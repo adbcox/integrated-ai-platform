@@ -1,6 +1,6 @@
 {
   "version": "1",
-  "generated_at_utc": "2026-04-11T17:11:32Z",
+  "generated_at_utc": "2026-04-11T17:17:10Z",
   "source_plan_json": "/srv/platform/repos/platform-browser-operator/artifacts/planning/latest.json",
   "records_total": 1,
   "default_workflow_mode": "tactical",

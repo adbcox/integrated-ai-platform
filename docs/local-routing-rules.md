@@ -50,6 +50,8 @@ Direct selector usage:
 
 ## Practical operator flow
 1. Run `make local-model-rules-refresh` after a batch of escalations.
-2. Resolve recommended mode for current task class.
-3. Set `WORKFLOW_MODE` accordingly and run `aider_loop`.
-4. Repeat cycle; apply only small rule changes per iteration.
+2. Start new work from intake:
+   - `TASK_NAME='<task>' TASK_GOAL='<goal>' [TASK_CLASS='<trigger> | <fix_pattern>'] make local-task-intake`
+3. Resolve/confirm recommended mode for current task class.
+4. Set `WORKFLOW_MODE` accordingly and run `aider_loop`.
+5. Repeat cycle; apply only small rule changes per iteration.

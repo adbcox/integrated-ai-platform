@@ -1,6 +1,6 @@
 SHELL := /bin/sh
 
-.PHONY: check check-shell check-python quick quick-shell quick-python test-offline test-changed-offline remote-prepare remote-finalize aider-start-task aider-handoff aider-finalize aider-capture-feedback aider-export-training aider-loop preflight-normalization-guard workflow-mode-show workflow-mode-list workflow-mode-validate workflow-mode-tactical workflow-mode-codex-assist workflow-mode-codex-investigate workflow-mode-codex-failure escalation-index-tail local-model-eval local-model-eval-json local-model-plan local-model-plan-json local-model-rules-refresh local-model-rules-show local-model-route
+.PHONY: check check-shell check-python quick quick-shell quick-python test-offline test-changed-offline remote-prepare remote-finalize aider-start-task aider-handoff aider-finalize aider-capture-feedback aider-export-training aider-loop preflight-normalization-guard workflow-mode-show workflow-mode-list workflow-mode-validate workflow-mode-tactical workflow-mode-codex-assist workflow-mode-codex-investigate workflow-mode-codex-failure escalation-index-tail local-model-eval local-model-eval-json local-model-plan local-model-plan-json local-model-rules-refresh local-model-rules-show local-model-route local-task-intake
 
 check: check-shell check-python
 	@echo "PASS: make check complete."
@@ -113,4 +113,16 @@ local-model-route:
 	else \
 		echo "Usage: TASK_CLASS='<trigger> | <fix_pattern>' make local-model-route"; \
 		echo "   or: TRIGGER='<trigger>' FIX_PATTERN='<fix_pattern>' make local-model-route"; \
+	fi
+
+local-task-intake:
+	@if [ -z "$$TASK_NAME" ] || [ -z "$$TASK_GOAL" ]; then \
+		echo "Usage: TASK_NAME='<task>' TASK_GOAL='<goal>' [TASK_CLASS='<trigger> | <fix_pattern>'] make local-task-intake"; \
+	else \
+		set -- ./bin/local_task_intake.py --name "$$TASK_NAME" --goal "$$TASK_GOAL"; \
+		if [ -n "$$TASK_CLASS" ]; then set -- "$$@" --class "$$TASK_CLASS"; fi; \
+		if [ -n "$$TRIGGER" ]; then set -- "$$@" --trigger "$$TRIGGER"; fi; \
+		if [ -n "$$FIX_PATTERN" ]; then set -- "$$@" --fix-pattern "$$FIX_PATTERN"; fi; \
+		if [ -n "$$ESCALATE" ]; then set -- "$$@" --escalate "$$ESCALATE"; fi; \
+		"$$@"; \
 	fi
