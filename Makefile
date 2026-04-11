@@ -1,6 +1,6 @@
 SHELL := /bin/sh
 
-.PHONY: check check-shell check-python quick quick-shell quick-python test-offline test-changed-offline remote-prepare remote-finalize aider-start-task aider-handoff aider-finalize aider-capture-feedback aider-export-training aider-loop
+.PHONY: check check-shell check-python quick quick-shell quick-python test-offline test-changed-offline remote-prepare remote-finalize aider-start-task aider-handoff aider-finalize aider-capture-feedback aider-export-training aider-loop preflight-normalization-guard
 
 check: check-shell check-python
 	@echo "PASS: make check complete."
@@ -54,3 +54,6 @@ aider-export-training:
 
 aider-loop:
 	@echo "Usage: ./bin/aider_loop.sh --name <task-name> [--goal <text>] [--dry-run]"
+
+preflight-normalization-guard:
+	@./bin/preflight_normalization_guard.sh
