@@ -1,6 +1,6 @@
 SHELL := /bin/sh
 
-.PHONY: check check-shell check-python quick quick-shell quick-python test-offline test-changed-offline remote-prepare remote-finalize aider-start-task aider-handoff aider-finalize aider-capture-feedback aider-export-training aider-loop preflight-normalization-guard workflow-mode-show workflow-mode-list workflow-mode-validate workflow-mode-tactical workflow-mode-codex-assist workflow-mode-codex-investigate workflow-mode-codex-failure escalation-index-tail
+.PHONY: check check-shell check-python quick quick-shell quick-python test-offline test-changed-offline remote-prepare remote-finalize aider-start-task aider-handoff aider-finalize aider-capture-feedback aider-export-training aider-loop preflight-normalization-guard workflow-mode-show workflow-mode-list workflow-mode-validate workflow-mode-tactical workflow-mode-codex-assist workflow-mode-codex-investigate workflow-mode-codex-failure escalation-index-tail local-model-eval local-model-eval-json
 
 check: check-shell check-python
 	@echo "PASS: make check complete."
@@ -82,3 +82,9 @@ workflow-mode-codex-failure:
 
 escalation-index-tail:
 	@tail -n 20 artifacts/escalations/index.jsonl 2>/dev/null || echo "No escalation index yet: artifacts/escalations/index.jsonl"
+
+local-model-eval:
+	@./bin/evaluate_escalations.py --write-report
+
+local-model-eval-json:
+	@./bin/evaluate_escalations.py --json-only --write-report
