@@ -1,6 +1,6 @@
 SHELL := /bin/sh
 
-.PHONY: check check-shell check-python quick quick-shell quick-python test-offline test-changed-offline remote-prepare remote-finalize aider-start-task aider-handoff aider-finalize aider-capture-feedback aider-export-training aider-loop preflight-normalization-guard workflow-mode-show workflow-mode-list workflow-mode-validate workflow-mode-tactical workflow-mode-codex-assist workflow-mode-codex-investigate workflow-mode-codex-failure escalation-index-tail local-model-eval local-model-eval-json
+.PHONY: check check-shell check-python quick quick-shell quick-python test-offline test-changed-offline remote-prepare remote-finalize aider-start-task aider-handoff aider-finalize aider-capture-feedback aider-export-training aider-loop preflight-normalization-guard workflow-mode-show workflow-mode-list workflow-mode-validate workflow-mode-tactical workflow-mode-codex-assist workflow-mode-codex-investigate workflow-mode-codex-failure escalation-index-tail local-model-eval local-model-eval-json local-model-plan local-model-plan-json
 
 check: check-shell check-python
 	@echo "PASS: make check complete."
@@ -88,3 +88,11 @@ local-model-eval:
 
 local-model-eval-json:
 	@./bin/evaluate_escalations.py --json-only --write-report
+
+local-model-plan:
+	@./bin/evaluate_escalations.py --write-report >/dev/null
+	@./bin/plan_local_model_improvements.py --write-plan
+
+local-model-plan-json:
+	@./bin/evaluate_escalations.py --write-report >/dev/null
+	@./bin/plan_local_model_improvements.py --json-only --write-plan
