@@ -67,3 +67,12 @@ Then resolve mode for a task class before starting work:
 ```sh
 TASK_CLASS='<trigger> | <fix_pattern>' make local-model-route
 ```
+
+## Training/Distillation planning handoff
+When enough escalation artifacts accumulate, generate candidate/review manifests:
+```sh
+make local-model-train-plan
+```
+
+See:
+- `docs/training-distillation-planning.md`

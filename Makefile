@@ -1,6 +1,6 @@
 SHELL := /bin/sh
 
-.PHONY: check check-shell check-python quick quick-shell quick-python test-offline test-changed-offline remote-prepare remote-finalize aider-start-task aider-handoff aider-finalize aider-capture-feedback aider-export-training aider-loop preflight-normalization-guard workflow-mode-show workflow-mode-list workflow-mode-validate workflow-mode-tactical workflow-mode-codex-assist workflow-mode-codex-investigate workflow-mode-codex-failure escalation-index-tail local-model-eval local-model-eval-json local-model-plan local-model-plan-json local-model-rules-refresh local-model-rules-show local-model-route local-task-intake
+.PHONY: check check-shell check-python quick quick-shell quick-python test-offline test-changed-offline remote-prepare remote-finalize aider-start-task aider-handoff aider-finalize aider-capture-feedback aider-export-training aider-loop preflight-normalization-guard workflow-mode-show workflow-mode-list workflow-mode-validate workflow-mode-tactical workflow-mode-codex-assist workflow-mode-codex-investigate workflow-mode-codex-failure escalation-index-tail local-model-eval local-model-eval-json local-model-plan local-model-plan-json local-model-rules-refresh local-model-rules-show local-model-route local-task-intake local-model-train-plan local-model-train-plan-json
 
 check: check-shell check-python
 	@echo "PASS: make check complete."
@@ -126,3 +126,9 @@ local-task-intake:
 		if [ -n "$$ESCALATE" ]; then set -- "$$@" --escalate "$$ESCALATE"; fi; \
 		"$$@"; \
 	fi
+
+local-model-train-plan:
+	@./bin/plan_training_distillation.py --write-plan
+
+local-model-train-plan-json:
+	@./bin/plan_training_distillation.py --json-only --write-plan
