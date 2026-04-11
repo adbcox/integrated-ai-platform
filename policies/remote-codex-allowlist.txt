@@ -1,0 +1,13 @@
+# Glob patterns safe to share with remote coding assistance by default.
+# One pattern per line. Blank lines and comments are ignored.
+
+README.md
+AGENTS.md
+Makefile
+docs/*.md
+shell/*.sh
+bin/*.sh
+tests/*.sh
+tests/scenarios/*.env
+browser_operator_*.sh
+*.py

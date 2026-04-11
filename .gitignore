@@ -1,0 +1,28 @@
+.env
+.venv/
+__pycache__/
+playwright/.auth/
+artifacts/
+*.pyc
+.ssh/authorized_keys
+.aider*
+.remote-tasks/
+.local-model-data/
+tmp/
+
+# Normalization guard: local-only archives/checkpoints/backups
+.compat-archive/
+.compat-usage/
+.cutover-checkpoints/
+.host-backups/
+.maintenance-checkpoints/
+.rename-backups/
+
+# Sensitive/local markers
+.env.save
+.codex
+.ssh/
+
+# Historical backup artifacts
+*.bak.*
+*.bad_codex_*

@@ -1,0 +1,15 @@
+# Glob patterns that must never be sent to remote coding assistance.
+# One pattern per line. Blank lines and comments are ignored.
+
+.env
+.env.*
+*.pem
+*.key
+*.p12
+*.pfx
+.ssh/*
+.host-backups/*
+.compat-archive/*
+.rename-backups/*
+artifacts/*
+playwright/.auth/*

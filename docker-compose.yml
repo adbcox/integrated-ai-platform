@@ -1,0 +1,16 @@
+# Compose v2+ — no top-level "version" key needed
+
+services:
+  browser-operator:
+    build: .
+    container_name: browser-operator
+    restart: unless-stopped
+    ports:
+      - "8010:8010"
+      - "2222:22"      # VS Code Remote SSH
+    env_file:
+      - .env
+    volumes:
+      - ./artifacts:/app/artifacts
+      - ./playwright_state:/app/playwright_state
+    shm_size: "1gb"
