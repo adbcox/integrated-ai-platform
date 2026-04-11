@@ -18,6 +18,7 @@ CHECKS_FILE=""
 WORKFLOW_MODE="${WORKFLOW_MODE:-tactical}"
 REMOTE_SET=0
 OFFLINE_SET=0
+ESCALATION_TRIGGER="${ESCALATION_TRIGGER:-}"
 
 usage() {
   cat <<'USAGE'
@@ -216,7 +217,18 @@ echo "[aider-loop] Running local finalize checks..."
 run_cmd ./bin/remote_finalize.sh --offline "$OFFLINE_MODE"
 
 echo "[aider-loop] Capturing feedback record..."
-set -- ./bin/aider_capture_feedback.sh --name "$TASK_NAME"
+if [ -z "$ESCALATION_TRIGGER" ]; then
+  case "$WORKFLOW_MODE" in
+    codex-assist) ESCALATION_TRIGGER="bounded-assist" ;;
+    codex-investigate) ESCALATION_TRIGGER="complex-investigation" ;;
+    codex-failure) ESCALATION_TRIGGER="hard-failure-analysis" ;;
+    *) ESCALATION_TRIGGER="" ;;
+  esac
+fi
+
+set -- ./bin/aider_capture_feedback.sh --name "$TASK_NAME" --workflow-mode "$WORKFLOW_MODE"
+[ -n "$ESCALATION_TRIGGER" ] && set -- "$@" --escalation-trigger "$ESCALATION_TRIGGER"
+[ -n "$GOAL" ] && set -- "$@" --problem "$GOAL"
 [ -n "$SUMMARY_FILE" ] && set -- "$@" --summary "$SUMMARY_FILE"
 [ -n "$OUTCOME_FILE" ] && set -- "$@" --outcome "$OUTCOME_FILE"
 [ -n "$CHECKS_FILE" ] && set -- "$@" --checks "$CHECKS_FILE"

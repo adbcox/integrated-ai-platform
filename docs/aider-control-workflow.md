@@ -41,6 +41,12 @@ Manual step-by-step loop:
 ./bin/aider_export_training_jsonl.sh
 ```
 
+Escalated (Codex mode) runs also write structured artifacts to:
+- `artifacts/escalations/<task_id>/summary.json`
+- `artifacts/escalations/<task_id>/timeline.log`
+- `artifacts/escalations/<task_id>/patch-notes.md`
+- `artifacts/escalations/index.jsonl`
+
 ## Delegation Policy
 - Default: local edits + local checks.
 - Remote Codex: bounded refactors, tests, docs, boilerplate.
