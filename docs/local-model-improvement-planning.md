@@ -56,3 +56,14 @@ Direct script usage:
 - Apply 1-2 heuristic/rule updates per cycle.
 - Keep high-failure classes in Codex-heavy modes until evidence improves.
 - Re-run evaluation and planning after each batch of meaningful escalations.
+
+## Rule application handoff
+After generating planning outputs, materialize routing policy:
+```sh
+make local-model-rules-refresh
+```
+
+Then resolve mode for a task class before starting work:
+```sh
+TASK_CLASS='<trigger> | <fix_pattern>' make local-model-route
+```

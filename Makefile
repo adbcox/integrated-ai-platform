@@ -1,6 +1,6 @@
 SHELL := /bin/sh
 
-.PHONY: check check-shell check-python quick quick-shell quick-python test-offline test-changed-offline remote-prepare remote-finalize aider-start-task aider-handoff aider-finalize aider-capture-feedback aider-export-training aider-loop preflight-normalization-guard workflow-mode-show workflow-mode-list workflow-mode-validate workflow-mode-tactical workflow-mode-codex-assist workflow-mode-codex-investigate workflow-mode-codex-failure escalation-index-tail local-model-eval local-model-eval-json local-model-plan local-model-plan-json
+.PHONY: check check-shell check-python quick quick-shell quick-python test-offline test-changed-offline remote-prepare remote-finalize aider-start-task aider-handoff aider-finalize aider-capture-feedback aider-export-training aider-loop preflight-normalization-guard workflow-mode-show workflow-mode-list workflow-mode-validate workflow-mode-tactical workflow-mode-codex-assist workflow-mode-codex-investigate workflow-mode-codex-failure escalation-index-tail local-model-eval local-model-eval-json local-model-plan local-model-plan-json local-model-rules-refresh local-model-rules-show local-model-route
 
 check: check-shell check-python
 	@echo "PASS: make check complete."
@@ -96,3 +96,21 @@ local-model-plan:
 local-model-plan-json:
 	@./bin/evaluate_escalations.py --write-report >/dev/null
 	@./bin/plan_local_model_improvements.py --json-only --write-plan
+
+local-model-rules-refresh:
+	@./bin/evaluate_escalations.py --write-report >/dev/null
+	@./bin/plan_local_model_improvements.py --write-plan >/dev/null
+	@./bin/generate_local_routing_rules.py
+
+local-model-rules-show:
+	@sed -n '1,240p' policies/local-routing-rules.json 2>/dev/null || echo "No rules file yet. Run: make local-model-rules-refresh"
+
+local-model-route:
+	@if [ -n "$$TASK_CLASS" ]; then \
+		./bin/select_workflow_mode.py --class "$$TASK_CLASS"; \
+	elif [ -n "$$TRIGGER" ] && [ -n "$$FIX_PATTERN" ]; then \
+		./bin/select_workflow_mode.py --trigger "$$TRIGGER" --fix-pattern "$$FIX_PATTERN"; \
+	else \
+		echo "Usage: TASK_CLASS='<trigger> | <fix_pattern>' make local-model-route"; \
+		echo "   or: TRIGGER='<trigger>' FIX_PATTERN='<fix_pattern>' make local-model-route"; \
+	fi

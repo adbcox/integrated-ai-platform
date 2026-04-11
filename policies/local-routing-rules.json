@@ -1,0 +1,48 @@
+{
+  "version": "1",
+  "generated_at_utc": "2026-04-11T17:11:32Z",
+  "source_plan_json": "/srv/platform/repos/platform-browser-operator/artifacts/planning/latest.json",
+  "records_total": 1,
+  "default_workflow_mode": "tactical",
+  "decision_framework": {
+    "local-first candidate": "total>=3, fail_rate<=0.10, pass>=2",
+    "local-with-codex-assist": "fail_rate<=0.25 with at least one successful/partial sample",
+    "codex-preferred": "default when evidence is limited or local stability is unclear",
+    "codex-required for now": "fail_rate>=0.50 with >=2 samples OR repeated hard-failure class with no pass"
+  },
+  "mode_rank": {
+    "tactical": 0,
+    "codex-assist": 1,
+    "codex-investigate": 2,
+    "codex-failure": 3
+  },
+  "class_overrides": [
+    {
+      "class": "hard-failure-analysis | state-coupled shell flow",
+      "category": "local-with-codex-assist",
+      "trigger": "hard-failure-analysis",
+      "fix_pattern": "state-coupled shell flow",
+      "recommended_workflow_mode": "codex-assist",
+      "reason": "low observed failure with incomplete confidence",
+      "heuristic": "When repeated failures persist after one local attempt, escalate earlier with full test context.",
+      "stats": {
+        "total": 1,
+        "pass": 0,
+        "partial": 1,
+        "fail": 0
+      }
+    }
+  ],
+  "trigger_defaults": {
+    "hard-failure-analysis": {
+      "recommended_workflow_mode": "codex-assist",
+      "source_classes": [
+        "hard-failure-analysis | state-coupled shell flow"
+      ]
+    }
+  },
+  "operator_guidance": {
+    "apply_cycle_limit": "Apply 1-2 local rule updates per cycle, then re-evaluate.",
+    "fallback_rule": "If class/trigger is unknown, start tactical for routine work and escalate explicitly when blocked."
+  }
+}
