@@ -5,12 +5,17 @@ This project treats **aider as the primary control point** and uses remote Codex
 ## Control Loop
 Single-command loop (recommended):
 ```sh
-./bin/aider_loop.sh --name "task-name" --goal "short objective"
+WORKFLOW_MODE=tactical ./bin/aider_loop.sh --name "task-name" --goal "short objective"
 ```
 
 Dry-run preview:
 ```sh
-./bin/aider_loop.sh --name "task-name" --goal "short objective" --dry-run
+WORKFLOW_MODE=codex-assist ./bin/aider_loop.sh --name "task-name" --goal "short objective" --dry-run
+```
+
+Mode check:
+```sh
+./bin/workflow_mode.sh show
 ```
 
 Manual step-by-step loop:
@@ -40,6 +45,18 @@ Manual step-by-step loop:
 - Default: local edits + local checks.
 - Remote Codex: bounded refactors, tests, docs, boilerplate.
 - Never remote: secrets, sensitive config, broad infra/network changes.
+
+## Workflow Modes
+- `tactical`: local-first tactical loop, remote Codex handoff disabled by default.
+- `codex-assist`: bounded Codex assist, remote handoff enabled by default, offline checks default to `changed`.
+- `codex-investigate`: deeper Codex investigation, remote handoff enabled by default, offline checks default to `full`.
+- `codex-failure`: hard failure analysis with Codex, remote handoff enabled by default, offline checks default to `full`.
+
+Per-run override remains explicit:
+- `--workflow-mode <mode>` on `aider_loop.sh`
+- `WORKFLOW_MODE=<mode>` env on command invocation
+
+Operator flags still take precedence over mode defaults (`--no-remote`, `--offline`).
 
 ## Required Validation
 - `make quick`

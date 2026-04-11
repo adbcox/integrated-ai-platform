@@ -15,6 +15,9 @@ HANDOFF_INCLUDES=""
 SUMMARY_FILE=""
 OUTCOME_FILE=""
 CHECKS_FILE=""
+WORKFLOW_MODE="${WORKFLOW_MODE:-tactical}"
+REMOTE_SET=0
+OFFLINE_SET=0
 
 usage() {
   cat <<'USAGE'
@@ -22,6 +25,7 @@ Usage:
   ./bin/aider_loop.sh --name <task-name> [options]
 
 Options:
+  --workflow-mode <mode>   tactical|codex-assist|codex-investigate|codex-failure
   --goal <text>            Task objective for auto-generated brief
   --task-file <path>       Use an existing task brief instead of creating one
   --include <path>         Additional include for remote handoff (repeatable)
@@ -54,6 +58,10 @@ run_cmd() {
 
 while [ "$#" -gt 0 ]; do
   case "$1" in
+    --workflow-mode)
+      WORKFLOW_MODE="${2:-}"
+      shift 2
+      ;;
     --name)
       TASK_NAME="${2:-}"
       shift 2
@@ -75,10 +83,12 @@ $inc"
       ;;
     --offline)
       OFFLINE_MODE="${2:-}"
+      OFFLINE_SET=1
       shift 2
       ;;
     --no-remote)
       REMOTE_ENABLED=0
+      REMOTE_SET=1
       shift
       ;;
     --no-export)
@@ -119,6 +129,30 @@ done
 
 [ -n "$TASK_NAME" ] || { echo "ERROR: --name is required" >&2; exit 1; }
 
+case "$WORKFLOW_MODE" in
+  tactical|codex-assist|codex-investigate|codex-failure) ;;
+  *)
+    echo "ERROR: invalid --workflow-mode: $WORKFLOW_MODE" >&2
+    exit 1
+    ;;
+esac
+
+# Mode defaults apply only when operator did not explicitly override flags.
+case "$WORKFLOW_MODE" in
+  tactical)
+    [ "$REMOTE_SET" -eq 1 ] || REMOTE_ENABLED=0
+    [ "$OFFLINE_SET" -eq 1 ] || OFFLINE_MODE="changed"
+    ;;
+  codex-assist)
+    [ "$REMOTE_SET" -eq 1 ] || REMOTE_ENABLED=1
+    [ "$OFFLINE_SET" -eq 1 ] || OFFLINE_MODE="changed"
+    ;;
+  codex-investigate|codex-failure)
+    [ "$REMOTE_SET" -eq 1 ] || REMOTE_ENABLED=1
+    [ "$OFFLINE_SET" -eq 1 ] || OFFLINE_MODE="full"
+    ;;
+esac
+
 case "$OFFLINE_MODE" in
   changed|full|skip) ;;
   *)
@@ -128,6 +162,7 @@ case "$OFFLINE_MODE" in
 esac
 
 cd "$BASE_DIR"
+echo "[aider-loop] workflow mode: $WORKFLOW_MODE"
 
 if [ -z "$TASK_FILE" ]; then
   echo "[aider-loop] Creating task brief..."
