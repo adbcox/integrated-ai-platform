@@ -25,7 +25,7 @@ This pipeline generates JSON briefs, enforces budgets, and runs the guard automa
 - Prompts stay short because the JSON brief already encodes target files/constraints.
 - `bin/aider_loop.sh` automatically runs `bin/aider_guard.py` after patch application; `--skip-guard` is only for emergency fallback.
 
-Fast local tactical default (CPU-reliable path):
+Default fast tactical settings (CPU-reliable path):
 ```sh
 make aider-fast
 ```
