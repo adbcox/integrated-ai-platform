@@ -14,7 +14,7 @@ usage() {
 Usage:
   ./bin/aider_local.sh [--hard] [--gpu-experimental] [--api-base <url>] [aider args...]
 
-Defaults (fast tactical profile):
+Default fast tactical settings:
   OLLAMA_API_BASE=http://127.0.0.1:11535
   --model ollama_chat/qwen2.5-coder:1.5b
   --map-tokens 0
