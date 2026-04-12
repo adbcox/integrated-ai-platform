@@ -1,6 +1,6 @@
 SHELL := /bin/sh
 
-.PHONY: check check-shell check-python quick quick-shell quick-python test-offline test-changed-offline remote-prepare remote-finalize aider-start-task aider-handoff aider-finalize aider-capture-feedback aider-export-training aider-loop aider-run aider-bugfix-small aider-refactor-narrow aider-test-repair aider-lint-fix aider-docs-sync aider-typed-cleanup aider-targeted-feature-patch preflight-normalization-guard workflow-mode-show workflow-mode-list workflow-mode-validate workflow-mode-tactical workflow-mode-codex-assist workflow-mode-codex-investigate workflow-mode-codex-failure escalation-index-tail local-model-eval local-model-eval-json local-model-plan local-model-plan-json local-model-rules-refresh local-model-rules-show local-model-route local-task-intake local-front-door local-model-train-plan local-model-train-plan-json prompt-rule-plan prompt-rule-plan-json assess-candidate-class
+.PHONY: check check-shell check-python quick quick-shell quick-python test-offline test-changed-offline remote-prepare remote-finalize aider-start-task aider-handoff aider-finalize aider-capture-feedback aider-export-training aider-loop aider-run aider-bugfix-small aider-refactor-narrow aider-test-repair aider-lint-fix aider-docs-sync aider-typed-cleanup aider-targeted-feature-patch aider-fast aider-hard preflight-normalization-guard workflow-mode-show workflow-mode-list workflow-mode-validate workflow-mode-tactical workflow-mode-codex-assist workflow-mode-codex-investigate workflow-mode-codex-failure escalation-index-tail local-model-eval local-model-eval-json local-model-plan local-model-plan-json local-model-rules-refresh local-model-rules-show local-model-route local-task-intake local-front-door local-model-train-plan local-model-train-plan-json prompt-rule-plan prompt-rule-plan-json assess-candidate-class
 
 .PHONY: aider-docs-micro aider-test-micro aider-shell-micro aider-lint-micro
 
@@ -90,6 +90,14 @@ aider-typed-cleanup:
 aider-targeted-feature-patch:
 	@$(MAKE) aider-run AIDER_CLASS=targeted-feature-patch
 	@echo "Modes: tactical | codex-assist | codex-investigate | codex-failure"
+
+AIDER_ARGS ?=
+
+aider-fast:
+	@./bin/aider_local.sh $(AIDER_ARGS)
+
+aider-hard:
+	@./bin/aider_local.sh --hard $(AIDER_ARGS)
 
 AIDER_AUTO_FILES ?=
 

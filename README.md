@@ -57,6 +57,19 @@ make aider-lint-micro AIDER_NAME="lint" AIDER_OBJECTIVE="Fix lint" AIDER_FILES="
 make aider-auto AIDER_NAME="auto" AIDER_OBJECTIVE="Docs sync" AIDER_AUTO_FILES="docs/runbook.md docs/AGENTS.md"
 ```
 
+Fast local tactical Aider entry points:
+
+```sh
+make aider-fast
+make aider-hard
+```
+
+- `aider-fast` is the default tactical profile on CPU Ollama (`127.0.0.1:11535`) using `qwen2.5-coder:1.5b`, `--map-tokens 0`, and `--timeout 60`.
+- `aider-hard` is explicit opt-in for heavier tasks (`qwen2.5-coder:7b`, higher map/timeout).
+- Optional pass-through flags via `AIDER_ARGS`, for example:
+  - `make aider-fast AIDER_ARGS="--message 'reply exactly READY'"`
+  - `make aider-hard AIDER_ARGS='path/to/file.py'`
+
 Recommended daily loop:
 
 ```sh

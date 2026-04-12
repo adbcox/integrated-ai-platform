@@ -25,6 +25,28 @@ This pipeline generates JSON briefs, enforces budgets, and runs the guard automa
 - Prompts stay short because the JSON brief already encodes target files/constraints.
 - `bin/aider_loop.sh` automatically runs `bin/aider_guard.py` after patch application; `--skip-guard` is only for emergency fallback.
 
+Fast local tactical default (CPU-reliable path):
+```sh
+make aider-fast
+```
+
+This uses:
+- `OLLAMA_API_BASE=http://127.0.0.1:11535`
+- `--model ollama_chat/qwen2.5-coder:1.5b`
+- `--map-tokens 0`
+- `--timeout 60`
+
+For harder tasks (explicit opt-in):
+```sh
+make aider-hard
+```
+
+Pass-through args are supported with `AIDER_ARGS`, for example:
+```sh
+make aider-fast AIDER_ARGS="--message 'reply exactly READY'"
+make aider-hard AIDER_ARGS="path/to/file.py"
+```
+
 ## 4. Validation & Artifacts
 - Guard enforces file scope, diff size, forbidden globs, root limits, and runs validation commands. Results saved under `artifacts/aider_runs/` with failure context.
 - If guard fails twice, escalate to Codex with the artifact path and failure_code.
