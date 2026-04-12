@@ -214,10 +214,10 @@ EOF
   if [ "$PROMPT_ENABLED" -eq 1 ]; then
     if [ "$DRY_RUN" -eq 0 ]; then
       echo
-      echo "[aider-loop] Apply the remote patch now, then press Enter to continue."
+      echo "[aider-loop] Apply the patch now, then press Enter to continue."
       IFS= read -r _unused
     else
-      echo "[aider-loop] DRY-RUN: would pause for manual patch application."
+      echo "[aider-loop] DRY-RUN: would pause for manual edit window."
     fi
   fi
 else
