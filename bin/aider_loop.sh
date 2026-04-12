@@ -173,10 +173,15 @@ echo "[aider-loop] workflow mode: $WORKFLOW_MODE"
 
 if [ -z "$TASK_FILE" ]; then
   echo "[aider-loop] Creating task brief..."
+  if [ -z "${TASK_CLASS:-}" ]; then
+    echo "ERROR: no bounded task class available for auto task-brief creation" >&2
+    echo "HINT: provide a concrete task file or route this case to Codex/front-door contract repair" >&2
+    exit 1
+  fi
   if [ -n "$GOAL" ]; then
-    run_cmd ./bin/aider_start_task.sh --name "$TASK_NAME" --goal "$GOAL"
+    run_cmd ./bin/aider_start_task.sh --name "$TASK_NAME" --class "${TASK_CLASS:-targeted-feature-patch}" --goal "$GOAL"
   else
-    run_cmd ./bin/aider_start_task.sh --name "$TASK_NAME"
+    run_cmd ./bin/aider_start_task.sh --name "$TASK_NAME" --class "${TASK_CLASS:-targeted-feature-patch}"
   fi
 
   slug="$(printf '%s' "$TASK_NAME" | tr ' ' '-' | tr -cd '[:alnum:]_.-')"
@@ -217,6 +222,16 @@ EOF
   fi
 else
   echo "[aider-loop] Remote handoff disabled (--no-remote)."
+  if [ "$PROMPT_ENABLED" -eq 1 ]; then
+    echo
+    echo "[aider-loop] Apply the patch now (e.g., run 'aider <files>' using the brief at $TASK_FILE)."
+    echo "Press Enter when the edits are complete to continue to guard enforcement."
+    if [ "$DRY_RUN" -eq 0 ]; then
+      IFS= read -r _unused
+    else
+      echo "[aider-loop] DRY-RUN: would pause for manual edit window."
+    fi
+  fi
 fi
 
 if [ "$DRY_RUN" -eq 0 ] && [ "$GUARD_ENABLED" -eq 1 ]; then
