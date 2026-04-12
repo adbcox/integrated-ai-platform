@@ -43,7 +43,7 @@ TASK_NAME='task-name' TASK_GOAL='short objective' make local-task-intake
 
 ## Operator flow
 1. Run intake.
-2. If `escalation_selected=false`, run local path:
-   - `WORKFLOW_MODE=<recommended> ./bin/aider_loop.sh --name ... --goal ...`
+2. If `escalation_selected=false`, Codex continues locally:
+   - follow the recommended workflow mode while keeping Codex as the orchestrator (`WORKFLOW_MODE=<recommended> ./bin/aider_loop.sh --name ... --goal ...` when tactical automation is desired).
 3. If `escalation_selected=true`, use packet artifact for Codex handoff and then continue normal loop.
 4. Capture -> evaluate -> plan -> refresh rules as usual.

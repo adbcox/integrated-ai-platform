@@ -1,38 +1,29 @@
-# Aider Task Brief
-
-## Task Name
-<short-name>
-
-## Objective
-<what to change>
-
-## Why
-<expected value>
-
-## Scope
-- In-scope files:
-  - <path>
-- Out-of-scope:
-  - network/firewall/service exposure changes
-  - secrets/config material
-
-## Constraints
-- keep behavior unchanged unless robustness bug is fixed
-- prefer small, reversible patch
-- preserve existing script output shape where possible
-
-## Acceptance Criteria
-- local checks pass (`make quick`)
-- behavior checks pass (`make test-changed-offline` or `make test-offline`)
-- changed files are explicitly listed
-
-## Validation Commands
-```sh
-make quick
-make test-changed-offline
-```
-
-## Notes For Remote Codex
-- return patch-oriented changes
-- list modified files
-- include short rationale per file
+{
+  "task": {
+    "name": "<task-name>",
+    "class": "<task-class>"
+  },
+  "objective": "<exact change in one sentence>",
+  "target_files": [
+    {"path": "path/to/file", "action": "modify"}
+  ],
+  "out_of_scope": [
+    "files or behaviors Aider must not touch"
+  ],
+  "constraints": [
+    "policy, style, or performance limits"
+  ],
+  "acceptance_criteria": [
+    "observable outcome or diff expectation"
+  ],
+  "validation_commands": [
+    "make quick"
+  ],
+  "limits": {
+    "max_files": 3,
+    "max_loc": 150,
+    "max_roots": 1,
+    "allowed_extra_globs": ["tests/**"],
+    "forbidden_globs": ["config/**", "systemd/**", "secrets/**", "policies/**"]
+  }
+}

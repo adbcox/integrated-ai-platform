@@ -19,6 +19,7 @@ WORKFLOW_MODE="${WORKFLOW_MODE:-tactical}"
 REMOTE_SET=0
 OFFLINE_SET=0
 ESCALATION_TRIGGER="${ESCALATION_TRIGGER:-}"
+GUARD_ENABLED=1
 
 usage() {
   cat <<'USAGE'
@@ -37,6 +38,7 @@ Options:
   --summary <path>         Feedback summary file for capture step
   --outcome <path>         Feedback outcome file for capture step
   --checks <path>          Feedback checks file for capture step
+  --skip-guard             Disable automated scope/validation guard (fallback to legacy finalize)
   --dry-run                Print actions without executing
   -h, --help               Show help
 
@@ -111,6 +113,10 @@ $inc"
     --checks)
       CHECKS_FILE="${2:-}"
       shift 2
+      ;;
+    --skip-guard)
+      GUARD_ENABLED=0
+      shift
       ;;
     --dry-run)
       DRY_RUN=1
@@ -213,8 +219,13 @@ else
   echo "[aider-loop] Remote handoff disabled (--no-remote)."
 fi
 
-echo "[aider-loop] Running local finalize checks..."
-run_cmd ./bin/remote_finalize.sh --offline "$OFFLINE_MODE"
+if [ "$DRY_RUN" -eq 0 ] && [ "$GUARD_ENABLED" -eq 1 ]; then
+  echo "[aider-loop] Enforcing scope + validations via guard..."
+  run_cmd ./bin/aider_guard.py --task-file "$TASK_FILE"
+else
+  echo "[aider-loop] Guard disabled; running legacy finalize checks..."
+  run_cmd ./bin/remote_finalize.sh --offline "$OFFLINE_MODE"
+fi
 
 echo "[aider-loop] Capturing feedback record..."
 if [ -z "$ESCALATION_TRIGGER" ]; then

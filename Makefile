@@ -1,6 +1,8 @@
 SHELL := /bin/sh
 
-.PHONY: check check-shell check-python quick quick-shell quick-python test-offline test-changed-offline remote-prepare remote-finalize aider-start-task aider-handoff aider-finalize aider-capture-feedback aider-export-training aider-loop preflight-normalization-guard workflow-mode-show workflow-mode-list workflow-mode-validate workflow-mode-tactical workflow-mode-codex-assist workflow-mode-codex-investigate workflow-mode-codex-failure escalation-index-tail local-model-eval local-model-eval-json local-model-plan local-model-plan-json local-model-rules-refresh local-model-rules-show local-model-route local-task-intake local-model-train-plan local-model-train-plan-json
+.PHONY: check check-shell check-python quick quick-shell quick-python test-offline test-changed-offline remote-prepare remote-finalize aider-start-task aider-handoff aider-finalize aider-capture-feedback aider-export-training aider-loop aider-run aider-bugfix-small aider-refactor-narrow aider-test-repair aider-lint-fix aider-docs-sync aider-typed-cleanup aider-targeted-feature-patch preflight-normalization-guard workflow-mode-show workflow-mode-list workflow-mode-validate workflow-mode-tactical workflow-mode-codex-assist workflow-mode-codex-investigate workflow-mode-codex-failure escalation-index-tail local-model-eval local-model-eval-json local-model-plan local-model-plan-json local-model-rules-refresh local-model-rules-show local-model-route local-task-intake local-front-door local-model-train-plan local-model-train-plan-json prompt-rule-plan prompt-rule-plan-json assess-candidate-class
+
+.PHONY: aider-docs-micro aider-test-micro aider-shell-micro aider-lint-micro
 
 check: check-shell check-python
 	@echo "PASS: make check complete."
@@ -54,7 +56,59 @@ aider-export-training:
 
 aider-loop:
 	@echo "Usage: WORKFLOW_MODE=<mode> ./bin/aider_loop.sh --name <task-name> [--goal <text>] [--dry-run]"
+
+# Automated Aider flows
+AIDER_CLASS ?= bugfix-small
+AIDER_NAME ?= aider-task
+AIDER_OBJECTIVE ?=
+AIDER_FILES ?=
+AIDER_FILE_ARGS = $(foreach f,$(AIDER_FILES),--file $(f))
+
+aider-run:
+	@[ -n "$(AIDER_OBJECTIVE)" ] || { echo "AIDER_OBJECTIVE is required"; exit 1; }
+	@[ -n "$(AIDER_FILES)" ] || { echo "AIDER_FILES is required"; exit 1; }
+	@./bin/aider_task_runner.py --class "$(AIDER_CLASS)" --name "$(AIDER_NAME)" --objective "$(AIDER_OBJECTIVE)" $(AIDER_FILE_ARGS)
+
+aider-bugfix-small:
+	@$(MAKE) aider-run AIDER_CLASS=bugfix-small
+
+aider-refactor-narrow:
+	@$(MAKE) aider-run AIDER_CLASS=refactor-narrow
+
+aider-test-repair:
+	@$(MAKE) aider-run AIDER_CLASS=test-repair
+
+aider-lint-fix:
+	@$(MAKE) aider-run AIDER_CLASS=lint-fix
+
+aider-docs-sync:
+	@$(MAKE) aider-run AIDER_CLASS=docs-sync
+
+aider-typed-cleanup:
+	@$(MAKE) aider-run AIDER_CLASS=typed-cleanup
+
+aider-targeted-feature-patch:
+	@$(MAKE) aider-run AIDER_CLASS=targeted-feature-patch
 	@echo "Modes: tactical | codex-assist | codex-investigate | codex-failure"
+
+AIDER_AUTO_FILES ?=
+
+aider-auto:
+	@[ -n "$(AIDER_OBJECTIVE)" ] || { echo "AIDER_OBJECTIVE is required"; exit 1; }
+	@[ -n "$(AIDER_AUTO_FILES)" ] || { echo "AIDER_AUTO_FILES is required"; exit 1; }
+	@./bin/aider_auto_route.py --name "$(AIDER_NAME)" --objective "$(AIDER_OBJECTIVE)" $(foreach f,$(AIDER_AUTO_FILES),--file $(f))
+
+aider-docs-micro:
+	@$(MAKE) aider-docs-sync AIDER_OBJECTIVE="$(or $(AIDER_OBJECTIVE),Update docs to match behavior)" AIDER_FILES="$(AIDER_FILES)"
+
+aider-test-micro:
+	@$(MAKE) aider-test-repair AIDER_OBJECTIVE="$(or $(AIDER_OBJECTIVE),Stabilize failing tests)" AIDER_FILES="$(AIDER_FILES)"
+
+aider-shell-micro:
+	@$(MAKE) aider-bugfix-small AIDER_OBJECTIVE="$(or $(AIDER_OBJECTIVE),Patch shell helper)" AIDER_FILES="$(AIDER_FILES)"
+
+aider-lint-micro:
+	@$(MAKE) aider-lint-fix AIDER_OBJECTIVE="$(or $(AIDER_OBJECTIVE),Apply lint fixes)" AIDER_FILES="$(AIDER_FILES)"
 
 preflight-normalization-guard:
 	@./bin/preflight_normalization_guard.sh
@@ -127,8 +181,39 @@ local-task-intake:
 		"$$@"; \
 	fi
 
+local-front-door:
+	@if [ -z "$$TASK_NAME" ] || [ -z "$$TASK_GOAL" ]; then \
+		echo "Usage: TASK_NAME='<task>' TASK_GOAL='<goal>' [TASK_CLASS='<trigger> | <fix_pattern>'] make local-front-door"; \
+	else \
+		set -- ./bin/local_front_door.py --name "$$TASK_NAME" --goal "$$TASK_GOAL"; \
+		if [ -n "$$TASK_CLASS" ]; then set -- "$$@" --class "$$TASK_CLASS"; fi; \
+		if [ -n "$$TRIGGER" ]; then set -- "$$@" --trigger "$$TRIGGER"; fi; \
+		if [ -n "$$FIX_PATTERN" ]; then set -- "$$@" --fix-pattern "$$FIX_PATTERN"; fi; \
+		if [ -n "$$ESCALATE" ]; then set -- "$$@" --escalate "$$ESCALATE"; fi; \
+		if [ -n "$$TASK_ID" ]; then set -- "$$@" --task-id "$$TASK_ID"; fi; \
+		"$$@"; \
+	fi
+
 local-model-train-plan:
 	@./bin/plan_training_distillation.py --write-plan
 
 local-model-train-plan-json:
 	@./bin/plan_training_distillation.py --json-only --write-plan
+
+prompt-rule-plan:
+	@./bin/plan_training_distillation.py --write-plan >/dev/null
+	@./bin/plan_prompt_rule_tuning.py --write-plan
+
+prompt-rule-plan-json:
+	@./bin/plan_training_distillation.py --write-plan >/dev/null
+	@./bin/plan_prompt_rule_tuning.py --json-only --write-plan
+
+assess-candidate-class:
+	@if [ -n "$$CLASS" ]; then \
+		./bin/assess_candidate_class.py --class "$$CLASS"; \
+	elif [ -n "$$TRIGGER" ] && [ -n "$$FIX_PATTERN" ]; then \
+		./bin/assess_candidate_class.py --trigger "$$TRIGGER" --fix-pattern "$$FIX_PATTERN"; \
+	else \
+		echo "Usage: CLASS='trigger | fix' make assess-candidate-class"; \
+		echo "   or: TRIGGER='...' FIX_PATTERN='...' make assess-candidate-class"; \
+	fi

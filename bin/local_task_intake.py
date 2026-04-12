@@ -35,6 +35,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--rules-file", default=str(default_rules), help="Routing rules file")
     parser.add_argument("--out-dir", default=str(default_out_root), help="Intake artifacts root")
     parser.add_argument("--json", action="store_true", help="Print result JSON")
+    parser.add_argument("--files", action="append", default=[], help="Target files for this request (repeatable)")
+    parser.add_argument("--auto-route", action="store_true", help="Invoke aider_auto_route when classification is low-risk")
     return parser.parse_args()
 
 
@@ -59,7 +61,7 @@ def resolve_class_key(class_name: str, trigger: str, fix_pattern: str) -> str:
     return ""
 
 
-def select_mode(rules: dict[str, Any], class_key: str, trigger: str) -> tuple[str, str, str]:
+def select_mode(rules: dict[str, Any], class_key: str, trigger: str) -> tuple[str, str, str, str]:
     default_mode = str(rules.get("default_workflow_mode") or "tactical")
 
     for item in rules.get("class_overrides", []):
@@ -68,6 +70,7 @@ def select_mode(rules: dict[str, Any], class_key: str, trigger: str) -> tuple[st
                 str(item.get("recommended_workflow_mode") or default_mode),
                 "class_override",
                 str(item.get("reason") or "matched class override"),
+                str(item.get("heuristic") or ""),
             )
 
     trigger_defaults = rules.get("trigger_defaults", {})
@@ -77,9 +80,10 @@ def select_mode(rules: dict[str, Any], class_key: str, trigger: str) -> tuple[st
             str(td.get("recommended_workflow_mode") or default_mode),
             "trigger_default",
             f"matched trigger default: {trigger}",
+            "",
         )
 
-    return (default_mode, "global_default", "no specific class/trigger rule matched")
+    return (default_mode, "global_default", "no specific class/trigger rule matched", "")
 
 
 def should_escalate(mode: str, policy: str) -> bool:
@@ -142,6 +146,24 @@ def write_packet_markdown(path: Path, packet: dict[str, Any]) -> None:
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
+def write_heuristic_validation(path: Path, heuristic: str) -> None:
+    success_signal = (
+        "Escalation happens after exactly one local attempt and includes the full offline test context/logs."
+    )
+    lines = [
+        "# Heuristic Validation",
+        "",
+        f"- heuristic: {heuristic}",
+        f"- success_signal: {success_signal}",
+        "- validation_status: pending",
+        "",
+        "## Notes",
+        "- record when you escalated, what context was attached, and whether this prevented further wasted retries.",
+        "- after finishing the task, update outcome notes / capture so the learning loop can evaluate it.",
+    ]
+    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
 def current_branch(repo: Path) -> str:
     head = repo / ".git" / "HEAD"
     try:
@@ -163,7 +185,7 @@ def main() -> int:
     rules = load_rules(rules_path)
 
     class_key = resolve_class_key(args.class_name, args.trigger, args.fix_pattern)
-    mode, source, reason = select_mode(rules, class_key, args.trigger.strip())
+    mode, source, reason, heuristic_note = select_mode(rules, class_key, args.trigger.strip())
 
     if mode not in MODE_RANK:
         mode = "codex-assist"
@@ -185,6 +207,20 @@ def main() -> int:
     intake_dir = out_root / task_id
     intake_dir.mkdir(parents=True, exist_ok=True)
 
+    auto_route_command = None
+    if args.auto_route and args.files and mode == "tactical" and not args.force_class:
+        try:
+            from aider_lib import parse_file_spec
+            from aider_auto_route import guess_class
+            file_specs = [parse_file_spec(spec) for spec in args.files]
+            task_class = guess_class(args.goal, file_specs)
+            auto_route_command = (
+                f"make aider-run AIDER_CLASS={task_class} AIDER_NAME=\"{args.name}\" "
+                f"AIDER_OBJECTIVE=\"{args.goal}\" AIDER_FILES=\"{' '.join(args.files)}\""
+            )
+        except Exception as auto_exc:  # noqa: BLE001
+            auto_route_command = f"# auto-route skipped: {auto_exc}"
+
     intake = {
         "task_id": task_id,
         "timestamp_utc": ts,
@@ -198,10 +234,12 @@ def main() -> int:
         "recommended_workflow_mode": mode,
         "routing_source": source,
         "routing_reason": reason,
+        "applied_heuristic": heuristic_note,
         "escalation_policy": args.escalate,
         "escalation_selected": escalate,
         "constraints": constraints,
         "rules_file": str(rules_path),
+        "auto_route_command": auto_route_command,
         "artifacts": {
             "intake_json": str(intake_dir / "intake.json"),
             "packet_json": str(intake_dir / "codex-escalation-packet.json"),
@@ -210,6 +248,9 @@ def main() -> int:
     }
 
     write_json(intake_dir / "intake.json", intake)
+
+    if heuristic_note:
+        write_heuristic_validation(intake_dir / "heuristic-validation.md", heuristic_note)
 
     packet_written = False
     if escalate:
@@ -229,6 +270,7 @@ def main() -> int:
             "routing_reason": reason,
             "escalation_policy": args.escalate,
             "constraints": constraints,
+            "applied_heuristic": heuristic_note,
             "suggested_local_command": f"WORKFLOW_MODE={mode} ./bin/aider_loop.sh --name '{args.name}' --goal '{args.goal}'",
             "suggested_handoff_command": f"./bin/aider_handoff.sh --task-file tmp/<task-brief>.md --name '{args.name}'",
             "learning_tags": {
@@ -246,6 +288,7 @@ def main() -> int:
         "recommended_workflow_mode": mode,
         "routing_source": source,
         "routing_reason": reason,
+        "applied_heuristic": heuristic_note,
         "escalation_selected": escalate,
         "intake_dir": str(intake_dir),
         "packet_written": packet_written,
@@ -258,6 +301,8 @@ def main() -> int:
         print(f"recommended_mode: {mode}")
         print(f"routing_source: {source}")
         print(f"routing_reason: {reason}")
+        if heuristic_note:
+            print(f"applied_heuristic: {heuristic_note}")
         print(f"escalation_selected: {str(escalate).lower()}")
         print(f"intake_artifact: {intake_dir / 'intake.json'}")
         if packet_written:

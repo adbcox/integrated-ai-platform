@@ -46,27 +46,25 @@ Run post-remote local validation:
 ./bin/remote_finalize.sh --offline changed
 ```
 
-Task wrappers for frequent small tasks:
+Task wrappers for frequent small tasks (Codex stays planner, Aider executes):
 
 ```sh
-./bin/fix-shell.sh
-./bin/fix-python.sh
-./bin/smoke-open-app.sh
-./bin/aider_start_task.sh --name "task-name"
-./bin/aider_handoff.sh --task-file tmp/task.md --name task-name
-./bin/aider_finalize.sh
-./bin/aider_capture_feedback.sh --name "task-name"
-./bin/aider_export_training_jsonl.sh
-./bin/aider_loop.sh --name "task-name" --goal "short objective"
+make aider-bugfix-small AIDER_NAME="login-fix" AIDER_OBJECTIVE="Stop nil panic" AIDER_FILES="browser_operator_login_flow.sh tests/mock_login_flow.sh"
+make aider-docs-micro AIDER_NAME="docs" AIDER_OBJECTIVE="Sync runbook" AIDER_FILES="docs/runbook.md"
+make aider-test-micro AIDER_NAME="tests" AIDER_OBJECTIVE="Stabilize failing tests" AIDER_FILES="tests/foo_test.sh tests/bar_test.sh"
+make aider-shell-micro AIDER_NAME="shell" AIDER_OBJECTIVE="Patch helper" AIDER_FILES="shell/common.sh"
+make aider-lint-micro AIDER_NAME="lint" AIDER_OBJECTIVE="Fix lint" AIDER_FILES="browser_operator.py"
+make aider-auto AIDER_NAME="auto" AIDER_OBJECTIVE="Docs sync" AIDER_AUTO_FILES="docs/runbook.md docs/AGENTS.md"
 ```
 
-Daily flow (dry run first):
+Recommended daily loop:
 
 ```sh
-./bin/aider_loop.sh --name "task-name" --goal "short objective" --dry-run
-./bin/aider_loop.sh --name "task-name" --goal "short objective"
+make local-task-intake TASK_NAME="login fix" TASK_GOAL="Stop nil session panic" TASK_CLASS="bugfix | auth" TASK_ID="login-fix" --auto-route --files browser_operator_login_flow.sh --files tests/mock_login_flow.sh
+make aider-bugfix-small AIDER_NAME="login-fix" AIDER_OBJECTIVE="Stop nil session panic" AIDER_FILES="browser_operator_login_flow.sh tests/mock_login_flow.sh"
 ```
 
 Agent-specific guardrails and workflow are documented in [AGENTS.md](/srv/platform/repos/platform-browser-operator/AGENTS.md).
 Remote delegation workflow is documented in [docs/remote-codex-workflow.md](/srv/platform/repos/platform-browser-operator/docs/remote-codex-workflow.md).
-Aider control workflow is documented in [docs/aider-control-workflow.md](/srv/platform/repos/platform-browser-operator/docs/aider-control-workflow.md).
+Codex operator workflow details live in [docs/codex-operator-workflow.md](/srv/platform/repos/platform-browser-operator/docs/codex-operator-workflow.md).
+High-throughput Aider usage rules live in [docs/aider-performance-guide.md](/srv/platform/repos/platform-browser-operator/docs/aider-performance-guide.md).

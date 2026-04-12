@@ -53,5 +53,5 @@ Direct selector usage:
 2. Start new work from intake:
    - `TASK_NAME='<task>' TASK_GOAL='<goal>' [TASK_CLASS='<trigger> | <fix_pattern>'] make local-task-intake`
 3. Resolve/confirm recommended mode for current task class.
-4. Set `WORKFLOW_MODE` accordingly and run `aider_loop`.
-5. Repeat cycle; apply only small rule changes per iteration.
+4. Keep Codex as the orchestrator; set `WORKFLOW_MODE` accordingly and run `aider_loop` only when tactical automation is warranted.
+5. Repeat cycle; apply only small rule changes per iteration and log new evidence for future Codex sessions.

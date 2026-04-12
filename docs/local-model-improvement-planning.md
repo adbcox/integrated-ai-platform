@@ -56,12 +56,21 @@ Direct script usage:
 - Apply 1-2 heuristic/rule updates per cycle.
 - Keep high-failure classes in Codex-heavy modes until evidence improves.
 - Re-run evaluation and planning after each batch of meaningful escalations.
+- When intake emits `heuristic-validation.md`, fill it in after the first local attempt and copy the results into the final capture summary so planning/prompt loops can score the heuristic.
+- Ensure planning outputs describe how Codex will orchestrate the next cycle (Codex remains the decision authority even when routing to automation helpers).
 
 ## Rule application handoff
 After generating planning outputs, materialize routing policy:
 ```sh
 make local-model-rules-refresh
 ```
+
+## Candidate class assessment
+Before asking Codex about reusing an existing heuristic for a new class, check the recorded evidence first:
+```sh
+CLASS='<trigger> | <fix_pattern>' make assess-candidate-class
+```
+This inspects escalation summaries for the class, flags placeholder or missing fields automatically, and reports whether there is insufficient evidence, plausibility-level evidence, or enough evidence to recommend a bounded validation cycle.
 
 Then resolve mode for a task class before starting work:
 ```sh

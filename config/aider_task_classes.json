@@ -1,0 +1,195 @@
+{
+  "bugfix-small": {
+    "description": "Single bug fix in one or two files with localized logic changes.",
+    "max_files": 2,
+    "max_loc": 100,
+    "max_roots": 1,
+    "validation_commands": [
+      "make quick",
+      "make test-changed-offline"
+    ],
+    "allowed_extra_globs": [
+      "tests/**"
+    ],
+    "forbidden_globs": [
+      "config/**",
+      "systemd/**",
+      "secrets/**",
+      "policies/**",
+      "artifacts/**"
+    ],
+    "default_constraints": [
+      "Do not change public CLI signatures",
+      "Keep existing logging format"
+    ],
+    "default_out_of_scope": [
+      "Network/firewall exposure changes",
+      "Adding new dependencies"
+    ],
+    "escalate_if": [
+      "Requires schema or protocol change",
+      "Impacts more than two files"
+    ]
+  },
+  "refactor-narrow": {
+    "description": "Tightly scoped refactor that keeps behavior identical.",
+    "max_files": 3,
+    "max_loc": 160,
+    "max_roots": 2,
+    "validation_commands": [
+      "make quick",
+      "make test-changed-offline"
+    ],
+    "allowed_extra_globs": [
+      "tests/**"
+    ],
+    "forbidden_globs": [
+      "config/**",
+      "systemd/**",
+      "secrets/**",
+      "policies/**",
+      "artifacts/**"
+    ],
+    "default_constraints": [
+      "Preserve observable behavior",
+      "No new dependencies"
+    ],
+    "default_out_of_scope": [
+      "Cross-module rewrites",
+      "Docs unrelated to touched files"
+    ],
+    "escalate_if": [
+      "Requires interface changes",
+      "Needs more than three files"
+    ]
+  },
+  "test-repair": {
+    "description": "Fix failing tests or add missing coverage without touching runtime logic beyond shims.",
+    "max_files": 3,
+    "max_loc": 130,
+    "max_roots": 2,
+    "validation_commands": [
+      "make quick",
+      "make test-offline"
+    ],
+    "allowed_extra_globs": [
+      "tests/**",
+      "playwright_state/**"
+    ],
+    "default_constraints": [
+      "Production scripts must stay untouched unless explicitly listed"
+    ],
+    "default_out_of_scope": [
+      "Runtime config changes"
+    ],
+    "escalate_if": [
+      "Requires fixture regeneration beyond allowed files"
+    ]
+  },
+  "lint-fix": {
+    "description": "Pure linting or formatting corrections.",
+    "max_files": 4,
+    "max_loc": 60,
+    "max_roots": 2,
+    "validation_commands": [
+      "make quick"
+    ],
+    "allowed_extra_globs": [
+      "**/*.md"
+    ],
+    "forbidden_globs": [
+      "config/**",
+      "systemd/**",
+      "secrets/**",
+      "policies/**"
+    ],
+    "default_constraints": [
+      "No behavior changes",
+      "Only touch lint errors described"
+    ],
+    "default_out_of_scope": [
+      "Functional refactors"
+    ],
+    "escalate_if": [
+      "Lint change impacts generated artifacts"
+    ]
+  },
+  "docs-sync": {
+    "description": "Documentation updates synced with existing behavior.",
+    "max_files": 4,
+    "max_loc": 160,
+    "max_roots": 2,
+    "requires_doc_only": true,
+    "validation_commands": [
+      "make quick"
+    ],
+    "allowed_extra_globs": [
+      "docs/**"
+    ],
+    "forbidden_globs": [
+      "config/**",
+      "systemd/**",
+      "secrets/**"
+    ],
+    "default_constraints": [
+      "Docs must reflect current behavior"
+    ],
+    "default_out_of_scope": [
+      "Runtime changes",
+      "Script modifications"
+    ],
+    "escalate_if": [
+      "Docs require runtime code changes"
+    ]
+  },
+  "typed-cleanup": {
+    "description": "Typing or annotations cleanup limited to helper modules.",
+    "max_files": 3,
+    "max_loc": 140,
+    "max_roots": 1,
+    "validation_commands": [
+      "make quick"
+    ],
+    "allowed_extra_globs": [
+      "shell/**"
+    ],
+    "default_constraints": [
+      "No runtime logic changes"
+    ],
+    "default_out_of_scope": [
+      "Adding new modules"
+    ],
+    "escalate_if": [
+      "Typing requires architecture change"
+    ]
+  },
+  "targeted-feature-patch": {
+    "description": "Small feature toggle or flag default update with tests.",
+    "max_files": 3,
+    "max_loc": 150,
+    "max_roots": 2,
+    "validation_commands": [
+      "make quick",
+      "make test-changed-offline"
+    ],
+    "allowed_extra_globs": [
+      "tests/**"
+    ],
+    "forbidden_globs": [
+      "config/**",
+      "systemd/**",
+      "secrets/**"
+    ],
+    "default_constraints": [
+      "Feature flag boundaries must remain scoped",
+      "No database or API schema adjustments"
+    ],
+    "default_out_of_scope": [
+      "New CLI arguments"
+    ],
+    "escalate_if": [
+      "Requires schema or API review",
+      "Impacts more than three files"
+    ]
+  }
+}
