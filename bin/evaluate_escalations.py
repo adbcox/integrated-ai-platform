@@ -135,10 +135,10 @@ def classify_task_classes(records: list[EscalationRecord]) -> tuple[list[dict[st
             "sample_heuristic": sample_heuristic,
         }
 
-        # Conservative first-pass rule set:
-        # - local-first candidate: no failures and at least one pass/partial
+        # Canonical local-first rule (aligned with planning/doc policy):
+        # - local-first candidate: total>=3, fail_rate<=0.10, pass>=2
         # - Codex-preferred: any failures or explicitly failure-heavy class naming
-        if failed == 0 and (passed + partial) > 0:
+        if total >= 3 and fail_rate <= 0.10 and passed >= 2:
             row["local_first_score"] = passed * 2 + partial
             local_first_candidates.append(row)
         if failed > 0 or cls.startswith("hard-failure-analysis"):
