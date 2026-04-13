@@ -1,7 +1,7 @@
 #!/bin/sh
 set -eu
 
-# Prints a newline-delimited list of changed or provided files.
+# Emits a newline-delimited list of changed or provided files.
 # Priority:
 # 1) CLI args
 # 2) CHANGED_FILES env (space or newline separated)
