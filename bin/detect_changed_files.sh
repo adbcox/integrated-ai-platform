@@ -1,7 +1,7 @@
 #!/bin/sh
 set -eu
 
-# Priority order for detection:
+# Priority ordering for detection:
 # 1) CLI args
 # 2) CHANGED_FILES env (space or newline separated)
 # 3) git tracked + untracked changes (if available)
