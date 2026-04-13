@@ -34,7 +34,7 @@ RECOVERY_AVAILABLE="no"
 if [ -x "$RECOVERY_JS" ]; then
   RECOVERY_AVAILABLE="yes"
 else
-  echo "WARN: browser_operator.js not available/executable; modal recovery disabled" >&2
+  echo "WARN: browser_operator.js missing or not executable; modal recovery disabled" >&2
 fi
 
 APP_NAME="${1:-Container Station}"
