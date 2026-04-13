@@ -138,16 +138,37 @@ aider-lint-micro:
 	@$(MAKE) aider-lint-fix AIDER_OBJECTIVE="$(or $(AIDER_OBJECTIVE),Apply lint fixes)" AIDER_FILES="$(AIDER_FILES)"
 
 AIDER_MICRO_MESSAGE ?=
+AIDER_MICRO_MESSAGE_FILE ?=
 AIDER_MICRO_FILES ?=
 
+.PHONY: aider-micro-help
+aider-micro-help:
+	@echo "Micro lane requirements:" && \
+	 echo "  make aider-micro-safe AIDER_MICRO_MESSAGE=\"file.sh::token add ...\" AIDER_MICRO_FILES=\"shell/file.sh\"" && \
+	 echo "  - Message must anchor each file: e.g. shell/common.sh::extract_session" && \
+	 echo "  - Only one or two code-adjacent files" && \
+	 echo "  - Doc/README edits will be rejected" && \
+	 echo "  - Alternatively set AIDER_MICRO_MESSAGE_FILE=path/to/prompt.txt"
+
 aider-micro-safe:
-	@[ -n "$(AIDER_MICRO_MESSAGE)" ] || { echo "AIDER_MICRO_MESSAGE is required"; exit 1; }
+	@if [ -z "$(AIDER_MICRO_MESSAGE)" ] && [ -z "$(AIDER_MICRO_MESSAGE_FILE)" ]; then \
+		echo "AIDER_MICRO_MESSAGE or AIDER_MICRO_MESSAGE_FILE is required"; exit 1; \
+	  fi
 	@[ -n "$(AIDER_MICRO_FILES)" ] || { echo "AIDER_MICRO_FILES is required (one or two repo-relative files)"; exit 1; }
-	@set -- $(AIDER_MICRO_FILES); \
+	@FILES="$(strip $(AIDER_MICRO_FILES))"; \
+		set -- $$FILES; \
 		if [ $$# -gt 2 ]; then \
 			echo "ERROR: aider-micro-safe supports at most two files"; exit 1; \
 		fi; \
-		bash bin/aider_micro.sh "$(AIDER_MICRO_MESSAGE)" "$$@"
+		if [ -n "$(AIDER_MICRO_MESSAGE_FILE)" ]; then \
+			if [ ! -f "$(AIDER_MICRO_MESSAGE_FILE)" ]; then \
+				echo "ERROR: message file $(AIDER_MICRO_MESSAGE_FILE) not found"; exit 1; \
+			fi; \
+			MICRO_MSG=$$(cat "$(AIDER_MICRO_MESSAGE_FILE)"); \
+		else \
+			MICRO_MSG="$(AIDER_MICRO_MESSAGE)"; \
+		fi; \
+		bash bin/aider_micro.sh "$$MICRO_MSG" "$$@"
 
 preflight-normalization-guard:
 	@./bin/preflight_normalization_guard.sh

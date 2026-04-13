@@ -51,8 +51,9 @@ make aider-smart AIDER_ARGS="--message 'reply READY for smart run' docs/aider-pe
 When you only need a one- or two-file patch and want strict guard rails, use:
 
 ```sh
+make aider-micro-help
 make aider-micro-safe \
-  AIDER_MICRO_MESSAGE="Explain guard clause at top" \
+  AIDER_MICRO_MESSAGE="shell/common.sh::extract_session add guard for blank ids" \
   AIDER_MICRO_FILES="shell/common.sh"
 ```
 
@@ -63,15 +64,16 @@ This helper enforces:
 - failure if aider touches any other file or produces no change
 - supervisor artifacts under `artifacts/aider_runs/` for audit
 - message must explicitly name the target file(s) and include a concrete action verb
-- only code-adjacent files (`shell/`, `src/`, `tests/`, `bin/`, `config/`, `Makefile`) are allowed; Markdown/README edits should use docs-specific flows
+- only code-adjacent files (`shell/`, `src/`, `tests/`, `bin/`, `config/`, `Makefile`, select scripts) are allowed; Markdown/README edits should use docs-specific flows
 
 Recommended starter tasks for fast lane:
-- anchor to a single function or literal (e.g., “In tests/mock_login_flow.sh, replace the string SUCCESS with PASS”)
+- anchor to a single function or literal (e.g., “tests/mock_login_flow.sh::SUCCESS replace literal SUCCESS with PASS”)
 - comment-only or docstring additions in `shell/` or `src/`
 - guard clauses or simple string replacements in shell helpers
 
 Rejected patterns:
 - vague wording like “clarify docs” or “polish README”
+- markdown edits without `<file>::<token>` anchor
 - multi-section doc updates
 - multi-file refactors beyond two files
 

@@ -64,6 +64,20 @@ make aider-fast
 make aider-hard
 make aider-smart   # 32B path (requires OLLAMA_API_BASE_32B)
 make aider-smart-status  # ping the configured 32B endpoint before smart runs
+
+# Micro lane (tiny autonomous edits)
+
+```sh
+make aider-micro-help
+make aider-micro-safe \
+  AIDER_MICRO_MESSAGE="shell/common.sh::extract_session add guard for blank ids" \
+  AIDER_MICRO_FILES="shell/common.sh"
+```
+
+- rejects vague prompts and doc edits before launching aider
+- message must anchor each file using `<basename>::<token>` syntax
+- enforces clean tree, ≤2 code-adjacent files, automatic quick checks
+- classifies failures (`dirty_tree`, `weak_prompt`, `scope_violation`, etc.) for faster triage
 ```
 
 - `aider-fast` is the default tactical profile on CPU Ollama (`127.0.0.1:11535`) using `qwen2.5-coder:1.5b`, `--map-tokens 0`, and `--timeout 60`.
