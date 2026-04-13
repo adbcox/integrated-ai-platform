@@ -9,7 +9,7 @@ require_exec() {
   fi
   command -v "$target" >/dev/null 2>&1 || {
     echo "Missing required command or executable: $target" >&2
-    return 1
+    exit 1
   }
 }
 
@@ -38,7 +38,7 @@ extract_session_id() {
     return 0
   fi
 
-  return 1
+  exit 1
 }
 
 # run_cmd is a wrapper around command that enforces strict shell flags and keeps behavior unchanged.
