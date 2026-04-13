@@ -55,27 +55,56 @@ smart_status() {
   exit 1
 }
 
-ping_ollama_or_fail() {
+ping_ollama_or_fail_once() {
   local base="$1"
   local mode_label="$2"
   local ping="${base%/}/api/tags"
+  local tmp_log="/tmp/aider_local_ping.$$"
   local http_code
-  http_code=$(curl -sS -o /dev/null -w "%{http_code}" --max-time 4 --connect-timeout 2 "$ping" 2>/tmp/aider_local_ping.$$ || echo "curl_error")
+  http_code=$(curl -sS -o /dev/null -w "%{http_code}" --max-time 4 --connect-timeout 2 "$ping" 2>"$tmp_log" || echo "curl_error")
   if [ "$http_code" = "200" ]; then
-    rm -f /tmp/aider_local_ping.$$
+    rm -f "$tmp_log"
     return 0
   fi
+  echo "[aider-local] ping failed for mode '$mode_label' at $base" >&2
   local details
-  details="$(cat /tmp/aider_local_ping.$$ 2>/dev/null || true)"
-  rm -f /tmp/aider_local_ping.$$
+  details="$(cat "$tmp_log" 2>/dev/null || true)"
+  rm -f "$tmp_log"
   if [ "$http_code" = "curl_error" ]; then
     echo "ERROR[$mode_label]: Ollama endpoint '$base' unreachable ($details)" >&2
   else
     echo "ERROR[$mode_label]: Ollama endpoint '$base' responded with HTTP $http_code ($details)" >&2
   fi
-  echo "hint: ensure 'ollama serve' (port $(printf '%s' "$base" | awk -F: '{print $3}') ) is running or set OLLAMA_API_BASE" >&2
+  local port
+  port=$(printf '%s' "$base" | awk -F: '{print $3}')
+  echo "hint: ensure 'ollama serve' (port ${port:-unknown}) is running or set OLLAMA_API_BASE" >&2
   echo "hint: skip this check with AIDER_LOCAL_SKIP_PING=1 if you already manage connectivity" >&2
-  exit 2
+  return 1
+}
+
+ping_ollama_with_retry() {
+  local base="$1"
+  local mode_label="$2"
+  local attempts="${AIDER_LOCAL_PING_RETRIES:-3}"
+  local delay="${AIDER_LOCAL_PING_DELAY:-2}"
+  local i=1
+  while [ "$i" -le "$attempts" ]; do
+    if ping_ollama_or_fail_once "$base" "$mode_label"; then
+      return 0
+    fi
+    if [ "$i" -lt "$attempts" ]; then
+      echo "[aider-local] ping attempt $i failed; retrying in ${delay}s" >&2
+      sleep "$delay"
+    fi
+    i=$((i + 1))
+  done
+  ping_ollama_or_fail_once "$base" "$mode_label"
+}
+
+ping_ollama_or_fail() {
+  local base="$1"
+  local mode_label="$2"
+  ping_ollama_with_retry "$base" "$mode_label"
 }
 
 while [ "$#" -gt 0 ]; do
