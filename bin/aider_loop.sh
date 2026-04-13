@@ -43,8 +43,8 @@ Options:
   -h, --help               Show help
 
 Default execution loop:
-  1) create or use task brief
-  2) prepare remote-safe handoff bundle
+  1) create or use task brief file
+  2) prepare a remote-safe handoff bundle
   3) pause for patch application
   4) run local finalize checks
   5) capture feedback
