@@ -10,7 +10,7 @@ usage() {
 Usage:
   ./bin/aider_export_training_jsonl.sh [--data-dir <path>] [--out-file <path>]
 
-Exports local feedback records into newline-delimited JSON for future tuning workflows.
+Exports local feedback samples into newline-delimited JSON for future tuning workflows.
 USAGE
 }
 
