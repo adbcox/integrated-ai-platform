@@ -37,6 +37,17 @@ if [ $# -gt 2 ]; then
 fi
 
 TARGET_FILES=("$@")
+TASK_KIND="code-adjacent"
+
+is_target_file() {
+  local candidate="$1"
+  for f in "${TARGET_FILES[@]}"; do
+    if [ "$f" = "$candidate" ]; then
+      return 0
+    fi
+  done
+  return 1
+}
 
 require_action_word() {
   local msg_lower=$1
@@ -79,6 +90,7 @@ ensure_message_quality() {
     detected_kind="guard"
   fi
   info "task kind detected: $detected_kind"
+  TASK_KIND="$detected_kind"
 
   for f in "${TARGET_FILES[@]}"; do
     local base
@@ -143,11 +155,7 @@ ensure_clean_tree
 ensure_message_quality "$MESSAGE"
 ensure_allowed_files
 
-before=$(mktemp)
-after=$(mktemp)
-trap 'rm -f "$before" "$after"' EXIT
-
-git diff --name-only | sort >"$before"
+HEAD_BEFORE=$(git rev-parse HEAD)
 
 info "running aider on ${TARGET_FILES[*]}"
 if ! bash bin/aider_local.sh --message "$MESSAGE" "${TARGET_FILES[@]}"; then
@@ -163,39 +171,68 @@ if ! PYTHONPYCACHEPREFIX=/tmp/aider_pycache make quick >/dev/null; then
   fail "make quick failed; inspect quick logs" "validation"
 fi
 
-git diff --name-only | sort >"$after"
-new_files=$(comm -13 "$before" "$after")
+HEAD_AFTER=$(git rev-parse HEAD)
+diff_file=$(mktemp)
+trap 'rm -f "$diff_file"' EXIT
 
-is_allowed() {
-  local candidate=$1
-  for f in "${TARGET_FILES[@]}"; do
-    if [ "$f" = "$candidate" ]; then
-      return 0
-    fi
-  done
-  return 1
-}
+declare -a DIFF_NAMES
+if [ "$HEAD_BEFORE" != "$HEAD_AFTER" ]; then
+  mapfile -t DIFF_NAMES < <(git diff --name-only "$HEAD_BEFORE" "$HEAD_AFTER")
+  git diff "$HEAD_BEFORE" "$HEAD_AFTER" -- "${TARGET_FILES[@]}" >"$diff_file"
+else
+  mapfile -t DIFF_NAMES < <(git diff --name-only)
+  git diff -- "${TARGET_FILES[@]}" >"$diff_file"
+fi
 
-for nf in $new_files; do
+changed_any=false
+for nf in "${DIFF_NAMES[@]}"; do
+  [ -n "$nf" ] || continue
   case "$nf" in
     .aider*|.gitignore)
       continue
       ;;
   esac
-  if ! is_allowed "$nf"; then
-    fail "micro run touched disallowed file '$nf'" "scope_violation"
-  fi
-done
-
-changed_any=false
-for f in "${TARGET_FILES[@]}"; do
-  if ! git diff --quiet -- "$f"; then
+  if is_target_file "$nf"; then
     changed_any=true
+  else
+    fail "micro run touched disallowed file '$nf'" "scope_violation"
   fi
 done
 
 if [ "$changed_any" = false ]; then
   fail "none of the target files changed" "no_change"
+fi
+
+enforce_comment_scope() {
+  local diff_path="$1"
+  local current_file=""
+  while IFS= read -r line; do
+    case "$line" in
+      "+++ "*)
+        current_file=${line#+++ b/}
+        continue
+        ;;
+      "--- "*|"@@ "*)
+        continue
+        ;;
+      +*|-*)
+        local sign=${line:0:1}
+        local content=${line:1}
+        local trimmed=$(printf '%s' "$content" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
+        if [ -z "$trimmed" ]; then
+          continue
+        fi
+        if [[ "$trimmed" =~ ^(#|//|/\*|\*/|\*|<!--) ]]; then
+          continue
+        fi
+        fail "comment-only task modified code in $current_file (line: $trimmed)" "comment_scope"
+        ;;
+    esac
+  done <"$diff_path"
+}
+
+if [ "$TASK_KIND" = "comment-only" ]; then
+  enforce_comment_scope "$diff_file"
 fi
 
 info "success"
