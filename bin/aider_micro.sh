@@ -152,6 +152,9 @@ git diff --name-only | sort >"$before"
 info "running aider on ${TARGET_FILES[*]}"
 if ! bash bin/aider_local.sh --message "$MESSAGE" "${TARGET_FILES[@]}"; then
   status=$?
+  if [ "$status" -eq 0 ]; then
+    status=99
+  fi
   fail "aider exited non-zero (status $status). Inspect artifacts/aider_runs for details." "aider_exit" "$status"
 fi
 
