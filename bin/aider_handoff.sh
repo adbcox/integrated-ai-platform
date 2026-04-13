@@ -18,7 +18,7 @@ Usage:
 
 Behavior:
   - If no --include is provided, auto-includes changed files plus AGENTS.md and docs/validation-matrix.md.
-  - Produces a remote-safe bundle via bin/remote_prepare.sh.
+  - Produces a remote-safe bundle using bin/remote_prepare.sh.
 USAGE
 }
 
