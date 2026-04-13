@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# Shared POSIX shell helpers used across browser operator scripts.
+# Shared POSIX shell helpers used across browser-operator scripts.
 
 require_exec() {
   target="$1"
