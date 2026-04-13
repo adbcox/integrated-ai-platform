@@ -8,7 +8,7 @@ require_exec() {
     return 0
   fi
   command -v "$target" >/dev/null 2>&1 || {
-    echo "Required command or executable not found: $target" >&2
+    echo "Required command or executable was not found: $target" >&2
     exit 1
   }
 }
