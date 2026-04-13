@@ -38,7 +38,7 @@ while [ "$#" -gt 0 ]; do
       ;;
     --include)
       item="${2:-}"
-      [ -n "$item" ] || { echo "ERROR: --include requires value" >&2; exit 1; }
+      [ -n "$item" ] || { echo "ERROR: --include requires a value" >&2; exit 1; }
       INCLUDES="$INCLUDES
 $item"
       shift 2
