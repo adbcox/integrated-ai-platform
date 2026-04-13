@@ -50,7 +50,7 @@ case "$OFFLINE_MODE" in
     make test-offline
     ;;
   skip)
-    echo "[finalize] Offline tests skipped by request."
+    echo "[finalize] Offline tests skipped upon request."
     ;;
   *)
     echo "ERROR: invalid --offline mode: $OFFLINE_MODE" >&2
