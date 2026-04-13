@@ -40,6 +40,72 @@ info() {
   echo "[micro] $1"
 }
 
+literal_validate() {
+  local target_file="$1"
+  local snapshot="$2"
+  if [ -z "$snapshot" ]; then
+    return
+  fi
+  if ! LITERAL_FILE="$target_file" LITERAL_BEFORE_FILE="$snapshot" LITERAL_OLD="$LITERAL_OLD" LITERAL_NEW="$LITERAL_NEW" python3 - <<'PY'
+import os, sys
+from pathlib import Path
+
+target_path = Path(os.environ['LITERAL_FILE'])
+before_path = Path(os.environ['LITERAL_BEFORE_FILE'])
+old = os.environ['LITERAL_OLD']
+new = os.environ['LITERAL_NEW']
+
+before = before_path.read_text()
+after = target_path.read_text()
+
+if old not in before:
+    print("literal replace old text missing from snapshot", file=sys.stderr)
+    sys.exit(1)
+
+expected = before.replace(old, new, 1)
+if before == expected:
+    print("literal replace performed zero substitutions", file=sys.stderr)
+    sys.exit(1)
+
+if expected != after:
+    print("literal replace produced unexpected diff", file=sys.stderr)
+    sys.exit(1)
+sys.exit(0)
+PY
+  then
+    fail "literal replace produced unexpected changes" "literal_replace_diff"
+  fi
+}
+
+literal_apply_direct() {
+  local target_file="$1"
+  local snapshot="$2"
+  info "applying literal replace directly to $target_file"
+  if ! LITERAL_FILE="$target_file" LITERAL_BEFORE_FILE="$snapshot" LITERAL_OLD="$LITERAL_OLD" LITERAL_NEW="$LITERAL_NEW" python3 - <<'PY'
+import os, sys
+from pathlib import Path
+
+path = Path(os.environ['LITERAL_FILE'])
+snapshot = Path(os.environ['LITERAL_BEFORE_FILE'])
+old = os.environ['LITERAL_OLD']
+new = os.environ['LITERAL_NEW']
+text = path.read_text()
+if old not in text:
+    print(f"literal replace fallback: old text missing in {path}", file=sys.stderr)
+    sys.exit(1)
+updated = text.replace(old, new, 1)
+if text == updated:
+    print("literal replace fallback performed zero substitutions", file=sys.stderr)
+    sys.exit(1)
+path.write_text(updated)
+sys.exit(0)
+PY
+  then
+    fail "literal replace fallback could not apply change" "literal_replace_fallback"
+  fi
+  LITERAL_FALLBACK_USED=true
+}
+
 if [ $# -lt 2 ]; then
   usage >&2
   exit 1
