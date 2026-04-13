@@ -37,7 +37,7 @@ Options:
   --constraints <text>             Constraint summary
   --plan-summary <text>            Codex plan summary
   --fix-pattern <text>             Fix pattern/root-cause classification
-  --heuristic <text>               Reusable local-first heuristic
+  --heuristic <text>               Reusable local-first heuristics
   --completion-summary <text>      Brief completion summary
   --force-escalation-capture       Write escalation artifacts even while in tactical mode
 
