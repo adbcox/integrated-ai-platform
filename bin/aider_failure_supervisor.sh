@@ -19,7 +19,7 @@ ensure_out_root() {
       local probe="$OUT_ROOT/.write_test.$$"
       if touch "$probe" >/dev/null 2>&1; then
         rm -f "$probe" >/dev/null 2>&1 || true
-        echo "[aider-supervisor] WARN: falling back to $OUT_ROOT for artifact storage" >&2
+        echo "[aider-supervisor] WARN: falling back to $OUT_ROOT for artifact storage." >&2
         return 0
       fi
     fi
