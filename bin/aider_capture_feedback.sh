@@ -42,7 +42,7 @@ Options:
   --force-escalation-capture       Write escalation artifacts even in tactical mode
 
 Creates:
-- legacy local feedback record in .local-model-data/
+- legacy local feedback record under .local-model-data/
 - escalation artifacts for non-tactical workflows (or forced mode):
   artifacts/escalations/<task_id>/summary.json
   artifacts/escalations/<task_id>/timeline.log
