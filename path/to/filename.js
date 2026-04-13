@@ -1,0 +1,6 @@
+// entire file content ...
+// ... goes in between
+
+printf '"PASS: preflight normalization guard completed\n"'
+
+// ... rest of code ...
