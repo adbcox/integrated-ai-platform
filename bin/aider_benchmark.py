@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import shutil
 import subprocess
 import sys
 import time
@@ -16,7 +17,7 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_CONFIG = REPO_ROOT / "config" / "aider_benchmarks.json"
 DEFAULT_RUN_ROOT = Path(os.environ.get("AIDER_BENCH_RUN_ROOT", REPO_ROOT / "tmp" / "aider_benchmarks"))
 ARTIFACT_ROOT = Path(os.environ.get("AIDER_RUN_ROOT", REPO_ROOT / "artifacts" / "aider_runs" / "local"))
-SUMMARY_FILE = Path(os.environ.get("AIDER_BENCH_SUMMARY_FILE", DEFAULT_RUN_ROOT / "summary.jsonl"))
+FALLBACK_SUMMARY_FILE = Path(os.environ.get("AIDER_BENCH_SUMMARY_FALLBACK", "/tmp/aider_benchmarks/summary.jsonl"))
 
 
 def load_scenario(config_path: Path, scenario: str) -> dict:
@@ -77,13 +78,23 @@ def stream_process(cmd: list[str], log_path: Path) -> int:
         return proc.wait()
 
 
-def run_validations(commands: list[str], log_dir: Path) -> list[dict]:
+def run_validations(commands: list[str], log_dir: Path, extra_env: dict[str, str] | None = None) -> list[dict]:
     results = []
+    base_env = os.environ.copy()
+    if extra_env:
+        base_env.update(extra_env)
     for idx, cmd in enumerate(commands, start=1):
         log_path = log_dir / f"validation-{idx}.log"
         start = time.time()
         with log_path.open("w", encoding="utf-8") as log:
-            proc = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+            proc = subprocess.Popen(
+                cmd,
+                shell=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=True,
+                env=base_env,
+            )
             assert proc.stdout is not None
             for line in proc.stdout:
                 log.write(line)
@@ -112,10 +123,32 @@ def build_command(mode: str, prompt: str, files: list[str]) -> list[str]:
     return cmd
 
 
-def append_summary(record: dict) -> None:
-    SUMMARY_FILE.parent.mkdir(parents=True, exist_ok=True)
-    with SUMMARY_FILE.open("a", encoding="utf-8") as fh:
-        fh.write(json.dumps(record) + "\n")
+def capture_baseline(files: list[str], run_dir: Path) -> Path:
+    baseline_dir = run_dir / "baseline"
+    baseline_dir.mkdir(parents=True, exist_ok=True)
+    for rel in files:
+        src = REPO_ROOT / rel
+        dest = baseline_dir / rel
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        if src.exists():
+            shutil.copy2(src, dest)
+    return baseline_dir
+
+
+def append_summary(record: dict, summary_path: Path) -> Path:
+    paths = [summary_path]
+    if summary_path != FALLBACK_SUMMARY_FILE:
+        paths.append(FALLBACK_SUMMARY_FILE)
+    last_exc: OSError | None = None
+    for path in paths:
+        try:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            with path.open("a", encoding="utf-8") as fh:
+                fh.write(json.dumps(record) + "\n")
+            return path
+        except OSError as exc:
+            last_exc = exc
+    raise SystemExit(f"Unable to write benchmark summary: {last_exc}")
 
 
 def main() -> None:
@@ -130,9 +163,11 @@ def main() -> None:
     scenario = load_scenario(config_path, args.scenario)
 
     run_root = resolve_run_root(Path(args.run_root))
+    summary_file = Path(os.environ.get("AIDER_BENCH_SUMMARY_FILE", run_root / "summary.jsonl"))
     timestamp = time.strftime("%Y%m%d_%H%M%S")
     run_dir = run_root / args.scenario / args.mode / timestamp
     run_dir.mkdir(parents=True, exist_ok=True)
+    baseline_dir = capture_baseline(scenario.get("files", []), run_dir)
 
     cmd = build_command(args.mode, scenario["prompt"], scenario.get("files", []))
     log_path = run_dir / "aider.log"
@@ -145,7 +180,8 @@ def main() -> None:
     duration = round(time.time() - start, 2)
     print(f"[benchmark] aider exit_code={exit_code} duration={duration}s")
 
-    validation_results = run_validations(scenario.get("validations", []), run_dir)
+    validation_env = {"AIDER_BENCH_BASELINE_DIR": str(baseline_dir)}
+    validation_results = run_validations(scenario.get("validations", []), run_dir, validation_env)
     artifacts = capture_new_artifacts(before_artifacts)
 
     status = "passed" if exit_code == 0 and all(r["exit_code"] == 0 for r in validation_results) else "failed"
@@ -170,7 +206,7 @@ def main() -> None:
         "status": status
     }
     (run_dir / "metadata.json").write_text(json.dumps(metadata, indent=2) + "\n", encoding="utf-8")
-    append_summary(metadata)
+    append_summary(metadata, summary_file)
     if exit_code != 0:
         sys.exit(exit_code)
 

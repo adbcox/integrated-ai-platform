@@ -3,7 +3,10 @@
     "description": "Update a single script and rerun quick tests",
     "prompt": "In shell/common.sh, document why run_cmd enforces strict shell flags and keep behavior unchanged.",
     "files": ["shell/common.sh"],
-    "validations": ["make quick"],
+    "validations": [
+      "PYTHONPYCACHEPREFIX=/tmp/aider_pycache make quick",
+      "bash bin/ensure_comment_only.sh shell/common.sh \"$AIDER_BENCH_BASELINE_DIR/shell/common.sh\""
+    ],
     "success": "Guard passes and make quick succeeds."
   },
   "multi-file-refactor": {
