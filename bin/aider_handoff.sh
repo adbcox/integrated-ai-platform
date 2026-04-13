@@ -17,7 +17,7 @@ Usage:
   ./bin/aider_handoff.sh --task-file <path> [--name <task>] [--out-dir <path>] [--include <path> ...] [--no-auto-include]
 
 Behavior:
-  - If no --include is provided, auto-includes changed files plus AGENTS.md and docs/validation-matrix.md.
+  - If no --include is provided, auto-includes changed files plus AGENTS.md and docs/validation-matrix.md by default.
   - Produces a remote-safe bundle using bin/remote_prepare.sh.
 USAGE
 }
