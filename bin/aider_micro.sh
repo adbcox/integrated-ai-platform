@@ -82,6 +82,9 @@ ensure_message_quality() {
   if ! require_action_word "$msg_lower"; then
     fail "message must include a concrete action verb (add/update/replace/...)" "weak_prompt"
   fi
+  if printf '%s' "$msg" | grep -Eq '<[[:space:][:alpha:][:digit:]_./-]+>' ; then
+    fail "replace placeholder tokens like <OLD TEXT>/<anchor-token> with real text" "placeholder_prompt"
+  fi
   local banned_phrases=(
     "reword" "rephrase" "clarify wording" "rewrite paragraph" "touch docs" "touch documentation"
     "update readme" "polish wording" "cleanup wording" "describe" "explain" "document" "summarize"
@@ -99,6 +102,13 @@ ensure_message_quality() {
     detected_kind="string-edit"
   elif printf '%s' "$msg_lower" | grep -q "guard"; then
     detected_kind="guard"
+  elif printf '%s' "$msg_lower" | grep -q "replace exact text"; then
+    detected_kind="literal-replace"
+    local quote_count
+    quote_count=$(printf "%s" "$msg" | tr -cd "'" | wc -c | tr -d ' ')
+    if [ "$quote_count" -lt 4 ]; then
+      fail "exact replace tasks must specify quoted old and new text" "literal_replace_contract"
+    fi
   fi
   info "task kind detected: $detected_kind"
   TASK_KIND="$detected_kind"
