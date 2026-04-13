@@ -48,6 +48,13 @@ make aider-smart AIDER_ARGS="--message 'reply READY for smart run' docs/aider-pe
 
 ### Micro lane for tiny autonomous tasks
 
+The default fast micro lane is **already production-proven for anchored literal wording/comment replacements**. Treat that as the steady-state default until further promotions land:
+
+- exactly one shell/bin file per probe (`shell/*.sh`, `bin/*.sh`, launcher scripts stay out unless already covered)
+- literal or comment wording only — **no** `set`, `if`, `trap`, or other shell-control tokens
+- explicit anchor syntax `file::<literal description>` plus an action verb (`replace`, `update`, `clarify`, …)
+- immediate commit (or rollback) before attempting the next probe; the helper enforces a clean tree
+
 When you only need a one- or two-file patch and want strict guard rails, use:
 
 ```sh
@@ -70,6 +77,8 @@ Recommended starter tasks for fast lane:
 - anchor to a single function or literal (e.g., “tests/mock_login_flow.sh::SUCCESS replace literal SUCCESS with PASS”)
 - comment-only or docstring additions in `shell/` or `src/`
 - guard clauses or simple string replacements in shell helpers
+
+To stay inside the proven lane, start from `templates/safe-literal-probe-template.msg` (see [docs/safe-literal-probes.md](safe-literal-probes.md)) and customize the quoted literal + file anchor before each run. Pair it with `bin/aider_micro.sh` so every probe documents its exact literal intent.
 
 Rejected patterns:
 - vague wording like “clarify docs” or “polish README”
