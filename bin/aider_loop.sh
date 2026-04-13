@@ -169,7 +169,7 @@ case "$OFFLINE_MODE" in
 esac
 
 cd "$BASE_DIR"
-echo "[aider-loop] workflow mode: $WORKFLOW_MODE"
+echo "[aider-loop] Workflow mode: $WORKFLOW_MODE"
 
 if [ -z "$TASK_FILE" ]; then
   echo "[aider-loop] Creating task brief..."
