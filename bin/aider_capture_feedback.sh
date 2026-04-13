@@ -39,7 +39,7 @@ Options:
   --fix-pattern <text>             Fix pattern/root-cause classification
   --heuristic <text>               Reusable local-first heuristic
   --completion-summary <text>      Short completion summary
-  --force-escalation-capture       Write escalation artifacts even in tactical mode
+  --force-escalation-capture       Write escalation artifacts even while in tactical mode
 
 Creates:
 - legacy local feedback record under .local-model-data/
