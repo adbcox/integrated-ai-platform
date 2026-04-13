@@ -81,6 +81,7 @@ make aider-micro-safe \
 ```
 
 - `aider-fast` is the default tactical profile on CPU Ollama (`127.0.0.1:11535`) using `qwen2.5-coder:1.5b`, `--map-tokens 0`, and `--timeout 60`.
+- `aider-fast` now pings `OLLAMA_API_BASE` (default `http://127.0.0.1:11535`) before launching; export `AIDER_LOCAL_SKIP_PING=1` only if you already manage connectivity.
 - `aider-hard` is explicit opt-in for heavier tasks (`qwen2.5-coder:7b`, higher map/timeout).
 - `aider-smart` routes to the 32B endpoint (set `OLLAMA_API_BASE_32B` or pass `--api-base`). Always run `make aider-smart-status` first so you know the endpoint is reachable.
 - Optional pass-through flags via `AIDER_ARGS`, for example:

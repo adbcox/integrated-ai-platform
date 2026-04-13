@@ -79,6 +79,7 @@ Rejected patterns:
 
 ## 4. Validation & Artifacts
 - Guard enforces file scope, diff size, forbidden globs, root limits, and runs validation commands. Results saved under `artifacts/aider_runs/` with failure context.
+- Fast lane pings `OLLAMA_API_BASE` before launching; failure will mention unreachable endpoint unless you set `AIDER_LOCAL_SKIP_PING=1`.
 - If guard fails twice, escalate to Codex with the artifact path and failure_code.
 - Manual review still occurs before commit; reference the guard artifact in summaries.
 

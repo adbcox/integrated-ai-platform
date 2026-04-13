@@ -55,6 +55,29 @@ smart_status() {
   exit 1
 }
 
+ping_ollama_or_fail() {
+  local base="$1"
+  local mode_label="$2"
+  local ping="${base%/}/api/tags"
+  local http_code
+  http_code=$(curl -sS -o /dev/null -w "%{http_code}" --max-time 4 --connect-timeout 2 "$ping" 2>/tmp/aider_local_ping.$$ || echo "curl_error")
+  if [ "$http_code" = "200" ]; then
+    rm -f /tmp/aider_local_ping.$$
+    return 0
+  fi
+  local details
+  details="$(cat /tmp/aider_local_ping.$$ 2>/dev/null || true)"
+  rm -f /tmp/aider_local_ping.$$
+  if [ "$http_code" = "curl_error" ]; then
+    echo "ERROR[$mode_label]: Ollama endpoint '$base' unreachable ($details)" >&2
+  else
+    echo "ERROR[$mode_label]: Ollama endpoint '$base' responded with HTTP $http_code ($details)" >&2
+  fi
+  echo "hint: ensure 'ollama serve' (port $(printf '%s' "$base" | awk -F: '{print $3}') ) is running or set OLLAMA_API_BASE" >&2
+  echo "hint: skip this check with AIDER_LOCAL_SKIP_PING=1 if you already manage connectivity" >&2
+  exit 2
+}
+
 while [ "$#" -gt 0 ]; do
   case "$1" in
     --hard)
@@ -169,6 +192,10 @@ if [ "$SMART_STATUS_ONLY" -eq 1 ]; then
 fi
 
 export OLLAMA_API_BASE="$API_BASE"
+
+if [ "${AIDER_LOCAL_SKIP_PING:-0}" != "1" ]; then
+  ping_ollama_or_fail "$OLLAMA_API_BASE" "$MODE_LABEL"
+fi
 
 CMD=(aider)
 [ "$HAS_MODEL_OVERRIDE" -eq 1 ] || CMD+=(--model "$MODEL")
