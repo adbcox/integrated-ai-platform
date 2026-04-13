@@ -98,8 +98,8 @@ instructions="$bundle_dir/instructions.md"
 
 printf 'bundle: %s\ncreated: %s\n\n' "$bundle_dir" "$(date -u '+%Y-%m-%dT%H:%M:%SZ')" >"$manifest"
 printf '# Remote Task Instructions\n\n' >"$instructions"
-printf 'Use only files in this bundle. Keep changes bounded and patch-oriented.\n\n' >>"$instructions"
-printf '## Validation requirements\n- make quick\n- make test-changed-offline (or make test-offline when helper/test harness changes)\n' >>"$instructions"
+printf 'Use only files from this bundle. Keep changes bounded and patch-oriented.\n\n' >>"$instructions"
+printf '## Validation checklist\n- make quick\n- make test-changed-offline (or make test-offline when helper/test harness changes)\n' >>"$instructions"
 
 # Copy task file as-is (author-controlled brief).
 cp "$TASK_FILE" "$bundle_dir/task.md"
