@@ -45,7 +45,7 @@ extract_session_id() {
 # This ensures that the script behaves as expected with strict error handling, unset variables,
 # and pipe failures.
 run_cmd() {
-  # Set the required shell options for strict mode
+  # Enable strict shell options before running the command
   set -euo pipefail
 
   # Execute the command with the provided arguments
