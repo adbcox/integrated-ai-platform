@@ -52,7 +52,7 @@ printf '%s\n' "$changed_files" >"$changed_file_list"
 shell_checked=0
 python_checked=0
 
-echo "[quick] Detecting changed files..."
+echo "[quick] Checking for changed files..."
 if [ -z "$changed_files" ]; then
   echo "[quick] No changed files detected."
   exit 0
