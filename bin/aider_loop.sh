@@ -172,7 +172,7 @@ cd "$BASE_DIR"
 echo "[aider-loop] Workflow mode: $WORKFLOW_MODE"
 
 if [ -z "$TASK_FILE" ]; then
-  echo "[aider-loop] Creating task brief..."
+  echo "[aider-loop] Creating task brief artifact..."
   if [ -z "${TASK_CLASS:-}" ]; then
     echo "ERROR: no bounded task class available for auto task-brief creation" >&2
     echo "HINT: provide a concrete task file or route this case to Codex/front-door contract repair" >&2
