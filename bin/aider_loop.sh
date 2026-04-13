@@ -42,7 +42,7 @@ Options:
   --dry-run                Print actions without executing
   -h, --help               Show help
 
-Default loop:
+Default execution loop:
   1) create or use task brief
   2) prepare remote-safe handoff bundle
   3) pause for patch application
