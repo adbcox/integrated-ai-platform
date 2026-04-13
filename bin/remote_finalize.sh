@@ -46,7 +46,7 @@ case "$OFFLINE_MODE" in
     make test-changed-offline
     ;;
   full)
-    echo "[finalize] Running full offline tests..."
+    echo "[finalize] Running full-scope offline tests..."
     make test-offline
     ;;
   skip)
