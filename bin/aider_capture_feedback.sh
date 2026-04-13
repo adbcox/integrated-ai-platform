@@ -363,5 +363,5 @@ index_line=$(printf '{"task_id":"%s","timestamp_utc":"%s","repo":"%s","branch":"
   "$(json_escape "$summary_json_path")")
 printf '%s\n' "$index_line" >>"$INDEX_FILE"
 
-echo "Captured local feedback record: $legacy_record_dir"
+echo "Captured local feedback record at: $legacy_record_dir"
 echo "Captured escalation record: $ESCALATION_ROOT/$TASK_ID"
