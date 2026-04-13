@@ -18,6 +18,35 @@ LITERAL_OLD=""
 LITERAL_NEW=""
 LITERAL_BEFORE_FILE=""
 LITERAL_FALLBACK_USED=false
+WRITE_CHECK_COUNT=${AIDER_MICRO_WRITE_CHECKS:-3}
+WRITE_CHECK_DELAY=${AIDER_MICRO_WRITE_DELAY_SEC:-1}
+
+check_path_writable() {
+  local path="$1"
+  local label="$2"
+  local attempt="$3"
+  local total="$4"
+  local probe
+  probe="$path/.aider_micro_write_probe.$$.$RANDOM"
+  if ! (umask 022 && printf 'probe\n' >"$probe" 2>/dev/null); then
+    fail "repo $label path '$path' is not writable (attempt $attempt/$total); fix mount/permissions (e.g. remount rw, then rerun)." "repo_unwritable"
+  fi
+  rm -f "$probe" >/dev/null 2>&1 || true
+}
+
+ensure_repo_write_stable() {
+  local repo_root
+  repo_root=$(git rev-parse --show-toplevel)
+  local git_dir="$repo_root/.git"
+  local i
+  for i in $(seq 1 "$WRITE_CHECK_COUNT"); do
+    check_path_writable "$repo_root" "root" "$i" "$WRITE_CHECK_COUNT"
+    check_path_writable "$git_dir" ".git" "$i" "$WRITE_CHECK_COUNT"
+    if [ "$i" -lt "$WRITE_CHECK_COUNT" ]; then
+      sleep "$WRITE_CHECK_DELAY"
+    fi
+  done
+}
 
 restore_repo_state() {
   if [ "$RESTORE_ON_FAIL" = true ] && [ -n "${HEAD_BEFORE:-}" ]; then
@@ -289,6 +318,7 @@ ensure_allowed_files() {
 }
 
 ensure_clean_tree
+ensure_repo_write_stable
 ensure_message_quality "$MESSAGE"
 ensure_allowed_files
 
