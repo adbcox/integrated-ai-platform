@@ -12,10 +12,21 @@ Usage: bin/aider_micro.sh "anchored message" path/to/file1 [path/to/file2]
 USAGE
 }
 
+RESTORE_ON_FAIL=false
+
+restore_repo_state() {
+  if [ "$RESTORE_ON_FAIL" = true ] && [ -n "${HEAD_BEFORE:-}" ]; then
+    info "restoring pre-run git state"
+    git reset --hard "$HEAD_BEFORE" >/dev/null 2>&1 || true
+    git clean -fd >/dev/null 2>&1 || true
+  fi
+}
+
 fail() {
   local msg="$1"
   local tag="${2:-general}"
   local code="${3:-1}"
+  restore_repo_state
   echo "ERROR[$tag]: $msg" >&2
   exit "$code"
 }
@@ -162,6 +173,7 @@ if [ -n "${AIDER_MICRO_FAKE_DIFF_FILE:-}" ]; then
 fi
 
 if [ "$TEST_MODE" = false ]; then
+  RESTORE_ON_FAIL=true
   info "running aider on ${TARGET_FILES[*]}"
   if ! bash bin/aider_local.sh --message "$MESSAGE" "${TARGET_FILES[@]}"; then
     status=$?
@@ -276,6 +288,8 @@ enforce_comment_scope() {
 if [ "$TASK_KIND" = "comment-only" ]; then
   enforce_comment_scope "$diff_file"
 fi
+
+RESTORE_ON_FAIL=false
 
 info "success"
 run_count_file="artifacts/micro_runs/count.txt"
