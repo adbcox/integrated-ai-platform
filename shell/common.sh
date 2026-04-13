@@ -42,6 +42,8 @@ extract_session_id() {
 }
 
 # run_cmd is a wrapper around command that enforces strict shell flags and keeps behavior unchanged.
+# This ensures that the script behaves as expected with strict error handling, unset variables,
+# and pipe failures.
 run_cmd() {
   # Set the required shell options for strict mode
   set -euo pipefail
