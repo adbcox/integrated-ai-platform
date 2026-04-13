@@ -86,7 +86,7 @@ run_validations() {
     while IFS= read -r line || [ -n "$line" ]; do
       [ -n "$line" ] || continue
       local vlog="$OUT_DIR/validation-${idx}.log"
-      echo "[aider-supervisor] validation: $line"
+      echo "[aider-supervisor] running validation: $line"
       local start_ts
       start_ts=$(date +%s)
       set +e
