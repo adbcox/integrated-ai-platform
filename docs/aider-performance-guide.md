@@ -80,6 +80,14 @@ Recommended starter tasks for fast lane:
 
 To stay inside the proven lane, start from `templates/safe-literal-probe-template.msg` (see [docs/safe-literal-probes.md](safe-literal-probes.md)) and customize the quoted literal + file anchor before each run. Pair it with `bin/aider_micro.sh` so every probe documents its exact literal intent.
 
+### Stage RAG-1 planning + telemetry
+
+1. Run `bin/stage_rag1_plan_probe.py --stage stage4 --top 6 -- "describe literal"` to retrieve candidate anchors before editing the probe message.
+2. Enter the file + line range that you plan to touch so the helper logs it under `artifacts/stage_rag1/usage.jsonl`.
+3. After a Stage-4 battery, run `bin/stage_rag1_metrics.py --window 40` to summarize how many logged probes overlapped with `literal_replace_missing_old`, `missing_file_ref`, or `missing_anchor` failures stored in `artifacts/aider_runs/**/metadata.json`.
+
+This keeps the planning assistance “read-only” while giving us measurable signals on whether retrieval is reducing literal misses, wrong-file probes, and anchor mistakes.
+
 Rejected patterns:
 - vague wording like “clarify docs” or “polish README”
 - markdown edits without `<file>::<token>` anchor

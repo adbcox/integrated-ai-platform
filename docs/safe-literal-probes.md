@@ -7,6 +7,7 @@ Use this helper whenever you want to stay inside the **Stage 3 fast micro lane**
 - single shell/bin target files
 - immediate commit (or rollback) before the next probe
 - literal fallback + rollback protections intact
+- Stage RAG-1 logging before every literal probe so anchor selection is recorded
 
 ## Quick steps
 
@@ -32,6 +33,23 @@ bin/quick_check.sh::status text replace exact text "echo \"[quick] Detecting cha
 ```
 
 Pair every literal probe with an immediate `git status` + commit (or rollback) before launching the next probe.
+
+## Stage RAG-1 planning hook (Stage 3 / Stage 4)
+
+Before editing the template, record the file + anchor via the retrieval helper:
+
+```sh
+bin/stage_rag1_plan_probe.py --stage stage4 \
+  --plan-id "stage4-boundary-$(date +%Y%m%d-%H%M)" \
+  --top 6 -- "where the literal replace should land"
+```
+
+Pick the chunk you intend to edit, enter the repo-relative file path and line
+range when prompted, and optionally note anything special (e.g. "expect
+literal_replace fallback"). The helper stores the event in
+`artifacts/stage_rag1/usage.jsonl`, letting us correlate Stage-4 runs with
+`literal_replace_missing_old`, `missing_file_ref`, and `missing_anchor`
+failures surfaced by the guard.
 
 ### Regression pack
 
