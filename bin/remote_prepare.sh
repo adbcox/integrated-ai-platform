@@ -17,7 +17,7 @@ Usage:
 
 Notes:
   - Included files are checked against policies/remote-codex-denylist.txt and allowlist.
-  - Output bundle contains sanitized file copies under context/.
+  - Output bundle includes sanitized file copies under context/.
 USAGE
 }
 
