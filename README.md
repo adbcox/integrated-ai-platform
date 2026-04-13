@@ -89,6 +89,16 @@ Constraints:
 - Supports at most two repo-relative files.
 - Automatically runs `make quick`.
 - Fails if aider touches any file outside the provided list or if nothing changes.
+- Message must explicitly name the file(s) and give a concrete action (e.g., "In shell/common.sh, add docstring to run_cmd" instead of "document run_cmd").
+- Code-centric files only (`shell/`, `src/`, `tests/`, `bin/`, `config/`, `Makefile`). Markdown/README/doc changes must use the normal docs workflows.
+
+Good micro tasks:
+- `make aider-micro-safe AIDER_MICRO_MESSAGE="In shell/common.sh, add a guard that returns early when cmd is empty." AIDER_MICRO_FILES="shell/common.sh"`
+- `make aider-micro-safe AIDER_MICRO_MESSAGE="In tests/mock_login_flow.sh, replace literal 'SUCCESS' with 'PASS' in the final echo." AIDER_MICRO_FILES="tests/mock_login_flow.sh"`
+
+Bad (rejected) micro tasks:
+- `make aider-micro-safe AIDER_MICRO_MESSAGE="Clarify README wording." AIDER_MICRO_FILES="README.md"`
+- `make aider-micro-safe AIDER_MICRO_MESSAGE="Touch docs to mention benchmarking." AIDER_MICRO_FILES="docs/aider-performance-guide.md"`
 
 Benchmark/report helpers:
 

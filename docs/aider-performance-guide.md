@@ -62,6 +62,18 @@ This helper enforces:
 - automatic `make quick`
 - failure if aider touches any other file or produces no change
 - supervisor artifacts under `artifacts/aider_runs/` for audit
+- message must explicitly name the target file(s) and include a concrete action verb
+- only code-adjacent files (`shell/`, `src/`, `tests/`, `bin/`, `config/`, `Makefile`) are allowed; Markdown/README edits should use docs-specific flows
+
+Recommended starter tasks for fast lane:
+- anchor to a single function or literal (e.g., “In tests/mock_login_flow.sh, replace the string SUCCESS with PASS”)
+- comment-only or docstring additions in `shell/` or `src/`
+- guard clauses or simple string replacements in shell helpers
+
+Rejected patterns:
+- vague wording like “clarify docs” or “polish README”
+- multi-section doc updates
+- multi-file refactors beyond two files
 
 ## 4. Validation & Artifacts
 - Guard enforces file scope, diff size, forbidden globs, root limits, and runs validation commands. Results saved under `artifacts/aider_runs/` with failure context.
