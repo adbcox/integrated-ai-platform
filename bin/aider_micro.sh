@@ -17,6 +17,7 @@ LITERAL_FILE=""
 LITERAL_OLD=""
 LITERAL_NEW=""
 LITERAL_BEFORE_FILE=""
+LITERAL_FALLBACK_USED=false
 
 restore_repo_state() {
   if [ "$RESTORE_ON_FAIL" = true ] && [ -n "${HEAD_BEFORE:-}" ]; then
@@ -225,17 +226,26 @@ fi
 if [ "$TEST_MODE" = false ]; then
   RESTORE_ON_FAIL=true
   info "running aider on ${TARGET_FILES[*]}"
-  if ! bash bin/aider_local.sh --message "$MESSAGE" "${TARGET_FILES[@]}"; then
+  if bash bin/aider_local.sh --message "$MESSAGE" "${TARGET_FILES[@]}"; then
+    info "running quick validation"
+    if ! PYTHONPYCACHEPREFIX=/tmp/aider_pycache make quick >/dev/null; then
+      fail "make quick failed; inspect quick logs" "validation"
+    fi
+  else
     status=$?
     if [ "$status" -eq 0 ]; then
       status=99
     fi
-    fail "aider exited non-zero (status $status). Inspect artifacts/aider_runs for details." "aider_exit" "$status"
-  fi
-
-  info "running quick validation"
-  if ! PYTHONPYCACHEPREFIX=/tmp/aider_pycache make quick >/dev/null; then
-    fail "make quick failed; inspect quick logs" "validation"
+    if [ "$TASK_KIND" = "literal-replace" ] && [ -n "$LITERAL_BEFORE_FILE" ]; then
+      info "aider exit detected; attempting literal replace fallback"
+      literal_apply_direct "$LITERAL_FILE" "$LITERAL_BEFORE_FILE"
+      info "running quick validation after fallback"
+      if ! PYTHONPYCACHEPREFIX=/tmp/aider_pycache make quick >/dev/null; then
+        fail "make quick failed after fallback; inspect quick logs" "validation"
+      fi
+    else
+      fail "aider exited non-zero (status $status). Inspect artifacts/aider_runs for details." "aider_exit" "$status"
+    fi
   fi
 else
   info "test mode enabled; skipping aider invocation"
@@ -299,7 +309,11 @@ for nf in "${CHANGED_TOTAL[@]}"; do
 done
 
 if [ "$changed_any" = false ]; then
-  fail "none of the target files changed" "no_change"
+  if [ "$TASK_KIND" = "literal-replace" ] && [ "$LITERAL_FALLBACK_USED" = true ]; then
+    info "no diff detected but literal fallback applied; treating as success"
+  else
+    fail "none of the target files changed" "no_change"
+  fi
 fi
 
 enforce_comment_scope() {
@@ -376,6 +390,35 @@ PY
   then
     fail "literal replace produced unexpected changes" "literal_replace_diff"
   fi
+}
+
+literal_apply_direct() {
+  local target_file="$1"
+  local snapshot="$2"
+  info "applying literal replace directly to $target_file"
+  if ! LITERAL_FILE="$target_file" LITERAL_BEFORE_FILE="$snapshot" LITERAL_OLD="$LITERAL_OLD" LITERAL_NEW="$LITERAL_NEW" python3 - <<'PY'
+import os, sys
+from pathlib import Path
+
+path = Path(os.environ['LITERAL_FILE'])
+snapshot = Path(os.environ['LITERAL_BEFORE_FILE'])
+old = os.environ['LITERAL_OLD']
+new = os.environ['LITERAL_NEW']
+text = path.read_text()
+if old not in text:
+    print(f"literal replace fallback: old text missing in {path}", file=sys.stderr)
+    sys.exit(1)
+updated = text.replace(old, new, 1)
+if text == updated:
+    print("literal replace fallback performed zero substitutions", file=sys.stderr)
+    sys.exit(1)
+path.write_text(updated)
+sys.exit(0)
+PY
+  then
+    fail "literal replace fallback could not apply change" "literal_replace_fallback"
+  fi
+  LITERAL_FALLBACK_USED=true
 }
 
 if [ "$TASK_KIND" = "comment-only" ]; then
