@@ -223,7 +223,7 @@ EOS
 
 # Build escalation structure only for explicit Codex escalations unless forced.
 if [ "$WORKFLOW_MODE" = "tactical" ] && [ "$FORCE_ESCALATION_CAPTURE" -ne 1 ] && [ -z "$ESCALATION_TRIGGER" ]; then
-  echo "Saved local feedback record: $legacy_record_dir"
+  echo "Saved local feedback record under: $legacy_record_dir"
   echo "Skipped escalation artifact capture (workflow_mode=tactical) by default."
   exit 0
 fi
