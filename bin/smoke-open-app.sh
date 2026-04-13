@@ -1,5 +1,5 @@
 #!/bin/sh
-set -eu
+set -euo
 
 BASE_DIR="$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)"
 cd "$BASE_DIR"
