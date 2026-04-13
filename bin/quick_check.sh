@@ -69,7 +69,7 @@ while IFS= read -r f; do
     continue
   fi
   case "$f" in
-    bin/aider_local.sh)
+    bin/aider_local.sh|bin/aider_micro.sh)
       [ "$check_shell" -eq 1 ] || continue
       bash -n "$BASE_DIR/$f"
       echo "OK: shell syntax (bash) $f"
