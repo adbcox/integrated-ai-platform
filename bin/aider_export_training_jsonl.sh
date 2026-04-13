@@ -65,4 +65,4 @@ for rec in "$DATA_DIR"/*; do
     "$(basename "$rec")" "$meta" "$summary" "$outcome" "$checks" "$changed" >>"$OUT_FILE"
 done
 
-echo "Exported training JSONL: $OUT_FILE"
+echo "Exported training data JSONL: $OUT_FILE"
