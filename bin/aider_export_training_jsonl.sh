@@ -40,7 +40,7 @@ mkdir -p "$(dirname "$OUT_FILE")"
 : >"$OUT_FILE"
 
 if [ ! -d "$DATA_DIR" ]; then
-  echo "No data directory found: $DATA_DIR"
+  echo "No training data directory found: $DATA_DIR"
   exit 0
 fi
 
