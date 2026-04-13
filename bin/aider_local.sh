@@ -38,7 +38,7 @@ Options:
   --smart              Use 32B smart profile (requires OLLAMA_API_BASE_32B or --api-base)
   --gpu-experimental   Route to GPU endpoint (127.0.0.1:11434). Experimental only.
   --api-base <url>     Override Ollama API base URL
-  --smart-status       Probe the configured smart (32B) endpoint and exit
+  --smart-status       Check the configured smart (32B) endpoint and exit
   -h, --help           Show help
 USAGE
 }
