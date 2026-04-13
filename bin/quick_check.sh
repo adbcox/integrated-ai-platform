@@ -104,4 +104,4 @@ if [ "$shell_checked" -eq 0 ] && [ "$python_checked" -eq 0 ]; then
   exit 0
 fi
 
-echo "PASS: quick checks complete."
+echo "PASS: quick checks complete for changed files."
