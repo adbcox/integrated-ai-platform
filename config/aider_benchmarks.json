@@ -1,0 +1,50 @@
+{
+  "single-file-edit": {
+    "description": "Update a single script and rerun quick tests",
+    "prompt": "In shell/common.sh, document why run_cmd enforces strict shell flags and keep behavior unchanged.",
+    "files": ["shell/common.sh"],
+    "validations": ["make quick"],
+    "success": "Guard passes and make quick succeeds."
+  },
+  "multi-file-refactor": {
+    "description": "Coordinated refactor across two operator scripts",
+    "prompt": "Update browser_operator_open_app.sh and browser_operator_open_and_click.sh to share a helper function for retries, keeping behavior identical otherwise.",
+    "files": [
+      "browser_operator_open_app.sh",
+      "browser_operator_open_and_click.sh"
+    ],
+    "validations": ["make quick"],
+    "success": "Guard passes, helper extracted, quick tests succeed."
+  },
+  "debug-failing-test": {
+    "description": "Diagnose a mocked login failure from test output",
+    "prompt": "Tests report a login regression; inspect browser_operator_login_flow.sh and tests/mock_login_flow.sh to address the failing case described in the console output.",
+    "files": [
+      "browser_operator_login_flow.sh",
+      "tests/mock_login_flow.sh"
+    ],
+    "validations": ["make test-changed-offline"],
+    "success": "Guard passes and test-changed-offline succeeds."
+  },
+  "doc-code-alignment": {
+    "description": "Align README and performance guide guidance",
+    "prompt": "Ensure README.md and docs/aider-performance-guide.md describe the same fast vs smart model defaults and commands.",
+    "files": [
+      "README.md",
+      "docs/aider-performance-guide.md"
+    ],
+    "validations": ["make check"],
+    "success": "Guard passes and make check succeeds."
+  },
+  "guard-edge-case": {
+    "description": "Stress guard limits with near-cap scope",
+    "prompt": "Touch at most three docs (docs/codex-operator-workflow.md, docs/aider-performance-guide.md, docs/aider-summary.md) to add a short section on benchmarking without exceeding guard limits.",
+    "files": [
+      "docs/codex-operator-workflow.md",
+      "docs/aider-performance-guide.md",
+      "docs/aider-summary.md"
+    ],
+    "validations": [],
+    "success": "Guard accepts the limited scope without violations."
+  }
+}
