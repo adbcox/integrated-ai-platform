@@ -7,7 +7,7 @@ Usage: bin/aider_micro.sh "anchored message" path/to/file1 [path/to/file2]
   - Requires a clean working tree.
   - Restricts micro tasks to at most two files.
   - Message must explicitly anchor each file using "<basename>::<token>" syntax.
-  - Default supported class: single-file literal/comment wording replacements inside shell/bin files (see docs/safe-literal-probes.md).
+  - Default supported class (Stage 3): single-file literal wording/comment replacements (up to two adjacent lines) inside shell/bin files. See docs/safe-literal-probes.md for the full checklist.
   - Runs aider via bin/aider_local.sh and then make quick.
   - Fails if files outside the allowed list change or no file changes.
 USAGE

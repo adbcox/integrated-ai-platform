@@ -11,6 +11,9 @@ HAS_MODEL_OVERRIDE=0
 HAS_MAP_TOKENS_OVERRIDE=0
 HAS_TIMEOUT_OVERRIDE=0
 HAS_API_BASE_OVERRIDE=0
+MICRO_MODEL="${MICRO_MODEL:-ollama_chat/local-micro-coder-fast}"
+MICRO_MAP_TOKENS="${MICRO_MAP_TOKENS:-0}"
+MICRO_TIMEOUT="${MICRO_TIMEOUT:-45}"
 SMART_STATUS_ONLY=0
 USER_MODEL=""
 USER_MAP_TOKENS=""
@@ -35,6 +38,7 @@ Default fast lane settings:
 
 Options:
   --hard               Use explicit harder-task profile (7b, map-tokens 1024, timeout 120)
+  --micro-profile      Opt into local-micro-coder-fast profile (Stage 3 experiments)
   --smart              Use 32B smart profile (requires OLLAMA_API_BASE_32B or --api-base)
   --gpu-experimental   Route to GPU endpoint (127.0.0.1:11434). Experimental only.
   --api-base <url>     Override Ollama API base URL
@@ -114,6 +118,16 @@ while [ "$#" -gt 0 ]; do
       MAP_TOKENS="1024"
       TIMEOUT="120"
       MODE_LABEL="hard"
+      shift
+      ;;
+    --micro-profile)
+      MODEL="$MICRO_MODEL"
+      MAP_TOKENS="$MICRO_MAP_TOKENS"
+      TIMEOUT="$MICRO_TIMEOUT"
+      MODE_LABEL="micro-opt"
+      HAS_MODEL_OVERRIDE=1
+      HAS_MAP_TOKENS_OVERRIDE=1
+      HAS_TIMEOUT_OVERRIDE=1
       shift
       ;;
     --smart)

@@ -65,6 +65,9 @@ make aider-hard
 make aider-smart   # 32B path (requires OLLAMA_API_BASE_32B)
 make aider-smart-status  # ping the configured 32B endpoint before smart runs
 
+# Opt-in Stage 3 micro profile:
+# make aider-fast AIDER_ARGS="--micro-profile"
+
 # Micro lane (tiny autonomous edits)
 
 ```sh
@@ -110,6 +113,12 @@ Constraints:
 Good micro tasks:
 - `make aider-micro-safe AIDER_MICRO_MESSAGE="In shell/common.sh, add a guard that returns early when cmd is empty." AIDER_MICRO_FILES="shell/common.sh"`
 - `make aider-micro-safe AIDER_MICRO_MESSAGE="In tests/mock_login_flow.sh, replace literal 'SUCCESS' with 'PASS' in the final echo." AIDER_MICRO_FILES="tests/mock_login_flow.sh"`
+
+Verify the Stage 3 lane at any time with:
+
+```
+make micro-lane-regression
+```
 
 Bad (rejected) micro tasks:
 - `make aider-micro-safe AIDER_MICRO_MESSAGE="Clarify README wording." AIDER_MICRO_FILES="README.md"`

@@ -170,6 +170,10 @@ aider-micro-safe:
 		fi; \
 		bash bin/aider_micro.sh "$$MICRO_MSG" "$$@"
 
+.PHONY: micro-lane-regression
+micro-lane-regression:
+	@./bin/micro_lane_regression.sh
+
 preflight-normalization-guard:
 	@./bin/preflight_normalization_guard.sh
 
