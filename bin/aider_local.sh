@@ -28,8 +28,8 @@ Usage:
   ./bin/aider_local.sh [--hard] [--smart] [--gpu-experimental] [--api-base <url>] [--smart-status] [aider args...]
 
 Default fast lane settings:
-  OLLAMA_API_BASE=http://127.0.0.1:11535
-  --model ollama_chat/qwen2.5-coder:1.5b
+  OLLAMA_API_BASE defaults to http://127.0.0.1:11535
+  --model ollama_chat/qwen2.5-coder:1.5b (fast micro lane)
   --map-tokens 0
   --timeout 60
 
