@@ -40,6 +40,27 @@ info() {
   echo "[micro] $1"
 }
 
+is_shell_like_path() {
+  local f="$1"
+  case "$f" in
+    *.sh|shell/*|bin/*|operator_task.sh|start_*|run_*|update_*)
+      return 0
+      ;;
+  esac
+  return 1
+}
+
+guard_literal_shell_change() {
+  local file="$1"
+  if ! is_shell_like_path "$file"; then
+    return
+  fi
+  local risky_regex='(\\b(set|if|then|fi|elif|else|for|while|until|case|esac|do|done|exit|return|trap)\\b|set[[:space:]]*-[[:alpha:]]+)'
+  if printf '%s\n%s\n' "$LITERAL_OLD" "$LITERAL_NEW" | grep -qiE "$risky_regex"; then
+    fail "literal replace touches shell control/strict-mode tokens in $file; use a wider lane" "literal_shell_risky"
+  fi
+}
+
 literal_validate() {
   local target_file="$1"
   local snapshot="$2"
@@ -279,6 +300,7 @@ if [ "$TASK_KIND" = "literal-replace" ]; then
   if ! grep -F -- "$LITERAL_OLD" "$LITERAL_FILE" >/dev/null; then
     fail "literal replace old text not found in $LITERAL_FILE" "literal_replace_missing_old"
   fi
+  guard_literal_shell_change "$LITERAL_FILE"
   LITERAL_BEFORE_FILE=$(mktemp)
   cp "$LITERAL_FILE" "$LITERAL_BEFORE_FILE"
 fi
