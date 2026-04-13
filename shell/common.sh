@@ -40,3 +40,12 @@ extract_session_id() {
 
   return 1
 }
+
+# run_cmd is a wrapper around command that enforces strict shell flags and keeps behavior unchanged.
+run_cmd() {
+  # Set the required shell options for strict mode
+  set -euo pipefail
+
+  # Execute the command with the provided arguments
+  "$@"
+}
