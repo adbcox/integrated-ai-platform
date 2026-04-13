@@ -14,7 +14,7 @@ if [ "$#" -gt 0 ]; then
 fi
 
 if [ -n "${CHANGED_FILES:-}" ]; then
-  # Support either space-separated or newline-separated lists.
+  # Supports either space-separated or newline-separated CHANGED_FILES values.
   printf '%s\n' "$CHANGED_FILES" | tr ' ' '\n' | sed '/^$/d'
   exit 0
 fi
