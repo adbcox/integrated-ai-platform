@@ -13,6 +13,10 @@ USAGE
 }
 
 RESTORE_ON_FAIL=false
+LITERAL_FILE=""
+LITERAL_OLD=""
+LITERAL_NEW=""
+LITERAL_BEFORE_FILE=""
 
 restore_repo_state() {
   if [ "$RESTORE_ON_FAIL" = true ] && [ -n "${HEAD_BEFORE:-}" ]; then
@@ -109,6 +113,30 @@ ensure_message_quality() {
     if [ "$quote_count" -lt 4 ]; then
       fail "exact replace tasks must specify quoted old and new text" "literal_replace_contract"
     fi
+    local parsed
+    if ! parsed=$(MESSAGE="$msg" python3 - <<'PY'
+import os,re,sys
+text=os.environ['MESSAGE']
+parts=re.findall(r"'([^']*)'", text)
+if len(parts) < 2:
+    sys.exit(1)
+print(parts[0])
+print(parts[1])
+PY
+); then
+      fail "unable to parse literal replace old/new text" "literal_replace_contract"
+    fi
+    local literal_old literal_new
+    literal_old=$(printf '%s\n' "$parsed" | sed -n '1p')
+    literal_new=$(printf '%s\n' "$parsed" | sed -n '2p')
+    if [ -z "$literal_new" ]; then
+      fail "literal replace prompt must specify both old and new text" "literal_replace_contract"
+    fi
+    LITERAL_OLD="$literal_old"
+    LITERAL_NEW="$literal_new"
+    if [ "$LITERAL_OLD" = "$LITERAL_NEW" ]; then
+      fail "literal replace old text matches new text" "literal_replace_contract"
+    fi
   fi
   info "task kind detected: $detected_kind"
   TASK_KIND="$detected_kind"
@@ -176,6 +204,18 @@ ensure_clean_tree
 ensure_message_quality "$MESSAGE"
 ensure_allowed_files
 
+if [ "$TASK_KIND" = "literal-replace" ]; then
+  if [ ${#TARGET_FILES[@]} -ne 1 ]; then
+    fail "literal replace tasks must specify exactly one file" "literal_replace_contract"
+  fi
+  LITERAL_FILE="${TARGET_FILES[0]}"
+  if ! grep -F -- "$LITERAL_OLD" "$LITERAL_FILE" >/dev/null; then
+    fail "literal replace old text not found in $LITERAL_FILE" "literal_replace_missing_old"
+  fi
+  LITERAL_BEFORE_FILE=$(mktemp)
+  cp "$LITERAL_FILE" "$LITERAL_BEFORE_FILE"
+fi
+
 HEAD_BEFORE=$(git rev-parse HEAD)
 TEST_MODE=false
 if [ -n "${AIDER_MICRO_FAKE_DIFF_FILE:-}" ]; then
@@ -207,7 +247,13 @@ else
   HEAD_AFTER="$HEAD_BEFORE"
 fi
 diff_file=$(mktemp)
-trap 'rm -f "$diff_file"' EXIT
+cleanup() {
+  rm -f "$diff_file"
+  if [ -n "${LITERAL_BEFORE_FILE:-}" ]; then
+    rm -f "$LITERAL_BEFORE_FILE"
+  fi
+}
+trap cleanup EXIT
 
 declare -a CHANGED_TOTAL
 declare -a CHANGED_TARGET
@@ -295,8 +341,49 @@ enforce_comment_scope() {
   done <"$diff_path"
 }
 
+literal_validate() {
+  local target_file="$1"
+  local snapshot="$2"
+  if [ -z "$snapshot" ]; then
+    return
+  fi
+  if ! LITERAL_FILE="$target_file" LITERAL_BEFORE_FILE="$snapshot" LITERAL_OLD="$LITERAL_OLD" LITERAL_NEW="$LITERAL_NEW" python3 - <<'PY'
+import os, sys
+from pathlib import Path
+
+target_path = Path(os.environ['LITERAL_FILE'])
+before_path = Path(os.environ['LITERAL_BEFORE_FILE'])
+old = os.environ['LITERAL_OLD']
+new = os.environ['LITERAL_NEW']
+
+before = before_path.read_text()
+after = target_path.read_text()
+
+if old not in before:
+    print("literal replace old text missing from snapshot", file=sys.stderr)
+    sys.exit(1)
+
+expected = before.replace(old, new, 1)
+if before == expected:
+    print("literal replace performed zero substitutions", file=sys.stderr)
+    sys.exit(1)
+
+if expected != after:
+    print("literal replace produced unexpected diff", file=sys.stderr)
+    sys.exit(1)
+sys.exit(0)
+PY
+  then
+    fail "literal replace produced unexpected changes" "literal_replace_diff"
+  fi
+}
+
 if [ "$TASK_KIND" = "comment-only" ]; then
   enforce_comment_scope "$diff_file"
+fi
+
+if [ "$TASK_KIND" = "literal-replace" ]; then
+  literal_validate "$LITERAL_FILE" "$LITERAL_BEFORE_FILE"
 fi
 
 RESTORE_ON_FAIL=false
