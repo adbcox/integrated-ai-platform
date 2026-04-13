@@ -37,7 +37,7 @@ done
 
 cd "$BASE_DIR"
 
-echo "[finalize] Running quick checks..."
+echo "[finalize] Running quick guard checks..."
 make quick
 
 case "$OFFLINE_MODE" in
