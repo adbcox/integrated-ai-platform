@@ -62,13 +62,41 @@ Fast local tactical Aider entry points:
 ```sh
 make aider-fast
 make aider-hard
+make aider-smart   # 32B path (requires OLLAMA_API_BASE_32B)
+make aider-smart-status  # ping the configured 32B endpoint before smart runs
 ```
 
 - `aider-fast` is the default tactical profile on CPU Ollama (`127.0.0.1:11535`) using `qwen2.5-coder:1.5b`, `--map-tokens 0`, and `--timeout 60`.
 - `aider-hard` is explicit opt-in for heavier tasks (`qwen2.5-coder:7b`, higher map/timeout).
+- `aider-smart` routes to the 32B endpoint (set `OLLAMA_API_BASE_32B` or pass `--api-base`). Always run `make aider-smart-status` first so you know the endpoint is reachable.
 - Optional pass-through flags via `AIDER_ARGS`, for example:
   - `make aider-fast AIDER_ARGS="--message 'reply exactly READY'"`
   - `make aider-hard AIDER_ARGS='path/to/file.py'`
+  - `make aider-smart AIDER_ARGS='--message "audit README" docs/aider-performance-guide.md'`
+
+### Micro lane (tiny autonomous edits)
+
+Use the new helper when you want the local model to attempt a very small patch (one or two files) with strict guard rails:
+
+```sh
+make aider-micro-safe \
+  AIDER_MICRO_MESSAGE="Add a docstring to foo()" \
+  AIDER_MICRO_FILES="src/foo.py"
+```
+
+Constraints:
+- Requires a clean working tree (no staged or unstaged changes).
+- Supports at most two repo-relative files.
+- Automatically runs `make quick`.
+- Fails if aider touches any file outside the provided list or if nothing changes.
+
+Benchmark/report helpers:
+
+```sh
+make aider-bench-report      # table of recent runs with model/profile info
+make aider-bench-compare SCENARIO=single-file-edit
+make aider-bench-models      # show fast/hard/smart defaults
+```
 
 Recommended daily loop:
 

@@ -2,7 +2,7 @@ SHELL := /bin/sh
 
 .PHONY: check check-shell check-python quick quick-shell quick-python test-offline test-changed-offline remote-prepare remote-finalize aider-start-task aider-handoff aider-finalize aider-capture-feedback aider-export-training aider-loop aider-run aider-bugfix-small aider-refactor-narrow aider-test-repair aider-lint-fix aider-docs-sync aider-typed-cleanup aider-targeted-feature-patch aider-fast aider-hard preflight-normalization-guard workflow-mode-show workflow-mode-list workflow-mode-validate workflow-mode-tactical workflow-mode-codex-assist workflow-mode-codex-investigate workflow-mode-codex-failure escalation-index-tail local-model-eval local-model-eval-json local-model-plan local-model-plan-json local-model-rules-refresh local-model-rules-show local-model-route local-task-intake local-front-door local-model-train-plan local-model-train-plan-json prompt-rule-plan prompt-rule-plan-json assess-candidate-class
 
-.PHONY: aider-docs-micro aider-test-micro aider-shell-micro aider-lint-micro
+.PHONY: aider-docs-micro aider-test-micro aider-shell-micro aider-lint-micro aider-smart aider-smart-status aider-bench-report aider-bench-compare aider-bench-models aider-micro-safe
 
 check: check-shell check-python
 	@echo "PASS: make check complete."
@@ -94,10 +94,29 @@ aider-targeted-feature-patch:
 AIDER_ARGS ?=
 
 aider-fast:
-	@./bin/aider_local.sh $(AIDER_ARGS)
+	@bash bin/aider_local.sh $(AIDER_ARGS)
 
 aider-hard:
-	@./bin/aider_local.sh --hard $(AIDER_ARGS)
+	@bash bin/aider_local.sh --hard $(AIDER_ARGS)
+
+aider-smart:
+	@bash bin/aider_local.sh --smart $(AIDER_ARGS)
+
+aider-smart-status:
+	@bash bin/aider_local.sh --smart-status
+
+aider-bench-report:
+	@python3 bin/aider_benchmark.py --report
+
+aider-bench-models:
+	@python3 bin/aider_benchmark.py --models
+
+aider-bench-compare:
+	@if [ -z "$(SCENARIO)" ]; then \
+		echo "SCENARIO is required, e.g. make aider-bench-compare SCENARIO=single-file-edit"; \
+		exit 1; \
+	fi
+	@python3 bin/aider_benchmark.py --compare "$(SCENARIO)"
 
 AIDER_AUTO_FILES ?=
 
@@ -117,6 +136,18 @@ aider-shell-micro:
 
 aider-lint-micro:
 	@$(MAKE) aider-lint-fix AIDER_OBJECTIVE="$(or $(AIDER_OBJECTIVE),Apply lint fixes)" AIDER_FILES="$(AIDER_FILES)"
+
+AIDER_MICRO_MESSAGE ?=
+AIDER_MICRO_FILES ?=
+
+aider-micro-safe:
+	@[ -n "$(AIDER_MICRO_MESSAGE)" ] || { echo "AIDER_MICRO_MESSAGE is required"; exit 1; }
+	@[ -n "$(AIDER_MICRO_FILES)" ] || { echo "AIDER_MICRO_FILES is required (one or two repo-relative files)"; exit 1; }
+	@set -- $(AIDER_MICRO_FILES); \
+		if [ $$# -gt 2 ]; then \
+			echo "ERROR: aider-micro-safe supports at most two files"; exit 1; \
+		fi; \
+		bash bin/aider_micro.sh "$(AIDER_MICRO_MESSAGE)" "$$@"
 
 preflight-normalization-guard:
 	@./bin/preflight_normalization_guard.sh

@@ -3,6 +3,8 @@ set -eu
 
 BASE_DIR="$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)"
 DETECT="$BASE_DIR/bin/detect_changed_files.sh"
+PY_CACHE_PREFIX="${PYTHONPYCACHEPREFIX:-${TMPDIR:-/tmp}/quick_pycache}"
+mkdir -p "$PY_CACHE_PREFIX" 2>/dev/null || true
 
 check_shell=1
 check_python=1
@@ -67,6 +69,12 @@ while IFS= read -r f; do
     continue
   fi
   case "$f" in
+    bin/aider_local.sh)
+      [ "$check_shell" -eq 1 ] || continue
+      bash -n "$BASE_DIR/$f"
+      echo "OK: shell syntax (bash) $f"
+      shell_checked=1
+      ;;
     *.sh)
       [ "$check_shell" -eq 1 ] || continue
       sh -n "$BASE_DIR/$f"
@@ -75,7 +83,7 @@ while IFS= read -r f; do
       ;;
     *.py)
       [ "$check_python" -eq 1 ] || continue
-      python3 -m py_compile "$BASE_DIR/$f"
+      PYTHONPYCACHEPREFIX="$PY_CACHE_PREFIX" python3 -m py_compile "$BASE_DIR/$f"
       echo "OK: python syntax $f"
       python_checked=1
       ;;

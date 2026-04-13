@@ -40,7 +40,10 @@
       "README.md",
       "docs/aider-performance-guide.md"
     ],
-    "validations": ["make check"],
+    "validations": [
+      "make check",
+      "python3 - <<'PY'\nimport os, pathlib, sys\nrequired = {\"README.md\", \"docs/aider-performance-guide.md\"}\nbaseline_root = os.environ.get('AIDER_BENCH_BASELINE_DIR')\nif not baseline_root:\n    sys.stderr.write('ERROR: missing AIDER_BENCH_BASELINE_DIR\\n')\n    sys.exit(1)\nbase = pathlib.Path(baseline_root)\nunchanged = []\nfor rel in required:\n    current = pathlib.Path(rel)\n    baseline = base / rel\n    curr_text = current.read_text() if current.exists() else ''\n    base_text = baseline.read_text() if baseline.exists() else ''\n    if curr_text == base_text:\n        unchanged.append(rel)\nif unchanged:\n    sys.stderr.write('ERROR: docs unchanged: ' + ', '.join(sorted(unchanged)) + '\\n')\n    sys.exit(1)\nprint('doc-change validation ok')\nPY"
+    ],
     "success": "Guard passes and make check succeeds."
   },
   "guard-edge-case": {

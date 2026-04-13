@@ -28,6 +28,9 @@ This pipeline generates JSON briefs, enforces budgets, and runs the guard automa
 Default fast tactical settings (CPU-reliable path):
 ```sh
 make aider-fast
+make aider-hard
+make aider-smart        # run against 32B (requires OLLAMA_API_BASE_32B)
+make aider-smart-status # ping the 32B endpoint before smart
 ```
 
 This uses:
@@ -36,16 +39,29 @@ This uses:
 - `--map-tokens 0`
 - `--timeout 60`
 
-For harder tasks (explicit opt-in):
-```sh
-make aider-hard
-```
-
 Pass-through args are supported with `AIDER_ARGS`, for example:
 ```sh
 make aider-fast AIDER_ARGS="--message 'reply exactly READY'"
 make aider-hard AIDER_ARGS="path/to/file.py"
+make aider-smart AIDER_ARGS="--message 'reply READY for smart run' docs/aider-performance-guide.md"
 ```
+
+### Micro lane for tiny autonomous tasks
+
+When you only need a one- or two-file patch and want strict guard rails, use:
+
+```sh
+make aider-micro-safe \
+  AIDER_MICRO_MESSAGE="Explain guard clause at top" \
+  AIDER_MICRO_FILES="shell/common.sh"
+```
+
+This helper enforces:
+- clean working tree requirement
+- maximum two repo-relative files
+- automatic `make quick`
+- failure if aider touches any other file or produces no change
+- supervisor artifacts under `artifacts/aider_runs/` for audit
 
 ## 4. Validation & Artifacts
 - Guard enforces file scope, diff size, forbidden globs, root limits, and runs validation commands. Results saved under `artifacts/aider_runs/` with failure context.
