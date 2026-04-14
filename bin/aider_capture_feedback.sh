@@ -198,7 +198,7 @@ else
 - key regressions prevented:
   - <key item>
 - follow-ups:
-  - <item>
+  - <follow-up item>
 EOS
 fi
 
