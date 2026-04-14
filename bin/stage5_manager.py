@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Stage-5 manager: bounded multi-file literal orchestrator."""
 
-from __future__ import annotations
+from __future__ import annotations  # stage6-grouped
 
 import argparse
 import json
