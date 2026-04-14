@@ -1,0 +1,16 @@
+[
+  {
+    "query": "stage5 fixture primary",
+    "target": "bin/stage5_regression_primary.sh",
+    "message": "bin/stage5_regression_primary.sh::primary block replace exact text '# Stage5 primary baseline block (do not edit outside regression tools):\n# - Stage5 baseline line A\n# - Stage5 baseline line B\n# - Stage5 baseline line C' with '# Stage5 primary Stage-5 validation block (auto-generated):\n# - Stage5 dual-batch primary line A\n# - Stage5 dual-batch primary line B\n# - Stage5 dual-batch primary line C' only.",
+    "lines": "auto",
+    "notes": "stage5 regression success op1"
+  },
+  {
+    "query": "stage5 fixture secondary",
+    "target": "bin/stage5_regression_secondary.sh",
+    "message": "bin/stage5_regression_secondary.sh::secondary block replace exact text '# Stage5 secondary baseline block:\n# * Stage5 fixture note alpha\n# * Stage5 fixture note beta\n# * Stage5 fixture note gamma' with '# Stage5 secondary validation block:\n# * Stage5 regression note alpha\n# * Stage5 regression note beta\n# * Stage5 regression note gamma' only.",
+    "lines": "auto",
+    "notes": "stage5 regression success op2"
+  }
+]

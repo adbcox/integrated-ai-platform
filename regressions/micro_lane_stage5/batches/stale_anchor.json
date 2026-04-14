@@ -1,0 +1,9 @@
+[
+  {
+    "query": "stage5 stale anchor",
+    "target": "bin/stage5_regression_primary.sh",
+    "message": "bin/stage5_regression_primary.sh::nonexistent replace exact text '# Stage5 missing anchor example\n# this block never existed\n# keep guards honest' with '# Stage5 stale anchor replacement\n# guard should reject before editing\n# because the old literal is absent' only.",
+    "lines": "auto",
+    "notes": "stage5 regression stale anchor"
+  }
+]

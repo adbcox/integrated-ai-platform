@@ -1,0 +1,9 @@
+[
+  {
+    "query": "stage5 harness guard",
+    "target": "bin/stage4_manager.py",
+    "message": "bin/stage4_manager.py::docstring replace exact text '"""Stage-4 manager orchestrator for bounded multi-line literal edits."""' with '"""Stage-4 manager orchestrator (stage5 regression attempt)."""' only.",
+    "lines": "auto",
+    "notes": "stage5 regression unsafe target"
+  }
+]
