@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """Manager-5 orchestrator for Stage-6 multi-target batches."""
 
+# STAGE6_PLACEHOLDER
+
 from __future__ import annotations
 
 import argparse
@@ -23,6 +25,7 @@ from promotion.tracing import PromotionTraceEntry, append_trace, current_commit_
 STAGE5_MANAGER = REPO_ROOT / "bin" / "stage5_manager.py"
 STAGE_RAG4_PLAN = REPO_ROOT / "bin" / "stage_rag4_plan_probe.py"
 TRACE_DIR = REPO_ROOT / "artifacts" / "manager5"
+PLACEHOLDER_LITERAL = "# STAGE6_PLACEHOLDER"
 
 
 @dataclass
@@ -136,10 +139,17 @@ def build_promotion_env(lane: str, versions: dict[str, Any], manifest_version: i
 
 
 def create_stage5_batch(job: Stage6Job, args: argparse.Namespace) -> Path:
+    literal_old = args.literal_old
+    literal_new = args.literal_new
     payload = {
         "query": " ".join(args.query),
         "target": job.path,
-        "message": args.message_template.format(path=job.path, source=(job.source or "rag4")),
+        "message": args.message_template.format(
+            path=job.path,
+            source=(job.source or "rag4"),
+            old=literal_old,
+            new=literal_new,
+        ),
         "lines": job.lines or args.lines,
     }
     if args.notes:
@@ -226,13 +236,19 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--max-entries", type=int, default=3, help="Max Stage-6 entries to orchestrate")
     parser.add_argument("--jobs-file", help="Optional manual JSON jobs definition")
     parser.add_argument("--manifest", default=str(MANIFEST_PATH), help="Promotion manifest path")
-    parser.add_argument("--message-template", default="Stage-6 refinement for {path}")
+    parser.add_argument(
+        "--message-template",
+        default="replace exact text '{old}' with '{new}' for {path} (source={source})",
+        help="Worker instruction message template",
+    )
     parser.add_argument("--dry-run", action="store_true", help="Print plan without invoking Stage-5 manager")
     parser.add_argument("--plan-status", default="preview", help="Optional status used in trace entries")
     parser.add_argument("--fallback-target", help="Fallback target when RAG-4 returns no eligible jobs")
     parser.add_argument("--related-limit", type=int, default=2)
     parser.add_argument("--history-window", type=int, default=15, help="Git history window for Stage RAG-4")
     parser.add_argument("--min-confidence", type=int, default=1, help="Minimum RAG-4 confidence before enqueuing a target")
+    parser.add_argument("--literal-old", default=PLACEHOLDER_LITERAL, help="Literal old text for Stage-4 replacements")
+    parser.add_argument("--literal-new", default=f"{PLACEHOLDER_LITERAL} (updated)", help="Literal new text for Stage-4 replacements")
     return parser.parse_args()
 
 
