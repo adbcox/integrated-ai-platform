@@ -18,11 +18,13 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT))
 
 from promotion import MANIFEST_PATH, load_manifest, resolve_versions_for_lane
+from promotion.worker_budget import WorkerBudgetDecision, apply_worker_budget
 from promotion.tracing import PromotionTraceEntry, append_trace, current_commit_hash
 
 STAGE6_MANAGER = REPO_ROOT / "bin" / "stage6_manager.py"
 STAGE_RAG6_PLAN = REPO_ROOT / "bin" / "stage_rag6_plan_probe.py"
 TRACE_DIR = REPO_ROOT / "artifacts" / "manager6"
+DEFAULT_MANAGER6_HISTORY_WINDOW_DAYS = 14
 IMPORT_BASE_RE = re.compile(r"^(import|from)\s+")
 SHELL_STRICT_RE = re.compile(r"^\s*set -euo pipefail\s*$")
 SHELL_ASSIGNMENT_RE = re.compile(r"^\s*[A-Za-z_][A-Za-z0-9_]*=")
@@ -110,6 +112,114 @@ def save_checkpoint(plan_id: str, status: dict[str, Any], *, attempt_index: int)
 
 def _is_resume_complete_status(status: str) -> bool:
     return status in {"success", "partial_success", "dropped_preflight"}
+
+
+def _subplan_family_key(subplan: dict[str, Any]) -> str:
+    meta = subplan.get("target_meta") or []
+    families = sorted({str(item.get("family") or "") for item in meta if item.get("family")})
+    if families:
+        return ",".join(families)
+    targets = [str(t) for t in subplan.get("targets", []) if t]
+    if not targets:
+        return "unknown"
+    stems = sorted({Path(t).stem.split("_")[0] for t in targets})
+    return ",".join(stems) if stems else "unknown"
+
+
+def _load_recent_manager6_outcomes(*, days: int = DEFAULT_MANAGER6_HISTORY_WINDOW_DAYS) -> list[dict[str, Any]]:
+    cutoff = datetime.now(timezone.utc).timestamp() - (max(1, days) * 86400)
+    outcomes: list[dict[str, Any]] = []
+    plans_dir = TRACE_DIR / "plans"
+    if not plans_dir.exists():
+        return outcomes
+    for path in plans_dir.glob("*.json"):
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError:
+            continue
+        events = data.get("history", [])
+        if not isinstance(events, list):
+            continue
+        for event in events:
+            if event.get("event_type") != "attempt_finished":
+                continue
+            ts_raw = str(event.get("timestamp") or "")
+            ts = None
+            try:
+                ts = datetime.fromisoformat(ts_raw.replace("Z", "+00:00")).timestamp()
+            except ValueError:
+                continue
+            if ts < cutoff:
+                continue
+            for status in event.get("statuses", []) or []:
+                if not isinstance(status, dict):
+                    continue
+                outcomes.append(status)
+    return outcomes
+
+
+def _strategy_scorecard(*, family: str, historical: list[dict[str, Any]]) -> dict[str, Any]:
+    grouped_success = 0
+    grouped_total = 0
+    split_success = 0
+    split_total = 0
+    for row in historical:
+        targets = [str(t) for t in row.get("targets", []) if t]
+        row_family = ",".join(sorted({Path(t).stem.split("_")[0] for t in targets})) if targets else "unknown"
+        if row_family != family:
+            continue
+        strategy = str(row.get("strategy") or "")
+        retry_strategy = str(row.get("retry_strategy") or "")
+        status = str(row.get("status") or "")
+        ok = status in {"success", "partial_success", "dropped_preflight"}
+        if retry_strategy == "split_on_failure" or strategy == "split_subplan":
+            split_total += 1
+            if ok:
+                split_success += 1
+            continue
+        grouped_total += 1
+        if ok:
+            grouped_success += 1
+    grouped_rate = (grouped_success / grouped_total) if grouped_total else 0.5
+    split_rate = (split_success / split_total) if split_total else 0.5
+    return {
+        "family": family,
+        "grouped_total": grouped_total,
+        "grouped_success": grouped_success,
+        "grouped_rate": round(grouped_rate, 3),
+        "split_total": split_total,
+        "split_success": split_success,
+        "split_rate": round(split_rate, 3),
+    }
+
+
+def _choose_subplan_strategy(
+    *,
+    subplan: dict[str, Any],
+    scorecard: dict[str, Any],
+) -> dict[str, Any]:
+    risk_score = float(subplan.get("risk_score") or 0.0)
+    yield_score = float(subplan.get("yield_score") or 0.0)
+    size = int(subplan.get("size") or len(subplan.get("targets", [])) or 1)
+    grouped_rate = float(scorecard.get("grouped_rate") or 0.5)
+    split_rate = float(scorecard.get("split_rate") or 0.5)
+
+    strategy = "run_grouped"
+    reason = "default_grouped"
+    if size > 1 and (risk_score >= 1.8 or split_rate > grouped_rate + 0.12):
+        strategy = "split_first"
+        reason = "history_or_risk_prefers_split"
+    elif size == 1 and grouped_rate < 0.35 and yield_score < 6.0:
+        strategy = "run_grouped"
+        reason = "single_target_grouped_only"
+
+    return {
+        "strategy": strategy,
+        "reason": reason,
+        "scorecard": scorecard,
+        "risk_score": round(risk_score, 3),
+        "yield_score": round(yield_score, 3),
+    }
 
 
 def build_promotion_env(lane: str, versions: dict[str, Any], manifest_version: int, manifest_path: Path) -> dict[str, str]:
@@ -324,6 +434,8 @@ def run_stage6_subplan(
     args: argparse.Namespace,
     env: dict[str, str],
     op_index: int,
+    strategy_tag: str = "grouped_subplan",
+    strategy_decision: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     subplan_id = str(subplan.get("subplan_id") or f"subplan-{op_index + 1}")
     requested_targets = [str(t) for t in subplan.get("targets", []) if t]
@@ -372,7 +484,8 @@ def run_stage6_subplan(
             "return_code": 0,
             "started_at": datetime.now(timezone.utc).isoformat(),
             "finished_at": datetime.now(timezone.utc).isoformat(),
-            "strategy": "grouped_subplan",
+            "strategy": strategy_tag,
+            "strategy_decision": strategy_decision or {},
             "rollback_contract": rollback_contract,
         }
         return status
@@ -435,7 +548,8 @@ def run_stage6_subplan(
         "return_code": proc.returncode,
         "started_at": started,
         "finished_at": datetime.now(timezone.utc).isoformat(),
-        "strategy": "grouped_subplan",
+        "strategy": strategy_tag,
+        "strategy_decision": strategy_decision or {},
         "rollback_contract": rollback_contract,
     }
     return status
@@ -456,6 +570,7 @@ def _run_split_recovery(
             "targets": [path],
         }
         status = run_stage6_subplan(subplan=single, args=args, env=env, op_index=len(statuses) + len(split_statuses))
+        status["strategy"] = "split_subplan"
         status["retry"] = True
         status["retry_strategy"] = "split_on_failure"
         status["refinement_of_subplan"] = failed_subplan.get("subplan_id")
@@ -486,7 +601,8 @@ def _order_subplans(subplans: list[dict[str, Any]]) -> list[dict[str, Any]]:
             conflict_count = len(families & seen_families)
             worst_risk = max((_risk_rank(str(m.get("risk_bucket") or "high")) for m in meta), default=2)
             confidence = float(subplan.get("confidence") or 0.0)
-            key = (conflict_count, worst_risk, -confidence)
+            yield_score = float(subplan.get("yield_score") or 0.0)
+            key = (conflict_count, worst_risk, -yield_score, -confidence)
             if best_key is None or key < best_key:
                 best_key = key
                 best_idx = idx
@@ -497,7 +613,8 @@ def _order_subplans(subplans: list[dict[str, Any]]) -> list[dict[str, Any]]:
             "risk_rank": max((_risk_rank(str(m.get("risk_bucket") or "high")) for m in meta), default=2),
             "family_conflicts_with_prior": len(set(families) & seen_families),
             "families": families,
-            "reason": "risk_conflict_aware_order",
+            "yield_score": round(float(chosen.get("yield_score") or 0.0), 3),
+            "reason": "risk_conflict_yield_aware_order",
         }
         seen_families.update(families)
         ordered.append(chosen)
@@ -555,6 +672,10 @@ def parse_args() -> argparse.Namespace:
         help="Preferred retrieval prefix for Stage RAG-6 ranking (repeatable).",
     )
     parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument("--manager-history-window-days", type=int, default=14)
+    parser.add_argument("--family-rescue-budget", type=int, default=1)
+    parser.add_argument("--worker-budget-grouped", type=int, default=4)
+    parser.add_argument("--worker-budget-single", type=int, default=8)
     parser.add_argument(
         "--resume",
         action="store_true",
@@ -648,7 +769,11 @@ def main() -> int:
     exit_code = 0
     resumed_completed: list[str] = []
     subplans_to_run: list[dict[str, Any]] = []
+    strategy_decisions: dict[str, dict[str, Any]] = {}
+    worker_budget_decisions: list[dict[str, Any]] = []
+    family_rescue_usage: dict[str, int] = {}
     checkpoint_subplans = checkpoint.get("subplans", {}) if isinstance(checkpoint, dict) else {}
+    historical_outcomes = _load_recent_manager6_outcomes(days=args.manager_history_window_days)
     for subplan in subplans:
         subplan_id = str(subplan.get("subplan_id") or "")
         prior = checkpoint_subplans.get(subplan_id)
@@ -666,12 +791,28 @@ def main() -> int:
                 }
             )
             continue
+        family = _subplan_family_key(subplan)
+        scorecard = _strategy_scorecard(family=family, historical=historical_outcomes)
+        strategy_decision = _choose_subplan_strategy(subplan=subplan, scorecard=scorecard)
+        strategy_decision["family"] = family
+        strategy_decisions[subplan_id] = strategy_decision
         subplans_to_run.append(subplan)
+
+    plan_payload.setdefault("manager_decisions", {})
+    plan_payload["manager_decisions"].update(
+        {
+            "strategy_decisions": strategy_decisions,
+            "manager_version": "manager8-v1",
+            "history_window_days": args.manager_history_window_days,
+            "family_rescue_budget": args.family_rescue_budget,
+        }
+    )
 
     write_plan_history(
         args.plan_id,
         {
             "event_type": "attempt_resumed" if args.resume else "attempt_started",
+            "decision_state": "evaluate->choose_strategy->execute",
             "state": "running",
             "plan_payload": plan_payload,
             "statuses": statuses if args.resume else [],
@@ -680,7 +821,102 @@ def main() -> int:
     )
 
     for idx, subplan in enumerate(subplans_to_run):
-        status = run_stage6_subplan(subplan=subplan, args=args, env=env, op_index=idx)
+        subplan_id = str(subplan.get("subplan_id") or f"subplan-{idx + 1}")
+        strategy_decision = strategy_decisions.get(subplan_id, {"strategy": "run_grouped", "reason": "default_grouped"})
+        family = str(strategy_decision.get("family") or _subplan_family_key(subplan))
+        budget_class = "grouped" if len(subplan.get("targets", [])) > 1 else "single"
+        budget_decision: WorkerBudgetDecision = apply_worker_budget(
+            lane=lane_name,
+            worker_class=budget_class,
+            grouped_limit=args.worker_budget_grouped,
+            single_limit=args.worker_budget_single,
+        )
+        worker_budget_decisions.append(budget_decision.to_dict())
+        if not budget_decision.allowed:
+            status = {
+                "subplan_id": subplan_id,
+                "targets": [str(t) for t in subplan.get("targets", []) if t],
+                "target_contracts": [],
+                "dropped_targets": [],
+                "status": "deferred_worker_budget",
+                "return_code": 0,
+                "started_at": datetime.now(timezone.utc).isoformat(),
+                "finished_at": datetime.now(timezone.utc).isoformat(),
+                "strategy": "defer_manual",
+                "strategy_decision": strategy_decision,
+                "worker_budget_decision": budget_decision.to_dict(),
+                "escalation_hint": "manual_lane_budget_exhausted",
+                "rollback_contract": {
+                    "contract_version": "stage8-v1",
+                    "strategy": "no_dispatch_budget_exhausted",
+                    "rollback_scope": [],
+                    "trigger_on_failure": False,
+                    "verification": "not_applicable_no_dispatch",
+                    "notes": "Worker budget exhausted before subplan dispatch.",
+                },
+            }
+        elif strategy_decision.get("strategy") == "split_first" and len(subplan.get("targets", [])) > 1:
+            split_success, split_statuses = _run_split_recovery(
+                failed_subplan={"subplan_id": subplan_id, "targets": subplan.get("targets", [])},
+                args=args,
+                env=env,
+                statuses=statuses,
+            )
+            for split_status in split_statuses:
+                split_status["strategy"] = "split_subplan"
+                split_status["strategy_decision"] = strategy_decision
+                split_status["worker_budget_decision"] = budget_decision.to_dict()
+            statuses.extend(split_statuses)
+            for split_idx, split_status in enumerate(split_statuses, start=1):
+                save_checkpoint(args.plan_id, split_status, attempt_index=(idx + 1) * 100 + split_idx)
+            plan_payload.setdefault("recoveries", []).append(
+                {
+                    "failed_subplan": subplan_id,
+                    "strategy": "split_first",
+                    "split_count": len(split_statuses),
+                    "result": "success" if split_success else "partial_or_failed",
+                    "decision_state": "choose_strategy->split_first->reconcile",
+                }
+            )
+            if not split_success:
+                if family_rescue_usage.get(family, 0) >= args.family_rescue_budget:
+                    status = {
+                        "subplan_id": subplan_id,
+                        "targets": [str(t) for t in subplan.get("targets", []) if t],
+                        "target_contracts": [],
+                        "dropped_targets": [],
+                        "status": "dropped_family_budget",
+                        "return_code": 0,
+                        "started_at": datetime.now(timezone.utc).isoformat(),
+                        "finished_at": datetime.now(timezone.utc).isoformat(),
+                        "strategy": "drop",
+                        "strategy_decision": strategy_decision,
+                        "worker_budget_decision": budget_decision.to_dict(),
+                        "rollback_contract": {
+                            "contract_version": "stage8-v1",
+                            "strategy": "drop_after_family_budget_exhaustion",
+                            "rollback_scope": [],
+                            "trigger_on_failure": False,
+                            "verification": "not_applicable_no_dispatch",
+                            "notes": "Family rescue budget exhausted.",
+                        },
+                    }
+                    family_rescue_usage[family] = family_rescue_usage.get(family, 0) + 1
+                else:
+                    exit_code = 1
+                    break
+            else:
+                continue
+        else:
+            status = run_stage6_subplan(
+                subplan=subplan,
+                args=args,
+                env=env,
+                op_index=idx,
+                strategy_tag="grouped_subplan",
+                strategy_decision=strategy_decision,
+            )
+            status["worker_budget_decision"] = budget_decision.to_dict()
         statuses.append(status)
         save_checkpoint(args.plan_id, status, attempt_index=idx + 1)
 
@@ -697,6 +933,7 @@ def main() -> int:
                 args.plan_id,
                 {
                     "event_type": "attempt_paused",
+                    "decision_state": "execute->paused",
                     "state": "paused",
                     "statuses": statuses,
                     "plan_payload": plan_payload,
@@ -756,6 +993,7 @@ def main() -> int:
                     "strategy": "split_on_failure",
                     "split_count": len(split_statuses),
                     "result": "success" if split_success else "partial_or_failed",
+                    "decision_state": "execute->split_on_failure->reconcile",
                 }
             )
             if split_success:
@@ -768,11 +1006,14 @@ def main() -> int:
     final_state = "succeeded" if exit_code == 0 else "failed"
     if exit_code == 0 and (plan_payload.get("drops") or plan_payload.get("recoveries")):
         final_state = "partial_success"
+    plan_payload.setdefault("manager_decisions", {})
+    plan_payload["manager_decisions"]["worker_budget_decisions"] = worker_budget_decisions
 
     write_plan_history(
         args.plan_id,
         {
             "event_type": "attempt_finished",
+            "decision_state": "execute->reconcile->finished",
             "state": final_state,
             "statuses": statuses,
             "failure_code": exit_code,
@@ -803,6 +1044,7 @@ def main() -> int:
             "resume": args.resume,
             "resume_completed_subplans": resumed_completed,
             "checkpoint_path": str(plan_checkpoint_path(args.plan_id)),
+            "manager_decisions": plan_payload.get("manager_decisions", {}),
         },
     )
     append_trace(trace, trace_dir=TRACE_DIR)

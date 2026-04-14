@@ -25,7 +25,7 @@ and required advancement evidence for:
 | candidate  | `stage5-v1`   | `manager4-v1`   | `rag3-v1`   | Stage-5 dual-file batches gathering telemetry ahead of promotion. |
 | manual     | `stage4-v1`   | `manager4-v1`   | `rag2-v1`   | Use Codex/manual workflows for out-of-policy or harness edits. |
 | stage6     | `stage6-v2`   | `manager5-v4`   | `rag4-v3`   | Candidate-ready Stage-6 batches with scored secondary selection, per-target literal contracts, adaptive grouped secondary retry/decomposition, and bounded secondary rescue swap from linked dropped targets. |
-| stage7     | `stage8-v1`   | `manager6-v1`   | `rag6-v1`   | Stage-8 resumable preview batches: RAG-6 emits clustered subplans, Manager-6 executes via Stage-6 with persisted checkpoints, resumable subplan execution, and explicit rollback-contract metadata. |
+| stage7     | `stage8-v1`   | `manager8-v1`   | `rag8-v1`   | Stage-8 resumable preview batches: RAG-8 emits conflict/yield-aware clustered subplans, Manager-8 executes with history-weighted strategy transitions, class-budgeted worker gating, persisted checkpoints, resumable subplan execution, and explicit rollback-contract metadata. |
 
 The manifest also records the current promotion policy (`candidate_success_threshold`,
 `candidate_failure_budget`, the required regression pack, trace window budget,

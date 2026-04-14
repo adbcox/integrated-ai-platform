@@ -7,19 +7,20 @@ This roadmap defines Level-10 goals across the six major subsystems and ties eac
 | Subsystem | Current level | Production level | Candidate level | Preview level | Next target |
 | --- | --- | --- | --- | --- | --- |
 | Stage system | 8 | 3 | 5 | 8 | 9 |
-| Manager system | 6 | 4 | 5 | 6 | 7 |
-| Retrieval / RAG | 6 | 1 | 3 | 6 | 7 |
-| Promotion engine | 6 | 3 | 5 | 6 | 7 |
-| Worker utilization | 5 | 3 | 5 | 6 | 6 |
-| Regression / qualification | 5 | 3 | 5 | 6 | 6 |
+| Manager system | 8 | 4 | 5 | 8 | 9 |
+| Retrieval / RAG | 8 | 1 | 3 | 8 | 9 |
+| Promotion engine | 8 | 3 | 5 | 8 | 9 |
+| Worker utilization | 8 | 3 | 5 | 8 | 9 |
+| Regression / qualification | 8 | 3 | 5 | 8 | 9 |
 
 The source of truth for these levels is now `config/promotion_manifest.json` under `subsystem_levels`.
 
 ## Version 8 Build List
 
-The concrete cross-subsystem upgrade plan for the next major tier lives in:
+The concrete cross-subsystem upgrade plan for Version 8 and follow-on Version 9 lives in:
 - `config/promotion_manifest.json` -> `version8_upgrade_list` (canonical machine-readable source)
 - `docs/version8-upgrade-list.md` (operator-facing summary with build order)
+- `docs/version9-upgrade-plan.md` (next-tier build order from post-session reality)
 
 ## Explicit version movement (this batch)
 

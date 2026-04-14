@@ -18,9 +18,12 @@ from promotion import MANIFEST_PATH, load_manifest  # noqa: E402
 
 DEFAULT_MANAGER4_TRACE = REPO_ROOT / "artifacts" / "manager4" / "traces.jsonl"
 DEFAULT_MANAGER5_TRACE = REPO_ROOT / "artifacts" / "manager5" / "traces.jsonl"
+DEFAULT_MANAGER6_TRACE = REPO_ROOT / "artifacts" / "manager6" / "traces.jsonl"
 DEFAULT_STAGE5_TRACE = REPO_ROOT / "artifacts" / "stage5_manager" / "traces.jsonl"
 DEFAULT_RAG4_USAGE = REPO_ROOT / "artifacts" / "stage_rag4" / "usage.jsonl"
+DEFAULT_RAG6_USAGE = REPO_ROOT / "artifacts" / "stage_rag6" / "usage.jsonl"
 DEFAULT_MANAGER5_PLANS = REPO_ROOT / "artifacts" / "manager5" / "plans"
+QUAL_HISTORY = REPO_ROOT / "artifacts" / "promotion" / "qualification_history.jsonl"
 
 
 def parse_timestamp(value: str | None) -> datetime | None:
@@ -206,6 +209,71 @@ def summarize_rag4(rag4_rows: list[dict[str, Any]]) -> dict[str, Any]:
     }
 
 
+def summarize_stage8(manager6_rows: list[dict[str, Any]]) -> dict[str, Any]:
+    resumed = 0
+    paused = 0
+    checkpointed = 0
+    rollback_contracts = 0
+    executed = 0
+    worker_budget_decisions = 0
+    manager_strategy_decisions = 0
+    for row in manager6_rows:
+        stage_version = str(row.get("stage_version") or "")
+        if not stage_version.startswith("stage8"):
+            continue
+        extra = row.get("extra") if isinstance(row.get("extra"), dict) else {}
+        if extra.get("resume"):
+            resumed += 1
+        if row.get("promotion_outcome") == "paused":
+            paused += 1
+        if extra.get("checkpoint_path"):
+            checkpointed += 1
+        if isinstance(extra.get("manager_decisions"), dict):
+            manager_strategy_decisions += 1
+        for sub in extra.get("subplans", []) or []:
+            if not isinstance(sub, dict):
+                continue
+            if sub.get("worker_budget_decision"):
+                worker_budget_decisions += 1
+            if sub.get("status") in {"success", "failure", "partial_success", "dropped_preflight"}:
+                executed += 1
+                if isinstance(sub.get("rollback_contract"), dict) and sub["rollback_contract"].get("contract_version"):
+                    rollback_contracts += 1
+    rollback_coverage = (rollback_contracts / executed) if executed else 0.0
+    return {
+        "resumed_runs": resumed,
+        "paused_runs": paused,
+        "checkpointed_runs": checkpointed,
+        "executed_subplans": executed,
+        "rollback_contract_coverage": round(rollback_coverage, 3),
+        "worker_budget_decisions": worker_budget_decisions,
+        "manager_strategy_decision_rows": manager_strategy_decisions,
+    }
+
+
+def summarize_rag6(rag6_rows: list[dict[str, Any]]) -> dict[str, Any]:
+    plans = len(rag6_rows)
+    clusters = 0
+    with_risk = 0
+    with_yield = 0
+    for row in rag6_rows:
+        subplans = row.get("subplans", []) or []
+        clusters += len(subplans)
+        for sub in subplans:
+            if not isinstance(sub, dict):
+                continue
+            if "risk_score" in sub and "conflict_signals" in sub:
+                with_risk += 1
+            if "yield_score" in sub:
+                with_yield += 1
+    return {
+        "plans": plans,
+        "clusters": clusters,
+        "clusters_with_risk": with_risk,
+        "clusters_with_yield": with_yield,
+    }
+
+
 def manager5_plan_lifecycle_health(plan_dir: Path) -> dict[str, Any]:
     if not plan_dir.exists():
         return {"plans": 0, "with_state": 0, "with_attempts": 0}
@@ -250,7 +318,10 @@ def evaluate_subsystems(
     assessments: dict[str, Any] = {}
 
     def base_info(name: str) -> dict[str, Any]:
-        data = subsystem_levels.get(name, {})
+        alias = {
+            "regression_framework": "regression_qualification_framework",
+        }
+        data = subsystem_levels.get(name) or subsystem_levels.get(alias.get(name, ""), {})
         return {
             "current_level": data.get("current_level"),
             "next_target_level": data.get("next_target_level"),
@@ -332,13 +403,65 @@ def evaluate_subsystems(
     return assessments
 
 
+def evaluate_v8_gates(
+    *,
+    manifest_data: dict[str, Any],
+    stage8_stats: dict[str, Any],
+    rag6_stats: dict[str, Any],
+    assessments: dict[str, Any],
+) -> dict[str, Any]:
+    v8 = manifest_data.get("version8_upgrade_list", {})
+    stage_gate = (
+        stage8_stats.get("resumed_runs", 0) > 0
+        and stage8_stats.get("checkpointed_runs", 0) > 0
+        and stage8_stats.get("rollback_contract_coverage", 0.0) >= 1.0
+    )
+    manager_gate = (
+        stage8_stats.get("manager_strategy_decision_rows", 0) > 0
+        and assessments.get("manager_system", {}).get("evidence_met", False)
+    )
+    rag_gate = (
+        rag6_stats.get("plans", 0) > 0
+        and rag6_stats.get("clusters", 0) > 0
+        and rag6_stats.get("clusters_with_risk", 0) >= 1
+        and rag6_stats.get("clusters_with_yield", 0) >= 1
+    )
+    worker_gate = stage8_stats.get("worker_budget_decisions", 0) > 0
+    promotion_gate = bool(v8) and bool(assessments.get("promotion_engine", {}).get("evidence_met"))
+    regression_gate = (
+        bool(assessments.get("regression_framework", {}).get("evidence_met"))
+        and bool(v8)
+    )
+    gates = {
+        "stage8_ready": stage_gate,
+        "manager8_ready": manager_gate,
+        "rag8_ready": rag_gate,
+        "worker8_ready": worker_gate,
+        "promotion8_ready": promotion_gate,
+        "qualification8_ready": regression_gate,
+    }
+    return {
+        "gates": gates,
+        "all_ready": all(gates.values()),
+        "missing": [name for name, ok in gates.items() if not ok],
+    }
+
+
+def append_qualification_history(payload: dict[str, Any]) -> None:
+    QUAL_HISTORY.parent.mkdir(parents=True, exist_ok=True)
+    with QUAL_HISTORY.open("a", encoding="utf-8") as fh:
+        fh.write(json.dumps(payload, ensure_ascii=False) + "\n")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Unified Level-10 readiness report")
     parser.add_argument("--manifest", default=str(MANIFEST_PATH) )
     parser.add_argument("--manager4-trace", default=str(DEFAULT_MANAGER4_TRACE))
     parser.add_argument("--manager5-trace", default=str(DEFAULT_MANAGER5_TRACE))
+    parser.add_argument("--manager6-trace", default=str(DEFAULT_MANAGER6_TRACE))
     parser.add_argument("--stage5-trace", default=str(DEFAULT_STAGE5_TRACE))
     parser.add_argument("--rag4-usage", default=str(DEFAULT_RAG4_USAGE))
+    parser.add_argument("--rag6-usage", default=str(DEFAULT_RAG6_USAGE))
     parser.add_argument("--manager5-plans", default=str(DEFAULT_MANAGER5_PLANS))
     parser.add_argument(
         "--strict-manifest-version",
@@ -356,8 +479,10 @@ def main() -> int:
 
     manager4_all = list(read_jsonl(Path(args.manager4_trace).resolve(), cutoff=cutoff))
     manager5_all = list(read_jsonl(Path(args.manager5_trace).resolve(), cutoff=cutoff))
+    manager6_rows = list(read_jsonl(Path(args.manager6_trace).resolve(), cutoff=cutoff))
     stage5_rows = list(read_jsonl(Path(args.stage5_trace).resolve(), cutoff=cutoff))
     rag4_rows = list(read_jsonl(Path(args.rag4_usage).resolve(), cutoff=cutoff))
+    rag6_rows = list(read_jsonl(Path(args.rag6_usage).resolve(), cutoff=cutoff))
     manager4_rows, manager4_dropped = filter_by_manifest_version(
         manager4_all,
         manifest_version=manifest_version,
@@ -374,6 +499,8 @@ def main() -> int:
     stage6_stats = summarize_stage6(manager5_rows)
     worker_stats = summarize_worker(stage5_rows)
     rag4_stats = summarize_rag4(rag4_rows)
+    stage8_stats = summarize_stage8(manager6_rows)
+    rag6_stats = summarize_rag6(rag6_rows)
     lifecycle_stats = manager5_plan_lifecycle_health(Path(args.manager5_plans).resolve())
 
     assessments = evaluate_subsystems(
@@ -386,6 +513,12 @@ def main() -> int:
         lifecycle_stats=lifecycle_stats,
         criteria=criteria,
         manifest_data=manifest.data,
+    )
+    v8_assertions = evaluate_v8_gates(
+        manifest_data=manifest.data,
+        stage8_stats=stage8_stats,
+        rag6_stats=rag6_stats,
+        assessments=assessments,
     )
 
     lane_snapshot = {
@@ -412,10 +545,24 @@ def main() -> int:
             "stage6_preview": dict(stage6_stats),
             "worker": dict(worker_stats),
             "rag4": rag4_stats,
+            "stage8": stage8_stats,
+            "rag6": rag6_stats,
             "manager5_lifecycle": lifecycle_stats,
         },
         "subsystem_assessments": assessments,
+        "v8_gate_assertions": v8_assertions,
     }
+
+    append_qualification_history(
+        {
+            "timestamp": datetime.now(UTC).isoformat(timespec="seconds"),
+            "manifest_version": manifest_version,
+            "trace_window_days": trace_window_days,
+            "metrics": summary["metrics"],
+            "v8_gate_assertions": v8_assertions,
+            "subsystem_assessments": assessments,
+        }
+    )
 
     if args.json:
         json.dump(summary, sys.stdout, ensure_ascii=False, indent=2)

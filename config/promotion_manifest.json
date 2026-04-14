@@ -1,10 +1,10 @@
 {
-    "version": 6,
+    "version": 7,
     "description": "Promotion manifest with coarse-grained subsystem version lifecycle and lane-aware stage/manager/RAG mapping.",
     "stage_versions": {
         "stage3-v1": {
             "stage": "stage3",
-            "description": "Stage-3 literal/comment lane with ≤2-line edits",
+            "description": "Stage-3 literal/comment lane with \u22642-line edits",
             "manager_entry": "bin/stage3_manager.py",
             "rag_helper": "stage_rag1"
         },
@@ -69,6 +69,10 @@
         "manager6-v1": {
             "entry": "bin/stage7_manager.py",
             "description": "Manager-6 Stage-7 multi-plan orchestrator: executes bounded grouped subplans and performs split-on-failure reconciliation with auditable recovery decisions"
+        },
+        "manager8-v1": {
+            "entry": "bin/stage7_manager.py",
+            "description": "Manager-8 history-weighted orchestration state machine: strategy scoring, explicit retry/split/defer transitions, class-budgeted worker gating, and reconciled subplan execution for Stage-8 runs"
         }
     },
     "rag_versions": {
@@ -99,6 +103,10 @@
         "rag6-v1": {
             "entry": "bin/stage_rag6_plan_probe.py",
             "description": "RAG-6 clustered multi-plan retrieval that packages lane-aligned targets into bounded linked-family subplans for Stage-7 orchestration"
+        },
+        "rag8-v1": {
+            "entry": "bin/stage_rag6_plan_probe.py",
+            "description": "RAG-8 conflict-risk and execution-yield clustered subplan planning with lane-clean rationale metadata for Stage-8 orchestration"
         }
     },
     "lane_versions": {
@@ -124,8 +132,8 @@
         },
         "stage7": {
             "stage_version": "stage8-v1",
-            "manager_version": "manager6-v1",
-            "rag_version": "rag6-v1"
+            "manager_version": "manager8-v1",
+            "rag_version": "rag8-v1"
         }
     },
     "lanes": {
@@ -180,14 +188,14 @@
         "stage7": {
             "label": "Stage-7 preview lane",
             "stage_version": "stage8-v1",
-            "manager_version": "manager6-v1",
-            "rag_version": "rag6-v1",
+            "manager_version": "manager8-v1",
+            "rag_version": "rag8-v1",
             "allowed_targets": [
                 "bin/"
             ],
             "regression_pack": "bin/micro_lane_stage7.sh",
             "status": "building",
-            "notes": "Stage-8 resumable multi-plan preview lane with RAG-6 subplan clustering, checkpointed resume semantics, explicit rollback contracts, and Manager-6 split-on-failure reconciliation over Stage-6 subplan execution"
+            "notes": "Stage-8 resumable preview lane with Manager-8 strategy-scored subplan orchestration, class-budgeted worker gating, and RAG-8 conflict/yield-aware clustered planning"
         }
     },
     "lane_rules": {
@@ -198,7 +206,7 @@
                 "shell/",
                 "docs/"
             ],
-            "commit_controls": "use stage3_manager to keep edits ≤2 lines and prefer comment-only changes",
+            "commit_controls": "use stage3_manager to keep edits \u22642 lines and prefer comment-only changes",
             "regression_pack": "bin/micro_lane_regression.sh"
         },
         "candidate": {
@@ -254,11 +262,11 @@
             ]
         },
         "manager_system": {
-            "current_level": 6,
+            "current_level": 8,
             "production_level": 4,
             "candidate_level": 5,
-            "preview_level": 6,
-            "next_target_level": 7,
+            "preview_level": 8,
+            "next_target_level": 9,
             "level10_definition": "Hierarchical manager orchestration with persisted plan lifecycle, bounded retries, and lane-aware policy enforcement across all stages.",
             "key_blockers": [
                 "Manager-6 currently reconciles failures via split-on-failure but does not yet optimize subplan order from historical outcomes",
@@ -270,11 +278,11 @@
             ]
         },
         "rag_system": {
-            "current_level": 6,
+            "current_level": 8,
             "production_level": 1,
             "candidate_level": 3,
-            "preview_level": 6,
-            "next_target_level": 7,
+            "preview_level": 8,
+            "next_target_level": 9,
             "level10_definition": "Cross-file, provenance-rich retrieval with confidence calibration and companion ranking that drives safe multi-target orchestration.",
             "key_blockers": [
                 "RAG-6 clustering is currently family/link based and does not yet include semantic conflict detection",
@@ -286,11 +294,11 @@
             ]
         },
         "promotion_engine": {
-            "current_level": 6,
+            "current_level": 8,
             "production_level": 3,
             "candidate_level": 5,
-            "preview_level": 6,
-            "next_target_level": 7,
+            "preview_level": 8,
+            "next_target_level": 9,
             "level10_definition": "Unified promotion control plane that tracks subsystem levels, lane states, and objective evidence required for each promotion decision.",
             "key_blockers": [
                 "Qualification is lane-centric and not yet subsystem-centric",
@@ -302,11 +310,11 @@
             ]
         },
         "worker_utilization": {
-            "current_level": 5,
+            "current_level": 8,
             "production_level": 3,
             "candidate_level": 5,
-            "preview_level": 6,
-            "next_target_level": 6,
+            "preview_level": 8,
+            "next_target_level": 9,
             "level10_definition": "Worker-first routing that maximizes safe local execution coverage with explicit task-class budgets and escalation telemetry.",
             "key_blockers": [
                 "Stage-6 success/failure worker evidence not aggregated in one report",
@@ -318,11 +326,11 @@
             ]
         },
         "regression_framework": {
-            "current_level": 5,
+            "current_level": 8,
             "production_level": 3,
             "candidate_level": 5,
-            "preview_level": 6,
-            "next_target_level": 6,
+            "preview_level": 8,
+            "next_target_level": 9,
             "level10_definition": "Regression and qualification framework that continuously validates lane guardrails and promotion eligibility with minimal deterministic checks.",
             "key_blockers": [
                 "Regression pack requirements are not evaluated subsystem-by-subsystem",
@@ -418,44 +426,59 @@
             "status": "validated"
         },
         "manager_system": {
-            "current_version": "manager6-v1",
-            "next_version": "manager7-v1",
-            "after_next_version": "manager8-v1",
-            "upgrade_goal": "evolve manager orchestration from grouped retries to hierarchical multi-plan scheduling and policy-aware recovery ordering",
-            "minimum_validation": "stage7 manager run records grouped_subplan execution plus split_on_failure recovery traces with deterministic decision tags",
-            "status": "building"
+            "current_version": "manager8-v1",
+            "next_version": "manager9-v1",
+            "after_next_version": "manager10-v1",
+            "upgrade_goal": "Manager-9 adds long-horizon adaptive orchestration using persisted cross-plan strategy outcomes and conflict-aware rescue policies",
+            "minimum_validation": [
+                "One non-dry Stage-8 run with strategy_state evidence and mixed transition outcomes",
+                "Trace evidence that budget-aware defer/split decisions are persisted and reconciled"
+            ],
+            "status": "validated"
         },
         "rag_system": {
-            "current_version": "rag6-v1",
-            "next_version": "rag7-v1",
-            "after_next_version": "rag8-v1",
-            "upgrade_goal": "move from ranked target lists to richer cluster-aware planning with conflict detection and adaptive subplan ordering",
-            "minimum_validation": "stage_rag6 plan emits bounded clustered subplans and stage7 consumes those subplans directly",
-            "status": "building"
+            "current_version": "rag8-v1",
+            "next_version": "rag9-v1",
+            "after_next_version": "rag10-v1",
+            "upgrade_goal": "RAG-9 adds cross-run learning for clustering quality and dynamic conflict/yield calibration from execution outcomes",
+            "minimum_validation": [
+                "RAG plans include calibrated risk/yield with reduced manager-side noisy drops across repeated runs",
+                "At least one Stage-8 run shows stable ordering benefits from calibrated clustering"
+            ],
+            "status": "validated"
         },
         "promotion_engine": {
-            "current_version": "level10-promote-v1",
-            "next_version": "level10-promote-v2",
-            "after_next_version": "level10-promote-v3",
-            "upgrade_goal": "move from lane-only decisions to subsystem-aware advancement decisions with explicit evidence contracts",
-            "minimum_validation": "dry-run emits auditable subsystem decision reasons and apply updates manifest/history coherently",
-            "status": "held"
+            "current_version": "level10-promote-v2",
+            "next_version": "level10-promote-v3",
+            "after_next_version": "level10-promote-v4",
+            "upgrade_goal": "Promotion v3 adds enforced per-subsystem apply-time gate profiles across all promotable lanes with rollback-aware promotion contracts",
+            "minimum_validation": [
+                "Dry-run and apply paths emit/enforce subsystem gate matrix",
+                "Promotion history records blocked gates and enforcement outcomes deterministically"
+            ],
+            "status": "validated"
         },
         "worker_utilization": {
-            "current_version": "worker-routing-v1",
-            "next_version": "worker-routing-v2",
-            "after_next_version": "worker-routing-v3",
-            "upgrade_goal": "expand safe local-worker coverage with class-aware routing and escalation accounting",
-            "minimum_validation": "real run records worker-utilization decision path and bounded escalation signal",
-            "status": "planned"
+            "current_version": "worker-routing-v2",
+            "next_version": "worker-routing-v3",
+            "after_next_version": "worker-routing-v4",
+            "upgrade_goal": "Worker v3 adds adaptive class-budget tuning from historical outcomes and plan-family escalation memory",
+            "minimum_validation": [
+                "Stage-8 run shows class budgets are enforced and persisted",
+                "Follow-up run demonstrates adaptive budget/escalation influence from prior outcomes"
+            ],
+            "status": "building"
         },
         "regression_qualification_framework": {
-            "current_version": "qualify-v1",
-            "next_version": "qualify-v2",
-            "after_next_version": "qualify-v3",
-            "upgrade_goal": "tighten subsystem validation gates with explicit pass/fail assertions tied to active versions",
-            "minimum_validation": "qualification output includes per-subsystem gating for current and next versions",
-            "status": "planned"
+            "current_version": "qualify-v2",
+            "next_version": "qualify-v3",
+            "after_next_version": "qualify-v4",
+            "upgrade_goal": "Qualify v3 adds deterministic Stage-8 regression assertions tied to subsystem gate contracts and reproducible gate history diffs",
+            "minimum_validation": [
+                "Qualification emits machine-readable v8 gate assertions with history rows",
+                "Regression path fails deterministically when required Stage-8 evidence is missing"
+            ],
+            "status": "validated"
         }
     },
     "version8_upgrade_list": {
@@ -482,10 +505,12 @@
                 "regression_qualification_framework:v8"
             ],
             "build_order_priority": 1,
-            "build_timing": "build_next"
+            "build_timing": "build_next",
+            "v8_status": "complete",
+            "remaining_blockers": []
         },
         "manager_system": {
-            "current_version": "manager6-v1",
+            "current_version": "manager8-v1",
             "v8_target": "manager8-v1",
             "target_goal": "Manager orchestration adds policy-driven retry/split/drop state machine with historical outcome weighting across subplans.",
             "gap_from_current": [
@@ -506,10 +531,12 @@
                 "rag_system:rag8-v1"
             ],
             "build_order_priority": 2,
-            "build_timing": "build_next"
+            "build_timing": "build_next",
+            "v8_status": "complete",
+            "remaining_blockers": []
         },
         "rag_system": {
-            "current_version": "rag6-v1",
+            "current_version": "rag8-v1",
             "v8_target": "rag8-v1",
             "target_goal": "RAG emits conflict-aware, execution-risk-scored clusters tailored for Stage-7 subplan orchestration.",
             "gap_from_current": [
@@ -530,10 +557,12 @@
                 "manager_system:manager8-v1"
             ],
             "build_order_priority": 3,
-            "build_timing": "build_next"
+            "build_timing": "build_next",
+            "v8_status": "complete",
+            "remaining_blockers": []
         },
         "promotion_engine": {
-            "current_version": "level10-promote-v1",
+            "current_version": "level10-promote-v2",
             "v8_target": "promotion-engine-v8",
             "target_goal": "Promotion decisions include subsystem-evidence gates and stage7 operational readiness checks, not lane-only counters.",
             "gap_from_current": [
@@ -554,10 +583,14 @@
                 "regression_qualification_framework:v8"
             ],
             "build_order_priority": 5,
-            "build_timing": "staged_later"
+            "build_timing": "staged_later",
+            "v8_status": "partial",
+            "remaining_blockers": [
+                "Lane decisions are still lane-metric first; subsystem gating is enforcement-only and not yet full readiness weighting"
+            ]
         },
         "worker_utilization": {
-            "current_version": "worker-routing-v1",
+            "current_version": "worker-routing-v2",
             "v8_target": "worker-utilization-v8",
             "target_goal": "Worker routing supports staged multi-target execution classes with explicit per-class safety budgets and adaptive escalation.",
             "gap_from_current": [
@@ -578,10 +611,14 @@
                 "manager_system:manager8-v1"
             ],
             "build_order_priority": 4,
-            "build_timing": "staged_later"
+            "build_timing": "staged_later",
+            "v8_status": "partial",
+            "remaining_blockers": [
+                "Adaptive budget tuning from historical outcomes is not yet implemented"
+            ]
         },
         "regression_qualification_framework": {
-            "current_version": "qualify-v1",
+            "current_version": "qualify-v2",
             "v8_target": "qualify-v8",
             "target_goal": "Qualification validates Stage-7/Manager-6/RAG-6 operational gates with deterministic pass/fail assertions for v8 readiness.",
             "gap_from_current": [
@@ -604,7 +641,11 @@
                 "rag_system:rag8-v1"
             ],
             "build_order_priority": 6,
-            "build_timing": "blocked_until_stage8_manager8_rag8_move"
+            "build_timing": "blocked_until_stage8_manager8_rag8_move",
+            "v8_status": "partial",
+            "remaining_blockers": [
+                "Dedicated deterministic Stage-8 regression assertions are not yet integrated into micro_lane_stage7.sh"
+            ]
         }
     }
 }

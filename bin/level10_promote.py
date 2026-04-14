@@ -153,6 +153,61 @@ def compute_decisions(summary: dict[str, Any], manifest_data: dict[str, Any]) ->
     ]
 
 
+def build_subsystem_gate_matrix(summary: dict[str, Any]) -> dict[str, Any]:
+    v8 = summary.get("v8_gate_assertions", {}) if isinstance(summary.get("v8_gate_assertions"), dict) else {}
+    gates = v8.get("gates", {}) if isinstance(v8.get("gates"), dict) else {}
+    matrix = {
+        "candidate_promote_requires": {
+            "promotion8_ready": bool(gates.get("promotion8_ready")),
+            "qualification8_ready": bool(gates.get("qualification8_ready")),
+        },
+        "stage6_promote_requires": {
+            "stage8_ready": bool(gates.get("stage8_ready")),
+            "manager8_ready": bool(gates.get("manager8_ready")),
+            "rag8_ready": bool(gates.get("rag8_ready")),
+            "worker8_ready": bool(gates.get("worker8_ready")),
+            "qualification8_ready": bool(gates.get("qualification8_ready")),
+        },
+    }
+    matrix["candidate_promote_blocked"] = [k for k, ok in matrix["candidate_promote_requires"].items() if not ok]
+    matrix["stage6_promote_blocked"] = [k for k, ok in matrix["stage6_promote_requires"].items() if not ok]
+    return matrix
+
+
+def enforce_subsystem_gate_policy(decisions: list[LaneDecision], gate_matrix: dict[str, Any]) -> list[LaneDecision]:
+    revised: list[LaneDecision] = []
+    for decision in decisions:
+        if decision.action != "promote":
+            revised.append(decision)
+            continue
+        if decision.lane == "candidate":
+            blocked = gate_matrix.get("candidate_promote_blocked", [])
+            if blocked:
+                revised.append(
+                    LaneDecision(
+                        lane=decision.lane,
+                        action="hold",
+                        reason=f"candidate promotion blocked by subsystem gates: {', '.join(blocked)}",
+                        next_status=decision.next_status if decision.next_status != "ready_for_promotion" else "in_progress",
+                    )
+                )
+                continue
+        if decision.lane == "stage6":
+            blocked = gate_matrix.get("stage6_promote_blocked", [])
+            if blocked:
+                revised.append(
+                    LaneDecision(
+                        lane=decision.lane,
+                        action="hold",
+                        reason=f"stage6 promotion blocked by subsystem gates: {', '.join(blocked)}",
+                        next_status=decision.next_status if decision.next_status != "candidate_ready" else "building",
+                    )
+                )
+                continue
+        revised.append(decision)
+    return revised
+
+
 def write_audit_record(record: dict[str, Any]) -> None:
     DECISION_DIR.mkdir(parents=True, exist_ok=True)
     with DECISION_HISTORY.open("a", encoding="utf-8") as fh:
@@ -196,7 +251,8 @@ def main() -> int:
     manifest_cfg = load_manifest(manifest_path)
     manifest_data = manifest_cfg.data
     summary = run_level10_qualify(manifest_path)
-    decisions = compute_decisions(summary, manifest_data)
+    gate_matrix = build_subsystem_gate_matrix(summary)
+    decisions = enforce_subsystem_gate_policy(compute_decisions(summary, manifest_data), gate_matrix)
     timestamp = now_utc()
 
     audit_record = {
@@ -207,6 +263,7 @@ def main() -> int:
         "decisions": [decision.__dict__ for decision in decisions],
         "metrics": summary.get("metrics", {}),
         "subsystem_assessments": summary.get("subsystem_assessments", {}),
+        "subsystem_gate_matrix": gate_matrix,
     }
 
     if args.dry_run:
