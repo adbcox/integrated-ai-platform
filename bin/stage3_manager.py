@@ -22,7 +22,8 @@ EVENT_LOG = REPO_ROOT / "artifacts" / "micro_runs" / "events.jsonl"
 
 
 FAILURE_CLASS_MAP = {
-    "literal_replace_missing_old": "clean_literal_replace_failure",
+    "literal_replace_missing_old": "literal_replace_missing_old",
+    "literal_replace_fallback": "clean_literal_replace_failure",
     "literal_shell_risky": "literal_shell_risky",
     "prompt_contract_rejection": "prompt_contract_rejection",
     "missing_file_ref": "missing_file_ref",
@@ -30,6 +31,7 @@ FAILURE_CLASS_MAP = {
     "no_change": "clean_no_op_rejection",
     "comment_scope": "clean_comment_scope_rejection",
     "repo_unwritable": "external_repo_writability_block",
+    "fallback_blocked_running_script": "fallback_blocked_running_script",
 }
 
 FALLBACK_TAGS = {"literal_fallback_start", "literal_fallback_applied"}
@@ -111,10 +113,11 @@ def load_events(plan_id: str) -> list[dict]:
     return events
 
 
-def classify(events: list[dict]) -> tuple[str, bool, bool]:
+def classify(events: list[dict]) -> tuple[str, bool, bool, str | None]:
     fallback_used = any(evt.get("tag") in FALLBACK_TAGS for evt in events)
     accepted = False
     classification = "unknown"
+    final_tag = None
     final = None
     for evt in reversed(events):
         if evt.get("status") in {"success", "failure"}:
@@ -123,12 +126,13 @@ def classify(events: list[dict]) -> tuple[str, bool, bool]:
     if final:
         status = final.get("status")
         tag = final.get("tag") or "completed"
+        final_tag = tag
         if status == "success":
             accepted = True
             classification = "aider_exit_recovered" if fallback_used else "accepted_change"
         else:
             classification = FAILURE_CLASS_MAP.get(tag, tag)
-    return classification, fallback_used, accepted
+    return classification, fallback_used, accepted, final_tag
 
 
 def commit_changes(target: str, commit_msg: str) -> str | None:
@@ -192,6 +196,9 @@ def main() -> int:
         "fallback_used": fallback_used,
         "accepted": accepted,
         "commit_hash": commit_hash,
+        "final_tag": final_tag,
+        "stage_rag_lines": args.lines,
+        "notes": args.notes or None,
         "worker_exit_code": exit_code,
     }
     append_trace(entry)

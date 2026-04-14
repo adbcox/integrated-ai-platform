@@ -447,7 +447,7 @@ script = os.path.abspath(sys.argv[2])
 sys.exit(0 if target == script else 1)
 PY
       then
-        fail "literal fallback disabled for currently running script ($LITERAL_FILE); inspect aider artifact" "aider_exit" "$status"
+        fail "literal fallback disabled for currently running script ($LITERAL_FILE); inspect aider artifact" "fallback_blocked_running_script" "$status"
       fi
       if [ -f "$LITERAL_BEFORE_FILE" ]; then
         cp "$LITERAL_BEFORE_FILE" "$LITERAL_FILE"
