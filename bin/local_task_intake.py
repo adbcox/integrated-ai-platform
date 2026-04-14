@@ -141,6 +141,7 @@ def write_packet_markdown(path: Path, packet: dict[str, Any]) -> None:
     lines.append("## Suggested Commands")
     lines.append("```sh")
     lines.append(packet["suggested_local_command"])
+    lines.append("# Candidate lane note: confirm metadata before handing off")
     lines.append(packet["suggested_handoff_command"])
     lines.append("```")
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
