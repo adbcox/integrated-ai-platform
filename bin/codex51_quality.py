@@ -81,6 +81,13 @@ def _code_outcome_totals(rows: list[dict[str, Any]]) -> dict[str, float]:
     python_passed = 0
     shell_total = 0
     shell_passed = 0
+    check_buckets: dict[str, dict[str, int]] = {}
+
+    def _add_check(name: str, total: int, passed: int) -> None:
+        bucket = check_buckets.setdefault(name, {"total": 0, "passed": 0})
+        bucket["total"] += max(0, total)
+        bucket["passed"] += max(0, min(passed, total if total > 0 else passed))
+
     for row in rows:
         code = row.get("code_outcomes")
         if not isinstance(code, dict):
@@ -88,18 +95,22 @@ def _code_outcome_totals(rows: list[dict[str, Any]]) -> dict[str, float]:
         if code.get("available") is False:
             continue
         rows_with_code += 1
-        for key in ("python_compile", "shell_syntax"):
-            block = code.get(key)
+        for key, block in code.items():
+            if key in {"summary", "per_file", "committed_files", "expected_files", "checks"}:
+                continue
             if not isinstance(block, dict):
+                continue
+            if "total" not in block or "passed" not in block:
                 continue
             total = int(block.get("total") or 0)
             passed = int(block.get("passed") or 0)
             checks_total += max(0, total)
             checks_passed += max(0, min(passed, total if total > 0 else passed))
-            if key == "python_compile":
+            _add_check(key, total, passed)
+            if key.startswith("python_") or key == "python_compile":
                 python_total += max(0, total)
                 python_passed += max(0, min(passed, total if total > 0 else passed))
-            if key == "shell_syntax":
+            if key.startswith("shell_") or key == "shell_syntax":
                 shell_total += max(0, total)
                 shell_passed += max(0, min(passed, total if total > 0 else passed))
         summary = code.get("summary")
@@ -132,6 +143,7 @@ def _code_outcome_totals(rows: list[dict[str, Any]]) -> dict[str, float]:
         "python_passed": python_passed,
         "shell_total": shell_total,
         "shell_passed": shell_passed,
+        "checks": check_buckets,
     }
 
 

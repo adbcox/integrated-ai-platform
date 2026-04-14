@@ -521,27 +521,31 @@ def _load_stage6_attempt_code_outcomes(stage6_plan_id: str) -> dict[str, Any]:
     if not statuses:
         return {"available": False, "reason": "stage6_statuses_empty"}
 
-    checks: dict[str, dict[str, int]] = {
-        "python_compile": {"total": 0, "passed": 0},
-        "shell_syntax": {"total": 0, "passed": 0},
-    }
+    checks: dict[str, dict[str, int]] = {}
     diff_total = 0
     diff_passed = 0
     rows_with_code = 0
+
+    def _add_check(name: str, total: int, passed: int) -> None:
+        bucket = checks.setdefault(name, {"total": 0, "passed": 0})
+        bucket["total"] += max(0, total)
+        bucket["passed"] += max(0, min(passed, total if total > 0 else passed))
 
     for row in statuses:
         code_outcomes = row.get("code_outcomes")
         if not isinstance(code_outcomes, dict):
             continue
         rows_with_code += 1
-        for key in ("python_compile", "shell_syntax"):
-            block = code_outcomes.get(key)
+        for key, block in code_outcomes.items():
+            if key in {"summary", "per_file", "committed_files", "expected_files"}:
+                continue
             if not isinstance(block, dict):
+                continue
+            if "total" not in block or "passed" not in block:
                 continue
             total = int(block.get("total") or 0)
             passed = int(block.get("passed") or 0)
-            checks[key]["total"] += max(0, total)
-            checks[key]["passed"] += max(0, min(passed, total if total > 0 else passed))
+            _add_check(key, total, passed)
         summary = code_outcomes.get("summary")
         if isinstance(summary, dict) and "diff_integrity_ok" in summary:
             diff_total += 1
@@ -562,8 +566,9 @@ def _load_stage6_attempt_code_outcomes(stage6_plan_id: str) -> dict[str, Any]:
         "checks_total": total_checks,
         "checks_passed": passed_checks,
         "diff_integrity_rate": diff_rate,
-        "python_compile": checks["python_compile"],
-        "shell_syntax": checks["shell_syntax"],
+        "checks": checks,
+        "python_compile": checks.get("python_compile", {"total": 0, "passed": 0}),
+        "shell_syntax": checks.get("shell_syntax", {"total": 0, "passed": 0}),
     }
 
 

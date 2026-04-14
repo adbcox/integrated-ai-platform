@@ -138,12 +138,64 @@ def _safe_check(cmd: list[str]) -> tuple[bool, str]:
     return proc.returncode == 0, output.strip()[:400]
 
 
+def _safe_check_with_timeout(cmd: list[str], *, timeout_seconds: int) -> tuple[bool, str]:
+    try:
+        proc = subprocess.run(cmd, capture_output=True, text=True, timeout=max(1, timeout_seconds))
+    except subprocess.TimeoutExpired as exc:
+        output = (exc.stdout or "") + ("\n" + exc.stderr if exc.stderr else "")
+        detail = f"timeout_after_{timeout_seconds}s"
+        merged = f"{detail}\n{output}".strip()
+        return False, merged[:400]
+    output = (proc.stdout or "") + ("\n" + proc.stderr if proc.stderr else "")
+    return proc.returncode == 0, output.strip()[:400]
+
+
+def _file_looks_like_python_entrypoint(path: Path) -> bool:
+    try:
+        contents = path.read_text(encoding="utf-8")
+    except OSError:
+        return False
+    return "argparse.ArgumentParser" in contents and "if __name__ == \"__main__\"" in contents
+
+
+def _run_shell_common_smoke() -> tuple[bool, str]:
+    common_sh = REPO_ROOT / "shell" / "common.sh"
+    if not common_sh.exists():
+        return False, "shell/common.sh_missing"
+    checks = [
+        ["sh", "-c", '. "$1"; extract_session_id "{\\"session_id\\":\\"abc-123\\"}"', "sh", str(common_sh)],
+        ["sh", "-c", '. "$1"; extract_session_id "Using session: abc-123"', "sh", str(common_sh)],
+        ["sh", "-c", '. "$1"; require_exec sh', "sh", str(common_sh)],
+    ]
+    for cmd in checks:
+        ok, detail = _safe_check(cmd)
+        if not ok:
+            return False, detail
+    return True, "ok"
+
+
+def _status_block(*, total: int, passed: int, available: bool = True) -> dict[str, Any]:
+    return {
+        "available": available,
+        "total": max(0, int(total)),
+        "passed": max(0, int(min(passed, total if total > 0 else passed))),
+        "failed": max(0, int(total) - int(min(passed, total if total > 0 else passed))),
+    }
+
+
 def collect_code_outcomes(*, modified_files: list[str]) -> dict[str, Any]:
     python_total = 0
     python_passed = 0
     shell_total = 0
     shell_passed = 0
+    python_entrypoint_total = 0
+    python_entrypoint_passed = 0
+    shell_bash_total = 0
+    shell_bash_passed = 0
+    shell_common_smoke_total = 0
+    shell_common_smoke_passed = 0
     per_file: list[dict[str, Any]] = []
+    common_shell_changed = False
     for rel_path in modified_files:
         row: dict[str, Any] = {"path": rel_path}
         abs_path = REPO_ROOT / rel_path
@@ -153,24 +205,62 @@ def collect_code_outcomes(*, modified_files: list[str]) -> dict[str, Any]:
             if ok:
                 python_passed += 1
             row["python_compile"] = {"passed": ok, "detail": detail}
+            if rel_path.startswith("bin/") and _file_looks_like_python_entrypoint(abs_path):
+                python_entrypoint_total += 1
+                help_ok, help_detail = _safe_check_with_timeout(
+                    [sys.executable, str(abs_path), "--help"],
+                    timeout_seconds=12,
+                )
+                if help_ok:
+                    python_entrypoint_passed += 1
+                row["python_entrypoint_help"] = {"passed": help_ok, "detail": help_detail}
         if rel_path.endswith(".sh"):
+            common_shell_changed = common_shell_changed or rel_path == "shell/common.sh"
             shell_total += 1
-            if shutil.which("bash"):
-                ok, detail = _safe_check(["bash", "-n", str(abs_path)])
-            else:
-                ok, detail = True, "bash_missing_skipped"
+            ok, detail = _safe_check(["sh", "-n", str(abs_path)])
             if ok:
                 shell_passed += 1
             row["shell_syntax"] = {"passed": ok, "detail": detail}
+            try:
+                first_line = abs_path.read_text(encoding="utf-8").splitlines()[0]
+            except (OSError, IndexError):
+                first_line = ""
+            if "bash" in first_line and shutil.which("bash"):
+                shell_bash_total += 1
+                bash_ok, bash_detail = _safe_check(["bash", "-n", str(abs_path)])
+                if bash_ok:
+                    shell_bash_passed += 1
+                row["shell_bash_syntax"] = {"passed": bash_ok, "detail": bash_detail}
         per_file.append(row)
+
+    if common_shell_changed:
+        shell_common_smoke_total = 1
+        smoke_ok, smoke_detail = _run_shell_common_smoke()
+        if smoke_ok:
+            shell_common_smoke_passed = 1
+    else:
+        smoke_ok = None
+        smoke_detail = "not_applicable"
 
     committed = run(["git", "show", "--name-only", "--pretty=format:", "HEAD"], capture_output=True, text=True)
     committed_files = sorted({line.strip() for line in committed.stdout.splitlines() if line.strip()})
     expected_files = sorted({path for path in modified_files if path})
     diff_integrity_ok = committed_files == expected_files
 
-    checks_total = python_total + shell_total
-    checks_passed = python_passed + shell_passed
+    checks_total = (
+        python_total
+        + python_entrypoint_total
+        + shell_total
+        + shell_bash_total
+        + shell_common_smoke_total
+    )
+    checks_passed = (
+        python_passed
+        + python_entrypoint_passed
+        + shell_passed
+        + shell_bash_passed
+        + shell_common_smoke_passed
+    )
     score = round((checks_passed / checks_total), 3) if checks_total else 0.0
     return {
         "summary": {
@@ -186,16 +276,27 @@ def collect_code_outcomes(*, modified_files: list[str]) -> dict[str, Any]:
             "passed": python_passed,
             "failed": max(0, python_total - python_passed),
         },
+        "python_entrypoint_help": _status_block(total=python_entrypoint_total, passed=python_entrypoint_passed),
         "shell_syntax": {
-            "available": bool(shutil.which("bash")),
+            "available": True,
             "total": shell_total,
             "passed": shell_passed,
             "failed": max(0, shell_total - shell_passed),
         },
-        "test": {"available": False, "status": "not_run"},
+        "shell_bash_syntax": _status_block(
+            total=shell_bash_total,
+            passed=shell_bash_passed,
+            available=bool(shutil.which("bash")),
+        ),
+        "shell_common_smoke": {
+            **_status_block(total=shell_common_smoke_total, passed=shell_common_smoke_passed),
+            "detail": smoke_detail,
+            "passed_bool": smoke_ok,
+        },
+        "test": _status_block(total=shell_common_smoke_total, passed=shell_common_smoke_passed),
         "lint": {"available": False, "status": "not_run"},
         "typecheck": {"available": False, "status": "not_run"},
-        "build": {"available": False, "status": "not_run"},
+        "build": _status_block(total=python_entrypoint_total, passed=python_entrypoint_passed),
         "committed_files": committed_files,
         "expected_files": expected_files,
         "per_file": per_file,
