@@ -4,7 +4,7 @@
     "stage_versions": {
         "stage3-v1": {
             "stage": "stage3",
-            "description": "Stage-3 literal/comment lane with \u22642-line edits",
+            "description": "Stage-3 literal/comment lane with ≤2-line edits",
             "manager_entry": "bin/stage3_manager.py",
             "rag_helper": "stage_rag1"
         },
@@ -123,7 +123,7 @@
                 "bin/"
             ],
             "regression_pack": "bin/micro_lane_stage6.sh",
-            "status": "preview",
+            "status": "candidate_ready",
             "notes": "Stage-6 orchestrated job preview via Manager-5"
         }
     },
@@ -135,7 +135,7 @@
                 "shell/",
                 "docs/"
             ],
-            "commit_controls": "use stage3_manager to keep edits \u22642 lines and prefer comment-only changes",
+            "commit_controls": "use stage3_manager to keep edits ≤2 lines and prefer comment-only changes",
             "regression_pack": "bin/micro_lane_regression.sh"
         },
         "candidate": {
@@ -274,9 +274,29 @@
             "required_preview_regression_pack": "bin/micro_lane_stage6.sh"
         },
         "last_decision": {
-            "date": "2026-04-14T00:00:00Z",
-            "status": "candidate_in_progress",
-            "notes": "Stage-5 collecting dual-file telemetry"
-        }
+            "date": "2026-04-14T17:19:24+00:00",
+            "status": "level10_control_loop_applied",
+            "notes": "candidate:hold; stage6:promote"
+        },
+        "history": [
+            {
+                "date": "2026-04-14T17:19:24+00:00",
+                "type": "level10_control_loop",
+                "decisions": [
+                    {
+                        "lane": "candidate",
+                        "action": "hold",
+                        "reason": "candidate success/failure 4/5 does not satisfy promotion or demotion thresholds",
+                        "next_status": "in_progress"
+                    },
+                    {
+                        "lane": "stage6",
+                        "action": "promote",
+                        "reason": "core subsystem evidence is ready and stage6 success/failure 5/1 meets 3/1",
+                        "next_status": "candidate_ready"
+                    }
+                ]
+            }
+        ]
     }
 }
