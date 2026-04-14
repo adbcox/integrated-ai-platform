@@ -1,0 +1,48 @@
+{
+  "schema_version": "1",
+  "window_days": 30,
+  "class_rules": [
+    {
+      "class_id": "multi_file_orchestration",
+      "label": "A. Multi-file orchestration changes",
+      "query_any": ["stage7", "stage8", "manager", "orchestration"]
+    },
+    {
+      "class_id": "retrieval_orchestration",
+      "label": "B. Retrieval + orchestration changes",
+      "query_any": ["rag", "retrieval", "ranking", "cluster"]
+    },
+    {
+      "class_id": "resumable_checkpointed",
+      "label": "C. Resumable/checkpointed execution",
+      "query_any": ["resume", "checkpoint", "reconcile", "rollback"]
+    },
+    {
+      "class_id": "safe_contracts",
+      "label": "D. Safe contract handling",
+      "query_any": ["contract", "literal", "shell", "script"]
+    },
+    {
+      "class_id": "bounded_architecture",
+      "label": "E. Bounded architecture changes",
+      "query_any": ["stage", "manager", "rag", "promotion"]
+    }
+  ],
+  "task_set": {
+    "min_tasks_per_class": 1,
+    "max_tasks_per_class": 6
+  },
+  "pass_fail": {
+    "min_success_rate": 0.7,
+    "max_rescue_rate": 0.45,
+    "max_escalation_rate": 0.35,
+    "max_recurrence_rate": 0.35,
+    "min_first_attempt_quality_rate": 0.5
+  },
+  "attribution_profiles": [
+    "normal",
+    "first_attempt_only",
+    "manager_reduced",
+    "rag_reduced"
+  ]
+}

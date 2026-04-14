@@ -1,0 +1,32 @@
+{
+  "schema_version": "1",
+  "description": "Bounded local-first campaign tasks for Codex 5.1 replacement benchmark runs.",
+  "default_lane": "stage7",
+  "default_dry_run": true,
+  "tasks": [
+    {
+      "task_id": "campaign-stage-resume",
+      "title": "Resume/checkpoint reconciliation path",
+      "in_scope": true,
+      "task_class": "resumable_checkpointed",
+      "query": "stage7 resume checkpoint reconcile rollback",
+      "notes": "Bounded resume correctness exercise"
+    },
+    {
+      "task_id": "campaign-manager-orchestration",
+      "title": "Manager orchestration behavior path",
+      "in_scope": true,
+      "task_class": "multi_file_orchestration",
+      "query": "stage7 manager orchestration subplan split defer rescue",
+      "notes": "Bounded manager policy and execution path"
+    },
+    {
+      "task_id": "campaign-rag-planning",
+      "title": "Retrieval planning quality path",
+      "in_scope": true,
+      "task_class": "retrieval_orchestration",
+      "query": "rag retrieval ranking clustered subplans execution feedback",
+      "notes": "Bounded retrieval-to-execution planning path"
+    }
+  ]
+}
