@@ -1,5 +1,5 @@
 #!/bin/sh
-# Stage-5 regression primary fixture
+# Stage-5 regression primary fixture  [stage7-op]
 # Stage5 primary baseline block (do not edit outside regression tools):
 # - Stage5 baseline line A
 # - Stage5 baseline line B
