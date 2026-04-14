@@ -29,7 +29,7 @@ Usage (Stage-3 production lane default flow):
 Options (Stage-3 safe default subset):
   --summary <path>                 Markdown summary file (Stage-3 telemetry capture)
   --outcome <path>                 Outcome file
-  --checks <path>                  Commands/checks file
+  --checks <path>                  Commands/checks file (Stage-3 run log)
   --task-id <id>                   Explicit task id (default: timestamp+slug)
   --workflow-mode <mode>           tactical|codex-assist|codex-investigate|codex-failure
   --escalation-trigger <text>      Why Codex escalation was used
