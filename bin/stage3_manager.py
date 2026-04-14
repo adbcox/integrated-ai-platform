@@ -41,7 +41,10 @@ HARNESS_TARGETS = {
     "bin/aider_micro.sh",
     "bin/aider_loop.sh",
     "bin/stage3_manager.py",
+    "bin/preflight_normalization_guard.sh",
 }
+
+COMMENT_PREFIXES = ("#", "//", "/*", "*", "--", ";", "<!--")
 
 
 def run(cmd: list[str], **kwargs) -> subprocess.CompletedProcess:
@@ -215,6 +218,15 @@ def _has_new_literal(message: str) -> bool:
     return bool(re.search(r"replace exact text '(.+?)' with '(.+?)'", message, re.DOTALL))
 
 
+def _message_requests_comment_only(message: str) -> bool:
+    return "comment" in message.lower()
+
+
+def _looks_like_comment(text: str) -> bool:
+    stripped = text.lstrip()
+    return any(stripped.startswith(prefix) for prefix in COMMENT_PREFIXES)
+
+
 def _preflight_literal_check(target_path: Path, message: str) -> bool:
     old_literal = _extract_old_literal(message)
     if not old_literal:
@@ -263,6 +275,8 @@ def _validate_prompt(target: str, message: str) -> tuple[bool, str | None]:
         return False, "old/new literal empty"
     if re.search(r"<[A-Za-z0-9_./-]+>", message):
         return False, "placeholder token detected"
+    if _message_requests_comment_only(message) and not _looks_like_comment(old_literal):
+        return False, "comment-only wording detected but literal is not a comment"
     return True, None
 
 
@@ -295,11 +309,14 @@ def main() -> int:
 
     valid_prompt, prompt_note = _validate_prompt(args.target, args.message)
     if not valid_prompt:
+        classification = "prompt_shape_invalid"
+        if prompt_note and "comment-only" in prompt_note:
+            classification = "comment_scope_preflight"
         return _record_skip(
             job_id,
             plan_id,
             args,
-            classification="prompt_shape_invalid",
+            classification=classification,
             note=f"prompt validation failed: {prompt_note}",
             message_file=message_file,
         )

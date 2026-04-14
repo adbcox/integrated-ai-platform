@@ -7,7 +7,7 @@ Codex owns orchestration. Aider exists to execute tightly scoped patches with mi
 - ✅ Confirm class limits: max files, max LOC, max roots, and forbidden globs.
 - ✅ Objective + target files known (`AIDER_OBJECTIVE`/`AIDER_FILES` or `AIDER_AUTO_FILES`).
 - ✅ Guardrails confirmed: no ports/secrets/systemd/policy files unless Codex handles manually.
-- ✅ If the job is a literal/comment tweak, follow the [Stage-3 operator flow](stage3-operator-flow.md) **even if Stage-4 exists**; Stage-4 remains a boundary-only regression pack.
+- ✅ If the job is a literal/comment tweak, run it through the [Stage-3 operator flow](stage3-operator-flow.md) with **Manager-2.2**; Stage-4 remains a boundary-only regression pack.
 
 ## 2. Brief Template (required fields)
 Preferred command path:
@@ -49,12 +49,13 @@ make aider-smart AIDER_ARGS="--message 'reply READY for smart run' docs/aider-pe
 
 ### Micro lane for tiny autonomous tasks
 
-The default fast micro lane is **already production-proven for anchored literal wording/comment replacements**. Treat that as the steady-state default until further promotions land:
+The default fast micro lane is **already production-proven for anchored literal wording/comment replacements**. Manager-2.2 is the orchestrator for this lane, so prepare prompts with its expectations in mind:
 
 - exactly one shell/bin file per probe (`shell/*.sh`, `bin/*.sh`, launcher scripts stay out unless already covered)
 - literal or comment wording only — **no** `set`, `if`, `trap`, or other shell-control tokens
 - explicit anchor syntax `file::<literal description>` plus an action verb (`replace`, `update`, `clarify`, …)
 - immediate commit (or rollback) before attempting the next probe; the helper enforces a clean tree
+- avoid the word “comment” unless you truly edit comment lines (the guard switches to comment-only mode on that keyword)
 
 When you only need a one- or two-file patch and want strict guard rails, use:
 
@@ -79,7 +80,7 @@ Recommended starter tasks for fast lane:
 - comment-only or docstring additions in `shell/` or `src/`
 - guard clauses or simple string replacements in shell helpers
 
-To stay inside the proven lane, start from `templates/safe-literal-probe-template.msg` (see [docs/safe-literal-probes.md](safe-literal-probes.md)) and customize the quoted literal + file anchor before each run. Pair it with `bin/aider_micro.sh` so every probe documents its exact literal intent.
+To stay inside the proven lane, start from `templates/safe-literal-probe-template.msg` (see [docs/safe-literal-probes.md](safe-literal-probes.md)) and customize the quoted literal + file anchor before each run. Pair it with `bin/stage3_manager.py` (preferred) or `bin/aider_micro.sh` so every probe documents its exact literal intent and preflights run before the worker launches.
 
 ### Stage RAG-1 planning + telemetry (Stage-3 lane)
 

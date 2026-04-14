@@ -14,16 +14,21 @@ Stage-3 remains the production lane for literal/comment fixes. Follow this playb
 - Replace the placeholder line with the exact literal/comment instruction (`file::<token> replace exact text ...`).
 - Keep the scope ≤2 adjacent lines and a single target file.
 
-## 3. Run the helper
+## 3. Run Manager-2.2 (default Stage-3 path)
 
 ```sh
-make aider-micro-safe \
-  AIDER_MICRO_MESSAGE_FILE=/tmp/probe_literal.msg \
-  AIDER_MICRO_FILES="path/to/file.sh"
+python3 bin/stage3_manager.py \
+  --query "<stage rag query>" \
+  --target path/to/file.sh \
+  --message "<literal instruction>" \
+  --commit-msg "short summary"
 ```
 
-- Never skip the guard. If the run fails, capture the guard artifact path in your task notes.
-- On success, commit immediately (or rollback if guard fails) before preparing the next probe.
+- The manager creates a unique job id, logs Stage RAG-1 usage, writes the `/tmp/stage3_job_<id>.msg` payload, runs `make aider-micro-safe`, and records the outcome/trace row automatically.
+- Built-in preflights now skip harness files (`bin/aider_micro.sh`, `bin/preflight_normalization_guard.sh`, etc.), detect stale literals, and validate prompt shape before the worker launches.
+- **Avoid using the word “comment” unless you are editing actual comment lines.** The guard treats any prompt mentioning “comment” as a comment-only probe; if you’re changing shell code, say “literal” instead.
+- If the manager reports `prompt_shape_invalid`/`comment_scope_preflight`, rewrite the instruction (or route to Codex) instead of forcing a run.
+- Accepted diffs are committed immediately; failed runs leave the repo clean so you can prepare the next probe.
 
 ## 4. Capture telemetry & regressions
 
@@ -39,8 +44,8 @@ make aider-micro-safe \
 
 Use this doc alongside `docs/aider-performance-guide.md` and `docs/safe-literal-probes.md` for the most up-to-date guardrails.
 
-## Manager-1 automation
+## Manager quick reference
 
-- Run `python3 bin/stage3_manager.py --query "<stage rag query>" --target path/to/file.sh --message "<literal instruction>" --commit-msg "short summary"`.
-- The manager creates a job id, logs Stage RAG usage, writes `/tmp/stage3_job_<id>.msg`, executes `make aider-micro-safe`, classifies the result, and appends a trace row to `artifacts/stage3_manager/traces.jsonl`.
-- You still need to craft the literal instruction (≤2 adjacent lines, anchored string). The manager keeps the repo clean and commits accepted diffs automatically.
+- The CLI above is the default Stage-3 lane. Use manual `make aider-micro-safe` only when debugging the manager or when a harness/manager change has been routed to Codex.
+- Keep literal prompts ≤2 adjacent lines, provide exact `file::<token>` anchors, and avoid placeholder tokens such as `<OLD_TEXT>`.
+- If you truly need a comment-only probe, make sure both the old and new literal strings begin with comment characters (`#`, `//`, etc.) so the guard accepts the scope.
