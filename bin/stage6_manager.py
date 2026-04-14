@@ -89,13 +89,21 @@ def load_jobs_from_file(path: Path) -> list[Stage6Job]:
     return jobs
 
 
-def plan_to_jobs(plan: dict[str, Any], allowed: list[str], max_entries: int) -> list[Stage6Job]:
+def plan_to_jobs(
+    plan: dict[str, Any],
+    allowed: list[str],
+    max_entries: int,
+    min_confidence: int,
+) -> list[Stage6Job]:
     jobs: list[Stage6Job] = []
     for target in plan.get("targets", [])[: max_entries]:
         path = target.get("path")
         if not path:
             continue
         if allowed and not any(path.startswith(prefix) for prefix in allowed):
+            continue
+        confidence = target.get("confidence", 0)
+        if confidence < min_confidence:
             continue
         jobs.append(
             Stage6Job(
@@ -223,7 +231,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--plan-status", default="preview", help="Optional status used in trace entries")
     parser.add_argument("--fallback-target", help="Fallback target when RAG-4 returns no eligible jobs")
     parser.add_argument("--related-limit", type=int, default=2)
-    parser.add_argument("--history-window", type=int, default=15)
+    parser.add_argument("--history-window", type=int, default=15, help="Git history window for Stage RAG-4")
+    parser.add_argument("--min-confidence", type=int, default=1, help="Minimum RAG-4 confidence before enqueuing a target")
     return parser.parse_args()
 
 
@@ -248,7 +257,7 @@ def main() -> int:
         }
     else:
         plan = run_stage_rag4(args)
-        jobs = plan_to_jobs(plan, allowed_targets, args.max_entries)
+        jobs = plan_to_jobs(plan, allowed_targets, args.max_entries, args.min_confidence)
         args.plan_details = plan
         if not jobs and args.fallback_target:
             fallback_path = args.fallback_target
@@ -276,6 +285,15 @@ def main() -> int:
         if code != 0:
             exit_code = code
             break
+
+    if exit_code != 0 and args.fallback_target and not any(job.source == "fallback" for job in jobs):
+        print(f"[stage6] retrying plan {args.plan_id} with fallback target {args.fallback_target}")
+        retry_job = Stage6Job(path=args.fallback_target, source="fallback")
+        retry_code = run_stage5_job(retry_job, args, env, len(statuses))
+        statuses.append({"target": retry_job.path, "status": "success" if retry_code == 0 else "failure", "retry": True})
+        exit_code = retry_code
+        plan_payload.setdefault("retries", []).append({"target": retry_job.path, "status": "pending" if retry_code != 0 else "success"})
+        plan_payload["notes"] = plan_payload.get("notes") or "fallback retry"
 
     history_record = {
         "plan_id": args.plan_id,

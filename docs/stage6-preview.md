@@ -50,9 +50,10 @@ commit message prefix. The manifest exposes Stage-6 as a `preview` lane
 
 3. Manager-5 records the plan payload plus job statuses under `artifacts/manager5/plans/{plan_id}.json`.
 
-4. Provide `--fallback-target bin/manager4.py` (or another approved `bin/` helper)
-   when the RAG-4 query does not return eligible targets so Stage-6 can still run
-   a bounded preview job.
+4. When Stage RAG-4 returns several weak targets, use `--min-confidence` to keep
+   only high-conviction hits and let the manager fall back gracefully via
+   `--fallback-target` if necessary. All retries and refinements are recorded so
+   Level 7 readiness can be audited.
 
 3. Manager-5 always stamps the promotion metadata on every Stage-5 invocation
    and records the plan/journal to the shared trace schema.

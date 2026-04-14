@@ -66,12 +66,16 @@ def main() -> int:
 
     targets: list[dict[str, Any]] = []
     for entry in results[: args.max_targets]:
+        related_files = [rel.get("path") for rel in entry.get("related", []) if rel.get("path")]
+        confidence = 1 + len(related_files)
         targets.append(
             {
                 "path": entry.get("path"),
                 "preview": entry.get("preview"),
-                "related": [rel.get("path") for rel in entry.get("related", []) if rel.get("path")],
+                "related": related_files,
                 "source": "stage_rag3",
+                "confidence": confidence,
+                "related_score": sum(len(rel.get("preview", "")) for rel in entry.get("related", [])),
             }
         )
 

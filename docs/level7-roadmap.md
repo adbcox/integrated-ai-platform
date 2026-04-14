@@ -16,6 +16,7 @@ A Level 7 manager must:
 
 *Gap:* Stage-6 could plan jobs but had no persisted history or fallback path.
 *Next step implemented:* Manager-5 now writes a plan history file (`artifacts/manager5/plans/{plan_id}.json`), includes plan payload/provenance in traces, and supports a `--fallback-target` so the lane can run even when RAG-4 returns no candidates.
+It also now filters Stage-6 targets by their RAG-4 `confidence` score (`--min-confidence`) and automatically retries failed plans with a fallback target, recording the retry reason in the plan record.
 
 ## RAG Level 7 definition
 
@@ -30,6 +31,7 @@ A Level 7 retrieval stack must:
 
 *Gap:* Stage RAG-4 provided targets but no provenance or payload packaging.
 *Next step implemented:* The Stage RAG-4 planner now records `provenance` data (tokenized query, limits) and includes the raw payload so managers can inspect why each target was suggested.
+It also attaches per-target `confidence` and `related_score` metadata so the manager can drop weak companions before they reach execution.
 
 ## Forward plan toward Level 7
 
