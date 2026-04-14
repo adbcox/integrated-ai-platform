@@ -1,1 +1,1 @@
-path/to/file.sh::anchor replace exact text 'OLD TEXT HERE' with 'NEW TEXT HERE' only. one replacement only. no behavior change. stage-3-safe literal/comment probe template.
+path/to/file.sh::anchor replace exact text 'OLD TEXT HERE' with 'NEW TEXT HERE' only. one replacement only. no behavior change. stage-3-safe literal/comment probe template. stage-4 experimental probes (3-line literals, paired comments) remain boundary-only — do not request them here.

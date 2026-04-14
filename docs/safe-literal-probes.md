@@ -61,6 +61,23 @@ literal_replace fallback"). The helper stores the event in
 `literal_replace_missing_old`, `missing_file_ref`, and `missing_anchor`
 failures surfaced by the guard.
 
+### Promotion policy snapshot (Apr 2026)
+
+Stage RAG-1 remains the only planning layer; RAG-2 stays off. With the latest Stage-4 battery we classify the task shapes as follows:
+
+| Class | Definition | Status |
+|-------|------------|--------|
+| Promotable | Single-file literal/comment edits spanning ≤2 adjacent lines, anchored with `<file>::<token>`, logged through `bin/stage_rag1_plan_probe.py`. | ✅ Production default (Stage 3) |
+| Constrained-but-allowed | Same literal/comment scope but marked as "fallback", "redo", or "resync" and accompanied by a Stage RAG log plus guard artifact. Use only when you expect a literal mismatch and need telemetry. | ⚠️ Experimental but still routed through Stage 3 |
+| Boundary-only probes | Stage-4 regression tasks (`literal three-line`, `comment pair`, `literal miss`, `shell risky`). These intentionally trigger `aider_exit`, `no_change`, `literal_replace_missing_old`, and `literal_shell_risky`, proving the guard still blocks them. | 🚫 Remain rejection-only |
+
+Decisions requested in this mission:
+
+- **3-line literal edits** stay boundary-only until we record successful guard runs (none yet; all ended with `aider_exit`).
+- **Paired comment edits** remain non-promoted; each attempt failed with `no_change` despite proper Stage RAG logging.
+- **Stage 3** stays the production default; **Stage 4** is still experimental telemetry.
+- The Stage-4 regression pack continues to ship with the four rejection probes above.
+
 ### Regression pack
 
 To replay accepted literal/comment probes plus the rejection paths (literal miss, shell-control guard, aider-exit guard), run:
@@ -81,4 +98,4 @@ which prints `git status` plus the first few lines (default 80) of each requeste
 
 ### Next promotion boundary
 
-Stage 4 work will only start after we can consistently run the regression pack. The likely next boundary is **multi-line literal/comment edits inside a single file**. Do **not** attempt broader scopes until new evidence is captured.
+Stage 4 work will only start after we can demonstrate non-zero success across the regression pack. The likely next boundary is still **multi-line literal/comment edits inside a single file**, but we need guard-passing evidence first. Do **not** attempt broader scopes until new metrics land.

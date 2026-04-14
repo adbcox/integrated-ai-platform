@@ -88,6 +88,20 @@ To stay inside the proven lane, start from `templates/safe-literal-probe-templat
 
 This keeps the planning assistance “read-only” while giving us measurable signals on whether retrieval is reducing literal misses, wrong-file probes, and anchor mistakes.
 
+### Stage-4 promotion decision (Apr 2026)
+
+Latest telemetry (`python3 bin/stage_rag1_metrics.py --window 20`) logged 17 Stage-4 planning events with **zero guard failures** across the five tracked signatures, while the preflight event log still reports `literal_replace_missing_old` and `literal_shell_risky` at 10 % each. Based on that evidence plus the standing Stage-4 battery:
+
+- **Promotable task shapes (production, Stage 3 default):** single-file literal or comment edits covering one or two adjacent lines, anchored with `<file>::<token>` and logged through Stage RAG-1 before launch. These are the only shapes demonstrating clean guard metrics.
+- **Constrained-but-allowed (experimental, requires explicit Stage RAG logs + micro lane):** same as above but with explicit “fallback” notes when you expect a literal re-sync. Treat them as Stage-3 jobs with extra scrutiny; no multi-line expansion yet.
+- **Boundary-only rejection probes (remain in `bin/micro_lane_stage4.sh`):**
+  - `literal three-line` → `aider_exit` (status 124) every run.
+  - `comment pair` → `no_change` (guarded) every run.
+  - `literal miss` → `literal_replace_missing_old`.
+  - `shell risky` → `literal_shell_risky`.
+
+Result: **Stage 3 stays the production default**; Stage-4 remains an experimental boundary pack whose job is to prove the guard still rejects the scenarios above. Keep those four probes in the regression pack unchanged so we continue exercising the metrics pipeline.
+
 Rejected patterns:
 - vague wording like “clarify docs” or “polish README”
 - markdown edits without `<file>::<token>` anchor
