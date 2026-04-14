@@ -2,6 +2,7 @@
 set -euo pipefail
 
 SCRIPT_PATH="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)/$(basename -- "$0")"
+REPO_ROOT="$(git rev-parse --show-toplevel)"
 
 usage() {
   cat <<'USAGE'
@@ -251,13 +252,43 @@ if [ $# -gt 2 ]; then
 fi
 
 TARGET_FILES=("$@")
+declare -a TARGET_FILES_CANON=()
+
+canonicalize_path_to_repo() {
+  local input="$1"
+  [ -n "$input" ] || return 1
+  python3 - "$input" "$REPO_ROOT" <<'PY'
+import os, sys
+
+path = sys.argv[1]
+repo = sys.argv[2]
+if not os.path.isabs(path):
+    path = os.path.join(repo, path)
+path = os.path.realpath(path)
+repo = os.path.realpath(repo)
+try:
+    common = os.path.commonpath([path, repo])
+except ValueError:
+    sys.exit(2)
+if common != repo:
+    sys.exit(2)
+print(path)
+PY
+}
+
+for tf in "${TARGET_FILES[@]}"; do
+  canon_tf=$(canonicalize_path_to_repo "$tf") || fail "target path '$tf' is invalid or outside repo" "bad_target"
+  TARGET_FILES_CANON+=("$canon_tf")
+done
 log_micro_event "info" "prompt_received" "" 0 "preflight"
 TASK_KIND="code-adjacent"
 
 is_target_file() {
   local candidate="$1"
-  for f in "${TARGET_FILES[@]}"; do
-    if [ "$f" = "$candidate" ]; then
+  local canon_candidate
+  canon_candidate=$(canonicalize_path_to_repo "$candidate") || return 1
+  for f in "${TARGET_FILES_CANON[@]}"; do
+    if [ "$f" = "$canon_candidate" ]; then
       return 0
     fi
   done
