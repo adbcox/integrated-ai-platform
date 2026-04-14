@@ -32,7 +32,7 @@ Options (Stage-3 safe default subset):
   --checks <path>                  Commands/checks file (Stage-3 run log)
   --task-id <id>                   Explicit task id (default: timestamp+slug)
   --workflow-mode <mode>           tactical|codex-assist|codex-investigate|codex-failure
-  --escalation-trigger <text>      Why Codex escalation was used
+  --escalation-trigger <text>      Why Codex/local-worker escalation was used
   --problem <text>                 Concise problem statement
   --constraints <text>             Constraint summary for telemetry
   --plan-summary <text>            Codex plan outline summary
