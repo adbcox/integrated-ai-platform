@@ -101,7 +101,7 @@ def _preview_decision(summary: dict[str, Any], criteria: dict[str, Any], current
             ),
             next_status="candidate_ready",
         )
-    if stage6_failure > stage6_failure_budget * 2 and stage6_success == 0:
+    if stage6_failure > max(1, stage6_failure_budget * 2) and stage6_success == 0:
         return LaneDecision(
             lane="stage6",
             action="demote",
