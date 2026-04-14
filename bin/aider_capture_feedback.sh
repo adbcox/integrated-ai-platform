@@ -23,7 +23,7 @@ FORCE_ESCALATION_CAPTURE=0
 
 usage() {
   cat <<'USAGE'
-Usage (Stage-3 micro lane default path):
+Usage (Stage-3 production lane default path):
   ./bin/aider_capture_feedback.sh --name <task-name> [options]
 
 Options (most-used subset, Stage-3 safe):
