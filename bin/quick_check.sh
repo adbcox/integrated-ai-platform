@@ -92,7 +92,7 @@ done <"$changed_file_list"
 
 # If shared helper changed, run shell helper smoke checks.
 if [ "$check_shell" -eq 1 ] && grep -Fx "shell/common.sh" "$changed_file_list" >/dev/null 2>&1; then
-  echo "[quick] shell/common.sh changed; running Stage-3 helper smoke tests..."
+  echo "[quick] shell/common.sh changed; running default Stage-3 helper smoke tests..."
   sh -c '. "$1"; extract_session_id "{\"session_id\":\"abc-123\"}"' sh "$BASE_DIR/shell/common.sh" >/dev/null
   sh -c '. "$1"; extract_session_id "Using session: abc-123"' sh "$BASE_DIR/shell/common.sh" >/dev/null
   sh -c '. "$1"; require_exec sh' sh "$BASE_DIR/shell/common.sh" >/dev/null
