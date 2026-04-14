@@ -170,17 +170,61 @@ def plan_to_jobs(
     allowed: list[str],
     max_entries: int,
     min_confidence: int,
-) -> list[Stage6Job]:
+) -> tuple[list[Stage6Job], dict[str, Any]]:
     jobs: list[Stage6Job] = []
-    for target in plan.get("targets", [])[: max_entries]:
+    selection: dict[str, Any] = {"selected": [], "dropped": []}
+    eligible_targets: list[dict[str, Any]] = []
+    for target in plan.get("targets", []):
         path = target.get("path")
         if not path:
+            selection["dropped"].append({"path": None, "reason": "missing_path"})
             continue
         if allowed and not any(path.startswith(prefix) for prefix in allowed):
+            selection["dropped"].append({"path": path, "reason": "target_not_allowed"})
             continue
         confidence = target.get("confidence", 0)
         if confidence < min_confidence:
+            selection["dropped"].append({"path": path, "reason": "below_confidence", "confidence": confidence})
             continue
+        eligible_targets.append(target)
+
+    if not eligible_targets:
+        return jobs, selection
+
+    # Keep the strongest target as primary, then only allow linked secondary jobs.
+    primary = eligible_targets[0]
+    primary_path = str(primary.get("path"))
+    selected_paths: set[str] = set()
+    primary_related = {str(p) for p in (primary.get("related") or []) if p}
+
+    jobs.append(
+        Stage6Job(
+            path=primary_path,
+            notes=plan.get("notes"),
+            lines=None,
+            source=primary.get("source"),
+        )
+    )
+    selected_paths.add(primary_path)
+    selection["selected"].append({"path": primary_path, "reason": "primary"})
+
+    for target in eligible_targets[1:]:
+        if len(jobs) >= max_entries:
+            selection["dropped"].append({"path": target.get("path"), "reason": "max_entries_reached"})
+            continue
+
+        path = str(target.get("path"))
+        if path in selected_paths:
+            selection["dropped"].append({"path": path, "reason": "duplicate_path"})
+            continue
+
+        related = {str(p) for p in (target.get("related") or []) if p}
+        linked_to_primary = path in primary_related or primary_path in related
+        linked_to_selected = any((path in {str(p) for p in (t.get("related") or []) if p}) for t in eligible_targets if str(t.get("path")) in selected_paths)
+        if not (linked_to_primary or linked_to_selected):
+            selection["dropped"].append({"path": path, "reason": "unlinked_secondary"})
+            continue
+
         jobs.append(
             Stage6Job(
                 path=path,
@@ -189,7 +233,15 @@ def plan_to_jobs(
                 source=target.get("source"),
             )
         )
-    return jobs
+        selected_paths.add(path)
+        selection["selected"].append(
+            {
+                "path": path,
+                "reason": "linked_secondary",
+                "linked_to_primary": linked_to_primary,
+            }
+        )
+    return jobs, selection
 
 
 def build_promotion_env(lane: str, versions: dict[str, Any], manifest_version: int, manifest_path: Path) -> dict[str, str]:
@@ -480,7 +532,7 @@ def main() -> int:
         }
     else:
         plan = run_stage_rag4(args)
-        jobs = plan_to_jobs(plan, allowed_targets, args.max_entries, args.min_confidence)
+        jobs, grouped_selection = plan_to_jobs(plan, allowed_targets, args.max_entries, args.min_confidence)
         args.plan_details = plan
         if not jobs and args.fallback_target and args.retry_class in {"fallback_on_empty", "fallback_on_failure"}:
             fallback_path = args.fallback_target
@@ -494,6 +546,7 @@ def main() -> int:
             "notes": args.notes,
             "targets": [job.path for job in jobs],
             "created_at": datetime.now(timezone.utc).isoformat(),
+            "grouped_selection": grouped_selection,
         }
 
     jobs, memory_findings = apply_failure_memory(
