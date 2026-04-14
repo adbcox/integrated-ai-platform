@@ -174,6 +174,7 @@ def _expand_lane_companions(
     targets: list[dict[str, Any]],
     lane_targets: list[dict[str, Any]],
     preferred_prefixes: list[str],
+    direct_result_paths: set[str],
 ) -> list[dict[str, Any]]:
     """Inject lane-aligned companions discovered through related links."""
     by_path = {t["path"]: t for t in targets}
@@ -185,6 +186,9 @@ def _expand_lane_companions(
             if not rel_path or rel_path in by_path:
                 continue
             if not _path_matches_prefix(rel_path, preferred_prefixes):
+                continue
+            if rel_path not in direct_result_paths:
+                # Keep companion expansion bounded to already-retrieved candidates.
                 continue
             domain = _path_domain(rel_path)
             # Keep synthetic companions safely below direct retrieval hits.
@@ -304,6 +308,8 @@ def main() -> int:
             }
         )
 
+    direct_result_paths = {str(entry.get("path")) for entry in results if entry.get("path")}
+
     # Deduplicate by path so Stage-6 does not receive repeated jobs for one file.
     deduped: dict[str, dict[str, Any]] = {}
     for target in targets:
@@ -344,6 +350,7 @@ def main() -> int:
                 targets=lane_targets,
                 lane_targets=lane_targets,
                 preferred_prefixes=preferred_prefixes,
+                direct_result_paths=direct_result_paths,
             )
             _calibrate_confidences(targets)
             targets = sorted(
