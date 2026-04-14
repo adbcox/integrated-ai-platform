@@ -1,6 +1,6 @@
 {
-    "version": 5,
-    "description": "Promotion manifest with explicit subsystem version movement and lane-aware stage/manager/RAG mapping.",
+    "version": 6,
+    "description": "Promotion manifest with coarse-grained subsystem version lifecycle and lane-aware stage/manager/RAG mapping.",
     "stage_versions": {
         "stage3-v1": {
             "stage": "stage3",
@@ -71,6 +71,10 @@
         "rag4-v2": {
             "entry": "bin/stage_rag4_plan_probe.py",
             "description": "RAG-4 intent/domain-aware ranking with lane-clean emission and bounded companion expansion"
+        },
+        "rag4-v3": {
+            "entry": "bin/stage_rag4_plan_probe.py",
+            "description": "RAG-4 lane-link-diverse ranking with stronger companion link-strength gating and family diversity caps"
         }
     },
     "lane_versions": {
@@ -92,7 +96,7 @@
         "stage6": {
             "stage_version": "stage6-v2",
             "manager_version": "manager5-v3",
-            "rag_version": "rag4-v2"
+            "rag_version": "rag4-v3"
         }
     },
     "lanes": {
@@ -136,13 +140,13 @@
             "label": "Stage-6 preview lane",
             "stage_version": "stage6-v2",
             "manager_version": "manager5-v3",
-            "rag_version": "rag4-v2",
+            "rag_version": "rag4-v3",
             "allowed_targets": [
                 "bin/"
             ],
             "regression_pack": "bin/micro_lane_stage6.sh",
             "status": "candidate_ready",
-            "notes": "Stage-6 candidate-ready lane with scored secondary decomposition, per-target literal contracts, and adaptive grouped secondary retry/decomposition"
+            "notes": "Stage-6 candidate-ready lane with scored secondary decomposition, per-target literal contracts, adaptive grouped retry/decomposition, and rag4 lane-link-diverse ranking"
         }
     },
     "lane_rules": {
@@ -355,48 +359,54 @@
             }
         ]
     },
-    "subsystem_version_movement": {
+    "subsystem_versions": {
         "stage_system": {
             "current_version": "stage6-v2",
-            "target_next_version": "stage6-v3",
-            "decision": "held",
-            "validation": "defer: next stage step should broaden safe multi-group orchestration scope",
-            "required_code_change": "stage6-v3 requires explicit stage-layer capability beyond manager retry policy"
+            "next_version": "stage6-v3",
+            "after_next_version": "stage6-v4",
+            "upgrade_goal": "broaden safe multi-group Stage-6 orchestration beyond current bin-only candidate-ready surface",
+            "minimum_validation": "one real grouped Stage-6 run with >1 meaningful target succeeds without fallback-only execution",
+            "status": "held"
         },
         "manager_system": {
             "current_version": "manager5-v3",
-            "target_next_version": "manager5-v4",
-            "decision": "implemented_now",
-            "validation": "real Stage-6 grouped plan shows secondary failure + refinement retry + bounded drop/continue with partial_success history state",
-            "required_code_change": "adaptive grouped retry/decomposition loop with per-target refinement retries and continue_on_secondary_failure policy"
+            "next_version": "manager5-v4",
+            "after_next_version": "manager6-v1",
+            "upgrade_goal": "add qualification-aware adaptive retry planning with explicit retry/drop rationale in plan history",
+            "minimum_validation": "real grouped Stage-6 run shows class-aware retry decision and auditable state transitions",
+            "status": "validated"
         },
         "rag_system": {
-            "current_version": "rag4-v2",
-            "target_next_version": "rag4-v3",
-            "decision": "held",
-            "validation": "defer: rag4-v3 already staged in prior batch; no retrieval code changes this session",
-            "required_code_change": "next rag step should reduce residual retrieval noise before grouped decomposition"
+            "current_version": "rag4-v3",
+            "next_version": "rag5-v1",
+            "after_next_version": "rag5-v2",
+            "upgrade_goal": "increase lane-aligned recall/diversity via stronger companion/link expansion without reintroducing out-of-lane noise",
+            "minimum_validation": "stage_rag4 plan shows ranking_version rag4-v3-lane-link-diverse and Stage-6 grouped dry-run resolves cleaner bin-only target sets",
+            "status": "validated"
         },
         "promotion_engine": {
             "current_version": "level10-promote-v1",
-            "target_next_version": "level10-promote-v2",
-            "decision": "held",
-            "validation": "defer; no promotion-logic bug requiring version step this session",
-            "required_code_change": "only when objective decision bug appears in control loop actions"
+            "next_version": "level10-promote-v2",
+            "after_next_version": "level10-promote-v3",
+            "upgrade_goal": "move from lane-only decisions to subsystem-aware advancement decisions with explicit evidence contracts",
+            "minimum_validation": "dry-run emits auditable subsystem decision reasons and apply updates manifest/history coherently",
+            "status": "held"
         },
         "worker_utilization": {
             "current_version": "worker-routing-v1",
-            "target_next_version": "worker-routing-v2",
-            "decision": "deferred",
-            "validation": "defer; requires task-class routing expansion beyond current safe class",
-            "required_code_change": "class-aware routing + utilization telemetry joined to stage decisions"
+            "next_version": "worker-routing-v2",
+            "after_next_version": "worker-routing-v3",
+            "upgrade_goal": "expand safe local-worker coverage with class-aware routing and escalation accounting",
+            "minimum_validation": "real run records worker-utilization decision path and bounded escalation signal",
+            "status": "planned"
         },
         "regression_qualification_framework": {
             "current_version": "qualify-v1",
-            "target_next_version": "qualify-v2",
-            "decision": "held",
-            "validation": "existing qualification sufficient for this version movement batch",
-            "required_code_change": "subsystem version gate checks and explicit regression-pack pass assertions"
+            "next_version": "qualify-v2",
+            "after_next_version": "qualify-v3",
+            "upgrade_goal": "tighten subsystem validation gates with explicit pass/fail assertions tied to active versions",
+            "minimum_validation": "qualification output includes per-subsystem gating for current and next versions",
+            "status": "planned"
         }
     }
 }

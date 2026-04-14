@@ -20,13 +20,13 @@ The source of truth for these levels is now `config/promotion_manifest.json` und
 | Subsystem | Current version | Next target | Decision |
 | --- | --- | --- | --- |
 | Stage system | `stage6-v2` | `stage6-v3` | held |
-| Manager system | `manager5-v3` | `manager5-v4` | implemented now |
-| Retrieval / RAG | `rag4-v2` | `rag4-v3` | held |
+| Manager system | `manager5-v3` | `manager5-v4` | validated |
+| Retrieval / RAG | `rag4-v3` | `rag5-v1` | implemented now |
 | Promotion engine | `level10-promote-v1` | `level10-promote-v2` | held |
 | Worker utilization | `worker-routing-v1` | `worker-routing-v2` | deferred |
 | Regression / qualification | `qualify-v1` | `qualify-v2` | held |
 
-Rationale and validation requirements are tracked in `subsystem_version_movement` inside the manifest.
+Rationale and validation requirements are tracked in `subsystem_versions` inside the manifest.
 
 ## Level-10 definitions and gaps
 

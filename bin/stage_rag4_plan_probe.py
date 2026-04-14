@@ -7,6 +7,7 @@ import argparse  # stage6-rag4-v4b  # stage6-rag4-v3b
 import datetime as dt
 import json  # stage6-linkscore-v2
 import math
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -73,6 +74,23 @@ def _path_domain(path: str) -> str:
     if path == "Makefile":
         return "makefile"
     return "other"
+
+
+TOKEN_SPLIT_RE = re.compile(r"[^a-z0-9]+")
+
+
+def _path_tokens(path: str) -> set[str]:
+    stem = Path(path).stem.lower()
+    parts = TOKEN_SPLIT_RE.split(stem)
+    return {p for p in parts if p}
+
+
+def _family_key(path: str) -> str:
+    """Coarse grouping key used to preserve companion diversity."""
+    tokens = sorted(_path_tokens(path))
+    if tokens:
+        return tokens[0]
+    return Path(path).stem.lower()
 
 
 def _query_intent(tokens: list[str]) -> str:
@@ -176,9 +194,22 @@ def _expand_lane_companions(
     lane_targets: list[dict[str, Any]],
     preferred_prefixes: list[str],
     direct_result_paths: set[str],
+    query_tokens: set[str],
+    max_targets: int,
 ) -> list[dict[str, Any]]:
-    """Inject lane-aligned companions discovered through related links."""
+    """Inject lane-aligned companions discovered through related links.
+
+    This keeps expansion bounded and diverse:
+    - weakly linked companions are rejected,
+    - only one synthetic companion per family is retained.
+    """
     by_path = {t["path"]: t for t in targets}
+    support_count: dict[str, int] = {}
+    for primary in lane_targets:
+        for rel_path in primary.get("selection_reason", {}).get("related_paths", []):
+            if rel_path:
+                support_count[rel_path] = support_count.get(rel_path, 0) + 1
+
     companion_pool: dict[str, dict[str, Any]] = {}
     for primary in lane_targets:
         primary_score = float(primary.get("rank_score", 0.0))
@@ -191,9 +222,23 @@ def _expand_lane_companions(
             if rel_path not in direct_result_paths:
                 # Keep companion expansion bounded to already-retrieved candidates.
                 continue
+
+            rel_tokens = _path_tokens(rel_path)
+            primary_tokens = _path_tokens(primary["path"])
+            overlap_tokens = sorted((rel_tokens & primary_tokens) | (rel_tokens & query_tokens))
+            link_strength = 0
+            if overlap_tokens:
+                link_strength += 1
+            if _family_key(rel_path) == _family_key(primary["path"]):
+                link_strength += 1
+            if support_count.get(rel_path, 0) >= 2:
+                link_strength += 1
+            if link_strength < 2:
+                continue
+
             domain = _path_domain(rel_path)
             # Keep synthetic companions safely below direct retrieval hits.
-            synthetic_score = round(primary_score - 1.6, 4)
+            synthetic_score = round(primary_score - 1.6 + (0.12 * min(link_strength, 3)), 4)
             existing = companion_pool.get(rel_path)
             if existing is None:
                 companion_pool[rel_path] = {
@@ -216,7 +261,9 @@ def _expand_lane_companions(
                         "query_intent": "code",
                         "domain_bonus": 0.0,
                         "companion_of": [primary["path"]],
-                        "companion_support": 1,
+                        "companion_support": support_count.get(rel_path, 1),
+                        "companion_link_strength": link_strength,
+                        "link_tokens": overlap_tokens,
                     },
                 }
                 continue
@@ -226,10 +273,36 @@ def _expand_lane_companions(
             if primary["path"] not in supports:
                 supports.append(primary["path"])
                 reason["companion_support"] = int(reason.get("companion_support", 0)) + 1
+            reason["companion_link_strength"] = max(int(reason.get("companion_link_strength", 1)), link_strength)
+            if overlap_tokens:
+                existing_tokens = set(reason.get("link_tokens", []))
+                reason["link_tokens"] = sorted(existing_tokens | set(overlap_tokens))
 
     if not companion_pool:
         return targets
-    targets.extend(companion_pool.values())
+    # Retain at most one synthetic companion per family to avoid same-module crowding.
+    kept_companions: list[dict[str, Any]] = []
+    seen_families: set[str] = set()
+    sorted_companions = sorted(
+        companion_pool.values(),
+        key=lambda item: (
+            int(item.get("selection_reason", {}).get("companion_link_strength", 0)),
+            int(item.get("selection_reason", {}).get("companion_support", 0)),
+            float(item.get("rank_score", 0.0)),
+        ),
+        reverse=True,
+    )
+    max_companions = max(0, max_targets // 2)
+    for companion in sorted_companions:
+        family = _family_key(companion["path"])
+        if family in seen_families:
+            continue
+        seen_families.add(family)
+        kept_companions.append(companion)
+        if len(kept_companions) >= max_companions:
+            break
+
+    targets.extend(kept_companions)
     return targets
 
 
@@ -259,6 +332,7 @@ def main() -> int:
 
     preferred_prefixes = [prefix for prefix in args.preferred_prefix if prefix]
     intent = _query_intent(args.query)
+    query_tokens = {t.lower() for t in args.query if t}
     search_top = args.top
     if preferred_prefixes and intent == "code":
         # Broaden retrieval for code-intent lane runs so we can recover more
@@ -357,6 +431,8 @@ def main() -> int:
                 lane_targets=lane_targets,
                 preferred_prefixes=preferred_prefixes,
                 direct_result_paths=direct_result_paths,
+                query_tokens=query_tokens,
+                max_targets=args.max_targets,
             )
             _calibrate_confidences(targets)
             targets = sorted(
@@ -391,7 +467,7 @@ def main() -> int:
             "history_window": args.history_window,
             "preferred_prefixes": preferred_prefixes,
             "query_intent": intent,
-            "ranking_version": "rag4-v4-intent-domain-companions",
+            "ranking_version": "rag4-v3-lane-link-diverse",
         },
         "raw_payload": search_payload,
     }

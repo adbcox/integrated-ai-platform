@@ -30,13 +30,28 @@ The manifest also records the current promotion policy (`candidate_success_thres
 `candidate_failure_budget`, the required regression pack, trace window budget,
 and the desired lane behaviors) so operators can validate evidence consistently.
 
+## Subsystem version lifecycle
+
+Use `subsystem_versions` in `config/promotion_manifest.json` as the canonical
+version lifecycle for:
+- current version
+- next version
+- after-next version
+- upgrade goal
+- minimum validation
+- lifecycle status (`planned`, `building`, `validated`, `promoted`, `held`)
+
+Policy details are in [docs/subsystem-versioning-policy.md](/srv/platform/repos/platform-browser-operator/docs/subsystem-versioning-policy.md).
+
 ## Explicit subsystem version movement
 
-`config/promotion_manifest.json` now includes `subsystem_version_movement`, which explicitly tracks per subsystem:
+`config/promotion_manifest.json` now includes `subsystem_versions`, which explicitly tracks per subsystem:
 - `current_version`
-- `target_next_version`
-- `decision` (`implemented_now`, `held`, `deferred`)
-- required code change and minimal validation signal
+- `next_version`
+- `after_next_version`
+- `upgrade_goal`
+- `minimum_validation`
+- `status` (`planned`, `building`, `validated`, `promoted`, `held`)
 
 This keeps version movement operational and auditable instead of “generic improvement” language.
 
