@@ -9,7 +9,7 @@ usage() {
   cat <<'USAGE'
 Usage: bin/micro_lane_regression.sh
 
-Runs the Stage 3 fast micro-lane regression pack:
+Runs the Stage-3 fast micro-lane regression pack:
   1. accepted literal wording edit
   2. accepted single-line comment edit
   3. literal-miss rejection
