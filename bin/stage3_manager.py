@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Manager-2.2 orchestrator for Stage-3 literal/comment worker jobs."""
+"""Manager-2.3 orchestrator for Stage-3 literal/comment worker jobs."""
 
 from __future__ import annotations
 
@@ -45,6 +45,7 @@ HARNESS_TARGETS = {
 }
 
 COMMENT_PREFIXES = ("#", "//", "/*", "*", "--", ";", "<!--")
+PLACEHOLDER_PATTERN = re.compile(r"<[A-Za-z0-9_./-]+>")
 
 
 def run(cmd: list[str], **kwargs) -> subprocess.CompletedProcess:
@@ -227,15 +228,31 @@ def _looks_like_comment(text: str) -> bool:
     return any(stripped.startswith(prefix) for prefix in COMMENT_PREFIXES)
 
 
-def _preflight_literal_check(target_path: Path, message: str) -> bool:
+def _preflight_literal_check(message: str, *, contents: str | None) -> bool:
+    if contents is None:
+        return False
     old_literal = _extract_old_literal(message)
     if not old_literal:
         return False
+    return old_literal not in contents
+
+
+def _refresh_target_context(
+    target_path: Path,
+    args,
+    job_id: str,
+    plan_id: str,
+) -> str:
+    refresh_plan_id = f"{plan_id}-refresh"
+    print(
+        "[manager] literal missing; refreshing Stage RAG context",
+        f"(plan_id={refresh_plan_id})",
+    )
+    stage_rag(args.query, refresh_plan_id, args.target, args.lines, args.notes, args.top)
     try:
-        contents = target_path.read_text(encoding="utf-8")
+        return target_path.read_text(encoding="utf-8")
     except OSError as exc:
         raise SystemExit(f"Failed to read target file {target_path}: {exc}") from exc
-    return old_literal not in contents
 
 
 def _record_skip(job_id: str, plan_id: str, args, *, classification: str, note: str, message_file: Path | None) -> int:
@@ -264,7 +281,12 @@ def _record_skip(job_id: str, plan_id: str, args, *, classification: str, note: 
     return 0
 
 
-def _validate_prompt(target: str, message: str) -> tuple[bool, str | None]:
+def _validate_prompt(
+    target: str,
+    message: str,
+    *,
+    contents: str | None,
+) -> tuple[bool, str | None]:
     if f"{target}::" not in message:
         return False, "target anchor missing"
     literal_match = re.search(r"replace exact text '(.+?)' with '(.+?)'", message, re.DOTALL)
@@ -273,8 +295,23 @@ def _validate_prompt(target: str, message: str) -> tuple[bool, str | None]:
     old_literal, new_literal = literal_match.group(1), literal_match.group(2)
     if not old_literal.strip() or not new_literal.strip():
         return False, "old/new literal empty"
-    if re.search(r"<[A-Za-z0-9_./-]+>", message):
-        return False, "placeholder token detected"
+    placeholder_hits = list(PLACEHOLDER_PATTERN.finditer(message))
+    if placeholder_hits:
+        old_span = literal_match.span(1)
+        new_span = literal_match.span(2)
+        require_target_presence = False
+        for hit in placeholder_hits:
+            in_old = old_span[0] <= hit.start() < old_span[1]
+            in_new = new_span[0] <= hit.start() < new_span[1]
+            if not (in_old or in_new):
+                return False, "placeholder token detected"
+            if in_old:
+                require_target_presence = True
+        if require_target_presence:
+            if contents is None:
+                return False, "placeholder literal without file context"
+            if old_literal not in contents:
+                return False, "literal with placeholder missing from target"
     if _message_requests_comment_only(message) and not _looks_like_comment(old_literal):
         return False, "comment-only wording detected but literal is not a comment"
     return True, None
@@ -307,7 +344,30 @@ def main() -> int:
     message_file = write_message_file(job_id, args.message)
     print(f"[manager] message file -> {message_file}")
 
-    valid_prompt, prompt_note = _validate_prompt(args.target, args.message)
+    try:
+        target_contents = target_path.read_text(encoding="utf-8")
+    except OSError as exc:
+        raise SystemExit(f"Failed to read target file {target_path}: {exc}") from exc
+
+    literal_missing = _preflight_literal_check(args.message, contents=target_contents)
+    if literal_missing:
+        target_contents = _refresh_target_context(target_path, args, job_id, plan_id)
+        literal_missing = _preflight_literal_check(args.message, contents=target_contents)
+        if literal_missing:
+            return _record_skip(
+                job_id,
+                plan_id,
+                args,
+                classification="literal_replace_missing_old",
+                note="preflight literal not present after refresh",
+                message_file=message_file,
+            )
+
+    valid_prompt, prompt_note = _validate_prompt(
+        args.target,
+        args.message,
+        contents=target_contents,
+    )
     if not valid_prompt:
         classification = "prompt_shape_invalid"
         if prompt_note and "comment-only" in prompt_note:
@@ -328,16 +388,6 @@ def main() -> int:
             args,
             classification="routed_to_codex",
             note="target is a running harness; route to Codex",
-            message_file=message_file,
-        )
-
-    if _preflight_literal_check(target_path, args.message):
-        return _record_skip(
-            job_id,
-            plan_id,
-            args,
-            classification="literal_replace_missing_old",
-            note="preflight literal not present",
             message_file=message_file,
         )
 
