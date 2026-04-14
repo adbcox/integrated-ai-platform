@@ -119,8 +119,29 @@ def main() -> int:
             }
         )
 
+    # Deduplicate by path so Stage-6 does not receive repeated jobs for one file.
+    deduped: dict[str, dict[str, Any]] = {}
+    for target in targets:
+        path = target["path"]
+        existing = deduped.get(path)
+        if existing is None:
+            deduped[path] = target
+            continue
+        if (
+            target["rank_score"],
+            target["confidence"],
+        ) > (
+            existing["rank_score"],
+            existing["confidence"],
+        ):
+            deduped[path] = target
+
     # Keep targets deterministic by retrieval score + companion strength.
-    targets.sort(key=lambda item: (item["rank_score"], item["confidence"], item["path"]), reverse=True)
+    targets = sorted(
+        deduped.values(),
+        key=lambda item: (item["rank_score"], item["confidence"], item["path"]),
+        reverse=True,
+    )
     targets = targets[: args.max_targets]
 
     plan = {
@@ -134,6 +155,7 @@ def main() -> int:
         "provenance": {
             "query_tokens": args.query,
             "result_count": len(results),
+            "unique_target_count": len(targets),
             "related_limit": args.related_limit,
             "history_window": args.history_window,
         },
