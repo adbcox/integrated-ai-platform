@@ -41,9 +41,10 @@ Options (Stage-3 safe default subset):
   --completion-summary <text>      Brief completion status summary
   --force-escalation-capture       Write escalation artifacts even while in tactical mode
 
-- legacy local feedback record stored under .local-model-data/
-- legacy local feedback record stored under .local-model-data/
-- escalation artifacts for non-tactical workflows (or forced mode):
+Creates the following artifacts:
+- legacy local feedback record stored under .local-model-data/ (Stage-3 history)
+- Stage-5 batch captures mirrored under .local-model-data/ for dual-file edits
+- escalation artifacts for non-tactical workflows (or forced mode, mirrored for Stage-5 batches):
   artifacts/escalations/<task_id>/summary.json
   artifacts/escalations/<task_id>/timeline.log
   artifacts/escalations/<task_id>/patch-notes.md
