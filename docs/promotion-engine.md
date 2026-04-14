@@ -56,6 +56,13 @@ and the desired lane behaviors) so operators can validate evidence consistently.
   manually before Stage-6 accumulates enough evidence to promote the lane to
   production.
 
+## Level 7 roadmap reference
+
+- See `docs/level7-roadmap.md` for the Level 7 definitions of the manager and
+  retrieval stacks, the current Level 6 gaps, and the first code steps we added
+  to move forward (plan history persistence, fallback targets, enriched
+  provenance).
+
 ## Running candidate work safely
 
 1. Edit `config/promotion_manifest.json` to update lane versions, lane rules,

@@ -48,6 +48,12 @@ commit message prefix. The manifest exposes Stage-6 as a `preview` lane
 2. When you are satisfied, rerun without `--dry-run` so Manager-5 executes each
    Stage-5 job via `bin/stage5_manager.py`.
 
+3. Manager-5 records the plan payload plus job statuses under `artifacts/manager5/plans/{plan_id}.json`.
+
+4. Provide `--fallback-target bin/manager4.py` (or another approved `bin/` helper)
+   when the RAG-4 query does not return eligible targets so Stage-6 can still run
+   a bounded preview job.
+
 3. Manager-5 always stamps the promotion metadata on every Stage-5 invocation
    and records the plan/journal to the shared trace schema.
 

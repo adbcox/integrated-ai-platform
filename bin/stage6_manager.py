@@ -10,6 +10,7 @@ import subprocess
 import sys
 import tempfile
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -30,6 +31,16 @@ class Stage6Job:
     notes: str | None = None
     lines: str | None = None
     source: str | None = None
+
+
+def plan_history_path(plan_id: str) -> Path:
+    return TRACE_DIR / "plans" / f"{plan_id}.json"
+
+
+def write_plan_history(plan_id: str, payload: dict[str, Any]) -> None:
+    history_path = plan_history_path(plan_id)
+    history_path.parent.mkdir(parents=True, exist_ok=True)
+    history_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
 def run_stage_rag4(args: argparse.Namespace) -> dict[str, Any]:
@@ -167,6 +178,7 @@ def record_trace(
     args: argparse.Namespace,
     statuses: list[dict[str, Any]],
     plan_id: str,
+    plan_payload: dict[str, Any],
     return_code: int,
     trace_dir: Path,
 ) -> None:
@@ -186,7 +198,7 @@ def record_trace(
         return_code=return_code,
         promotion_outcome="success" if return_code == 0 else "failure",
         commit_hash=current_commit_hash(),
-        extra={"plan_id": plan_id, "jobs": statuses},
+        extra={"plan_id": plan_id, "jobs": statuses, "plan_payload": plan_payload},
     )
     append_trace(entry, trace_dir=trace_dir)
 
@@ -197,6 +209,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--plan-id", required=True, help="Identifier used across Stage-6 planning")
     parser.add_argument("--commit-msg", required=True, help="Commit message prefix for generated stage5 commits")
     parser.add_argument("--notes", default="", help="General notes for the Stage-6 batch")
+    parser.add_argument("--lines", default="auto", help="Line range hint for all Stage-6 jobs")
     parser.add_argument("--max-ops", type=int, default=3, help="Per-stage5 invocation maximum operations")
     parser.add_argument("--max-total-lines", type=int, default=80, help="Aggregate diff budget per stage5 job")
     parser.add_argument("--top", type=int, default=5, help="RAG-4 top hits to consider")
@@ -208,6 +221,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--message-template", default="Stage-6 refinement for {path}")
     parser.add_argument("--dry-run", action="store_true", help="Print plan without invoking Stage-5 manager")
     parser.add_argument("--plan-status", default="preview", help="Optional status used in trace entries")
+    parser.add_argument("--fallback-target", help="Fallback target when RAG-4 returns no eligible jobs")
     parser.add_argument("--related-limit", type=int, default=2)
     parser.add_argument("--history-window", type=int, default=15)
     return parser.parse_args()
@@ -222,12 +236,33 @@ def main() -> int:
     lane_cfg = versions.get("lane", {})
     allowed_targets = lane_cfg.get("allowed_targets", ["bin/"])
 
+    plan_payload: dict[str, Any] = {}
     if args.jobs_file:
         jobs = load_jobs_from_file(Path(args.jobs_file))
+        plan_payload = {
+            "plan_id": args.plan_id,
+            "query": " ".join(args.query),
+            "notes": args.notes,
+        "targets": [job.path for job in jobs],
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        }
     else:
         plan = run_stage_rag4(args)
         jobs = plan_to_jobs(plan, allowed_targets, args.max_entries)
-
+        args.plan_details = plan
+        if not jobs and args.fallback_target:
+            fallback_path = args.fallback_target
+            if allowed_targets and not any(fallback_path.startswith(prefix) for prefix in allowed_targets):
+                raise SystemExit(f"[stage6] fallback target {fallback_path} is not allowed for the lane")
+            jobs = [Stage6Job(path=fallback_path, source="fallback")]
+            plan.setdefault("targets", []).append({"path": fallback_path, "source": "fallback"})
+        plan_payload = {
+            "plan_id": args.plan_id,
+            "query": " ".join(args.query),
+            "notes": args.notes,
+            "targets": [job.path for job in jobs],
+            "created_at": datetime.now(timezone.utc).isoformat(),
+        }
     if not jobs:
         print("[stage6] no eligible jobs found, nothing to run")
         return 0
@@ -242,6 +277,14 @@ def main() -> int:
             exit_code = code
             break
 
+    history_record = {
+        "plan_id": args.plan_id,
+        "plan_payload": plan_payload,
+        "statuses": statuses,
+        "failure_code": exit_code,
+    }
+    write_plan_history(args.plan_id, history_record)
+
     record_trace(
         lane=lane_name,
         lane_cfg=lane_cfg,
@@ -251,6 +294,7 @@ def main() -> int:
         args=args,
         statuses=statuses,
         plan_id=args.plan_id,
+        plan_payload=plan_payload,
         return_code=exit_code,
         trace_dir=TRACE_DIR,
     )

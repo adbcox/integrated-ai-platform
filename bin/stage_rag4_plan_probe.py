@@ -83,6 +83,13 @@ def main() -> int:
         "targets": targets,
         "notes": args.notes,
         "preview_window": args.preview_lines,
+        "provenance": {
+            "query_tokens": args.query,
+            "result_count": len(results),
+            "related_limit": args.related_limit,
+            "history_window": args.history_window,
+        },
+        "raw_payload": search_payload,
     }
 
     append_log(plan)
