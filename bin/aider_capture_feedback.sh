@@ -36,7 +36,7 @@ Options (Stage-3 safe default subset):
   --problem <text>                 Concise problem statement
   --constraints <text>             Constraint summary for telemetry
   --plan-summary <text>            Codex plan outline summary
-  --fix-pattern <text>             Fix pattern/root-cause classification
+  --fix-pattern <text>             Fix pattern/root-cause note
   --heuristic <text>               Reusable local-first heuristic note
   --completion-summary <text>      Brief completion status summary
   --force-escalation-capture       Write escalation artifacts even while in tactical mode
