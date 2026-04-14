@@ -27,7 +27,7 @@ Usage (Stage-3 micro lane default path):
   ./bin/aider_capture_feedback.sh --name <task-name> [options]
 
 Options (most-used subset, Stage-3 safe):
-  --summary <path>                 Markdown summary file
+  --summary <path>                 Markdown summary file (Stage-3 capture)
   --outcome <path>                 Outcome file
   --checks <path>                  Commands/checks file
   --task-id <id>                   Explicit task id (default: timestamp+slug)
