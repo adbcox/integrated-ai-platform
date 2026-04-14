@@ -100,7 +100,7 @@ if [ "$check_shell" -eq 1 ] && grep -Fx "shell/common.sh" "$changed_file_list" >
 fi
 
 if [ "$shell_checked" -eq 0 ] && [ "$python_checked" -eq 0 ]; then
-  echo "[quick] No shell/python files to check (Stage-3 skip)."
+  echo "[quick] No shell/python files detected for Stage-3 quick checks (skip)."
   exit 0
 fi
 
