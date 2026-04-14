@@ -197,7 +197,7 @@ else
 - status: partial
 - key regressions prevented:
   - <key item>
-- follow-ups:
+- follow-ups (record next steps):
   - <follow-up item>
 EOS
 fi
