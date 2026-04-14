@@ -275,13 +275,15 @@ def main() -> int:
         reverse=True,
     )
 
-    # For code-intent lane-focused planning, prefer emitting lane-aligned targets first.
+    # For code-intent lane-focused planning, emit lane-aligned targets only when
+    # available so Stage-6 does not receive avoidable out-of-lane noise.
     if preferred_prefixes and intent == "code":
         lane_targets = [t for t in targets if t.get("lane_aligned")]
         non_lane_targets = [t for t in targets if not t.get("lane_aligned")]
         if lane_targets:
-            keep_non_lane = max(0, args.max_targets - len(lane_targets))
-            targets = lane_targets + non_lane_targets[:keep_non_lane]
+            targets = lane_targets
+        else:
+            targets = non_lane_targets
 
     targets = targets[: args.max_targets]
 
