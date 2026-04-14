@@ -1,7 +1,7 @@
 #!/bin/sh
 set -eu
 
-# Priority ordering for detection (Stage 3 literal lane):
+# Priority ordering for detection (Stage-3 literal lane):
 # 1) CLI args remain the highest priority
 # 2) CHANGED_FILES env (space or newline separated) remains second in line
 
