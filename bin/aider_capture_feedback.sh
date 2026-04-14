@@ -34,7 +34,7 @@ Options (Stage-3 safe default subset):
   --workflow-mode <mode>           tactical|codex-assist|codex-investigate|codex-failure
   --escalation-trigger <text>      Why Codex escalation was used
   --problem <text>                 Concise problem statement
-  --constraints <text>             Constraint summary
+  --constraints <text>             Constraint summary for telemetry
   --plan-summary <text>            Codex plan outline summary
   --fix-pattern <text>             Fix pattern/root-cause classification
   --heuristic <text>               Reusable local-first heuristic note
