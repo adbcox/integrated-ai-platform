@@ -47,7 +47,7 @@ log_micro_event() {
   local ts
   ts=$(date -Is)
   local files_payload=""
-  if [ ${#TARGET_FILES[@]:-0} -gt 0 ]; then
+  if [ ${#TARGET_FILES[@]} -gt 0 ]; then
     files_payload=$(printf '%s\0' "${TARGET_FILES[@]}")
   fi
   mkdir -p "$(dirname "$EVENT_LOG")"
