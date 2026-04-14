@@ -55,6 +55,29 @@ def read_jsonl(path: Path, *, cutoff: datetime | None = None) -> Iterable[dict[s
     return rows
 
 
+def filter_by_manifest_version(
+    rows: list[dict[str, Any]],
+    *,
+    manifest_version: int,
+    strict: bool,
+) -> tuple[list[dict[str, Any]], int]:
+    filtered: list[dict[str, Any]] = []
+    dropped = 0
+    for row in rows:
+        row_version = row.get("manifest_version")
+        if row_version is None:
+            if strict:
+                dropped += 1
+                continue
+            filtered.append(row)
+            continue
+        if int(row_version) != manifest_version:
+            dropped += 1
+            continue
+        filtered.append(row)
+    return filtered, dropped
+
+
 def summarize_candidate(manager4_rows: list[dict[str, Any]]) -> Counter:
     stats: Counter = Counter()
     for row in manager4_rows:
@@ -244,18 +267,34 @@ def main() -> int:
     parser.add_argument("--stage5-trace", default=str(DEFAULT_STAGE5_TRACE))
     parser.add_argument("--rag4-usage", default=str(DEFAULT_RAG4_USAGE))
     parser.add_argument("--manager5-plans", default=str(DEFAULT_MANAGER5_PLANS))
+    parser.add_argument(
+        "--strict-manifest-version",
+        action="store_true",
+        help="Only count trace rows that match the current manifest version",
+    )
     parser.add_argument("--json", action="store_true", help="Emit machine-readable JSON summary")
     args = parser.parse_args()
 
     manifest = load_manifest(Path(args.manifest).resolve())
+    manifest_version = manifest.version
     criteria = manifest.data.get("promotion_policy", {}).get("criteria", {})
     trace_window_days = int(criteria.get("trace_window_days", 7))
     cutoff = datetime.now(UTC) - timedelta(days=trace_window_days)
 
-    manager4_rows = list(read_jsonl(Path(args.manager4_trace).resolve(), cutoff=cutoff))
-    manager5_rows = list(read_jsonl(Path(args.manager5_trace).resolve(), cutoff=cutoff))
+    manager4_all = list(read_jsonl(Path(args.manager4_trace).resolve(), cutoff=cutoff))
+    manager5_all = list(read_jsonl(Path(args.manager5_trace).resolve(), cutoff=cutoff))
     stage5_rows = list(read_jsonl(Path(args.stage5_trace).resolve(), cutoff=cutoff))
     rag4_rows = list(read_jsonl(Path(args.rag4_usage).resolve(), cutoff=cutoff))
+    manager4_rows, manager4_dropped = filter_by_manifest_version(
+        manager4_all,
+        manifest_version=manifest_version,
+        strict=bool(args.strict_manifest_version),
+    )
+    manager5_rows, manager5_dropped = filter_by_manifest_version(
+        manager5_all,
+        manifest_version=manifest_version,
+        strict=bool(args.strict_manifest_version),
+    )
 
     candidate_stats = summarize_candidate(manager4_rows)
     stage6_stats = summarize_stage6(manager5_rows)
@@ -280,8 +319,17 @@ def main() -> int:
         "preview": manifest.data.get("lanes", {}).get("stage6", {}),
     }
     summary = {
-        "manifest_version": manifest.version,
+        "manifest_version": manifest_version,
         "trace_window_days": trace_window_days,
+        "trace_filter": {
+            "strict_manifest_version": bool(args.strict_manifest_version),
+            "manager4_rows_total": len(manager4_all),
+            "manager4_rows_kept": len(manager4_rows),
+            "manager4_rows_dropped": manager4_dropped,
+            "manager5_rows_total": len(manager5_all),
+            "manager5_rows_kept": len(manager5_rows),
+            "manager5_rows_dropped": manager5_dropped,
+        },
         "lane_snapshot": lane_snapshot,
         "metrics": {
             "candidate": dict(candidate_stats),
