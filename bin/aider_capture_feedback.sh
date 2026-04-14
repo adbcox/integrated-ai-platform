@@ -35,7 +35,7 @@ Options (Stage-3 safe default subset):
   --escalation-trigger <text>      Why Codex/local-worker escalation was used
   --problem <text>                 Concise problem statement
   --constraints <text>             Constraint summary for telemetry
-  --plan-summary <text>            Codex plan outline summary
+  --plan-summary <text>            Codex plan outline recap
   --fix-pattern <text>             Fix pattern/root-cause note
   --heuristic <text>               Reusable local-first heuristic note
   --completion-summary <text>      Brief completion status summary
