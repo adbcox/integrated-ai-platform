@@ -47,6 +47,10 @@ single shell/bin file.
   fallbacks, so the new class inherits the same guardrails as Stage 3.
 - Plan IDs and stage tags are logged in `artifacts/stage_rag2/usage.jsonl` for
   future promotion reviews.
+- Keep placeholder tokens (e.g., `<task-id>`, `<task-name>`) inside the quoted
+  literal blocks. If a prompt references placeholder syntax outside the `'old'`
+  / `'new'` spans, the guard rejects it with `placeholder_prompt` before the
+  worker runs.
 
 ## When not to use Stage 4
 
