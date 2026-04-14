@@ -1,7 +1,7 @@
 #!/bin/sh
 # Stage-5 regression secondary fixture
-# Stage5 secondary validation block:
-# * Stage5 regression note alpha
-# * Stage5 regression note beta
-# * Stage5 regression note gamma
+# Stage5 secondary baseline block:
+# * Stage5 fixture note alpha
+# * Stage5 fixture note beta
+# * Stage5 fixture note gamma
 # End of secondary block.
