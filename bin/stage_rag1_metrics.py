@@ -1,11 +1,14 @@
 #!/usr/bin/env python3
-"""Summarize Stage RAG-1 usage vs. guard failure types.
+"""Summarize Stage RAG-1 usage vs. guard + preflight failure types.
 
-The script scans artifacts/stage_rag1/usage.jsonl for planning events and
-artifacts/aider_runs/**/metadata.json for aide guard outcomes. It focuses on the
-three failure signatures we care about for Stage-4 rollout:
+The script scans artifacts/stage_rag1/usage.jsonl for planning events,
+artifacts/aider_runs/**/metadata.json for guard outcomes, and
+artifacts/micro_runs/events.jsonl for preflight rejections. It surfaces the
+preflight signatures we track inside the Stage-3/Stage-4 micro lane:
 
 * literal_replace_missing_old
+* literal_shell_risky
+* prompt_contract_rejection
 * missing_file_ref
 * missing_anchor
 """
@@ -81,7 +84,7 @@ def summarize_failures(metadata: list[dict], window: int) -> dict:
     for data in recent:
         total += 1
         for sig in data.get("failure_signatures", []) or []:
-            if sig in {"literal_replace_missing_old", "missing_file_ref", "missing_anchor"}:
+            if sig in FOCUS_PREFAIL:
                 focus[sig] += 1
     return {"total_runs": total, "failures": dict(focus)}
 
@@ -129,7 +132,7 @@ def main() -> int:
     print(f"  total logged events: {len(usage)}")
 
     print("\nGuard failure focus (last {window} runs):".format(window=summary["total_runs"]))
-    for key in ["literal_replace_missing_old", "missing_file_ref", "missing_anchor"]:
+    for key in FOCUS_PREFAIL:
         value = summary["failures"].get(key, 0)
         rate = (value / summary["total_runs"]) if summary["total_runs"] else 0.0
         print(f"  {key}: {value} ({rate:.2%})")
