@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Unified subsystem qualification report toward Level-10 targets."""
 
-from __future__ import annotations
+from __future__ import annotations  # stage6-grouped
 
 import argparse
 import json
