@@ -1,5 +1,5 @@
 {
-    "version": 3,
+    "version": 4,
     "description": "Manager-4 promotion manifest with lane-aware stage/manager/RAG mapping.",
     "stage_versions": {
         "stage3-v1": {
@@ -122,7 +122,7 @@
             "allowed_targets": [
                 "bin/"
             ],
-            "regression_pack": "bin/micro_lane_stage5.sh",
+            "regression_pack": "bin/micro_lane_stage6.sh",
             "status": "preview",
             "notes": "Stage-6 orchestrated job preview via Manager-5"
         }
@@ -162,7 +162,7 @@
             "target_constraints": [
                 "bin/"
             ],
-            "regression_pack": "bin/micro_lane_stage5.sh"
+            "regression_pack": "bin/micro_lane_stage6.sh"
         }
     },
     "subsystem_levels": {
@@ -271,7 +271,7 @@
             "trace_window_days": 7,
             "stage6_success_threshold": 3,
             "stage6_failure_budget": 1,
-            "required_preview_regression_pack": "bin/micro_lane_stage5.sh"
+            "required_preview_regression_pack": "bin/micro_lane_stage6.sh"
         },
         "last_decision": {
             "date": "2026-04-14T00:00:00Z",

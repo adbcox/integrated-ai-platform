@@ -170,9 +170,15 @@ aider-micro-safe:
 		fi; \
 		bash bin/aider_micro.sh "$$MICRO_MSG" "$$@"
 
-.PHONY: micro-lane-regression
+.PHONY: micro-lane-regression micro-lane-stage6 level10-promote
 micro-lane-regression:
 	@./bin/micro_lane_regression.sh
+
+micro-lane-stage6:
+	@./bin/micro_lane_stage6.sh
+
+level10-promote:
+	@python3 ./bin/level10_promote.py --manifest ./config/promotion_manifest.json
 
 preflight-normalization-guard:
 	@./bin/preflight_normalization_guard.sh

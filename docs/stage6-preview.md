@@ -57,6 +57,8 @@ commit message prefix. The manifest exposes Stage-6 as a `preview` lane
    only high-conviction hits and let the manager fall back gracefully via
    `--fallback-target` if necessary. All retries and refinements are recorded so
    Level 7 readiness can be audited.
+   Retry policy is now explicit via `--retry-class`:
+   `fallback_on_failure` (default), `fallback_on_empty`, or `none`.
 
 5. When targeting a placeholder, use `--literal-old`/`--literal-new` and
    `--min-lines` so Stage-4 can satisfy its literal-span guard without
@@ -68,13 +70,16 @@ commit message prefix. The manifest exposes Stage-6 as a `preview` lane
 ## Experimental status
 
 * Stage-6 currently targets the `bin/` prefix and keeps the Stage-5 regression
-  pack (`bin/micro_lane_stage5.sh`). The lane is `preview` so automated dispatch
+  pack (`bin/micro_lane_stage6.sh`). The lane is `preview` so automated dispatch
   still prefers Stage-5.
 * We plan to keep Stage-6 in preview until at least three Stage-6 plans produce
   successful Stage-5 jobs and the rolling trace window clears the old failures.
 * Stage-5 traces now include success/failure status, rollback markers, and
   commit hash metadata, which Manager-5 can capture in plan history and trace
   records for qualification.
+* The dedicated Stage-6 regression pack (`bin/micro_lane_stage6.sh`) validates
+  orchestration lifecycle behavior, confidence gating, and fallback constraints
+  in dry-run mode so repo state remains clean.
 
 ## Forward plan (what must happen next)
 

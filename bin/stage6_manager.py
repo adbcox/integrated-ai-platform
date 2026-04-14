@@ -245,6 +245,8 @@ def run_stage5_job(job: Stage6Job, args: argparse.Namespace, env: dict[str, str]
             "started_at": started_at,
             "finished_at": datetime.now(timezone.utc).isoformat(),
             "source": job.source,
+            "refinement_of": job.refinement_of,
+            "retry_class": args.retry_class,
             "commit_msg": commit_msg,
         }
     trace_line_start = _line_count(STAGE5_TRACE_FILE)
@@ -273,6 +275,8 @@ def run_stage5_job(job: Stage6Job, args: argparse.Namespace, env: dict[str, str]
         "started_at": started_at,
         "finished_at": datetime.now(timezone.utc).isoformat(),
         "source": job.source,
+        "refinement_of": job.refinement_of,
+        "retry_class": args.retry_class,
         "commit_msg": commit_msg,
         "stage5_job_id": latest_trace.get("job_id"),
         "stage5_commit_hash": latest_trace.get("commit_hash"),
@@ -341,6 +345,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--related-limit", type=int, default=2)
     parser.add_argument("--history-window", type=int, default=15, help="Git history window for Stage RAG-4")
     parser.add_argument("--min-confidence", type=int, default=1, help="Minimum RAG-4 confidence before enqueuing a target")
+    parser.add_argument(
+        "--retry-class",
+        choices=["none", "fallback_on_empty", "fallback_on_failure"],
+        default="fallback_on_failure",
+        help="Retry policy class for Stage-6 fallback behavior",
+    )
     parser.add_argument("--literal-old", default=PLACEHOLDER_LITERAL, help="Literal old text for Stage-4 replacements")
     parser.add_argument("--literal-new", default=PLACEHOLDER_LITERAL_UPDATED, help="Literal new text for Stage-4 replacements")
     parser.add_argument("--min-lines", type=int, default=1, help="Minimum Stage-4 literal lines for the jobs")
@@ -370,11 +380,11 @@ def main() -> int:
         plan = run_stage_rag4(args)
         jobs = plan_to_jobs(plan, allowed_targets, args.max_entries, args.min_confidence)
         args.plan_details = plan
-        if not jobs and args.fallback_target:
+        if not jobs and args.fallback_target and args.retry_class in {"fallback_on_empty", "fallback_on_failure"}:
             fallback_path = args.fallback_target
             if allowed_targets and not any(fallback_path.startswith(prefix) for prefix in allowed_targets):
                 raise SystemExit(f"[stage6] fallback target {fallback_path} is not allowed for the lane")
-            jobs = [Stage6Job(path=fallback_path, source="fallback")]
+            jobs = [Stage6Job(path=fallback_path, source="fallback", refinement_of="empty_plan")]
             plan.setdefault("targets", []).append({"path": fallback_path, "source": "fallback"})
         plan_payload = {
             "plan_id": args.plan_id,
@@ -392,6 +402,7 @@ def main() -> int:
             "plan_payload": plan_payload,
             "eligible_targets": [job.path for job in jobs],
             "query": " ".join(args.query),
+            "retry_class": args.retry_class,
         },
     )
     if not jobs:
@@ -428,9 +439,14 @@ def main() -> int:
             exit_code = int(status["return_code"])
             break
 
-    if exit_code != 0 and args.fallback_target and not any(job.source == "fallback" for job in jobs):
+    if (
+        exit_code != 0
+        and args.retry_class == "fallback_on_failure"
+        and args.fallback_target
+        and not any(job.source == "fallback" for job in jobs)
+    ):
         print(f"[stage6] retrying plan {args.plan_id} with fallback target {args.fallback_target}")
-        retry_job = Stage6Job(path=args.fallback_target, source="fallback")
+        retry_job = Stage6Job(path=args.fallback_target, source="fallback", refinement_of="failed_primary_job")
         retry_status = run_stage5_job(retry_job, args, env, len(statuses))
         retry_status["retry"] = True
         statuses.append(retry_status)

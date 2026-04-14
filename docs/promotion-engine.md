@@ -130,3 +130,18 @@ The report combines:
 - subsystem readiness (`ready_for_next_level` vs `needs_more_evidence`).
 
 Roadmap details live in `docs/level10-roadmap.md`.
+
+## Level-10 promotion control loop
+
+Use `bin/level10_promote.py` to consume `bin/level10_qualify.py --json`,
+compute objective lane decisions (`promote`, `demote`, `hold`), and update:
+- lane statuses in `config/promotion_manifest.json`,
+- `promotion_policy.last_decision` and `promotion_policy.history`,
+- audit history in `artifacts/promotion/decision_history.jsonl`.
+
+Dry-run mode keeps the manifest untouched while still appending an auditable
+decision record:
+
+```sh
+python3 bin/level10_promote.py --manifest config/promotion_manifest.json --dry-run
+```
