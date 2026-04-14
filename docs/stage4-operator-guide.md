@@ -21,11 +21,14 @@ single shell/bin file.
 
 ## Workflow
 
-1. **Plan** with Stage RAG-2:
+1. **Plan** with Stage RAG-2 (Stage RAG-1 stays the Stage-3-only planner):
    ```sh
    python3 bin/stage_rag2_plan_probe.py --plan-id stage4-<ticket> --top 6 -- "describe block edit"
    ```
-2. **Dispatch** via Manager-3 (auto-detects Stage 3 vs Stage 4):
+2. **Dispatch** via Manager-3 (auto-detects Stage 3 vs Stage 4).
+   - Manager-3 is the default entrypoint; it routes to Stage-4 when the literal
+     span is ≥3 lines and to Stage-3 otherwise so telemetry for both lanes stays
+     isolated.
    ```sh
    python3 bin/manager3.py \
      --query "tighten deploy block" \

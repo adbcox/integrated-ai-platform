@@ -7,6 +7,9 @@ Stage-3 remains the production lane for literal/comment fixes. Follow this playb
 - Run `bin/stage_rag1_plan_probe.py --stage stage3 --plan-id "stage3-<ticket>" --top 6 -- "<goal>"`.
 - Pick the file + lines from the ranked snippets and let the helper log the entry under `artifacts/stage_rag1/usage.jsonl`.
 - If you expect a literal mismatch, note it in `--notes` (shows up in the log for later analysis).
+- Stage RAG-2 is reserved for Stage-4 multi-line work. If your span creeps past
+  two lines, stop here and re-plan the job as Stage-4 so the structural retriever
+  and budget checks apply.
 
 ## 2. Prepare the literal template
 
