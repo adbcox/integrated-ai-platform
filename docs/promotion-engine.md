@@ -24,7 +24,7 @@ and required advancement evidence for:
 | production | `stage3-v1`   | `manager4-v1`   | `rag1-v1`   | Stage-3 literal/comment jobs remain the default production lane. |
 | candidate  | `stage5-v1`   | `manager4-v1`   | `rag3-v1`   | Stage-5 dual-file batches gathering telemetry ahead of promotion. |
 | manual     | `stage4-v1`   | `manager4-v1`   | `rag2-v1`   | Use Codex/manual workflows for out-of-policy or harness edits. |
-| stage6     | `stage6-v2`   | `manager5-v2`   | `rag4-v2`   | Candidate-ready Stage-6 batches with scored secondary selection and per-target literal contracts. |
+| stage6     | `stage6-v2`   | `manager5-v3`   | `rag4-v2`   | Candidate-ready Stage-6 batches with scored secondary selection, per-target literal contracts, and adaptive grouped secondary retry/decomposition. |
 
 The manifest also records the current promotion policy (`candidate_success_threshold`,
 `candidate_failure_budget`, the required regression pack, trace window budget,

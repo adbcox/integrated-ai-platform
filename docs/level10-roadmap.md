@@ -19,9 +19,9 @@ The source of truth for these levels is now `config/promotion_manifest.json` und
 
 | Subsystem | Current version | Next target | Decision |
 | --- | --- | --- | --- |
-| Stage system | `stage6-v2` | `stage6-v3` | implemented now |
-| Manager system | `manager5-v2` | `manager5-v3` | implemented now |
-| Retrieval / RAG | `rag4-v2` | `rag4-v3` | implemented now |
+| Stage system | `stage6-v2` | `stage6-v3` | held |
+| Manager system | `manager5-v3` | `manager5-v4` | implemented now |
+| Retrieval / RAG | `rag4-v2` | `rag4-v3` | held |
 | Promotion engine | `level10-promote-v1` | `level10-promote-v2` | held |
 | Worker utilization | `worker-routing-v1` | `worker-routing-v2` | deferred |
 | Regression / qualification | `qualify-v1` | `qualify-v2` | held |
@@ -43,6 +43,10 @@ Rationale and validation requirements are tracked in `subsystem_version_movement
 ### 2) Manager system
 - **Current**: Manager-4 lane dispatcher + Manager-5 orchestration.
 - **Level-10 definition**: hierarchical plan decomposition with bounded retries, lifecycle persistence, and auditable decision points.
+- **Manager5-v3 landed**:
+  - Failed secondary grouped targets now get bounded per-target refinement retry (`max_secondary_retries`) before final decision.
+  - If a retried secondary still fails, Manager-5 can mark a bounded drop and continue remaining grouped jobs (`continue_on_secondary_failure`) instead of aborting the whole plan.
+  - Plan history now emits `partial_success` when grouped execution succeeds with bounded secondary drops.
 - **Main blockers**:
   - Qualification loop is not fully integrated into manager decisions.
   - Retry/refinement policy remains simple.

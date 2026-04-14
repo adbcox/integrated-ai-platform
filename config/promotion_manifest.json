@@ -45,6 +45,10 @@
         "manager5-v2": {
             "entry": "bin/stage6_manager.py",
             "description": "Manager-5 scored grouped decomposition and per-target literal/message contracts"
+        },
+        "manager5-v3": {
+            "entry": "bin/stage6_manager.py",
+            "description": "Manager-5 adaptive grouped retry loop: retry failed secondaries with per-target refinement and continue on bounded secondary failures"
         }
     },
     "rag_versions": {
@@ -87,7 +91,7 @@
         },
         "stage6": {
             "stage_version": "stage6-v2",
-            "manager_version": "manager5-v2",
+            "manager_version": "manager5-v3",
             "rag_version": "rag4-v2"
         }
     },
@@ -131,14 +135,14 @@
         "stage6": {
             "label": "Stage-6 preview lane",
             "stage_version": "stage6-v2",
-            "manager_version": "manager5-v2",
+            "manager_version": "manager5-v3",
             "rag_version": "rag4-v2",
             "allowed_targets": [
                 "bin/"
             ],
             "regression_pack": "bin/micro_lane_stage6.sh",
             "status": "candidate_ready",
-            "notes": "Stage-6 candidate-ready lane with scored secondary decomposition and per-target literal contracts"
+            "notes": "Stage-6 candidate-ready lane with scored secondary decomposition, per-target literal contracts, and adaptive grouped secondary retry/decomposition"
         }
     },
     "lane_rules": {
@@ -355,23 +359,23 @@
         "stage_system": {
             "current_version": "stage6-v2",
             "target_next_version": "stage6-v3",
-            "decision": "implemented_now",
-            "validation": "real grouped Stage-6 run with heterogeneous targets completes with per-target literal contracts",
-            "required_code_change": "expand stage6 plan decomposition to retain bounded linked secondaries with per-target contract persistence"
+            "decision": "held",
+            "validation": "defer: next stage step should broaden safe multi-group orchestration scope",
+            "required_code_change": "stage6-v3 requires explicit stage-layer capability beyond manager retry policy"
         },
         "manager_system": {
-            "current_version": "manager5-v2",
-            "target_next_version": "manager5-v3",
+            "current_version": "manager5-v3",
+            "target_next_version": "manager5-v4",
             "decision": "implemented_now",
-            "validation": "grouped_selection shows scored_secondary acceptance and 3-target execution completes",
-            "required_code_change": "replace binary unlinked_secondary gate with scored link evidence and persist reasons"
+            "validation": "real Stage-6 grouped plan shows secondary failure + refinement retry + bounded drop/continue with partial_success history state",
+            "required_code_change": "adaptive grouped retry/decomposition loop with per-target refinement retries and continue_on_secondary_failure policy"
         },
         "rag_system": {
             "current_version": "rag4-v2",
             "target_next_version": "rag4-v3",
-            "decision": "implemented_now",
-            "validation": "stage_rag4 usage entries show intent/domain ranking version with lane-clean bin-only targets",
-            "required_code_change": "intent/domain weighting, deeper code-intent retrieval, and bounded companion expansion"
+            "decision": "held",
+            "validation": "defer: rag4-v3 already staged in prior batch; no retrieval code changes this session",
+            "required_code_change": "next rag step should reduce residual retrieval noise before grouped decomposition"
         },
         "promotion_engine": {
             "current_version": "level10-promote-v1",
