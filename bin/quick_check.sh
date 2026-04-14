@@ -52,7 +52,7 @@ printf '%s\n' "$changed_files" >"$changed_file_list"
 shell_checked=0
 python_checked=0
 
-echo "[quick] Reviewing files selected for default Stage-3 quick checks..."
+echo "[quick] Reviewing files selected for the default Stage-3 quick checks..."
 if [ -z "$changed_files" ]; then
   echo "[quick] No changed files detected for default Stage-3 quick checks."
   exit 0
