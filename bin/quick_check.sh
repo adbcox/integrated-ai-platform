@@ -54,7 +54,7 @@ python_checked=0
 
 echo "[quick] Reviewing changed files for quick checks..."
 if [ -z "$changed_files" ]; then
-  echo "[quick] No changed files detected (clean tree)."
+  echo "[quick] No changed files detected (clean tree, nothing to run)."
   exit 0
 fi
 
