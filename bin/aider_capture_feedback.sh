@@ -194,7 +194,7 @@ if [ -n "$OUTCOME_FILE" ] && [ -f "$OUTCOME_FILE" ]; then
 else
   cat >"$legacy_record_dir/outcome.md" <<'EOS'
 # Outcome
-- status: partial
+- status: partial (set pass/fail/partial)
 - key regressions prevented (list blockers):
   - <key item>
 - follow-ups (record next steps):
