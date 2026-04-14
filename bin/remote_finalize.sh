@@ -28,7 +28,8 @@ while [ "$#" -gt 0 ]; do
       exit 0
       ;;
     *)
-      echo "ERROR: unknown argument: $1" >&2
+      echo "ERROR: unknown argument: $1 (Stage-3/Stage-4 finalize helper)" >&2
+      echo "HINT: this lane expects bounded literal probes before remote finalize." >&2
       usage
       exit 1
       ;;
