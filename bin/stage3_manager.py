@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Manager-1 orchestrator for Stage-3 literal/comment worker jobs."""
+"""Manager-2 orchestrator for Stage-3 literal/comment worker jobs."""
 
 from __future__ import annotations
 
@@ -22,16 +22,17 @@ EVENT_LOG = REPO_ROOT / "artifacts" / "micro_runs" / "events.jsonl"
 
 
 FAILURE_CLASS_MAP = {
+    # Explicit classes requested for Manager-2 telemetry
     "literal_replace_missing_old": "literal_replace_missing_old",
-    "literal_replace_fallback": "clean_literal_replace_failure",
     "literal_shell_risky": "literal_shell_risky",
     "prompt_contract_rejection": "prompt_contract_rejection",
+    "fallback_blocked_running_script": "fallback_blocked_running_script",
+    "literal_replace_fallback": "clean_literal_replace_failure",
+    # Supplemental tags that should still appear distinctly in traces
     "missing_file_ref": "missing_file_ref",
     "missing_anchor": "missing_anchor",
-    "no_change": "clean_no_op_rejection",
     "comment_scope": "clean_comment_scope_rejection",
     "repo_unwritable": "external_repo_writability_block",
-    "fallback_blocked_running_script": "fallback_blocked_running_script",
 }
 
 FALLBACK_TAGS = {"literal_fallback_start", "literal_fallback_applied"}
@@ -113,26 +114,73 @@ def load_events(plan_id: str) -> list[dict]:
     return events
 
 
-def classify(events: list[dict]) -> tuple[str, bool, bool, str | None]:
+def classify(events: list[dict]) -> tuple[
+    str,
+    bool,
+    bool,
+    str | None,
+    str | None,
+    str | None,
+    int,
+]:
     fallback_used = any(evt.get("tag") in FALLBACK_TAGS for evt in events)
-    accepted = False
-    classification = "unknown"
-    final_tag = None
     final = None
     for evt in reversed(events):
         if evt.get("status") in {"success", "failure"}:
             final = evt
             break
+
+    accepted = False
+    classification = "unknown"
+    final_tag = None
+    final_status = None
+    final_note = None
     if final:
-        status = final.get("status")
-        tag = final.get("tag") or "completed"
-        final_tag = tag
-        if status == "success":
+        final_status = final.get("status")
+        final_tag = final.get("tag") or "completed"
+        final_note = final.get("note")
+        if final_status == "success":
             accepted = True
             classification = "aider_exit_recovered" if fallback_used else "accepted_change"
         else:
-            classification = FAILURE_CLASS_MAP.get(tag, tag)
-    return classification, fallback_used, accepted, final_tag
+            classification = _classify_failure(final_tag, fallback_used)
+    else:
+        classification = "unknown"
+
+    return (
+        classification,
+        fallback_used,
+        accepted,
+        final_tag,
+        final_status,
+        final_note,
+        len(events),
+    )
+
+
+def _classify_failure(final_tag: str | None, fallback_used: bool) -> str:
+    if not final_tag:
+        return "other_clean_rejection"
+
+    if final_tag == "aider_exit":
+        # In Stage-3 the literal fallback is blocked when the target file is the
+        # currently running script (e.g. aider_micro.sh). Treat that uniquely.
+        return "fallback_blocked_running_script"
+
+    if final_tag in {"literal_replace_fallback", "literal_fallback_start", "literal_fallback_applied"}:
+        return "clean_literal_replace_failure"
+
+    if final_tag == "no_change":
+        return "clean_literal_replace_failure"
+
+    if final_tag == "literal_shell_risky":
+        return "literal_shell_risky"
+
+    mapped = FAILURE_CLASS_MAP.get(final_tag)
+    if mapped:
+        return mapped
+
+    return "other_clean_rejection"
 
 
 def commit_changes(target: str, commit_msg: str) -> str | None:
@@ -176,8 +224,19 @@ def main() -> int:
 
     exit_code = run_worker(message_file, args.target, plan_id)
     events = load_events(plan_id)
-    classification, fallback_used, accepted, final_tag = classify(events)
-    print(f"[manager] worker exit={exit_code} classification={classification}")
+    (
+        classification,
+        fallback_used,
+        accepted,
+        final_tag,
+        final_status,
+        final_note,
+        event_count,
+    ) = classify(events)
+    print(
+        "[manager] worker exit=%s classification=%s final_tag=%s"
+        % (exit_code, classification, final_tag)
+    )
 
     commit_hash = None
     if accepted:
@@ -197,6 +256,9 @@ def main() -> int:
         "accepted": accepted,
         "commit_hash": commit_hash,
         "final_tag": final_tag,
+        "final_status": final_status,
+        "final_note": final_note,
+        "event_count": event_count,
         "stage_rag_lines": args.lines,
         "notes": args.notes or None,
         "worker_exit_code": exit_code,
