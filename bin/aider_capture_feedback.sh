@@ -42,9 +42,9 @@ Options (Stage-3 safe default subset):
   --force-escalation-capture       Write escalation artifacts even while in tactical mode
 
 Creates the following artifacts:
-- legacy local feedback record stored under .local-model-data/ (Stage-3 history)
-- Stage-5 batch captures mirrored under .local-model-data/ plus artifacts/stage5_manager/ traces for audit
-- escalation artifacts for non-tactical workflows (or forced mode, now mirrored for Stage-5 traces as well):
+- legacy local feedback record stored under .local-model-data/ (Stage-3 history plus Stage-5 references)
+- Stage-5 batch captures mirrored under .local-model-data/ plus artifacts/stage5_manager/ traces for audit, including Manager-4 plan IDs for real dual-file jobs
+- escalation artifacts for non-tactical workflows (or forced mode, still mirrored for Stage-5 traces when dual-file jobs escalate):
   artifacts/escalations/<task_id>/summary.json
   artifacts/escalations/<task_id>/timeline.log
   artifacts/escalations/<task_id>/patch-notes.md

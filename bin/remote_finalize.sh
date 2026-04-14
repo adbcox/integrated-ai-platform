@@ -11,9 +11,9 @@ Usage:
 
 Behavior:
   - always runs: make quick
-  - --offline changed (default): make test-changed-offline
-  - --offline full: make test-offline
-  - --offline skip: no offline behavior tests
+  - --offline changed (default): make test-changed-offline and capture the freshest Stage-5 trace when a real dual-file job fed this finalize
+  - --offline full: make test-offline (record Stage-5 commit metadata before remote syncing)
+  - --offline skip: no offline behavior tests, but Stage-5 traces must already be archived
 USAGE
 }
 
