@@ -51,7 +51,10 @@ and the desired lane behaviors) so operators can validate evidence consistently.
 ## Promotion qualification
 
 `bin/promotion_qualify.py` now summarizes whether the candidate lane meets the
-anticipated policy and highlights missing evidence:
+anticipated policy and highlights missing evidence. In order to reflect the
+improved Stage-5 work, qualification counts only the candidate jobs logged
+within the manifest’s `trace_window_days`, letting long-past failures fall off
+the rolling window as fresh wins arrive.
 
 ```sh
 python3 bin/promotion_qualify.py \

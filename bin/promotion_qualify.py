@@ -7,7 +7,7 @@ import argparse
 import json
 import sys
 from collections import Counter, deque
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Iterable
 
@@ -39,11 +39,32 @@ def is_candidate_batch(batch_file: str | None) -> bool:
     return Path(batch_file).name.startswith("stage5_candidate_job")
 
 
-def summarize_candidate_activity(trace_path: Path, lane_name: str) -> dict:
+def parse_timestamp(ts: str | None) -> datetime | None:
+    if not ts:
+        return None
+    try:
+        if ts.endswith("Z"):
+            ts = ts[:-1] + "+00:00"
+        return datetime.fromisoformat(ts)
+    except ValueError:
+        return None
+
+
+def summarize_candidate_activity(
+    trace_path: Path,
+    lane_name: str,
+    window_days: int | None = None,
+) -> dict:
     stats = Counter()
     recent = deque(maxlen=5)
+    cutoff = None
+    if window_days is not None:
+        cutoff = datetime.now(UTC) - timedelta(days=window_days)
     for entry in read_traces(trace_path):
         if entry.get("lane") != lane_name:
+            continue
+        timestamp = parse_timestamp(entry.get("timestamp"))
+        if cutoff and (timestamp is None or timestamp < cutoff):
             continue
         batch_file = entry.get("batch_file")
         real = is_candidate_batch(batch_file)
@@ -117,7 +138,13 @@ def main() -> int:
     criteria = policy.get("criteria", {})
     lane_rules = manifest_data.get("lane_rules", {}).get("candidate", {})
 
-    summary = summarize_candidate_activity(manager_trace, "candidate")
+    trace_window = criteria.get("trace_window_days")
+    window_days: int | None = None
+    try:
+        window_days = int(trace_window) if trace_window is not None else None
+    except (TypeError, ValueError):
+        window_days = None
+    summary = summarize_candidate_activity(manager_trace, "candidate", window_days)
     stats = summary["stats"]
     lane_verdict, verdict_reasons = verdict(stats, criteria)
     stage5_commits = summarize_stage5_commits(stage5_trace)
@@ -132,6 +159,7 @@ def main() -> int:
     print("--- Promotion policy criteria ---")
     print(f"  Success threshold: {criteria.get('candidate_success_threshold', 0)}")
     print(f"  Failure budget: {criteria.get('candidate_failure_budget', 0)}")
+    window_label = f" (last {window_days} days)" if window_days else ""
     print(f"  Trace window days: {trace_window if trace_window is not None else 'N/A'}")
     print("--- Candidate lane rules ---")
     if lane_rules:
@@ -141,7 +169,7 @@ def main() -> int:
         print("  (no explicit lane rules provided)")
     print("--- Candidate telemetry ---")
     print(
-        f"  Real candidate successes: {stats['real_successes']}  failures: {stats['real_failures']}"
+        f"  Real candidate successes: {stats['real_successes']}  failures: {stats['real_failures']}{window_label}"
     )
     print(
         f"  Guard/regression successes: {stats['guard_successes']}  failures: {stats['guard_failures']}"
@@ -174,6 +202,8 @@ def main() -> int:
             print(" Additional evidence recommended: " + "; ".join(missing_evidence))
     else:
         detail = "; ".join(missing_evidence) if missing_evidence else "missing evidence."
+        if window_days:
+            detail = f"{detail} (evaluated over last {window_days} days)"
         print(f"NOT READY: {detail}")
     last_decision = policy.get("last_decision", {})
     print(f"Last recorded promotion decision: {last_decision.get('status')} on {last_decision.get('date')}")
