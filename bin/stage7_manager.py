@@ -499,6 +499,74 @@ def _write_stage6_jobs_file(jobs: list[dict[str, Any]]) -> Path:
     return file_path
 
 
+def _load_stage6_attempt_code_outcomes(stage6_plan_id: str) -> dict[str, Any]:
+    stage6_history_path = TRACE_DIR / "plans" / f"{stage6_plan_id}.json"
+    if not stage6_history_path.exists():
+        return {"available": False, "reason": "stage6_history_missing"}
+    try:
+        history_payload = json.loads(stage6_history_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        return {"available": False, "reason": "stage6_history_invalid_json"}
+    history = history_payload.get("history")
+    if not isinstance(history, list):
+        return {"available": False, "reason": "stage6_history_missing_events"}
+    finished: dict[str, Any] | None = None
+    for event in reversed(history):
+        if str(event.get("event_type") or "") == "attempt_finished":
+            finished = event if isinstance(event, dict) else None
+            break
+    if not finished:
+        return {"available": False, "reason": "stage6_attempt_finished_missing"}
+    statuses = [row for row in (finished.get("statuses") or []) if isinstance(row, dict)]
+    if not statuses:
+        return {"available": False, "reason": "stage6_statuses_empty"}
+
+    checks: dict[str, dict[str, int]] = {
+        "python_compile": {"total": 0, "passed": 0},
+        "shell_syntax": {"total": 0, "passed": 0},
+    }
+    diff_total = 0
+    diff_passed = 0
+    rows_with_code = 0
+
+    for row in statuses:
+        code_outcomes = row.get("code_outcomes")
+        if not isinstance(code_outcomes, dict):
+            continue
+        rows_with_code += 1
+        for key in ("python_compile", "shell_syntax"):
+            block = code_outcomes.get(key)
+            if not isinstance(block, dict):
+                continue
+            total = int(block.get("total") or 0)
+            passed = int(block.get("passed") or 0)
+            checks[key]["total"] += max(0, total)
+            checks[key]["passed"] += max(0, min(passed, total if total > 0 else passed))
+        summary = code_outcomes.get("summary")
+        if isinstance(summary, dict) and "diff_integrity_ok" in summary:
+            diff_total += 1
+            if bool(summary.get("diff_integrity_ok")):
+                diff_passed += 1
+
+    total_checks = sum(v["total"] for v in checks.values())
+    passed_checks = sum(v["passed"] for v in checks.values())
+    check_rate = round((passed_checks / total_checks), 3) if total_checks > 0 else 0.0
+    diff_rate = round((diff_passed / diff_total), 3) if diff_total > 0 else 0.0
+    coverage = round((rows_with_code / len(statuses)), 3) if statuses else 0.0
+    return {
+        "available": rows_with_code > 0,
+        "status_count": len(statuses),
+        "code_status_count": rows_with_code,
+        "code_coverage_rate": coverage,
+        "check_rate": check_rate,
+        "checks_total": total_checks,
+        "checks_passed": passed_checks,
+        "diff_integrity_rate": diff_rate,
+        "python_compile": checks["python_compile"],
+        "shell_syntax": checks["shell_syntax"],
+    }
+
+
 def _single_line_import_base(value: str) -> str | None:
     if "\n" in value:
         return None
@@ -709,6 +777,7 @@ def run_stage6_subplan(
             "strategy": strategy_tag,
             "strategy_decision": strategy_decision or {},
             "rollback_contract": rollback_contract,
+            "code_outcomes": {"available": False, "reason": "no_dispatch_preflight_drop"},
         }
         return status
 
@@ -753,6 +822,8 @@ def run_stage6_subplan(
 
     proc = subprocess.run(cmd, env={**os.environ, **env})
     jobs_file.unlink(missing_ok=True)
+    stage6_plan_id = f"{args.plan_id}-{subplan_id}"
+    code_outcomes = _load_stage6_attempt_code_outcomes(stage6_plan_id)
     rollback_contract = {
         "contract_version": "stage9-v1",
         "strategy": "delegated_stage6_stage5_bounded_commit",
@@ -773,6 +844,8 @@ def run_stage6_subplan(
         "strategy": strategy_tag,
         "strategy_decision": strategy_decision or {},
         "rollback_contract": rollback_contract,
+        "stage6_plan_id": stage6_plan_id,
+        "code_outcomes": code_outcomes,
     }
     return status
 
@@ -1020,6 +1093,7 @@ def main() -> int:
                     "strategy": "resume_skip",
                     "targets": prior.get("targets", []),
                     "rollback_contract": prior.get("rollback_contract"),
+                    "code_outcomes": {"available": False, "reason": "resume_skip_no_new_dispatch"},
                 }
                 verification = _verify_rollback_contract_for_status(resumed_status)
                 resumed_status["rollback_verification"] = verification
@@ -1123,6 +1197,7 @@ def main() -> int:
                     "verification": "not_applicable_no_dispatch",
                     "notes": "Manager-9 deferred subplan before dispatch due to qualification/budget posture.",
                 },
+                "code_outcomes": {"available": False, "reason": "manager_preemptive_defer_no_dispatch"},
             }
             statuses.append(status)
             record_worker_outcome(
@@ -1165,6 +1240,7 @@ def main() -> int:
                     "verification": "not_applicable_no_dispatch",
                     "notes": "Worker budget exhausted before subplan dispatch.",
                 },
+                "code_outcomes": {"available": False, "reason": "worker_budget_defer_no_dispatch"},
             }
         elif strategy_decision.get("strategy") == "split_first" and len(subplan.get("targets", [])) > 1:
             split_success, split_statuses = _run_split_recovery(
@@ -1225,6 +1301,7 @@ def main() -> int:
                             "verification": "not_applicable_no_dispatch",
                             "notes": "Family rescue budget exhausted.",
                         },
+                        "code_outcomes": {"available": False, "reason": "family_budget_drop_no_dispatch"},
                     }
                     family_rescue_usage[family] = family_rescue_usage.get(family, 0) + 1
                 else:

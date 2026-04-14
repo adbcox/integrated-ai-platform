@@ -71,6 +71,70 @@ def _coverage_flags(plan_payload: dict[str, Any]) -> tuple[bool, bool]:
     return coverage_ok, outcome_ok
 
 
+def _code_outcome_totals(rows: list[dict[str, Any]]) -> dict[str, float]:
+    checks_total = 0
+    checks_passed = 0
+    diff_total = 0
+    diff_passed = 0
+    rows_with_code = 0
+    python_total = 0
+    python_passed = 0
+    shell_total = 0
+    shell_passed = 0
+    for row in rows:
+        code = row.get("code_outcomes")
+        if not isinstance(code, dict):
+            continue
+        if code.get("available") is False:
+            continue
+        rows_with_code += 1
+        for key in ("python_compile", "shell_syntax"):
+            block = code.get(key)
+            if not isinstance(block, dict):
+                continue
+            total = int(block.get("total") or 0)
+            passed = int(block.get("passed") or 0)
+            checks_total += max(0, total)
+            checks_passed += max(0, min(passed, total if total > 0 else passed))
+            if key == "python_compile":
+                python_total += max(0, total)
+                python_passed += max(0, min(passed, total if total > 0 else passed))
+            if key == "shell_syntax":
+                shell_total += max(0, total)
+                shell_passed += max(0, min(passed, total if total > 0 else passed))
+        summary = code.get("summary")
+        if isinstance(summary, dict) and "diff_integrity_ok" in summary:
+            diff_total += 1
+            if bool(summary.get("diff_integrity_ok")):
+                diff_passed += 1
+        elif "diff_integrity_rate" in code:
+            diff_total += 1
+            if float(code.get("diff_integrity_rate") or 0.0) >= 1.0:
+                diff_passed += 1
+        elif "diff_integrity_ok" in code:
+            diff_total += 1
+            if bool(code.get("diff_integrity_ok")):
+                diff_passed += 1
+
+    check_rate = (checks_passed / checks_total) if checks_total else 0.0
+    diff_rate = (diff_passed / diff_total) if diff_total else 0.0
+    coverage_rate = (rows_with_code / len(rows)) if rows else 0.0
+    return {
+        "checks_total": checks_total,
+        "checks_passed": checks_passed,
+        "check_rate": round(check_rate, 3),
+        "diff_total": diff_total,
+        "diff_passed": diff_passed,
+        "diff_rate": round(diff_rate, 3),
+        "coverage_rate": round(coverage_rate, 3),
+        "rows_with_code": rows_with_code,
+        "python_total": python_total,
+        "python_passed": python_passed,
+        "shell_total": shell_total,
+        "shell_passed": shell_passed,
+    }
+
+
 def score_first_attempt_quality(
     *,
     plan_payload: dict[str, Any],
@@ -142,6 +206,8 @@ def score_first_attempt_quality(
 
     first_dropped_targets = sum(_count_dropped_targets(row) for row in first_rows)
     final_dropped_targets = sum(_count_dropped_targets(row) for row in final_rows)
+    first_code = _code_outcome_totals(first_rows)
+    final_code = _code_outcome_totals(final_rows)
 
     rollback_checked = 0
     rollback_failed = 0
@@ -167,7 +233,7 @@ def score_first_attempt_quality(
 
     final_success_signal = float(failure_code == 0 and state in {"succeeded", "partial_success"})
 
-    base = (0.55 * first_rate) + (0.2 * final_rate)
+    base = (0.45 * first_rate) + (0.15 * final_rate) + (0.25 * first_code["check_rate"]) + (0.05 * final_code["check_rate"])
     bonus = 0.0
     if final_success_signal > 0:
         bonus += 0.1
@@ -178,6 +244,10 @@ def score_first_attempt_quality(
     if rollback_checked > 0 and rollback_failed == 0:
         bonus += 0.03
     if dispatch_ratio >= 0.5:
+        bonus += 0.02
+    if first_code["coverage_rate"] >= 0.5:
+        bonus += 0.03
+    if first_code["diff_rate"] >= 1.0 and first_code["diff_total"] > 0:
         bonus += 0.02
 
     penalty = 0.0
@@ -191,6 +261,14 @@ def score_first_attempt_quality(
     penalty += min(0.1, 0.02 * first_dropped_targets)
     penalty += min(0.1, 0.02 * final_dropped_targets)
     penalty += 0.1 * rollback_failed_ratio
+    if first_code["checks_total"] > 0:
+        penalty += 0.1 * (1.0 - first_code["check_rate"])
+    if final_code["checks_total"] > 0:
+        penalty += 0.05 * (1.0 - final_code["check_rate"])
+    if first_code["coverage_rate"] < 0.5:
+        penalty += 0.05 * (0.5 - first_code["coverage_rate"])
+    if first_code["diff_total"] > 0 and first_code["diff_rate"] < 1.0:
+        penalty += 0.08 * (1.0 - first_code["diff_rate"])
     if total_subplans > 0 and missing_roots > 0:
         penalty += min(0.15, 0.08 * (missing_roots / total_subplans))
     if not coverage_ok:
@@ -208,6 +286,10 @@ def score_first_attempt_quality(
         "final_success_rate": round(final_rate, 3),
         "first_to_final_improvement": round(delta_improvement, 3),
         "first_attempt_quality_score": round(score, 3),
+        "first_code_outcome_rate": first_code["check_rate"],
+        "final_code_outcome_rate": final_code["check_rate"],
+        "code_outcome_coverage_rate": first_code["coverage_rate"],
+        "code_diff_integrity_rate": first_code["diff_rate"],
         "rescue_count": rescue_count,
         "escalation_count": escalation_count,
         "guard_count": guard_count,
@@ -223,5 +305,17 @@ def score_first_attempt_quality(
             "outcome_guarantee_ok": outcome_ok,
             "missing_subplan_roots": missing_roots,
             "final_success_signal": final_success_signal,
+            "first_code_checks_total": first_code["checks_total"],
+            "first_code_checks_passed": first_code["checks_passed"],
+            "final_code_checks_total": final_code["checks_total"],
+            "final_code_checks_passed": final_code["checks_passed"],
+            "first_code_outcome_rate": first_code["check_rate"],
+            "final_code_outcome_rate": final_code["check_rate"],
+            "code_outcome_coverage_rate": first_code["coverage_rate"],
+            "code_diff_integrity_rate": first_code["diff_rate"],
+            "first_python_compile_total": first_code["python_total"],
+            "first_python_compile_passed": first_code["python_passed"],
+            "first_shell_syntax_total": first_code["shell_total"],
+            "first_shell_syntax_passed": first_code["shell_passed"],
         },
     }

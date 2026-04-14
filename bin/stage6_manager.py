@@ -574,6 +574,7 @@ def run_stage5_job(job: Stage6Job, args: argparse.Namespace, env: dict[str, str]
     proc = subprocess.run(cmd, env={**os.environ, **env})
     trace_rows = _read_jsonl_slice(STAGE5_TRACE_FILE, trace_line_start)
     latest_trace = trace_rows[-1] if trace_rows else {}
+    code_outcomes = latest_trace.get("code_outcomes") if isinstance(latest_trace.get("code_outcomes"), dict) else {}
     batch_path.unlink(missing_ok=True)
     return {
         "target": job.path,
@@ -589,6 +590,8 @@ def run_stage5_job(job: Stage6Job, args: argparse.Namespace, env: dict[str, str]
         "stage5_commit_hash": latest_trace.get("commit_hash"),
         "stage5_total_added": latest_trace.get("total_added"),
         "stage5_total_deleted": latest_trace.get("total_deleted"),
+        "stage5_status": latest_trace.get("status"),
+        "code_outcomes": code_outcomes,
         "literal_sync": literal_info,
     }
 

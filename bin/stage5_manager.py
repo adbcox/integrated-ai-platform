@@ -6,6 +6,7 @@ from __future__ import annotations  # stage6-grouped
 import argparse  # stage6-rag4-v4b
 import json  # stage6-linkscore-v2
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -131,6 +132,76 @@ def diff_stats(paths: list[str]) -> tuple[int, int]:
     return added, deleted
 
 
+def _safe_check(cmd: list[str]) -> tuple[bool, str]:
+    proc = subprocess.run(cmd, capture_output=True, text=True)
+    output = (proc.stdout or "") + ("\n" + proc.stderr if proc.stderr else "")
+    return proc.returncode == 0, output.strip()[:400]
+
+
+def collect_code_outcomes(*, modified_files: list[str]) -> dict[str, Any]:
+    python_total = 0
+    python_passed = 0
+    shell_total = 0
+    shell_passed = 0
+    per_file: list[dict[str, Any]] = []
+    for rel_path in modified_files:
+        row: dict[str, Any] = {"path": rel_path}
+        abs_path = REPO_ROOT / rel_path
+        if rel_path.endswith(".py"):
+            python_total += 1
+            ok, detail = _safe_check([sys.executable, "-m", "py_compile", str(abs_path)])
+            if ok:
+                python_passed += 1
+            row["python_compile"] = {"passed": ok, "detail": detail}
+        if rel_path.endswith(".sh"):
+            shell_total += 1
+            if shutil.which("bash"):
+                ok, detail = _safe_check(["bash", "-n", str(abs_path)])
+            else:
+                ok, detail = True, "bash_missing_skipped"
+            if ok:
+                shell_passed += 1
+            row["shell_syntax"] = {"passed": ok, "detail": detail}
+        per_file.append(row)
+
+    committed = run(["git", "show", "--name-only", "--pretty=format:", "HEAD"], capture_output=True, text=True)
+    committed_files = sorted({line.strip() for line in committed.stdout.splitlines() if line.strip()})
+    expected_files = sorted({path for path in modified_files if path})
+    diff_integrity_ok = committed_files == expected_files
+
+    checks_total = python_total + shell_total
+    checks_passed = python_passed + shell_passed
+    score = round((checks_passed / checks_total), 3) if checks_total else 0.0
+    return {
+        "summary": {
+            "quality_score": score,
+            "checks_total": checks_total,
+            "checks_passed": checks_passed,
+            "diff_integrity_ok": diff_integrity_ok,
+            "files_touched": len(expected_files),
+        },
+        "python_compile": {
+            "available": True,
+            "total": python_total,
+            "passed": python_passed,
+            "failed": max(0, python_total - python_passed),
+        },
+        "shell_syntax": {
+            "available": bool(shutil.which("bash")),
+            "total": shell_total,
+            "passed": shell_passed,
+            "failed": max(0, shell_total - shell_passed),
+        },
+        "test": {"available": False, "status": "not_run"},
+        "lint": {"available": False, "status": "not_run"},
+        "typecheck": {"available": False, "status": "not_run"},
+        "build": {"available": False, "status": "not_run"},
+        "committed_files": committed_files,
+        "expected_files": expected_files,
+        "per_file": per_file,
+    }
+
+
 def stage5_manager(args: argparse.Namespace) -> None:
     ensure_clean_tree()
     batch_path = Path(args.batch_file).resolve()
@@ -184,6 +255,9 @@ def stage5_manager(args: argparse.Namespace) -> None:
     total_added = 0
     total_deleted = 0
     commit_hash: str | None = None
+    code_outcomes: dict[str, Any] = {
+        "summary": {"quality_score": 0.0, "checks_total": 0, "checks_passed": 0, "diff_integrity_ok": False}
+    }
 
     try:
         for idx, entry in enumerate(entries, start=1):
@@ -281,6 +355,7 @@ def stage5_manager(args: argparse.Namespace) -> None:
         run(["git", "add"] + modified_files)
         run(["git", "commit", "-m", args.commit_msg])
         commit_hash = git_head()
+        code_outcomes = collect_code_outcomes(modified_files=modified_files)
     except Exception as exc:
         restore_head(start_head)
         log_trace(
@@ -303,6 +378,15 @@ def stage5_manager(args: argparse.Namespace) -> None:
                 "commit_hash": None,
                 "end_head": git_head(),
                 "failure_memory_findings": memory_findings,
+                "code_outcomes": {
+                    "summary": {
+                        "quality_score": 0.0,
+                        "checks_total": 0,
+                        "checks_passed": 0,
+                        "diff_integrity_ok": False,
+                    },
+                    "error": "stage5_failed_before_quality_checks",
+                },
             }
         )
         if isinstance(exc, Stage5Error):
@@ -335,6 +419,7 @@ def stage5_manager(args: argparse.Namespace) -> None:
             "rollback_to": None,
             "commit_hash": commit_hash,
             "failure_memory_findings": memory_findings,
+            "code_outcomes": code_outcomes,
         }
     )
     target_summary = ", ".join(modified_files)

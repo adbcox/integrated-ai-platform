@@ -35,4 +35,5 @@ First-attempt quality is now scored from concrete outcome deltas (not plan metad
 - wrapper-dependence delta (`first_to_final_improvement`),
 - rescue/escalation/guard signals,
 - rollback verification + reconciliation coverage/outcome guarantees,
-- return-code and no-dispatch evidence.
+- return-code and no-dispatch evidence,
+- artifact-level code outcomes when available (`python_compile`, `shell_syntax`, diff-integrity checks).

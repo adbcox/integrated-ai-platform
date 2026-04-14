@@ -40,6 +40,10 @@ class PlanRun:
     first_attempt_quality_score: float
     first_to_final_improvement: float
     final_success_rate: float
+    first_code_outcome_rate: float
+    final_code_outcome_rate: float
+    code_outcome_coverage_rate: float
+    code_diff_integrity_rate: float
     rescue_count: int
     escalation_count: int
     guard_count: int
@@ -101,11 +105,13 @@ def _primary_attribution_label(
     ranking_version: str,
     first_attempt_quality_score: float,
     first_to_final_improvement: float,
+    first_code_outcome_rate: float,
 ) -> str:
     if (
         success
         and first_attempt_quality_score >= 0.85
         and first_to_final_improvement <= 0.05
+        and first_code_outcome_rate >= 0.8
         and rescue_count == 0
         and guard_count == 0
     ):
@@ -183,6 +189,10 @@ def load_plan_runs(
         first_attempt_quality_score = float(quality.get("first_attempt_quality_score", 0.0))
         first_to_final_improvement = float(quality.get("first_to_final_improvement", 0.0))
         final_success_rate = float(quality.get("final_success_rate", 0.0))
+        first_code_outcome_rate = float(quality.get("first_code_outcome_rate", 0.0))
+        final_code_outcome_rate = float(quality.get("final_code_outcome_rate", 0.0))
+        code_outcome_coverage_rate = float(quality.get("code_outcome_coverage_rate", 0.0))
+        code_diff_integrity_rate = float(quality.get("code_diff_integrity_rate", 0.0))
         rescue_count = int(quality.get("rescue_count", 0))
         escalation_count = int(quality.get("escalation_count", 0))
         guard_count = int(quality.get("guard_count", 0))
@@ -199,6 +209,7 @@ def load_plan_runs(
             ranking_version=ranking_version,
             first_attempt_quality_score=first_attempt_quality_score,
             first_to_final_improvement=first_to_final_improvement,
+            first_code_outcome_rate=first_code_outcome_rate,
         )
         runs.append(
             PlanRun(
@@ -216,6 +227,10 @@ def load_plan_runs(
                 first_attempt_quality_score=first_attempt_quality_score,
                 first_to_final_improvement=first_to_final_improvement,
                 final_success_rate=final_success_rate,
+                first_code_outcome_rate=first_code_outcome_rate,
+                final_code_outcome_rate=final_code_outcome_rate,
+                code_outcome_coverage_rate=code_outcome_coverage_rate,
+                code_diff_integrity_rate=code_diff_integrity_rate,
                 rescue_count=rescue_count,
                 escalation_count=escalation_count,
                 guard_count=guard_count,
@@ -268,6 +283,10 @@ def summarize_metrics(task_set: list[PlanRun]) -> dict[str, Any]:
     first_attempt_total = sum(r.total_subplans for r in task_set)
     first_attempt_score_avg = _safe_rate(sum(r.first_attempt_quality_score for r in task_set), total)
     first_to_final_delta_avg = _safe_rate(sum(r.first_to_final_improvement for r in task_set), total)
+    first_code_outcome_avg = _safe_rate(sum(r.first_code_outcome_rate for r in task_set), total)
+    final_code_outcome_avg = _safe_rate(sum(r.final_code_outcome_rate for r in task_set), total)
+    code_coverage_avg = _safe_rate(sum(r.code_outcome_coverage_rate for r in task_set), total)
+    code_diff_integrity_avg = _safe_rate(sum(r.code_diff_integrity_rate for r in task_set), total)
     failure_signatures = [r.failure_signature for r in task_set if r.failure_signature]
     sig_counter = Counter(failure_signatures)
     recurring_failure_runs = sum(1 for sig in failure_signatures if sig_counter[sig] > 1)
@@ -281,6 +300,10 @@ def summarize_metrics(task_set: list[PlanRun]) -> dict[str, Any]:
         "first_attempt_quality_rate": first_attempt_score_avg,
         "first_attempt_success_rate_raw": _safe_rate(first_attempt_sum, first_attempt_total),
         "first_to_final_delta_rate": first_to_final_delta_avg,
+        "first_code_outcome_rate": first_code_outcome_avg,
+        "final_code_outcome_rate": final_code_outcome_avg,
+        "code_outcome_coverage_rate": code_coverage_avg,
+        "code_diff_integrity_rate": code_diff_integrity_avg,
         "recurrence_rate": recurrence_rate,
         "recurrence_signatures": [
             {"signature": sig, "count": count}
@@ -408,8 +431,12 @@ def to_markdown(summary: dict[str, Any]) -> str:
         "recurrence_rate",
         "first_attempt_quality_rate",
         "first_attempt_success_rate_raw",
-        "first_to_final_delta_rate",
-    ):
+            "first_to_final_delta_rate",
+            "first_code_outcome_rate",
+            "final_code_outcome_rate",
+            "code_outcome_coverage_rate",
+            "code_diff_integrity_rate",
+        ):
         lines.append(f"- {key}: {summary['metrics'][key]}")
     lines.append("")
     lines.append("## Pass/Fail Checks")
@@ -425,7 +452,9 @@ def to_markdown(summary: dict[str, Any]) -> str:
             f"rescue_rate={row['rescue_rate']} escalation_rate={row['escalation_rate']} "
             f"first_attempt_quality_rate={row['first_attempt_quality_rate']} "
             f"first_attempt_success_rate_raw={row['first_attempt_success_rate_raw']} "
-            f"first_to_final_delta_rate={row['first_to_final_delta_rate']}"
+            f"first_to_final_delta_rate={row['first_to_final_delta_rate']} "
+            f"first_code_outcome_rate={row['first_code_outcome_rate']} "
+            f"code_outcome_coverage_rate={row['code_outcome_coverage_rate']}"
         )
     lines.append("")
     lines.append("## Attribution")
@@ -516,6 +545,10 @@ def main() -> int:
                     "first_attempt_success_rate": run.first_attempt_quality_rate,
                     "first_to_final_improvement": run.first_to_final_improvement,
                     "final_success_rate": run.final_success_rate,
+                    "first_code_outcome_rate": run.first_code_outcome_rate,
+                    "final_code_outcome_rate": run.final_code_outcome_rate,
+                    "code_outcome_coverage_rate": run.code_outcome_coverage_rate,
+                    "code_diff_integrity_rate": run.code_diff_integrity_rate,
                 }
                 for run in task_set
             ],

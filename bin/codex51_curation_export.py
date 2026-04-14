@@ -113,13 +113,24 @@ def build_exports(
         first_attempt_success_rate = float(quality.get("first_attempt_success_rate") or 0.0)
         final_success_rate = float(quality.get("final_success_rate") or 0.0)
         first_to_final_improvement = float(quality.get("first_to_final_improvement") or 0.0)
+        first_code_outcome_rate = float(quality.get("first_code_outcome_rate") or 0.0)
+        final_code_outcome_rate = float(quality.get("final_code_outcome_rate") or 0.0)
+        code_outcome_coverage_rate = float(quality.get("code_outcome_coverage_rate") or 0.0)
+        code_diff_integrity_rate = float(quality.get("code_diff_integrity_rate") or 0.0)
         rescue_count = int(quality.get("rescue_count") or 0)
         escalation_count = int(quality.get("escalation_count") or 0)
         guard_count = int(quality.get("guard_count") or 0)
         signal_components = quality.get("signal_components") if isinstance(quality.get("signal_components"), dict) else {}
 
         attribution_primary = str(run.get("attribution_primary") or "mixed_gain")
-        if bool(run.get("success")) and first_attempt_quality_score >= 0.85 and first_to_final_improvement <= 0.05 and rescue_count == 0 and guard_count == 0:
+        if (
+            bool(run.get("success"))
+            and first_attempt_quality_score >= 0.85
+            and first_to_final_improvement <= 0.05
+            and first_code_outcome_rate >= 0.8
+            and rescue_count == 0
+            and guard_count == 0
+        ):
             attribution_primary = "model_gain"
         elif bool(run.get("success")) and rescue_count > 0:
             attribution_primary = "manager_gain"
@@ -142,6 +153,10 @@ def build_exports(
             "first_attempt_success_rate": first_attempt_success_rate,
             "final_success_rate": final_success_rate,
             "first_to_final_improvement": first_to_final_improvement,
+            "first_code_outcome_rate": first_code_outcome_rate,
+            "final_code_outcome_rate": final_code_outcome_rate,
+            "code_outcome_coverage_rate": code_outcome_coverage_rate,
+            "code_diff_integrity_rate": code_diff_integrity_rate,
             "rescue_count": rescue_count,
             "escalation_count": escalation_count,
             "guard_count": guard_count,
@@ -158,6 +173,7 @@ def build_exports(
             base_row["success"]
             and base_row["first_attempt_quality_score"] >= 0.85
             and base_row["first_to_final_improvement"] <= 0.05
+            and base_row["first_code_outcome_rate"] >= 0.8
             and base_row["rescue_count"] == 0
             and base_row["guard_count"] == 0
         ):
@@ -189,7 +205,12 @@ def build_exports(
                     "training_reason": "success with rescue/escalation or weak first-attempt quality",
                 }
             )
-            if base_row["first_attempt_quality_score"] < 0.5 or base_row["first_to_final_improvement"] >= 0.4:
+            if (
+                base_row["first_attempt_quality_score"] < 0.5
+                or base_row["first_to_final_improvement"] >= 0.4
+                or (base_row["code_outcome_coverage_rate"] >= 0.5 and base_row["first_code_outcome_rate"] < 0.6)
+                or (base_row["code_diff_integrity_rate"] > 0 and base_row["code_diff_integrity_rate"] < 1.0)
+            ):
                 failures_for_training.append(
                     {
                         **base_row,
