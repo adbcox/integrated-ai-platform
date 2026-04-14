@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Manager-4 dispatcher bridging Stage-3/4/5 lanes with promotion awareness."""
 
-from __future__ import annotations
+from __future__ import annotations  # stage6-grouped
 
 import argparse
 import json
