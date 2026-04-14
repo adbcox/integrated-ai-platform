@@ -3,6 +3,8 @@ set -euo pipefail
 
 SCRIPT_PATH="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)/$(basename -- "$0")"
 REPO_ROOT="$(git rev-parse --show-toplevel)"
+ALLOW_LITERAL_DIFF=${AIDER_MICRO_ALLOW_LITERAL_DIFF:-0}
+LITERAL_DIFF_ALLOWED=false
 
 usage() {
   cat <<'USAGE'
@@ -206,7 +208,12 @@ if expected != after:
 sys.exit(0)
 PY
   then
-    fail "literal replace produced unexpected changes" "literal_replace_diff"
+    if [ "$ALLOW_LITERAL_DIFF" -eq 1 ]; then
+      LITERAL_DIFF_ALLOWED=true
+      log_micro_event "warning" "literal_diff_allowed" "literal replace produced unexpected diff; continuing" 0 "execution"
+    else
+      fail "literal replace produced unexpected changes" "literal_replace_diff"
+    fi
   fi
 }
 

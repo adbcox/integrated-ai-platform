@@ -124,6 +124,7 @@ def _load_events(plan_id: str) -> list[dict]:
 def _classify(events: list[dict]) -> tuple[str, bool, bool, str | None, str | None, str | None, int]:
     fallback_tags = {"literal_fallback_start", "literal_fallback_applied"}
     fallback_used = any(evt.get("tag") in fallback_tags for evt in events)
+    literal_diff_flag = any(evt.get("tag") == "literal_diff_allowed" for evt in events)
     final = None
     for evt in reversed(events):
         if evt.get("status") in {"success", "failure"}:
@@ -140,7 +141,13 @@ def _classify(events: list[dict]) -> tuple[str, bool, bool, str | None, str | No
         final_note = final.get("note")
         if final_status == "success":
             accepted = True
-            classification = "aider_exit_recovered" if fallback_used else "accepted_change"
+            if literal_diff_flag:
+                classification = "literal_diff_allowed"
+                final_tag = "literal_diff_allowed"
+            elif fallback_used:
+                classification = "aider_exit_recovered"
+            else:
+                classification = "accepted_change"
         else:
             classification = final_tag or "other_clean_rejection"
     return classification, fallback_used, accepted, final_tag, final_status, final_note, len(events)
@@ -227,6 +234,10 @@ def main() -> int:
     env = os.environ.copy()
     env["AIDER_MICRO_STAGE"] = "stage4"
     env["AIDER_MICRO_PLAN_ID"] = plan_id
+    if args.allow_literal_diff:
+        env["AIDER_MICRO_ALLOW_LITERAL_DIFF"] = "1"
+    else:
+        env.pop("AIDER_MICRO_ALLOW_LITERAL_DIFF", None)
     cmd = [
         "make",
         "aider-micro-safe",
