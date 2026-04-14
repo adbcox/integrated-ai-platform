@@ -31,6 +31,12 @@
             "description": "Stage-6 orchestrated multi-target batches with per-target literal contracts and scored secondaries",
             "manager_entry": "bin/stage6_manager.py",
             "rag_helper": "stage_rag4"
+        },
+        "stage7-v1": {
+            "stage": "stage7",
+            "description": "Stage-7 multi-plan orchestration with partitioned subplans, audited partial completion, and manager-controlled split recovery",
+            "manager_entry": "bin/stage7_manager.py",
+            "rag_helper": "stage_rag6"
         }
     },
     "manager_versions": {
@@ -53,6 +59,10 @@
         "manager5-v4": {
             "entry": "bin/stage6_manager.py",
             "description": "Manager-5 grouped rescue orchestration: after bounded secondary refinement failure, swap to high-link dropped alternates and record explicit rescue outcomes"
+        },
+        "manager6-v1": {
+            "entry": "bin/stage7_manager.py",
+            "description": "Manager-6 Stage-7 multi-plan orchestrator: executes bounded grouped subplans and performs split-on-failure reconciliation with auditable recovery decisions"
         }
     },
     "rag_versions": {
@@ -79,6 +89,10 @@
         "rag4-v3": {
             "entry": "bin/stage_rag4_plan_probe.py",
             "description": "RAG-4 lane-link-diverse ranking with stronger companion link-strength gating and family diversity caps"
+        },
+        "rag6-v1": {
+            "entry": "bin/stage_rag6_plan_probe.py",
+            "description": "RAG-6 clustered multi-plan retrieval that packages lane-aligned targets into bounded linked-family subplans for Stage-7 orchestration"
         }
     },
     "lane_versions": {
@@ -101,6 +115,11 @@
             "stage_version": "stage6-v2",
             "manager_version": "manager5-v4",
             "rag_version": "rag4-v3"
+        },
+        "stage7": {
+            "stage_version": "stage7-v1",
+            "manager_version": "manager6-v1",
+            "rag_version": "rag6-v1"
         }
     },
     "lanes": {
@@ -151,6 +170,18 @@
             "regression_pack": "bin/micro_lane_stage6.sh",
             "status": "candidate_ready",
             "notes": "Stage-6 candidate-ready lane with scored secondary decomposition, per-target literal contracts, adaptive grouped retry/decomposition, secondary rescue swap from linked dropped targets, and rag4 lane-link-diverse ranking"
+        },
+        "stage7": {
+            "label": "Stage-7 preview lane",
+            "stage_version": "stage7-v1",
+            "manager_version": "manager6-v1",
+            "rag_version": "rag6-v1",
+            "allowed_targets": [
+                "bin/"
+            ],
+            "regression_pack": "bin/micro_lane_stage7.sh",
+            "status": "building",
+            "notes": "Stage-7 multi-plan preview lane with RAG-6 subplan clustering and Manager-6 split-on-failure reconciliation over Stage-6 subplan execution"
         }
     },
     "lane_rules": {
@@ -189,23 +220,31 @@
                 "bin/"
             ],
             "regression_pack": "bin/micro_lane_stage6.sh"
+        },
+        "stage7": {
+            "assignment": "orchestrated Stage-7 multi-plan batches",
+            "behavior": "plan with RAG-6 clustered subplans, execute each subplan through Stage-6, and reconcile partial completion via manager-controlled split recovery",
+            "target_constraints": [
+                "bin/"
+            ],
+            "regression_pack": "bin/micro_lane_stage7.sh"
         }
     },
     "subsystem_levels": {
         "stage_system": {
-            "current_level": 6,
+            "current_level": 7,
             "production_level": 3,
             "candidate_level": 5,
-            "preview_level": 6,
-            "next_target_level": 7,
+            "preview_level": 7,
+            "next_target_level": 8,
             "level10_definition": "Autonomous multi-lane stage planner that selects and safely executes bounded work classes with policy-backed rollback and promotion gates.",
             "key_blockers": [
-                "Stage-6 remains preview-only with limited target scope",
-                "No automated gate that advances lane status from evidence"
+                "Stage-7 currently runs in preview-only dry/near-real mode",
+                "Subplan-level rollback semantics still rely on Stage-6/5 bounded behavior rather than dedicated Stage-7 rollback primitives"
             ],
             "evidence_to_advance": [
-                "Rolling Stage-6 success streak with green required regression packs",
-                "Plan lifecycle traces contain deterministic state transitions and retry outcomes"
+                "Repeated Stage-7 multi-plan runs succeed with auditable subplan lifecycle transitions",
+                "Stage-7 split-on-failure reconciliation maintains bounded safe execution while improving completion rate"
             ]
         },
         "manager_system": {
@@ -216,28 +255,28 @@
             "next_target_level": 7,
             "level10_definition": "Hierarchical manager orchestration with persisted plan lifecycle, bounded retries, and lane-aware policy enforcement across all stages.",
             "key_blockers": [
-                "Manager-5 lacks end-to-end qualification feedback loop",
-                "Plan lifecycle evidence is not yet summarized into promotion decisions"
+                "Manager-6 currently reconciles failures via split-on-failure but does not yet optimize subplan order from historical outcomes",
+                "Cross-lane promotion/qualification feedback is not yet consumed directly in manager orchestration decisions"
             ],
             "evidence_to_advance": [
-                "Per-attempt plan history includes planned/running/succeeded-or-failed states",
-                "Qualification tooling ingests manager traces and emits upgrade readiness"
+                "Manager-6 traces show deterministic retry-vs-split-vs-drop decisions with persisted outcomes",
+                "Subplan reconciliation improves completion without expanding safety risk"
             ]
         },
         "rag_system": {
-            "current_level": 4,
+            "current_level": 6,
             "production_level": 1,
             "candidate_level": 3,
-            "preview_level": 4,
-            "next_target_level": 5,
+            "preview_level": 6,
+            "next_target_level": 7,
             "level10_definition": "Cross-file, provenance-rich retrieval with confidence calibration and companion ranking that drives safe multi-target orchestration.",
             "key_blockers": [
-                "Companion ranking confidence has been shallow",
-                "Plan selection reason metadata is not fully exploited downstream"
+                "RAG-6 clustering is currently family/link based and does not yet include semantic conflict detection",
+                "Cluster ordering is not yet tuned by execution risk learned from Stage-7 outcomes"
             ],
             "evidence_to_advance": [
-                "RAG-4 targets include rank signals and source-weighted confidence",
-                "Managers filter weak companions and record retry/fallback decisions"
+                "RAG-6 emits bounded subplans with explicit provenance and cluster strategy metadata",
+                "Stage-7 runs show cleaner multi-plan packaging before manager-side repair"
             ]
         },
         "promotion_engine": {
@@ -365,28 +404,28 @@
     },
     "subsystem_versions": {
         "stage_system": {
-            "current_version": "stage6-v2",
-            "next_version": "stage6-v3",
-            "after_next_version": "stage6-v4",
-            "upgrade_goal": "broaden safe multi-group Stage-6 orchestration beyond current bin-only candidate-ready surface",
-            "minimum_validation": "one real grouped Stage-6 run with >1 meaningful target succeeds without fallback-only execution",
-            "status": "held"
+            "current_version": "stage7-v1",
+            "next_version": "stage8-v1",
+            "after_next_version": "stage9-v1",
+            "upgrade_goal": "harden Stage-7 multi-plan orchestration from preview into repeatable production-safe execution with explicit rollback/reconciliation contracts",
+            "minimum_validation": "stage7 manager run shows subplan lifecycle planning->running->(succeeded|partial_success|failed) with auditable reconciliation events",
+            "status": "building"
         },
         "manager_system": {
-            "current_version": "manager5-v4",
-            "next_version": "manager6-v1",
-            "after_next_version": "manager6-v2",
-            "upgrade_goal": "add qualification-aware grouped recovery planning that predicts split/retry/drop before dispatch from historical outcomes",
-            "minimum_validation": "real grouped Stage-6 run shows refinement->rescue transition with explicit retry/drop/swap rationale and persisted rescue outcomes",
-            "status": "validated"
+            "current_version": "manager6-v1",
+            "next_version": "manager7-v1",
+            "after_next_version": "manager8-v1",
+            "upgrade_goal": "evolve manager orchestration from grouped retries to hierarchical multi-plan scheduling and policy-aware recovery ordering",
+            "minimum_validation": "stage7 manager run records grouped_subplan execution plus split_on_failure recovery traces with deterministic decision tags",
+            "status": "building"
         },
         "rag_system": {
-            "current_version": "rag4-v3",
-            "next_version": "rag5-v1",
-            "after_next_version": "rag5-v2",
-            "upgrade_goal": "increase lane-aligned recall/diversity via stronger companion/link expansion without reintroducing out-of-lane noise",
-            "minimum_validation": "stage_rag4 plan shows ranking_version rag4-v3-lane-link-diverse and Stage-6 grouped dry-run resolves cleaner bin-only target sets",
-            "status": "validated"
+            "current_version": "rag6-v1",
+            "next_version": "rag7-v1",
+            "after_next_version": "rag8-v1",
+            "upgrade_goal": "move from ranked target lists to richer cluster-aware planning with conflict detection and adaptive subplan ordering",
+            "minimum_validation": "stage_rag6 plan emits bounded clustered subplans and stage7 consumes those subplans directly",
+            "status": "building"
         },
         "promotion_engine": {
             "current_version": "level10-promote-v1",

@@ -25,6 +25,7 @@ and required advancement evidence for:
 | candidate  | `stage5-v1`   | `manager4-v1`   | `rag3-v1`   | Stage-5 dual-file batches gathering telemetry ahead of promotion. |
 | manual     | `stage4-v1`   | `manager4-v1`   | `rag2-v1`   | Use Codex/manual workflows for out-of-policy or harness edits. |
 | stage6     | `stage6-v2`   | `manager5-v4`   | `rag4-v3`   | Candidate-ready Stage-6 batches with scored secondary selection, per-target literal contracts, adaptive grouped secondary retry/decomposition, and bounded secondary rescue swap from linked dropped targets. |
+| stage7     | `stage7-v1`   | `manager6-v1`   | `rag6-v1`   | Stage-7 preview batches: RAG-6 emits clustered subplans, Manager-6 executes each via Stage-6 and reconciles partial failure with split-on-failure recovery. |
 
 The manifest also records the current promotion policy (`candidate_success_threshold`,
 `candidate_failure_budget`, the required regression pack, trace window budget,
@@ -90,6 +91,21 @@ This keeps version movement operational and auditable instead of “generic impr
 - The manifest keeps the lane in `preview` status. Operators may sample it
   manually before Stage-6 accumulates enough evidence to promote the lane to
   production.
+
+## Stage-7 preview and Manager-6 routing
+
+- Manager-6 (`bin/stage7_manager.py`) orchestrates a **multi-plan** run, not a
+  single grouped plan. Each Stage-7 plan contains bounded subplans and executes
+  each subplan through Stage-6.
+- Stage RAG-6 (`bin/stage_rag6_plan_probe.py`) clusters lane-aligned retrieval
+  targets into linked/family subplans so Stage-7 receives a partitioned plan
+  payload rather than one flat target list.
+- On grouped subplan failure, Manager-6 can apply `split_on_failure` recovery:
+  it retries the failed subplan as single-target subplans and records explicit
+  reconciliation outcomes in plan history and traces.
+- Stage-7 traces are written to `artifacts/manager6/traces.jsonl` with
+  deterministic decision tags that show grouped execution, recoveries, and
+  partial-success semantics.
 
 ## Level 7 roadmap reference
 

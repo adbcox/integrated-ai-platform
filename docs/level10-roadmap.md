@@ -6,9 +6,9 @@ This roadmap defines Level-10 goals across the six major subsystems and ties eac
 
 | Subsystem | Current level | Production level | Candidate level | Preview level | Next target |
 | --- | --- | --- | --- | --- | --- |
-| Stage system | 6 | 3 | 5 | 6 | 7 |
+| Stage system | 7 | 3 | 5 | 7 | 8 |
 | Manager system | 6 | 4 | 5 | 6 | 7 |
-| Retrieval / RAG | 4 | 1 | 3 | 4 | 5 |
+| Retrieval / RAG | 6 | 1 | 3 | 6 | 7 |
 | Promotion engine | 6 | 3 | 5 | 6 | 7 |
 | Worker utilization | 5 | 3 | 5 | 6 | 6 |
 | Regression / qualification | 5 | 3 | 5 | 6 | 6 |
@@ -19,9 +19,9 @@ The source of truth for these levels is now `config/promotion_manifest.json` und
 
 | Subsystem | Current version | Next target | Decision |
 | --- | --- | --- | --- |
-| Stage system | `stage6-v2` | `stage6-v3` | held |
-| Manager system | `manager5-v4` | `manager6-v1` | validated |
-| Retrieval / RAG | `rag4-v3` | `rag5-v1` | implemented now |
+| Stage system | `stage7-v1` | `stage8-v1` | building |
+| Manager system | `manager6-v1` | `manager7-v1` | building |
+| Retrieval / RAG | `rag6-v1` | `rag7-v1` | building |
 | Promotion engine | `level10-promote-v1` | `level10-promote-v2` | held |
 | Worker utilization | `worker-routing-v1` | `worker-routing-v2` | deferred |
 | Regression / qualification | `qualify-v1` | `qualify-v2` | held |
@@ -96,14 +96,14 @@ Rationale and validation requirements are tracked in `subsystem_versions` inside
 
 ## Implementation focus for this batch
 
-1. Strengthen Stage-6 plan lifecycle and evidence persistence.
-2. Strengthen RAG-4 ranking/confidence metadata used by orchestration.
-3. Add manifest-level subsystem advancement policy (levels + evidence).
-4. Add a unified qualification command that reports subsystem readiness from traces.
+1. Stage-7 multi-plan orchestration (`bin/stage7_manager.py`) with explicit subplan lifecycle and partial-completion reconciliation.
+2. Manager-6 split-on-failure recovery semantics over Stage-6 subplan execution.
+3. RAG-6 clustered subplan planner (`bin/stage_rag6_plan_probe.py`) that emits lane-clean grouped subplans for Stage-7.
+4. Coarse major-version source-of-truth updates in `config/promotion_manifest.json`.
 
 Those changes are now implemented in:
+- `bin/stage7_manager.py`
+- `bin/stage_rag6_plan_probe.py`
+- `bin/micro_lane_stage7.sh`
 - `bin/stage6_manager.py`
-- `bin/stage_rag4_plan_probe.py`
-- `bin/stage5_manager.py`
-- `bin/level10_qualify.py`
 - `config/promotion_manifest.json`

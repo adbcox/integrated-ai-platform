@@ -23,8 +23,8 @@ Each subsystem in `subsystem_versions` must define:
 - `status` (`planned`, `building`, `validated`, `promoted`, `held`)
 
 ## Current active next-step targets
-- `stage system`: `stage6-v3`
-- `manager system`: `manager5-v4`
-- `rag system`: `rag5-v1`
+- `stage system`: `stage8-v1`
+- `manager system`: `manager7-v1`
+- `rag system`: `rag7-v1`
 
 These targets are operational commitments and should be changed only when code and validation evidence justify it.
