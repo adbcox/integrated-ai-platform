@@ -125,6 +125,12 @@ def _stage5_entry_payload(
         payload["window"] = window
     if max_total_lines is not None:
         payload["max_total_lines"] = max_total_lines
+    old_lines, new_lines = literal_line_count(message)
+    literal_span = max(old_lines, new_lines)
+    if 0 < literal_span < 3:
+        # Stage-5 candidate batches may include one/two-line literal tweaks.
+        # Keep Stage-4 bounds explicit so short literals do not fail by default.
+        payload["min_lines"] = 1
     return payload
 
 
