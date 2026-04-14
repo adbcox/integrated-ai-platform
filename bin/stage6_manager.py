@@ -5,7 +5,7 @@
 
 from __future__ import annotations
 
-import argparse
+import argparse  # m5v3-proof
 import json
 import os
 import re
