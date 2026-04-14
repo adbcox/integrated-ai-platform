@@ -207,7 +207,7 @@ if [ -n "$CHECKS_FILE" ] && [ -f "$CHECKS_FILE" ]; then
 else
   cat >"$legacy_record_dir/checks.txt" <<'EOS'
 make quick (Stage-3 default)
-make test-changed-offline
+make test-changed-offline (Stage-3 default)
 EOS
 fi
 
