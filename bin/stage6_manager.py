@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Manager-5 orchestrator for Stage-6 multi-target batches."""
 
-# STAGE6_PLACEHOLDER
+# STAGE6_PLACEHOLDER (real-cycle)
 
 from __future__ import annotations
 
