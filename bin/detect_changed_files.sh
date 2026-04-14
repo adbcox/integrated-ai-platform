@@ -1,9 +1,9 @@
 #!/bin/sh
 set -eu
 
-# Priority ordering for detection (Stage-3 literal micro lane, refreshed):
+# Priority ordering for detection (Stage-3 + Stage-4 literal lanes):
 # 1) CLI args stay the highest priority
-# 2) CHANGED_FILES env (space/newline separated) stays second priority for the Stage-3 default override
+# 2) CHANGED_FILES env (space/newline separated) stays second priority for the literal default override
 
 if [ "$#" -gt 0 ]; then
   for item in "$@"; do
