@@ -81,16 +81,20 @@ def filter_by_manifest_version(
 def summarize_candidate(manager4_rows: list[dict[str, Any]]) -> Counter:
     def candidate_run_key(row: dict[str, Any]) -> str:
         extra = row.get("extra") if isinstance(row.get("extra"), dict) else {}
-        batch_file = extra.get("batch_file") or row.get("batch_file")
-        if batch_file:
-            return f"batch:{batch_file}"
+        commit_msg = str(extra.get("commit_msg") or "")
         target = ""
         targets = row.get("targets")
         if isinstance(targets, list) and targets:
             target = str(targets[0])
         if not target:
             target = str(row.get("target") or "")
-        commit_msg = str(extra.get("commit_msg") or "")
+        secondary_target = str(extra.get("secondary_target") or "")
+        if commit_msg and target:
+            # Batch files change across retries; logical run identity should not.
+            return f"task:{commit_msg}|target:{target}|secondary:{secondary_target}"
+        batch_file = extra.get("batch_file") or row.get("batch_file")
+        if batch_file:
+            return f"batch:{batch_file}"
         return f"target:{target}|commit:{commit_msg}"
 
     latest_rows: dict[str, dict[str, Any]] = {}

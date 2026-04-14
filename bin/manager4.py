@@ -36,6 +36,15 @@ def literal_line_count(message: str) -> tuple[int, int]:
     return match.group(1).count("\n") + 1, match.group(2).count("\n") + 1
 
 
+def ensure_message_anchor(message: str, target: str) -> str:
+    target_name = Path(target).name
+    if "::" in message and (target in message or target_name in message):
+        return message
+    if target in message or target_name in message:
+        return f"{target}:: {message}"
+    return f"{target}:: {message}"
+
+
 def run(cmd: list[str], extra_env: dict[str, str] | None = None) -> int:
     env = os.environ.copy()
     if extra_env:
@@ -114,7 +123,7 @@ def _stage5_entry_payload(
     payload: dict = {
         "query": query,
         "target": target,
-        "message": message,
+        "message": ensure_message_anchor(message, target),
         "lines": lines,
     }
     if notes:
