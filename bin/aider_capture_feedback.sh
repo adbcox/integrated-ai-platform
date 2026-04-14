@@ -196,7 +196,7 @@ else
 # Outcome
 - status: partial
 - key regressions prevented:
-  - <item>
+  - <key item>
 - follow-ups:
   - <item>
 EOS
