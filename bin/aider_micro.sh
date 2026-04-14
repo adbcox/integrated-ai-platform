@@ -286,8 +286,9 @@ ensure_message_quality() {
   if ! require_action_word "$msg_lower"; then
     fail "message must include a concrete action verb (add/update/replace/...)" "weak_prompt"
   fi
+  local placeholders_present=false
   if printf '%s' "$msg" | grep -Eq '<[[:space:][:alpha:][:digit:]_./-]+>' ; then
-    fail "replace placeholder tokens like <OLD TEXT>/<anchor-token> with real text" "placeholder_prompt"
+    placeholders_present=true
   fi
   local banned_phrases=(
     "reword" "rephrase" "clarify wording" "rewrite paragraph" "touch docs" "touch documentation"
@@ -337,6 +338,36 @@ PY
     if [ "$LITERAL_OLD" = "$LITERAL_NEW" ]; then
       fail "literal replace old text matches new text" "prompt_contract_rejection"
     fi
+    if [ "$placeholders_present" = true ]; then
+      if ! MESSAGE="$msg" python3 - "$LITERAL_OLD" "$LITERAL_NEW" <<'PY'
+import os, re, sys
+msg = os.environ['MESSAGE']
+literal_old = sys.argv[1]
+literal_new = sys.argv[2]
+placeholders = list(re.finditer(r"<[A-Za-z0-9_./-]+>", msg))
+if not placeholders:
+    sys.exit(0)
+literal_spans = []
+for match in re.finditer(r"'([^']*)'", msg):
+    literal_spans.append((match.span(), match.group(1)))
+allowed_text = {literal_old, literal_new}
+def allowed(hit_start):
+    for (start, end), text in literal_spans:
+        if start <= hit_start < end and text in allowed_text:
+            return True
+    return False
+for ph in placeholders:
+    if not allowed(ph.start()):
+        sys.exit(1)
+sys.exit(0)
+PY
+      then
+        fail "placeholder tokens must stay inside quoted literal old/new text" "placeholder_prompt"
+      fi
+    fi
+  fi
+  if [ "$placeholders_present" = true ] && [ "$detected_kind" != "literal-replace" ]; then
+    fail "replace placeholder tokens like <OLD TEXT>/<anchor-token> with real text" "placeholder_prompt"
   fi
   info "task kind detected: $detected_kind"
   TASK_KIND="$detected_kind"
