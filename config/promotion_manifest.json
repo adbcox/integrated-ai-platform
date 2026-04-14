@@ -1,9 +1,10 @@
 {
-  "version": 1,
+  "version": 2,
+  "description": "Manager-4 promotion manifest with lane-aware stage/manager/RAG mapping.",
   "stage_versions": {
     "stage3-v1": {
       "stage": "stage3",
-      "description": "Stage-3 literal/comment lane with ≤2-line edits",
+      "description": "Stage-3 literal/comment lane with \u22642-line edits",
       "manager_entry": "bin/stage3_manager.py",
       "rag_helper": "stage_rag1"
     },
@@ -40,6 +41,23 @@
       "description": "Hybrid retrieval for Stage-5"
     }
   },
+  "lane_versions": {
+    "production": {
+      "stage_version": "stage3-v1",
+      "manager_version": "manager4-v1",
+      "rag_version": "rag1-v1"
+    },
+    "candidate": {
+      "stage_version": "stage5-v1",
+      "manager_version": "manager4-v1",
+      "rag_version": "rag3-v1"
+    },
+    "manual": {
+      "stage_version": "stage4-v1",
+      "manager_version": "manager4-v1",
+      "rag_version": "rag2-v1"
+    }
+  },
   "lanes": {
     "production": {
       "label": "Stage-3 production lane",
@@ -72,14 +90,36 @@
       "notes": "For harness/docs/out-of-scope work"
     }
   },
+  "lane_rules": {
+    "production": {
+      "assignment": "literal span < stage4 threshold when --lane auto or explicit production",
+      "target_constraints": ["bin/", "shell/", "docs/"],
+      "commit_controls": "use stage3_manager to keep edits ≤2 lines and prefer comment-only changes",
+      "regression_pack": "bin/micro_lane_regression.sh"
+    },
+    "candidate": {
+      "assignment": "stage5 requests or explicit --lane candidate with dual-file batches",
+      "target_constraints": ["bin/", "docs/"],
+      "regression_pack": "bin/micro_lane_stage5.sh",
+      "auto_reroute": "disallowed targets fall back to manual lane"
+    },
+    "manual": {
+      "assignment": "used when a target violates lane constraints or a human needs manual guidance",
+      "behavior": "run Codex/manual workflow, update manifest to adjust lanes, then rerun Manager-4",
+      "regression_pack": null
+    }
+  },
   "promotion_policy": {
-    "candidate_success_threshold": 4,
-    "candidate_failure_budget": 1,
-    "required_regression_pack": "bin/micro_lane_stage5.sh",
+    "criteria": {
+      "candidate_success_threshold": 4,
+      "candidate_failure_budget": 1,
+      "required_regression_pack": "bin/micro_lane_stage5.sh",
+      "trace_window_days": 7
+    },
     "last_decision": {
       "date": "2026-04-14T00:00:00Z",
       "status": "candidate_in_progress",
-      "notes": "Stage-5 collecting real dual-file telemetry"
+      "notes": "Stage-5 collecting dual-file telemetry"
     }
   }
 }

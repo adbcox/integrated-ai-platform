@@ -12,16 +12,16 @@ import sys
 import tempfile
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT))
 
 from promotion import MANIFEST_PATH, load_manifest, resolve_versions_for_lane
+from promotion.tracing import PromotionTraceEntry, append_trace, current_commit_hash
 STAGE3_MANAGER = REPO_ROOT / "bin" / "stage3_manager.py"
 STAGE4_MANAGER = REPO_ROOT / "bin" / "stage4_manager.py"
 STAGE5_MANAGER = REPO_ROOT / "bin" / "stage5_manager.py"
-TRACE_DIR = REPO_ROOT / "artifacts" / "manager4"
-TRACE_FILE = TRACE_DIR / "traces.jsonl"
 LITERAL_RE = re.compile(r"replace exact text '(.+?)' with '(.+?)'", re.DOTALL)
 
 
@@ -100,13 +100,6 @@ def dispatch_stage5(args: argparse.Namespace, batch_file: str, extra_env: dict[s
     return run(cmd, extra_env)
 
 
-def append_trace(entry: dict) -> None:
-    TRACE_DIR.mkdir(parents=True, exist_ok=True)
-    with TRACE_FILE.open("a", encoding="utf-8") as fh:
-        json.dump(entry, fh, ensure_ascii=False)
-        fh.write("\n")
-
-
 def _stage5_entry_payload(
     *,
     query: str,
@@ -172,6 +165,59 @@ def create_stage5_batch(args: argparse.Namespace) -> Path:
     batch_path = Path(tempfile.gettempdir()) / f"{timestamp}.json"
     batch_path.write_text(json.dumps(entries, ensure_ascii=False, indent=2), encoding="utf-8")
     return batch_path
+
+
+def _classify_outcome(return_code: int | None, manual: bool) -> str:
+    if manual:
+        return "manual"
+    if return_code == 0:
+        return "success"
+    return "failure"
+
+
+def _trace_literal_lines(args: argparse.Namespace) -> int:
+    old_lines, new_lines = literal_line_count(args.message or "")
+    return max(old_lines, new_lines)
+
+
+def record_trace(
+    *,
+    lane: str,
+    lane_cfg: dict,
+    lane_reason: str,
+    versions: dict,
+    manifest_path: Path,
+    manifest_version: int,
+    policy_status: str | None,
+    args: argparse.Namespace,
+    return_code: int | None,
+    manual: bool,
+    extra: dict[str, Any] | None = None,
+) -> None:
+    entry = PromotionTraceEntry(
+        lane=lane,
+        lane_label=lane_cfg.get("label", ""),
+        lane_status=lane_cfg.get("status", ""),
+        lane_reason=lane_reason,
+        stage=versions.get("stage"),
+        stage_version=versions.get("stage_version_name"),
+        manager_version=versions.get("manager_version_name"),
+        rag_version=versions.get("rag_version_name"),
+        promotion_policy_status=policy_status,
+        manifest_version=manifest_version,
+        manifest_path=str(manifest_path),
+        literal_lines=_trace_literal_lines(args),
+        return_code=return_code,
+        promotion_outcome=_classify_outcome(return_code, manual),
+        commit_hash=current_commit_hash(),
+        manual=manual,
+        targets=[normalize_target(args.target)] if args.target else None,
+        batch_file=args.batch_file,
+        auto_stage=args.stage == "auto",
+        auto_stage5_batch=args.batch_file is not None,
+        extra=extra or {},
+    )
+    append_trace(entry)
 
 
 def infer_lane(args: argparse.Namespace, desired_stage: str) -> str:
@@ -321,36 +367,26 @@ def main() -> int:
 
     if lane == "manual":
         handle_manual_lane(lane_cfg, lane_reason, manifest_path)
-        trace_time = datetime.now(UTC).isoformat(timespec="seconds")
-        append_trace(
-            {
-                "timestamp": trace_time,
-                "lane": lane,
-                "lane_status": lane_cfg.get("status"),
-                "lane_label": lane_cfg.get("label"),
-                "lane_reason": lane_reason,
+        record_trace(
+            lane=lane,
+            lane_cfg=lane_cfg,
+            lane_reason=lane_reason,
+            versions=versions,
+            manifest_path=manifest_path,
+            manifest_version=manifest_version,
+            policy_status=policy_status,
+            args=args,
+            return_code=2,
+            manual=True,
+            extra={
                 "manual_reason": lane_reason,
-                "stage": desired_stage,
                 "job_stage_argument": args.stage,
-                "stage_version": versions.get("stage_version_name"),
-                "manager_version": versions.get("manager_version_name"),
-                "rag_version": versions.get("rag_version_name"),
-                "manifest_version": manifest_version,
-                "manifest_path": str(manifest_path),
-                "promotion_policy_status": policy_status,
-                "literal_lines": literal_span,
-                "return_code": 2,
-                "manual": True,
-                "target": args.target,
-                "secondary_target": args.secondary_target,
-                "lane_allowed_targets": allowed_targets,
                 "allowed_check_targets": targets_to_check,
-                "batch_file": batch_file_arg,
-                "auto_stage": args.stage == "auto",
-                "auto_stage5_batch": False,
+                "lane_allowed_targets": allowed_targets,
+                "secondary_target": args.secondary_target,
                 "notes": args.notes or None,
                 "lane_regression_pack": lane_cfg.get("regression_pack"),
-            }
+            },
         )
         return 2
 
@@ -378,36 +414,29 @@ def main() -> int:
     if auto_batch_path and auto_batch_path.exists():
         auto_batch_path.unlink(missing_ok=True)
 
-    trace_time = datetime.now(UTC).isoformat(timespec="seconds")
-    append_trace(
-        {
-            "timestamp": trace_time,
-            "lane": lane,
-            "lane_status": lane_cfg.get("status"),
-            "lane_label": lane_cfg.get("label"),
-            "lane_reason": lane_reason,
-            "stage": routed_stage,
+    record_trace(
+        lane=lane,
+        lane_cfg=lane_cfg,
+        lane_reason=lane_reason,
+        versions=versions,
+        manifest_path=manifest_path,
+        manifest_version=manifest_version,
+        policy_status=policy_status,
+        args=args,
+        return_code=retcode,
+        manual=False,
+        extra={
             "dispatched_stage": routed_stage,
             "job_stage_argument": args.stage,
-            "stage_version": versions.get("stage_version_name"),
-            "manager_version": versions.get("manager_version_name"),
-            "rag_version": versions.get("rag_version_name"),
-            "manifest_version": manifest_version,
-            "manifest_path": str(manifest_path),
-            "promotion_policy_status": policy_status,
-            "auto_stage": args.stage == "auto",
-            "literal_lines": literal_span,
-            "return_code": retcode,
-            "target": args.target,
-            "secondary_target": args.secondary_target,
-            "lane_allowed_targets": allowed_targets,
             "allowed_check_targets": targets_to_check,
+            "lane_allowed_targets": allowed_targets,
+            "secondary_target": args.secondary_target,
             "batch_file": batch_file_arg,
             "auto_stage5_batch": auto_batch_used,
             "notes": args.notes or None,
             "lane_regression_pack": lane_cfg.get("regression_pack"),
             "commit_msg": args.commit_msg,
-        }
+        },
     )
     if retcode != 0:
         return retcode

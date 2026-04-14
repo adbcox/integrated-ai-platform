@@ -71,9 +71,9 @@ def summarize_stage5_commits(trace_path: Path) -> list[dict]:
     return list(recent_commits)
 
 
-def verdict(stats: Counter, policy: dict) -> tuple[str, list[str]]:
-    required_successes = int(policy.get("candidate_success_threshold", 0))
-    failure_budget = int(policy.get("candidate_failure_budget", 0))
+def verdict(stats: Counter, criteria: dict) -> tuple[str, list[str]]:
+    required_successes = int(criteria.get("candidate_success_threshold", 0))
+    failure_budget = int(criteria.get("candidate_failure_budget", 0))
     reasons: list[str] = []
     if stats["successes"] < required_successes:
         reasons.append(f"Needs {required_successes - stats['successes']} more successful candidate jobs.")
@@ -100,10 +100,12 @@ def main() -> int:
     candidate_lane = resolve_versions_for_lane(manifest_data, "candidate")
     lane_cfg = candidate_lane.get("lane", {})
     policy = manifest_data.get("promotion_policy", {})
+    criteria = policy.get("criteria", {})
+    lane_rules = manifest_data.get("lane_rules", {}).get("candidate", {})
 
     summary = summarize_candidate_activity(manager_trace, "candidate")
     stats = summary["stats"]
-    lane_verdict, verdict_reasons = verdict(stats, policy)
+    lane_verdict, verdict_reasons = verdict(stats, criteria)
     stage5_commits = summarize_stage5_commits(stage5_trace)
 
     print(f"Manifest: {manifest_path} (version={manifest.version})")
@@ -111,11 +113,22 @@ def main() -> int:
     print(f"Stage version: {candidate_lane.get('stage_version_name')} ({candidate_lane.get('stage')})")
     print(f"Manager version: {candidate_lane.get('manager_version_name')}")
     print(f"RAG version: {candidate_lane.get('rag_version_name')}")
+    trace_window = criteria.get("trace_window_days")
     print(f"Required regression pack: {lane_cfg.get('regression_pack')}")
+    print("--- Promotion policy criteria ---")
+    print(f"  Success threshold: {criteria.get('candidate_success_threshold', 0)}")
+    print(f"  Failure budget: {criteria.get('candidate_failure_budget', 0)}")
+    print(f"  Trace window days: {trace_window if trace_window is not None else 'N/A'}")
+    print("--- Candidate lane rules ---")
+    if lane_rules:
+        for rule_key, rule_value in lane_rules.items():
+            print(f"  {rule_key}: {rule_value}")
+    else:
+        print("  (no explicit lane rules provided)")
     print("--- Candidate telemetry ---")
     print(f"  Successes: {stats['successes']}  Failures: {stats['failures']}")
-    print(f"  Required successes: {policy.get('candidate_success_threshold', 0)}")
-    print(f"  Failure budget: {policy.get('candidate_failure_budget', 0)}")
+    print(f"  Required successes: {criteria.get('candidate_success_threshold', 0)}")
+    print(f"  Failure budget: {criteria.get('candidate_failure_budget', 0)}")
     print("--- Recent candidate jobs ---")
     if summary["recent"]:
         for item in summary["recent"]:
@@ -132,11 +145,17 @@ def main() -> int:
     else:
         print("  No Stage-5 manager commits recorded.")
 
+    missing_evidence = list(verdict_reasons)
+    if not stage5_commits:
+        missing_evidence.append("No Stage-5 commits recorded.")
     print("--- Verdict ---")
     if lane_verdict == "promotable":
         print("PROMOTABLE: candidate lane meets success/failure thresholds.")
+        if missing_evidence:
+            print(" Additional evidence recommended: " + "; ".join(missing_evidence))
     else:
-        print("NOT READY: " + "; ".join(verdict_reasons) if verdict_reasons else "NOT READY: missing evidence.")
+        detail = "; ".join(missing_evidence) if missing_evidence else "missing evidence."
+        print(f"NOT READY: {detail}")
     last_decision = policy.get("last_decision", {})
     print(f"Last recorded promotion decision: {last_decision.get('status')} on {last_decision.get('date')}")
 
