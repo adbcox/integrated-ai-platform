@@ -48,7 +48,7 @@ Default execution loop:
   3) pause for manual patch application
   4) run local finalize checks
   5) capture and annotate feedback notes
-  6) export captured training JSONL records
+  6) export captured training JSONL records (if enabled)
 USAGE
 }
 
