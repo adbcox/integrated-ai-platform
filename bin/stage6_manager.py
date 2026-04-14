@@ -25,9 +25,9 @@ from promotion.tracing import PromotionTraceEntry, append_trace, current_commit_
 STAGE5_MANAGER = REPO_ROOT / "bin" / "stage5_manager.py"
 STAGE_RAG4_PLAN = REPO_ROOT / "bin" / "stage_rag4_plan_probe.py"
 TRACE_DIR = REPO_ROOT / "artifacts" / "manager5"
-# STAGE6_PLACEHOLDER
-# STAGE6_PLACEHOLDER
-# STAGE6_PLACEHOLDER
+# STAGE6_PLACEHOLDER (updated)
+# STAGE6_PLACEHOLDER (updated)
+# STAGE6_PLACEHOLDER (updated)
 PLACEHOLDER_LITERAL = "# STAGE6_PLACEHOLDER\\n# STAGE6_PLACEHOLDER\\n# STAGE6_PLACEHOLDER"
 PLACEHOLDER_LITERAL_UPDATED = "# STAGE6_PLACEHOLDER (updated)\\n# STAGE6_PLACEHOLDER (updated)\\n# STAGE6_PLACEHOLDER (updated)"
 
