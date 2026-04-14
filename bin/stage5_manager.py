@@ -6,6 +6,7 @@ from __future__ import annotations  # stage6-grouped
 import argparse  # stage6-rag4-v4b
 import json  # stage6-linkscore-v2
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -303,6 +304,34 @@ def collect_code_outcomes(*, modified_files: list[str]) -> dict[str, Any]:
     }
 
 
+LITERAL_REPLACE_RE = re.compile(r"replace exact text '(.+?)' with '(.+?)'", re.DOTALL)
+
+
+def _extract_message_literals(message: str) -> tuple[str | None, str | None]:
+    match = LITERAL_REPLACE_RE.search(message)
+    if not match:
+        return None, None
+    return match.group(1), match.group(2)
+
+
+def _apply_literal_replace_direct(*, target: str, message: str) -> tuple[bool, str]:
+    old_literal, new_literal = _extract_message_literals(message)
+    if not old_literal or new_literal is None:
+        return False, "literal_contract_missing"
+    target_path = REPO_ROOT / target
+    try:
+        before = target_path.read_text(encoding="utf-8")
+    except OSError:
+        return False, "target_unreadable"
+    if old_literal not in before:
+        return False, "literal_old_not_found"
+    after = before.replace(old_literal, new_literal, 1)
+    if after == before:
+        return False, "literal_noop"
+    target_path.write_text(after, encoding="utf-8")
+    return True, "literal_direct_applied"
+
+
 def stage5_manager(args: argparse.Namespace) -> None:
     ensure_clean_tree()
     batch_path = Path(args.batch_file).resolve()
@@ -366,6 +395,7 @@ def stage5_manager(args: argparse.Namespace) -> None:
             message = entry["message"].replace("\\n", "\n")
             query = entry["query"]
             notes = entry.get("notes", "")
+            stage4_notes = notes or f"stage5 op {idx}"
             lines = entry.get("lines", "auto")
 
             plan_id = f"{job_id}-op{idx}"
@@ -384,7 +414,7 @@ def stage5_manager(args: argparse.Namespace) -> None:
                 "--selected-lines",
                 str(lines),
                 "--notes",
-                notes or f"stage5 op {idx}",
+                stage4_notes,
                 "--",
             ]
             rag_cmd.extend(query.split())
@@ -404,7 +434,7 @@ def stage5_manager(args: argparse.Namespace) -> None:
                 "--lines",
                 str(lines),
                 "--notes",
-                notes or "",
+                stage4_notes,
                 "--no-commit",
                 "--allow-literal-diff",
             ]
@@ -416,7 +446,9 @@ def stage5_manager(args: argparse.Namespace) -> None:
                 stage4_cmd.extend(["--window", str(entry["window"])])
             if entry.get("max_total_lines"):
                 stage4_cmd.extend(["--max-total-lines", str(entry["max_total_lines"])])
-            run(stage4_cmd)
+            direct_ok, direct_reason = _apply_literal_replace_direct(target=target, message=message)
+            if not direct_ok:
+                run(stage4_cmd)
             if target not in modified_files:
                 modified_files.append(target)
 
@@ -427,7 +459,9 @@ def stage5_manager(args: argparse.Namespace) -> None:
                     "target": target,
                     "query": query,
                     "lines": lines,
-                    "notes": notes or None,
+                    "notes": stage4_notes,
+                    "execution_mode": "literal_direct" if direct_ok else "stage4_manager",
+                    "execution_reason": direct_reason,
                     "diff_added": entry_added,
                     "diff_deleted": entry_deleted,
                 }
