@@ -27,7 +27,7 @@ Usage (Stage-3 production lane default flow):
   ./bin/aider_capture_feedback.sh --name <task-name> [options] (Stage-3 default invocation)
 
 Options (Stage-3 safe default subset):
-  --summary <path>                 Markdown summary file (Stage-3 telemetry capture)
+  --summary <path>                 Markdown summary file (Stage-3 telemetry log)
   --outcome <path>                 Outcome file (Stage-3 completion log)
   --checks <path>                  Commands/checks file (Stage-3 run log)
   --task-id <id>                   Explicit task id (default Stage-3 timestamp+slug)
