@@ -255,6 +255,45 @@ def _run_split_recovery(
     return all_success, split_statuses
 
 
+def _risk_rank(bucket: str) -> int:
+    return {"low": 0, "medium": 1, "high": 2}.get(bucket, 2)
+
+
+def _order_subplans(subplans: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Risk/conflict-aware ordering for Stage-7 subplan execution.
+
+    Lower-risk, non-overlapping families run first to reduce early brittle failures.
+    """
+    pending = [dict(item) for item in subplans]
+    ordered: list[dict[str, Any]] = []
+    seen_families: set[str] = set()
+    while pending:
+        best_idx = 0
+        best_key: tuple[int, int, float] | None = None
+        for idx, subplan in enumerate(pending):
+            meta = subplan.get("target_meta") or []
+            families = {str(m.get("family") or "") for m in meta if m.get("family")}
+            conflict_count = len(families & seen_families)
+            worst_risk = max((_risk_rank(str(m.get("risk_bucket") or "high")) for m in meta), default=2)
+            confidence = float(subplan.get("confidence") or 0.0)
+            key = (conflict_count, worst_risk, -confidence)
+            if best_key is None or key < best_key:
+                best_key = key
+                best_idx = idx
+        chosen = pending.pop(best_idx)
+        meta = chosen.get("target_meta") or []
+        families = sorted({str(m.get("family") or "") for m in meta if m.get("family")})
+        chosen["execution_ordering"] = {
+            "risk_rank": max((_risk_rank(str(m.get("risk_bucket") or "high")) for m in meta), default=2),
+            "family_conflicts_with_prior": len(set(families) & seen_families),
+            "families": families,
+            "reason": "risk_conflict_aware_order",
+        }
+        seen_families.update(families)
+        ordered.append(chosen)
+    return ordered
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Stage-7 multi-plan manager")
     parser.add_argument("--query", nargs="+", required=True)
@@ -320,7 +359,7 @@ def main() -> int:
         args.preferred_prefix = list(lane_cfg.get("allowed_targets", ["bin/"]))
 
     rag6_plan = run_stage_rag6(args)
-    subplans = list(rag6_plan.get("subplans", []))
+    subplans = _order_subplans(list(rag6_plan.get("subplans", [])))
 
     plan_payload = {
         "plan_id": args.plan_id,
@@ -329,6 +368,11 @@ def main() -> int:
         "created_at": datetime.now(timezone.utc).isoformat(),
         "subplans": subplans,
         "provenance": rag6_plan.get("provenance", {}),
+        "reconciliation_contract": {
+            "subplan_failure_policy": args.subplan_failure_policy,
+            "rollback_model": "delegated_stage6_stage5_bounded_commit",
+            "drop_model": "preflight_drop_when_literal_contract_unsupported",
+        },
     }
 
     write_plan_history(
