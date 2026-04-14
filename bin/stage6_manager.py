@@ -45,6 +45,10 @@ class Stage6Job:
     lines: str | None = None
     source: str | None = None
     refinement_of: str | None = None
+    literal_old: str | None = None
+    literal_new: str | None = None
+    sync_reason: str | None = None
+    message: str | None = None
 
 
 LINK_TOKEN_SPLIT_RE = re.compile(r"[^a-z0-9]+")
@@ -433,8 +437,8 @@ def _sync_import_literal_pair(
 
 
 def create_stage5_batch(job: Stage6Job, args: argparse.Namespace) -> tuple[Path, dict[str, Any]]:
-    literal_old = args.literal_old
-    literal_new = args.literal_new
+    literal_old = job.literal_old or args.literal_old
+    literal_new = job.literal_new or args.literal_new
     target_path = (REPO_ROOT / job.path).resolve()
     try:
         target_contents = target_path.read_text(encoding="utf-8")
@@ -456,15 +460,16 @@ def create_stage5_batch(job: Stage6Job, args: argparse.Namespace) -> tuple[Path,
             literal_old, literal_new = import_sync
             sync_reason = "sync_import_line"
 
+    message = job.message or args.message_template.format(
+        path=job.path,
+        source=(job.source or "rag4"),
+        old=literal_old,
+        new=literal_new,
+    )
     payload = {
         "query": " ".join(args.query),
         "target": job.path,
-        "message": args.message_template.format(
-            path=job.path,
-            source=(job.source or "rag4"),
-            old=literal_old,
-            new=literal_new,
-        ),
+        "message": message,
         "lines": job.lines or args.lines,
     }
     if args.min_lines:
@@ -479,7 +484,55 @@ def create_stage5_batch(job: Stage6Job, args: argparse.Namespace) -> tuple[Path,
         "literal_old": literal_old,
         "literal_new": literal_new,
         "sync_reason": sync_reason,
+        "message": message,
     }
+
+
+def build_job_contracts(jobs: list[Stage6Job], args: argparse.Namespace) -> list[Stage6Job]:
+    """Resolve per-target literal/message contracts before Stage-5 dispatch."""
+    resolved: list[Stage6Job] = []
+    for job in jobs:
+        target_path = (REPO_ROOT / job.path).resolve()
+        try:
+            target_contents = target_path.read_text(encoding="utf-8")
+        except OSError:
+            target_contents = ""
+
+        literal_old, literal_new, sync_reason = _synchronize_literal_pair(
+            target_contents=target_contents,
+            literal_old=args.literal_old,
+            literal_new=args.literal_new,
+        )
+        if sync_reason is None and literal_old not in target_contents:
+            import_sync = _sync_import_literal_pair(
+                target_contents=target_contents,
+                literal_old=args.literal_old,
+                literal_new=args.literal_new,
+            )
+            if import_sync:
+                literal_old, literal_new = import_sync
+                sync_reason = "sync_import_line"
+
+        message = args.message_template.format(
+            path=job.path,
+            source=(job.source or "rag4"),
+            old=literal_old,
+            new=literal_new,
+        )
+        resolved.append(
+            Stage6Job(
+                path=job.path,
+                notes=job.notes,
+                lines=job.lines,
+                source=job.source,
+                refinement_of=job.refinement_of,
+                literal_old=literal_old,
+                literal_new=literal_new,
+                sync_reason=sync_reason,
+                message=message,
+            )
+        )
+    return resolved
 
 
 def run_stage5_job(job: Stage6Job, args: argparse.Namespace, env: dict[str, str], idx: int) -> dict[str, Any]:
@@ -552,8 +605,8 @@ def apply_failure_memory(
         projected_message = args.message_template.format(
             path=job.path,
             source=(job.source or "rag4"),
-            old=args.literal_old,
-            new=args.literal_new,
+            old=(job.literal_old or args.literal_old),
+            new=(job.literal_new or args.literal_new),
         )
         decision = assess_target_risk(
             lane=lane_name,
@@ -726,6 +779,19 @@ def main() -> int:
         lane_name=lane_name,
         allowed_targets=allowed_targets,
     )
+    jobs = build_job_contracts(jobs, args)
+    plan_payload["job_contracts"] = [
+        {
+            "path": job.path,
+            "source": job.source,
+            "refinement_of": job.refinement_of,
+            "literal_old": job.literal_old,
+            "literal_new": job.literal_new,
+            "sync_reason": job.sync_reason,
+            "message": job.message,
+        }
+        for job in jobs
+    ]
     plan_payload["failure_memory_findings"] = memory_findings
     write_plan_history(
         args.plan_id,
