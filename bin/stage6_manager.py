@@ -502,14 +502,14 @@ def build_job_contracts(jobs: list[Stage6Job], args: argparse.Namespace) -> list
 
         literal_old, literal_new, sync_reason = _synchronize_literal_pair(
             target_contents=target_contents,
-            literal_old=args.literal_old,
-            literal_new=args.literal_new,
+            literal_old=job.literal_old or args.literal_old,
+            literal_new=job.literal_new or args.literal_new,
         )
         if sync_reason is None and literal_old not in target_contents:
             import_sync = _sync_import_literal_pair(
                 target_contents=target_contents,
-                literal_old=args.literal_old,
-                literal_new=args.literal_new,
+                literal_old=job.literal_old or args.literal_old,
+                literal_new=job.literal_new or args.literal_new,
             )
             if import_sync:
                 literal_old, literal_new = import_sync
