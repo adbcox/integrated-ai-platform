@@ -319,7 +319,7 @@ def main() -> int:
     parser.add_argument(
         "--strict-manifest-version",
         action="store_true",
-        help="Only count trace rows that match the current manifest version",
+        help="Only count rows matching the current manifest version",
     )
     parser.add_argument("--json", action="store_true", help="Emit machine-readable JSON summary")
     args = parser.parse_args()
