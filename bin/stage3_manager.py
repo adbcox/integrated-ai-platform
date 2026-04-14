@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 import argparse
-import datetime as dt
+from datetime import UTC, datetime
 import json
 import os
 import shlex
@@ -160,7 +160,7 @@ def main() -> int:
 
     git_clean()
 
-    timestamp = dt.datetime.utcnow().strftime("%Y%m%d-%H%M%S")
+    timestamp = datetime.now(UTC).strftime("%Y%m%d-%H%M%S")
     job_id = f"stage3mgr-{timestamp}"
     plan_id = f"{job_id}-plan"
 
@@ -182,7 +182,7 @@ def main() -> int:
         git_clean()
 
     entry = {
-        "timestamp": dt.datetime.utcnow().isoformat(timespec="seconds") + "Z",
+        "timestamp": datetime.now(UTC).isoformat(timespec="seconds"),
         "job_id": job_id,
         "plan_id": plan_id,
         "query": args.query,
