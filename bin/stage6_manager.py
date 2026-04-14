@@ -47,6 +47,22 @@ class Stage6Job:
     refinement_of: str | None = None
 
 
+LINK_TOKEN_SPLIT_RE = re.compile(r"[^a-z0-9]+")
+GENERIC_LINK_TOKENS = {
+    "bin",
+    "docs",
+    "file",
+    "files",
+    "path",
+    "target",
+    "targets",
+    "lane",
+    "stage",
+    "py",
+    "sh",
+}
+
+
 def plan_history_path(plan_id: str) -> Path:
     return TRACE_DIR / "plans" / f"{plan_id}.json"
 
@@ -175,6 +191,78 @@ def plan_to_jobs(
     max_entries: int,
     min_confidence: int,
 ) -> tuple[list[Stage6Job], dict[str, Any]]:
+    def _path_tokens(path: str) -> set[str]:
+        parts: list[str] = []
+        for segment in path.lower().replace("/", "_").split("_"):
+            if not segment:
+                continue
+            parts.extend(LINK_TOKEN_SPLIT_RE.split(segment))
+        tokens: set[str] = set()
+        for token in parts:
+            token = token.strip()
+            if not token or token in GENERIC_LINK_TOKENS:
+                continue
+            tokens.add(token)
+            alpha = re.sub(r"\d+", "", token)
+            if alpha and alpha != token and alpha not in GENERIC_LINK_TOKENS:
+                tokens.add(alpha)
+        return tokens
+
+    def _query_tokens(plan_payload: dict[str, Any]) -> set[str]:
+        raw_tokens = plan_payload.get("provenance", {}).get("query_tokens", [])
+        if not isinstance(raw_tokens, list):
+            return set()
+        tokens: set[str] = set()
+        for token in raw_tokens:
+            value = str(token).lower().strip()
+            if not value:
+                continue
+            for split in LINK_TOKEN_SPLIT_RE.split(value):
+                split = split.strip()
+                if not split or split in GENERIC_LINK_TOKENS:
+                    continue
+                tokens.add(split)
+        return tokens
+
+    def _secondary_link_evidence(
+        *,
+        candidate: dict[str, Any],
+        primary: dict[str, Any],
+        query_tokens: set[str],
+    ) -> tuple[float, list[str], bool]:
+        evidence: list[str] = []
+        score = 0.0
+
+        candidate_path = str(candidate.get("path") or "")
+        primary_path = str(primary.get("path") or "")
+        candidate_related = {str(p) for p in (candidate.get("related") or []) if p}
+        primary_related = {str(p) for p in (primary.get("related") or []) if p}
+        direct_related = candidate_path in primary_related or primary_path in candidate_related
+        if direct_related:
+            score += 3.0
+            evidence.append("direct_related")
+
+        candidate_tokens = _path_tokens(candidate_path)
+        primary_tokens = _path_tokens(primary_path)
+        token_overlap = (candidate_tokens & query_tokens)
+        if token_overlap:
+            score += min(1.5, 0.75 * len(token_overlap))
+            evidence.append(f"query_token_overlap:{','.join(sorted(token_overlap))}")
+
+        family_overlap = (candidate_tokens & primary_tokens)
+        if family_overlap:
+            score += 0.75
+            evidence.append(f"path_family_overlap:{','.join(sorted(list(family_overlap)[:2]))}")
+
+        candidate_conf = float(candidate.get("confidence") or 0)
+        primary_score = float(primary.get("rank_score") or 0.0)
+        candidate_score = float(candidate.get("rank_score") or 0.0)
+        if candidate_conf >= 6 and primary_score > 0 and candidate_score >= (primary_score * 0.68):
+            score += 0.75
+            evidence.append("high_confidence_proximal")
+
+        return score, evidence, direct_related
+
     jobs: list[Stage6Job] = []
     selection: dict[str, Any] = {"selected": [], "dropped": []}
     eligible_targets: list[dict[str, Any]] = []
@@ -199,7 +287,7 @@ def plan_to_jobs(
     primary = eligible_targets[0]
     primary_path = str(primary.get("path"))
     selected_paths: set[str] = set()
-    primary_related = {str(p) for p in (primary.get("related") or []) if p}
+    query_tokens = _query_tokens(plan)
 
     jobs.append(
         Stage6Job(
@@ -222,11 +310,21 @@ def plan_to_jobs(
             selection["dropped"].append({"path": path, "reason": "duplicate_path"})
             continue
 
-        related = {str(p) for p in (target.get("related") or []) if p}
-        linked_to_primary = path in primary_related or primary_path in related
-        linked_to_selected = any((path in {str(p) for p in (t.get("related") or []) if p}) for t in eligible_targets if str(t.get("path")) in selected_paths)
-        if not (linked_to_primary or linked_to_selected):
-            selection["dropped"].append({"path": path, "reason": "unlinked_secondary"})
+        link_score, link_evidence, direct_related = _secondary_link_evidence(
+            candidate=target,
+            primary=primary,
+            query_tokens=query_tokens,
+        )
+        keep_secondary = direct_related or link_score >= 1.5
+        if not keep_secondary:
+            selection["dropped"].append(
+                {
+                    "path": path,
+                    "reason": "unlinked_secondary",
+                    "link_score": round(link_score, 2),
+                    "link_evidence": link_evidence,
+                }
+            )
             continue
 
         jobs.append(
@@ -241,8 +339,10 @@ def plan_to_jobs(
         selection["selected"].append(
             {
                 "path": path,
-                "reason": "linked_secondary",
-                "linked_to_primary": linked_to_primary,
+                "reason": "linked_secondary" if direct_related else "scored_secondary",
+                "linked_to_primary": direct_related,
+                "link_score": round(link_score, 2),
+                "link_evidence": link_evidence,
             }
         )
     return jobs, selection
