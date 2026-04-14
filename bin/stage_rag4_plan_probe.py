@@ -56,11 +56,56 @@ def _count_related_sources(related_entries: list[dict[str, Any]]) -> tuple[int, 
     return sibling, git_history
 
 
-def _confidence_score(*, base_score: float, sibling_count: int, git_history_count: int, related_score: int) -> int:
-    """Collapse retrieval quality signals into a bounded confidence bucket (1-10)."""
-    # BM25 score contributes the strongest signal, while companion quality nudges tie-breaks.
-    raw = (base_score * 3.0) + (sibling_count * 0.8) + (git_history_count * 1.2) + min(related_score / 220.0, 2.5)
-    return max(1, min(10, int(math.floor(raw)) + 1))
+def _path_matches_prefix(path: str, prefixes: list[str]) -> bool:
+    if not prefixes:
+        return True
+    return any(path.startswith(prefix) for prefix in prefixes)
+
+
+def _ranking_score(
+    *,
+    base_score: float,
+    sibling_count: int,
+    git_history_count: int,
+    related_count: int,
+    related_score: int,
+    lane_aligned: bool,
+) -> float:
+    # Stage-6 currently executes mostly bin-scoped work; make lane alignment decisive.
+    lane_bonus = 2.35 if lane_aligned else -2.35
+    companion_bonus = (min(related_count, 4) * 0.18) + (git_history_count * 0.22) + (sibling_count * 0.12)
+    related_preview_bonus = min(related_score / 420.0, 1.6)
+    return round(base_score + lane_bonus + companion_bonus + related_preview_bonus, 4)
+
+
+def _calibrate_confidences(targets: list[dict[str, Any]]) -> None:
+    """Assign confidence buckets with score-spread awareness (avoids constant 10s)."""
+    if not targets:
+        return
+    if len(targets) == 1:
+        targets[0]["confidence"] = 8 if targets[0].get("lane_aligned") else 6
+        return
+
+    scores = [float(t.get("rank_score", 0.0)) for t in targets]
+    lo = min(scores)
+    hi = max(scores)
+    span = hi - lo
+
+    if span < 0.25:
+        # Flat-score fallback: confidence by rank with light lane bias.
+        for idx, target in enumerate(targets):
+            base = max(3, 9 - idx)
+            if target.get("lane_aligned"):
+                base += 1
+            target["confidence"] = max(1, min(10, base))
+        return
+
+    for target in targets:
+        norm = (float(target.get("rank_score", 0.0)) - lo) / span
+        confidence = 2 + int(round(norm * 7))
+        if target.get("lane_aligned"):
+            confidence += 1
+        target["confidence"] = max(1, min(10, confidence))
 
 
 def main() -> int:
@@ -73,6 +118,12 @@ def main() -> int:
     parser.add_argument("--max-targets", type=int, default=4)
     parser.add_argument("--related-limit", type=int, default=2)
     parser.add_argument(
+        "--preferred-prefix",
+        action="append",
+        default=[],
+        help="Preferred path prefix (repeatable) used for lane-aware ranking",
+    )
+    parser.add_argument(
         "--history-window",
         type=int,
         default=15,
@@ -83,6 +134,7 @@ def main() -> int:
 
     search_payload = run_search(args)
     results = search_payload.get("results", [])
+    preferred_prefixes = [prefix for prefix in args.preferred_prefix if prefix]
 
     targets: list[dict[str, Any]] = []
     for entry in results:
@@ -91,16 +143,19 @@ def main() -> int:
             continue
         related_entries = [rel for rel in entry.get("related", []) if rel.get("path")]
         related_files = [rel.get("path") for rel in related_entries]
+        related_count = len(related_files)
         related_score = sum(len(rel.get("preview", "")) for rel in related_entries)
         sibling_count, git_history_count = _count_related_sources(related_entries)
         base_score = float(entry.get("score") or 0.0)
-        confidence = _confidence_score(
+        lane_aligned = _path_matches_prefix(path, preferred_prefixes)
+        rank_score = _ranking_score(
             base_score=base_score,
             sibling_count=sibling_count,
             git_history_count=git_history_count,
+            related_count=related_count,
             related_score=related_score,
+            lane_aligned=lane_aligned,
         )
-        rank_score = round(base_score + (git_history_count * 0.35) + (sibling_count * 0.15), 4)
         targets.append(
             {
                 "path": path,
@@ -109,12 +164,15 @@ def main() -> int:
                 "source": "stage_rag3",
                 "base_score": base_score,
                 "rank_score": rank_score,
-                "confidence": confidence,
                 "related_score": related_score,
+                "lane_aligned": lane_aligned,
                 "selection_reason": {
                     "sibling_count": sibling_count,
                     "git_history_count": git_history_count,
                     "related_paths": related_files,
+                    "related_count": related_count,
+                    "preferred_prefixes": preferred_prefixes,
+                    "lane_aligned": lane_aligned,
                 },
             }
         )
@@ -129,17 +187,23 @@ def main() -> int:
             continue
         if (
             target["rank_score"],
-            target["confidence"],
+            int(target.get("lane_aligned", False)),
         ) > (
             existing["rank_score"],
-            existing["confidence"],
+            int(existing.get("lane_aligned", False)),
         ):
             deduped[path] = target
 
     # Keep targets deterministic by retrieval score + companion strength.
     targets = sorted(
         deduped.values(),
-        key=lambda item: (item["rank_score"], item["confidence"], item["path"]),
+        key=lambda item: (int(item.get("lane_aligned", False)), item["rank_score"], item["path"]),
+        reverse=True,
+    )
+    _calibrate_confidences(targets)
+    targets = sorted(
+        targets,
+        key=lambda item: (int(item.get("lane_aligned", False)), item["rank_score"], item["confidence"], item["path"]),
         reverse=True,
     )
     targets = targets[: args.max_targets]
@@ -158,6 +222,8 @@ def main() -> int:
             "unique_target_count": len(targets),
             "related_limit": args.related_limit,
             "history_window": args.history_window,
+            "preferred_prefixes": preferred_prefixes,
+            "ranking_version": "rag4-v2-lane-aware",
         },
         "raw_payload": search_payload,
     }

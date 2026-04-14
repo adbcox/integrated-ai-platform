@@ -140,6 +140,8 @@ def run_stage_rag4(args: argparse.Namespace) -> dict[str, Any]:
     ]
     if args.notes:
         cmd.extend(["--notes", args.notes])
+    for prefix in args.preferred_prefix:
+        cmd.extend(["--preferred-prefix", prefix])
     cmd.extend(args.query)
     proc = subprocess.run(cmd, capture_output=True, text=True, check=True)
     return json.loads(proc.stdout)
@@ -516,6 +518,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--literal-old", default=PLACEHOLDER_LITERAL, help="Literal old text for Stage-4 replacements")
     parser.add_argument("--literal-new", default=PLACEHOLDER_LITERAL_UPDATED, help="Literal new text for Stage-4 replacements")
     parser.add_argument("--min-lines", type=int, default=1, help="Minimum Stage-4 literal lines for the jobs")
+    parser.add_argument(
+        "--preferred-prefix",
+        action="append",
+        default=[],
+        help="Preferred retrieval prefix for Stage RAG-4 ranking (repeatable).",
+    )
     return parser.parse_args()
 
 
@@ -527,6 +535,8 @@ def main() -> int:
     versions = resolve_versions_for_lane(manifest_cfg.data, lane_name)
     lane_cfg = versions.get("lane", {})
     allowed_targets = lane_cfg.get("allowed_targets", ["bin/"])
+    if not args.preferred_prefix:
+        args.preferred_prefix = list(allowed_targets)
 
     plan_payload: dict[str, Any] = {}
     if args.jobs_file:
