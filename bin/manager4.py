@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
-"""Manager-4 dispatcher bridging Stage-3/4/5 lanes."""
+"""Manager-4 dispatcher bridging Stage-3/4/5 lanes with promotion awareness."""
 
 from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import subprocess
 import sys
@@ -13,6 +14,9 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(REPO_ROOT))
+
+from promotion import MANIFEST_PATH, load_manifest, resolve_versions_for_lane
 STAGE3_MANAGER = REPO_ROOT / "bin" / "stage3_manager.py"
 STAGE4_MANAGER = REPO_ROOT / "bin" / "stage4_manager.py"
 STAGE5_MANAGER = REPO_ROOT / "bin" / "stage5_manager.py"
@@ -32,12 +36,15 @@ def literal_line_count(message: str) -> tuple[int, int]:
     return match.group(1).count("\n") + 1, match.group(2).count("\n") + 1
 
 
-def run(cmd: list[str]) -> int:
-    proc = subprocess.run(cmd)
+def run(cmd: list[str], extra_env: dict[str, str] | None = None) -> int:
+    env = os.environ.copy()
+    if extra_env:
+        env.update({k: v for k, v in extra_env.items() if v is not None})
+    proc = subprocess.run(cmd, env=env)
     return proc.returncode
 
 
-def dispatch_stage3(args: argparse.Namespace) -> int:
+def dispatch_stage3(args: argparse.Namespace, extra_env: dict[str, str]) -> int:
     cmd = [
         sys.executable,
         str(STAGE3_MANAGER),
@@ -54,10 +61,10 @@ def dispatch_stage3(args: argparse.Namespace) -> int:
         cmd.extend(["--lines", args.lines])
     if args.notes:
         cmd.extend(["--notes", args.notes])
-    return run(cmd)
+    return run(cmd, extra_env)
 
 
-def dispatch_stage4(args: argparse.Namespace) -> int:
+def dispatch_stage4(args: argparse.Namespace, extra_env: dict[str, str]) -> int:
     cmd = [
         sys.executable,
         str(STAGE4_MANAGER),
@@ -78,10 +85,10 @@ def dispatch_stage4(args: argparse.Namespace) -> int:
         cmd.extend(["--top", str(args.top)])
     if args.window:
         cmd.extend(["--window", str(args.window)])
-    return run(cmd)
+    return run(cmd, extra_env)
 
 
-def dispatch_stage5(args: argparse.Namespace, batch_file: str) -> int:
+def dispatch_stage5(args: argparse.Namespace, batch_file: str, extra_env: dict[str, str]) -> int:
     cmd = [
         sys.executable,
         str(STAGE5_MANAGER),
@@ -90,7 +97,7 @@ def dispatch_stage5(args: argparse.Namespace, batch_file: str) -> int:
         "--commit-msg",
         args.commit_msg,
     ]
-    return run(cmd)
+    return run(cmd, extra_env)
 
 
 def append_trace(entry: dict) -> None:
@@ -167,6 +174,68 @@ def create_stage5_batch(args: argparse.Namespace) -> Path:
     return batch_path
 
 
+def infer_lane(args: argparse.Namespace, desired_stage: str) -> str:
+    if args.lane != "auto":
+        return args.lane
+    if desired_stage == "stage5" or args.batch_file or args.secondary_target:
+        return "candidate"
+    return "production"
+
+
+def normalize_target(target: str | None) -> str:
+    if not target:
+        return ""
+    return target.lstrip("./")
+
+
+def is_target_allowed(target: str, allowed_prefixes: list[str]) -> bool:
+    if not target or not allowed_prefixes:
+        return True
+    return any(target.startswith(prefix) for prefix in allowed_prefixes)
+
+
+def build_promotion_env(
+    lane_name: str,
+    versions: dict,
+    manifest_version: int,
+    manifest_path: Path,
+    lane_reason: str,
+) -> dict[str, str]:
+    lane = versions.get("lane", {})
+    stage_version_name = versions.get("stage_version_name")
+    manager_version_name = versions.get("manager_version_name")
+    rag_version_name = versions.get("rag_version_name")
+    stage_name = versions.get("stage")
+    env = {
+        "PROMOTION_LANE": lane_name,
+        "PROMOTION_LANE_STATUS": lane.get("status", ""),
+        "PROMOTION_LANE_LABEL": lane.get("label", ""),
+        "PROMOTION_LANE_REASON": lane_reason,
+        "PROMOTION_STAGE_VERSION": stage_version_name or "",
+        "PROMOTION_STAGE_NAME": stage_name or "",
+        "PROMOTION_MANAGER_VERSION": manager_version_name or "",
+        "PROMOTION_RAG_VERSION": rag_version_name or "",
+        "PROMOTION_MANIFEST_VERSION": str(manifest_version),
+        "PROMOTION_MANIFEST_PATH": str(manifest_path),
+    }
+    allowed = lane.get("allowed_targets")
+    if allowed:
+        env["PROMOTION_ALLOWED_TARGETS"] = ",".join(allowed)
+    return env
+
+
+def handle_manual_lane(lane_cfg: dict, reason: str, manifest_path: Path) -> None:
+    label = lane_cfg.get("label", "manual lane")
+    notes = lane_cfg.get("notes", "")
+    print(f"[manager4] routing to manual lane '{label}': {reason}")
+    if notes:
+        print(f"[manager4] manual lane notes: {notes}")
+    print(
+        "[manager4] use Codex/manual workflow or rerun with an explicit lane once"
+        f" the manifest ({manifest_path}) is updated."
+    )
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Manager-4 dispatcher")
     parser.add_argument("--query", help="Stage RAG query (Stage-3/Stage-4)")
@@ -189,58 +258,160 @@ def main() -> int:
     parser.add_argument("--secondary-top", type=int)
     parser.add_argument("--secondary-window", type=int)
     parser.add_argument("--secondary-max-total-lines", type=int)
+    parser.add_argument("--lane", choices=["auto", "production", "candidate", "manual"], default="auto", help="Explicit lane override")
+    parser.add_argument(
+        "--promotion-manifest",
+        default=str(MANIFEST_PATH),
+        help="Path to the promotion manifest JSON (defaults to config/promotion_manifest.json)",
+    )
     args = parser.parse_args()
+
+    manifest_path = Path(args.promotion_manifest).resolve()
+    manifest_cfg = load_manifest(manifest_path)
+    manifest_data = manifest_cfg.data
 
     old_lines, new_lines = literal_line_count(args.message or "")
     literal_span = max(old_lines, new_lines)
 
-    routed_stage = args.stage
-    if routed_stage == "auto":
+    desired_stage = args.stage
+    if desired_stage == "auto":
         if args.batch_file:
-            routed_stage = "stage5"
+            desired_stage = "stage5"
         elif literal_span >= args.stage4_threshold:
-            routed_stage = "stage4"
+            desired_stage = "stage4"
         else:
-            routed_stage = "stage3"
+            desired_stage = "stage3"
 
-    if routed_stage in {"stage3", "stage4"} and (not args.query or not args.target or not args.message):
-        raise ManagerError(f"{routed_stage} routing requires --query/--target/--message")
-    if routed_stage == "stage5" and not (args.batch_file or args.secondary_target or args.secondary_query or args.secondary_message or (args.query and args.target and args.message)):
+    if desired_stage in {"stage3", "stage4"} and (not args.query or not args.target or not args.message):
+        raise ManagerError(f"{desired_stage} routing requires --query/--target/--message")
+    if desired_stage == "stage5" and not (args.batch_file or args.secondary_target or args.secondary_query or args.secondary_message or (args.query and args.target and args.message)):
         raise ManagerError("Stage-5 routing requires either --batch-file or primary literal parameters")
 
-    auto_batch_path: Path | None = None
+    lane = infer_lane(args, desired_stage)
+    lane_reason = f"forced:{args.lane}" if args.lane != "auto" else f"auto:{lane}"
+    versions = resolve_versions_for_lane(manifest_data, lane)
+    lane_cfg = versions.get("lane", {})
+    allowed_targets = lane_cfg.get("allowed_targets") or []
+
+    targets_to_check: list[str] = []
+    if args.target:
+        targets_to_check.append(normalize_target(args.target))
+    if args.secondary_target:
+        targets_to_check.append(normalize_target(args.secondary_target))
+
+    disallowed_target: str | None = None
+    if allowed_targets:
+        for candidate_target in targets_to_check:
+            if not is_target_allowed(candidate_target, allowed_targets):
+                disallowed_target = candidate_target
+                break
+    if disallowed_target:
+        lane = "manual"
+        lane_reason = f"manual:target:{disallowed_target}"
+        versions = resolve_versions_for_lane(manifest_data, lane)
+        lane_cfg = versions.get("lane", {})
+        allowed_targets = lane_cfg.get("allowed_targets") or []
+
+    manifest_version = manifest_cfg.version
+    promotion_policy = manifest_data.get("promotion_policy", {})
+    policy_status = promotion_policy.get("last_decision", {}).get("status")
+
     batch_file_arg = args.batch_file
+    auto_batch_used = False
+
+    if lane == "manual":
+        handle_manual_lane(lane_cfg, lane_reason, manifest_path)
+        trace_time = datetime.now(UTC).isoformat(timespec="seconds")
+        append_trace(
+            {
+                "timestamp": trace_time,
+                "lane": lane,
+                "lane_status": lane_cfg.get("status"),
+                "lane_label": lane_cfg.get("label"),
+                "lane_reason": lane_reason,
+                "manual_reason": lane_reason,
+                "stage": desired_stage,
+                "job_stage_argument": args.stage,
+                "stage_version": versions.get("stage_version_name"),
+                "manager_version": versions.get("manager_version_name"),
+                "rag_version": versions.get("rag_version_name"),
+                "manifest_version": manifest_version,
+                "manifest_path": str(manifest_path),
+                "promotion_policy_status": policy_status,
+                "literal_lines": literal_span,
+                "return_code": 2,
+                "manual": True,
+                "target": args.target,
+                "secondary_target": args.secondary_target,
+                "lane_allowed_targets": allowed_targets,
+                "allowed_check_targets": targets_to_check,
+                "batch_file": batch_file_arg,
+                "auto_stage": args.stage == "auto",
+                "auto_stage5_batch": False,
+                "notes": args.notes or None,
+                "lane_regression_pack": lane_cfg.get("regression_pack"),
+            }
+        )
+        return 2
+
+    lane_stage_name = versions.get("stage")
+    routed_stage = desired_stage
+    if lane == "candidate" and lane_stage_name:
+        routed_stage = lane_stage_name
+    if routed_stage not in {"stage3", "stage4", "stage5"}:
+        raise ManagerError(f"Unsupported stage '{routed_stage}' for lane '{lane}'")
+
+    promotion_env = build_promotion_env(lane, versions, manifest_version, manifest_path, lane_reason)
+
+    auto_batch_path: Path | None = None
     if routed_stage == "stage5" and not batch_file_arg:
         auto_batch_path = create_stage5_batch(args)
         batch_file_arg = str(auto_batch_path)
-
-    auto_batch_used = auto_batch_path is not None
+        auto_batch_used = True
 
     if routed_stage == "stage3":
-        retcode = dispatch_stage3(args)
+        retcode = dispatch_stage3(args, promotion_env)
     elif routed_stage == "stage4":
-        retcode = dispatch_stage4(args)
+        retcode = dispatch_stage4(args, promotion_env)
     else:
-        retcode = dispatch_stage5(args, batch_file_arg)
+        retcode = dispatch_stage5(args, batch_file_arg, promotion_env)
     if auto_batch_path and auto_batch_path.exists():
         auto_batch_path.unlink(missing_ok=True)
 
+    trace_time = datetime.now(UTC).isoformat(timespec="seconds")
     append_trace(
         {
-            "timestamp": datetime.now(UTC).isoformat(timespec="seconds"),
+            "timestamp": trace_time,
+            "lane": lane,
+            "lane_status": lane_cfg.get("status"),
+            "lane_label": lane_cfg.get("label"),
+            "lane_reason": lane_reason,
             "stage": routed_stage,
+            "dispatched_stage": routed_stage,
+            "job_stage_argument": args.stage,
+            "stage_version": versions.get("stage_version_name"),
+            "manager_version": versions.get("manager_version_name"),
+            "rag_version": versions.get("rag_version_name"),
+            "manifest_version": manifest_version,
+            "manifest_path": str(manifest_path),
+            "promotion_policy_status": policy_status,
             "auto_stage": args.stage == "auto",
             "literal_lines": literal_span,
             "return_code": retcode,
             "target": args.target,
+            "secondary_target": args.secondary_target,
+            "lane_allowed_targets": allowed_targets,
+            "allowed_check_targets": targets_to_check,
             "batch_file": batch_file_arg,
             "auto_stage5_batch": auto_batch_used,
-            "secondary_target": args.secondary_target,
+            "notes": args.notes or None,
+            "lane_regression_pack": lane_cfg.get("regression_pack"),
+            "commit_msg": args.commit_msg,
         }
     )
     if retcode != 0:
         return retcode
-    print(f"[manager4] dispatched to {routed_stage}")
+    print(f"[manager4] dispatched to {routed_stage} (lane={lane})")
     return 0
 
 

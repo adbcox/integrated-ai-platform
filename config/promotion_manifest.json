@@ -1,0 +1,85 @@
+{
+  "version": 1,
+  "stage_versions": {
+    "stage3-v1": {
+      "stage": "stage3",
+      "description": "Stage-3 literal/comment lane with ≤2-line edits",
+      "manager_entry": "bin/stage3_manager.py",
+      "rag_helper": "stage_rag1"
+    },
+    "stage4-v1": {
+      "stage": "stage4",
+      "description": "Stage-4 bounded literal lane (3-8 lines)",
+      "manager_entry": "bin/stage4_manager.py",
+      "rag_helper": "stage_rag2"
+    },
+    "stage5-v1": {
+      "stage": "stage5",
+      "description": "Stage-5 dual-file literal batches",
+      "manager_entry": "bin/stage5_manager.py",
+      "rag_helper": "stage_rag3"
+    }
+  },
+  "manager_versions": {
+    "manager4-v1": {
+      "entry": "bin/manager4.py",
+      "description": "Version-aware dispatcher for Stage-3/4/5"
+    }
+  },
+  "rag_versions": {
+    "rag1-v1": {
+      "entry": "bin/stage_rag1_plan_probe.py",
+      "description": "Lexical retrieval for Stage-3"
+    },
+    "rag2-v1": {
+      "entry": "bin/stage_rag2_plan_probe.py",
+      "description": "Structural retrieval for Stage-4"
+    },
+    "rag3-v1": {
+      "entry": "bin/stage_rag3_plan_probe.py",
+      "description": "Hybrid retrieval for Stage-5"
+    }
+  },
+  "lanes": {
+    "production": {
+      "label": "Stage-3 production lane",
+      "stage_version": "stage3-v1",
+      "manager_version": "manager4-v1",
+      "rag_version": "rag1-v1",
+      "allowed_targets": ["bin/", "shell/", "docs/"],
+      "regression_pack": "bin/micro_lane_regression.sh",
+      "status": "active",
+      "notes": "Stage-3 remains the production default"
+    },
+    "candidate": {
+      "label": "Stage-5 candidate lane",
+      "stage_version": "stage5-v1",
+      "manager_version": "manager4-v1",
+      "rag_version": "rag3-v1",
+      "allowed_targets": ["bin/", "docs/"],
+      "regression_pack": "bin/micro_lane_stage5.sh",
+      "status": "in_progress",
+      "notes": "Dual-file literal batches under Manager-4"
+    },
+    "manual": {
+      "label": "Manual/Codex lane",
+      "stage_version": "stage4-v1",
+      "manager_version": "manager4-v1",
+      "rag_version": "rag2-v1",
+      "allowed_targets": [],
+      "regression_pack": null,
+      "status": "fallback",
+      "notes": "For harness/docs/out-of-scope work"
+    }
+  },
+  "promotion_policy": {
+    "candidate_success_threshold": 4,
+    "candidate_failure_budget": 1,
+    "required_regression_pack": "bin/micro_lane_stage5.sh",
+    "last_decision": {
+      "date": "2026-04-14T00:00:00Z",
+      "status": "candidate_in_progress",
+      "notes": "Stage-5 collecting real dual-file telemetry"
+    }
+  }
+}

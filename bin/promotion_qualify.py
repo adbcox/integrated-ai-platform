@@ -1,0 +1,147 @@
+#!/usr/bin/env python3
+"""Summarize promotion readiness for the candidate lane."""
+
+from __future__ import annotations
+
+import argparse
+import json
+import sys
+from collections import Counter, deque
+from datetime import UTC, datetime
+from pathlib import Path
+from typing import Iterable
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(REPO_ROOT))
+
+from promotion import MANIFEST_PATH, load_manifest, resolve_versions_for_lane
+DEFAULT_MANAGER_TRACE = REPO_ROOT / "artifacts" / "manager4" / "traces.jsonl"
+DEFAULT_STAGE5_TRACE = REPO_ROOT / "artifacts" / "stage5_manager" / "traces.jsonl"
+
+
+def read_traces(path: Path) -> Iterable[dict]:
+    if not path.exists():
+        return []
+    with path.open(encoding="utf-8") as fh:
+        for line in fh:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                yield json.loads(line)
+            except json.JSONDecodeError:
+                continue
+
+
+def summarize_candidate_activity(trace_path: Path, lane_name: str) -> dict:
+    stats = Counter()
+    recent = deque(maxlen=5)
+    for entry in read_traces(trace_path):
+        if entry.get("lane") != lane_name:
+            continue
+        retcode = entry.get("return_code")
+        if retcode == 0:
+            stats["successes"] += 1
+        else:
+            stats["failures"] += 1
+        recent.appendleft(
+            {
+                "timestamp": entry.get("timestamp"),
+                "target": entry.get("target"),
+                "stage": entry.get("stage"),
+                "return_code": retcode,
+            }
+        )
+    return {"stats": stats, "recent": list(recent)}
+
+
+def summarize_stage5_commits(trace_path: Path) -> list[dict]:
+    recent_commits = deque(maxlen=3)
+    for entry in read_traces(trace_path):
+        recent_commits.appendleft(
+            {
+                "timestamp": entry.get("timestamp"),
+                "job_id": entry.get("job_id"),
+                "targets": entry.get("targets"),
+                "operations": entry.get("operations"),
+                "total_added": entry.get("total_added"),
+                "total_deleted": entry.get("total_deleted"),
+            }
+        )
+    return list(recent_commits)
+
+
+def verdict(stats: Counter, policy: dict) -> tuple[str, list[str]]:
+    required_successes = int(policy.get("candidate_success_threshold", 0))
+    failure_budget = int(policy.get("candidate_failure_budget", 0))
+    reasons: list[str] = []
+    if stats["successes"] < required_successes:
+        reasons.append(f"Needs {required_successes - stats['successes']} more successful candidate jobs.")
+    if stats["failures"] > failure_budget:
+        reasons.append(f"Exceeded failure budget by {stats['failures'] - failure_budget}.")
+    if not reasons:
+        return "promotable", []
+    return "needs-more-data", reasons
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description="Evaluate promotion readiness for the candidate lane.")
+    parser.add_argument("--manifest", default=str(MANIFEST_PATH))
+    parser.add_argument("--manager-trace", default=str(DEFAULT_MANAGER_TRACE))
+    parser.add_argument("--stage5-trace", default=str(DEFAULT_STAGE5_TRACE))
+    args = parser.parse_args()
+
+    manifest_path = Path(args.manifest).resolve()
+    manager_trace = Path(args.manager_trace).resolve()
+    stage5_trace = Path(args.stage5_trace).resolve()
+
+    manifest = load_manifest(manifest_path)
+    manifest_data = manifest.data
+    candidate_lane = resolve_versions_for_lane(manifest_data, "candidate")
+    lane_cfg = candidate_lane.get("lane", {})
+    policy = manifest_data.get("promotion_policy", {})
+
+    summary = summarize_candidate_activity(manager_trace, "candidate")
+    stats = summary["stats"]
+    lane_verdict, verdict_reasons = verdict(stats, policy)
+    stage5_commits = summarize_stage5_commits(stage5_trace)
+
+    print(f"Manifest: {manifest_path} (version={manifest.version})")
+    print(f"Candidate lane label: {lane_cfg.get('label')} ({lane_cfg.get('status')})")
+    print(f"Stage version: {candidate_lane.get('stage_version_name')} ({candidate_lane.get('stage')})")
+    print(f"Manager version: {candidate_lane.get('manager_version_name')}")
+    print(f"RAG version: {candidate_lane.get('rag_version_name')}")
+    print(f"Required regression pack: {lane_cfg.get('regression_pack')}")
+    print("--- Candidate telemetry ---")
+    print(f"  Successes: {stats['successes']}  Failures: {stats['failures']}")
+    print(f"  Required successes: {policy.get('candidate_success_threshold', 0)}")
+    print(f"  Failure budget: {policy.get('candidate_failure_budget', 0)}")
+    print("--- Recent candidate jobs ---")
+    if summary["recent"]:
+        for item in summary["recent"]:
+            print(f"  {item['timestamp']} :: stage={item['stage']} target={item['target']} rc={item['return_code']}")
+    else:
+        print("  No candidate jobs logged yet.")
+    print("--- Recent stage5 commits ---")
+    if stage5_commits:
+        for commit in stage5_commits:
+            print(
+                f"  {commit['timestamp']} :: {commit['job_id']} targets={commit['targets']} "
+                f"Δ+{commit['total_added']}/-{commit['total_deleted']}"
+            )
+    else:
+        print("  No Stage-5 manager commits recorded.")
+
+    print("--- Verdict ---")
+    if lane_verdict == "promotable":
+        print("PROMOTABLE: candidate lane meets success/failure thresholds.")
+    else:
+        print("NOT READY: " + "; ".join(verdict_reasons) if verdict_reasons else "NOT READY: missing evidence.")
+    last_decision = policy.get("last_decision", {})
+    print(f"Last recorded promotion decision: {last_decision.get('status')} on {last_decision.get('date')}")
+
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

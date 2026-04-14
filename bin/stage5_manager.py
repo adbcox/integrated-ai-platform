@@ -20,6 +20,15 @@ TRACE_DIR = REPO_ROOT / "artifacts" / "stage5_manager"
 TRACE_FILE = TRACE_DIR / "traces.jsonl"
 DEFAULT_MAX_OPS = 2  # Manager-4 batches stay within two entries until Stage-5 saturation completes.
 DEFAULT_MAX_TOTAL_LINES = 20
+PROMOTION_ENV_KEYS = {
+    "promotion_lane": "PROMOTION_LANE",
+    "promotion_lane_status": "PROMOTION_LANE_STATUS",
+    "promotion_stage_version": "PROMOTION_STAGE_VERSION",
+    "promotion_stage_name": "PROMOTION_STAGE_NAME",
+    "promotion_manager_version": "PROMOTION_MANAGER_VERSION",
+    "promotion_rag_version": "PROMOTION_RAG_VERSION",
+    "promotion_manifest_version": "PROMOTION_MANIFEST_VERSION",
+}
 
 
 class Stage5Error(SystemExit):
@@ -57,6 +66,8 @@ def load_batch(path: Path) -> list[dict[str, Any]]:
 
 
 def log_trace(entry: dict) -> None:
+    for dest, env_key in PROMOTION_ENV_KEYS.items():
+        entry[dest] = os.environ.get(env_key)
     TRACE_DIR.mkdir(parents=True, exist_ok=True)
     with TRACE_FILE.open("a", encoding="utf-8") as fh:
         fh.write(json.dumps(entry, ensure_ascii=False) + "\n")

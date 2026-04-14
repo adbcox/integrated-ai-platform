@@ -304,6 +304,17 @@ def main() -> int:
         "notes": args.notes or None,
         "worker_exit_code": exit_code,
     }
+    entry.update(
+        {
+            "promotion_lane": os.environ.get("PROMOTION_LANE"),
+            "promotion_lane_status": os.environ.get("PROMOTION_LANE_STATUS"),
+            "promotion_stage_version": os.environ.get("PROMOTION_STAGE_VERSION"),
+            "promotion_stage_name": os.environ.get("PROMOTION_STAGE_NAME"),
+            "promotion_manager_version": os.environ.get("PROMOTION_MANAGER_VERSION"),
+            "promotion_rag_version": os.environ.get("PROMOTION_RAG_VERSION"),
+            "promotion_manifest_version": os.environ.get("PROMOTION_MANIFEST_VERSION"),
+        }
+    )
     append_trace(entry)
     print(f"[stage4_manager] trace appended -> {TRACE_FILE}")
     if not args.no_commit:
