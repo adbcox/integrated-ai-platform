@@ -33,7 +33,7 @@ Options (most-used subset, Stage-3 safe):
   --task-id <id>                   Explicit task id (default: timestamp+slug)
   --workflow-mode <mode>           tactical|codex-assist|codex-investigate|codex-failure
   --escalation-trigger <text>      Why Codex escalation was used
-  --problem <text>                 Concise problem statement
+  --problem <text>                 Concise problem summary
   --constraints <text>             Constraint summary
   --plan-summary <text>            Codex plan summary
   --fix-pattern <text>             Fix pattern/root-cause classification
