@@ -29,3 +29,10 @@ Profiles used for model-vs-wrapper attribution:
 - `rag_reduced`
 
 The benchmark compares profile outcomes and reports gain estimates without weakening safety controls.
+
+First-attempt quality is now scored from concrete outcome deltas (not plan metadata only):
+- first-attempt vs final per-subplan success rates,
+- wrapper-dependence delta (`first_to_final_improvement`),
+- rescue/escalation/guard signals,
+- rollback verification + reconciliation coverage/outcome guarantees,
+- return-code and no-dispatch evidence.

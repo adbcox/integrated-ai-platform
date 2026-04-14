@@ -12,6 +12,8 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
+from codex51_quality import score_first_attempt_quality
+
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_CONFIG = REPO_ROOT / "config" / "codex51_replacement_benchmark.json"
@@ -35,6 +37,9 @@ class PlanRun:
     total_subplans: int
     first_attempt_success: int
     first_attempt_quality_rate: float
+    first_attempt_quality_score: float
+    first_to_final_improvement: float
+    final_success_rate: float
     rescue_count: int
     escalation_count: int
     guard_count: int
@@ -94,9 +99,16 @@ def _primary_attribution_label(
     rescue_count: int,
     guard_count: int,
     ranking_version: str,
-    first_attempt_quality_rate: float,
+    first_attempt_quality_score: float,
+    first_to_final_improvement: float,
 ) -> str:
-    if success and first_attempt_quality_rate >= 1.0 and rescue_count == 0 and guard_count == 0:
+    if (
+        success
+        and first_attempt_quality_score >= 0.85
+        and first_to_final_improvement <= 0.05
+        and rescue_count == 0
+        and guard_count == 0
+    ):
         return "model_gain"
     if success and rescue_count > 0:
         return "manager_gain"
@@ -157,40 +169,24 @@ def load_plan_runs(
         query = str(plan_payload.get("query") or "")
         class_id, class_label = classify_class(query, class_rules)
         statuses = [row for row in (finished.get("statuses") or []) if isinstance(row, dict)]
-        subplans = [row for row in (plan_payload.get("subplans") or []) if isinstance(row, dict)]
-        expected_ids = {str(sp.get("subplan_id") or "") for sp in subplans if str(sp.get("subplan_id") or "")}
-        base_status_rows = [row for row in statuses if str(row.get("subplan_id") or "") in expected_ids]
-        total_subplans = len(expected_ids)
-        first_attempt_success = sum(1 for row in base_status_rows if str(row.get("status") or "") in SUCCESS_STATUSES)
-        first_attempt_quality_rate = (
-            round(first_attempt_success / total_subplans, 3) if total_subplans > 0 else 0.0
-        )
-
-        plan_recoveries = [x for x in (plan_payload.get("recoveries") or []) if isinstance(x, dict)]
-        split_like_statuses = [
-            row
-            for row in statuses
-            if str(row.get("strategy") or "") == "split_subplan"
-            or bool(row.get("retry"))
-            or str(row.get("retry_strategy") or "")
-        ]
-        rescue_count = len(split_like_statuses) + len(plan_recoveries)
-        escalation_count = sum(
-            1
-            for row in statuses
-            if str(row.get("status") or "").startswith("deferred")
-            or str(row.get("status") or "") == "dropped_family_budget"
-            or bool(row.get("escalation_hint"))
-        )
-        guard_count = sum(
-            1
-            for row in statuses
-            if str(row.get("status") or "") in {"dropped_preflight", "deferred_worker_budget", "deferred_manager_policy"}
-            or "no_dispatch" in str((row.get("rollback_contract") or {}).get("strategy") or "")
-        )
-
         state = str(finished.get("state") or "")
         failure_code = int(finished.get("failure_code") or 0)
+        quality = score_first_attempt_quality(
+            plan_payload=plan_payload,
+            statuses=statuses,
+            state=state,
+            failure_code=failure_code,
+        )
+        total_subplans = int(quality.get("total_subplans", 0))
+        first_attempt_success = int(quality.get("first_attempt_success_count", 0))
+        first_attempt_quality_rate = float(quality.get("first_attempt_success_rate", 0.0))
+        first_attempt_quality_score = float(quality.get("first_attempt_quality_score", 0.0))
+        first_to_final_improvement = float(quality.get("first_to_final_improvement", 0.0))
+        final_success_rate = float(quality.get("final_success_rate", 0.0))
+        rescue_count = int(quality.get("rescue_count", 0))
+        escalation_count = int(quality.get("escalation_count", 0))
+        guard_count = int(quality.get("guard_count", 0))
+
         success = failure_code == 0 and state in {"succeeded", "partial_success"}
         ranking_version = str((plan_payload.get("provenance") or {}).get("ranking_version") or "")
         failure_signature = _status_failure_signature(statuses)
@@ -201,7 +197,8 @@ def load_plan_runs(
             rescue_count=rescue_count,
             guard_count=guard_count,
             ranking_version=ranking_version,
-            first_attempt_quality_rate=first_attempt_quality_rate,
+            first_attempt_quality_score=first_attempt_quality_score,
+            first_to_final_improvement=first_to_final_improvement,
         )
         runs.append(
             PlanRun(
@@ -216,6 +213,9 @@ def load_plan_runs(
                 total_subplans=total_subplans,
                 first_attempt_success=first_attempt_success,
                 first_attempt_quality_rate=first_attempt_quality_rate,
+                first_attempt_quality_score=first_attempt_quality_score,
+                first_to_final_improvement=first_to_final_improvement,
+                final_success_rate=final_success_rate,
                 rescue_count=rescue_count,
                 escalation_count=escalation_count,
                 guard_count=guard_count,
@@ -266,6 +266,8 @@ def summarize_metrics(task_set: list[PlanRun]) -> dict[str, Any]:
     escalation_runs = sum(1 for r in task_set if r.escalation_count > 0)
     first_attempt_sum = sum(r.first_attempt_success for r in task_set)
     first_attempt_total = sum(r.total_subplans for r in task_set)
+    first_attempt_score_avg = _safe_rate(sum(r.first_attempt_quality_score for r in task_set), total)
+    first_to_final_delta_avg = _safe_rate(sum(r.first_to_final_improvement for r in task_set), total)
     failure_signatures = [r.failure_signature for r in task_set if r.failure_signature]
     sig_counter = Counter(failure_signatures)
     recurring_failure_runs = sum(1 for sig in failure_signatures if sig_counter[sig] > 1)
@@ -276,7 +278,9 @@ def summarize_metrics(task_set: list[PlanRun]) -> dict[str, Any]:
         "success_rate": _safe_rate(successes, total),
         "rescue_rate": _safe_rate(rescue_runs, total),
         "escalation_rate": _safe_rate(escalation_runs, total),
-        "first_attempt_quality_rate": _safe_rate(first_attempt_sum, first_attempt_total),
+        "first_attempt_quality_rate": first_attempt_score_avg,
+        "first_attempt_success_rate_raw": _safe_rate(first_attempt_sum, first_attempt_total),
+        "first_to_final_delta_rate": first_to_final_delta_avg,
         "recurrence_rate": recurrence_rate,
         "recurrence_signatures": [
             {"signature": sig, "count": count}
@@ -328,6 +332,9 @@ def summarize_by_profile(task_set: list[PlanRun], configured_profiles: list[str]
             "model_first_attempt_signal": first_only.get("first_attempt_quality_rate", 0.0)
             if first_only.get("task_count", 0) > 0
             else normal.get("first_attempt_quality_rate", 0.0),
+            "first_to_final_delta_signal": first_only.get("first_to_final_delta_rate", 0.0)
+            if first_only.get("task_count", 0) > 0
+            else normal.get("first_to_final_delta_rate", 0.0),
             "manager_gain_estimate": round(
                 normal.get("success_rate", 0.0) - mgr_reduced.get("success_rate", 0.0),
                 3,
@@ -394,7 +401,15 @@ def to_markdown(summary: dict[str, Any]) -> str:
     lines.append(f"- overall_pass: {summary['pass_fail']['overall_pass']}")
     lines.append("")
     lines.append("## Core Metrics")
-    for key in ("success_rate", "rescue_rate", "escalation_rate", "recurrence_rate", "first_attempt_quality_rate"):
+    for key in (
+        "success_rate",
+        "rescue_rate",
+        "escalation_rate",
+        "recurrence_rate",
+        "first_attempt_quality_rate",
+        "first_attempt_success_rate_raw",
+        "first_to_final_delta_rate",
+    ):
         lines.append(f"- {key}: {summary['metrics'][key]}")
     lines.append("")
     lines.append("## Pass/Fail Checks")
@@ -408,7 +423,9 @@ def to_markdown(summary: dict[str, Any]) -> str:
         lines.append(
             f"- {row['class_id']}: tasks={row['task_count']} success_rate={row['success_rate']} "
             f"rescue_rate={row['rescue_rate']} escalation_rate={row['escalation_rate']} "
-            f"first_attempt_quality_rate={row['first_attempt_quality_rate']}"
+            f"first_attempt_quality_rate={row['first_attempt_quality_rate']} "
+            f"first_attempt_success_rate_raw={row['first_attempt_success_rate_raw']} "
+            f"first_to_final_delta_rate={row['first_to_final_delta_rate']}"
         )
     lines.append("")
     lines.append("## Attribution")
@@ -417,6 +434,7 @@ def to_markdown(summary: dict[str, Any]) -> str:
     lines.append(f"- manager_gain_estimate: {gain['manager_gain_estimate']}")
     lines.append(f"- retrieval_gain_estimate: {gain['retrieval_gain_estimate']}")
     lines.append(f"- guard_policy_effectiveness: {gain['guard_policy_effectiveness']}")
+    lines.append(f"- first_to_final_delta_signal: {gain['first_to_final_delta_signal']}")
     for key, value in summary["attribution"]["attribution_primary_counts"].items():
         lines.append(f"- attribution_primary::{key}: {value}")
     lines.append("")
@@ -494,6 +512,10 @@ def main() -> int:
                     "query": run.query,
                     "attribution_profile": run.attribution_profile,
                     "attribution_primary": run.attribution_primary,
+                    "first_attempt_quality_score": run.first_attempt_quality_score,
+                    "first_attempt_success_rate": run.first_attempt_quality_rate,
+                    "first_to_final_improvement": run.first_to_final_improvement,
+                    "final_success_rate": run.final_success_rate,
                 }
                 for run in task_set
             ],

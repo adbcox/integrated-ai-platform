@@ -10,6 +10,8 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from codex51_quality import score_first_attempt_quality
+
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_BENCHMARK = REPO_ROOT / "artifacts" / "codex51" / "benchmark" / "latest.json"
@@ -38,7 +40,7 @@ def _read_jsonl(path: Path) -> list[dict[str, Any]]:
     return rows
 
 
-def _plan_payload(plan_id: str, plan_dir: Path) -> dict[str, Any]:
+def _plan_attempt(plan_id: str, plan_dir: Path) -> dict[str, Any]:
     plan_path = plan_dir / f"{plan_id}.json"
     if not plan_path.exists():
         return {}
@@ -46,8 +48,19 @@ def _plan_payload(plan_id: str, plan_dir: Path) -> dict[str, Any]:
     history = data.get("history") or []
     for row in reversed(history):
         if str(row.get("event_type") or "") == "attempt_finished":
-            return row.get("plan_payload") or data.get("plan_payload") or {}
-    return data.get("plan_payload") or {}
+            statuses = [x for x in (row.get("statuses") or []) if isinstance(x, dict)]
+            return {
+                "plan_payload": row.get("plan_payload") or data.get("plan_payload") or {},
+                "statuses": statuses,
+                "state": str(row.get("state") or ""),
+                "failure_code": int(row.get("failure_code") or 0),
+            }
+    return {
+        "plan_payload": data.get("plan_payload") or {},
+        "statuses": [],
+        "state": "",
+        "failure_code": 1,
+    }
 
 
 def _write_jsonl(path: Path, rows: list[dict[str, Any]]) -> None:
@@ -82,11 +95,38 @@ def build_exports(
         plan_id = str(run.get("plan_id") or "")
         if not plan_id:
             continue
-        payload = _plan_payload(plan_id, plan_dir)
+        attempt = _plan_attempt(plan_id, plan_dir)
+        payload = attempt.get("plan_payload") if isinstance(attempt.get("plan_payload"), dict) else {}
+        statuses = attempt.get("statuses") if isinstance(attempt.get("statuses"), list) else []
+        state = str(attempt.get("state") or "")
+        failure_code = int(attempt.get("failure_code") or 0)
+        quality = score_first_attempt_quality(
+            plan_payload=payload,
+            statuses=[x for x in statuses if isinstance(x, dict)],
+            state=state,
+            failure_code=failure_code,
+        )
         query = str(payload.get("query") or "")
         reconciliation = payload.get("stage_reconciliation") if isinstance(payload.get("stage_reconciliation"), dict) else {}
         recoveries = [x for x in (payload.get("recoveries") or []) if isinstance(x, dict)]
-        statuses = [x for x in (run.get("plan_result", {}).get("status_count"),)]
+        first_attempt_quality_score = float(quality.get("first_attempt_quality_score") or 0.0)
+        first_attempt_success_rate = float(quality.get("first_attempt_success_rate") or 0.0)
+        final_success_rate = float(quality.get("final_success_rate") or 0.0)
+        first_to_final_improvement = float(quality.get("first_to_final_improvement") or 0.0)
+        rescue_count = int(quality.get("rescue_count") or 0)
+        escalation_count = int(quality.get("escalation_count") or 0)
+        guard_count = int(quality.get("guard_count") or 0)
+        signal_components = quality.get("signal_components") if isinstance(quality.get("signal_components"), dict) else {}
+
+        attribution_primary = str(run.get("attribution_primary") or "mixed_gain")
+        if bool(run.get("success")) and first_attempt_quality_score >= 0.85 and first_to_final_improvement <= 0.05 and rescue_count == 0 and guard_count == 0:
+            attribution_primary = "model_gain"
+        elif bool(run.get("success")) and rescue_count > 0:
+            attribution_primary = "manager_gain"
+        elif bool(run.get("success")) and str(run.get("ranking_version") or "").startswith("rag9"):
+            attribution_primary = "retrieval_gain"
+        elif guard_count > 0:
+            attribution_primary = "guard_policy_gain"
 
         base_row = {
             "schema_version": "1",
@@ -96,37 +136,49 @@ def build_exports(
             "task_class": str(run.get("task_class") or ""),
             "query": query,
             "attribution_profile": str(run.get("attribution_profile") or "normal"),
-            "attribution_primary": str(run.get("attribution_primary") or "mixed_gain"),
+            "attribution_primary": attribution_primary,
             "ranking_version": str(run.get("ranking_version") or ""),
-            "first_attempt_quality_rate": float(run.get("first_attempt_quality_rate") or 0.0),
-            "rescue_count": int(run.get("rescue_count") or 0),
-            "escalation_count": int(run.get("escalation_count") or 0),
-            "guard_count": int(run.get("guard_count") or 0),
+            "first_attempt_quality_score": first_attempt_quality_score,
+            "first_attempt_success_rate": first_attempt_success_rate,
+            "final_success_rate": final_success_rate,
+            "first_to_final_improvement": first_to_final_improvement,
+            "rescue_count": rescue_count,
+            "escalation_count": escalation_count,
+            "guard_count": guard_count,
             "success": bool(run.get("success")),
+            "attempt_state": state,
+            "attempt_failure_code": failure_code,
             "stage_reconciliation": reconciliation,
             "recoveries": recoveries,
+            "signal_components": signal_components,
             "benchmark_member": bool(plan_id in benchmark_items),
         }
 
-        if base_row["success"] and base_row["first_attempt_quality_rate"] >= 1.0 and base_row["rescue_count"] == 0:
+        if (
+            base_row["success"]
+            and base_row["first_attempt_quality_score"] >= 0.85
+            and base_row["first_to_final_improvement"] <= 0.05
+            and base_row["rescue_count"] == 0
+            and base_row["guard_count"] == 0
+        ):
             template = {
                 **base_row,
                 "curation_destination": "template_candidate",
-                "template_reason": "high first-attempt quality without rescue",
+                "template_reason": "high first-attempt score with minimal wrapper dependence",
             }
             template_candidates.append(template)
             benchmark_wins.append(
                 {
                     **base_row,
                     "curation_destination": "benchmark_win",
-                    "win_reason": "success with model-forward execution profile",
+                    "win_reason": "benchmark success with strong model-first outcome quality",
                 }
             )
             training_examples.append(
                 {
                     **base_row,
                     "curation_destination": "training_positive",
-                    "training_reason": "successful bounded complex local execution",
+                    "training_reason": "successful bounded complex local execution with strong first-attempt quality",
                 }
             )
         elif base_row["success"]:
@@ -134,9 +186,19 @@ def build_exports(
                 {
                     **base_row,
                     "curation_destination": "training_positive_assisted",
-                    "training_reason": "success with rescue/escalation signals",
+                    "training_reason": "success with rescue/escalation or weak first-attempt quality",
                 }
             )
+            if base_row["first_attempt_quality_score"] < 0.5 or base_row["first_to_final_improvement"] >= 0.4:
+                failures_for_training.append(
+                    {
+                        **base_row,
+                        "curation_destination": "training_negative_first_attempt",
+                        "training_reason": "final success depended on wrapper rescue beyond target bound",
+                        "recurrence_signature": "",
+                        "recurrence_count": 0,
+                    }
+                )
         else:
             failure_signature = ""
             if base_row["benchmark_member"]:
@@ -163,6 +225,14 @@ def build_exports(
                     **base_row,
                     "curation_destination": "guard_rule_candidate",
                     "guard_reason": "guard/defer/preflight signal observed",
+                }
+            )
+        elif not bool((signal_components or {}).get("coverage_ok")) or not bool((signal_components or {}).get("outcome_guarantee_ok")):
+            guard_candidates.append(
+                {
+                    **base_row,
+                    "curation_destination": "guard_rule_candidate",
+                    "guard_reason": "reconciliation/coverage guarantees not fully satisfied",
                 }
             )
 
