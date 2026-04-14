@@ -30,7 +30,7 @@ Options (Stage-3 safe default subset):
   --summary <path>                 Markdown summary file (Stage-3 telemetry log)
   --outcome <path>                 Outcome file (Stage-3 completion log file)
   --checks <path>                  Commands/checks file (Stage-3 run log file)
-  --task-id <id>                   Explicit task id (default Stage-3 timestamp+slug)
+  --task-id <id>                   Explicit task id (Stage-3 default timestamp+slug)
   --workflow-mode <mode>           tactical|codex-assist|codex-investigate|codex-failure
   --escalation-trigger <text>      Why Codex/local-worker escalation was used
   --problem <text>                 Concise problem statement
