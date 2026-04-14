@@ -34,8 +34,6 @@ def current_commit_hash() -> str | None:
 
 @dataclass
 class PromotionTraceEntry:
-    schema_version: str = SCHEMA_VERSION
-    timestamp: str = field(default_factory=_utc_timestamp)
     lane: str
     lane_label: str
     lane_status: str
@@ -58,6 +56,8 @@ class PromotionTraceEntry:
     auto_stage: bool | None = None
     auto_stage5_batch: bool | None = None
     extra: Dict[str, Any] = field(default_factory=dict)
+    schema_version: str = field(init=False, default=SCHEMA_VERSION)
+    timestamp: str = field(default_factory=_utc_timestamp)
 
     def to_dict(self) -> Dict[str, Any]:
         data = asdict(self)
