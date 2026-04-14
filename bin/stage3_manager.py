@@ -185,10 +185,9 @@ def _classify_failure(final_tag: str | None, fallback_used: bool) -> str:
 
 def commit_changes(target: str, commit_msg: str) -> str | None:
     status = run(["git", "status", "--porcelain"], capture_output=True, text=True, check=True)
-    if not status.stdout.strip():
-        return None
-    run(["git", "add", target])
-    run(["git", "commit", "-m", commit_msg])
+    if status.stdout.strip():
+        run(["git", "add", target])
+        run(["git", "commit", "-m", commit_msg])
     head = run(["git", "rev-parse", "HEAD"], capture_output=True, text=True, check=True)
     return head.stdout.strip()
 
