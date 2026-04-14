@@ -26,7 +26,7 @@ usage() {
 Usage (Stage-3 micro lane default path):
   ./bin/aider_capture_feedback.sh --name <task-name> [options]
 
-Options (most used):
+Options (most-used subset):
   --summary <path>                 Markdown summary file
   --outcome <path>                 Outcome file
   --checks <path>                  Commands/checks file
