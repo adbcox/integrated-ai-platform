@@ -89,7 +89,7 @@ fi
 
 ensure_clean_tree
 
-run_probe "basic-dryrun-live" "success" --dry-run --max-entries 2
+run_probe "basic-dryrun" "success" --dry-run --max-entries 2
 latest_basic_plan="$(ls -1t "$PLAN_DIR"/stage6-reg-*.json | head -n 1)"
 assert_plan_state "$latest_basic_plan" "succeeded"
 
