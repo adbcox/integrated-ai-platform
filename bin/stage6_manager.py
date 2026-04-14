@@ -400,7 +400,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--top", type=int, default=5, help="RAG-4 top hits to consider")
     parser.add_argument("--window", type=int, default=25, help="RAG-4 search window")
     parser.add_argument("--preview-lines", type=int, default=18)
-    parser.add_argument("--max-entries", type=int, default=3, help="Max Stage-6 entries to orchestrate")
+    parser.add_argument("--max-entries", type=int, default=3, help="Maximum eligible Stage-6 entries to orchestrate per plan")
     parser.add_argument("--jobs-file", help="Optional manual JSON jobs definition")
     parser.add_argument("--manifest", default=str(MANIFEST_PATH), help="Promotion manifest path")
     parser.add_argument(
