@@ -20,7 +20,7 @@ The source of truth for these levels is now `config/promotion_manifest.json` und
 | Subsystem | Current version | Next target | Decision |
 | --- | --- | --- | --- |
 | Stage system | `stage6-v2` | `stage6-v3` | held |
-| Manager system | `manager5-v3` | `manager5-v4` | validated |
+| Manager system | `manager5-v4` | `manager6-v1` | validated |
 | Retrieval / RAG | `rag4-v3` | `rag5-v1` | implemented now |
 | Promotion engine | `level10-promote-v1` | `level10-promote-v2` | held |
 | Worker utilization | `worker-routing-v1` | `worker-routing-v2` | deferred |

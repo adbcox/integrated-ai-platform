@@ -49,6 +49,10 @@
         "manager5-v3": {
             "entry": "bin/stage6_manager.py",
             "description": "Manager-5 adaptive grouped retry loop: retry failed secondaries with per-target refinement and continue on bounded secondary failures"
+        },
+        "manager5-v4": {
+            "entry": "bin/stage6_manager.py",
+            "description": "Manager-5 grouped rescue orchestration: after bounded secondary refinement failure, swap to high-link dropped alternates and record explicit rescue outcomes"
         }
     },
     "rag_versions": {
@@ -95,7 +99,7 @@
         },
         "stage6": {
             "stage_version": "stage6-v2",
-            "manager_version": "manager5-v3",
+            "manager_version": "manager5-v4",
             "rag_version": "rag4-v3"
         }
     },
@@ -139,14 +143,14 @@
         "stage6": {
             "label": "Stage-6 preview lane",
             "stage_version": "stage6-v2",
-            "manager_version": "manager5-v3",
+            "manager_version": "manager5-v4",
             "rag_version": "rag4-v3",
             "allowed_targets": [
                 "bin/"
             ],
             "regression_pack": "bin/micro_lane_stage6.sh",
             "status": "candidate_ready",
-            "notes": "Stage-6 candidate-ready lane with scored secondary decomposition, per-target literal contracts, adaptive grouped retry/decomposition, and rag4 lane-link-diverse ranking"
+            "notes": "Stage-6 candidate-ready lane with scored secondary decomposition, per-target literal contracts, adaptive grouped retry/decomposition, secondary rescue swap from linked dropped targets, and rag4 lane-link-diverse ranking"
         }
     },
     "lane_rules": {
@@ -369,11 +373,11 @@
             "status": "held"
         },
         "manager_system": {
-            "current_version": "manager5-v3",
-            "next_version": "manager5-v4",
-            "after_next_version": "manager6-v1",
-            "upgrade_goal": "add qualification-aware adaptive retry planning with explicit retry/drop rationale in plan history",
-            "minimum_validation": "real grouped Stage-6 run shows class-aware retry decision and auditable state transitions",
+            "current_version": "manager5-v4",
+            "next_version": "manager6-v1",
+            "after_next_version": "manager6-v2",
+            "upgrade_goal": "add qualification-aware grouped recovery planning that predicts split/retry/drop before dispatch from historical outcomes",
+            "minimum_validation": "real grouped Stage-6 run shows refinement->rescue transition with explicit retry/drop/swap rationale and persisted rescue outcomes",
             "status": "validated"
         },
         "rag_system": {
