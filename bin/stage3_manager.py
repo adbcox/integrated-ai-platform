@@ -176,7 +176,7 @@ def main() -> int:
 
     exit_code = run_worker(message_file, args.target, plan_id)
     events = load_events(plan_id)
-    classification, fallback_used, accepted = classify(events)
+    classification, fallback_used, accepted, final_tag = classify(events)
     print(f"[manager] worker exit={exit_code} classification={classification}")
 
     commit_hash = None
