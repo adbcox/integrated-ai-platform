@@ -74,7 +74,7 @@
       "stage_version": "stage5-v1",
       "manager_version": "manager4-v1",
       "rag_version": "rag3-v1",
-      "allowed_targets": ["bin/", "docs/"],
+      "allowed_targets": ["bin/"],
       "regression_pack": "bin/micro_lane_stage5.sh",
       "status": "in_progress",
       "notes": "Dual-file literal batches under Manager-4"

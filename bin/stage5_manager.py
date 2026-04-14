@@ -14,12 +14,16 @@ from pathlib import Path
 from typing import Any
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(REPO_ROOT))
+
+from promotion import MANIFEST_PATH, load_manifest, resolve_versions_for_lane
 STAGE4_MANAGER = REPO_ROOT / "bin" / "stage4_manager.py"
 STAGE_RAG3 = REPO_ROOT / "bin" / "stage_rag3_plan_probe.py"
 TRACE_DIR = REPO_ROOT / "artifacts" / "stage5_manager"
 TRACE_FILE = TRACE_DIR / "traces.jsonl"
 DEFAULT_MAX_OPS = 2  # Manager-4 batches stay within two entries until Stage-5 saturation completes.
 DEFAULT_MAX_TOTAL_LINES = 20
+DEFAULT_MANIFEST_PATH = MANIFEST_PATH
 PROMOTION_ENV_KEYS = {
     "promotion_lane": "PROMOTION_LANE",
     "promotion_lane_status": "PROMOTION_LANE_STATUS",
@@ -44,6 +48,24 @@ def ensure_clean_tree() -> None:
     status = run(["git", "status", "--porcelain"], capture_output=True, text=True)
     if status.stdout.strip():
         raise Stage5Error("Stage-5 manager requires a clean working tree")
+
+
+def load_candidate_allowed_targets(manifest_path: Path) -> list[str]:
+    manifest = load_manifest(manifest_path)
+    lane_cfg = resolve_versions_for_lane(manifest.data, "candidate")["lane"]
+    return list(lane_cfg.get("allowed_targets", []))
+
+
+def enforce_allowed_targets(entries: list[dict[str, Any]], allowed: list[str]) -> None:
+    if not allowed:
+        return
+    for entry in entries:
+        target = entry["target"]
+        if not any(target.startswith(prefix) for prefix in allowed):
+            raise Stage5Error(
+                f"Target '{target}' is not allowed for Stage-5 candidate lane. "
+                f"Allowed prefixes: {allowed}"
+            )
 
 
 def load_batch(path: Path) -> list[dict[str, Any]]:
@@ -103,6 +125,9 @@ def stage5_manager(args: argparse.Namespace) -> None:
     ensure_clean_tree()
     batch_path = Path(args.batch_file).resolve()
     entries = load_batch(batch_path)
+    manifest_path = Path(args.manifest).resolve()
+    allowed_targets = load_candidate_allowed_targets(manifest_path)
+    enforce_allowed_targets(entries, allowed_targets)
     if len(entries) > args.max_ops:
         raise Stage5Error(f"Stage-5 manager currently supports at most {args.max_ops} operations per batch")
 
@@ -246,6 +271,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--max-ops", type=int, default=DEFAULT_MAX_OPS)
     parser.add_argument("--max-total-lines", type=int, default=DEFAULT_MAX_TOTAL_LINES)
     parser.add_argument("--rag-top", type=int, default=6)
+    parser.add_argument("--manifest", default=str(DEFAULT_MANIFEST_PATH), help="Promotion manifest path for allowed targets")
     return parser.parse_args()
 
 
