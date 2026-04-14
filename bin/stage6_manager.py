@@ -638,6 +638,64 @@ def _build_refinement_job(
     )
 
 
+def _candidate_rescue_paths(plan_payload: dict[str, Any], attempted: set[str]) -> list[str]:
+    grouped = plan_payload.get("grouped_selection", {})
+    dropped = grouped.get("dropped", [])
+    rescue_paths: list[str] = []
+    for entry in dropped:
+        path = str(entry.get("path") or "")
+        if not path or path in attempted:
+            continue
+        reason = str(entry.get("reason") or "")
+        if reason == "max_entries_reached":
+            rescue_paths.append(path)
+            continue
+        if reason == "unlinked_secondary":
+            link_score = float(entry.get("link_score") or 0.0)
+            if link_score >= 1.25:
+                rescue_paths.append(path)
+    return rescue_paths
+
+
+def _build_rescue_job(path: str, *, failed_target: str, args: argparse.Namespace) -> Stage6Job:
+    target_path = (REPO_ROOT / path).resolve()
+    try:
+        target_contents = target_path.read_text(encoding="utf-8")
+    except OSError:
+        target_contents = ""
+
+    literal_old, literal_new, sync_reason = _synchronize_literal_pair(
+        target_contents=target_contents,
+        literal_old=args.literal_old,
+        literal_new=args.literal_new,
+    )
+    if sync_reason is None and literal_old not in target_contents:
+        import_sync = _sync_import_literal_pair(
+            target_contents=target_contents,
+            literal_old=args.literal_old,
+            literal_new=args.literal_new,
+        )
+        if import_sync:
+            literal_old, literal_new = import_sync
+            sync_reason = "sync_import_line_rescue"
+
+    message = args.message_template.format(
+        path=path,
+        source="rescue_swap",
+        old=literal_old,
+        new=literal_new,
+    )
+    return Stage6Job(
+        path=path,
+        source="rescue_swap",
+        refinement_of=failed_target,
+        literal_old=literal_old,
+        literal_new=literal_new,
+        sync_reason=sync_reason,
+        message=message,
+    )
+
+
 def apply_failure_memory(
     *,
     jobs: list[Stage6Job],
@@ -778,6 +836,12 @@ def parse_args() -> argparse.Namespace:
         type=int,
         default=1,
         help="Maximum refinement retries for a failed secondary grouped target.",
+    )
+    parser.add_argument(
+        "--max-secondary-rescues",
+        type=int,
+        default=1,
+        help="Maximum rescue/swap attempts for failed secondary grouped targets.",
     )
     parser.add_argument("--literal-old", default=PLACEHOLDER_LITERAL, help="Literal old text for Stage-4 replacements")
     parser.add_argument("--literal-new", default=PLACEHOLDER_LITERAL_UPDATED, help="Literal new text for Stage-4 replacements")
@@ -933,11 +997,50 @@ def main() -> int:
                 continue
 
             if args.group_failure_policy == "continue_on_secondary_failure":
+                attempted_paths = {str(s.get("target")) for s in statuses if s.get("target")}
+                rescue_candidates = _candidate_rescue_paths(plan_payload, attempted_paths)
+                rescue_attempts = 0
+                rescue_success = False
+                for candidate in rescue_candidates:
+                    if rescue_attempts >= max(0, args.max_secondary_rescues):
+                        break
+                    rescue_attempts += 1
+                    rescue_job = _build_rescue_job(candidate, failed_target=job.path, args=args)
+                    rescue_status = run_stage5_job(rescue_job, args, env, len(statuses))
+                    rescue_status["retry"] = True
+                    rescue_status["retry_attempt"] = rescue_attempts
+                    rescue_status["retry_strategy"] = "secondary_swap"
+                    rescue_status["rescued_from"] = job.path
+                    statuses.append(rescue_status)
+                    if rescue_status["return_code"] == 0:
+                        rescue_success = True
+                        plan_payload.setdefault("rescues", []).append(
+                            {
+                                "failed_target": job.path,
+                                "rescue_target": candidate,
+                                "result": "success",
+                                "rescue_attempt": rescue_attempts,
+                            }
+                        )
+                        break
+                    plan_payload.setdefault("rescues", []).append(
+                        {
+                            "failed_target": job.path,
+                            "rescue_target": candidate,
+                            "result": "failed",
+                            "rescue_attempt": rescue_attempts,
+                        }
+                    )
+
+                if rescue_success:
+                    continue
+
                 plan_payload.setdefault("drops", []).append(
                     {
                         "target": job.path,
                         "reason": "secondary_failed_after_retry",
                         "retry_attempts": retry_attempts,
+                        "rescue_attempts": rescue_attempts,
                     }
                 )
                 continue
