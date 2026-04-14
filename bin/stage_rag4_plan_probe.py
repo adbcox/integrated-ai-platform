@@ -62,6 +62,64 @@ def _path_matches_prefix(path: str, prefixes: list[str]) -> bool:
     return any(path.startswith(prefix) for prefix in prefixes)
 
 
+def _path_domain(path: str) -> str:
+    if path.startswith("bin/"):
+        return "bin"
+    if path.startswith("docs/"):
+        return "docs"
+    if path.startswith("tests/"):
+        return "tests"
+    if path == "Makefile":
+        return "makefile"
+    return "other"
+
+
+def _query_intent(tokens: list[str]) -> str:
+    lowered = [t.lower() for t in tokens]
+    doc_terms = {"doc", "docs", "documentation", "readme", "guide", "roadmap", "policy"}
+    code_terms = {
+        "stage6",
+        "stage5",
+        "manager",
+        "rag4",
+        "retry",
+        "failure",
+        "memory",
+        "python",
+        "script",
+        "bin",
+        "lane",
+        "target",
+    }
+    doc_hits = sum(1 for t in lowered if any(t.startswith(term) for term in doc_terms))
+    code_hits = sum(1 for t in lowered if any(t.startswith(term) for term in code_terms))
+    if code_hits > doc_hits:
+        return "code"
+    if doc_hits > code_hits:
+        return "docs"
+    return "mixed"
+
+
+def _domain_bonus(*, intent: str, domain: str) -> float:
+    if intent == "code":
+        return {
+            "bin": 1.35,
+            "tests": 0.35,
+            "docs": -1.25,
+            "makefile": -0.55,
+            "other": -0.25,
+        }.get(domain, -0.25)
+    if intent == "docs":
+        return {
+            "docs": 1.2,
+            "makefile": 0.15,
+            "bin": -0.85,
+            "tests": -0.45,
+            "other": -0.2,
+        }.get(domain, -0.2)
+    return 0.0
+
+
 def _ranking_score(
     *,
     base_score: float,
@@ -70,12 +128,15 @@ def _ranking_score(
     related_count: int,
     related_score: int,
     lane_aligned: bool,
+    domain: str,
+    intent: str,
 ) -> float:
     # Stage-6 currently executes mostly bin-scoped work; make lane alignment decisive.
     lane_bonus = 2.35 if lane_aligned else -2.35
     companion_bonus = (min(related_count, 4) * 0.18) + (git_history_count * 0.22) + (sibling_count * 0.12)
     related_preview_bonus = min(related_score / 420.0, 1.6)
-    return round(base_score + lane_bonus + companion_bonus + related_preview_bonus, 4)
+    domain_intent_bonus = _domain_bonus(intent=intent, domain=domain)
+    return round(base_score + lane_bonus + companion_bonus + related_preview_bonus + domain_intent_bonus, 4)
 
 
 def _calibrate_confidences(targets: list[dict[str, Any]]) -> None:
@@ -135,12 +196,14 @@ def main() -> int:
     search_payload = run_search(args)
     results = search_payload.get("results", [])
     preferred_prefixes = [prefix for prefix in args.preferred_prefix if prefix]
+    intent = _query_intent(args.query)
 
     targets: list[dict[str, Any]] = []
     for entry in results:
         path = entry.get("path")
         if not path:
             continue
+        domain = _path_domain(path)
         related_entries = [rel for rel in entry.get("related", []) if rel.get("path")]
         related_files = [rel.get("path") for rel in related_entries]
         related_count = len(related_files)
@@ -155,6 +218,8 @@ def main() -> int:
             related_count=related_count,
             related_score=related_score,
             lane_aligned=lane_aligned,
+            domain=domain,
+            intent=intent,
         )
         targets.append(
             {
@@ -166,6 +231,7 @@ def main() -> int:
                 "rank_score": rank_score,
                 "related_score": related_score,
                 "lane_aligned": lane_aligned,
+                "domain": domain,
                 "selection_reason": {
                     "sibling_count": sibling_count,
                     "git_history_count": git_history_count,
@@ -173,6 +239,8 @@ def main() -> int:
                     "related_count": related_count,
                     "preferred_prefixes": preferred_prefixes,
                     "lane_aligned": lane_aligned,
+                    "query_intent": intent,
+                    "domain_bonus": _domain_bonus(intent=intent, domain=domain),
                 },
             }
         )
@@ -206,6 +274,15 @@ def main() -> int:
         key=lambda item: (int(item.get("lane_aligned", False)), item["rank_score"], item["confidence"], item["path"]),
         reverse=True,
     )
+
+    # For code-intent lane-focused planning, prefer emitting lane-aligned targets first.
+    if preferred_prefixes and intent == "code":
+        lane_targets = [t for t in targets if t.get("lane_aligned")]
+        non_lane_targets = [t for t in targets if not t.get("lane_aligned")]
+        if lane_targets:
+            keep_non_lane = max(0, args.max_targets - len(lane_targets))
+            targets = lane_targets + non_lane_targets[:keep_non_lane]
+
     targets = targets[: args.max_targets]
 
     plan = {
@@ -223,7 +300,8 @@ def main() -> int:
             "related_limit": args.related_limit,
             "history_window": args.history_window,
             "preferred_prefixes": preferred_prefixes,
-            "ranking_version": "rag4-v2-lane-aware",
+            "query_intent": intent,
+            "ranking_version": "rag4-v3-intent-domain",
         },
         "raw_payload": search_payload,
     }
