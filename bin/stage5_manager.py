@@ -234,7 +234,8 @@ def stage5_manager(args: argparse.Namespace) -> None:
             "operation_details": operation_details,
         }
     )
-    print(f"[stage5_manager] completed batch {job_id}; committed {args.commit_msg}")
+    target_summary = ", ".join(modified_files)
+    print(f"[stage5_manager] completed batch {job_id}; committed {args.commit_msg} (targets={target_summary})")
 
 
 def parse_args() -> argparse.Namespace:

@@ -411,7 +411,8 @@ def main() -> int:
     )
     if retcode != 0:
         return retcode
-    print(f"[manager4] dispatched to {routed_stage} (lane={lane})")
+    version_label = versions.get("stage_version_name") or routed_stage
+    print(f"[manager4] dispatched to {routed_stage} (lane={lane}, stage_version={version_label})")
     return 0
 
 
