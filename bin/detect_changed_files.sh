@@ -4,6 +4,7 @@ set -eu
 # Priority ordering for detection (Stage-3 + Stage-4 literal lanes):
 # 1) CLI args stay the highest priority
 # 2) CHANGED_FILES env (space/newline separated) stays second priority for the literal default override
+# 3) git diff/ls-files fallback keeps Stage-4 multi-line scans bounded
 
 if [ "$#" -gt 0 ]; then
   for item in "$@"; do
