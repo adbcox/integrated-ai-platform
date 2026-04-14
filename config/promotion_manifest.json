@@ -102,6 +102,7 @@
       "target_constraints": ["bin/", "docs/"],
       "regression_pack": "bin/micro_lane_stage5.sh",
       "auto_reroute": "disallowed targets fall back to manual lane"
+      ,"disallowed_extensions": [".md", ".markdown"]
     },
     "manual": {
       "assignment": "used when a target violates lane constraints or a human needs manual guidance",
