@@ -196,10 +196,11 @@ def stage5_manager(args: argparse.Namespace) -> None:
             run(["git", "checkout", "--", target])
             run(["git", "restore", "--staged", target])
 
-        added, deleted = diff_stats(modified_files)
-        if added + deleted > args.max_total_lines:
+        total_added = sum(detail["diff_added"] for detail in operation_details)
+        total_deleted = sum(detail["diff_deleted"] for detail in operation_details)
+        if total_added + total_deleted > args.max_total_lines:
             raise Stage5Error(
-                f"Stage-5 diff exceeded limit ({added + deleted}>{args.max_total_lines}); revert and retry with smaller scope"
+                f"Stage-5 diff exceeded limit ({total_added + total_deleted}>{args.max_total_lines}); revert and retry with smaller scope"
             )
 
         for target, patch_path in patch_records:
@@ -229,8 +230,8 @@ def stage5_manager(args: argparse.Namespace) -> None:
             "commit_msg": args.commit_msg,
             "max_ops": args.max_ops,
             "max_total_lines": args.max_total_lines,
-            "total_added": added,
-            "total_deleted": deleted,
+            "total_added": total_added,
+            "total_deleted": total_deleted,
             "operation_details": operation_details,
         }
     )
