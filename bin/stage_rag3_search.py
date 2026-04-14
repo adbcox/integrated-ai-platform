@@ -34,8 +34,12 @@ def run_stage_rag2(query: list[str], top: int, window: int, preview: int) -> lis
     ]
     cmd += query
     proc = subprocess.run(cmd, capture_output=True, text=True, check=True)
-    data = json.loads(proc.stdout)
-    return data.get("results", [])
+    stdout = proc.stdout
+    start = stdout.find("[")
+    end = stdout.rfind("]")
+    if start == -1 or end == -1 or end <= start:
+        raise RuntimeError("Stage RAG-2 search did not emit JSON payload")
+    return json.loads(stdout[start : end + 1])
 
 
 def related_candidates(path: str) -> list[str]:
