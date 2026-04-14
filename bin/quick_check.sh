@@ -104,4 +104,4 @@ if [ "$shell_checked" -eq 0 ] && [ "$python_checked" -eq 0 ]; then
   exit 0
 fi
 
-echo "[quick] PASS: Stage-3 quick checks complete (shell/python syntax checks verified)."
+echo "[quick] PASS: Stage-3 quick checks complete (shell/python syntax checks done)."
