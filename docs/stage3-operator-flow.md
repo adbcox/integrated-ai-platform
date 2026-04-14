@@ -38,3 +38,9 @@ make aider-micro-safe \
 - Do **not** attempt Stage-4 tasks until we review this batch of telemetry.
 
 Use this doc alongside `docs/aider-performance-guide.md` and `docs/safe-literal-probes.md` for the most up-to-date guardrails.
+
+## Manager-1 automation
+
+- Run `python3 bin/stage3_manager.py --query "<stage rag query>" --target path/to/file.sh --message "<literal instruction>" --commit-msg "short summary"`.
+- The manager creates a job id, logs Stage RAG usage, writes `/tmp/stage3_job_<id>.msg`, executes `make aider-micro-safe`, classifies the result, and appends a trace row to `artifacts/stage3_manager/traces.jsonl`.
+- You still need to craft the literal instruction (≤2 adjacent lines, anchored string). The manager keeps the repo clean and commits accepted diffs automatically.
