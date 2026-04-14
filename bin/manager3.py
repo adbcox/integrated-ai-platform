@@ -27,7 +27,8 @@ def parse_literal_line_count(message: str) -> tuple[int, int]:
     match = LITERAL_RE.search(message)
     if not match:
         return 0, 0
-    old_literal, new_literal = match.group(1), match.group(2)
+    old_literal = normalize_literal(match.group(1))
+    new_literal = normalize_literal(match.group(2))
     return line_count(old_literal), line_count(new_literal)
 
 
@@ -35,6 +36,14 @@ def line_count(text: str) -> int:
     if not text:
         return 0
     return text.count("\n") + 1
+
+
+def normalize_literal(text: str) -> str:
+    if "\\n" in text:
+        text = text.replace("\\n", "\n")
+    if "\\t" in text:
+        text = text.replace("\\t", "\t")
+    return text
 
 
 def dispatch(stage: str, args: argparse.Namespace, literal_lines: int) -> tuple[int, str | None]:
