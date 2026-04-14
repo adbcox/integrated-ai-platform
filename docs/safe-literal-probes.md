@@ -26,6 +26,13 @@ Use this helper whenever you want to stay inside the **Stage 3 fast micro lane**
      AIDER_MICRO_FILES="bin/quick_check.sh"
    ```
 
+### Stage-3 operator checklist
+
+1. Plan the probe with `bin/stage_rag1_plan_probe.py --stage stage3 ...` so the event lands in `artifacts/stage_rag1/usage.jsonl`.
+2. Populate `/tmp/probe_literal.msg` using the template above (≤2 adjacent lines, single file).
+3. Run `make aider-micro-safe ...` (never bypass the guard) and commit/rollback immediately after.
+4. Record notable plan IDs or fallback notes so we can filter telemetry later. See [docs/stage3-operator-flow.md](stage3-operator-flow.md) for the expanded checklist and the current data-collection goals.
+
 ## Example
 
 ```
@@ -87,6 +94,8 @@ bin/micro_lane_regression.sh
 ```
 
 The script uses the templates under `regressions/micro_lane_stage3/messages/` and automatically reverts accepted edits so the repository remains clean.
+
+When you need the Stage-4 rejection proof, run `bin/micro_lane_stage4.sh`. Keep the output around so we can show the guard still blocks 3-line literals, paired comments, literal misses, and shell-control tweaks.
 
 For quick repo-aware planning context, run:
 

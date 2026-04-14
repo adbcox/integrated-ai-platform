@@ -39,3 +39,10 @@ Validation Questions
 
 This document pairs with `docs/stage_rag1.md` (tool reference) and the new
 planning section in `docs/safe-literal-probes.md`.
+
+Next Data-Collection Window
+---------------------------
+- Collect **30 Stage-3 probes between 15–19 Apr 2026** (at least six per day).
+- Each probe must have matching entries in `artifacts/stage_rag1/usage.jsonl` and `artifacts/micro_runs/events.jsonl`.
+- After every batch, run `python3 bin/stage_rag1_metrics.py --window 20` and paste the summary into your PR/retro notes.
+- Do not reconsider Stage-4 promotions until this batch is complete and reviewed.

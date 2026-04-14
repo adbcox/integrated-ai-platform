@@ -2,11 +2,12 @@
 
 Codex owns orchestration. Aider exists to execute tightly scoped patches with minimal context. Follow this checklist every time.
 
-## 1. Preflight Checklist
+## 1. Preflight Checklist (Stage-3 default)
 - ✅ Pick a task class from `config/aider_task_classes.json` (bugfix-small, refactor-narrow, test-repair, lint-fix, docs-sync, typed-cleanup, targeted-feature-patch).
 - ✅ Confirm class limits: max files, max LOC, max roots, and forbidden globs.
 - ✅ Objective + target files known (`AIDER_OBJECTIVE`/`AIDER_FILES` or `AIDER_AUTO_FILES`).
 - ✅ Guardrails confirmed: no ports/secrets/systemd/policy files unless Codex handles manually.
+- ✅ If the job is a literal/comment tweak, follow the [Stage-3 operator flow](stage3-operator-flow.md) **even if Stage-4 exists**; Stage-4 remains a boundary-only regression pack.
 
 ## 2. Brief Template (required fields)
 Preferred command path:
@@ -80,13 +81,19 @@ Recommended starter tasks for fast lane:
 
 To stay inside the proven lane, start from `templates/safe-literal-probe-template.msg` (see [docs/safe-literal-probes.md](safe-literal-probes.md)) and customize the quoted literal + file anchor before each run. Pair it with `bin/aider_micro.sh` so every probe documents its exact literal intent.
 
-### Stage RAG-1 planning + telemetry
+### Stage RAG-1 planning + telemetry (Stage-3 lane)
 
 1. Run `bin/stage_rag1_plan_probe.py --stage stage4 --top 6 -- "describe literal"` to retrieve candidate anchors before editing the probe message.
 2. Enter the file + line range that you plan to touch so the helper logs it under `artifacts/stage_rag1/usage.jsonl`.
 3. After a Stage-4 battery, run `bin/stage_rag1_metrics.py --window 40` to summarize how many logged probes overlapped with guard failures (`literal_replace_missing_old`, `missing_file_ref`, `missing_anchor`) and how many preflight rejections (`literal_shell_risky`, `prompt_contract_rejection`, etc.) were captured in `artifacts/micro_runs/events.jsonl`.
 
-This keeps the planning assistance “read-only” while giving us measurable signals on whether retrieval is reducing literal misses, wrong-file probes, and anchor mistakes.
+This keeps the planning assistance “read-only” while giving us measurable signals on whether retrieval is reducing literal misses, wrong-file probes, and anchor mistakes. For a full checklist (plan → template → helper → metrics) see [docs/stage3-operator-flow.md](stage3-operator-flow.md).
+
+### Regression reminders
+
+- Run `bin/micro_lane_stage4.sh` whenever the guard changes or at least once per week so the four rejection probes continue to fail in the expected ways.
+- After every coding block, capture telemetry with `python3 bin/stage_rag1_metrics.py --window 20` and note how many Stage-3 entries were logged (current target: 30 probes between 15–19 Apr 2026).
+- Do **not** expand scope beyond ≤2-line literals/comments until the next telemetry review explicitly promotes new shapes.
 
 ### Stage-4 promotion decision (Apr 2026)
 
