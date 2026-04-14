@@ -3,7 +3,7 @@ set -eu
 
 # Priority ordering for detection (Stage-3 literal micro lane):
 # 1) CLI args remain the highest priority
-# 2) CHANGED_FILES env (space or newline separated) stays second in line
+# 2) CHANGED_FILES env (space or newline separated) remains second in line
 
 if [ "$#" -gt 0 ]; then
   for item in "$@"; do
