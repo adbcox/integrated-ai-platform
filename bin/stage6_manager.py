@@ -28,9 +28,7 @@ STAGE5_MANAGER = REPO_ROOT / "bin" / "stage5_manager.py"
 STAGE_RAG4_PLAN = REPO_ROOT / "bin" / "stage_rag4_plan_probe.py"
 TRACE_DIR = REPO_ROOT / "artifacts" / "manager5"
 STAGE5_TRACE_FILE = REPO_ROOT / "artifacts" / "stage5_manager" / "traces.jsonl"
-# STAGE6_PLACEHOLDER (updated)
-# STAGE6_PLACEHOLDER (updated)
-# STAGE6_PLACEHOLDER (updated)
+import argparse  # stage6-rag4-v4b  # stage6-rag4-v3b  # m5v4-proof
 PLACEHOLDER_LITERAL = "# STAGE6_PLACEHOLDER\n# STAGE6_PLACEHOLDER\n# STAGE6_PLACEHOLDER"
 PLACEHOLDER_LITERAL_UPDATED = "# STAGE6_PLACEHOLDER (updated)\n# STAGE6_PLACEHOLDER (updated)\n# STAGE6_PLACEHOLDER (updated)"
 PLACEHOLDER_BLOCK_RE = re.compile(
