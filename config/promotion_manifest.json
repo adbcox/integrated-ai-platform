@@ -276,7 +276,7 @@
             "required_preview_regression_pack": "bin/micro_lane_stage6.sh"
         },
         "last_decision": {
-            "date": "2026-04-14T17:59:05+00:00",
+            "date": "2026-04-14T18:04:40+00:00",
             "status": "level10_control_loop_applied",
             "notes": "candidate:promote; stage6:promote"
         },
@@ -301,6 +301,24 @@
             },
             {
                 "date": "2026-04-14T17:59:05+00:00",
+                "type": "level10_control_loop",
+                "decisions": [
+                    {
+                        "lane": "candidate",
+                        "action": "promote",
+                        "reason": "candidate recovery rule met: streak 10>=6, success/failure 12/4, failure_cap=4",
+                        "next_status": "ready_for_promotion"
+                    },
+                    {
+                        "lane": "stage6",
+                        "action": "promote",
+                        "reason": "core subsystem evidence is ready and stage6 success/failure 5/1 meets 3/1",
+                        "next_status": "candidate_ready"
+                    }
+                ]
+            },
+            {
+                "date": "2026-04-14T18:04:40+00:00",
                 "type": "level10_control_loop",
                 "decisions": [
                     {
