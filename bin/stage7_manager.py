@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -22,6 +23,7 @@ from promotion.tracing import PromotionTraceEntry, append_trace, current_commit_
 STAGE6_MANAGER = REPO_ROOT / "bin" / "stage6_manager.py"
 STAGE_RAG6_PLAN = REPO_ROOT / "bin" / "stage_rag6_plan_probe.py"
 TRACE_DIR = REPO_ROOT / "artifacts" / "manager6"
+IMPORT_BASE_RE = re.compile(r"^(import|from)\s+")
 
 
 def plan_history_path(plan_id: str) -> Path:
@@ -111,6 +113,39 @@ def _write_stage6_jobs_file(targets: list[str]) -> Path:
     return file_path
 
 
+def _single_line_import_base(value: str) -> str | None:
+    if "\n" in value:
+        return None
+    text = value.strip()
+    if not text:
+        return None
+    comment_idx = text.find("#")
+    if comment_idx != -1:
+        text = text[:comment_idx].rstrip()
+    if IMPORT_BASE_RE.match(text):
+        return text
+    return None
+
+
+def _target_supports_literal_contract(path: str, literal_old: str, literal_new: str) -> tuple[bool, str]:
+    target_path = (REPO_ROOT / path).resolve()
+    try:
+        contents = target_path.read_text(encoding="utf-8")
+    except OSError:
+        return False, "unreadable_target"
+
+    if literal_old in contents or literal_new in contents:
+        return True, "literal_present"
+
+    base_old = _single_line_import_base(literal_old)
+    base_new = _single_line_import_base(literal_new)
+    if base_old and base_new and base_old == base_new:
+        for line in contents.splitlines():
+            if line.strip().startswith(base_old):
+                return True, "import_base_match"
+    return False, "literal_mismatch_preflight"
+
+
 def run_stage6_subplan(
     *,
     subplan: dict[str, Any],
@@ -119,7 +154,30 @@ def run_stage6_subplan(
     op_index: int,
 ) -> dict[str, Any]:
     subplan_id = str(subplan.get("subplan_id") or f"subplan-{op_index + 1}")
-    targets = [str(t) for t in subplan.get("targets", []) if t]
+    requested_targets = [str(t) for t in subplan.get("targets", []) if t]
+    accepted_targets: list[str] = []
+    dropped_targets: list[dict[str, str]] = []
+    for target in requested_targets:
+        supported, reason = _target_supports_literal_contract(target, args.literal_old, args.literal_new)
+        if supported:
+            accepted_targets.append(target)
+        else:
+            dropped_targets.append({"path": target, "reason": reason})
+
+    if not accepted_targets:
+        status = {
+            "subplan_id": subplan_id,
+            "targets": [],
+            "dropped_targets": dropped_targets,
+            "status": "dropped_preflight",
+            "return_code": 0,
+            "started_at": datetime.now(timezone.utc).isoformat(),
+            "finished_at": datetime.now(timezone.utc).isoformat(),
+            "strategy": "grouped_subplan",
+        }
+        return status
+
+    targets = accepted_targets
     jobs_file = _write_stage6_jobs_file(targets)
     started = datetime.now(timezone.utc).isoformat()
 
@@ -150,6 +208,10 @@ def run_stage6_subplan(
         str(args.related_limit),
         "--history-window",
         str(args.history_window),
+        "--literal-old",
+        args.literal_old,
+        "--literal-new",
+        args.literal_new,
     ]
     if args.dry_run:
         cmd.append("--dry-run")
@@ -159,6 +221,7 @@ def run_stage6_subplan(
     status = {
         "subplan_id": subplan_id,
         "targets": targets,
+        "dropped_targets": dropped_targets,
         "status": "success" if proc.returncode == 0 else "failure",
         "return_code": proc.returncode,
         "started_at": started,
@@ -223,6 +286,12 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--max-secondary-retries", type=int, default=1)
     parser.add_argument("--max-secondary-rescues", type=int, default=1)
+    parser.add_argument("--literal-old", default="import argparse", help="Literal old text for delegated Stage-6 jobs")
+    parser.add_argument(
+        "--literal-new",
+        default="import argparse  # stage7-op",
+        help="Literal new text for delegated Stage-6 jobs",
+    )
 
     parser.add_argument(
         "--subplan-failure-policy",
