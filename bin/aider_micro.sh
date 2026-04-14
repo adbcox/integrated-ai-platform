@@ -48,7 +48,7 @@ log_micro_event() {
   ts=$(date -Is)
   local files_payload=""
   if [ ${#TARGET_FILES[@]} -gt 0 ]; then
-    files_payload=$(printf '%s\0' "${TARGET_FILES[@]}")
+    files_payload=$(printf '%s\n' "${TARGET_FILES[@]}")
   fi
   mkdir -p "$(dirname "$EVENT_LOG")"
   MICRO_EVENT_TS="$ts" \
@@ -75,7 +75,7 @@ prompt = os.environ.get("MICRO_EVENT_PROMPT")
 files_raw = os.environ.get("MICRO_EVENT_FILES", "")
 exit_code_raw = os.environ.get("MICRO_EVENT_EXIT_CODE", "0")
 
-files = [f for f in files_raw.split("\0") if f]
+files = [f for f in files_raw.split("\n") if f]
 
 try:
     exit_code = int(exit_code_raw)
