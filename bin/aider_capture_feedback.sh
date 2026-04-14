@@ -26,7 +26,7 @@ usage() {
 Usage (Stage-3 production lane default flow):
   ./bin/aider_capture_feedback.sh --name <task-name> [options]
 
-Options (most-used subset, Stage-3 safe):
+Options (Stage-3 safe default subset):
   --summary <path>                 Markdown summary file (Stage-3 capture)
   --outcome <path>                 Outcome file
   --checks <path>                  Commands/checks file
