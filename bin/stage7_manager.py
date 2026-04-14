@@ -26,6 +26,11 @@ TRACE_DIR = REPO_ROOT / "artifacts" / "manager6"
 IMPORT_BASE_RE = re.compile(r"^(import|from)\s+")
 SHELL_STRICT_RE = re.compile(r"^\s*set -euo pipefail\s*$")
 SHELL_ASSIGNMENT_RE = re.compile(r"^\s*[A-Za-z_][A-Za-z0-9_]*=")
+SHELL_PRINT_RE = re.compile(r"^\s*(echo|printf)\b")
+SHELL_RISKY_TOKEN_RE = re.compile(
+    r"(\b(set|if|then|fi|elif|else|for|while|until|case|esac|do|done|exit|return|trap)\b|set\s*-[A-Za-z]+)",
+    re.IGNORECASE,
+)
 
 
 def plan_history_path(plan_id: str) -> Path:
@@ -176,13 +181,23 @@ def _derive_target_contract(path: str, literal_old: str, literal_new: str) -> di
         if first_line.startswith("#!") and ("sh" in first_line or "bash" in first_line):
             is_shell_like = True
     if is_shell_like:
+        def _safe_shell_literal_line(text: str) -> bool:
+            stripped = text.strip()
+            if not stripped:
+                return False
+            if stripped.startswith("#!"):
+                return False
+            if SHELL_RISKY_TOKEN_RE.search(stripped):
+                return False
+            return True
+
         for line in contents.splitlines():
             text = line.rstrip()
             if not text or text.lstrip().startswith("#"):
                 continue
             if SHELL_STRICT_RE.match(text):
                 continue
-            if SHELL_ASSIGNMENT_RE.match(text):
+            if SHELL_ASSIGNMENT_RE.match(text) and _safe_shell_literal_line(text):
                 return {
                     "supported": True,
                     "reason": "derived_shell_assignment_line",
@@ -190,6 +205,33 @@ def _derive_target_contract(path: str, literal_old: str, literal_new: str) -> di
                     "contract_strategy": "shell_assignment_literal",
                     "literal_old": text,
                     "literal_new": f"{text}  # stage7-op",
+                }
+        for line in contents.splitlines():
+            text = line.rstrip()
+            if not text or text.lstrip().startswith("#"):
+                continue
+            if SHELL_PRINT_RE.match(text) and _safe_shell_literal_line(text):
+                return {
+                    "supported": True,
+                    "reason": "derived_shell_print_line",
+                    "path": path,
+                    "contract_strategy": "shell_print_literal",
+                    "literal_old": text,
+                    "literal_new": f"{text}  # stage7-op",
+                }
+        for line in contents.splitlines():
+            text = line.rstrip()
+            stripped = text.strip()
+            if not stripped or stripped.startswith("#!"):
+                continue
+            if stripped.startswith("#") and _safe_shell_literal_line(text):
+                return {
+                    "supported": True,
+                    "reason": "derived_shell_comment_line",
+                    "path": path,
+                    "contract_strategy": "shell_comment_literal",
+                    "literal_old": text,
+                    "literal_new": f"{text}  [stage7-op]",
                 }
         for line in contents.splitlines():
             if SHELL_STRICT_RE.match(line):
@@ -202,6 +244,12 @@ def _derive_target_contract(path: str, literal_old: str, literal_new: str) -> di
                     "literal_old": base_old,
                     "literal_new": f"{base_old}  # stage7-op",
                 }
+        return {
+            "supported": False,
+            "reason": "no_safe_anchor_script",
+            "path": path,
+            "contract_strategy": "shell_no_safe_anchor",
+        }
 
     if path.endswith(".py"):
         for line in contents.splitlines():
