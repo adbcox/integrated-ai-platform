@@ -194,6 +194,11 @@ def main() -> int:
     parser.add_argument("--max-lines", type=int, default=DEFAULT_MAX_LINES)
     parser.add_argument("--max-total-lines", type=int, default=12, help="Maximum total changed lines (add+delete)")
     parser.add_argument("--no-commit", action="store_true", help="Leave accepted changes unstaged for a parent manager to commit")
+    parser.add_argument(
+        "--allow-literal-diff",
+        action="store_true",
+        help="Treat literal_replace_diff guard hits as accepted (for orchestrators that post-validate diffs)",
+    )
     args = parser.parse_args()
 
     if args.target in HARNESS_TARGETS:
@@ -243,6 +248,10 @@ def main() -> int:
 
     diff_added = 0
     diff_deleted = 0
+    if not accepted and classification == "literal_replace_diff" and args.allow_literal_diff:
+        classification = "literal_diff_allowed"
+        accepted = True
+
     if accepted:
         diff_added, diff_deleted = _diff_stats(args.target)
         if diff_added + diff_deleted > args.max_total_lines:

@@ -146,6 +146,7 @@ def stage5_manager(args: argparse.Namespace) -> None:
                 "--notes",
                 notes or "",
                 "--no-commit",
+                "--allow-literal-diff",
             ]
             if entry.get("top"):
                 stage4_cmd.extend(["--top", str(entry["top"])])
