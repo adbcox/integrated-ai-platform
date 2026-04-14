@@ -37,6 +37,10 @@ def plan_history_path(plan_id: str) -> Path:
     return TRACE_DIR / "plans" / f"{plan_id}.json"
 
 
+def plan_checkpoint_path(plan_id: str) -> Path:
+    return TRACE_DIR / "plans" / plan_id / "checkpoints.json"
+
+
 def write_plan_history(plan_id: str, payload: dict[str, Any]) -> None:
     history_path = plan_history_path(plan_id)
     history_path.parent.mkdir(parents=True, exist_ok=True)
@@ -63,6 +67,49 @@ def write_plan_history(plan_id: str, payload: dict[str, Any]) -> None:
         "last_updated": event["timestamp"],
     }
     history_path.write_text(json.dumps(merged, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
+def load_plan_history(plan_id: str) -> dict[str, Any]:
+    history_path = plan_history_path(plan_id)
+    if not history_path.exists():
+        return {}
+    try:
+        return json.loads(history_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        return {}
+
+
+def load_checkpoints(plan_id: str) -> dict[str, Any]:
+    path = plan_checkpoint_path(plan_id)
+    if not path.exists():
+        return {"plan_id": plan_id, "subplans": {}, "updated_at": None}
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        if isinstance(payload, dict):
+            payload.setdefault("plan_id", plan_id)
+            payload.setdefault("subplans", {})
+            return payload
+    except json.JSONDecodeError:
+        pass
+    return {"plan_id": plan_id, "subplans": {}, "updated_at": None}
+
+
+def save_checkpoint(plan_id: str, status: dict[str, Any], *, attempt_index: int) -> None:
+    checkpoint = load_checkpoints(plan_id)
+    subplans = checkpoint.setdefault("subplans", {})
+    subplan_id = str(status.get("subplan_id") or f"subplan-{len(subplans) + 1}")
+    record = dict(status)
+    record["attempt_index"] = int(attempt_index)
+    record["checkpointed_at"] = datetime.now(timezone.utc).isoformat()
+    subplans[subplan_id] = record
+    checkpoint["updated_at"] = record["checkpointed_at"]
+    path = plan_checkpoint_path(plan_id)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(checkpoint, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
+def _is_resume_complete_status(status: str) -> bool:
+    return status in {"success", "partial_success", "dropped_preflight"}
 
 
 def build_promotion_env(lane: str, versions: dict[str, Any], manifest_version: int, manifest_path: Path) -> dict[str, str]:
@@ -308,6 +355,14 @@ def run_stage6_subplan(
             dropped_targets.append({"path": target, "reason": str(contract.get("reason") or "literal_mismatch_preflight")})
 
     if not accepted_targets:
+        rollback_contract = {
+            "contract_version": "stage8-v1",
+            "strategy": "preflight_drop_no_dispatch",
+            "rollback_scope": [],
+            "trigger_on_failure": False,
+            "verification": "not_applicable_no_dispatch",
+            "notes": "No stage6/stage5 dispatch occurred; no rollback action required.",
+        }
         status = {
             "subplan_id": subplan_id,
             "targets": [],
@@ -318,6 +373,7 @@ def run_stage6_subplan(
             "started_at": datetime.now(timezone.utc).isoformat(),
             "finished_at": datetime.now(timezone.utc).isoformat(),
             "strategy": "grouped_subplan",
+            "rollback_contract": rollback_contract,
         }
         return status
 
@@ -362,6 +418,14 @@ def run_stage6_subplan(
 
     proc = subprocess.run(cmd, env={**os.environ, **env})
     jobs_file.unlink(missing_ok=True)
+    rollback_contract = {
+        "contract_version": "stage8-v1",
+        "strategy": "delegated_stage6_stage5_bounded_commit",
+        "rollback_scope": targets,
+        "trigger_on_failure": proc.returncode != 0,
+        "verification": "stage6_return_code",
+        "notes": "Rollback boundary remains delegated to stage6/stage5 guards; no global repo reset.",
+    }
     status = {
         "subplan_id": subplan_id,
         "targets": targets,
@@ -372,6 +436,7 @@ def run_stage6_subplan(
         "started_at": started,
         "finished_at": datetime.now(timezone.utc).isoformat(),
         "strategy": "grouped_subplan",
+        "rollback_contract": rollback_contract,
     }
     return status
 
@@ -490,6 +555,17 @@ def parse_args() -> argparse.Namespace:
         help="Preferred retrieval prefix for Stage RAG-6 ranking (repeatable).",
     )
     parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument(
+        "--resume",
+        action="store_true",
+        help="Resume an existing Stage-7 plan from persisted checkpoints and skip completed subplans.",
+    )
+    parser.add_argument(
+        "--stop-after-subplans",
+        type=int,
+        default=0,
+        help="Bounded test control: stop cleanly after N subplans and persist checkpoints.",
+    )
     return parser.parse_args()
 
 
@@ -503,33 +579,55 @@ def main() -> int:
         lane_cfg = versions.get("lane", {})
         args.preferred_prefix = list(lane_cfg.get("allowed_targets", ["bin/"]))
 
-    rag6_plan = run_stage_rag6(args)
-    subplans = _order_subplans(list(rag6_plan.get("subplans", [])))
+    checkpoint = load_checkpoints(args.plan_id) if args.resume else {"subplans": {}}
+    existing = load_plan_history(args.plan_id) if args.resume else {}
+    if args.resume and existing.get("plan_payload"):
+        plan_payload = dict(existing.get("plan_payload") or {})
+        subplans = list(plan_payload.get("subplans", []))
+        plan_payload.setdefault("resume_contract", {})
+        plan_payload["resume_contract"].update(
+            {
+                "enabled": True,
+                "resumed_at": datetime.now(timezone.utc).isoformat(),
+                "checkpoint_path": str(plan_checkpoint_path(args.plan_id)),
+                "resume_mode": "skip_completed_subplans",
+            }
+        )
+    else:
+        rag6_plan = run_stage_rag6(args)
+        subplans = _order_subplans(list(rag6_plan.get("subplans", [])))
 
-    plan_payload = {
-        "plan_id": args.plan_id,
-        "query": " ".join(args.query),
-        "notes": args.notes,
-        "created_at": datetime.now(timezone.utc).isoformat(),
-        "subplans": subplans,
-        "provenance": rag6_plan.get("provenance", {}),
-        "reconciliation_contract": {
-            "subplan_failure_policy": args.subplan_failure_policy,
-            "rollback_model": "delegated_stage6_stage5_bounded_commit",
-            "drop_model": "preflight_drop_when_literal_contract_unsupported",
-        },
-    }
+        plan_payload = {
+            "plan_id": args.plan_id,
+            "query": " ".join(args.query),
+            "notes": args.notes,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "subplans": subplans,
+            "provenance": rag6_plan.get("provenance", {}),
+            "reconciliation_contract": {
+                "subplan_failure_policy": args.subplan_failure_policy,
+                "rollback_model": "delegated_stage6_stage5_bounded_commit",
+                "drop_model": "preflight_drop_when_literal_contract_unsupported",
+                "checkpoint_model": "persisted_subplan_checkpoints_stage8_v1",
+                "rollback_contract_version": "stage8-v1",
+            },
+            "resume_contract": {
+                "enabled": True,
+                "checkpoint_path": str(plan_checkpoint_path(args.plan_id)),
+                "resume_mode": "skip_completed_subplans",
+            },
+        }
 
-    write_plan_history(
-        args.plan_id,
-        {
-            "event_type": "planned",
-            "state": "planned",
-            "plan_payload": plan_payload,
-            "subplan_count": len(subplans),
-            "subplan_failure_policy": args.subplan_failure_policy,
-        },
-    )
+        write_plan_history(
+            args.plan_id,
+            {
+                "event_type": "planned",
+                "state": "planned",
+                "plan_payload": plan_payload,
+                "subplan_count": len(subplans),
+                "subplan_failure_policy": args.subplan_failure_policy,
+            },
+        )
 
     if not subplans:
         write_plan_history(
@@ -545,22 +643,90 @@ def main() -> int:
         return 0
 
     env = build_promotion_env(lane_name, versions, manifest_cfg.version, manifest_path)
+    lane_cfg = versions.get("lane", {})
     statuses: list[dict[str, Any]] = []
     exit_code = 0
+    resumed_completed: list[str] = []
+    subplans_to_run: list[dict[str, Any]] = []
+    checkpoint_subplans = checkpoint.get("subplans", {}) if isinstance(checkpoint, dict) else {}
+    for subplan in subplans:
+        subplan_id = str(subplan.get("subplan_id") or "")
+        prior = checkpoint_subplans.get(subplan_id)
+        if args.resume and isinstance(prior, dict) and _is_resume_complete_status(str(prior.get("status") or "")):
+            resumed_completed.append(subplan_id)
+            statuses.append(
+                {
+                    "subplan_id": subplan_id,
+                    "status": "resumed_skip_completed",
+                    "return_code": 0,
+                    "resume_source_status": str(prior.get("status") or ""),
+                    "strategy": "resume_skip",
+                    "targets": prior.get("targets", []),
+                    "rollback_contract": prior.get("rollback_contract"),
+                }
+            )
+            continue
+        subplans_to_run.append(subplan)
 
     write_plan_history(
         args.plan_id,
         {
-            "event_type": "attempt_started",
+            "event_type": "attempt_resumed" if args.resume else "attempt_started",
             "state": "running",
             "plan_payload": plan_payload,
-            "statuses": [],
+            "statuses": statuses if args.resume else [],
+            "resume_completed_subplans": resumed_completed,
         },
     )
 
-    for idx, subplan in enumerate(subplans):
+    for idx, subplan in enumerate(subplans_to_run):
         status = run_stage6_subplan(subplan=subplan, args=args, env=env, op_index=idx)
         statuses.append(status)
+        save_checkpoint(args.plan_id, status, attempt_index=idx + 1)
+
+        if args.stop_after_subplans > 0 and (idx + 1) >= args.stop_after_subplans:
+            plan_payload.setdefault("resume_events", []).append(
+                {
+                    "event": "paused_by_operator",
+                    "processed_subplans": idx + 1,
+                    "remaining_subplans": max(len(subplans_to_run) - (idx + 1), 0),
+                    "checkpoint_path": str(plan_checkpoint_path(args.plan_id)),
+                }
+            )
+            write_plan_history(
+                args.plan_id,
+                {
+                    "event_type": "attempt_paused",
+                    "state": "paused",
+                    "statuses": statuses,
+                    "plan_payload": plan_payload,
+                    "failure_code": 0,
+                },
+            )
+            trace = PromotionTraceEntry(
+                lane=lane_name,
+                lane_label=lane_cfg.get("label", "Stage-7 preview lane"),
+                lane_status=lane_cfg.get("status", "preview"),
+                lane_reason=f"plan:{args.plan_id}",
+                stage=versions.get("stage"),
+                stage_version=versions.get("stage_version_name"),
+                manager_version=versions.get("manager_version_name"),
+                rag_version=versions.get("rag_version_name"),
+                promotion_policy_status=args.plan_status,
+                manifest_version=manifest_cfg.version,
+                manifest_path=str(manifest_path),
+                literal_lines=0,
+                return_code=0,
+                promotion_outcome="paused",
+                commit_hash=current_commit_hash(),
+                extra={"plan_id": args.plan_id, "subplans": statuses, "plan_payload": plan_payload, "resume": args.resume},
+            )
+            append_trace(trace, trace_dir=TRACE_DIR)
+            print(
+                f"[stage7] paused after {idx + 1} subplan(s); checkpoints saved to {plan_checkpoint_path(args.plan_id)}"
+            )
+            return 0
+
         if status["return_code"] == 0:
             continue
 
@@ -582,6 +748,8 @@ def main() -> int:
                 statuses=statuses,
             )
             statuses.extend(split_statuses)
+            for split_idx, split_status in enumerate(split_statuses, start=1):
+                save_checkpoint(args.plan_id, split_status, attempt_index=(idx + 1) * 100 + split_idx)
             plan_payload.setdefault("recoveries", []).append(
                 {
                     "failed_subplan": status["subplan_id"],
@@ -612,7 +780,6 @@ def main() -> int:
         },
     )
 
-    lane_cfg = versions.get("lane", {})
     trace = PromotionTraceEntry(
         lane=lane_name,
         lane_label=lane_cfg.get("label", "Stage-7 preview lane"),
@@ -629,7 +796,14 @@ def main() -> int:
         return_code=exit_code,
         promotion_outcome="success" if exit_code == 0 else "failure",
         commit_hash=current_commit_hash(),
-        extra={"plan_id": args.plan_id, "subplans": statuses, "plan_payload": plan_payload},
+        extra={
+            "plan_id": args.plan_id,
+            "subplans": statuses,
+            "plan_payload": plan_payload,
+            "resume": args.resume,
+            "resume_completed_subplans": resumed_completed,
+            "checkpoint_path": str(plan_checkpoint_path(args.plan_id)),
+        },
     )
     append_trace(trace, trace_dir=TRACE_DIR)
 

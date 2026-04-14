@@ -22,20 +22,17 @@ This file is the operator-facing view of the Version 8 build list. The canonical
 
 ## Stage 8
 
-- Current: `stage7-v1`
-- Target: `stage8-v1`
-- Goal: resumable multi-phase Stage-7 execution with explicit subplan rollback contracts.
-- Gap:
-  - Stage-7 is auditable but not resumable from persisted checkpoints.
-  - Rollback semantics are bounded but not emitted as a formal stage-level contract.
-- Required code:
-  - persisted `checkpoints.json` for Stage-7 plans
-  - resume mode that skips completed subplans
-  - explicit `rollback_contract` payload per subplan
-- Validation:
-  - interrupted real Stage-7 run resumed from checkpoints
-  - failed subplan emits and enforces rollback contract
-- Operator-visible change: interrupted Stage-7 plans can be resumed safely.
+- Current: `stage8-v1`
+- Target: `stage9-v1`
+- Goal: harden resumed multi-phase execution into deterministic production gates and interruption handling contracts.
+- Landed in `stage8-v1`:
+  - persisted `checkpoints.json` for Stage-7/8 plans
+  - `--resume` mode that skips completed subplans from checkpoints
+  - explicit `rollback_contract` payload per executed subplan
+- Validation completed:
+  - paused run resumed from checkpoints without rerunning completed subplans
+  - checkpoint/history include rollback-contract semantics
+- Operator-visible change now: interrupted Stage-8 plans can be resumed safely.
 - Dependencies: Manager 8, Regression/Qualification v8.
 
 ## Manager 8

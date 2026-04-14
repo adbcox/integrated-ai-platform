@@ -6,7 +6,7 @@ This roadmap defines Level-10 goals across the six major subsystems and ties eac
 
 | Subsystem | Current level | Production level | Candidate level | Preview level | Next target |
 | --- | --- | --- | --- | --- | --- |
-| Stage system | 7 | 3 | 5 | 7 | 8 |
+| Stage system | 8 | 3 | 5 | 8 | 9 |
 | Manager system | 6 | 4 | 5 | 6 | 7 |
 | Retrieval / RAG | 6 | 1 | 3 | 6 | 7 |
 | Promotion engine | 6 | 3 | 5 | 6 | 7 |
@@ -25,7 +25,7 @@ The concrete cross-subsystem upgrade plan for the next major tier lives in:
 
 | Subsystem | Current version | Next target | Decision |
 | --- | --- | --- | --- |
-| Stage system | `stage7-v1` | `stage8-v1` | building |
+| Stage system | `stage8-v1` | `stage9-v1` | validated |
 | Manager system | `manager6-v1` | `manager7-v1` | building |
 | Retrieval / RAG | `rag6-v1` | `rag7-v1` | building |
 | Promotion engine | `level10-promote-v1` | `level10-promote-v2` | held |
@@ -37,14 +37,14 @@ Rationale and validation requirements are tracked in `subsystem_versions` inside
 ## Level-10 definitions and gaps
 
 ### 1) Stage system
-- **Current**: Stage-6 preview exists (`bin/stage6_manager.py`) and orchestrates sequential Stage-5 jobs.
+- **Current**: Stage-8 preview exists (`bin/stage7_manager.py`) with multi-plan orchestration, persisted checkpoints, resumable subplan execution, and explicit rollback-contract metadata.
 - **Level-10 definition**: autonomous multi-lane stage planner that safely promotes/rolls back based on objective evidence.
 - **Main blockers**:
-  - Stage-6 is preview-only and constrained to limited targets.
-  - Promotion is not yet automatically driven by lane evidence.
+  - Stage-8 resume/checkpoint semantics are still preview-lane only and not yet gated for production promotion.
+  - Rollback contract remains delegated to Stage-6/5 bounded protections instead of independent Stage-level rollback primitives.
 - **Next code steps**:
-  - Expand Stage-6 target coverage with lane-aware guards.
-  - Add automatic stage-lane advancement gates keyed to qualification output.
+  - Add deterministic interruption/timeout gate assertions for Stage-8 runs.
+  - Add production-grade stage gate checks in qualification/promotion paths before Stage-8 promotion.
 
 ### 2) Manager system
 - **Current**: Manager-4 lane dispatcher + Manager-5 orchestration.

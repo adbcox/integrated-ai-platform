@@ -37,6 +37,12 @@
             "description": "Stage-7 multi-plan orchestration with partitioned subplans, audited partial completion, and manager-controlled split recovery",
             "manager_entry": "bin/stage7_manager.py",
             "rag_helper": "stage_rag6"
+        },
+        "stage8-v1": {
+            "stage": "stage8",
+            "description": "Stage-8 resumable multi-plan orchestration with persisted checkpoints, explicit subplan rollback contracts, and audited resume/reconcile semantics",
+            "manager_entry": "bin/stage7_manager.py",
+            "rag_helper": "stage_rag6"
         }
     },
     "manager_versions": {
@@ -117,7 +123,7 @@
             "rag_version": "rag4-v3"
         },
         "stage7": {
-            "stage_version": "stage7-v1",
+            "stage_version": "stage8-v1",
             "manager_version": "manager6-v1",
             "rag_version": "rag6-v1"
         }
@@ -173,7 +179,7 @@
         },
         "stage7": {
             "label": "Stage-7 preview lane",
-            "stage_version": "stage7-v1",
+            "stage_version": "stage8-v1",
             "manager_version": "manager6-v1",
             "rag_version": "rag6-v1",
             "allowed_targets": [
@@ -181,7 +187,7 @@
             ],
             "regression_pack": "bin/micro_lane_stage7.sh",
             "status": "building",
-            "notes": "Stage-7 multi-plan preview lane with RAG-6 subplan clustering and Manager-6 split-on-failure reconciliation over Stage-6 subplan execution"
+            "notes": "Stage-8 resumable multi-plan preview lane with RAG-6 subplan clustering, checkpointed resume semantics, explicit rollback contracts, and Manager-6 split-on-failure reconciliation over Stage-6 subplan execution"
         }
     },
     "lane_rules": {
@@ -232,19 +238,19 @@
     },
     "subsystem_levels": {
         "stage_system": {
-            "current_level": 7,
+            "current_level": 8,
             "production_level": 3,
             "candidate_level": 5,
-            "preview_level": 7,
-            "next_target_level": 8,
+            "preview_level": 8,
+            "next_target_level": 9,
             "level10_definition": "Autonomous multi-lane stage planner that selects and safely executes bounded work classes with policy-backed rollback and promotion gates.",
             "key_blockers": [
-                "Stage-7 currently runs in preview-only dry/near-real mode",
-                "Subplan-level rollback semantics still rely on Stage-6/5 bounded behavior rather than dedicated Stage-7 rollback primitives"
+                "Stage-8 resume/checkpoint semantics are preview-only and not yet promoted with deterministic gate assertions",
+                "Subplan rollback contract is explicit but remains delegated to Stage-6/5 bounded protections"
             ],
             "evidence_to_advance": [
-                "Repeated Stage-7 multi-plan runs succeed with auditable subplan lifecycle transitions",
-                "Stage-7 split-on-failure reconciliation maintains bounded safe execution while improving completion rate"
+                "Repeated Stage-8 resume runs recover from paused/interrupted plans without replaying completed subplans",
+                "Stage-8 rollback contract fields are emitted in checkpoints/traces for all executed subplans"
             ]
         },
         "manager_system": {
@@ -404,12 +410,12 @@
     },
     "subsystem_versions": {
         "stage_system": {
-            "current_version": "stage7-v1",
-            "next_version": "stage8-v1",
-            "after_next_version": "stage9-v1",
-            "upgrade_goal": "harden Stage-7 multi-plan orchestration from preview into repeatable production-safe execution with explicit rollback/reconciliation contracts",
-            "minimum_validation": "stage7 manager run shows subplan lifecycle planning->running->(succeeded|partial_success|failed) with auditable reconciliation events",
-            "status": "building"
+            "current_version": "stage8-v1",
+            "next_version": "stage9-v1",
+            "after_next_version": "stage10-v1",
+            "upgrade_goal": "harden Stage-8 resume/checkpoint contracts into production-grade operational gates with deterministic interruption recovery guarantees",
+            "minimum_validation": "stage7 manager resume run demonstrates checkpoint-backed skip_completed_subplans with rollback contracts persisted per subplan",
+            "status": "validated"
         },
         "manager_system": {
             "current_version": "manager6-v1",
@@ -454,7 +460,7 @@
     },
     "version8_upgrade_list": {
         "stage_system": {
-            "current_version": "stage7-v1",
+            "current_version": "stage8-v1",
             "v8_target": "stage8-v1",
             "target_goal": "Stage-7 transitions from single pass subplan orchestration to resumable multi-phase execution with explicit subplan rollback and resume checkpoints.",
             "gap_from_current": [
