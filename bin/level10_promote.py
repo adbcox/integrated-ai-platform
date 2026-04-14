@@ -57,7 +57,7 @@ def _candidate_decision(summary: dict[str, Any], criteria: dict[str, Any], curre
             ),
             next_status="ready_for_promotion",
         )
-    if failure > failure_budget * 2 and success < success_threshold:
+    if failure > max(1, failure_budget * 2) and success < success_threshold:
         return LaneDecision(
             lane="candidate",
             action="demote",
