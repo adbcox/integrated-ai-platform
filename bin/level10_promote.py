@@ -42,10 +42,14 @@ def run_level10_qualify(manifest_path: Path) -> dict[str, Any]:
 
 def _candidate_decision(summary: dict[str, Any], criteria: dict[str, Any], current_status: str) -> LaneDecision:
     metrics = summary.get("metrics", {}).get("candidate", {})
+    recovery = summary.get("metrics", {}).get("candidate_recovery", {})
     success = int(metrics.get("success", 0))
     failure = int(metrics.get("failure", 0))
+    success_streak = int(recovery.get("latest_success_streak", 0))
     success_threshold = int(criteria.get("candidate_success_threshold", 0))
     failure_budget = int(criteria.get("candidate_failure_budget", 0))
+    recovery_streak_threshold = int(criteria.get("candidate_recovery_streak_threshold", 0))
+    recovery_failure_cap = int(criteria.get("candidate_recovery_failure_cap", 0))
 
     if success >= success_threshold and failure <= failure_budget:
         return LaneDecision(
@@ -54,6 +58,22 @@ def _candidate_decision(summary: dict[str, Any], criteria: dict[str, Any], curre
             reason=(
                 f"candidate success/failure {success}/{failure} meets "
                 f"threshold {success_threshold} and budget {failure_budget}"
+            ),
+            next_status="ready_for_promotion",
+        )
+    if (
+        recovery_streak_threshold > 0
+        and recovery_failure_cap > 0
+        and success >= success_threshold
+        and success_streak >= recovery_streak_threshold
+        and failure <= recovery_failure_cap
+    ):
+        return LaneDecision(
+            lane="candidate",
+            action="promote",
+            reason=(
+                f"candidate recovery rule met: streak {success_streak}>={recovery_streak_threshold}, "
+                f"success/failure {success}/{failure}, failure_cap={recovery_failure_cap}"
             ),
             next_status="ready_for_promotion",
         )

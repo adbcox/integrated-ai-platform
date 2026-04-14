@@ -78,25 +78,26 @@ def filter_by_manifest_version(
     return filtered, dropped
 
 
-def summarize_candidate(manager4_rows: list[dict[str, Any]]) -> Counter:
-    def candidate_run_key(row: dict[str, Any]) -> str:
-        extra = row.get("extra") if isinstance(row.get("extra"), dict) else {}
-        commit_msg = str(extra.get("commit_msg") or "")
-        target = ""
-        targets = row.get("targets")
-        if isinstance(targets, list) and targets:
-            target = str(targets[0])
-        if not target:
-            target = str(row.get("target") or "")
-        secondary_target = str(extra.get("secondary_target") or "")
-        if commit_msg and target:
-            # Batch files change across retries; logical run identity should not.
-            return f"task:{commit_msg}|target:{target}|secondary:{secondary_target}"
-        batch_file = extra.get("batch_file") or row.get("batch_file")
-        if batch_file:
-            return f"batch:{batch_file}"
-        return f"target:{target}|commit:{commit_msg}"
+def candidate_run_key(row: dict[str, Any]) -> str:
+    extra = row.get("extra") if isinstance(row.get("extra"), dict) else {}
+    commit_msg = str(extra.get("commit_msg") or "")
+    target = ""
+    targets = row.get("targets")
+    if isinstance(targets, list) and targets:
+        target = str(targets[0])
+    if not target:
+        target = str(row.get("target") or "")
+    secondary_target = str(extra.get("secondary_target") or "")
+    if commit_msg and target:
+        # Batch files change across retries; logical run identity should not.
+        return f"task:{commit_msg}|target:{target}|secondary:{secondary_target}"
+    batch_file = extra.get("batch_file") or row.get("batch_file")
+    if batch_file:
+        return f"batch:{batch_file}"
+    return f"target:{target}|commit:{commit_msg}"
 
+
+def latest_candidate_rows(manager4_rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     latest_rows: dict[str, dict[str, Any]] = {}
     for row in manager4_rows:
         if row.get("lane") != "candidate":
@@ -110,14 +111,35 @@ def summarize_candidate(manager4_rows: list[dict[str, Any]]) -> Counter:
         prev_ts = parse_timestamp(previous.get("timestamp")) or datetime.min.replace(tzinfo=UTC)
         if ts >= prev_ts:
             latest_rows[key] = row
+    return sorted(
+        latest_rows.values(),
+        key=lambda row: parse_timestamp(row.get("timestamp")) or datetime.min.replace(tzinfo=UTC),
+    )
 
+
+def summarize_candidate(manager4_rows: list[dict[str, Any]]) -> Counter:
+    latest_rows = latest_candidate_rows(manager4_rows)
     stats: Counter = Counter()
-    for row in latest_rows.values():
+    for row in latest_rows:
         if row.get("return_code") == 0:
             stats["success"] += 1
         else:
             stats["failure"] += 1
     return stats
+
+
+def summarize_candidate_recovery(manager4_rows: list[dict[str, Any]]) -> dict[str, int]:
+    latest_rows = latest_candidate_rows(manager4_rows)
+    success_streak = 0
+    for row in reversed(latest_rows):
+        if row.get("return_code") == 0:
+            success_streak += 1
+            continue
+        break
+    return {
+        "latest_success_streak": success_streak,
+        "latest_run_count": len(latest_rows),
+    }
 
 
 def summarize_stage6(manager5_rows: list[dict[str, Any]]) -> Counter:
@@ -210,6 +232,7 @@ def evaluate_subsystems(
     stage6_stats: Counter,
     worker_stats: Counter,
     rag4_stats: dict[str, Any],
+    candidate_recovery: dict[str, int],
     lifecycle_stats: dict[str, Any],
     criteria: dict[str, Any],
     manifest_data: dict[str, Any],
@@ -280,6 +303,7 @@ def evaluate_subsystems(
             "required_candidate_pack": required_candidate_pack,
             "required_candidate_pack_exists": candidate_pack_exists,
             "manifest_has_subsystem_policy": bool(subsystem_levels),
+            "latest_candidate_success_streak": int(candidate_recovery.get("latest_success_streak", 0)),
         },
     }
 
@@ -346,6 +370,7 @@ def main() -> int:
     )
 
     candidate_stats = summarize_candidate(manager4_rows)
+    candidate_recovery = summarize_candidate_recovery(manager4_rows)
     stage6_stats = summarize_stage6(manager5_rows)
     worker_stats = summarize_worker(stage5_rows)
     rag4_stats = summarize_rag4(rag4_rows)
@@ -357,6 +382,7 @@ def main() -> int:
         stage6_stats=stage6_stats,
         worker_stats=worker_stats,
         rag4_stats=rag4_stats,
+        candidate_recovery=candidate_recovery,
         lifecycle_stats=lifecycle_stats,
         criteria=criteria,
         manifest_data=manifest.data,
@@ -382,6 +408,7 @@ def main() -> int:
         "lane_snapshot": lane_snapshot,
         "metrics": {
             "candidate": dict(candidate_stats),
+            "candidate_recovery": candidate_recovery,
             "stage6_preview": dict(stage6_stats),
             "worker": dict(worker_stats),
             "rag4": rag4_stats,

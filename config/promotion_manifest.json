@@ -267,6 +267,8 @@
         "criteria": {
             "candidate_success_threshold": 4,
             "candidate_failure_budget": 1,
+            "candidate_recovery_streak_threshold": 6,
+            "candidate_recovery_failure_cap": 4,
             "required_regression_pack": "bin/micro_lane_stage5.sh",
             "trace_window_days": 7,
             "stage6_success_threshold": 3,
