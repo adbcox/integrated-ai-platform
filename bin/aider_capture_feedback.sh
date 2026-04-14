@@ -23,7 +23,7 @@ FORCE_ESCALATION_CAPTURE=0
 
 usage() {
   cat <<'USAGE'
-Usage:
+Usage (Stage-3 micro lane default):
   ./bin/aider_capture_feedback.sh --name <task-name> [options]
 
 Options:
