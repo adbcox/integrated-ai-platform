@@ -26,14 +26,15 @@ This document is planning-only and review-first. It is grounded in current repo 
 - Current contribution to Codex-5.1 replacement: medium. It can run bounded complex multi-target workflows, but still needs stronger deterministic recovery guarantees.
 
 ### 2) Manager/orchestration system
-- Current version/level: `manager8-v1`, level 8.
+- Current version/level: `manager9-v1`, level 9 (building).
 - Current real capability:
   - History-weighted strategy selection.
   - Explicit retry/split/defer state transitions.
   - Subplan reconciliation and class-budgeted gating.
+  - Qualification-aware strategy posture + family-memory/budget-forecast decision tags.
 - Main blockers:
-  - Strategy is still short-horizon and mostly family-local.
-  - Limited long-horizon policy learning across runs/repos.
+  - Strategy memory now spans worker-family outcomes, but remains lane-local and non-hierarchical.
+  - Long-horizon policy learning still lacks proactive multi-family repackaging.
 - Main dependencies: Worker budget feedback quality, RAG calibration quality.
 - Current contribution to Codex-5.1 replacement: high for bounded orchestration, medium for sustained high-complexity problem solving.
 

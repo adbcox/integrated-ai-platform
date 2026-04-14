@@ -164,6 +164,117 @@ def _adaptive_adjustment(
     return adjustment, stats, reason
 
 
+def summarize_worker_family_outcomes(
+    *,
+    lane: str,
+    worker_class: str,
+    family: str,
+    window_days: int = DEFAULT_ADAPTIVE_WINDOW_DAYS,
+    path: Path = LEDGER_PATH,
+) -> dict[str, Any]:
+    """Summarize family/class outcomes for manager strategy decisions."""
+
+    ledger = _load_ledger(path)
+    history = ledger.get("history") or []
+    cutoff_ts = datetime.now(UTC).timestamp() - (max(1, window_days) * 86400)
+
+    cls = "grouped" if worker_class == "grouped" else "single"
+    family_rows: list[dict[str, Any]] = []
+    class_rows: list[dict[str, Any]] = []
+    for item in history:
+        if not isinstance(item, dict):
+            continue
+        if str(item.get("lane") or "") != lane:
+            continue
+        if str(item.get("worker_class") or "") != cls:
+            continue
+        ts = str(item.get("timestamp") or "")
+        if not _is_within_window(ts, cutoff_ts):
+            continue
+        class_rows.append(item)
+        if str(item.get("family") or "unknown") == family:
+            family_rows.append(item)
+
+    rows = family_rows if len(family_rows) >= 3 else class_rows
+    scope = "family" if rows is family_rows else "class"
+    total = len(rows)
+    if total == 0:
+        return {
+            "samples": 0,
+            "scope": scope,
+            "success_rate": 0.0,
+            "failure_rate": 0.0,
+            "escalation_rate": 0.0,
+            "rescue_rate": 0.0,
+        }
+
+    success = 0
+    failure = 0
+    escalated = 0
+    rescued = 0
+    for item in rows:
+        outcome = str(item.get("outcome") or "unknown")
+        if outcome == "success":
+            success += 1
+        elif outcome in {"failure", "manual_escalation", "deferred"}:
+            failure += 1
+        if bool(item.get("escalated")):
+            escalated += 1
+        if bool(item.get("rescued")):
+            rescued += 1
+
+    return {
+        "samples": total,
+        "scope": scope,
+        "success_rate": round(success / total, 3),
+        "failure_rate": round(failure / total, 3),
+        "escalation_rate": round(escalated / total, 3),
+        "rescue_rate": round(rescued / total, 3),
+    }
+
+
+def worker_budget_forecast(
+    *,
+    lane: str,
+    worker_class: str,
+    grouped_limit: int,
+    single_limit: int,
+    family: str = "unknown",
+    adaptive_window_days: int = DEFAULT_ADAPTIVE_WINDOW_DAYS,
+    path: Path = LEDGER_PATH,
+) -> dict[str, Any]:
+    """Read-only budget forecast used by manager planning before dispatch."""
+
+    ledger = _load_ledger(path)
+    cls = "grouped" if worker_class == "grouped" else "single"
+    base_limit = int(grouped_limit if cls == "grouped" else single_limit)
+    day_key = datetime.now(UTC).date().isoformat()
+    day = (ledger.get("days") or {}).get(day_key) or {}
+    lane_key = f"{lane}:{cls}"
+    used = int(day.get(lane_key, 0))
+    adjustment, adaptive_stats, adaptive_reason = _adaptive_adjustment(
+        ledger=ledger,
+        lane=lane,
+        worker_class=cls,
+        family=family,
+        window_days=adaptive_window_days,
+    )
+    adaptive_ceiling = max(base_limit * 2, base_limit)
+    effective_limit = max(1, min(base_limit + adjustment, adaptive_ceiling))
+    remaining = effective_limit - used
+    return {
+        "lane": lane,
+        "worker_class": cls,
+        "family": family,
+        "base_limit": base_limit,
+        "effective_limit": effective_limit,
+        "used": used,
+        "remaining": remaining,
+        "adaptive_adjustment": adjustment,
+        "adaptive_stats": {**adaptive_stats, "adaptive_reason": adaptive_reason},
+    }
+
+
 def apply_worker_budget(
     *,
     lane: str,

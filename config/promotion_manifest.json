@@ -73,6 +73,10 @@
         "manager8-v1": {
             "entry": "bin/stage7_manager.py",
             "description": "Manager-8 history-weighted orchestration state machine: strategy scoring, explicit retry/split/defer transitions, class-budgeted worker gating, and reconciled subplan execution for Stage-8 runs"
+        },
+        "manager9-v1": {
+            "entry": "bin/stage7_manager.py",
+            "description": "Manager-9 long-horizon orchestration step: qualification-aware strategy posture, worker family-memory scoring, resume-failure biasing, and budget-forecast preemptive defer/split decision tags for Stage-8 runs"
         }
     },
     "rag_versions": {
@@ -132,7 +136,7 @@
         },
         "stage7": {
             "stage_version": "stage8-v1",
-            "manager_version": "manager8-v1",
+            "manager_version": "manager9-v1",
             "rag_version": "rag8-v1"
         }
     },
@@ -188,14 +192,14 @@
         "stage7": {
             "label": "Stage-7 preview lane",
             "stage_version": "stage8-v1",
-            "manager_version": "manager8-v1",
+            "manager_version": "manager9-v1",
             "rag_version": "rag8-v1",
             "allowed_targets": [
                 "bin/"
             ],
             "regression_pack": "bin/micro_lane_stage7.sh",
             "status": "building",
-            "notes": "Stage-8 resumable preview lane with Manager-8 strategy-scored subplan orchestration, class-budgeted worker gating, and RAG-8 conflict/yield-aware clustered planning"
+            "notes": "Stage-8 resumable preview lane with Manager-9 qualification-aware strategy memory, class-budgeted worker gating, and RAG-8 conflict/yield-aware clustered planning"
         }
     },
     "lane_rules": {
@@ -426,15 +430,15 @@
             "status": "validated"
         },
         "manager_system": {
-            "current_version": "manager8-v1",
-            "next_version": "manager9-v1",
-            "after_next_version": "manager10-v1",
-            "upgrade_goal": "Manager-9 adds long-horizon adaptive orchestration using persisted cross-plan strategy outcomes and conflict-aware rescue policies",
+            "current_version": "manager9-v1",
+            "next_version": "manager10-v1",
+            "after_next_version": "manager11-v1",
+            "upgrade_goal": "Manager-10 extends Manager-9 with richer hierarchical policy adaptation across multi-family subplans and escalation outcomes",
             "minimum_validation": [
-                "One non-dry Stage-8 run with strategy_state evidence and mixed transition outcomes",
-                "Trace evidence that budget-aware defer/split decisions are persisted and reconciled"
+                "One Stage-8 run emits qualification-aware strategy decisions with family-memory and budget-forecast tags",
+                "Resume-aware run shows prior failure/defer status can bias split/defer decisions before dispatch"
             ],
-            "status": "validated"
+            "status": "building"
         },
         "rag_system": {
             "current_version": "rag8-v1",

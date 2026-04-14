@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Manager-6 orchestrator for Stage-7 multi-plan execution."""
+"""Manager-9 orchestrator for Stage-7/8 multi-plan execution."""
 
 from __future__ import annotations
 
@@ -18,12 +18,19 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT))
 
 from promotion import MANIFEST_PATH, load_manifest, resolve_versions_for_lane
-from promotion.worker_budget import WorkerBudgetDecision, apply_worker_budget, record_worker_outcome
+from promotion.worker_budget import (
+    WorkerBudgetDecision,
+    apply_worker_budget,
+    record_worker_outcome,
+    summarize_worker_family_outcomes,
+    worker_budget_forecast,
+)
 from promotion.tracing import PromotionTraceEntry, append_trace, current_commit_hash
 
 STAGE6_MANAGER = REPO_ROOT / "bin" / "stage6_manager.py"
 STAGE_RAG6_PLAN = REPO_ROOT / "bin" / "stage_rag6_plan_probe.py"
 TRACE_DIR = REPO_ROOT / "artifacts" / "manager6"
+QUAL_HISTORY_PATH = REPO_ROOT / "artifacts" / "promotion" / "qualification_history.jsonl"
 DEFAULT_MANAGER6_HISTORY_WINDOW_DAYS = 14
 IMPORT_BASE_RE = re.compile(r"^(import|from)\s+")
 SHELL_STRICT_RE = re.compile(r"^\s*set -euo pipefail\s*$")
@@ -197,18 +204,43 @@ def _choose_subplan_strategy(
     *,
     subplan: dict[str, Any],
     scorecard: dict[str, Any],
+    family_memory: dict[str, Any],
+    qualification_posture: dict[str, Any],
+    budget_forecast: dict[str, Any],
+    resume_source_status: str | None,
 ) -> dict[str, Any]:
     risk_score = float(subplan.get("risk_score") or 0.0)
     yield_score = float(subplan.get("yield_score") or 0.0)
     size = int(subplan.get("size") or len(subplan.get("targets", [])) or 1)
     grouped_rate = float(scorecard.get("grouped_rate") or 0.5)
     split_rate = float(scorecard.get("split_rate") or 0.5)
+    memory_escalation = float(family_memory.get("escalation_rate") or 0.0)
+    memory_failure = float(family_memory.get("failure_rate") or 0.0)
+    memory_samples = int(family_memory.get("samples") or 0)
+    budget_remaining = int(budget_forecast.get("remaining") or 0)
+    worker_pressure = bool(qualification_posture.get("worker_pressure"))
+    qualification_caution = bool(qualification_posture.get("caution_mode"))
+    resume_status = str(resume_source_status or "")
 
     strategy = "run_grouped"
     reason = "default_grouped"
-    if size > 1 and (risk_score >= 1.8 or split_rate > grouped_rate + 0.12):
+    decision_tags: list[str] = []
+
+    if resume_status in {"failure", "deferred_worker_budget", "dropped_family_budget"} and size > 1:
+        strategy = "split_first"
+        reason = "resume_failure_bias_split"
+        decision_tags.append("resume_bias")
+    elif worker_pressure and qualification_caution and budget_remaining <= 0 and yield_score < 12.0:
+        strategy = "defer_manual"
+        reason = "qualification_worker_pressure_budget_forecast"
+        decision_tags.append("qualification_budget_pressure")
+    elif size > 1 and (risk_score >= 1.8 or split_rate > grouped_rate + 0.12):
         strategy = "split_first"
         reason = "history_or_risk_prefers_split"
+    elif size > 1 and memory_samples >= 5 and (memory_failure >= 0.35 or memory_escalation >= 0.35):
+        strategy = "split_first"
+        reason = "family_memory_prefers_split"
+        decision_tags.append("family_memory")
     elif size == 1 and grouped_rate < 0.35 and yield_score < 6.0:
         strategy = "run_grouped"
         reason = "single_target_grouped_only"
@@ -217,8 +249,89 @@ def _choose_subplan_strategy(
         "strategy": strategy,
         "reason": reason,
         "scorecard": scorecard,
+        "family_memory": family_memory,
+        "qualification_posture": qualification_posture,
+        "budget_forecast": budget_forecast,
+        "resume_source_status": resume_status or "",
+        "decision_tags": decision_tags,
         "risk_score": round(risk_score, 3),
         "yield_score": round(yield_score, 3),
+    }
+
+
+def _load_latest_qualification_posture(*, max_age_hours: int = 48) -> dict[str, Any]:
+    """Load bounded qualification posture for manager-side caution signals."""
+
+    if not QUAL_HISTORY_PATH.exists():
+        return {
+            "source": "qualification_missing",
+            "caution_mode": False,
+            "worker_pressure": False,
+            "age_hours": None,
+        }
+
+    last: dict[str, Any] | None = None
+    with QUAL_HISTORY_PATH.open(encoding="utf-8") as fh:
+        for line in fh:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                row = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            if isinstance(row, dict):
+                last = row
+
+    if not last:
+        return {
+            "source": "qualification_unreadable",
+            "caution_mode": False,
+            "worker_pressure": False,
+            "age_hours": None,
+        }
+
+    ts_raw = str(last.get("timestamp") or "")
+    age_hours: float | None = None
+    if ts_raw:
+        try:
+            ts = datetime.fromisoformat(ts_raw.replace("Z", "+00:00"))
+            age_hours = max((datetime.now(timezone.utc) - ts).total_seconds() / 3600.0, 0.0)
+        except ValueError:
+            age_hours = None
+
+    fresh = age_hours is not None and age_hours <= max(1, max_age_hours)
+    metrics = last.get("metrics") if isinstance(last.get("metrics"), dict) else {}
+    stage8 = metrics.get("stage8") if isinstance(metrics.get("stage8"), dict) else {}
+    worker = metrics.get("worker") if isinstance(metrics.get("worker"), dict) else {}
+    gates = (
+        last.get("v8_gate_assertions", {}).get("gates")
+        if isinstance(last.get("v8_gate_assertions"), dict)
+        else {}
+    )
+    if not isinstance(gates, dict):
+        gates = {}
+
+    worker_success = int(worker.get("success") or 0)
+    worker_failure = int(worker.get("failure") or 0)
+    worker_failure_rate = (worker_failure / (worker_success + worker_failure)) if (worker_success + worker_failure) else 0.0
+    stage8_deferred = int(stage8.get("worker_budget_deferred_subplans") or 0)
+
+    worker_pressure = bool(stage8_deferred > 0 or worker_failure_rate >= 0.22)
+    caution_mode = bool(not gates.get("promotion8_ready", True) or worker_pressure)
+    if not fresh:
+        caution_mode = False
+
+    return {
+        "source": "qualification_history",
+        "fresh": fresh,
+        "age_hours": round(age_hours, 3) if age_hours is not None else None,
+        "caution_mode": caution_mode,
+        "worker_pressure": worker_pressure if fresh else False,
+        "worker_failure_rate": round(worker_failure_rate, 3),
+        "stage8_worker_budget_deferred_subplans": stage8_deferred,
+        "promotion8_ready": bool(gates.get("promotion8_ready", False)),
+        "qualification8_ready": bool(gates.get("qualification8_ready", False)),
     }
 
 
@@ -673,6 +786,8 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--manager-history-window-days", type=int, default=14)
+    parser.add_argument("--manager-memory-window-days", type=int, default=30)
+    parser.add_argument("--qualification-max-age-hours", type=int, default=48)
     parser.add_argument("--family-rescue-budget", type=int, default=1)
     parser.add_argument("--worker-budget-grouped", type=int, default=4)
     parser.add_argument("--worker-budget-single", type=int, default=8)
@@ -775,6 +890,7 @@ def main() -> int:
     family_rescue_usage: dict[str, int] = {}
     checkpoint_subplans = checkpoint.get("subplans", {}) if isinstance(checkpoint, dict) else {}
     historical_outcomes = _load_recent_manager6_outcomes(days=args.manager_history_window_days)
+    qualification_posture = _load_latest_qualification_posture(max_age_hours=args.qualification_max_age_hours)
     for subplan in subplans:
         subplan_id = str(subplan.get("subplan_id") or "")
         prior = checkpoint_subplans.get(subplan_id)
@@ -793,8 +909,30 @@ def main() -> int:
             )
             continue
         family = _subplan_family_key(subplan)
+        budget_class = "grouped" if len(subplan.get("targets", [])) > 1 else "single"
+        family_memory = summarize_worker_family_outcomes(
+            lane=lane_name,
+            worker_class=budget_class,
+            family=family,
+            window_days=args.manager_memory_window_days,
+        )
+        forecast = worker_budget_forecast(
+            lane=lane_name,
+            worker_class=budget_class,
+            grouped_limit=args.worker_budget_grouped,
+            single_limit=args.worker_budget_single,
+            family=family,
+            adaptive_window_days=args.worker_budget_adaptive_window_days,
+        )
         scorecard = _strategy_scorecard(family=family, historical=historical_outcomes)
-        strategy_decision = _choose_subplan_strategy(subplan=subplan, scorecard=scorecard)
+        strategy_decision = _choose_subplan_strategy(
+            subplan=subplan,
+            scorecard=scorecard,
+            family_memory=family_memory,
+            qualification_posture=qualification_posture,
+            budget_forecast=forecast,
+            resume_source_status=str(prior.get("status") or "") if isinstance(prior, dict) else None,
+        )
         strategy_decision["family"] = family
         strategy_decisions[subplan_id] = strategy_decision
         subplans_to_run.append(subplan)
@@ -803,9 +941,11 @@ def main() -> int:
     plan_payload["manager_decisions"].update(
         {
             "strategy_decisions": strategy_decisions,
-            "manager_version": "manager8-v1",
+            "manager_version": "manager9-v1",
             "history_window_days": args.manager_history_window_days,
+            "memory_window_days": args.manager_memory_window_days,
             "family_rescue_budget": args.family_rescue_budget,
+            "qualification_posture": qualification_posture,
         }
     )
 
@@ -826,6 +966,47 @@ def main() -> int:
         strategy_decision = strategy_decisions.get(subplan_id, {"strategy": "run_grouped", "reason": "default_grouped"})
         family = str(strategy_decision.get("family") or _subplan_family_key(subplan))
         budget_class = "grouped" if len(subplan.get("targets", [])) > 1 else "single"
+        if strategy_decision.get("strategy") == "defer_manual":
+            preemptive_budget = {
+                "lane": lane_name,
+                "worker_class": budget_class,
+                "allowed": False,
+                "reason": "manager9_preemptive_defer",
+                "forecast": strategy_decision.get("budget_forecast", {}),
+            }
+            worker_budget_decisions.append(preemptive_budget)
+            status = {
+                "subplan_id": subplan_id,
+                "targets": [str(t) for t in subplan.get("targets", []) if t],
+                "target_contracts": [],
+                "dropped_targets": [],
+                "status": "deferred_manager_policy",
+                "return_code": 0,
+                "started_at": datetime.now(timezone.utc).isoformat(),
+                "finished_at": datetime.now(timezone.utc).isoformat(),
+                "strategy": "defer_manual",
+                "strategy_decision": strategy_decision,
+                "worker_budget_decision": preemptive_budget,
+                "escalation_hint": "manual_lane_manager9_preemptive_defer",
+                "rollback_contract": {
+                    "contract_version": "stage8-v1",
+                    "strategy": "manager9_preemptive_defer_no_dispatch",
+                    "rollback_scope": [],
+                    "trigger_on_failure": False,
+                    "verification": "not_applicable_no_dispatch",
+                    "notes": "Manager-9 deferred subplan before dispatch due to qualification/budget posture.",
+                },
+            }
+            statuses.append(status)
+            record_worker_outcome(
+                lane=lane_name,
+                worker_class=budget_class,
+                family=family,
+                status=str(status.get("status") or "unknown"),
+                escalation_hint=str(status.get("escalation_hint") or ""),
+            )
+            save_checkpoint(args.plan_id, status, attempt_index=idx + 1)
+            continue
         budget_decision: WorkerBudgetDecision = apply_worker_budget(
             lane=lane_name,
             worker_class=budget_class,
