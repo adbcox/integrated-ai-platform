@@ -206,7 +206,7 @@ if [ -n "$CHECKS_FILE" ] && [ -f "$CHECKS_FILE" ]; then
   cp "$CHECKS_FILE" "$legacy_record_dir/checks.txt"
 else
   cat >"$legacy_record_dir/checks.txt" <<'EOS'
-make quick
+make quick (Stage-3 default)
 make test-changed-offline
 EOS
 fi
