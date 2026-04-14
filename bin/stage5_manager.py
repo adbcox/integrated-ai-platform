@@ -17,6 +17,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT))
 
 from promotion import MANIFEST_PATH, load_manifest, resolve_versions_for_lane
+from promotion.failure_memory import assess_target_risk, message_has_target_ref
 STAGE4_MANAGER = REPO_ROOT / "bin" / "stage4_manager.py"
 STAGE_RAG3 = REPO_ROOT / "bin" / "stage_rag3_plan_probe.py"
 TRACE_DIR = REPO_ROOT / "artifacts" / "stage5_manager"
@@ -90,6 +91,12 @@ def load_batch(path: Path) -> list[dict[str, Any]]:
     return entries
 
 
+def ensure_message_anchor(message: str, target: str) -> str:
+    if message_has_target_ref(message, target):
+        return message
+    return f"{target}:: {message}"
+
+
 def log_trace(entry: dict) -> None:
     for dest, env_key in PROMOTION_ENV_KEYS.items():
         entry[dest] = os.environ.get(env_key)
@@ -133,6 +140,39 @@ def stage5_manager(args: argparse.Namespace) -> None:
     enforce_allowed_targets(entries, allowed_targets)
     if len(entries) > args.max_ops:
         raise Stage5Error(f"Stage-5 manager currently supports at most {args.max_ops} operations per batch")
+
+    lane = os.environ.get("PROMOTION_LANE", "candidate")
+    manifest_version_raw = os.environ.get("PROMOTION_MANIFEST_VERSION")
+    manifest_version = int(manifest_version_raw) if manifest_version_raw and manifest_version_raw.isdigit() else None
+    filtered_entries: list[dict[str, Any]] = []
+    memory_findings: list[dict[str, Any]] = []
+    for entry in entries:
+        target = str(entry["target"])
+        message = str(entry["message"] or "")
+        decision = assess_target_risk(
+            lane=lane,
+            target=target,
+            message=message,
+            manifest_version=manifest_version,
+            retry_class="none",
+        )
+        entry["message"] = ensure_message_anchor(message, target)
+        finding = {
+            "target": target,
+            "reason": decision.reason,
+            "failures_by_class": decision.failures_by_class,
+            "successes": decision.successes,
+            "forced_anchor": bool(entry["message"] != message),
+            "rerouted_manual": decision.should_reroute_manual,
+        }
+        memory_findings.append(finding)
+        if decision.should_reroute_manual and lane == "candidate":
+            # Keep candidate lanes away from shell-risk classes; let manual/Codex handle it.
+            continue
+        filtered_entries.append(entry)
+    entries = filtered_entries
+    if not entries:
+        raise Stage5Error("all batch entries were blocked by failure-memory preflight; reroute to manual lane")
 
     start_head = git_head()
     job_id = datetime.now(UTC).strftime("stage5-%Y%m%d-%H%M%S")
@@ -262,6 +302,7 @@ def stage5_manager(args: argparse.Namespace) -> None:
                 "rollback_to": start_head,
                 "commit_hash": None,
                 "end_head": git_head(),
+                "failure_memory_findings": memory_findings,
             }
         )
         if isinstance(exc, Stage5Error):
@@ -293,6 +334,7 @@ def stage5_manager(args: argparse.Namespace) -> None:
             "end_head": git_head(),
             "rollback_to": None,
             "commit_hash": commit_hash,
+            "failure_memory_findings": memory_findings,
         }
     )
     target_summary = ", ".join(modified_files)

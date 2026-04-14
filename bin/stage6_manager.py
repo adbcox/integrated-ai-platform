@@ -20,6 +20,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT))
 
 from promotion import MANIFEST_PATH, load_manifest, resolve_versions_for_lane
+from promotion.failure_memory import assess_target_risk
 from promotion.tracing import PromotionTraceEntry, append_trace, current_commit_hash
 
 STAGE5_MANAGER = REPO_ROOT / "bin" / "stage5_manager.py"
@@ -296,6 +297,63 @@ def run_stage5_job(job: Stage6Job, args: argparse.Namespace, env: dict[str, str]
     }
 
 
+def apply_failure_memory(
+    *,
+    jobs: list[Stage6Job],
+    args: argparse.Namespace,
+    manifest_version: int,
+    lane_name: str,
+    allowed_targets: list[str],
+) -> tuple[list[Stage6Job], list[dict[str, Any]]]:
+    adjusted: list[Stage6Job] = []
+    findings: list[dict[str, Any]] = []
+    for job in jobs:
+        projected_message = args.message_template.format(
+            path=job.path,
+            source=(job.source or "rag4"),
+            old=args.literal_old,
+            new=args.literal_new,
+        )
+        decision = assess_target_risk(
+            lane=lane_name,
+            target=job.path,
+            message=projected_message,
+            manifest_version=manifest_version,
+            retry_class=args.retry_class,
+        )
+        findings.append(
+            {
+                "target": job.path,
+                "reason": decision.reason,
+                "failures_by_class": decision.failures_by_class,
+                "successes": decision.successes,
+                "retry_class": args.retry_class,
+                "rerouted": False,
+            }
+        )
+        if decision.should_reroute_manual:
+            continue
+        adjusted.append(job)
+
+    if not adjusted and args.fallback_target and args.retry_class in {"fallback_on_empty", "fallback_on_failure"}:
+        fallback_path = args.fallback_target
+        if not allowed_targets or any(fallback_path.startswith(prefix) for prefix in allowed_targets):
+            adjusted.append(
+                Stage6Job(path=fallback_path, source="fallback", refinement_of="failure_memory_reroute")
+            )
+            findings.append(
+                {
+                    "target": fallback_path,
+                    "reason": "failure_memory fallback target",
+                    "failures_by_class": {},
+                    "successes": 0,
+                    "retry_class": args.retry_class,
+                    "rerouted": True,
+                }
+            )
+    return adjusted, findings
+
+
 def record_trace(
     lane: str,
     lane_cfg: dict[str, Any],
@@ -404,6 +462,15 @@ def main() -> int:
             "targets": [job.path for job in jobs],
             "created_at": datetime.now(timezone.utc).isoformat(),
         }
+
+    jobs, memory_findings = apply_failure_memory(
+        jobs=jobs,
+        args=args,
+        manifest_version=manifest_cfg.version,
+        lane_name=lane_name,
+        allowed_targets=allowed_targets,
+    )
+    plan_payload["failure_memory_findings"] = memory_findings
     write_plan_history(
         args.plan_id,
         {
@@ -414,6 +481,7 @@ def main() -> int:
             "eligible_targets": [job.path for job in jobs],
             "query": " ".join(args.query),
             "retry_class": args.retry_class,
+            "failure_memory_findings": memory_findings,
         },
     )
     if not jobs:

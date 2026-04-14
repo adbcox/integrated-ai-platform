@@ -18,6 +18,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT))
 
 from promotion import MANIFEST_PATH, load_manifest, resolve_versions_for_lane
+from promotion.failure_memory import assess_target_risk
 from promotion.tracing import PromotionTraceEntry, append_trace, current_commit_hash
 STAGE3_MANAGER = REPO_ROOT / "bin" / "stage3_manager.py"
 STAGE4_MANAGER = REPO_ROOT / "bin" / "stage4_manager.py"
@@ -377,6 +378,44 @@ def main() -> int:
     promotion_policy = manifest_data.get("promotion_policy", {})
     policy_status = promotion_policy.get("last_decision", {}).get("status")
 
+    memory_findings: list[dict[str, Any]] = []
+    if lane in {"candidate", "stage6"}:
+        candidate_inputs: list[tuple[str, str]] = []
+        if args.target and args.message:
+            candidate_inputs.append((normalize_target(args.target), args.message))
+        if args.secondary_target and args.secondary_message:
+            candidate_inputs.append((normalize_target(args.secondary_target), args.secondary_message))
+        for target, message in candidate_inputs:
+            decision = assess_target_risk(
+                lane=lane,
+                target=target,
+                message=message,
+                manifest_version=manifest_version,
+                retry_class="none",
+            )
+            memory_findings.append(
+                {
+                    "target": target,
+                    "failures_by_class": decision.failures_by_class,
+                    "successes": decision.successes,
+                    "should_force_anchor": decision.should_force_anchor,
+                    "should_reroute_manual": decision.should_reroute_manual,
+                    "reason": decision.reason,
+                }
+            )
+            if decision.should_reroute_manual:
+                lane = "manual"
+                lane_reason = f"manual:memory:{target}:literal_shell_risky"
+                versions = resolve_versions_for_lane(manifest_data, lane)
+                lane_cfg = versions.get("lane", {})
+                allowed_targets = lane_cfg.get("allowed_targets") or []
+                break
+            if decision.should_force_anchor:
+                if args.target and normalize_target(args.target) == target and args.message:
+                    args.message = ensure_message_anchor(args.message, target)
+                if args.secondary_target and normalize_target(args.secondary_target) == target and args.secondary_message:
+                    args.secondary_message = ensure_message_anchor(args.secondary_message, target)
+
     batch_file_arg = args.batch_file
     auto_batch_used = False
 
@@ -401,6 +440,7 @@ def main() -> int:
                 "secondary_target": args.secondary_target,
                 "notes": args.notes or None,
                 "lane_regression_pack": lane_cfg.get("regression_pack"),
+                "failure_memory_findings": memory_findings,
             },
         )
         return 2
@@ -451,6 +491,7 @@ def main() -> int:
             "notes": args.notes or None,
             "lane_regression_pack": lane_cfg.get("regression_pack"),
             "commit_msg": args.commit_msg,
+            "failure_memory_findings": memory_findings,
         },
     )
     if retcode != 0:
