@@ -24,11 +24,21 @@ and required advancement evidence for:
 | production | `stage3-v1`   | `manager4-v1`   | `rag1-v1`   | Stage-3 literal/comment jobs remain the default production lane. |
 | candidate  | `stage5-v1`   | `manager4-v1`   | `rag3-v1`   | Stage-5 dual-file batches gathering telemetry ahead of promotion. |
 | manual     | `stage4-v1`   | `manager4-v1`   | `rag2-v1`   | Use Codex/manual workflows for out-of-policy or harness edits. |
-| stage6     | `stage6-v1`   | `manager5-v1`   | `rag4-v1`   | Preview Stage-6 multi-target batches orchestrated by Manager-5. |
+| stage6     | `stage6-v2`   | `manager5-v2`   | `rag4-v2`   | Candidate-ready Stage-6 batches with scored secondary selection and per-target literal contracts. |
 
 The manifest also records the current promotion policy (`candidate_success_threshold`,
 `candidate_failure_budget`, the required regression pack, trace window budget,
 and the desired lane behaviors) so operators can validate evidence consistently.
+
+## Explicit subsystem version movement
+
+`config/promotion_manifest.json` now includes `subsystem_version_movement`, which explicitly tracks per subsystem:
+- `current_version`
+- `target_next_version`
+- `decision` (`implemented_now`, `held`, `deferred`)
+- required code change and minimal validation signal
+
+This keeps version movement operational and auditable instead of “generic improvement” language.
 
 ## Manager-4 routing
 

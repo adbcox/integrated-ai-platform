@@ -1,6 +1,6 @@
 {
-    "version": 4,
-    "description": "Manager-4 promotion manifest with lane-aware stage/manager/RAG mapping.",
+    "version": 5,
+    "description": "Promotion manifest with explicit subsystem version movement and lane-aware stage/manager/RAG mapping.",
     "stage_versions": {
         "stage3-v1": {
             "stage": "stage3",
@@ -25,6 +25,12 @@
             "description": "Stage-6 orchestrated multi-target batches",
             "manager_entry": "bin/stage6_manager.py",
             "rag_helper": "stage_rag4"
+        },
+        "stage6-v2": {
+            "stage": "stage6",
+            "description": "Stage-6 orchestrated multi-target batches with per-target literal contracts and scored secondaries",
+            "manager_entry": "bin/stage6_manager.py",
+            "rag_helper": "stage_rag4"
         }
     },
     "manager_versions": {
@@ -35,6 +41,10 @@
         "manager5-v1": {
             "entry": "bin/stage6_manager.py",
             "description": "Manager-5 orchestrator for Stage-6 multi-target batches"
+        },
+        "manager5-v2": {
+            "entry": "bin/stage6_manager.py",
+            "description": "Manager-5 scored grouped decomposition and per-target literal/message contracts"
         }
     },
     "rag_versions": {
@@ -53,6 +63,10 @@
         "rag4-v1": {
             "entry": "bin/stage_rag4_plan_probe.py",
             "description": "Related-file retrieval for Stage-6 orchestration"
+        },
+        "rag4-v2": {
+            "entry": "bin/stage_rag4_plan_probe.py",
+            "description": "RAG-4 intent/domain-aware ranking with lane-clean emission and bounded companion expansion"
         }
     },
     "lane_versions": {
@@ -72,9 +86,9 @@
             "rag_version": "rag2-v1"
         },
         "stage6": {
-            "stage_version": "stage6-v1",
-            "manager_version": "manager5-v1",
-            "rag_version": "rag4-v1"
+            "stage_version": "stage6-v2",
+            "manager_version": "manager5-v2",
+            "rag_version": "rag4-v2"
         }
     },
     "lanes": {
@@ -116,15 +130,15 @@
         },
         "stage6": {
             "label": "Stage-6 preview lane",
-            "stage_version": "stage6-v1",
-            "manager_version": "manager5-v1",
-            "rag_version": "rag4-v1",
+            "stage_version": "stage6-v2",
+            "manager_version": "manager5-v2",
+            "rag_version": "rag4-v2",
             "allowed_targets": [
                 "bin/"
             ],
             "regression_pack": "bin/micro_lane_stage6.sh",
             "status": "candidate_ready",
-            "notes": "Stage-6 orchestrated job preview via Manager-5"
+            "notes": "Stage-6 candidate-ready lane with scored secondary decomposition and per-target literal contracts"
         }
     },
     "lane_rules": {
@@ -336,5 +350,49 @@
                 ]
             }
         ]
+    },
+    "subsystem_version_movement": {
+        "stage_system": {
+            "current_version": "stage6-v2",
+            "target_next_version": "stage6-v3",
+            "decision": "implemented_now",
+            "validation": "real grouped Stage-6 run with heterogeneous targets completes with per-target literal contracts",
+            "required_code_change": "expand stage6 plan decomposition to retain bounded linked secondaries with per-target contract persistence"
+        },
+        "manager_system": {
+            "current_version": "manager5-v2",
+            "target_next_version": "manager5-v3",
+            "decision": "implemented_now",
+            "validation": "grouped_selection shows scored_secondary acceptance and 3-target execution completes",
+            "required_code_change": "replace binary unlinked_secondary gate with scored link evidence and persist reasons"
+        },
+        "rag_system": {
+            "current_version": "rag4-v2",
+            "target_next_version": "rag4-v3",
+            "decision": "implemented_now",
+            "validation": "stage_rag4 usage entries show intent/domain ranking version with lane-clean bin-only targets",
+            "required_code_change": "intent/domain weighting, deeper code-intent retrieval, and bounded companion expansion"
+        },
+        "promotion_engine": {
+            "current_version": "level10-promote-v1",
+            "target_next_version": "level10-promote-v2",
+            "decision": "held",
+            "validation": "defer; no promotion-logic bug requiring version step this session",
+            "required_code_change": "only when objective decision bug appears in control loop actions"
+        },
+        "worker_utilization": {
+            "current_version": "worker-routing-v1",
+            "target_next_version": "worker-routing-v2",
+            "decision": "deferred",
+            "validation": "defer; requires task-class routing expansion beyond current safe class",
+            "required_code_change": "class-aware routing + utilization telemetry joined to stage decisions"
+        },
+        "regression_qualification_framework": {
+            "current_version": "qualify-v1",
+            "target_next_version": "qualify-v2",
+            "decision": "held",
+            "validation": "existing qualification sufficient for this version movement batch",
+            "required_code_change": "subsystem version gate checks and explicit regression-pack pass assertions"
+        }
     }
 }

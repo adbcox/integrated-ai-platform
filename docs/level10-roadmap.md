@@ -15,6 +15,19 @@ This roadmap defines Level-10 goals across the six major subsystems and ties eac
 
 The source of truth for these levels is now `config/promotion_manifest.json` under `subsystem_levels`.
 
+## Explicit version movement (this batch)
+
+| Subsystem | Current version | Next target | Decision |
+| --- | --- | --- | --- |
+| Stage system | `stage6-v2` | `stage6-v3` | implemented now |
+| Manager system | `manager5-v2` | `manager5-v3` | implemented now |
+| Retrieval / RAG | `rag4-v2` | `rag4-v3` | implemented now |
+| Promotion engine | `level10-promote-v1` | `level10-promote-v2` | held |
+| Worker utilization | `worker-routing-v1` | `worker-routing-v2` | deferred |
+| Regression / qualification | `qualify-v1` | `qualify-v2` | held |
+
+Rationale and validation requirements are tracked in `subsystem_version_movement` inside the manifest.
+
 ## Level-10 definitions and gaps
 
 ### 1) Stage system
