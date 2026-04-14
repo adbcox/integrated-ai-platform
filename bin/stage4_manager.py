@@ -193,6 +193,7 @@ def main() -> int:
     parser.add_argument("--min-lines", type=int, default=DEFAULT_MIN_LINES)
     parser.add_argument("--max-lines", type=int, default=DEFAULT_MAX_LINES)
     parser.add_argument("--max-total-lines", type=int, default=12, help="Maximum total changed lines (add+delete)")
+    parser.add_argument("--no-commit", action="store_true", help="Leave accepted changes unstaged for a parent manager to commit")
     args = parser.parse_args()
 
     if args.target in HARNESS_TARGETS:
@@ -251,7 +252,11 @@ def main() -> int:
             raise SystemExit(
                 f"Stage-4 diff exceeded safe limit ({diff_added + diff_deleted}>{args.max_total_lines}). Run again with smaller scope."
             )
-        commit_hash = commit_changes(args.target, args.commit_msg)
+        if args.no_commit:
+            commit_hash = None
+            # leave changes in the working tree for a parent orchestration layer
+        else:
+            commit_hash = commit_changes(args.target, args.commit_msg)
     else:
         commit_hash = None
         git_clean()
@@ -280,7 +285,8 @@ def main() -> int:
     }
     append_trace(entry)
     print(f"[stage4_manager] trace appended -> {TRACE_FILE}")
-    git_clean()
+    if not args.no_commit:
+        git_clean()
     return 0
 
 

@@ -1,0 +1,16 @@
+[
+  {
+    "query": "detection priority stage5 comment",
+    "target": "bin/detect_changed_files.sh",
+    "message": "bin/detect_changed_files.sh::priority block replace exact text '# Priority ordering for detection (Stage-3 + Stage-4 literal lanes):\\n# 1) CLI args stay the highest priority\\n# 2) CHANGED_FILES env (space/newline separated) stays second priority for the literal default override\\n# 3) git diff/ls-files fallback keeps Stage-4 multi-line scans bounded' with '# Priority ordering for detection (Stage-3 + Stage-5 literal lanes):\\n# 1) CLI args stay the highest priority\\n# 2) CHANGED_FILES env (space/newline separated) stays second priority for the literal default override\\n# 3) git diff/ls-files fallback keeps Stage-4 multi-line scans bounded\\n# Stage-5 batches keep dual literal targets bounded' only. keep literal window within stage5 guard.",
+    "lines": "1-10",
+    "notes": "stage5 demo op1"
+  },
+  {
+    "query": "remote finalize behavior stage5 hint",
+    "target": "bin/remote_finalize.sh",
+    "message": "bin/remote_finalize.sh::behavior bullets replace exact text 'Behavior:\\n  - always runs: make quick\\n  - --offline changed (default): make test-changed-offline\\n  - --offline full: make test-offline\\n  - --offline skip: no offline behavior tests' with 'Behavior:\\n  - always runs: make quick\\n  - --offline changed (default): make test-changed-offline\\n  - --offline full: make test-offline\\n  - --offline skip: no offline behavior tests\\n  - Stage-5 finalize helpers expect bounded literal batches before remote finalize' only. keep literal window between 3 and 8 lines; no other edits.",
+    "lines": "12-25",
+    "notes": "stage5 demo op2"
+  }
+]
