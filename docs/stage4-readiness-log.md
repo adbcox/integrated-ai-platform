@@ -23,3 +23,5 @@
 1. Continue Stage-3 manager batches over the next 4+ operator days to satisfy telemetry coverage.
 2. Capture a retro note tying literal-miss/shell-risk failures directly to regression pack executions.
 3. Prepare Stage-4 test plan draft so we can reopen immediately once the telemetry window closes.
+
+- **Stage-4 boundary regression pack:** `bin/micro_lane_stage4.sh` executed at 06:09Z; literal three-line, comment pair, literal miss, and shell-control probes all failed with the expected guard tags (`aider_exit`, `no_change`, `literal_replace_missing_old`, `literal_shell_risky`).
