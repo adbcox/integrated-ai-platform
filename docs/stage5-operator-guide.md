@@ -16,6 +16,10 @@ rollback on failure).
   updates referencing both files may merge together.
 - Planning is performed with **Stage RAG-3** which augments Stage RAG-2
   structural hits with related-file suggestions suitable for multi-file batches.
+- Manager-4 can now auto-build the JSON batch for you: supply the first literal
+  via `--query/--target/--message` plus optional `--secondary-*` flags and route
+  with `--stage stage5`. The dispatcher writes a temporary batch file in `/tmp`
+  and pipes it directly into `bin/stage5_manager.py`.
 
 ## Workflow
 
@@ -43,7 +47,9 @@ rollback on failure).
      --commit-msg "stage5: sync detection/finalize hints"
    ```
    The manager logs Stage RAG-3 plans for each entry, routes to Stage-4 manager
-   in `--no-commit` mode, and commits once at the end if all edits succeed.
+   in `--no-commit` mode, captures per-entry diff stats, and commits once at the
+   end if all edits succeed. Operation details (plan IDs, files, add/delete
+   counts) now land in `artifacts/stage5_manager/traces.jsonl`.
 3. Monitor traces under `artifacts/stage5_manager/traces.jsonl`.
 
 ## Safety and rollback

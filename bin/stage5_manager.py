@@ -97,12 +97,13 @@ def stage5_manager(args: argparse.Namespace) -> None:
     start_head = git_head()
     job_id = datetime.now(UTC).strftime("stage5-%Y%m%d-%H%M%S")
     modified_files: list[str] = []
+    operation_details: list[dict[str, Any]] = []
     plan_ids: list[str] = []
 
     try:
         for idx, entry in enumerate(entries, start=1):
             target = entry["target"]
-            message = entry["message"]
+            message = entry["message"].replace("\\n", "\n")
             query = entry["query"]
             notes = entry.get("notes", "")
             lines = entry.get("lines", "auto")
@@ -150,9 +151,24 @@ def stage5_manager(args: argparse.Namespace) -> None:
                 stage4_cmd.extend(["--top", str(entry["top"])])
             if entry.get("window"):
                 stage4_cmd.extend(["--window", str(entry["window"])])
+            if entry.get("max_total_lines"):
+                stage4_cmd.extend(["--max-total-lines", str(entry["max_total_lines"])])
             run(stage4_cmd)
             if target not in modified_files:
                 modified_files.append(target)
+
+            entry_added, entry_deleted = diff_stats([target])
+            operation_details.append(
+                {
+                    "plan_id": plan_id,
+                    "target": target,
+                    "query": query,
+                    "lines": lines,
+                    "notes": notes or None,
+                    "diff_added": entry_added,
+                    "diff_deleted": entry_deleted,
+                }
+            )
 
         added, deleted = diff_stats(modified_files)
         if added + deleted > args.max_total_lines:
@@ -179,6 +195,9 @@ def stage5_manager(args: argparse.Namespace) -> None:
             "commit_msg": args.commit_msg,
             "max_ops": args.max_ops,
             "max_total_lines": args.max_total_lines,
+            "total_added": added,
+            "total_deleted": deleted,
+            "operation_details": operation_details,
         }
     )
     print(f"[stage5_manager] completed batch {job_id}; committed {args.commit_msg}")

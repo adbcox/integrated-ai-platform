@@ -43,6 +43,10 @@ python3 bin/manager3.py \
 - The helper already writes to `artifacts/micro_runs/events.jsonl`. Tag your plan IDs so we can match them to Stage RAG entries.
 - Run `bin/stage_rag1_metrics.py --window 20` after your shift and append the summary to the task retro.
 - Keep the Stage-4 regression pack (`bin/micro_lane_stage4.sh`) handy; run it whenever the guard rules change or at least once per week to ensure the rejection probes still fire.
+- When you need a coordinated multi-file literal change, switch to Manager-4 with
+  `--stage stage5` (or let the auto-router detect a `--secondary-*` literal).
+  Manager-4 now builds the Stage-5 batch for you and logs the resolved JSON path
+  in `artifacts/manager4/traces.jsonl`.
 
 ## 5. Next data-collection period
 
