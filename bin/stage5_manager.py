@@ -8,6 +8,7 @@ import json
 import os
 import subprocess
 import sys
+import tempfile
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -100,6 +101,8 @@ def stage5_manager(args: argparse.Namespace) -> None:
     operation_details: list[dict[str, Any]] = []
     plan_ids: list[str] = []
 
+    patch_records: list[tuple[str, Path]] = []
+
     try:
         for idx, entry in enumerate(entries, start=1):
             target = entry["target"]
@@ -171,12 +174,25 @@ def stage5_manager(args: argparse.Namespace) -> None:
                 }
             )
 
+            diff_proc = run(["git", "diff", "--", target], capture_output=True, text=True)
+            if not diff_proc.stdout.strip():
+                raise Stage5Error(f"Stage-4 operation on {target} produced no diff")
+            patch_fd, patch_path_str = tempfile.mkstemp(prefix=f"stage5_{idx}_", suffix=".patch")
+            os.close(patch_fd)
+            patch_path = Path(patch_path_str)
+            patch_path.write_text(diff_proc.stdout, encoding="utf-8")
+            patch_records.append((target, patch_path))
+            run(["git", "checkout", "--", target])
+            run(["git", "restore", "--staged", target])
+
         added, deleted = diff_stats(modified_files)
         if added + deleted > args.max_total_lines:
             raise Stage5Error(
                 f"Stage-5 diff exceeded limit ({added + deleted}>{args.max_total_lines}); revert and retry with smaller scope"
             )
 
+        for target, patch_path in patch_records:
+            run(["git", "apply", str(patch_path)])
         run(["git", "add"] + modified_files)
         run(["git", "commit", "-m", args.commit_msg])
     except Exception as exc:
@@ -184,6 +200,12 @@ def stage5_manager(args: argparse.Namespace) -> None:
         if isinstance(exc, Stage5Error):
             raise
         raise Stage5Error(str(exc)) from exc
+    finally:
+        for _, patch_path in patch_records:
+            try:
+                patch_path.unlink()
+            except FileNotFoundError:
+                pass
 
     log_trace(
         {
