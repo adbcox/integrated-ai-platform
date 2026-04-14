@@ -121,6 +121,115 @@ def _is_resume_complete_status(status: str) -> bool:
     return status in {"success", "partial_success", "dropped_preflight"}
 
 
+def _sorted_targets(value: Any) -> list[str]:
+    return sorted({str(item) for item in (value or []) if item})
+
+
+def _is_dispatch_status(status: str) -> bool:
+    return status in {"success", "failure", "partial_success"}
+
+
+def _is_no_dispatch_status(status: str) -> bool:
+    return status in {
+        "dropped_preflight",
+        "deferred_worker_budget",
+        "deferred_manager_policy",
+        "dropped_family_budget",
+        "resumed_skip_completed",
+    }
+
+
+def _verify_rollback_contract_for_status(status: dict[str, Any]) -> dict[str, Any]:
+    issues: list[str] = []
+    contract = status.get("rollback_contract")
+    if not isinstance(contract, dict):
+        return {"ok": False, "issues": ["missing_rollback_contract"], "dispatch": False}
+
+    version = str(contract.get("contract_version") or "")
+    if version != "stage9-v1":
+        issues.append("rollback_contract_version_mismatch")
+
+    strategy = str(contract.get("strategy") or "")
+    if not strategy:
+        issues.append("rollback_strategy_missing")
+
+    trigger = contract.get("trigger_on_failure")
+    if not isinstance(trigger, bool):
+        issues.append("rollback_trigger_not_bool")
+
+    verification = str(contract.get("verification") or "")
+    if not verification:
+        issues.append("rollback_verification_missing")
+
+    scope = _sorted_targets(contract.get("rollback_scope"))
+    targets = _sorted_targets(status.get("targets"))
+    status_name = str(status.get("status") or "")
+    dispatch = _is_dispatch_status(status_name)
+    no_dispatch = _is_no_dispatch_status(status_name)
+
+    if dispatch:
+        if scope != targets:
+            issues.append("rollback_scope_mismatch_dispatch")
+        expected_trigger = int(status.get("return_code") or 0) != 0
+        if trigger is not expected_trigger:
+            issues.append("rollback_trigger_mismatch_dispatch")
+        if verification != "stage6_return_code":
+            issues.append("rollback_verification_mismatch_dispatch")
+    elif no_dispatch:
+        if scope:
+            issues.append("rollback_scope_nonempty_no_dispatch")
+        if trigger is not False:
+            issues.append("rollback_trigger_mismatch_no_dispatch")
+        if verification != "not_applicable_no_dispatch":
+            issues.append("rollback_verification_mismatch_no_dispatch")
+    else:
+        issues.append("rollback_unknown_status_class")
+
+    return {"ok": not issues, "issues": issues, "dispatch": dispatch}
+
+
+def _validate_resume_checkpoint_for_subplan(subplan: dict[str, Any], prior: dict[str, Any]) -> tuple[bool, list[str]]:
+    issues: list[str] = []
+    prior_status = str(prior.get("status") or "")
+    if not _is_resume_complete_status(prior_status):
+        issues.append("resume_status_not_complete")
+    if not str(prior.get("checkpointed_at") or ""):
+        issues.append("checkpoint_timestamp_missing")
+    if int(prior.get("attempt_index") or 0) <= 0:
+        issues.append("checkpoint_attempt_index_invalid")
+
+    expected_targets = _sorted_targets(subplan.get("targets"))
+    prior_targets = _sorted_targets(prior.get("targets"))
+    if expected_targets != prior_targets:
+        issues.append("checkpoint_targets_mismatch")
+
+    verification = _verify_rollback_contract_for_status(prior)
+    if not verification.get("ok"):
+        issues.extend([f"checkpoint_{issue}" for issue in verification.get("issues", [])])
+    return (not issues, issues)
+
+
+def _subplan_coverage_summary(subplans: list[dict[str, Any]], statuses: list[dict[str, Any]]) -> dict[str, Any]:
+    expected_ids = [str(sp.get("subplan_id") or "") for sp in subplans if str(sp.get("subplan_id") or "")]
+    accounted: set[str] = set()
+    for row in statuses:
+        sid = str(row.get("subplan_id") or "")
+        if sid in expected_ids:
+            accounted.add(sid)
+            continue
+        for exp in expected_ids:
+            if sid.startswith(f"{exp}-split-"):
+                accounted.add(exp)
+                break
+    missing = sorted([sid for sid in expected_ids if sid and sid not in accounted])
+    return {
+        "expected_subplans": len(expected_ids),
+        "accounted_subplans": len(accounted),
+        "missing_subplans": missing,
+        "coverage_ok": not missing,
+    }
+
+
 def _subplan_family_key(subplan: dict[str, Any]) -> str:
     meta = subplan.get("target_meta") or []
     families = sorted({str(item.get("family") or "") for item in meta if item.get("family")})
@@ -645,7 +754,7 @@ def run_stage6_subplan(
     proc = subprocess.run(cmd, env={**os.environ, **env})
     jobs_file.unlink(missing_ok=True)
     rollback_contract = {
-        "contract_version": "stage8-v1",
+        "contract_version": "stage9-v1",
         "strategy": "delegated_stage6_stage5_bounded_commit",
         "rollback_scope": targets,
         "trigger_on_failure": proc.returncode != 0,
@@ -827,7 +936,9 @@ def main() -> int:
                 "enabled": True,
                 "resumed_at": datetime.now(timezone.utc).isoformat(),
                 "checkpoint_path": str(plan_checkpoint_path(args.plan_id)),
-                "resume_mode": "skip_completed_subplans",
+                "resume_mode": "validated_skip_completed_subplans",
+                "checkpoint_validation_version": "stage9-v1",
+                "invalid_checkpoint_subplans": [],
             }
         )
     else:
@@ -846,12 +957,14 @@ def main() -> int:
                 "rollback_model": "delegated_stage6_stage5_bounded_commit",
                 "drop_model": "preflight_drop_when_literal_contract_unsupported",
                 "checkpoint_model": "persisted_subplan_checkpoints_stage8_v1",
-                "rollback_contract_version": "stage8-v1",
+                "rollback_contract_version": "stage9-v1",
             },
             "resume_contract": {
                 "enabled": True,
                 "checkpoint_path": str(plan_checkpoint_path(args.plan_id)),
-                "resume_mode": "skip_completed_subplans",
+                "resume_mode": "validated_skip_completed_subplans",
+                "checkpoint_validation_version": "stage9-v1",
+                "invalid_checkpoint_subplans": [],
             },
         }
 
@@ -895,19 +1008,33 @@ def main() -> int:
         subplan_id = str(subplan.get("subplan_id") or "")
         prior = checkpoint_subplans.get(subplan_id)
         if args.resume and isinstance(prior, dict) and _is_resume_complete_status(str(prior.get("status") or "")):
-            resumed_completed.append(subplan_id)
-            statuses.append(
-                {
+            valid_checkpoint, checkpoint_issues = _validate_resume_checkpoint_for_subplan(subplan, prior)
+            if valid_checkpoint:
+                resumed_completed.append(subplan_id)
+                resumed_status = {
                     "subplan_id": subplan_id,
                     "status": "resumed_skip_completed",
                     "return_code": 0,
                     "resume_source_status": str(prior.get("status") or ""),
+                    "resume_checkpoint_validation": {"ok": True, "issues": []},
                     "strategy": "resume_skip",
                     "targets": prior.get("targets", []),
                     "rollback_contract": prior.get("rollback_contract"),
                 }
-            )
-            continue
+                verification = _verify_rollback_contract_for_status(resumed_status)
+                resumed_status["rollback_verification"] = verification
+                if verification.get("ok"):
+                    statuses.append(resumed_status)
+                    continue
+                checkpoint_issues = sorted(set(checkpoint_issues + verification.get("issues", [])))
+                valid_checkpoint = False
+            if not valid_checkpoint:
+                plan_payload.setdefault("resume_contract", {}).setdefault("invalid_checkpoint_subplans", []).append(
+                    {
+                        "subplan_id": subplan_id,
+                        "issues": checkpoint_issues,
+                    }
+                )
         family = _subplan_family_key(subplan)
         budget_class = "grouped" if len(subplan.get("targets", [])) > 1 else "single"
         family_memory = summarize_worker_family_outcomes(
@@ -989,7 +1116,7 @@ def main() -> int:
                 "worker_budget_decision": preemptive_budget,
                 "escalation_hint": "manual_lane_manager9_preemptive_defer",
                 "rollback_contract": {
-                    "contract_version": "stage8-v1",
+                    "contract_version": "stage9-v1",
                     "strategy": "manager9_preemptive_defer_no_dispatch",
                     "rollback_scope": [],
                     "trigger_on_failure": False,
@@ -1031,7 +1158,7 @@ def main() -> int:
                 "worker_budget_decision": budget_decision.to_dict(),
                 "escalation_hint": "manual_lane_budget_exhausted",
                 "rollback_contract": {
-                    "contract_version": "stage8-v1",
+                    "contract_version": "stage9-v1",
                     "strategy": "no_dispatch_budget_exhausted",
                     "rollback_scope": [],
                     "trigger_on_failure": False,
@@ -1050,6 +1177,13 @@ def main() -> int:
                 split_status["strategy"] = "split_subplan"
                 split_status["strategy_decision"] = strategy_decision
                 split_status["worker_budget_decision"] = budget_decision.to_dict()
+                split_verification = _verify_rollback_contract_for_status(split_status)
+                split_status["rollback_verification"] = split_verification
+                if not split_verification.get("ok"):
+                    split_status["status"] = "rollback_contract_invalid"
+                    split_status["return_code"] = 1
+                    split_status["failure_reason"] = "stage9_rollback_contract_verification_failed"
+                    all_success = False
                 record_worker_outcome(
                     lane=lane_name,
                     worker_class=budget_class,
@@ -1084,7 +1218,7 @@ def main() -> int:
                         "strategy_decision": strategy_decision,
                         "worker_budget_decision": budget_decision.to_dict(),
                         "rollback_contract": {
-                            "contract_version": "stage8-v1",
+                            "contract_version": "stage9-v1",
                             "strategy": "drop_after_family_budget_exhaustion",
                             "rollback_scope": [],
                             "trigger_on_failure": False,
@@ -1109,6 +1243,15 @@ def main() -> int:
             )
             status["worker_budget_decision"] = budget_decision.to_dict()
         statuses.append(status)
+        rollback_verification = _verify_rollback_contract_for_status(status)
+        status["rollback_verification"] = rollback_verification
+        if not rollback_verification.get("ok"):
+            status["status"] = "rollback_contract_invalid"
+            status["return_code"] = 1
+            status["failure_reason"] = "stage9_rollback_contract_verification_failed"
+            exit_code = 1
+            save_checkpoint(args.plan_id, status, attempt_index=idx + 1)
+            break
         record_worker_outcome(
             lane=lane_name,
             worker_class=budget_class,
@@ -1182,6 +1325,14 @@ def main() -> int:
                 env=env,
                 statuses=statuses,
             )
+            for split_status in split_statuses:
+                split_verification = _verify_rollback_contract_for_status(split_status)
+                split_status["rollback_verification"] = split_verification
+                if not split_verification.get("ok"):
+                    split_status["status"] = "rollback_contract_invalid"
+                    split_status["return_code"] = 1
+                    split_status["failure_reason"] = "stage9_rollback_contract_verification_failed"
+                    split_success = False
             statuses.extend(split_statuses)
             for split_idx, split_status in enumerate(split_statuses, start=1):
                 save_checkpoint(args.plan_id, split_status, attempt_index=(idx + 1) * 100 + split_idx)
@@ -1206,6 +1357,26 @@ def main() -> int:
         final_state = "partial_success"
     plan_payload.setdefault("manager_decisions", {})
     plan_payload["manager_decisions"]["worker_budget_decisions"] = worker_budget_decisions
+    rollback_checks = [s.get("rollback_verification") for s in statuses if isinstance(s.get("rollback_verification"), dict)]
+    rollback_ok = sum(1 for item in rollback_checks if item.get("ok"))
+    rollback_fail = len(rollback_checks) - rollback_ok
+    coverage = _subplan_coverage_summary(subplans, statuses)
+    plan_payload.setdefault("stage_reconciliation", {})
+    plan_payload["stage_reconciliation"] = {
+        "stage_version": "stage9-v1",
+        "resume_mode": plan_payload.get("resume_contract", {}).get("resume_mode"),
+        "rollback_contract_verification": {
+            "checked": len(rollback_checks),
+            "ok": rollback_ok,
+            "failed": rollback_fail,
+            "all_verified": rollback_fail == 0,
+        },
+        "subplan_coverage": coverage,
+        "outcome_guarantee": {
+            "all_subplans_accounted": bool(coverage.get("coverage_ok")),
+            "all_checked_contracts_valid": rollback_fail == 0,
+        },
+    }
 
     write_plan_history(
         args.plan_id,

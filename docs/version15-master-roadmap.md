@@ -1,6 +1,6 @@
 # Version 15 Master Roadmap
 
-This is the canonical review roadmap for taking the current Stage-8/Manager-8/RAG-8 stack to **Version 15** across:
+This is the canonical review roadmap for taking the current Stage-9/Manager-9/RAG-9 stack to **Version 15** across:
 1. stage system
 2. manager/orchestration
 3. retrieval/RAG
@@ -14,14 +14,14 @@ This document is planning-only and review-first. It is grounded in current repo 
 ## Part 1 — Current-state assessment
 
 ### 1) Stage system
-- Current version/level: `stage8-v1`, level 8.
+- Current version/level: `stage9-v1`, level 9 (building).
 - Current real capability:
   - Multi-plan Stage-7/8 orchestration.
   - Persisted checkpoints (`artifacts/manager6/plans/<plan>/checkpoints.json`).
   - Resume support and rollback-contract metadata.
 - Main blockers:
-  - Rollback semantics are metadata-first; deterministic rollback verification is not yet a hard operational gate.
-  - Stage-8 is operational preview, not production default.
+  - Deterministic rollback verification now exists, but replay/interruption contracts still need stronger mixed-outcome guarantees.
+  - Stage-9 is operational preview, not production default.
 - Main dependencies: Manager strategy quality, RAG cluster quality, qualification gates.
 - Current contribution to Codex-5.1 replacement: medium. It can run bounded complex multi-target workflows, but still needs stronger deterministic recovery guarantees.
 
@@ -157,8 +157,8 @@ Out-of-scope at first replacement milestone:
 Coarse major milestones only.
 
 ### Stage system ladder
-- Current: `stage8-v1`
-- Next: `stage9` — deterministic rollback verification + interruption contracts.
+- Current: `stage9-v1`
+- Next: `stage10` — stronger deterministic replay/interruption contracts across mixed-family outcomes.
 - Mid: `stage11` — production-capable resumed multi-plan execution with deterministic conflict isolation.
 - Mid: `stage13` — broader heterogeneous job contracts and safer autonomous reconciliation.
 - Target: `stage15` — high-confidence autonomous stage planner with verified replay/rollback correctness.
@@ -345,7 +345,7 @@ Coarse major milestones only.
 
 ## Phase A — Stabilize v8 completions (near-term)
 - Goal: close partial v8 blockers (worker/promotion/qualification).
-- Entry: current `stage8/manager9/rag9` operational.
+- Entry: current `stage9/manager9/rag9` operational.
 - Exit:
   - worker adaptive budget tuning landed,
   - qualification deterministic stage8 assertions landed,

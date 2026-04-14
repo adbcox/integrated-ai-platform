@@ -43,6 +43,12 @@
             "description": "Stage-8 resumable multi-plan orchestration with persisted checkpoints, explicit subplan rollback contracts, and audited resume/reconcile semantics",
             "manager_entry": "bin/stage7_manager.py",
             "rag_helper": "stage_rag6"
+        },
+        "stage9-v1": {
+            "stage": "stage9",
+            "description": "Stage-9 deterministic resume/checkpoint orchestration with explicit rollback-contract verification and subplan reconciliation guarantees",
+            "manager_entry": "bin/stage7_manager.py",
+            "rag_helper": "stage_rag6"
         }
     },
     "manager_versions": {
@@ -139,7 +145,7 @@
             "rag_version": "rag4-v3"
         },
         "stage7": {
-            "stage_version": "stage8-v1",
+            "stage_version": "stage9-v1",
             "manager_version": "manager9-v1",
             "rag_version": "rag9-v1"
         }
@@ -195,7 +201,7 @@
         },
         "stage7": {
             "label": "Stage-7 preview lane",
-            "stage_version": "stage8-v1",
+            "stage_version": "stage9-v1",
             "manager_version": "manager9-v1",
             "rag_version": "rag9-v1",
             "allowed_targets": [
@@ -203,7 +209,7 @@
             ],
             "regression_pack": "bin/micro_lane_stage7.sh",
             "status": "building",
-            "notes": "Stage-8 resumable preview lane with Manager-9 qualification-aware strategy memory, class-budgeted worker gating, and RAG-9 execution-feedback-calibrated clustered planning"
+            "notes": "Stage-9 deterministic resume/checkpoint preview lane with rollback-contract verification, reconciliation guarantees, Manager-9 strategy memory, and RAG-9 execution-feedback-calibrated clustered planning"
         }
     },
     "lane_rules": {
@@ -426,12 +432,15 @@
     },
     "subsystem_versions": {
         "stage_system": {
-            "current_version": "stage8-v1",
-            "next_version": "stage9-v1",
-            "after_next_version": "stage10-v1",
-            "upgrade_goal": "harden Stage-8 resume/checkpoint contracts into production-grade operational gates with deterministic interruption recovery guarantees",
-            "minimum_validation": "stage7 manager resume run demonstrates checkpoint-backed skip_completed_subplans with rollback contracts persisted per subplan",
-            "status": "validated"
+            "current_version": "stage9-v1",
+            "next_version": "stage10-v1",
+            "after_next_version": "stage11-v1",
+            "upgrade_goal": "Stage-10 extends Stage-9 with stricter interruption contracts and deterministic replay semantics across mixed subplan outcomes",
+            "minimum_validation": [
+                "Stage-7/8 resume run uses validated_skip_completed_subplans with checkpoint validity checks",
+                "Plan payload records stage_reconciliation with rollback verification counts and subplan coverage guarantees"
+            ],
+            "status": "building"
         },
         "manager_system": {
             "current_version": "manager9-v1",
