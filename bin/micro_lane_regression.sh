@@ -90,4 +90,4 @@ run_probe "literal miss" "literal_miss.msg" "bin/aider_local.sh" "failure"
 run_probe "shell control" "shell_risky.msg" "bin/aider_local.sh" "failure"
 run_probe "aider exit" "guard_banner.msg" "bin/preflight_normalization_guard.sh" "guard"
 
-echo "PASS: Stage 3 micro-lane regression pack completed."
+echo "PASS: Stage-3 micro-lane regression pack completed cleanly."
