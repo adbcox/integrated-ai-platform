@@ -33,25 +33,37 @@ def read_traces(path: Path) -> Iterable[dict]:
                 continue
 
 
+def is_candidate_batch(batch_file: str | None) -> bool:
+    if not batch_file:
+        return False
+    return Path(batch_file).name.startswith("stage5_candidate_job")
+
+
 def summarize_candidate_activity(trace_path: Path, lane_name: str) -> dict:
     stats = Counter()
     recent = deque(maxlen=5)
     for entry in read_traces(trace_path):
         if entry.get("lane") != lane_name:
             continue
+        batch_file = entry.get("batch_file")
+        real = is_candidate_batch(batch_file)
         retcode = entry.get("return_code")
-        if retcode == 0:
-            stats["successes"] += 1
+        outcome = "successes" if retcode == 0 else "failures"
+        if real:
+            stats[f"real_{outcome}"] += 1
+            recent.appendleft(
+                {
+                    "timestamp": entry.get("timestamp"),
+                    "target": entry.get("target"),
+                    "stage": entry.get("stage"),
+                    "return_code": retcode,
+                    "batch_file": batch_file,
+                }
+            )
         else:
-            stats["failures"] += 1
-        recent.appendleft(
-            {
-                "timestamp": entry.get("timestamp"),
-                "target": entry.get("target"),
-                "stage": entry.get("stage"),
-                "return_code": retcode,
-            }
-        )
+            stats[f"guard_{outcome}"] += 1
+    stats["total_successes"] = stats["real_successes"] + stats["guard_successes"]
+    stats["total_failures"] = stats["real_failures"] + stats["guard_failures"]
     return {"stats": stats, "recent": list(recent)}
 
 
@@ -75,10 +87,12 @@ def verdict(stats: Counter, criteria: dict) -> tuple[str, list[str]]:
     required_successes = int(criteria.get("candidate_success_threshold", 0))
     failure_budget = int(criteria.get("candidate_failure_budget", 0))
     reasons: list[str] = []
-    if stats["successes"] < required_successes:
-        reasons.append(f"Needs {required_successes - stats['successes']} more successful candidate jobs.")
-    if stats["failures"] > failure_budget:
-        reasons.append(f"Exceeded failure budget by {stats['failures'] - failure_budget}.")
+    if stats["real_successes"] < required_successes:
+        reasons.append(
+            f"Needs {required_successes - stats['real_successes']} more successful candidate jobs."
+        )
+    if stats["real_failures"] > failure_budget:
+        reasons.append(f"Exceeded failure budget by {stats['real_failures'] - failure_budget}.")
     if not reasons:
         return "promotable", []
     return "needs-more-data", reasons
@@ -126,7 +140,12 @@ def main() -> int:
     else:
         print("  (no explicit lane rules provided)")
     print("--- Candidate telemetry ---")
-    print(f"  Successes: {stats['successes']}  Failures: {stats['failures']}")
+    print(
+        f"  Real candidate successes: {stats['real_successes']}  failures: {stats['real_failures']}"
+    )
+    print(
+        f"  Guard/regression successes: {stats['guard_successes']}  failures: {stats['guard_failures']}"
+    )
     print(f"  Required successes: {criteria.get('candidate_success_threshold', 0)}")
     print(f"  Failure budget: {criteria.get('candidate_failure_budget', 0)}")
     print("--- Recent candidate jobs ---")
