@@ -438,6 +438,9 @@ if [ "$TEST_MODE" = false ]; then
     if [ "$TASK_KIND" = "literal-replace" ] && [ -n "$LITERAL_BEFORE_FILE" ]; then
       info "aider exit detected; attempting literal replace fallback"
       log_micro_event "warning" "literal_fallback_start" "aider exited status $status"
+      if [ -f "$LITERAL_BEFORE_FILE" ]; then
+        cp "$LITERAL_BEFORE_FILE" "$LITERAL_FILE"
+      fi
       literal_apply_direct "$LITERAL_FILE" "$LITERAL_BEFORE_FILE"
       info "running quick validation after fallback"
       if ! PYTHONPYCACHEPREFIX=/tmp/aider_pycache make quick >/dev/null; then
