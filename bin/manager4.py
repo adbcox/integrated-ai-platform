@@ -309,7 +309,7 @@ def main() -> int:
     parser.add_argument("--top", type=int, default=6)
     parser.add_argument("--window", type=int, default=20)
     parser.add_argument("--stage", choices=["auto", "stage3", "stage4", "stage5"], default="auto")
-    parser.add_argument("--stage4-threshold", type=int, default=3, help="Line count threshold for Stage-4 routing")
+    parser.add_argument("--stage4-threshold", type=int, default=3, help="Literal line-count threshold for auto Stage-4 routing")
     parser.add_argument("--batch-file", help="JSON batch file for Stage-5")
     parser.add_argument("--stage5-primary-max-total-lines", type=int, help="Per-entry budget override for auto Stage-5 primary entry")
     parser.add_argument("--secondary-query")
