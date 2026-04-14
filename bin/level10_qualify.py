@@ -79,10 +79,36 @@ def filter_by_manifest_version(
 
 
 def summarize_candidate(manager4_rows: list[dict[str, Any]]) -> Counter:
-    stats: Counter = Counter()
+    def candidate_run_key(row: dict[str, Any]) -> str:
+        extra = row.get("extra") if isinstance(row.get("extra"), dict) else {}
+        batch_file = extra.get("batch_file") or row.get("batch_file")
+        if batch_file:
+            return f"batch:{batch_file}"
+        target = ""
+        targets = row.get("targets")
+        if isinstance(targets, list) and targets:
+            target = str(targets[0])
+        if not target:
+            target = str(row.get("target") or "")
+        commit_msg = str(extra.get("commit_msg") or "")
+        return f"target:{target}|commit:{commit_msg}"
+
+    latest_rows: dict[str, dict[str, Any]] = {}
     for row in manager4_rows:
         if row.get("lane") != "candidate":
             continue
+        key = candidate_run_key(row)
+        ts = parse_timestamp(row.get("timestamp")) or datetime.min.replace(tzinfo=UTC)
+        previous = latest_rows.get(key)
+        if previous is None:
+            latest_rows[key] = row
+            continue
+        prev_ts = parse_timestamp(previous.get("timestamp")) or datetime.min.replace(tzinfo=UTC)
+        if ts >= prev_ts:
+            latest_rows[key] = row
+
+    stats: Counter = Counter()
+    for row in latest_rows.values():
         if row.get("return_code") == 0:
             stats["success"] += 1
         else:
@@ -91,10 +117,29 @@ def summarize_candidate(manager4_rows: list[dict[str, Any]]) -> Counter:
 
 
 def summarize_stage6(manager5_rows: list[dict[str, Any]]) -> Counter:
-    stats: Counter = Counter()
+    def stage6_run_key(row: dict[str, Any]) -> str:
+        extra = row.get("extra") if isinstance(row.get("extra"), dict) else {}
+        plan_id = extra.get("plan_id")
+        if plan_id:
+            return f"plan:{plan_id}"
+        return f"timestamp:{row.get('timestamp')}"
+
+    latest_rows: dict[str, dict[str, Any]] = {}
     for row in manager5_rows:
         if row.get("lane") != "stage6":
             continue
+        key = stage6_run_key(row)
+        ts = parse_timestamp(row.get("timestamp")) or datetime.min.replace(tzinfo=UTC)
+        previous = latest_rows.get(key)
+        if previous is None:
+            latest_rows[key] = row
+            continue
+        prev_ts = parse_timestamp(previous.get("timestamp")) or datetime.min.replace(tzinfo=UTC)
+        if ts >= prev_ts:
+            latest_rows[key] = row
+
+    stats: Counter = Counter()
+    for row in latest_rows.values():
         if row.get("return_code") == 0:
             stats["success"] += 1
         else:
