@@ -156,6 +156,8 @@ def create_stage5_batch(job: Stage6Job, args: argparse.Namespace) -> Path:
         ),
         "lines": job.lines or args.lines,
     }
+    if args.min_lines:
+        payload["min_lines"] = args.min_lines
     if args.notes:
         payload["notes"] = args.notes
     if args.max_total_lines:
@@ -253,6 +255,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--min-confidence", type=int, default=1, help="Minimum RAG-4 confidence before enqueuing a target")
     parser.add_argument("--literal-old", default=PLACEHOLDER_LITERAL, help="Literal old text for Stage-4 replacements")
     parser.add_argument("--literal-new", default=PLACEHOLDER_LITERAL_UPDATED, help="Literal new text for Stage-4 replacements")
+    parser.add_argument("--min-lines", type=int, default=1, help="Minimum Stage-4 literal lines for the jobs")
     return parser.parse_args()
 
 

@@ -55,6 +55,10 @@ commit message prefix. The manifest exposes Stage-6 as a `preview` lane
    `--fallback-target` if necessary. All retries and refinements are recorded so
    Level 7 readiness can be audited.
 
+5. When targeting a placeholder, use `--literal-old`/`--literal-new` and
+   `--min-lines` so Stage-4 can satisfy its literal-span guard without
+   raising layout errors.
+
 3. Manager-5 always stamps the promotion metadata on every Stage-5 invocation
    and records the plan/journal to the shared trace schema.
 

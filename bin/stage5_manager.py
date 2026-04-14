@@ -187,6 +187,8 @@ def stage5_manager(args: argparse.Namespace) -> None:
                 "--no-commit",
                 "--allow-literal-diff",
             ]
+            if entry.get("min_lines"):
+                stage4_cmd.extend(["--min-lines", str(entry["min_lines"])])
             if entry.get("top"):
                 stage4_cmd.extend(["--top", str(entry["top"])])
             if entry.get("window"):
