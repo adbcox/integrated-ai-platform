@@ -315,26 +315,21 @@ ensure_message_quality() {
       fail "exact replace tasks must specify quoted old and new text" "prompt_contract_rejection"
     fi
     local parsed
-    if ! parsed=$(MESSAGE="$msg" python3 - <<'PY'
-import os,re,sys
-text=os.environ['MESSAGE']
-parts=re.findall(r"'([^']*)'", text)
+    if ! eval "$(MESSAGE="$msg" python3 - <<'PY'
+import os, re, sys, shlex
+text = os.environ['MESSAGE']
+parts = re.findall(r"'([^']*)'", text)
 if len(parts) < 2:
     sys.exit(1)
-print(parts[0])
-print(parts[1])
+print(f"LITERAL_OLD={shlex.quote(parts[0])}")
+print(f"LITERAL_NEW={shlex.quote(parts[1])}")
 PY
-); then
+)"; then
       fail "unable to parse literal replace old/new text" "prompt_contract_rejection"
     fi
-    local literal_old literal_new
-    literal_old=$(printf '%s\n' "$parsed" | sed -n '1p')
-    literal_new=$(printf '%s\n' "$parsed" | sed -n '2p')
-    if [ -z "$literal_new" ]; then
+    if [ -z "$LITERAL_NEW" ]; then
       fail "literal replace prompt must specify both old and new text" "prompt_contract_rejection"
     fi
-    LITERAL_OLD="$literal_old"
-    LITERAL_NEW="$literal_new"
     if [ "$LITERAL_OLD" = "$LITERAL_NEW" ]; then
       fail "literal replace old text matches new text" "prompt_contract_rejection"
     fi
