@@ -22,6 +22,9 @@ The concrete cross-subsystem upgrade plan for Version 8 and follow-on Version 9 
 - `docs/version8-upgrade-list.md` (operator-facing summary with build order)
 - `docs/version9-upgrade-plan.md` (next-tier build order from post-session reality)
 
+For the full long-range execution plan through Version 15 and the Codex-5.1 replacement milestone, see:
+- `docs/version15-master-roadmap.md` (canonical review roadmap)
+
 ## Explicit version movement (this batch)
 
 | Subsystem | Current version | Next target | Decision |
