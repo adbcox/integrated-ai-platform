@@ -476,6 +476,31 @@ def main() -> int:
             versions = resolve_versions_for_lane(manifest_data, lane)
             lane_cfg = versions.get("lane", {})
             allowed_targets = lane_cfg.get("allowed_targets") or []
+    if lane == "manual":
+        handle_manual_lane(lane_cfg, lane_reason, manifest_path)
+        record_trace(
+            lane=lane,
+            lane_cfg=lane_cfg,
+            lane_reason=lane_reason,
+            versions=versions,
+            manifest_path=manifest_path,
+            manifest_version=manifest_version,
+            policy_status=policy_status,
+            args=args,
+            return_code=2,
+            manual=True,
+            extra={
+                "manual_reason": lane_reason,
+                "job_stage_argument": args.stage,
+                "allowed_check_targets": targets_to_check,
+                "lane_allowed_targets": allowed_targets,
+                "secondary_target": args.secondary_target,
+                "notes": args.notes or None,
+                "lane_regression_pack": lane_cfg.get("regression_pack"),
+                "failure_memory_findings": memory_findings,
+            },
+        )
+        return 2
 
     promotion_env = build_promotion_env(lane, versions, manifest_version, manifest_path, lane_reason)
 
