@@ -209,6 +209,17 @@ def build_promotion_env(lane: str, versions: dict[str, Any], manifest_version: i
 def create_stage5_batch(job: Stage6Job, args: argparse.Namespace) -> Path:
     literal_old = args.literal_old
     literal_new = args.literal_new
+    target_path = (REPO_ROOT / job.path).resolve()
+    try:
+        target_contents = target_path.read_text(encoding="utf-8")
+    except OSError:
+        target_contents = ""
+
+    # Keep Stage-6 preview runs resilient when the placeholder has already flipped:
+    # if the "new" literal is present and the "old" literal is not, invert the pair.
+    if target_contents and literal_old not in target_contents and literal_new in target_contents:
+        literal_old, literal_new = literal_new, literal_old
+
     payload = {
         "query": " ".join(args.query),
         "target": job.path,
