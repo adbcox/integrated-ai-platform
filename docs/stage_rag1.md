@@ -21,7 +21,11 @@ bin/stage_rag1_search.py "where remote handoff bundle validation is defined"
 - Use `bin/stage_rag1_plan_probe.py` when you want to log the search along with
   the selected file + anchor (Stage-4 boundary requirement).
 - Run `bin/stage_rag1_metrics.py --window 40` after a probe battery to see how
-  often literal/anchor guard failures appeared in the latest aide runs.
+  often literal/anchor guard failures appeared in the latest aide runs. The same
+  report also reads `artifacts/micro_runs/events.jsonl` so preflight rejections
+  (`literal_replace_missing_old`, `literal_shell_risky`,
+  `prompt_contract_rejection`, `missing_file_ref`, `missing_anchor`) show up
+  next to guard-level failures.
 
 Scope & Filters
 ---------------

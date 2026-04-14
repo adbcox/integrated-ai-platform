@@ -4,6 +4,7 @@ set -euo pipefail
 REPO_ROOT="$(git rev-parse --show-toplevel)"
 MSG_DIR="$REPO_ROOT/regressions/micro_lane_stage4/messages"
 SUMMARY_DIR="$REPO_ROOT/artifacts/micro_runs"
+PLAN_BIN="$REPO_ROOT/bin/stage_rag1_plan_probe.py"
 
 usage() {
   cat <<'USAGE'
@@ -32,14 +33,33 @@ run_probe() {
   local msg="$2"
   local file="$3"
   local expect="$4"
+  local plan_id
+  plan_id="$(printf '%s-%s' "${label// /-}" "$(date +%H%M%S)")"
+  local query_line
+  query_line="$(head -n 1 "$MSG_DIR/$msg" | tr -d '\r')"
 
   echo "== [$label] =="
 
   local head_ref
   head_ref="$(git rev-parse --verify HEAD)"
 
+  if [ -x "$PLAN_BIN" ]; then
+    python3 "$PLAN_BIN" \
+      --stage stage4 \
+      --plan-id "$plan_id" \
+      --top 6 \
+      --selected-path "$file" \
+      --selected-lines "auto" \
+      --notes "$label boundary probe" \
+      -- "${query_line:-$label}"
+  else
+    echo "[warn] Stage RAG-1 planner not found; skipping plan log" >&2
+  fi
+
   local status=0
   set +e
+  AIDER_MICRO_STAGE=stage4 \
+  AIDER_MICRO_PLAN_ID="$plan_id" \
   make aider-micro-safe \
     AIDER_MICRO_MESSAGE_FILE="${MSG_DIR}/${msg}" \
     AIDER_MICRO_FILES="${file}"

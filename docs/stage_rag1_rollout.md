@@ -13,15 +13,20 @@ Workflow
    review the ranked snippets, and log the file/line range you intend to edit.
 2. **Probe** – Craft/update the literal message (per
    [safe-literal-probes](safe-literal-probes.md)) and run the probe via
-   `make aider-micro-safe` or the Stage-4 boundary harness.
+   `make aider-micro-safe` or the Stage-4 boundary harness. The Stage-4 script
+   now auto-runs `bin/stage_rag1_plan_probe.py` and passes the resulting
+   `plan_id` into `bin/aider_micro.sh`, so planning logs and preflight telemetry
+   stay linked.
 3. **Measure** – After a probe battery, execute
    `bin/stage_rag1_metrics.py --window 40` to summarize:
    - how many Stage-4 planning events were logged, and
-   - how often `literal_replace_missing_old`, `missing_file_ref`, or
-     `missing_anchor` failures appeared in the most recent guard runs.
+   - how often `literal_replace_missing_old`, `missing_file_ref`, `missing_anchor`,
+     `literal_shell_risky`, or `prompt_contract_rejection` surfaced in either the
+     guard metadata or the micro-lane preflight log (`artifacts/micro_runs/events.jsonl`).
 
-Because logging lives under `artifacts/stage_rag1/usage.jsonl`, no new tracked
-files are added to the repo; results are easy to export into probe write-ups or
+Because logging lives under `artifacts/stage_rag1/usage.jsonl` and
+`artifacts/micro_runs/events.jsonl`, no new tracked files are added to the repo;
+results are easy to export into probe write-ups or
 regression checklists.
 
 Validation Questions

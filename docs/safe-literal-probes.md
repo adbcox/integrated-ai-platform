@@ -34,6 +34,16 @@ bin/quick_check.sh::status text replace exact text "echo \"[quick] Detecting cha
 
 Pair every literal probe with an immediate `git status` + commit (or rollback) before launching the next probe.
 
+### Telemetry
+
+Each `make aider-micro-safe` run now appends a JSON record to
+`artifacts/micro_runs/events.jsonl`. The log captures the prompt, selected
+files, whether the run passed, and which preflight guard (e.g.
+`literal_replace_missing_old`, `literal_shell_risky`, `prompt_contract_rejection`,
+`missing_file_ref`, `missing_anchor`) fired when a probe is rejected. The Stage
+RAG-1 metrics script reads this log so we can prove that preflight rejections
+are trending downward alongside the guard failures in `artifacts/aider_runs`.
+
 ## Stage RAG-1 planning hook (Stage 3 / Stage 4)
 
 Before editing the template, record the file + anchor via the retrieval helper:

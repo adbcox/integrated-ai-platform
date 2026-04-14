@@ -21,6 +21,84 @@ LITERAL_BEFORE_FILE=""
 LITERAL_FALLBACK_USED=false
 WRITE_CHECK_COUNT=${AIDER_MICRO_WRITE_CHECKS:-3}
 WRITE_CHECK_DELAY=${AIDER_MICRO_WRITE_DELAY_SEC:-1}
+EVENT_LOG="${AIDER_MICRO_EVENT_LOG:-artifacts/micro_runs/events.jsonl}"
+MICRO_STAGE="${AIDER_MICRO_STAGE:-stage3}"
+MICRO_PLAN_ID="${AIDER_MICRO_PLAN_ID:-}"
+TARGET_FILES=()
+
+classify_failure_phase() {
+  local tag="$1"
+  case "$tag" in
+    literal_replace_missing_old|literal_shell_risky|prompt_contract_rejection|weak_prompt|placeholder_prompt|doc_prompt|missing_file_ref|missing_anchor|too_many_files|bad_target|missing_file|doc_target|dirty_tree)
+      echo "preflight"
+      ;;
+    *)
+      echo "execution"
+      ;;
+  esac
+}
+
+log_micro_event() {
+  local status="$1"
+  local tag="$2"
+  local note="$3"
+  local exit_code="${4:-0}"
+  local phase="${5:-$(classify_failure_phase "$tag")}"
+  local ts
+  ts=$(date -Is)
+  local files_payload=""
+  if [ ${#TARGET_FILES[@]:-0} -gt 0 ]; then
+    files_payload=$(printf '%s\0' "${TARGET_FILES[@]}")
+  fi
+  mkdir -p "$(dirname "$EVENT_LOG")"
+  MICRO_EVENT_TS="$ts" \
+    MICRO_EVENT_STATUS="$status" \
+    MICRO_EVENT_TAG="$tag" \
+    MICRO_EVENT_NOTE="$note" \
+    MICRO_EVENT_PHASE="$phase" \
+    MICRO_EVENT_STAGE="$MICRO_STAGE" \
+    MICRO_EVENT_PLAN_ID="$MICRO_PLAN_ID" \
+    MICRO_EVENT_PROMPT="$MESSAGE" \
+    MICRO_EVENT_FILES="$files_payload" \
+    MICRO_EVENT_EXIT_CODE="$exit_code" \
+    python3 - <<'PY' >>"$EVENT_LOG" 2>/dev/null || true
+import json, os, sys
+
+timestamp = os.environ.get("MICRO_EVENT_TS")
+status = os.environ.get("MICRO_EVENT_STATUS")
+tag = os.environ.get("MICRO_EVENT_TAG")
+note = os.environ.get("MICRO_EVENT_NOTE")
+phase = os.environ.get("MICRO_EVENT_PHASE")
+stage = os.environ.get("MICRO_EVENT_STAGE")
+plan_id = os.environ.get("MICRO_EVENT_PLAN_ID") or None
+prompt = os.environ.get("MICRO_EVENT_PROMPT")
+files_raw = os.environ.get("MICRO_EVENT_FILES", "")
+exit_code_raw = os.environ.get("MICRO_EVENT_EXIT_CODE", "0")
+
+files = [f for f in files_raw.split("\0") if f]
+
+try:
+    exit_code = int(exit_code_raw)
+except ValueError:
+    exit_code = exit_code_raw
+
+event = {
+    "timestamp": timestamp,
+    "status": status,
+    "phase": phase,
+    "tag": tag,
+    "note": note,
+    "stage": stage,
+    "plan_id": plan_id,
+    "prompt": prompt,
+    "target_files": files or None,
+    "exit_code": exit_code,
+}
+
+json.dump(event, sys.stdout, ensure_ascii=False)
+sys.stdout.write("\n")
+PY
+}
 
 check_path_writable() {
   local path="$1"
@@ -61,6 +139,7 @@ fail() {
   local msg="$1"
   local tag="${2:-general}"
   local code="${3:-1}"
+  log_micro_event "failure" "$tag" "$msg" "$code"
   restore_repo_state
   echo "ERROR[$tag]: $msg" >&2
   exit "$code"
@@ -170,6 +249,7 @@ if [ $# -gt 2 ]; then
 fi
 
 TARGET_FILES=("$@")
+log_micro_event "info" "prompt_received" "" 0 "preflight"
 TASK_KIND="code-adjacent"
 
 is_target_file() {
@@ -229,7 +309,7 @@ ensure_message_quality() {
     local quote_count
     quote_count=$(printf "%s" "$msg" | tr -cd "'" | wc -c | tr -d ' ')
     if [ "$quote_count" -lt 4 ]; then
-      fail "exact replace tasks must specify quoted old and new text" "literal_replace_contract"
+      fail "exact replace tasks must specify quoted old and new text" "prompt_contract_rejection"
     fi
     local parsed
     if ! parsed=$(MESSAGE="$msg" python3 - <<'PY'
@@ -242,18 +322,18 @@ print(parts[0])
 print(parts[1])
 PY
 ); then
-      fail "unable to parse literal replace old/new text" "literal_replace_contract"
+      fail "unable to parse literal replace old/new text" "prompt_contract_rejection"
     fi
     local literal_old literal_new
     literal_old=$(printf '%s\n' "$parsed" | sed -n '1p')
     literal_new=$(printf '%s\n' "$parsed" | sed -n '2p')
     if [ -z "$literal_new" ]; then
-      fail "literal replace prompt must specify both old and new text" "literal_replace_contract"
+      fail "literal replace prompt must specify both old and new text" "prompt_contract_rejection"
     fi
     LITERAL_OLD="$literal_old"
     LITERAL_NEW="$literal_new"
     if [ "$LITERAL_OLD" = "$LITERAL_NEW" ]; then
-      fail "literal replace old text matches new text" "literal_replace_contract"
+      fail "literal replace old text matches new text" "prompt_contract_rejection"
     fi
   fi
   info "task kind detected: $detected_kind"
@@ -325,7 +405,7 @@ ensure_allowed_files
 
 if [ "$TASK_KIND" = "literal-replace" ]; then
   if [ ${#TARGET_FILES[@]} -ne 1 ]; then
-    fail "literal replace tasks must specify exactly one file" "literal_replace_contract"
+    fail "literal replace tasks must specify exactly one file" "prompt_contract_rejection"
   fi
   LITERAL_FILE="${TARGET_FILES[0]}"
   if ! grep -F -- "$LITERAL_OLD" "$LITERAL_FILE" >/dev/null; then
@@ -357,11 +437,13 @@ if [ "$TEST_MODE" = false ]; then
     fi
     if [ "$TASK_KIND" = "literal-replace" ] && [ -n "$LITERAL_BEFORE_FILE" ]; then
       info "aider exit detected; attempting literal replace fallback"
+      log_micro_event "warning" "literal_fallback_start" "aider exited status $status"
       literal_apply_direct "$LITERAL_FILE" "$LITERAL_BEFORE_FILE"
       info "running quick validation after fallback"
       if ! PYTHONPYCACHEPREFIX=/tmp/aider_pycache make quick >/dev/null; then
         fail "make quick failed after fallback; inspect quick logs" "validation"
       fi
+      log_micro_event "info" "literal_fallback_applied" "$LITERAL_FILE"
     else
       fail "aider exited non-zero (status $status). Inspect artifacts/aider_runs for details." "aider_exit" "$status"
     fi
@@ -503,4 +585,5 @@ files: ${TARGET_FILES[*]}
 message: $MESSAGE
 timestamp: $(date -Is)
 SUMMARY
+log_micro_event "success" "completed" "micro lane run succeeded" 0 "execution"
 info "wrote summary to $summary_path"
