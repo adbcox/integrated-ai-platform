@@ -15,6 +15,12 @@ This roadmap defines Level-10 goals across the six major subsystems and ties eac
 
 The source of truth for these levels is now `config/promotion_manifest.json` under `subsystem_levels`.
 
+## Version 8 Build List
+
+The concrete cross-subsystem upgrade plan for the next major tier lives in:
+- `config/promotion_manifest.json` -> `version8_upgrade_list` (canonical machine-readable source)
+- `docs/version8-upgrade-list.md` (operator-facing summary with build order)
+
 ## Explicit version movement (this batch)
 
 | Subsystem | Current version | Next target | Decision |

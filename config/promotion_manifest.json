@@ -451,5 +451,154 @@
             "minimum_validation": "qualification output includes per-subsystem gating for current and next versions",
             "status": "planned"
         }
+    },
+    "version8_upgrade_list": {
+        "stage_system": {
+            "current_version": "stage7-v1",
+            "v8_target": "stage8-v1",
+            "target_goal": "Stage-7 transitions from single pass subplan orchestration to resumable multi-phase execution with explicit subplan rollback and resume checkpoints.",
+            "gap_from_current": [
+                "Subplan execution is auditable but not resumable from persisted checkpoints.",
+                "Rollback semantics are bounded at subplan level but not codified as a stage-level contract artifact."
+            ],
+            "required_code_changes": [
+                "Add persisted stage7 execution checkpoints under artifacts/manager6/plans/<plan_id>/checkpoints.json.",
+                "Add stage7 resume mode that skips already-succeeded subplans and replays only pending/failed checkpoints.",
+                "Emit explicit rollback_contract payload per subplan with rollback scope and post-rollback verification."
+            ],
+            "required_validation": [
+                "One non-dry stage7 run interrupted mid-plan and resumed successfully from checkpoints.",
+                "Trace evidence proves rollback_contract is emitted and enforced for a failed subplan."
+            ],
+            "operator_visible_behavior_change": "Operators can resume an interrupted Stage-7 plan safely without rerunning completed subplans.",
+            "dependencies": [
+                "manager_system:manager8-v1",
+                "regression_qualification_framework:v8"
+            ],
+            "build_order_priority": 1,
+            "build_timing": "build_next"
+        },
+        "manager_system": {
+            "current_version": "manager6-v1",
+            "v8_target": "manager8-v1",
+            "target_goal": "Manager orchestration adds policy-driven retry/split/drop state machine with historical outcome weighting across subplans.",
+            "gap_from_current": [
+                "Manager-6 has split-on-failure recovery but no weighted strategy selection from historical outcomes.",
+                "Retry orchestration is deterministic but not policy-scored by plan-family history."
+            ],
+            "required_code_changes": [
+                "Add manager6 strategy scorer using recent plan history (retry, split, drop, rescue) success rates by target family.",
+                "Add explicit decision_state transitions persisted in plan history: evaluate->choose_strategy->execute->reconcile.",
+                "Add bounded rescue budget per subplan family to prevent repeated low-yield retries."
+            ],
+            "required_validation": [
+                "One stage7 grouped run where manager chooses different strategies for two subplans from history-weighted scoring.",
+                "Trace decision tags show chosen strategy and why alternatives were rejected."
+            ],
+            "operator_visible_behavior_change": "Manager decisions become explainable by strategy scores instead of fixed fallback order.",
+            "dependencies": [
+                "rag_system:rag8-v1"
+            ],
+            "build_order_priority": 2,
+            "build_timing": "build_next"
+        },
+        "rag_system": {
+            "current_version": "rag6-v1",
+            "v8_target": "rag8-v1",
+            "target_goal": "RAG emits conflict-aware, execution-risk-scored clusters tailored for Stage-7 subplan orchestration.",
+            "gap_from_current": [
+                "RAG-6 clusters by linkage/family but does not estimate edit conflict risk between cluster members.",
+                "Cluster ordering is not optimized for expected execution yield."
+            ],
+            "required_code_changes": [
+                "Add conflict-risk features (shared anchor overlap, same-line family proximity, shell-risk shape collisions).",
+                "Add cluster yield score used to order subplans before manager execution.",
+                "Emit per-cluster rationale fields: risk_score, yield_score, conflict_signals."
+            ],
+            "required_validation": [
+                "RAG-6 plan output contains risk/yield metadata for each subplan.",
+                "At least one stage7 run shows fewer manager-side dropped targets due to cleaner cluster ordering."
+            ],
+            "operator_visible_behavior_change": "Stage-7 plans arrive pre-ordered by expected safety/yield rather than raw rank only.",
+            "dependencies": [
+                "manager_system:manager8-v1"
+            ],
+            "build_order_priority": 3,
+            "build_timing": "build_next"
+        },
+        "promotion_engine": {
+            "current_version": "level10-promote-v1",
+            "v8_target": "promotion-engine-v8",
+            "target_goal": "Promotion decisions include subsystem-evidence gates and stage7 operational readiness checks, not lane-only counters.",
+            "gap_from_current": [
+                "Promotion engine is lane-centric and does not enforce stage7 operational gate contracts.",
+                "Subsystem evidence exists but is not evaluated as first-class promotion blockers."
+            ],
+            "required_code_changes": [
+                "Extend level10_promote to evaluate subsystem gate contracts from version8_upgrade_list validation status.",
+                "Add promotion decision payload with subsystem_gate_pass/fail matrix.",
+                "Add apply-time guard preventing promotion when required subsystem gate evidence is missing."
+            ],
+            "required_validation": [
+                "Dry-run emits subsystem gate matrix for each decision.",
+                "Apply path blocks promotion when any required v8 gate is not satisfied."
+            ],
+            "operator_visible_behavior_change": "Promotion output shows explicit subsystem blockers, not just success/failure counters.",
+            "dependencies": [
+                "regression_qualification_framework:v8"
+            ],
+            "build_order_priority": 5,
+            "build_timing": "staged_later"
+        },
+        "worker_utilization": {
+            "current_version": "worker-routing-v1",
+            "v8_target": "worker-utilization-v8",
+            "target_goal": "Worker routing supports staged multi-target execution classes with explicit per-class safety budgets and adaptive escalation.",
+            "gap_from_current": [
+                "Worker routing is class-aware but does not expose per-class budget exhaustion handling to stage7 manager.",
+                "Escalation signals are captured in traces but not used to adapt subsequent dispatches."
+            ],
+            "required_code_changes": [
+                "Add worker class budget ledger consumed by manager6 before dispatch.",
+                "Add adaptive escalation hints (defer, split, manual) when class budget is exhausted.",
+                "Persist worker outcome summaries per plan family for reuse by manager strategy scoring."
+            ],
+            "required_validation": [
+                "One stage7 run where budget exhaustion causes adaptive split/manual reroute without unsafe execution.",
+                "Trace output includes worker_budget_decision fields."
+            ],
+            "operator_visible_behavior_change": "Operators get explicit worker budget/exhaustion reasons for reroutes.",
+            "dependencies": [
+                "manager_system:manager8-v1"
+            ],
+            "build_order_priority": 4,
+            "build_timing": "staged_later"
+        },
+        "regression_qualification_framework": {
+            "current_version": "qualify-v1",
+            "v8_target": "qualify-v8",
+            "target_goal": "Qualification validates Stage-7/Manager-6/RAG-6 operational gates with deterministic pass/fail assertions for v8 readiness.",
+            "gap_from_current": [
+                "Qualification summarizes lanes and subsystem posture but does not enforce per-subsystem v8 gates.",
+                "Stage-7 evidence is present in traces but not validated as mandatory promotion prerequisites."
+            ],
+            "required_code_changes": [
+                "Extend level10_qualify with explicit v8 gate assertions per subsystem using version8_upgrade_list requirements.",
+                "Add machine-readable gate results persisted to artifacts/promotion/qualification_history.jsonl.",
+                "Add minimal stage7 operational regression assertions to bin/micro_lane_stage7.sh."
+            ],
+            "required_validation": [
+                "Qualification JSON includes subsystem gate verdicts and missing-evidence lists.",
+                "Regression pack fails when required stage7 gate evidence is absent."
+            ],
+            "operator_visible_behavior_change": "Qualification output clearly states why v8 promotion is blocked or ready per subsystem.",
+            "dependencies": [
+                "stage_system:stage8-v1",
+                "manager_system:manager8-v1",
+                "rag_system:rag8-v1"
+            ],
+            "build_order_priority": 6,
+            "build_timing": "blocked_until_stage8_manager8_rag8_move"
+        }
     }
 }

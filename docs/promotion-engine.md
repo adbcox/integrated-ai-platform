@@ -56,6 +56,10 @@ Policy details are in [docs/subsystem-versioning-policy.md](/srv/platform/repos/
 
 This keeps version movement operational and auditable instead of “generic improvement” language.
 
+For the next major tier, the concrete Version-8 upgrade plan is tracked in:
+- `config/promotion_manifest.json` under `version8_upgrade_list` (source of truth)
+- `docs/version8-upgrade-list.md` (operator view + build order)
+
 ## Manager-4 routing
 
 - `bin/manager4.py` now accepts `--lane {auto,production,candidate,manual}`.
