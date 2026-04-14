@@ -334,7 +334,7 @@ def evaluate_subsystems(
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Unified Level-10 readiness report")
-    parser.add_argument("--manifest", default=str(MANIFEST_PATH))
+    parser.add_argument("--manifest", default=str(MANIFEST_PATH) )
     parser.add_argument("--manager4-trace", default=str(DEFAULT_MANAGER4_TRACE))
     parser.add_argument("--manager5-trace", default=str(DEFAULT_MANAGER5_TRACE))
     parser.add_argument("--stage5-trace", default=str(DEFAULT_STAGE5_TRACE))
