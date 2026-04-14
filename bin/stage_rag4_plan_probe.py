@@ -18,12 +18,13 @@ LOG_DIR = REPO_ROOT / "artifacts" / "stage_rag4"
 LOG_FILE = LOG_DIR / "usage.jsonl"
 
 
-def run_search(args: argparse.Namespace) -> dict[str, Any]:
+def run_search(args: argparse.Namespace, *, top_override: int | None = None) -> dict[str, Any]:
+    top_value = top_override if top_override is not None else args.top
     cmd = [
         sys.executable,
         str(STAGE_RAG3_SEARCH),
         "--top",
-        str(args.top),
+        str(top_value),
         "--window",
         str(args.window),
         "--preview-lines",
@@ -256,10 +257,15 @@ def main() -> int:
     parser.add_argument("--notes", help="Optional notes/context for the plan")
     args = parser.parse_args()
 
-    search_payload = run_search(args)
-    results = search_payload.get("results", [])
     preferred_prefixes = [prefix for prefix in args.preferred_prefix if prefix]
     intent = _query_intent(args.query)
+    search_top = args.top
+    if preferred_prefixes and intent == "code":
+        # Broaden retrieval for code-intent lane runs so we can recover more
+        # lane-aligned candidates without emitting out-of-lane targets.
+        search_top = max(args.top, args.max_targets * 4)
+    search_payload = run_search(args, top_override=search_top)
+    results = search_payload.get("results", [])
 
     targets: list[dict[str, Any]] = []
     for entry in results:
@@ -378,6 +384,7 @@ def main() -> int:
         "preview_window": args.preview_lines,
         "provenance": {
             "query_tokens": args.query,
+            "search_top": search_top,
             "result_count": len(results),
             "unique_target_count": len(targets),
             "related_limit": args.related_limit,
