@@ -8,6 +8,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -32,6 +33,9 @@ STAGE5_TRACE_FILE = REPO_ROOT / "artifacts" / "stage5_manager" / "traces.jsonl"
 # STAGE6_PLACEHOLDER (ops2)
 PLACEHOLDER_LITERAL = "# STAGE6_PLACEHOLDER\n# STAGE6_PLACEHOLDER\n# STAGE6_PLACEHOLDER"
 PLACEHOLDER_LITERAL_UPDATED = "# STAGE6_PLACEHOLDER (updated)\n# STAGE6_PLACEHOLDER (updated)\n# STAGE6_PLACEHOLDER (updated)"
+PLACEHOLDER_BLOCK_RE = re.compile(
+    r"(?m)^# STAGE6_PLACEHOLDER(?:[^\n]*)\n# STAGE6_PLACEHOLDER(?:[^\n]*)\n# STAGE6_PLACEHOLDER(?:[^\n]*)"
+)
 
 
 @dataclass
@@ -207,7 +211,29 @@ def build_promotion_env(lane: str, versions: dict[str, Any], manifest_version: i
     return env
 
 
-def create_stage5_batch(job: Stage6Job, args: argparse.Namespace) -> Path:
+def _synchronize_literal_pair(target_contents: str, literal_old: str, literal_new: str) -> tuple[str, str, str | None]:
+    if not target_contents:
+        return literal_old, literal_new, None
+    if literal_old in target_contents:
+        return literal_old, literal_new, None
+    if literal_new in target_contents:
+        return literal_new, literal_old, "swap_on_new_match"
+
+    # If neither literal is present, attempt to anchor on the live placeholder block.
+    # This keeps fallback resilient after prior candidate edits introduced a new variant.
+    match = PLACEHOLDER_BLOCK_RE.search(target_contents)
+    if not match:
+        return literal_old, literal_new, None
+
+    live_old = match.group(0)
+    if live_old == literal_new:
+        return literal_new, literal_old, "swap_on_live_match"
+    if live_old == literal_old:
+        return literal_old, literal_new, None
+    return live_old, literal_new, "sync_live_block"
+
+
+def create_stage5_batch(job: Stage6Job, args: argparse.Namespace) -> tuple[Path, dict[str, Any]]:
     literal_old = args.literal_old
     literal_new = args.literal_new
     target_path = (REPO_ROOT / job.path).resolve()
@@ -216,10 +242,11 @@ def create_stage5_batch(job: Stage6Job, args: argparse.Namespace) -> Path:
     except OSError:
         target_contents = ""
 
-    # Keep Stage-6 preview runs resilient when the placeholder has already flipped:
-    # if the "new" literal is present and the "old" literal is not, invert the pair.
-    if target_contents and literal_old not in target_contents and literal_new in target_contents:
-        literal_old, literal_new = literal_new, literal_old
+    literal_old, literal_new, sync_reason = _synchronize_literal_pair(
+        target_contents=target_contents,
+        literal_old=literal_old,
+        literal_new=literal_new,
+    )
 
     payload = {
         "query": " ".join(args.query),
@@ -240,11 +267,15 @@ def create_stage5_batch(job: Stage6Job, args: argparse.Namespace) -> Path:
         payload["max_total_lines"] = args.max_total_lines
     batch_path = Path(tempfile.mkstemp(prefix="stage6-", suffix=".json")[1])
     batch_path.write_text(json.dumps([payload], ensure_ascii=False, indent=2), encoding="utf-8")
-    return batch_path
+    return batch_path, {
+        "literal_old": literal_old,
+        "literal_new": literal_new,
+        "sync_reason": sync_reason,
+    }
 
 
 def run_stage5_job(job: Stage6Job, args: argparse.Namespace, env: dict[str, str], idx: int) -> dict[str, Any]:
-    batch_path = create_stage5_batch(job, args)
+    batch_path, literal_info = create_stage5_batch(job, args)
     commit_msg = f"{args.commit_msg} - stage6 op {idx + 1}"
     started_at = datetime.now(timezone.utc).isoformat()
     if args.dry_run:
@@ -260,6 +291,7 @@ def run_stage5_job(job: Stage6Job, args: argparse.Namespace, env: dict[str, str]
             "refinement_of": job.refinement_of,
             "retry_class": args.retry_class,
             "commit_msg": commit_msg,
+            "literal_sync": literal_info,
         }
     trace_line_start = _line_count(STAGE5_TRACE_FILE)
     cmd = [
@@ -294,6 +326,7 @@ def run_stage5_job(job: Stage6Job, args: argparse.Namespace, env: dict[str, str]
         "stage5_commit_hash": latest_trace.get("commit_hash"),
         "stage5_total_added": latest_trace.get("total_added"),
         "stage5_total_deleted": latest_trace.get("total_deleted"),
+        "literal_sync": literal_info,
     }
 
 
