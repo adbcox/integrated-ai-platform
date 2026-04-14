@@ -28,7 +28,7 @@ Usage (Stage-3 production lane default flow):
 
 Options (Stage-3 safe default subset):
   --summary <path>                 Markdown summary file (Stage-3 telemetry capture)
-  --outcome <path>                 Outcome file
+  --outcome <path>                 Outcome file (Stage-3 completion log)
   --checks <path>                  Commands/checks file (Stage-3 run log)
   --task-id <id>                   Explicit task id (default: timestamp+slug)
   --workflow-mode <mode>           tactical|codex-assist|codex-investigate|codex-failure
