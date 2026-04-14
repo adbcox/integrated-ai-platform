@@ -14,15 +14,20 @@ Stage-3 remains the production lane for literal/comment fixes. Follow this playb
 - Replace the placeholder line with the exact literal/comment instruction (`file::<token> replace exact text ...`).
 - Keep the scope ≤2 adjacent lines and a single target file.
 
-## 3. Run Manager-2.2 (default Stage-3 path)
+## 3. Run Manager-3 (auto routes Stage 3/4)
 
 ```sh
-python3 bin/stage3_manager.py \
+python3 bin/manager3.py \
   --query "<stage rag query>" \
   --target path/to/file.sh \
   --message "<literal instruction>" \
   --commit-msg "short summary"
 ```
+
+- Manager-3 inspects the literal span. ≤2 lines stay in Stage 3, longer blocks
+  (3–8 lines) route to `bin/stage4_manager.py` with Stage RAG-2 planning.
+- You can still call `bin/stage3_manager.py` directly when you need the legacy
+  path; the rest of this section applies to both managers unless noted.
 
 - The manager creates a unique job id, logs Stage RAG-1 usage, writes the `/tmp/stage3_job_<id>.msg` payload, runs `make aider-micro-safe`, and records the outcome/trace row automatically.
 - Built-in preflights now skip harness files (`bin/aider_micro.sh`, `bin/preflight_normalization_guard.sh`, etc.), detect stale literals, and validate prompt shape before the worker launches.

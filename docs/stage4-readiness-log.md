@@ -25,3 +25,4 @@
 3. Prepare Stage-4 test plan draft so we can reopen immediately once the telemetry window closes.
 
 - **Stage-4 boundary regression pack:** `bin/micro_lane_stage4.sh` executed at 06:09Z; literal three-line, comment pair, literal miss, and shell-control probes all failed with the expected guard tags (`aider_exit`, `no_change`, `literal_replace_missing_old`, `literal_shell_risky`).
+- **Stage-4 implementation:** `bin/stage4_manager.py`, `bin/manager3.py`, and the Stage RAG-2 helpers landed the same day; see `docs/stage4-operator-guide.md` for the promoted class (single-file literal/comment edits spanning 3–8 lines). Manager-3 traces live under `artifacts/manager3/traces.jsonl`.
