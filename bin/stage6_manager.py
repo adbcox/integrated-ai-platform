@@ -131,6 +131,8 @@ def run_stage_rag4(args: argparse.Namespace) -> dict[str, Any]:
         str(args.window),
         "--preview-lines",
         str(args.preview_lines),
+        "--max-targets",
+        str(args.rag_max_targets),
         "--related-limit",
         str(args.related_limit),
         "--history-window",
@@ -485,6 +487,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--top", type=int, default=5, help="RAG-4 top hits to consider")
     parser.add_argument("--window", type=int, default=25, help="RAG-4 search window")
     parser.add_argument("--preview-lines", type=int, default=18)
+    parser.add_argument(
+        "--rag-max-targets",
+        type=int,
+        default=8,
+        help="Maximum Stage RAG-4 targets before lane filtering/decomposition",
+    )
     parser.add_argument("--max-entries", type=int, default=3, help="Maximum eligible Stage-6 entries to orchestrate per plan")
     parser.add_argument("--jobs-file", help="Optional manual JSON jobs definition")
     parser.add_argument("--manifest", default=str(MANIFEST_PATH), help="Promotion manifest path")
