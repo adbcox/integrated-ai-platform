@@ -45,7 +45,7 @@ Options:
 Default execution loop:
   1) create or use task brief file
   2) prepare a remote-safe handoff bundle
-  3) pause for patch application
+  3) pause for manual patch application
   4) run local finalize checks
   5) capture and annotate feedback
   6) export captured training JSONL records
