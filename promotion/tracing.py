@@ -69,8 +69,10 @@ class PromotionTraceEntry:
         return {k: v for k, v in data.items() if v is not None}
 
 
-def append_trace(entry: PromotionTraceEntry) -> None:
-    TRACE_DIR.mkdir(parents=True, exist_ok=True)
-    with TRACE_FILE.open("a", encoding="utf-8") as fh:
+def append_trace(entry: PromotionTraceEntry, trace_dir: Path | None = None) -> None:
+    target_dir = Path(trace_dir) if trace_dir is not None else TRACE_DIR
+    target_file = target_dir / "traces.jsonl"
+    target_dir.mkdir(parents=True, exist_ok=True)
+    with target_file.open("a", encoding="utf-8") as fh:
         json.dump(entry.to_dict(), fh, ensure_ascii=False)
         fh.write("\n")

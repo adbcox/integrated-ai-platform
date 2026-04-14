@@ -1,126 +1,181 @@
 {
-  "version": 2,
-  "description": "Manager-4 promotion manifest with lane-aware stage/manager/RAG mapping.",
-  "stage_versions": {
-    "stage3-v1": {
-      "stage": "stage3",
-      "description": "Stage-3 literal/comment lane with \u22642-line edits",
-      "manager_entry": "bin/stage3_manager.py",
-      "rag_helper": "stage_rag1"
+    "version": 2,
+    "description": "Manager-4 promotion manifest with lane-aware stage/manager/RAG mapping.",
+    "stage_versions": {
+        "stage3-v1": {
+            "stage": "stage3",
+            "description": "Stage-3 literal/comment lane with \u22642-line edits",
+            "manager_entry": "bin/stage3_manager.py",
+            "rag_helper": "stage_rag1"
+        },
+        "stage4-v1": {
+            "stage": "stage4",
+            "description": "Stage-4 bounded literal lane (3-8 lines)",
+            "manager_entry": "bin/stage4_manager.py",
+            "rag_helper": "stage_rag2"
+        },
+        "stage5-v1": {
+            "stage": "stage5",
+            "description": "Stage-5 dual-file literal batches",
+            "manager_entry": "bin/stage5_manager.py",
+            "rag_helper": "stage_rag3"
+        },
+        "stage6-v1": {
+            "stage": "stage6",
+            "description": "Stage-6 orchestrated multi-target batches",
+            "manager_entry": "bin/stage6_manager.py",
+            "rag_helper": "stage_rag4"
+        }
     },
-    "stage4-v1": {
-      "stage": "stage4",
-      "description": "Stage-4 bounded literal lane (3-8 lines)",
-      "manager_entry": "bin/stage4_manager.py",
-      "rag_helper": "stage_rag2"
+    "manager_versions": {
+        "manager4-v1": {
+            "entry": "bin/manager4.py",
+            "description": "Version-aware dispatcher for Stage-3/4/5"
+        },
+        "manager5-v1": {
+            "entry": "bin/stage6_manager.py",
+            "description": "Manager-5 orchestrator for Stage-6 multi-target batches"
+        }
     },
-    "stage5-v1": {
-      "stage": "stage5",
-      "description": "Stage-5 dual-file literal batches",
-      "manager_entry": "bin/stage5_manager.py",
-      "rag_helper": "stage_rag3"
+    "rag_versions": {
+        "rag1-v1": {
+            "entry": "bin/stage_rag1_plan_probe.py",
+            "description": "Lexical retrieval for Stage-3"
+        },
+        "rag2-v1": {
+            "entry": "bin/stage_rag2_plan_probe.py",
+            "description": "Structural retrieval for Stage-4"
+        },
+        "rag3-v1": {
+            "entry": "bin/stage_rag3_plan_probe.py",
+            "description": "Hybrid retrieval for Stage-5"
+        },
+        "rag4-v1": {
+            "entry": "bin/stage_rag4_plan_probe.py",
+            "description": "Related-file retrieval for Stage-6 orchestration"
+        }
+    },
+    "lane_versions": {
+        "production": {
+            "stage_version": "stage3-v1",
+            "manager_version": "manager4-v1",
+            "rag_version": "rag1-v1"
+        },
+        "candidate": {
+            "stage_version": "stage5-v1",
+            "manager_version": "manager4-v1",
+            "rag_version": "rag3-v1"
+        },
+        "manual": {
+            "stage_version": "stage4-v1",
+            "manager_version": "manager4-v1",
+            "rag_version": "rag2-v1"
+        },
+        "stage6": {
+            "stage_version": "stage6-v1",
+            "manager_version": "manager5-v1",
+            "rag_version": "rag4-v1"
+        }
+    },
+    "lanes": {
+        "production": {
+            "label": "Stage-3 production lane",
+            "stage_version": "stage3-v1",
+            "manager_version": "manager4-v1",
+            "rag_version": "rag1-v1",
+            "allowed_targets": [
+                "bin/",
+                "shell/",
+                "docs/"
+            ],
+            "regression_pack": "bin/micro_lane_regression.sh",
+            "status": "active",
+            "notes": "Stage-3 remains the production default"
+        },
+        "candidate": {
+            "label": "Stage-5 candidate lane",
+            "stage_version": "stage5-v1",
+            "manager_version": "manager4-v1",
+            "rag_version": "rag3-v1",
+            "allowed_targets": [
+                "bin/"
+            ],
+            "regression_pack": "bin/micro_lane_stage5.sh",
+            "status": "in_progress",
+            "notes": "Dual-file literal batches under Manager-4"
+        },
+        "manual": {
+            "label": "Manual/Codex lane",
+            "stage_version": "stage4-v1",
+            "manager_version": "manager4-v1",
+            "rag_version": "rag2-v1",
+            "allowed_targets": [],
+            "regression_pack": null,
+            "status": "fallback",
+            "notes": "For harness/docs/out-of-scope work"
+        },
+        "stage6": {
+            "label": "Stage-6 preview lane",
+            "stage_version": "stage6-v1",
+            "manager_version": "manager5-v1",
+            "rag_version": "rag4-v1",
+            "allowed_targets": [
+                "bin/"
+            ],
+            "regression_pack": "bin/micro_lane_stage5.sh",
+            "status": "preview",
+            "notes": "Stage-6 orchestrated job preview via Manager-5"
+        }
+    },
+    "lane_rules": {
+        "production": {
+            "assignment": "literal span < stage4 threshold when --lane auto or explicit production",
+            "target_constraints": [
+                "bin/",
+                "shell/",
+                "docs/"
+            ],
+            "commit_controls": "use stage3_manager to keep edits \u22642 lines and prefer comment-only changes",
+            "regression_pack": "bin/micro_lane_regression.sh"
+        },
+        "candidate": {
+            "assignment": "stage5 requests or explicit --lane candidate with dual-file batches",
+            "target_constraints": [
+                "bin/",
+                "docs/"
+            ],
+            "regression_pack": "bin/micro_lane_stage5.sh",
+            "auto_reroute": "disallowed targets fall back to manual lane",
+            "disallowed_extensions": [
+                ".md",
+                ".markdown"
+            ]
+        },
+        "manual": {
+            "assignment": "used when a target violates lane constraints or a human needs manual guidance",
+            "behavior": "run Codex/manual workflow, update manifest to adjust lanes, then rerun Manager-4",
+            "regression_pack": null
+        },
+        "stage6": {
+            "assignment": "orchestrated multi-target Stage-6 batches",
+            "behavior": "plan with RAG-4, then execute sequential Stage-5 operations via Manager-5",
+            "target_constraints": [
+                "bin/"
+            ],
+            "regression_pack": "bin/micro_lane_stage5.sh"
+        }
+    },
+    "promotion_policy": {
+        "criteria": {
+            "candidate_success_threshold": 4,
+            "candidate_failure_budget": 1,
+            "required_regression_pack": "bin/micro_lane_stage5.sh",
+            "trace_window_days": 7
+        },
+        "last_decision": {
+            "date": "2026-04-14T00:00:00Z",
+            "status": "candidate_in_progress",
+            "notes": "Stage-5 collecting dual-file telemetry"
+        }
     }
-  },
-  "manager_versions": {
-    "manager4-v1": {
-      "entry": "bin/manager4.py",
-      "description": "Version-aware dispatcher for Stage-3/4/5"
-    }
-  },
-  "rag_versions": {
-    "rag1-v1": {
-      "entry": "bin/stage_rag1_plan_probe.py",
-      "description": "Lexical retrieval for Stage-3"
-    },
-    "rag2-v1": {
-      "entry": "bin/stage_rag2_plan_probe.py",
-      "description": "Structural retrieval for Stage-4"
-    },
-    "rag3-v1": {
-      "entry": "bin/stage_rag3_plan_probe.py",
-      "description": "Hybrid retrieval for Stage-5"
-    }
-  },
-  "lane_versions": {
-    "production": {
-      "stage_version": "stage3-v1",
-      "manager_version": "manager4-v1",
-      "rag_version": "rag1-v1"
-    },
-    "candidate": {
-      "stage_version": "stage5-v1",
-      "manager_version": "manager4-v1",
-      "rag_version": "rag3-v1"
-    },
-    "manual": {
-      "stage_version": "stage4-v1",
-      "manager_version": "manager4-v1",
-      "rag_version": "rag2-v1"
-    }
-  },
-  "lanes": {
-    "production": {
-      "label": "Stage-3 production lane",
-      "stage_version": "stage3-v1",
-      "manager_version": "manager4-v1",
-      "rag_version": "rag1-v1",
-      "allowed_targets": ["bin/", "shell/", "docs/"],
-      "regression_pack": "bin/micro_lane_regression.sh",
-      "status": "active",
-      "notes": "Stage-3 remains the production default"
-    },
-    "candidate": {
-      "label": "Stage-5 candidate lane",
-      "stage_version": "stage5-v1",
-      "manager_version": "manager4-v1",
-      "rag_version": "rag3-v1",
-      "allowed_targets": ["bin/"],
-      "regression_pack": "bin/micro_lane_stage5.sh",
-      "status": "in_progress",
-      "notes": "Dual-file literal batches under Manager-4"
-    },
-    "manual": {
-      "label": "Manual/Codex lane",
-      "stage_version": "stage4-v1",
-      "manager_version": "manager4-v1",
-      "rag_version": "rag2-v1",
-      "allowed_targets": [],
-      "regression_pack": null,
-      "status": "fallback",
-      "notes": "For harness/docs/out-of-scope work"
-    }
-  },
-  "lane_rules": {
-    "production": {
-      "assignment": "literal span < stage4 threshold when --lane auto or explicit production",
-      "target_constraints": ["bin/", "shell/", "docs/"],
-      "commit_controls": "use stage3_manager to keep edits ≤2 lines and prefer comment-only changes",
-      "regression_pack": "bin/micro_lane_regression.sh"
-    },
-    "candidate": {
-      "assignment": "stage5 requests or explicit --lane candidate with dual-file batches",
-      "target_constraints": ["bin/", "docs/"],
-      "regression_pack": "bin/micro_lane_stage5.sh",
-      "auto_reroute": "disallowed targets fall back to manual lane"
-      ,"disallowed_extensions": [".md", ".markdown"]
-    },
-    "manual": {
-      "assignment": "used when a target violates lane constraints or a human needs manual guidance",
-      "behavior": "run Codex/manual workflow, update manifest to adjust lanes, then rerun Manager-4",
-      "regression_pack": null
-    }
-  },
-  "promotion_policy": {
-    "criteria": {
-      "candidate_success_threshold": 4,
-      "candidate_failure_budget": 1,
-      "required_regression_pack": "bin/micro_lane_stage5.sh",
-      "trace_window_days": 7
-    },
-    "last_decision": {
-      "date": "2026-04-14T00:00:00Z",
-      "status": "candidate_in_progress",
-      "notes": "Stage-5 collecting dual-file telemetry"
-    }
-  }
 }

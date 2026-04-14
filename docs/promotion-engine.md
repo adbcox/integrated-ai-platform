@@ -14,6 +14,7 @@ stage.
 | production | `stage3-v1`   | `manager4-v1`   | `rag1-v1`   | Stage-3 literal/comment jobs remain the default production lane. |
 | candidate  | `stage5-v1`   | `manager4-v1`   | `rag3-v1`   | Stage-5 dual-file batches gathering telemetry ahead of promotion. |
 | manual     | `stage4-v1`   | `manager4-v1`   | `rag2-v1`   | Use Codex/manual workflows for out-of-policy or harness edits. |
+| stage6     | `stage6-v1`   | `manager5-v1`   | `rag4-v1`   | Preview Stage-6 multi-target batches orchestrated by Manager-5. |
 
 The manifest also records the current promotion policy (`candidate_success_threshold`,
 `candidate_failure_budget`, the required regression pack, trace window budget,
@@ -36,6 +37,24 @@ and the desired lane behaviors) so operators can validate evidence consistently.
     commit is produced,
   - any lane-specific metadata such as allowed targets, regression packs, and
     auto-reroute decisions.
+
+## Stage-6 preview and Manager-5 routing
+
+- Manager-5 (`bin/stage6_manager.py`) orchestrates Stage-6 preview runs by
+  calling the new Stage RAG-4 planner and then executing up to three
+  sequential Stage-5 jobs from a single plan id. Each job reuses the staging
+  budget while letting the orchestrator commit the coordinated multi-target
+  change.
+- Stage RAG-4 (`bin/stage_rag4_plan_probe.py`) wraps the Stage-5 search surface
+  plus related-file heuristics to produce multi-target plans with optional
+  companion paths. The plan’s payloads feed the Stage-6 manager so the
+  operator can glance at the job list before firing off the Stage-5 workers.
+- Stage-6 traces (`artifacts/manager5/traces.jsonl`) follow the same `trace-v1`
+  schema, recording the plan, job outcomes, lane metadata, and the borrower's
+  promotion policy status for auditing.
+- The manifest keeps the lane in `preview` status. Operators may sample it
+  manually before Stage-6 accumulates enough evidence to promote the lane to
+  production.
 
 ## Running candidate work safely
 
