@@ -144,6 +144,12 @@ def _stage5_entry_payload(
     return payload
 
 
+def _has_explicit_literal_blocks(message: str | None) -> bool:
+    if not message:
+        return False
+    return bool(LITERAL_RE.search(message))
+
+
 def create_stage5_batch(args: argparse.Namespace) -> Path:
     if not all([args.query, args.target, args.message]):
         raise ManagerError("Stage-5 auto batch requires --query/--target/--message")
@@ -451,6 +457,25 @@ def main() -> int:
         routed_stage = lane_stage_name
     if routed_stage not in {"stage3", "stage4", "stage5"}:
         raise ManagerError(f"Unsupported stage '{routed_stage}' for lane '{lane}'")
+
+    # Stage-5 routes through stage4_manager for each entry. Guard prompt shape before
+    # dispatch so malformed non-literal instructions do not count as avoidable run failures.
+    if lane == "candidate" and routed_stage == "stage5" and not args.batch_file:
+        stage5_messages: list[tuple[str, str | None]] = []
+        if args.target:
+            stage5_messages.append((normalize_target(args.target), args.message))
+        if args.secondary_target:
+            stage5_messages.append((normalize_target(args.secondary_target), args.secondary_message))
+        malformed_target = next(
+            (target for target, message in stage5_messages if not _has_explicit_literal_blocks(message)),
+            None,
+        )
+        if malformed_target:
+            lane = "manual"
+            lane_reason = f"manual:prompt_shape:{malformed_target}:stage5_literal_required"
+            versions = resolve_versions_for_lane(manifest_data, lane)
+            lane_cfg = versions.get("lane", {})
+            allowed_targets = lane_cfg.get("allowed_targets") or []
 
     promotion_env = build_promotion_env(lane, versions, manifest_version, manifest_path, lane_reason)
 
