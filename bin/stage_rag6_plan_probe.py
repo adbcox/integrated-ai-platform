@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import collections
 import datetime as dt
 import json
 import subprocess
@@ -15,6 +16,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 STAGE_RAG4_PLAN = REPO_ROOT / "bin" / "stage_rag4_plan_probe.py"
 LOG_DIR = REPO_ROOT / "artifacts" / "stage_rag6"
 LOG_FILE = LOG_DIR / "usage.jsonl"
+MANAGER_PLAN_DIR = REPO_ROOT / "artifacts" / "manager6" / "plans"
 
 
 def append_log(entry: dict[str, Any]) -> None:
@@ -60,6 +62,195 @@ def _risk_bucket(confidence: int) -> str:
     if confidence >= 5:
         return "medium"
     return "high"
+
+
+def _status_bucket(status: str) -> str:
+    value = (status or "").strip().lower()
+    if not value:
+        return "other"
+    if value in {"success", "resumed_skip_completed"}:
+        return "success"
+    if value == "failure":
+        return "failure"
+    if value.startswith("deferred"):
+        return "deferred"
+    if value.startswith("dropped"):
+        return "dropped"
+    if "escalat" in value:
+        return "escalated"
+    return "other"
+
+
+def _rate(numerator: int, denominator: int) -> float:
+    if denominator <= 0:
+        return 0.0
+    return round(float(numerator) / float(denominator), 3)
+
+
+def _parse_iso(ts: str | None) -> dt.datetime | None:
+    if not ts:
+        return None
+    value = ts.strip()
+    if not value:
+        return None
+    try:
+        if value.endswith("Z"):
+            value = value[:-1] + "+00:00"
+        parsed = dt.datetime.fromisoformat(value)
+        if parsed.tzinfo is None:
+            return parsed.replace(tzinfo=dt.timezone.utc)
+        return parsed
+    except ValueError:
+        return None
+
+
+def _new_feedback_counter() -> dict[str, int]:
+    return {
+        "samples": 0,
+        "successes": 0,
+        "failures": 0,
+        "deferred": 0,
+        "dropped": 0,
+        "escalated": 0,
+    }
+
+
+def _counter_with_rates(counter: dict[str, int]) -> dict[str, Any]:
+    samples = int(counter.get("samples", 0))
+    return {
+        **counter,
+        "success_rate": _rate(int(counter.get("successes", 0)), samples),
+        "failure_rate": _rate(int(counter.get("failures", 0)), samples),
+        "defer_rate": _rate(int(counter.get("deferred", 0)), samples),
+        "drop_rate": _rate(int(counter.get("dropped", 0)), samples),
+        "escalation_rate": _rate(int(counter.get("escalated", 0)), samples),
+    }
+
+
+def load_execution_feedback(*, window_days: int, sample_limit: int) -> dict[str, Any]:
+    now = dt.datetime.now(dt.timezone.utc)
+    cutoff = now - dt.timedelta(days=max(1, window_days))
+    family_counters: dict[str, dict[str, int]] = collections.defaultdict(_new_feedback_counter)
+    path_counters: dict[str, dict[str, int]] = collections.defaultdict(_new_feedback_counter)
+    processed_files = 0
+
+    plan_paths = sorted(MANAGER_PLAN_DIR.glob("*.json"), key=lambda p: p.stat().st_mtime, reverse=True)
+    for plan_path in plan_paths:
+        if processed_files >= max(1, sample_limit):
+            break
+        try:
+            payload = json.loads(plan_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        history = payload.get("history") or []
+        finished = None
+        for event in reversed(history):
+            if (event.get("event_type") or "") == "attempt_finished":
+                finished = event
+                break
+        if not isinstance(finished, dict):
+            continue
+        ts = _parse_iso(finished.get("timestamp"))
+        if ts and ts < cutoff:
+            continue
+        statuses = finished.get("statuses") or []
+        if not isinstance(statuses, list) or not statuses:
+            continue
+        plan_payload = finished.get("plan_payload") or payload.get("plan_payload") or {}
+        subplans = plan_payload.get("subplans") or []
+        subplan_targets: dict[str, tuple[list[str], list[str]]] = {}
+        for subplan in subplans:
+            if not isinstance(subplan, dict):
+                continue
+            sid = str(subplan.get("subplan_id") or "")
+            if not sid:
+                continue
+            target_meta = subplan.get("target_meta") or []
+            paths: list[str] = []
+            families: list[str] = []
+            for item in target_meta:
+                if not isinstance(item, dict):
+                    continue
+                path = str(item.get("path") or "")
+                family = str(item.get("family") or _family_key(path))
+                if path:
+                    paths.append(path)
+                if family:
+                    families.append(family)
+            if not paths:
+                paths = [str(p) for p in (subplan.get("targets") or []) if p]
+                families = [_family_key(p) for p in paths]
+            subplan_targets[sid] = (sorted(set(paths)), sorted(set(families)))
+
+        for status_row in statuses:
+            if not isinstance(status_row, dict):
+                continue
+            sid = str(status_row.get("subplan_id") or "")
+            if sid not in subplan_targets:
+                continue
+            bucket = _status_bucket(str(status_row.get("status") or ""))
+            if bucket == "other":
+                continue
+            paths, families = subplan_targets[sid]
+            for path in paths:
+                ctr = path_counters[path]
+                ctr["samples"] += 1
+                if bucket == "success":
+                    ctr["successes"] += 1
+                elif bucket == "failure":
+                    ctr["failures"] += 1
+                elif bucket == "deferred":
+                    ctr["deferred"] += 1
+                elif bucket == "dropped":
+                    ctr["dropped"] += 1
+                elif bucket == "escalated":
+                    ctr["escalated"] += 1
+            for family in families:
+                ctr = family_counters[family]
+                ctr["samples"] += 1
+                if bucket == "success":
+                    ctr["successes"] += 1
+                elif bucket == "failure":
+                    ctr["failures"] += 1
+                elif bucket == "deferred":
+                    ctr["deferred"] += 1
+                elif bucket == "dropped":
+                    ctr["dropped"] += 1
+                elif bucket == "escalated":
+                    ctr["escalated"] += 1
+        processed_files += 1
+
+    family_summary = {k: _counter_with_rates(v) for k, v in family_counters.items() if v.get("samples", 0) > 0}
+    path_summary = {k: _counter_with_rates(v) for k, v in path_counters.items() if v.get("samples", 0) > 0}
+    return {
+        "window_days": max(1, window_days),
+        "sample_limit": max(1, sample_limit),
+        "processed_plan_files": processed_files,
+        "families": family_summary,
+        "paths": path_summary,
+    }
+
+
+def _feedback_signal(feedback: dict[str, Any]) -> float:
+    samples = int(feedback.get("samples", 0))
+    if samples <= 0:
+        return 0.0
+    success = float(feedback.get("success_rate") or 0.0)
+    failure = float(feedback.get("failure_rate") or 0.0)
+    deferred = float(feedback.get("defer_rate") or 0.0)
+    dropped = float(feedback.get("drop_rate") or 0.0)
+    escalated = float(feedback.get("escalation_rate") or 0.0)
+    return round((success * 3.2) - (failure * 4.4) - (deferred * 2.0) - (dropped * 1.6) - (escalated * 2.4), 3)
+
+
+def _target_effective_rank(target: dict[str, Any], feedback: dict[str, Any]) -> float:
+    path = str(target.get("path") or "")
+    rank = float(target.get("rank_score") or 0.0)
+    conf = float(target.get("confidence") or 0.0)
+    path_feedback = ((feedback.get("paths") or {}).get(path) or {})
+    signal = _feedback_signal(path_feedback)
+    sample_weight = min(1.0, int(path_feedback.get("samples", 0)) / 5.0)
+    return round(rank + (conf * 0.12) + (signal * sample_weight), 4)
 
 
 def _subplan_conflict_meta(cluster: list[dict[str, Any]]) -> tuple[float, list[str]]:
@@ -128,11 +319,19 @@ def build_subplans(
     targets: list[dict[str, Any]],
     max_subplans: int,
     subplan_size: int,
+    execution_feedback: dict[str, Any],
 ) -> list[dict[str, Any]]:
     if not targets:
         return []
 
-    ordered = list(targets)
+    ordered = sorted(
+        list(targets),
+        key=lambda item: (
+            -_target_effective_rank(item, execution_feedback),
+            -float(item.get("rank_score") or 0.0),
+            -int(item.get("confidence") or 0),
+        ),
+    )
     consumed: set[str] = set()
     subplans: list[dict[str, Any]] = []
 
@@ -169,7 +368,37 @@ def build_subplans(
             / max(1, len(cluster) - 1),
             3,
         ) if len(cluster) > 1 else 0.0
-        yield_score = round((avg_confidence * 0.85) + (avg_rank_score * 0.25) + (link_strength * 0.8) - conflict_score, 3)
+        family_feedback = []
+        for family in sorted({str(item.get("family") or _family_key(str(item.get("path") or ""))) for item in cluster}):
+            entry = ((execution_feedback.get("families") or {}).get(family) or {})
+            if int(entry.get("samples", 0)) > 0:
+                family_feedback.append({"family": family, **entry, "feedback_signal": _feedback_signal(entry)})
+        family_feedback_signal = round(
+            sum(float(f.get("feedback_signal") or 0.0) for f in family_feedback) / max(1, len(family_feedback)),
+            3,
+        ) if family_feedback else 0.0
+        feedback_risk_penalty = round(
+            sum(
+                (
+                    float(f.get("failure_rate") or 0.0)
+                    + float(f.get("defer_rate") or 0.0)
+                    + float(f.get("drop_rate") or 0.0)
+                    + float(f.get("escalation_rate") or 0.0)
+                )
+                * 0.9
+                for f in family_feedback
+            ) / max(1, len(family_feedback)),
+            3,
+        ) if family_feedback else 0.0
+        adjusted_conflict = round(conflict_score + feedback_risk_penalty, 3)
+        yield_score = round(
+            (avg_confidence * 0.85)
+            + (avg_rank_score * 0.25)
+            + (link_strength * 0.8)
+            + family_feedback_signal
+            - adjusted_conflict,
+            3,
+        )
         subplan_id = f"subplan-{len(subplans) + 1}"
         subplans.append(
             {
@@ -190,10 +419,15 @@ def build_subplans(
                 "rank_score": avg_rank_score,
                 "size": len(cluster),
                 "strategy": "linked_family_cluster",
-                "risk_score": conflict_score,
+                "risk_score": adjusted_conflict,
                 "yield_score": yield_score,
                 "conflict_signals": conflict_signals,
                 "link_strength": link_strength,
+                "execution_feedback": {
+                    "family_feedback": family_feedback[:4],
+                    "family_feedback_signal": family_feedback_signal,
+                    "feedback_risk_penalty": feedback_risk_penalty,
+                },
             }
         )
         if len(subplans) >= max_subplans:
@@ -221,6 +455,8 @@ def main() -> int:
     parser.add_argument("--subplan-size", type=int, default=3)
     parser.add_argument("--related-limit", type=int, default=2)
     parser.add_argument("--history-window", type=int, default=15)
+    parser.add_argument("--feedback-window-days", type=int, default=30)
+    parser.add_argument("--feedback-sample-limit", type=int, default=80)
     parser.add_argument("--notes", help="Optional notes/context for the plan")
     parser.add_argument(
         "--preferred-prefix",
@@ -240,10 +476,15 @@ def main() -> int:
         # Stage-7 should consume lane-clean candidates whenever available.
         if lane_aligned:
             targets = lane_aligned
+    execution_feedback = load_execution_feedback(
+        window_days=max(1, args.feedback_window_days),
+        sample_limit=max(1, args.feedback_sample_limit),
+    )
     subplans = build_subplans(
         targets=targets,
         max_subplans=max(1, args.max_subplans),
         subplan_size=max(1, args.subplan_size),
+        execution_feedback=execution_feedback,
     )
 
     plan = {
@@ -259,11 +500,15 @@ def main() -> int:
             "max_subplans": args.max_subplans,
             "subplan_size": args.subplan_size,
             "preferred_prefixes": preferred_prefixes,
-            "ranking_version": "rag6-v2-conflict-yield-cluster",
+            "ranking_version": "rag9-v1-execution-feedback-cluster",
             "upstream_rag4_plan_id": rag4_plan.get("plan_id"),
             "upstream_ranking_version": (rag4_plan.get("provenance") or {}).get("ranking_version"),
             "retrieved_targets": len(targets),
             "emitted_subplans": len(subplans),
+            "feedback_window_days": max(1, args.feedback_window_days),
+            "feedback_sample_limit": max(1, args.feedback_sample_limit),
+            "feedback_processed_plan_files": int(execution_feedback.get("processed_plan_files") or 0),
+            "feedback_family_count": len((execution_feedback.get("families") or {})),
         },
         "raw_payload": rag4_plan,
     }

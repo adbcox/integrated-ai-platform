@@ -39,14 +39,14 @@ This document is planning-only and review-first. It is grounded in current repo 
 - Current contribution to Codex-5.1 replacement: high for bounded orchestration, medium for sustained high-complexity problem solving.
 
 ### 3) Retrieval / RAG system
-- Current version/level: `rag8-v1`, level 8.
+- Current version/level: `rag9-v1`, level 9 (building).
 - Current real capability:
   - Lane-clean clustered planning.
   - Conflict-risk and execution-yield metadata.
   - Ordered subplans for manager execution.
 - Main blockers:
-  - Risk/yield are mostly static and not execution-feedback-calibrated.
-  - Remaining noisy edge cases still need adaptive suppression.
+  - Execution-feedback calibration is now baseline but still family/cohort-oriented rather than fully predictive across mixed-family plans.
+  - Remaining noisy edge cases still need stronger path-level suppression and conflict priors.
 - Main dependencies: Manager outcome telemetry, qualification assertions on planning quality.
 - Current contribution to Codex-5.1 replacement: medium-high for code-target discovery and packaging.
 
@@ -171,8 +171,8 @@ Coarse major milestones only.
 - Target: `manager15` — robust autonomous orchestration with explainable policy actions.
 
 ### RAG system ladder
-- Current: `rag8-v1`
-- Next: `rag9` — execution-feedback calibration.
+- Current: `rag9-v1`
+- Next: `rag10` — deeper predictive conflict/yield priors using broader execution cohorts.
 - Mid: `rag11` — robust query-intent/domain fusion with adaptive link confidence.
 - Mid: `rag13` — predictive conflict/yield modeling and context-window-efficient plan packaging.
 - Target: `rag15` — high-precision retrieval/planning substrate for autonomous coding workflows.
@@ -345,7 +345,7 @@ Coarse major milestones only.
 
 ## Phase A — Stabilize v8 completions (near-term)
 - Goal: close partial v8 blockers (worker/promotion/qualification).
-- Entry: current `stage8/manager8/rag8` operational.
+- Entry: current `stage8/manager9/rag9` operational.
 - Exit:
   - worker adaptive budget tuning landed,
   - qualification deterministic stage8 assertions landed,

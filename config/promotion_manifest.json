@@ -111,6 +111,10 @@
         "rag8-v1": {
             "entry": "bin/stage_rag6_plan_probe.py",
             "description": "RAG-8 conflict-risk and execution-yield clustered subplan planning with lane-clean rationale metadata for Stage-8 orchestration"
+        },
+        "rag9-v1": {
+            "entry": "bin/stage_rag6_plan_probe.py",
+            "description": "RAG-9 execution-feedback-calibrated clustered planning with manager-plan outcome weighting for risk/yield ordering and auditable operational provenance"
         }
     },
     "lane_versions": {
@@ -137,7 +141,7 @@
         "stage7": {
             "stage_version": "stage8-v1",
             "manager_version": "manager9-v1",
-            "rag_version": "rag8-v1"
+            "rag_version": "rag9-v1"
         }
     },
     "lanes": {
@@ -193,13 +197,13 @@
             "label": "Stage-7 preview lane",
             "stage_version": "stage8-v1",
             "manager_version": "manager9-v1",
-            "rag_version": "rag8-v1",
+            "rag_version": "rag9-v1",
             "allowed_targets": [
                 "bin/"
             ],
             "regression_pack": "bin/micro_lane_stage7.sh",
             "status": "building",
-            "notes": "Stage-8 resumable preview lane with Manager-9 qualification-aware strategy memory, class-budgeted worker gating, and RAG-8 conflict/yield-aware clustered planning"
+            "notes": "Stage-8 resumable preview lane with Manager-9 qualification-aware strategy memory, class-budgeted worker gating, and RAG-9 execution-feedback-calibrated clustered planning"
         }
     },
     "lane_rules": {
@@ -441,15 +445,15 @@
             "status": "building"
         },
         "rag_system": {
-            "current_version": "rag8-v1",
-            "next_version": "rag9-v1",
-            "after_next_version": "rag10-v1",
-            "upgrade_goal": "RAG-9 adds cross-run learning for clustering quality and dynamic conflict/yield calibration from execution outcomes",
+            "current_version": "rag9-v1",
+            "next_version": "rag10-v1",
+            "after_next_version": "rag11-v1",
+            "upgrade_goal": "RAG-10 strengthens execution-feedback calibration with deeper predictive conflict/yield priors across mixed-family clustered subplans",
             "minimum_validation": [
-                "RAG plans include calibrated risk/yield with reduced manager-side noisy drops across repeated runs",
-                "At least one Stage-8 run shows stable ordering benefits from calibrated clustering"
+                "RAG plans include execution-feedback-aware risk/yield and per-subplan operational provenance links",
+                "At least one Stage-7/8 planning run shows ordering/clustering changed by historical execution outcomes"
             ],
-            "status": "validated"
+            "status": "building"
         },
         "promotion_engine": {
             "current_version": "level10-promote-v2",

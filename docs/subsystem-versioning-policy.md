@@ -25,6 +25,6 @@ Each subsystem in `subsystem_versions` must define:
 ## Current active next-step targets
 - `stage system`: `stage8-v1`
 - `manager system`: `manager9-v1`
-- `rag system`: `rag8-v1`
+- `rag system`: `rag9-v1`
 
 These targets are operational commitments and should be changed only when code and validation evidence justify it.
