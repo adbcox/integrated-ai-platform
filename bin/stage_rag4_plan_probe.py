@@ -169,6 +169,65 @@ def _calibrate_confidences(targets: list[dict[str, Any]]) -> None:
         target["confidence"] = max(1, min(10, confidence))
 
 
+def _expand_lane_companions(
+    *,
+    targets: list[dict[str, Any]],
+    lane_targets: list[dict[str, Any]],
+    preferred_prefixes: list[str],
+) -> list[dict[str, Any]]:
+    """Inject lane-aligned companions discovered through related links."""
+    by_path = {t["path"]: t for t in targets}
+    companion_pool: dict[str, dict[str, Any]] = {}
+    for primary in lane_targets:
+        primary_score = float(primary.get("rank_score", 0.0))
+        related_paths = primary.get("selection_reason", {}).get("related_paths", [])
+        for rel_path in related_paths:
+            if not rel_path or rel_path in by_path:
+                continue
+            if not _path_matches_prefix(rel_path, preferred_prefixes):
+                continue
+            domain = _path_domain(rel_path)
+            # Keep synthetic companions safely below direct retrieval hits.
+            synthetic_score = round(primary_score - 1.6, 4)
+            existing = companion_pool.get(rel_path)
+            if existing is None:
+                companion_pool[rel_path] = {
+                    "path": rel_path,
+                    "preview": None,
+                    "related": [],
+                    "source": "stage_rag4_companion",
+                    "base_score": 0.0,
+                    "rank_score": synthetic_score,
+                    "related_score": 0,
+                    "lane_aligned": True,
+                    "domain": domain,
+                    "selection_reason": {
+                        "sibling_count": 0,
+                        "git_history_count": 0,
+                        "related_paths": [],
+                        "related_count": 0,
+                        "preferred_prefixes": preferred_prefixes,
+                        "lane_aligned": True,
+                        "query_intent": "code",
+                        "domain_bonus": 0.0,
+                        "companion_of": [primary["path"]],
+                        "companion_support": 1,
+                    },
+                }
+                continue
+            existing["rank_score"] = max(float(existing.get("rank_score", 0.0)), synthetic_score)
+            reason = existing.setdefault("selection_reason", {})
+            supports = reason.setdefault("companion_of", [])
+            if primary["path"] not in supports:
+                supports.append(primary["path"])
+                reason["companion_support"] = int(reason.get("companion_support", 0)) + 1
+
+    if not companion_pool:
+        return targets
+    targets.extend(companion_pool.values())
+    return targets
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Stage RAG-4 planning helper")
     parser.add_argument("query", nargs="+", help="Natural language probe for Stage-6")
@@ -281,7 +340,22 @@ def main() -> int:
         lane_targets = [t for t in targets if t.get("lane_aligned")]
         non_lane_targets = [t for t in targets if not t.get("lane_aligned")]
         if lane_targets:
-            targets = lane_targets
+            targets = _expand_lane_companions(
+                targets=lane_targets,
+                lane_targets=lane_targets,
+                preferred_prefixes=preferred_prefixes,
+            )
+            _calibrate_confidences(targets)
+            targets = sorted(
+                targets,
+                key=lambda item: (
+                    int(item.get("lane_aligned", False)),
+                    item["rank_score"],
+                    item["confidence"],
+                    item["path"],
+                ),
+                reverse=True,
+            )
         else:
             targets = non_lane_targets
 
@@ -303,7 +377,7 @@ def main() -> int:
             "history_window": args.history_window,
             "preferred_prefixes": preferred_prefixes,
             "query_intent": intent,
-            "ranking_version": "rag4-v3-intent-domain",
+            "ranking_version": "rag4-v4-intent-domain-companions",
         },
         "raw_payload": search_payload,
     }
