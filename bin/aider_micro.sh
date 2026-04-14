@@ -257,6 +257,9 @@ declare -a TARGET_FILES_CANON=()
 canonicalize_path_to_repo() {
   local input="$1"
   [ -n "$input" ] || return 1
+  if [[ "$input" == path/to/* ]]; then
+    input="${input#path/to/}"
+  fi
   python3 - "$input" "$REPO_ROOT" <<'PY'
 import os, sys
 
