@@ -24,7 +24,7 @@ FORCE_ESCALATION_CAPTURE=0
 usage() {
   cat <<'USAGE'
 Usage (Stage-3 production lane default flow):
-  ./bin/aider_capture_feedback.sh --name <task-name> [options] (Stage-3 default invocation)
+  ./bin/aider_capture_feedback.sh --name <task-name> [options] (Stage-3 default invocation; use the intake slug)
 
 Options (Stage-3 safe default subset):
   --summary <path>                 Markdown summary file (Stage-3 telemetry log)
