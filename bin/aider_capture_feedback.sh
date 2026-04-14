@@ -185,7 +185,7 @@ if [ -n "$SUMMARY_FILE" ] && [ -f "$SUMMARY_FILE" ]; then
 else
   cat >"$legacy_record_dir/summary.md" <<'EOS'
 # Summary
-<what was changed and why>
+<detail what changed and why>
 EOS
 fi
 
