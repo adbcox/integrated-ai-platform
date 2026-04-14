@@ -1,6 +1,8 @@
 #!/bin/bash
 set -euo pipefail
 
+SCRIPT_PATH="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)/$(basename -- "$0")"
+
 usage() {
   cat <<'USAGE'
 Usage: bin/aider_micro.sh "anchored message" path/to/file1 [path/to/file2]
@@ -426,7 +428,7 @@ if [ "$TEST_MODE" = false ]; then
   RESTORE_ON_FAIL=true
   info "running aider on ${TARGET_FILES[*]}"
   if bash bin/aider_local.sh --message "$MESSAGE" "${TARGET_FILES[@]}"; then
-    info "running quick validation"
+    info "running quick validation after aider"
     if ! PYTHONPYCACHEPREFIX=/tmp/aider_pycache make quick >/dev/null; then
       fail "make quick failed; inspect quick logs" "validation"
     fi
@@ -438,6 +440,15 @@ if [ "$TEST_MODE" = false ]; then
     if [ "$TASK_KIND" = "literal-replace" ] && [ -n "$LITERAL_BEFORE_FILE" ]; then
       info "aider exit detected; attempting literal replace fallback"
       log_micro_event "warning" "literal_fallback_start" "aider exited status $status"
+      if python3 - "$LITERAL_FILE" "$SCRIPT_PATH" <<'PY'
+import os, sys
+target = os.path.abspath(sys.argv[1])
+script = os.path.abspath(sys.argv[2])
+sys.exit(0 if target == script else 1)
+PY
+      then
+        fail "literal fallback disabled for currently running script ($LITERAL_FILE); inspect aider artifact" "aider_exit" "$status"
+      fi
       if [ -f "$LITERAL_BEFORE_FILE" ]; then
         cp "$LITERAL_BEFORE_FILE" "$LITERAL_FILE"
       fi
