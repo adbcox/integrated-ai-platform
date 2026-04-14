@@ -195,7 +195,7 @@ else
   cat >"$legacy_record_dir/outcome.md" <<'EOS'
 # Outcome
 - status: partial
-- key regressions prevented:
+- key regressions prevented (list blockers):
   - <key item>
 - follow-ups (record next steps):
   - <follow-up item>
