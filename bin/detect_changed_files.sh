@@ -1,10 +1,10 @@
 #!/bin/sh
 set -eu
 
-# Priority ordering for detection (Stage-3/Stage-4 literal lanes + Stage-5 batches):
-# 1) CLI args remain the operator-provided authority
-# 2) CHANGED_FILES env (space/newline separated) remains the literal default override
-# 3) git diff/ls-files fallback limits Stage-4/Stage-5 scan budgets
+# Priority ordering for detection (Stage-3/Stage-4 literal lanes + Stage-5 dual batches):
+# 1) CLI args remain the operator-provided authority for Codex-managed runs
+# 2) CHANGED_FILES env (space/newline separated) stays the literal override for scripted probes
+# 3) git diff/ls-files fallback only seeds Stage-4/Stage-5 scans when nothing else is provided
 
 if [ "$#" -gt 0 ]; then
   for item in "$@"; do
