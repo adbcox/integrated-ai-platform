@@ -591,6 +591,53 @@ def run_stage5_job(job: Stage6Job, args: argparse.Namespace, env: dict[str, str]
     }
 
 
+def _build_refinement_job(
+    failed_job: Stage6Job,
+    *,
+    args: argparse.Namespace,
+    suffix: str = "refine",
+) -> Stage6Job:
+    """Construct a bounded refinement retry contract for a failed secondary."""
+    target_path = (REPO_ROOT / failed_job.path).resolve()
+    try:
+        target_contents = target_path.read_text(encoding="utf-8")
+    except OSError:
+        target_contents = ""
+
+    literal_old, literal_new, sync_reason = _synchronize_literal_pair(
+        target_contents=target_contents,
+        literal_old=failed_job.literal_old or args.literal_old,
+        literal_new=failed_job.literal_new or args.literal_new,
+    )
+    if sync_reason is None and literal_old not in target_contents:
+        import_sync = _sync_import_literal_pair(
+            target_contents=target_contents,
+            literal_old=args.literal_old,
+            literal_new=args.literal_new,
+        )
+        if import_sync:
+            literal_old, literal_new = import_sync
+            sync_reason = "sync_import_line_refinement"
+
+    message = args.message_template.format(
+        path=failed_job.path,
+        source=(failed_job.source or "rag4"),
+        old=literal_old,
+        new=literal_new,
+    )
+    return Stage6Job(
+        path=failed_job.path,
+        notes=failed_job.notes,
+        lines=failed_job.lines,
+        source=f"{failed_job.source or 'rag4'}:{suffix}",
+        refinement_of=failed_job.path,
+        literal_old=literal_old,
+        literal_new=literal_new,
+        sync_reason=sync_reason,
+        message=message,
+    )
+
+
 def apply_failure_memory(
     *,
     jobs: list[Stage6Job],
@@ -716,9 +763,21 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--min-confidence", type=int, default=1, help="Minimum RAG-4 confidence before enqueuing a target")
     parser.add_argument(
         "--retry-class",
-        choices=["none", "fallback_on_empty", "fallback_on_failure"],
-        default="fallback_on_failure",
+        choices=["none", "fallback_on_empty", "fallback_on_failure", "adaptive_group_retry"],
+        default="adaptive_group_retry",
         help="Retry policy class for Stage-6 fallback behavior",
+    )
+    parser.add_argument(
+        "--group-failure-policy",
+        choices=["abort", "continue_on_secondary_failure"],
+        default="continue_on_secondary_failure",
+        help="Behavior when a non-primary grouped target fails after bounded retries.",
+    )
+    parser.add_argument(
+        "--max-secondary-retries",
+        type=int,
+        default=1,
+        help="Maximum refinement retries for a failed secondary grouped target.",
     )
     parser.add_argument("--literal-old", default=PLACEHOLDER_LITERAL, help="Literal old text for Stage-4 replacements")
     parser.add_argument("--literal-new", default=PLACEHOLDER_LITERAL_UPDATED, help="Literal new text for Stage-4 replacements")
@@ -837,12 +896,58 @@ def main() -> int:
         status = run_stage5_job(job, args, env, idx)
         statuses.append(status)
         if status["return_code"] != 0:
+            is_primary = idx == 0
+            if is_primary:
+                exit_code = int(status["return_code"])
+                break
+
+            retry_attempts = 0
+            retry_success = False
+            while (
+                args.retry_class == "adaptive_group_retry"
+                and retry_attempts < max(0, args.max_secondary_retries)
+            ):
+                retry_attempts += 1
+                refinement_job = _build_refinement_job(
+                    job,
+                    args=args,
+                    suffix=f"retry{retry_attempts}",
+                )
+                retry_status = run_stage5_job(refinement_job, args, env, len(statuses))
+                retry_status["retry"] = True
+                retry_status["retry_attempt"] = retry_attempts
+                retry_status["retry_strategy"] = "secondary_refinement"
+                statuses.append(retry_status)
+                if retry_status["return_code"] == 0:
+                    retry_success = True
+                    break
+
+            if retry_success:
+                plan_payload.setdefault("refinements", []).append(
+                    {
+                        "target": job.path,
+                        "result": "secondary_retry_succeeded",
+                        "attempts": retry_attempts,
+                    }
+                )
+                continue
+
+            if args.group_failure_policy == "continue_on_secondary_failure":
+                plan_payload.setdefault("drops", []).append(
+                    {
+                        "target": job.path,
+                        "reason": "secondary_failed_after_retry",
+                        "retry_attempts": retry_attempts,
+                    }
+                )
+                continue
+
             exit_code = int(status["return_code"])
             break
 
     if (
         exit_code != 0
-        and args.retry_class == "fallback_on_failure"
+        and args.retry_class in {"fallback_on_failure", "adaptive_group_retry"}
         and args.fallback_target
         and not any(job.source == "fallback" for job in jobs)
     ):
@@ -857,11 +962,15 @@ def main() -> int:
         )
         plan_payload["notes"] = plan_payload.get("notes") or "fallback retry"
 
+    final_state = "succeeded" if exit_code == 0 else "failed"
+    if exit_code == 0 and plan_payload.get("drops"):
+        final_state = "partial_success"
+
     write_plan_history(
         args.plan_id,
         {
             "event_type": "attempt_finished",
-            "state": "succeeded" if exit_code == 0 else "failed",
+            "state": final_state,
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "statuses": statuses,
             "failure_code": exit_code,
