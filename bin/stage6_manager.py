@@ -25,7 +25,11 @@ from promotion.tracing import PromotionTraceEntry, append_trace, current_commit_
 STAGE5_MANAGER = REPO_ROOT / "bin" / "stage5_manager.py"
 STAGE_RAG4_PLAN = REPO_ROOT / "bin" / "stage_rag4_plan_probe.py"
 TRACE_DIR = REPO_ROOT / "artifacts" / "manager5"
-PLACEHOLDER_LITERAL = "# STAGE6_PLACEHOLDER"
+# STAGE6_PLACEHOLDER
+# STAGE6_PLACEHOLDER
+# STAGE6_PLACEHOLDER
+PLACEHOLDER_LITERAL = "# STAGE6_PLACEHOLDER\\n# STAGE6_PLACEHOLDER\\n# STAGE6_PLACEHOLDER"
+PLACEHOLDER_LITERAL_UPDATED = "# STAGE6_PLACEHOLDER (updated)\\n# STAGE6_PLACEHOLDER (updated)\\n# STAGE6_PLACEHOLDER (updated)"
 
 
 @dataclass
@@ -248,7 +252,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--history-window", type=int, default=15, help="Git history window for Stage RAG-4")
     parser.add_argument("--min-confidence", type=int, default=1, help="Minimum RAG-4 confidence before enqueuing a target")
     parser.add_argument("--literal-old", default=PLACEHOLDER_LITERAL, help="Literal old text for Stage-4 replacements")
-    parser.add_argument("--literal-new", default=f"{PLACEHOLDER_LITERAL} (updated)", help="Literal new text for Stage-4 replacements")
+    parser.add_argument("--literal-new", default=PLACEHOLDER_LITERAL_UPDATED, help="Literal new text for Stage-4 replacements")
     return parser.parse_args()
 
 
