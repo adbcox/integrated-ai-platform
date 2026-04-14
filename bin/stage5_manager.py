@@ -18,7 +18,7 @@ STAGE4_MANAGER = REPO_ROOT / "bin" / "stage4_manager.py"
 STAGE_RAG3 = REPO_ROOT / "bin" / "stage_rag3_plan_probe.py"
 TRACE_DIR = REPO_ROOT / "artifacts" / "stage5_manager"
 TRACE_FILE = TRACE_DIR / "traces.jsonl"
-DEFAULT_MAX_OPS = 2
+DEFAULT_MAX_OPS = 2  # Manager-4 batches stay within two entries until Stage-5 saturation completes.
 DEFAULT_MAX_TOTAL_LINES = 20
 
 
