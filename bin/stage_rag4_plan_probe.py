@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import datetime as dt
 import json
+import math
 import subprocess
 import sys
 from pathlib import Path
@@ -43,6 +44,25 @@ def append_log(entry: dict[str, Any]) -> None:
         fh.write(json.dumps(entry, ensure_ascii=False) + "\n")
 
 
+def _count_related_sources(related_entries: list[dict[str, Any]]) -> tuple[int, int]:
+    sibling = 0
+    git_history = 0
+    for rel in related_entries:
+        source = str(rel.get("source") or "")
+        if source == "sibling":
+            sibling += 1
+        elif source == "git_history":
+            git_history += 1
+    return sibling, git_history
+
+
+def _confidence_score(*, base_score: float, sibling_count: int, git_history_count: int, related_score: int) -> int:
+    """Collapse retrieval quality signals into a bounded confidence bucket (1-10)."""
+    # BM25 score contributes the strongest signal, while companion quality nudges tie-breaks.
+    raw = (base_score * 3.0) + (sibling_count * 0.8) + (git_history_count * 1.2) + min(related_score / 220.0, 2.5)
+    return max(1, min(10, int(math.floor(raw)) + 1))
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Stage RAG-4 planning helper")
     parser.add_argument("query", nargs="+", help="Natural language probe for Stage-6")
@@ -65,19 +85,43 @@ def main() -> int:
     results = search_payload.get("results", [])
 
     targets: list[dict[str, Any]] = []
-    for entry in results[: args.max_targets]:
-        related_files = [rel.get("path") for rel in entry.get("related", []) if rel.get("path")]
-        confidence = 1 + len(related_files)
+    for entry in results:
+        path = entry.get("path")
+        if not path:
+            continue
+        related_entries = [rel for rel in entry.get("related", []) if rel.get("path")]
+        related_files = [rel.get("path") for rel in related_entries]
+        related_score = sum(len(rel.get("preview", "")) for rel in related_entries)
+        sibling_count, git_history_count = _count_related_sources(related_entries)
+        base_score = float(entry.get("score") or 0.0)
+        confidence = _confidence_score(
+            base_score=base_score,
+            sibling_count=sibling_count,
+            git_history_count=git_history_count,
+            related_score=related_score,
+        )
+        rank_score = round(base_score + (git_history_count * 0.35) + (sibling_count * 0.15), 4)
         targets.append(
             {
-                "path": entry.get("path"),
+                "path": path,
                 "preview": entry.get("preview"),
                 "related": related_files,
                 "source": "stage_rag3",
+                "base_score": base_score,
+                "rank_score": rank_score,
                 "confidence": confidence,
-                "related_score": sum(len(rel.get("preview", "")) for rel in entry.get("related", [])),
+                "related_score": related_score,
+                "selection_reason": {
+                    "sibling_count": sibling_count,
+                    "git_history_count": git_history_count,
+                    "related_paths": related_files,
+                },
             }
         )
+
+    # Keep targets deterministic by retrieval score + companion strength.
+    targets.sort(key=lambda item: (item["rank_score"], item["confidence"], item["path"]), reverse=True)
+    targets = targets[: args.max_targets]
 
     plan = {
         "timestamp": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds"),

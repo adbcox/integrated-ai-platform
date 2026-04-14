@@ -1,5 +1,5 @@
 {
-    "version": 2,
+    "version": 3,
     "description": "Manager-4 promotion manifest with lane-aware stage/manager/RAG mapping.",
     "stage_versions": {
         "stage3-v1": {
@@ -165,12 +165,113 @@
             "regression_pack": "bin/micro_lane_stage5.sh"
         }
     },
+    "subsystem_levels": {
+        "stage_system": {
+            "current_level": 6,
+            "production_level": 3,
+            "candidate_level": 5,
+            "preview_level": 6,
+            "next_target_level": 7,
+            "level10_definition": "Autonomous multi-lane stage planner that selects and safely executes bounded work classes with policy-backed rollback and promotion gates.",
+            "key_blockers": [
+                "Stage-6 remains preview-only with limited target scope",
+                "No automated gate that advances lane status from evidence"
+            ],
+            "evidence_to_advance": [
+                "Rolling Stage-6 success streak with green required regression packs",
+                "Plan lifecycle traces contain deterministic state transitions and retry outcomes"
+            ]
+        },
+        "manager_system": {
+            "current_level": 6,
+            "production_level": 4,
+            "candidate_level": 5,
+            "preview_level": 6,
+            "next_target_level": 7,
+            "level10_definition": "Hierarchical manager orchestration with persisted plan lifecycle, bounded retries, and lane-aware policy enforcement across all stages.",
+            "key_blockers": [
+                "Manager-5 lacks end-to-end qualification feedback loop",
+                "Plan lifecycle evidence is not yet summarized into promotion decisions"
+            ],
+            "evidence_to_advance": [
+                "Per-attempt plan history includes planned/running/succeeded-or-failed states",
+                "Qualification tooling ingests manager traces and emits upgrade readiness"
+            ]
+        },
+        "rag_system": {
+            "current_level": 4,
+            "production_level": 1,
+            "candidate_level": 3,
+            "preview_level": 4,
+            "next_target_level": 5,
+            "level10_definition": "Cross-file, provenance-rich retrieval with confidence calibration and companion ranking that drives safe multi-target orchestration.",
+            "key_blockers": [
+                "Companion ranking confidence has been shallow",
+                "Plan selection reason metadata is not fully exploited downstream"
+            ],
+            "evidence_to_advance": [
+                "RAG-4 targets include rank signals and source-weighted confidence",
+                "Managers filter weak companions and record retry/fallback decisions"
+            ]
+        },
+        "promotion_engine": {
+            "current_level": 6,
+            "production_level": 3,
+            "candidate_level": 5,
+            "preview_level": 6,
+            "next_target_level": 7,
+            "level10_definition": "Unified promotion control plane that tracks subsystem levels, lane states, and objective evidence required for each promotion decision.",
+            "key_blockers": [
+                "Qualification is lane-centric and not yet subsystem-centric",
+                "No single report ties production/candidate/preview and next-target levels together"
+            ],
+            "evidence_to_advance": [
+                "Manifest encodes subsystem level policy and required evidence",
+                "Qualification report scores all major subsystems against policy"
+            ]
+        },
+        "worker_utilization": {
+            "current_level": 5,
+            "production_level": 3,
+            "candidate_level": 5,
+            "preview_level": 6,
+            "next_target_level": 6,
+            "level10_definition": "Worker-first routing that maximizes safe local execution coverage with explicit task-class budgets and escalation telemetry.",
+            "key_blockers": [
+                "Stage-6 success/failure worker evidence not aggregated in one report",
+                "Task-class promotion metrics are not connected to lane qualification"
+            ],
+            "evidence_to_advance": [
+                "Stage-5/6 traces include worker outcomes and rollback metadata",
+                "Qualification report surfaces worker success/failure trends"
+            ]
+        },
+        "regression_framework": {
+            "current_level": 5,
+            "production_level": 3,
+            "candidate_level": 5,
+            "preview_level": 6,
+            "next_target_level": 6,
+            "level10_definition": "Regression and qualification framework that continuously validates lane guardrails and promotion eligibility with minimal deterministic checks.",
+            "key_blockers": [
+                "Regression pack requirements are not evaluated subsystem-by-subsystem",
+                "Preview-lane confidence checks are mostly manual"
+            ],
+            "evidence_to_advance": [
+                "Qualification report verifies required regression packs per active lane",
+                "Manager and stage traces are correlated with policy thresholds"
+            ]
+        }
+    },
     "promotion_policy": {
         "criteria": {
             "candidate_success_threshold": 4,
             "candidate_failure_budget": 1,
             "required_regression_pack": "bin/micro_lane_stage5.sh",
-            "trace_window_days": 7
+            "trace_window_days": 7,
+            "stage6_success_threshold": 3,
+            "stage6_failure_budget": 1,
+            "required_preview_regression_pack": "bin/micro_lane_stage5.sh"
         },
         "last_decision": {
             "date": "2026-04-14T00:00:00Z",

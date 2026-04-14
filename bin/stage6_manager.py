@@ -25,6 +25,7 @@ from promotion.tracing import PromotionTraceEntry, append_trace, current_commit_
 STAGE5_MANAGER = REPO_ROOT / "bin" / "stage5_manager.py"
 STAGE_RAG4_PLAN = REPO_ROOT / "bin" / "stage_rag4_plan_probe.py"
 TRACE_DIR = REPO_ROOT / "artifacts" / "manager5"
+STAGE5_TRACE_FILE = REPO_ROOT / "artifacts" / "stage5_manager" / "traces.jsonl"
 # STAGE6_PLACEHOLDER (updated)
 # STAGE6_PLACEHOLDER (updated)
 # STAGE6_PLACEHOLDER (updated)
@@ -38,16 +39,79 @@ class Stage6Job:
     notes: str | None = None
     lines: str | None = None
     source: str | None = None
+    refinement_of: str | None = None
 
 
 def plan_history_path(plan_id: str) -> Path:
     return TRACE_DIR / "plans" / f"{plan_id}.json"
 
 
+def load_plan_history(plan_id: str) -> dict[str, Any]:
+    history_path = plan_history_path(plan_id)
+    if not history_path.exists():
+        return {}
+    try:
+        return json.loads(history_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        return {}
+
+
 def write_plan_history(plan_id: str, payload: dict[str, Any]) -> None:
     history_path = plan_history_path(plan_id)
     history_path.parent.mkdir(parents=True, exist_ok=True)
-    history_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+    existing: dict[str, Any] = {}
+    if history_path.exists():
+        try:
+            existing = json.loads(history_path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError:
+            existing = {}
+    history = existing.get("history", [])
+    event = dict(payload)
+    event.setdefault("event_type", "update")
+    event.setdefault("timestamp", datetime.now(timezone.utc).isoformat())
+    history.append(event)
+    plan_payload: dict[str, Any] = existing.get("plan_payload", {})
+    plan_payload.update(payload.get("plan_payload", {}))
+    current_state = payload.get("state") or existing.get("current_state")
+    latest_statuses = payload.get("statuses") or existing.get("latest_statuses", [])
+    attempts = int(existing.get("attempt_count", 0))
+    if payload.get("event_type") == "attempt_started":
+        attempts += 1
+    merged = {
+        "plan_id": plan_id,
+        "plan_payload": plan_payload,
+        "history": history,
+        "current_state": current_state,
+        "latest_statuses": latest_statuses,
+        "attempt_count": attempts,
+        "last_updated": payload.get("timestamp"),
+    }
+    history_path.write_text(json.dumps(merged, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
+def _read_jsonl_slice(path: Path, start_line: int) -> list[dict[str, Any]]:
+    if not path.exists():
+        return []
+    records: list[dict[str, Any]] = []
+    with path.open(encoding="utf-8") as fh:
+        for idx, line in enumerate(fh):
+            if idx < start_line:
+                continue
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                records.append(json.loads(line))
+            except json.JSONDecodeError:
+                continue
+    return records
+
+
+def _line_count(path: Path) -> int:
+    if not path.exists():
+        return 0
+    with path.open(encoding="utf-8") as fh:
+        return sum(1 for _ in fh)
 
 
 def run_stage_rag4(args: argparse.Namespace) -> dict[str, Any]:
@@ -167,13 +231,23 @@ def create_stage5_batch(job: Stage6Job, args: argparse.Namespace) -> Path:
     return batch_path
 
 
-def run_stage5_job(job: Stage6Job, args: argparse.Namespace, env: dict[str, str], idx: int) -> int:
+def run_stage5_job(job: Stage6Job, args: argparse.Namespace, env: dict[str, str], idx: int) -> dict[str, Any]:
     batch_path = create_stage5_batch(job, args)
     commit_msg = f"{args.commit_msg} - stage6 op {idx + 1}"
+    started_at = datetime.now(timezone.utc).isoformat()
     if args.dry_run:
         print(f"[stage6] dry-run planning job {idx + 1}: target={job.path}, commit='{commit_msg}'")
         batch_path.unlink(missing_ok=True)
-        return 0
+        return {
+            "target": job.path,
+            "status": "planned",
+            "return_code": 0,
+            "started_at": started_at,
+            "finished_at": datetime.now(timezone.utc).isoformat(),
+            "source": job.source,
+            "commit_msg": commit_msg,
+        }
+    trace_line_start = _line_count(STAGE5_TRACE_FILE)
     cmd = [
         sys.executable,
         str(STAGE5_MANAGER),
@@ -189,8 +263,22 @@ def run_stage5_job(job: Stage6Job, args: argparse.Namespace, env: dict[str, str]
     if args.manifest:
         cmd.extend(["--manifest", args.manifest])
     proc = subprocess.run(cmd, env={**os.environ, **env})
+    trace_rows = _read_jsonl_slice(STAGE5_TRACE_FILE, trace_line_start)
+    latest_trace = trace_rows[-1] if trace_rows else {}
     batch_path.unlink(missing_ok=True)
-    return proc.returncode
+    return {
+        "target": job.path,
+        "status": "success" if proc.returncode == 0 else "failure",
+        "return_code": proc.returncode,
+        "started_at": started_at,
+        "finished_at": datetime.now(timezone.utc).isoformat(),
+        "source": job.source,
+        "commit_msg": commit_msg,
+        "stage5_job_id": latest_trace.get("job_id"),
+        "stage5_commit_hash": latest_trace.get("commit_hash"),
+        "stage5_total_added": latest_trace.get("total_added"),
+        "stage5_total_deleted": latest_trace.get("total_deleted"),
+    }
 
 
 def record_trace(
@@ -295,36 +383,74 @@ def main() -> int:
             "targets": [job.path for job in jobs],
             "created_at": datetime.now(timezone.utc).isoformat(),
         }
+    write_plan_history(
+        args.plan_id,
+        {
+            "event_type": "planned",
+            "state": "planned",
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "plan_payload": plan_payload,
+            "eligible_targets": [job.path for job in jobs],
+            "query": " ".join(args.query),
+        },
+    )
     if not jobs:
         print("[stage6] no eligible jobs found, nothing to run")
+        write_plan_history(
+            args.plan_id,
+            {
+                "event_type": "plan_empty",
+                "state": "no_eligible_targets",
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "statuses": [],
+                "plan_payload": plan_payload,
+            },
+        )
         return 0
 
     env = build_promotion_env(lane_name, versions, manifest_cfg.version, manifest_path)
     statuses: list[dict[str, Any]] = []
     exit_code = 0
+    write_plan_history(
+        args.plan_id,
+        {
+            "event_type": "attempt_started",
+            "state": "running",
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "statuses": [],
+            "plan_payload": plan_payload,
+        },
+    )
     for idx, job in enumerate(jobs):
-        code = run_stage5_job(job, args, env, idx)
-        statuses.append({"target": job.path, "status": "success" if code == 0 else "failure"})
-        if code != 0:
-            exit_code = code
+        status = run_stage5_job(job, args, env, idx)
+        statuses.append(status)
+        if status["return_code"] != 0:
+            exit_code = int(status["return_code"])
             break
 
     if exit_code != 0 and args.fallback_target and not any(job.source == "fallback" for job in jobs):
         print(f"[stage6] retrying plan {args.plan_id} with fallback target {args.fallback_target}")
         retry_job = Stage6Job(path=args.fallback_target, source="fallback")
-        retry_code = run_stage5_job(retry_job, args, env, len(statuses))
-        statuses.append({"target": retry_job.path, "status": "success" if retry_code == 0 else "failure", "retry": True})
-        exit_code = retry_code
-        plan_payload.setdefault("retries", []).append({"target": retry_job.path, "status": "pending" if retry_code != 0 else "success"})
+        retry_status = run_stage5_job(retry_job, args, env, len(statuses))
+        retry_status["retry"] = True
+        statuses.append(retry_status)
+        exit_code = int(retry_status["return_code"])
+        plan_payload.setdefault("retries", []).append(
+            {"target": retry_job.path, "status": "success" if retry_status["return_code"] == 0 else "failed"}
+        )
         plan_payload["notes"] = plan_payload.get("notes") or "fallback retry"
 
-    history_record = {
-        "plan_id": args.plan_id,
-        "plan_payload": plan_payload,
-        "statuses": statuses,
-        "failure_code": exit_code,
-    }
-    write_plan_history(args.plan_id, history_record)
+    write_plan_history(
+        args.plan_id,
+        {
+            "event_type": "attempt_finished",
+            "state": "succeeded" if exit_code == 0 else "failed",
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "statuses": statuses,
+            "failure_code": exit_code,
+            "plan_payload": plan_payload,
+        },
+    )
 
     record_trace(
         lane=lane_name,

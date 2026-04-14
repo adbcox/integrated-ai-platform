@@ -24,6 +24,10 @@ class PromotionConfig:
     def version(self) -> int:
         return int(self.data.get("version", 0))
 
+    @property
+    def subsystem_levels(self) -> Dict[str, Any]:
+        return dict(self.data.get("subsystem_levels", {}))
+
 
 def load_manifest(path: str | Path | None = None) -> PromotionConfig:
     """Load and parse the promotion manifest."""

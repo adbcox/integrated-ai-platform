@@ -7,6 +7,16 @@ green. The manifest also defines lane rules, policy criteria, and the last
 promotion decision so the rest of the tooling can enforce the next sensible
 stage.
 
+As of manifest `version=3`, the same file also contains `subsystem_levels`,
+which tracks current production/candidate/preview posture, next target level,
+and required advancement evidence for:
+- stage system
+- manager system
+- retrieval / RAG
+- promotion engine
+- worker utilization
+- regression / qualification framework
+
 ## Lanes at a glance
 
 | Lane       | Stage version | Manager version | RAG version | Description |
@@ -101,3 +111,22 @@ to decide whether the candidate lane is ready to promote. Once promoted, update
 the manifest so the production lane points at the new stage/manager/RAG
 versions, bump the manifest version, and reset the candidate lane to the next
 class of work.
+
+## Unified Level-10 qualification
+
+Use `bin/level10_qualify.py` to score all major subsystems together rather than
+checking only the candidate lane.
+
+```sh
+python3 bin/level10_qualify.py --manifest config/promotion_manifest.json
+```
+
+The report combines:
+- lane snapshot (production/candidate/preview),
+- candidate + stage6 orchestration success/failure metrics,
+- worker success/failure outcomes from Stage-5 traces,
+- RAG-4 plan volume and confidence summaries,
+- manager plan-lifecycle health from `artifacts/manager5/plans/`,
+- subsystem readiness (`ready_for_next_level` vs `needs_more_evidence`).
+
+Roadmap details live in `docs/level10-roadmap.md`.

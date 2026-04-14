@@ -49,6 +49,9 @@ commit message prefix. The manifest exposes Stage-6 as a `preview` lane
    Stage-5 job via `bin/stage5_manager.py`.
 
 3. Manager-5 records the plan payload plus job statuses under `artifacts/manager5/plans/{plan_id}.json`.
+   The plan file now tracks lifecycle events (`planned`, `attempt_started`,
+   `attempt_finished`), `current_state`, and `attempt_count` so preview
+   promotion evidence is auditable without replaying raw logs.
 
 4. When Stage RAG-4 returns several weak targets, use `--min-confidence` to keep
    only high-conviction hits and let the manager fall back gracefully via
@@ -69,6 +72,9 @@ commit message prefix. The manifest exposes Stage-6 as a `preview` lane
   still prefers Stage-5.
 * We plan to keep Stage-6 in preview until at least three Stage-6 plans produce
   successful Stage-5 jobs and the rolling trace window clears the old failures.
+* Stage-5 traces now include success/failure status, rollback markers, and
+  commit hash metadata, which Manager-5 can capture in plan history and trace
+  records for qualification.
 
 ## Forward plan (what must happen next)
 

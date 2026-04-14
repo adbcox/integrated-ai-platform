@@ -27,11 +27,14 @@ DEFAULT_MANIFEST_PATH = MANIFEST_PATH
 PROMOTION_ENV_KEYS = {
     "promotion_lane": "PROMOTION_LANE",
     "promotion_lane_status": "PROMOTION_LANE_STATUS",
+    "promotion_lane_label": "PROMOTION_LANE_LABEL",
+    "promotion_lane_reason": "PROMOTION_LANE_REASON",
     "promotion_stage_version": "PROMOTION_STAGE_VERSION",
     "promotion_stage_name": "PROMOTION_STAGE_NAME",
     "promotion_manager_version": "PROMOTION_MANAGER_VERSION",
     "promotion_rag_version": "PROMOTION_RAG_VERSION",
     "promotion_manifest_version": "PROMOTION_MANIFEST_VERSION",
+    "promotion_manifest_path": "PROMOTION_MANIFEST_PATH",
 }
 
 
@@ -138,6 +141,9 @@ def stage5_manager(args: argparse.Namespace) -> None:
     plan_ids: list[str] = []
 
     patch_records: list[tuple[str, Path]] = []
+    total_added = 0
+    total_deleted = 0
+    commit_hash: str | None = None
 
     try:
         for idx, entry in enumerate(entries, start=1):
@@ -234,8 +240,30 @@ def stage5_manager(args: argparse.Namespace) -> None:
             run(["git", "apply", str(patch_path)])
         run(["git", "add"] + modified_files)
         run(["git", "commit", "-m", args.commit_msg])
+        commit_hash = git_head()
     except Exception as exc:
         restore_head(start_head)
+        log_trace(
+            {
+                "timestamp": datetime.now(UTC).isoformat(timespec="seconds"),
+                "job_id": job_id,
+                "batch_file": str(batch_path),
+                "operations": len(entries),
+                "targets": modified_files,
+                "plan_ids": plan_ids,
+                "commit_msg": args.commit_msg,
+                "max_ops": args.max_ops,
+                "max_total_lines": args.max_total_lines,
+                "total_added": total_added,
+                "total_deleted": total_deleted,
+                "operation_details": operation_details,
+                "status": "failure",
+                "error": str(exc),
+                "rollback_to": start_head,
+                "commit_hash": None,
+                "end_head": git_head(),
+            }
+        )
         if isinstance(exc, Stage5Error):
             raise
         raise Stage5Error(str(exc)) from exc
@@ -260,6 +288,11 @@ def stage5_manager(args: argparse.Namespace) -> None:
             "total_added": total_added,
             "total_deleted": total_deleted,
             "operation_details": operation_details,
+            "status": "success",
+            "start_head": start_head,
+            "end_head": git_head(),
+            "rollback_to": None,
+            "commit_hash": commit_hash,
         }
     )
     target_summary = ", ".join(modified_files)
