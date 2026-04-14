@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Manager-2 orchestrator for Stage-3 literal/comment worker jobs."""
+"""Manager-2.1 orchestrator for Stage-3 literal/comment worker jobs."""
 
 from __future__ import annotations
 
@@ -7,6 +7,7 @@ import argparse
 from datetime import UTC, datetime
 import json
 import os
+import re
 import shlex
 import subprocess
 import sys
@@ -36,6 +37,11 @@ FAILURE_CLASS_MAP = {
 }
 
 FALLBACK_TAGS = {"literal_fallback_start", "literal_fallback_applied"}
+HARNESS_TARGETS = {
+    "bin/aider_micro.sh",
+    "bin/aider_loop.sh",
+    "bin/stage3_manager.py",
+}
 
 
 def run(cmd: list[str], **kwargs) -> subprocess.CompletedProcess:
@@ -198,6 +204,50 @@ def append_trace(entry: dict) -> None:
         fh.write(json.dumps(entry, ensure_ascii=False) + "\n")
 
 
+def _extract_old_literal(message: str) -> str | None:
+    match = re.search(r"replace exact text '(.+?)' with '(.+?)'", message, re.DOTALL)
+    if match:
+        return match.group(1)
+    return None
+
+
+def _preflight_literal_check(target_path: Path, message: str) -> bool:
+    old_literal = _extract_old_literal(message)
+    if not old_literal:
+        return False
+    try:
+        contents = target_path.read_text(encoding="utf-8")
+    except OSError as exc:
+        raise SystemExit(f"Failed to read target file {target_path}: {exc}") from exc
+    return old_literal not in contents
+
+
+def _record_skip(job_id: str, plan_id: str, args, *, classification: str, note: str, message_file: Path | None) -> int:
+    entry = {
+        "timestamp": datetime.now(UTC).isoformat(timespec="seconds"),
+        "job_id": job_id,
+        "plan_id": plan_id,
+        "query": args.query,
+        "target_file": args.target,
+        "message_file": str(message_file) if message_file else None,
+        "classification": classification,
+        "fallback_used": False,
+        "accepted": False,
+        "commit_hash": None,
+        "final_tag": "preflight",
+        "final_status": "failure",
+        "final_note": note,
+        "event_count": 0,
+        "stage_rag_lines": args.lines,
+        "notes": args.notes or None,
+        "worker_exit_code": None,
+    }
+    append_trace(entry)
+    print(f"[manager] skipping worker: {classification} ({note})")
+    git_clean()
+    return 0
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Stage-3 manager orchestrator")
     parser.add_argument("--query", required=True, help="Stage RAG planning query")
@@ -217,9 +267,33 @@ def main() -> int:
 
     print(f"[manager] job_id={job_id} plan_id={plan_id}")
 
+    target_path = (REPO_ROOT / args.target).resolve()
+    if not target_path.exists():
+        raise SystemExit(f"Target file not found: {args.target}")
+
     stage_rag(args.query, plan_id, args.target, args.lines, args.notes, args.top)
     message_file = write_message_file(job_id, args.message)
     print(f"[manager] message file -> {message_file}")
+
+    if args.target in HARNESS_TARGETS:
+        return _record_skip(
+            job_id,
+            plan_id,
+            args,
+            classification="routed_to_codex",
+            note="target is a running harness; route to Codex",
+            message_file=message_file,
+        )
+
+    if _preflight_literal_check(target_path, args.message):
+        return _record_skip(
+            job_id,
+            plan_id,
+            args,
+            classification="literal_replace_missing_old",
+            note="preflight literal not present",
+            message_file=message_file,
+        )
 
     exit_code = run_worker(message_file, args.target, plan_id)
     events = load_events(plan_id)
