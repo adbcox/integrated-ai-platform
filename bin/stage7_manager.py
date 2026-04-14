@@ -25,6 +25,7 @@ STAGE_RAG6_PLAN = REPO_ROOT / "bin" / "stage_rag6_plan_probe.py"
 TRACE_DIR = REPO_ROOT / "artifacts" / "manager6"
 IMPORT_BASE_RE = re.compile(r"^(import|from)\s+")
 SHELL_STRICT_RE = re.compile(r"^\s*set -euo pipefail\s*$")
+SHELL_ASSIGNMENT_RE = re.compile(r"^\s*[A-Za-z_][A-Za-z0-9_]*=")
 
 
 def plan_history_path(plan_id: str) -> Path:
@@ -175,6 +176,21 @@ def _derive_target_contract(path: str, literal_old: str, literal_new: str) -> di
         if first_line.startswith("#!") and ("sh" in first_line or "bash" in first_line):
             is_shell_like = True
     if is_shell_like:
+        for line in contents.splitlines():
+            text = line.rstrip()
+            if not text or text.lstrip().startswith("#"):
+                continue
+            if SHELL_STRICT_RE.match(text):
+                continue
+            if SHELL_ASSIGNMENT_RE.match(text):
+                return {
+                    "supported": True,
+                    "reason": "derived_shell_assignment_line",
+                    "path": path,
+                    "contract_strategy": "shell_assignment_literal",
+                    "literal_old": text,
+                    "literal_new": f"{text}  # stage7-op",
+                }
         for line in contents.splitlines():
             if SHELL_STRICT_RE.match(line):
                 base_old = line.rstrip()
