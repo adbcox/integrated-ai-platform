@@ -389,6 +389,49 @@ def _synchronize_literal_pair(target_contents: str, literal_old: str, literal_ne
     return live_old, literal_new, "sync_live_block"
 
 
+def _single_line_import_base(value: str) -> str | None:
+    if "\n" in value:
+        return None
+    text = value.strip()
+    if not text:
+        return None
+    comment_idx = text.find("#")
+    if comment_idx != -1:
+        text = text[:comment_idx].rstrip()
+    if text.startswith("import ") or text.startswith("from "):
+        return text
+    return None
+
+
+def _sync_import_literal_pair(
+    target_contents: str,
+    literal_old: str,
+    literal_new: str,
+) -> tuple[str, str] | None:
+    """Adapt import/from literals per-target when only inline comments differ."""
+    base_old = _single_line_import_base(literal_old)
+    base_new = _single_line_import_base(literal_new)
+    if not base_old or not base_new or base_old != base_new:
+        return None
+
+    lines = target_contents.splitlines()
+    candidate_old: str | None = None
+    for line in lines:
+        stripped = line.strip()
+        if stripped.startswith(base_old):
+            candidate_old = stripped
+            break
+    if not candidate_old:
+        return None
+
+    desired = literal_new.strip()
+    if not desired.startswith(base_old):
+        return None
+    suffix = desired[len(base_old) :]
+    candidate_new = f"{base_old}{suffix}".rstrip()
+    return candidate_old, candidate_new
+
+
 def create_stage5_batch(job: Stage6Job, args: argparse.Namespace) -> tuple[Path, dict[str, Any]]:
     literal_old = args.literal_old
     literal_new = args.literal_new
@@ -403,6 +446,15 @@ def create_stage5_batch(job: Stage6Job, args: argparse.Namespace) -> tuple[Path,
         literal_old=literal_old,
         literal_new=literal_new,
     )
+    if sync_reason is None and literal_old not in target_contents:
+        import_sync = _sync_import_literal_pair(
+            target_contents=target_contents,
+            literal_old=args.literal_old,
+            literal_new=args.literal_new,
+        )
+        if import_sync:
+            literal_old, literal_new = import_sync
+            sync_reason = "sync_import_line"
 
     payload = {
         "query": " ".join(args.query),
