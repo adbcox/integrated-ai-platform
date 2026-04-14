@@ -234,6 +234,7 @@ def main() -> int:
     env = os.environ.copy()
     env["AIDER_MICRO_STAGE"] = "stage4"
     env["AIDER_MICRO_PLAN_ID"] = plan_id
+    env["AIDER_AUTO_COMMITS"] = "0"
     if args.allow_literal_diff:
         env["AIDER_MICRO_ALLOW_LITERAL_DIFF"] = "1"
     else:
