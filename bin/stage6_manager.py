@@ -244,7 +244,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--manifest", default=str(MANIFEST_PATH), help="Promotion manifest path")
     parser.add_argument(
         "--message-template",
-        default="replace exact text '{old}' with '{new}' for {path} (source={source})",
+        default="{path}:: replace exact text '{old}' with '{new}' (source={source})",
         help="Worker instruction message template",
     )
     parser.add_argument("--dry-run", action="store_true", help="Print plan without invoking Stage-5 manager")
