@@ -37,7 +37,7 @@ Options (Stage-3 safe default subset):
   --constraints <text>             Constraint summary
   --plan-summary <text>            Codex plan outline summary
   --fix-pattern <text>             Fix pattern/root-cause classification
-  --heuristic <text>               Reusable local-first heuristics
+  --heuristic <text>               Reusable local-first heuristic note
   --completion-summary <text>      Brief completion status summary
   --force-escalation-capture       Write escalation artifacts even while in tactical mode
 
