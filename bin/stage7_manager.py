@@ -24,6 +24,7 @@ STAGE6_MANAGER = REPO_ROOT / "bin" / "stage6_manager.py"
 STAGE_RAG6_PLAN = REPO_ROOT / "bin" / "stage_rag6_plan_probe.py"
 TRACE_DIR = REPO_ROOT / "artifacts" / "manager6"
 IMPORT_BASE_RE = re.compile(r"^(import|from)\s+")
+SHELL_STRICT_RE = re.compile(r"^\s*set -euo pipefail\s*$")
 
 
 def plan_history_path(plan_id: str) -> Path:
@@ -106,8 +107,8 @@ def run_stage_rag6(args: argparse.Namespace) -> dict[str, Any]:
     return json.loads(proc.stdout)
 
 
-def _write_stage6_jobs_file(targets: list[str]) -> Path:
-    payload = [{"path": path, "source": "stage7-subplan"} for path in targets]
+def _write_stage6_jobs_file(jobs: list[dict[str, Any]]) -> Path:
+    payload = list(jobs)
     file_path = Path(tempfile.mkstemp(prefix="stage7-subplan-", suffix=".json")[1])
     file_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
     return file_path
@@ -146,6 +147,66 @@ def _target_supports_literal_contract(path: str, literal_old: str, literal_new: 
     return False, "literal_mismatch_preflight"
 
 
+def _derive_target_contract(path: str, literal_old: str, literal_new: str) -> dict[str, Any]:
+    target_path = (REPO_ROOT / path).resolve()
+    try:
+        contents = target_path.read_text(encoding="utf-8")
+    except OSError:
+        return {
+            "supported": False,
+            "reason": "unreadable_target",
+            "path": path,
+        }
+
+    supported, reason = _target_supports_literal_contract(path, literal_old, literal_new)
+    if supported:
+        return {
+            "supported": True,
+            "reason": reason,
+            "path": path,
+            "contract_strategy": "global_literal_contract",
+            "literal_old": literal_old,
+            "literal_new": literal_new,
+        }
+
+    is_shell_like = path.endswith(".sh")
+    if not is_shell_like:
+        first_line = contents.splitlines()[0].strip() if contents.splitlines() else ""
+        if first_line.startswith("#!") and ("sh" in first_line or "bash" in first_line):
+            is_shell_like = True
+    if is_shell_like:
+        for line in contents.splitlines():
+            if SHELL_STRICT_RE.match(line):
+                base_old = line.rstrip()
+                return {
+                    "supported": True,
+                    "reason": "derived_shell_strict_mode_line",
+                    "path": path,
+                    "contract_strategy": "shell_strict_mode_literal",
+                    "literal_old": base_old,
+                    "literal_new": f"{base_old}  # stage7-op",
+                }
+
+    if path.endswith(".py"):
+        for line in contents.splitlines():
+            text = line.rstrip()
+            if IMPORT_BASE_RE.match(text.strip()):
+                return {
+                    "supported": True,
+                    "reason": "derived_python_import_line",
+                    "path": path,
+                    "contract_strategy": "python_import_literal",
+                    "literal_old": text,
+                    "literal_new": f"{text}  # stage7-op",
+                }
+
+    return {
+        "supported": False,
+        "reason": "literal_mismatch_preflight",
+        "path": path,
+    }
+
+
 def run_stage6_subplan(
     *,
     subplan: dict[str, Any],
@@ -155,19 +216,38 @@ def run_stage6_subplan(
 ) -> dict[str, Any]:
     subplan_id = str(subplan.get("subplan_id") or f"subplan-{op_index + 1}")
     requested_targets = [str(t) for t in subplan.get("targets", []) if t]
+    accepted_jobs: list[dict[str, Any]] = []
     accepted_targets: list[str] = []
+    accepted_contracts: list[dict[str, Any]] = []
     dropped_targets: list[dict[str, str]] = []
     for target in requested_targets:
-        supported, reason = _target_supports_literal_contract(target, args.literal_old, args.literal_new)
-        if supported:
+        contract = _derive_target_contract(target, args.literal_old, args.literal_new)
+        if contract.get("supported"):
             accepted_targets.append(target)
+            accepted_contracts.append(
+                {
+                    "path": target,
+                    "contract_strategy": contract.get("contract_strategy", "global_literal_contract"),
+                    "reason": contract.get("reason"),
+                }
+            )
+            accepted_jobs.append(
+                {
+                    "path": target,
+                    "source": "stage7-subplan",
+                    "literal_old": contract.get("literal_old", args.literal_old),
+                    "literal_new": contract.get("literal_new", args.literal_new),
+                    "sync_reason": contract.get("reason"),
+                }
+            )
         else:
-            dropped_targets.append({"path": target, "reason": reason})
+            dropped_targets.append({"path": target, "reason": str(contract.get("reason") or "literal_mismatch_preflight")})
 
     if not accepted_targets:
         status = {
             "subplan_id": subplan_id,
             "targets": [],
+            "target_contracts": [],
             "dropped_targets": dropped_targets,
             "status": "dropped_preflight",
             "return_code": 0,
@@ -178,7 +258,7 @@ def run_stage6_subplan(
         return status
 
     targets = accepted_targets
-    jobs_file = _write_stage6_jobs_file(targets)
+    jobs_file = _write_stage6_jobs_file(accepted_jobs)
     started = datetime.now(timezone.utc).isoformat()
 
     cmd = [
@@ -221,6 +301,7 @@ def run_stage6_subplan(
     status = {
         "subplan_id": subplan_id,
         "targets": targets,
+        "target_contracts": accepted_contracts,
         "dropped_targets": dropped_targets,
         "status": "success" if proc.returncode == 0 else "failure",
         "return_code": proc.returncode,

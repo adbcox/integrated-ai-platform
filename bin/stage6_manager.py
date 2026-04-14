@@ -181,6 +181,11 @@ def load_jobs_from_file(path: Path) -> list[Stage6Job]:
                 notes=entry.get("notes"),
                 lines=entry.get("lines"),
                 source=entry.get("source"),
+                refinement_of=entry.get("refinement_of"),
+                literal_old=entry.get("literal_old"),
+                literal_new=entry.get("literal_new"),
+                sync_reason=entry.get("sync_reason"),
+                message=entry.get("message"),
             )
         )
     return jobs
