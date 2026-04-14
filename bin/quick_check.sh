@@ -54,7 +54,7 @@ python_checked=0
 
 echo "[quick] Reviewing files selected for the default Stage-3 quick checks..."
 if [ -z "$changed_files" ]; then
-  echo "[quick] No changed files detected for default Stage-3 quick checks."
+  echo "[quick] No changed files detected for Stage-3 quick checks (default run)."
   exit 0
 fi
 
