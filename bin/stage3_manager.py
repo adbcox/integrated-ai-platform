@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Manager-2.1 orchestrator for Stage-3 literal/comment worker jobs."""
+"""Manager-2.2 orchestrator for Stage-3 literal/comment worker jobs."""
 
 from __future__ import annotations
 
@@ -211,6 +211,10 @@ def _extract_old_literal(message: str) -> str | None:
     return None
 
 
+def _has_new_literal(message: str) -> bool:
+    return bool(re.search(r"replace exact text '(.+?)' with '(.+?)'", message, re.DOTALL))
+
+
 def _preflight_literal_check(target_path: Path, message: str) -> bool:
     old_literal = _extract_old_literal(message)
     if not old_literal:
@@ -248,6 +252,20 @@ def _record_skip(job_id: str, plan_id: str, args, *, classification: str, note: 
     return 0
 
 
+def _validate_prompt(target: str, message: str) -> tuple[bool, str | None]:
+    if f"{target}::" not in message:
+        return False, "target anchor missing"
+    literal_match = re.search(r"replace exact text '(.+?)' with '(.+?)'", message, re.DOTALL)
+    if not literal_match:
+        return False, "literal replace pattern missing"
+    old_literal, new_literal = literal_match.group(1), literal_match.group(2)
+    if not old_literal.strip() or not new_literal.strip():
+        return False, "old/new literal empty"
+    if re.search(r"<[A-Za-z0-9_./-]+>", message):
+        return False, "placeholder token detected"
+    return True, None
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Stage-3 manager orchestrator")
     parser.add_argument("--query", required=True, help="Stage RAG planning query")
@@ -274,6 +292,17 @@ def main() -> int:
     stage_rag(args.query, plan_id, args.target, args.lines, args.notes, args.top)
     message_file = write_message_file(job_id, args.message)
     print(f"[manager] message file -> {message_file}")
+
+    valid_prompt, prompt_note = _validate_prompt(args.target, args.message)
+    if not valid_prompt:
+        return _record_skip(
+            job_id,
+            plan_id,
+            args,
+            classification="prompt_shape_invalid",
+            note=f"prompt validation failed: {prompt_note}",
+            message_file=message_file,
+        )
 
     if args.target in HARNESS_TARGETS:
         return _record_skip(
