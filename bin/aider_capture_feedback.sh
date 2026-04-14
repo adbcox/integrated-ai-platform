@@ -38,7 +38,7 @@ Options (Stage-3 safe default subset):
   --plan-summary <text>            Codex plan summary
   --fix-pattern <text>             Fix pattern/root-cause classification
   --heuristic <text>               Reusable local-first heuristics
-  --completion-summary <text>      Brief completion summary
+  --completion-summary <text>      Brief completion status summary
   --force-escalation-capture       Write escalation artifacts even while in tactical mode
 
 Creates the following artifacts:
