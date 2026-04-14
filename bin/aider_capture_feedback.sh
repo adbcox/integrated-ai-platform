@@ -155,7 +155,7 @@ done
 case "$WORKFLOW_MODE" in
   tactical|codex-assist|codex-investigate|codex-failure) ;;
   *)
-    echo "ERROR: invalid --workflow-mode: $WORKFLOW_MODE" >&2
+    echo "ERROR: invalid --workflow-mode (expected tactical|codex-assist|codex-investigate|codex-failure): $WORKFLOW_MODE" >&2
     exit 1
     ;;
 esac
