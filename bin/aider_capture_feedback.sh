@@ -35,7 +35,7 @@ Options (Stage-3 safe default subset):
   --escalation-trigger <text>      Why Codex escalation was used
   --problem <text>                 Concise problem statement
   --constraints <text>             Constraint summary
-  --plan-summary <text>            Codex plan summary
+  --plan-summary <text>            Codex plan outline summary
   --fix-pattern <text>             Fix pattern/root-cause classification
   --heuristic <text>               Reusable local-first heuristics
   --completion-summary <text>      Brief completion status summary
