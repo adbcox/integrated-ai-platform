@@ -54,7 +54,7 @@ python_checked=0
 
 echo "[quick] Reviewing files selected for Stage-3 quick checks..."
 if [ -z "$changed_files" ]; then
-  echo "[quick] Stage-3 clean tree snapshot (no changed files)."
+  echo "[quick] No changed files detected for Stage-3 quick checks."
   exit 0
 fi
 
