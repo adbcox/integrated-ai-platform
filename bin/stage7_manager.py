@@ -18,7 +18,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT))
 
 from promotion import MANIFEST_PATH, load_manifest, resolve_versions_for_lane
-from promotion.worker_budget import WorkerBudgetDecision, apply_worker_budget
+from promotion.worker_budget import WorkerBudgetDecision, apply_worker_budget, record_worker_outcome
 from promotion.tracing import PromotionTraceEntry, append_trace, current_commit_hash
 
 STAGE6_MANAGER = REPO_ROOT / "bin" / "stage6_manager.py"
@@ -676,6 +676,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--family-rescue-budget", type=int, default=1)
     parser.add_argument("--worker-budget-grouped", type=int, default=4)
     parser.add_argument("--worker-budget-single", type=int, default=8)
+    parser.add_argument("--worker-budget-adaptive-window-days", type=int, default=14)
     parser.add_argument(
         "--resume",
         action="store_true",
@@ -830,6 +831,8 @@ def main() -> int:
             worker_class=budget_class,
             grouped_limit=args.worker_budget_grouped,
             single_limit=args.worker_budget_single,
+            family=family,
+            adaptive_window_days=args.worker_budget_adaptive_window_days,
         )
         worker_budget_decisions.append(budget_decision.to_dict())
         if not budget_decision.allowed:
@@ -866,6 +869,13 @@ def main() -> int:
                 split_status["strategy"] = "split_subplan"
                 split_status["strategy_decision"] = strategy_decision
                 split_status["worker_budget_decision"] = budget_decision.to_dict()
+                record_worker_outcome(
+                    lane=lane_name,
+                    worker_class=budget_class,
+                    family=family,
+                    status=str(split_status.get("status") or "unknown"),
+                    escalation_hint=str(split_status.get("escalation_hint") or ""),
+                )
             statuses.extend(split_statuses)
             for split_idx, split_status in enumerate(split_statuses, start=1):
                 save_checkpoint(args.plan_id, split_status, attempt_index=(idx + 1) * 100 + split_idx)
@@ -918,6 +928,13 @@ def main() -> int:
             )
             status["worker_budget_decision"] = budget_decision.to_dict()
         statuses.append(status)
+        record_worker_outcome(
+            lane=lane_name,
+            worker_class=budget_class,
+            family=family,
+            status=str(status.get("status") or "unknown"),
+            escalation_hint=str(status.get("escalation_hint") or ""),
+        )
         save_checkpoint(args.plan_id, status, attempt_index=idx + 1)
 
         if args.stop_after_subplans > 0 and (idx + 1) >= args.stop_after_subplans:

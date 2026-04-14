@@ -216,6 +216,9 @@ def summarize_stage8(manager6_rows: list[dict[str, Any]]) -> dict[str, Any]:
     rollback_contracts = 0
     executed = 0
     worker_budget_decisions = 0
+    worker_budget_adaptive_decisions = 0
+    worker_budget_deferred = 0
+    worker_budget_manual_hints = 0
     manager_strategy_decisions = 0
     for row in manager6_rows:
         stage_version = str(row.get("stage_version") or "")
@@ -233,8 +236,17 @@ def summarize_stage8(manager6_rows: list[dict[str, Any]]) -> dict[str, Any]:
         for sub in extra.get("subplans", []) or []:
             if not isinstance(sub, dict):
                 continue
-            if sub.get("worker_budget_decision"):
+            budget_decision = sub.get("worker_budget_decision")
+            if budget_decision:
                 worker_budget_decisions += 1
+                if isinstance(budget_decision, dict):
+                    if int(budget_decision.get("adaptive_adjustment") or 0) != 0:
+                        worker_budget_adaptive_decisions += 1
+            status = str(sub.get("status") or "")
+            if status == "deferred_worker_budget":
+                worker_budget_deferred += 1
+            if str(sub.get("escalation_hint") or "").startswith("manual_"):
+                worker_budget_manual_hints += 1
             if sub.get("status") in {"success", "failure", "partial_success", "dropped_preflight"}:
                 executed += 1
                 if isinstance(sub.get("rollback_contract"), dict) and sub["rollback_contract"].get("contract_version"):
@@ -247,6 +259,9 @@ def summarize_stage8(manager6_rows: list[dict[str, Any]]) -> dict[str, Any]:
         "executed_subplans": executed,
         "rollback_contract_coverage": round(rollback_coverage, 3),
         "worker_budget_decisions": worker_budget_decisions,
+        "worker_budget_adaptive_decisions": worker_budget_adaptive_decisions,
+        "worker_budget_deferred_subplans": worker_budget_deferred,
+        "worker_budget_manual_hints": worker_budget_manual_hints,
         "manager_strategy_decision_rows": manager_strategy_decisions,
     }
 
