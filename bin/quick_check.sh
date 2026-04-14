@@ -96,7 +96,7 @@ if [ "$check_shell" -eq 1 ] && grep -Fx "shell/common.sh" "$changed_file_list" >
   sh -c '. "$1"; extract_session_id "{\"session_id\":\"abc-123\"}"' sh "$BASE_DIR/shell/common.sh" >/dev/null
   sh -c '. "$1"; extract_session_id "Using session: abc-123"' sh "$BASE_DIR/shell/common.sh" >/dev/null
   sh -c '. "$1"; require_exec sh' sh "$BASE_DIR/shell/common.sh" >/dev/null
-  echo "OK: helper smoke tests"
+  echo "OK: helper smoke tests complete"
 fi
 
 if [ "$shell_checked" -eq 0 ] && [ "$python_checked" -eq 0 ]; then
