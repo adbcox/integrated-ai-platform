@@ -4,7 +4,7 @@ set -eu
 # Priority ordering for detection (Stage-3/Stage-4 literal lanes + Stage-5 batches):
 # 1) CLI args remain the operator-provided authority
 # 2) CHANGED_FILES env (space/newline separated) remains the literal default override
-# 3) git diff/ls-files fallback limits Stage-4/Stage-5 scan budgets' only. Use apply_patch and do not touch any other text.
+# 3) git diff/ls-files fallback limits Stage-4/Stage-5 scan budgets
 
 if [ "$#" -gt 0 ]; then
   for item in "$@"; do
