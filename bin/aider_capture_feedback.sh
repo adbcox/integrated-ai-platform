@@ -150,7 +150,7 @@ while [ "$#" -gt 0 ]; do
 done
 
 [ -x "$DETECT" ] || { echo "ERROR: missing helper: $DETECT" >&2; exit 1; }
-[ -n "$TASK_NAME" ] || { echo "ERROR: --name is required" >&2; exit 1; }
+[ -n "$TASK_NAME" ] || { echo "ERROR: --name flag is required" >&2; exit 1; }
 
 case "$WORKFLOW_MODE" in
   tactical|codex-assist|codex-investigate|codex-failure) ;;
