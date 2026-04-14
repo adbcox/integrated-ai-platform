@@ -185,7 +185,7 @@ def apply_decisions(manifest_data: dict[str, Any], decisions: list[LaneDecision]
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Apply Level-10 promotion/demotion control loop")
-    parser.add_argument("--manifest", default=str(MANIFEST_PATH), help="Promotion manifest path")
+    parser.add_argument("--manifest", default=str(MANIFEST_PATH) , help="Promotion manifest path")
     parser.add_argument("--dry-run", action="store_true", help="Compute and log decisions without mutating manifest")
     return parser.parse_args()
 
