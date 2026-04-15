@@ -38,7 +38,7 @@ extract_session_id() {
     return 0
   fi
 
-  exit 1
+  return 1
 }
 
 # run_cmd is a wrapper around command that enforces strict shell flags and keeps behavior unchanged.

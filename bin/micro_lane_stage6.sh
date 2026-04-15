@@ -97,7 +97,7 @@ run_probe "confidence-empty" "success" --dry-run --max-entries 2 --min-confidenc
 latest_empty_plan="$(ls -1t "$PLAN_DIR"/stage6-reg-*.json | head -n 1)"
 assert_plan_state "$latest_empty_plan" "no_eligible_targets"
 
-run_probe "fallback-allowed" "success" --dry-run --max-entries 2 --min-confidence 99 --fallback-target "bin/stage6_manager.py"
+run_probe "fallback-allowed" "success" --dry-run --max-entries 2 --min-confidence 99 --retry-class fallback_on_empty --fallback-target "bin/stage6_manager.py"
 latest_fallback_plan="$(ls -1t "$PLAN_DIR"/stage6-reg-*.json | head -n 1)"
 assert_plan_state "$latest_fallback_plan" "succeeded"
 
