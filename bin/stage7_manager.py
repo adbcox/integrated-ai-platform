@@ -1198,7 +1198,7 @@ def _build_hierarchical_decomposition(
             subplan_id = str(item.get("subplan_id") or "")
             role = "parent_head" if member_idx == 1 else "child_member"
             item["hierarchy_context"] = {
-                "manager_version": "manager12-v1",
+                "manager_version": "manager13-v1",
                 "cohort_id": cohort_id,
                 "cohort_role": role,
                 "cohort_size": len(ordered_members),
@@ -1261,6 +1261,8 @@ def _load_cross_run_recurrence_memory(
     bad_runs = 0
     strategy_totals: dict[str, int] = {}
     strategy_bad: dict[str, int] = {}
+    family_totals: dict[str, int] = {}
+    family_bad: dict[str, int] = {}
     now_ts = datetime.now(timezone.utc).timestamp()
     cutoff_ts = now_ts - (max(1, history_window_days) * 86400)
     plans_dir = TRACE_DIR / "plans"
@@ -1296,7 +1298,10 @@ def _load_cross_run_recurrence_memory(
                     continue
                 status = str(row.get("status") or "")
                 strategy = str(row.get("strategy") or "unknown")
+                strategy_decision = row.get("strategy_decision") if isinstance(row.get("strategy_decision"), dict) else {}
+                family = str(strategy_decision.get("family") or "unknown")
                 strategy_totals[strategy] = strategy_totals.get(strategy, 0) + 1
+                family_totals[family] = family_totals.get(family, 0) + 1
                 is_bad = status in {
                     "failure",
                     "deferred_worker_budget",
@@ -1307,6 +1312,7 @@ def _load_cross_run_recurrence_memory(
                 if is_bad:
                     run_bad = True
                     strategy_bad[strategy] = strategy_bad.get(strategy, 0) + 1
+                    family_bad[family] = family_bad.get(family, 0) + 1
             if run_bad:
                 bad_runs += 1
 
@@ -1314,6 +1320,10 @@ def _load_cross_run_recurrence_memory(
     strategy_bad_rates = {
         key: round((strategy_bad.get(key, 0) / total), 3) if total > 0 else 0.0
         for key, total in strategy_totals.items()
+    }
+    family_bad_rates = {
+        key: round((family_bad.get(key, 0) / total), 3) if total > 0 else 0.0
+        for key, total in family_totals.items()
     }
     conservative_split = bool(replay_pressure or bad_rate >= 0.35)
     return {
@@ -1325,8 +1335,116 @@ def _load_cross_run_recurrence_memory(
         "recent_bad_runs": bad_runs,
         "recent_bad_rate": bad_rate,
         "strategy_bad_rates": strategy_bad_rates,
+        "family_bad_rates": family_bad_rates,
         "conservative_split": conservative_split,
         "decomposition_mode": "recurrence_aware_conservative_split" if conservative_split else "balanced_hierarchical",
+    }
+
+
+def _apply_manager13_predispatch_shaping(
+    *,
+    subplans: list[dict[str, Any]],
+    strategy_decisions: dict[str, dict[str, Any]],
+    recurrence_memory: dict[str, Any],
+) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    """Manager-13 pre-dispatch shaping using cross-run recurrence trends."""
+
+    family_bad_rates = recurrence_memory.get("family_bad_rates")
+    if not isinstance(family_bad_rates, dict):
+        family_bad_rates = {}
+    strategy_bad_rates = recurrence_memory.get("strategy_bad_rates")
+    if not isinstance(strategy_bad_rates, dict):
+        strategy_bad_rates = {}
+    replay_pressure = bool(recurrence_memory.get("replay_pressure"))
+    recent_bad_rate = float(recurrence_memory.get("recent_bad_rate") or 0.0)
+    grouped_bad_rate = float(strategy_bad_rates.get("grouped_subplan") or 0.0)
+
+    shaped_subplans: list[dict[str, Any]] = []
+    split_first_count = 0
+    proactive_defer_count = 0
+    predispatch_drop_count = 0
+
+    for original in subplans:
+        subplan = dict(original)
+        subplan_id = str(subplan.get("subplan_id") or "")
+        decision = strategy_decisions.setdefault(
+            subplan_id,
+            {"strategy": "run_grouped", "reason": "manager13_default_grouped"},
+        )
+        family = str(decision.get("family") or _subplan_family_key(subplan) or "unknown")
+        family_bad_rate = float(family_bad_rates.get(family) or 0.0)
+        targets = [str(t) for t in (subplan.get("targets") or []) if t]
+        target_meta = subplan.get("target_meta") if isinstance(subplan.get("target_meta"), list) else []
+        risk_rank = max((_risk_rank(str(m.get("risk_bucket") or "high")) for m in target_meta), default=2)
+        shape_tags = list(decision.get("decision_tags") or [])
+
+        if replay_pressure and len(targets) > 1 and (family_bad_rate >= 0.35 or grouped_bad_rate >= 0.45):
+            if decision.get("strategy") not in {"defer_manual"}:
+                decision["strategy"] = "split_first"
+                decision["reason"] = "manager13_proactive_split_from_recurrence"
+                split_first_count += 1
+                shape_tags.append("manager13_proactive_split")
+
+        if replay_pressure and len(targets) > 1 and family_bad_rate >= 0.65 and risk_rank >= 1:
+            drop_count = len(targets) - 1
+            if drop_count > 0:
+                dropped = [{"path": path, "reason": "manager13_predispatch_drop_high_recurrence"} for path in targets[1:]]
+                subplan["targets"] = targets[:1]
+                existing = subplan.get("predispatch_dropped_targets")
+                if isinstance(existing, list):
+                    subplan["predispatch_dropped_targets"] = existing + dropped
+                else:
+                    subplan["predispatch_dropped_targets"] = dropped
+                predispatch_drop_count += drop_count
+                shape_tags.append("manager13_predispatch_drop")
+
+        if (
+            replay_pressure
+            and recent_bad_rate >= 0.5
+            and len(targets) == 1
+            and family_bad_rate >= 0.8
+            and risk_rank >= 2
+            and decision.get("strategy") not in {"defer_manual"}
+        ):
+            decision["strategy"] = "defer_manual"
+            decision["reason"] = "manager13_proactive_defer_high_recurrence"
+            proactive_defer_count += 1
+            shape_tags.append("manager13_proactive_defer")
+
+        decision["predispatch_shape"] = {
+            "family_bad_rate": round(family_bad_rate, 3),
+            "grouped_bad_rate": round(grouped_bad_rate, 3),
+            "risk_rank": int(risk_rank),
+            "replay_pressure": replay_pressure,
+        }
+        decision["decision_tags"] = sorted(set(shape_tags))
+        strategy_decisions[subplan_id] = decision
+        shaped_subplans.append(subplan)
+
+    def _order_key(item: dict[str, Any]) -> tuple[float, int, float]:
+        subplan_id = str(item.get("subplan_id") or "")
+        decision = strategy_decisions.get(subplan_id, {})
+        family = str(decision.get("family") or _subplan_family_key(item) or "unknown")
+        family_bad_rate = float(family_bad_rates.get(family) or 0.0)
+        target_meta = item.get("target_meta") if isinstance(item.get("target_meta"), list) else []
+        risk_rank = max((_risk_rank(str(m.get("risk_bucket") or "high")) for m in target_meta), default=2)
+        yield_score = float(item.get("yield_score") or 0.0)
+        return (family_bad_rate, risk_rank, -yield_score)
+
+    ordered = sorted(shaped_subplans, key=_order_key)
+    for idx, item in enumerate(ordered, start=1):
+        subplan_id = str(item.get("subplan_id") or "")
+        strategy_decisions.setdefault(subplan_id, {})["predispatch_priority"] = idx
+
+    return ordered, {
+        "enabled": bool(replay_pressure or recent_bad_rate >= 0.35),
+        "strategy": "manager13_proactive_predispatch_shaping",
+        "split_first_count": split_first_count,
+        "proactive_defer_count": proactive_defer_count,
+        "predispatch_drop_count": predispatch_drop_count,
+        "ordered_subplan_ids": [str(item.get("subplan_id") or "") for item in ordered],
+        "recent_bad_rate": round(recent_bad_rate, 3),
+        "grouped_bad_rate": round(grouped_bad_rate, 3),
     }
 
 
@@ -1612,6 +1730,11 @@ def main() -> int:
         recurrence_memory=recurrence_memory,
     )
     subplans_to_run = list(hierarchical_plan.get("ordered_subplans") or subplans_to_run)
+    subplans_to_run, predispatch_shaping = _apply_manager13_predispatch_shaping(
+        subplans=subplans_to_run,
+        strategy_decisions=strategy_decisions,
+        recurrence_memory=recurrence_memory,
+    )
     hierarchy_contexts = {
         str(k): dict(v)
         for k, v in (hierarchical_plan.get("contexts") or {}).items()
@@ -1634,13 +1757,18 @@ def main() -> int:
                 "cohorts": list(hierarchical_plan.get("cohorts") or []),
                 "summary": dict(hierarchical_plan.get("summary") or {}),
                 "strategy": (
-                    "manager12_recurrence_aware_hierarchical_repackaging"
-                    if bool(recurrence_memory.get("replay_pressure"))
-                    or bool(recurrence_memory.get("conservative_split"))
-                    else "manager11_hierarchical_two_level"
+                    "manager13_proactive_predispatch_recurrence_shaping"
+                    if bool(predispatch_shaping.get("enabled"))
+                    else (
+                        "manager12_recurrence_aware_hierarchical_repackaging"
+                        if bool(recurrence_memory.get("replay_pressure"))
+                        or bool(recurrence_memory.get("conservative_split"))
+                        else "manager11_hierarchical_two_level"
+                    )
                 ),
             },
-            "manager_version": "manager12-v1",
+            "predispatch_shaping": predispatch_shaping,
+            "manager_version": "manager13-v1",
             "history_window_days": args.manager_history_window_days,
             "memory_window_days": args.manager_memory_window_days,
             "family_rescue_budget": args.family_rescue_budget,

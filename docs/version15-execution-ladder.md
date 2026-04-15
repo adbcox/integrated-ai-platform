@@ -12,7 +12,7 @@ This document is the coordinated implementation ladder from current subsystem ve
 | Subsystem | Current Version | Next Version | After Next | Version 15 Target | Current Status |
 | --- | --- | --- | --- | --- | --- |
 | Stage system | `stage9-v1` | `stage10-v1` | `stage11-v1` | `stage15-v1` | building |
-| Manager/orchestration | `manager12-v1` | `manager13-v1` | `manager14-v1` | `manager15-v1` | building |
+| Manager/orchestration | `manager13-v1` | `manager14-v1` | `manager15-v1` | `manager15-v1` | building |
 | Retrieval / RAG | `rag10-v1` | `rag11-v1` | `rag12-v1` | `rag15-v1` | building |
 | Promotion engine / control loop | `level10-promote-v2` | `level10-promote-v3` | `level10-promote-v4` | `level10-promote-v15` | validated |
 | Worker utilization / local execution | `worker-routing-v2` | `worker-routing-v3` | `worker-routing-v4` | `worker-routing-v15` | building |
@@ -28,10 +28,9 @@ This document is the coordinated implementation ladder from current subsystem ve
 - `stage15-v1`: high-confidence autonomous stage planner with verified replay/rollback correctness.
 
 ### Manager/orchestration
-- `manager12-v1`: recurrence-aware hierarchical repackaging from replay queue and recent bad-run cohorts.
-- `manager13-v1`: proactive pre-dispatch split/drop/rescue shaping from cross-run strategy recurrence trends.
+- `manager13-v1`: proactive pre-dispatch split/drop/defer/order shaping from cross-run strategy/family recurrence trends.
 - `manager14-v1`: autonomous multi-run adaptation with replay-priority selection across bounded complex classes.
-- `manager15-v1`: robust autonomous orchestration with explainable policy trace lineage.
+- `manager15-v1`: robust autonomous orchestration with explainable policy trace lineage and bounded high-complexity recovery.
 
 ### Retrieval / RAG
 - `rag10-v1`: deeper conflict/yield priors from broader execution cohorts.
@@ -83,7 +82,7 @@ Rationale:
 ## Codex 5.1 Replacement Prerequisite Versions (Minimum Gate)
 
 - Stage: `stage9-v1` validated with deterministic reconciliation evidence
-- Manager: `manager12-v1` validated with recurrence-memory-driven hierarchical repackaging and cross-run strategy evidence
+- Manager: `manager13-v1` validated with proactive pre-dispatch recurrence shaping and cross-run strategy evidence
 - RAG: `rag10-v1` validated with execution-cohort clustered planning and mixed-family feedback priors
 - Worker: `worker-routing-v3` validated (adaptive budgets operational)
 - Regression: `qualify-v3` validated (deterministic stage assertions operational)
