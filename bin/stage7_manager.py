@@ -1963,10 +1963,11 @@ def main() -> int:
                 else {}
             )
             replay_pressure = bool(recurrence_adaptation.get("replay_pressure"))
+            recent_bad_rate = float(recurrence_adaptation.get("recent_bad_rate") or 0.0)
             singleton_quota_cap = (
                 1
                 if manager14_enabled
-                and replay_pressure
+                and (replay_pressure or recent_bad_rate >= 0.35)
                 and task_class in {"multi_file_orchestration", "retrieval_orchestration", "resumable_checkpointed"}
                 else 0
             )
