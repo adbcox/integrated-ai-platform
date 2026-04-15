@@ -13,6 +13,12 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from codex51_attribution import (
+    aggregate_attribution,
+    enrich_run_row,
+    load_jsonl,
+    write_attribution_report,
+)
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_CONFIG = REPO_ROOT / "config" / "local_first_campaign.json"
@@ -20,6 +26,7 @@ STAGE7_MANAGER = REPO_ROOT / "bin" / "stage7_manager.py"
 PLAN_DIR = REPO_ROOT / "artifacts" / "manager6" / "plans"
 RUN_ROOT = REPO_ROOT / "artifacts" / "codex51" / "campaign"
 RUNS_JSONL = RUN_ROOT / "runs.jsonl"
+ATTRIBUTION_REPORT_PATH = REPO_ROOT / "artifacts" / "codex51" / "attribution" / "latest.json"
 
 
 @dataclass
@@ -139,6 +146,8 @@ def _load_plan_result(plan_id: str) -> dict[str, Any]:
         "guard_count": guard_count,
         "status_count": len(statuses),
         "stage_reconciliation": plan_payload.get("stage_reconciliation"),
+        "plan_payload": plan_payload,
+        "statuses": statuses,
     }
 
 
@@ -146,6 +155,21 @@ def _append_run(row: dict[str, Any]) -> None:
     RUN_ROOT.mkdir(parents=True, exist_ok=True)
     with RUNS_JSONL.open("a", encoding="utf-8") as fh:
         fh.write(json.dumps(row, ensure_ascii=False) + "\n")
+
+
+def _refresh_attribution_report() -> dict[str, Any]:
+    rows = load_jsonl(RUNS_JSONL)
+    summary = aggregate_attribution(rows)
+    report = {
+        "generated_at_utc": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "source": {
+            "campaign_runs_path": str(RUNS_JSONL),
+            "row_count": len(rows),
+        },
+        "campaign_aggregate": summary,
+    }
+    write_attribution_report(ATTRIBUTION_REPORT_PATH, report)
+    return report
 
 
 def run_task(
@@ -219,6 +243,18 @@ def run_task(
         "attribution_primary": attribution_primary,
         "plan_result": result,
     }
+    row = enrich_run_row(
+        row=row,
+        repo_root=REPO_ROOT,
+        plan_payload=result.get("plan_payload") if isinstance(result.get("plan_payload"), dict) else {},
+        statuses=result.get("statuses") if isinstance(result.get("statuses"), list) else [],
+    )
+    if isinstance(row.get("plan_result"), dict):
+        row["plan_result"] = {
+            k: v
+            for k, v in row["plan_result"].items()
+            if k not in {"plan_payload", "statuses"}
+        }
     _append_run(row)
     (RUN_ROOT / f"{plan_id}.json").write_text(json.dumps(row, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     return row
@@ -281,6 +317,9 @@ def main() -> int:
             print(f"unknown task-id: {args.task_id}", file=sys.stderr)
             return 2
         row = run_task(task=target, lane=args.lane, profile=args.profile, dry_run=dry_run, extra_args=extra_args)
+        attribution_report = _refresh_attribution_report()
+        row["attribution_report_path"] = str(ATTRIBUTION_REPORT_PATH)
+        row["attribution_summary"] = attribution_report.get("campaign_aggregate", {})
         print(json.dumps(row, ensure_ascii=False, indent=2))
         return 0 if row["return_code"] == 0 else row["return_code"]
 
@@ -294,7 +333,18 @@ def main() -> int:
             rows.append(row)
             if int(row["return_code"]) != 0:
                 rc = int(row["return_code"])
-        print(json.dumps({"runs": rows}, ensure_ascii=False, indent=2))
+        attribution_report = _refresh_attribution_report()
+        print(
+            json.dumps(
+                {
+                    "runs": rows,
+                    "attribution_report_path": str(ATTRIBUTION_REPORT_PATH),
+                    "attribution_summary": attribution_report.get("campaign_aggregate", {}),
+                },
+                ensure_ascii=False,
+                indent=2,
+            )
+        )
         return rc
 
     return 0

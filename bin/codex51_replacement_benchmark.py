@@ -12,6 +12,12 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
+from codex51_attribution import (
+    aggregate_attribution,
+    classify_attribution_bucket,
+    write_attribution_report,
+    AttributionSignals,
+)
 from codex51_quality import score_first_attempt_quality
 
 
@@ -20,6 +26,7 @@ DEFAULT_CONFIG = REPO_ROOT / "config" / "codex51_replacement_benchmark.json"
 DEFAULT_PLAN_DIR = REPO_ROOT / "artifacts" / "manager6" / "plans"
 DEFAULT_CAMPAIGN_RUNS = REPO_ROOT / "artifacts" / "codex51" / "campaign" / "runs.jsonl"
 DEFAULT_OUT_DIR = REPO_ROOT / "artifacts" / "codex51" / "benchmark"
+DEFAULT_ATTRIBUTION_REPORT = REPO_ROOT / "artifacts" / "codex51" / "attribution" / "latest.json"
 
 SUCCESS_STATUSES = {"success", "resumed_skip_completed"}
 
@@ -123,6 +130,18 @@ def _primary_attribution_label(
     if guard_count > 0:
         return "guard_policy_gain"
     return "mixed_gain"
+
+
+def _attribution_bucket_for_run(run: PlanRun) -> str:
+    return classify_attribution_bucket(
+        AttributionSignals(
+            success=run.success,
+            rescue_count=run.rescue_count,
+            escalation_count=run.escalation_count,
+            guard_count=run.guard_count,
+            ranking_version=run.ranking_version,
+        )
+    )
 
 
 def _load_campaign_profiles(campaign_runs_path: Path) -> dict[str, str]:
@@ -466,6 +485,14 @@ def to_markdown(summary: dict[str, Any]) -> str:
     lines.append(f"- first_to_final_delta_signal: {gain['first_to_final_delta_signal']}")
     for key, value in summary["attribution"]["attribution_primary_counts"].items():
         lines.append(f"- attribution_primary::{key}: {value}")
+    exact = summary["attribution"].get("exact_counter", {})
+    if exact:
+        lines.append(f"- exact_local_share_rate: {exact.get('local_share_rate')}")
+        lines.append(f"- exact_codex_or_manual_share_rate: {exact.get('codex_or_manual_share_rate')}")
+        lines.append(f"- exact_mixed_or_shared_rate: {exact.get('mixed_or_shared_rate')}")
+        lines.append(f"- exact_accepted_commit_count: {exact.get('accepted_commit_count_exact')}")
+        for key, value in (exact.get("attribution_bucket_counts") or {}).items():
+            lines.append(f"- attribution_bucket::{key}: {value}")
     lines.append("")
     lines.append("## Recurrence Signatures")
     if not summary["metrics"]["recurrence_signatures"]:
@@ -495,6 +522,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--plan-dir", default=str(DEFAULT_PLAN_DIR))
     parser.add_argument("--campaign-runs", default=str(DEFAULT_CAMPAIGN_RUNS))
     parser.add_argument("--out-dir", default=str(DEFAULT_OUT_DIR))
+    parser.add_argument("--attribution-report", default=str(DEFAULT_ATTRIBUTION_REPORT))
     parser.add_argument("--write-report", action="store_true")
     parser.add_argument("--json-only", action="store_true")
     return parser.parse_args()
@@ -538,9 +566,16 @@ def main() -> int:
                     "plan_id": run.plan_id,
                     "timestamp": run.timestamp,
                     "class_id": run.class_id,
+                    "class_label": run.class_label,
                     "query": run.query,
+                    "success": run.success,
+                    "rescue_count": run.rescue_count,
+                    "escalation_count": run.escalation_count,
+                    "guard_count": run.guard_count,
+                    "ranking_version": run.ranking_version,
                     "attribution_profile": run.attribution_profile,
                     "attribution_primary": run.attribution_primary,
+                    "attribution_bucket": _attribution_bucket_for_run(run),
                     "first_attempt_quality_score": run.first_attempt_quality_score,
                     "first_attempt_success_rate": run.first_attempt_quality_rate,
                     "first_to_final_improvement": run.first_to_final_improvement,
@@ -558,6 +593,34 @@ def main() -> int:
         "attribution": attribution,
         "pass_fail": pass_fail,
     }
+
+    attribution_rows = [
+        {
+            "task_id": str(item.get("plan_id") or ""),
+            "success": bool(item.get("success")),
+            "rescue_count": int(item.get("rescue_count") or 0),
+            "escalation_count": int(item.get("escalation_count") or 0),
+            "guard_count": int(item.get("guard_count") or 0),
+            "ranking_version": str(item.get("ranking_version") or ""),
+            "attribution_bucket": str(item.get("attribution_bucket") or "mixed_or_shared"),
+            "families": [str(item.get("class_id") or "unclassified")],
+            "first_attempt_quality_rate": float(item.get("first_attempt_success_rate") or 0.0),
+            "accepted_commit_count_exact": 0,
+        }
+        for item in summary["task_set"]["items"]
+    ]
+    attribution_counter = aggregate_attribution(attribution_rows)
+    summary["attribution"]["exact_counter"] = attribution_counter
+    attribution_report = {
+        "generated_at_utc": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "source": {
+            "benchmark_config_path": str(Path(args.config).resolve()),
+            "task_count": len(summary["task_set"]["items"]),
+        },
+        "benchmark_aggregate": attribution_counter,
+    }
+    write_attribution_report(Path(args.attribution_report).resolve(), attribution_report)
+    summary["attribution"]["report_path"] = str(Path(args.attribution_report).resolve())
 
     markdown = to_markdown(summary)
     if args.write_report:
