@@ -407,6 +407,7 @@ def _choose_subplan_strategy(
     qualification_posture: dict[str, Any],
     budget_forecast: dict[str, Any],
     learning_priors: dict[str, Any],
+    trusted_guidance: dict[str, Any],
     success_memory: dict[str, Any],
     resume_source_status: str | None,
 ) -> dict[str, Any]:
@@ -430,15 +431,43 @@ def _choose_subplan_strategy(
     success_confidence = float(success_memory.get("confidence") or 0.0)
     success_samples = int(success_memory.get("total_samples") or 0)
     resume_status = str(resume_source_status or "")
+    trusted_active = bool(trusted_guidance.get("active"))
+    trusted_use_first = (
+        trusted_guidance.get("use_first_trusted_patterns")
+        if isinstance(trusted_guidance.get("use_first_trusted_patterns"), list)
+        else []
+    )
+    trusted_avoid = (
+        trusted_guidance.get("avoid_trusted_patterns")
+        if isinstance(trusted_guidance.get("avoid_trusted_patterns"), list)
+        else []
+    )
+    trusted_complexity = str(trusted_guidance.get("preferred_complexity_level") or "medium")
 
     strategy = "run_grouped"
     reason = "default_grouped"
     decision_tags: list[str] = []
+    trusted_applied = False
+    trusted_applied_rule = ""
+    trusted_applied_avoid = ""
 
     if resume_status in {"failure", "deferred_worker_budget", "dropped_family_budget"} and size > 1:
         strategy = "split_first"
         reason = "resume_failure_bias_split"
         decision_tags.append("resume_bias")
+    elif trusted_active and size > 1 and len(trusted_avoid) > 0 and risk_score >= 1.0:
+        strategy = "split_first"
+        reason = "trusted_guidance_avoidance_bias_split"
+        decision_tags.append("trusted_guidance")
+        trusted_applied = True
+        trusted_applied_rule = "avoidance_bias_split"
+        trusted_applied_avoid = str((trusted_avoid[0] or {}).get("reason") or "")
+    elif trusted_active and size > 1 and trusted_complexity == "low":
+        strategy = "split_first"
+        reason = "trusted_guidance_low_complexity_bias_split"
+        decision_tags.append("trusted_guidance")
+        trusted_applied = True
+        trusted_applied_rule = "low_complexity_bias_split"
     elif (
         learning_active
         and task_class in weak_classes
@@ -498,6 +527,25 @@ def _choose_subplan_strategy(
         "success_memory": success_memory,
         "resume_source_status": resume_status or "",
         "decision_tags": decision_tags,
+        "trusted_guidance": {
+            "active": trusted_active,
+            "task_class": str(trusted_guidance.get("task_class") or task_class),
+            "reason": str(trusted_guidance.get("reason") or ""),
+            "preferred_complexity_level": trusted_complexity,
+            "use_first_patterns": [
+                str(item.get("key") or "")
+                for item in trusted_use_first[:5]
+                if isinstance(item, dict)
+            ],
+            "avoid_reasons": [
+                str(item.get("reason") or "")
+                for item in trusted_avoid[:5]
+                if isinstance(item, dict)
+            ],
+            "applied": trusted_applied,
+            "applied_rule": trusted_applied_rule,
+            "applied_avoidance": trusted_applied_avoid,
+        },
         "risk_score": round(risk_score, 3),
         "yield_score": round(yield_score, 3),
     }
@@ -551,6 +599,20 @@ def _load_learning_priors(*, path: Path, max_age_hours: int = 72) -> dict[str, A
             weak_classes = []
 
     metrics = payload.get("benchmark_metrics") if isinstance(payload.get("benchmark_metrics"), dict) else {}
+    trusted_support = payload.get("trusted_decision_support")
+    trusted_rows = (
+        trusted_support.get("by_task_class")
+        if isinstance(trusted_support, dict) and isinstance(trusted_support.get("by_task_class"), list)
+        else []
+    )
+    trusted_by_class: dict[str, dict[str, Any]] = {}
+    for row in trusted_rows:
+        if not isinstance(row, dict):
+            continue
+        cls = str(row.get("task_class") or "")
+        if not cls:
+            continue
+        trusted_by_class[cls] = row
     replay_queue = payload.get("replay_queue") if isinstance(payload.get("replay_queue"), list) else []
     bounded_replay_queue = [
         {
@@ -580,6 +642,65 @@ def _load_learning_priors(*, path: Path, max_age_hours: int = 72) -> dict[str, A
         "benchmark_escalation_rate": escalation_rate,
         "benchmark_first_attempt_quality_rate": first_attempt_rate,
         "replay_queue": bounded_replay_queue,
+        "trusted_decision_support_by_task_class": trusted_by_class,
+        "trusted_decision_support_active": bool(fresh and trusted_by_class),
+    }
+
+
+def _resolve_trusted_guidance_for_task_class(
+    *,
+    learning_priors: dict[str, Any],
+    task_class: str,
+    disabled: bool,
+) -> dict[str, Any]:
+    if disabled:
+        return {
+            "active": False,
+            "disabled": True,
+            "task_class": task_class,
+            "reason": "trusted_guidance_disabled",
+            "use_first_trusted_patterns": [],
+            "avoid_trusted_patterns": [],
+            "preferred_complexity_level": "medium",
+        }
+    if not bool(learning_priors.get("trusted_decision_support_active")):
+        return {
+            "active": False,
+            "disabled": False,
+            "task_class": task_class,
+            "reason": "trusted_guidance_unavailable_or_stale",
+            "use_first_trusted_patterns": [],
+            "avoid_trusted_patterns": [],
+            "preferred_complexity_level": "medium",
+        }
+    by_class = (
+        learning_priors.get("trusted_decision_support_by_task_class")
+        if isinstance(learning_priors.get("trusted_decision_support_by_task_class"), dict)
+        else {}
+    )
+    row = by_class.get(task_class) if isinstance(by_class.get(task_class), dict) else None
+    if not row:
+        return {
+            "active": False,
+            "disabled": False,
+            "task_class": task_class,
+            "reason": "trusted_guidance_missing_task_class",
+            "use_first_trusted_patterns": [],
+            "avoid_trusted_patterns": [],
+            "preferred_complexity_level": "medium",
+        }
+    return {
+        "active": True,
+        "disabled": False,
+        "task_class": task_class,
+        "reason": "trusted_guidance_loaded",
+        "prior_families": list(row.get("prior_families") or []),
+        "use_first_trusted_patterns": list(row.get("use_first_trusted_patterns") or []),
+        "avoid_trusted_patterns": list(row.get("avoid_trusted_patterns") or []),
+        "preferred_complexity_level": str(row.get("preferred_complexity_level") or "medium"),
+        "recommended_library_plus_trusted_combinations": list(
+            row.get("recommended_library_plus_trusted_combinations") or []
+        ),
     }
 
 
@@ -1706,6 +1827,11 @@ def parse_args() -> argparse.Namespace:
         help="Disable learning-prior strategy adaptation and use baseline manager policy.",
     )
     parser.add_argument(
+        "--disable-trusted-guidance",
+        action="store_true",
+        help="Disable trusted decision support consumption from learning outputs.",
+    )
+    parser.add_argument(
         "--worker-budget-profile",
         default="auto",
         help="Worker budget profile from manifest worker_budget_profiles (or auto).",
@@ -1829,6 +1955,11 @@ def main() -> int:
         history_window_days=args.manager_history_window_days,
         learning_priors=learning_priors,
     )
+    trusted_guidance = _resolve_trusted_guidance_for_task_class(
+        learning_priors=learning_priors,
+        task_class=task_class,
+        disabled=bool(args.disable_trusted_guidance),
+    )
     success_memory = _load_cross_run_success_memory(
         task_class=task_class,
         history_window_days=args.manager_history_window_days,
@@ -1901,6 +2032,7 @@ def main() -> int:
             qualification_posture=qualification_posture,
             budget_forecast=forecast,
             learning_priors=learning_priors,
+            trusted_guidance=trusted_guidance,
             success_memory=dict(success_memory.get("families", {}).get(family, {})),
             resume_source_status=str(prior.get("status") or "") if isinstance(prior, dict) else None,
         )
@@ -1995,6 +2127,18 @@ def main() -> int:
                 "benchmark_escalation_rate": float(learning_priors.get("benchmark_escalation_rate") or 0.0),
                 "benchmark_first_attempt_quality_rate": float(
                     learning_priors.get("benchmark_first_attempt_quality_rate") or 0.0
+                ),
+            },
+            "trusted_guidance": {
+                "active": bool(trusted_guidance.get("active")),
+                "disabled": bool(trusted_guidance.get("disabled")),
+                "task_class": str(trusted_guidance.get("task_class") or task_class),
+                "reason": str(trusted_guidance.get("reason") or ""),
+                "preferred_complexity_level": str(trusted_guidance.get("preferred_complexity_level") or "medium"),
+                "use_first_count": len(trusted_guidance.get("use_first_trusted_patterns") or []),
+                "avoid_count": len(trusted_guidance.get("avoid_trusted_patterns") or []),
+                "recommended_combination_count": len(
+                    trusted_guidance.get("recommended_library_plus_trusted_combinations") or []
                 ),
             },
         }
