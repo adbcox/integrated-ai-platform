@@ -443,6 +443,14 @@ def _choose_subplan_strategy(
         else []
     )
     trusted_complexity = str(trusted_guidance.get("preferred_complexity_level") or "medium")
+    trusted_avoid_present = len(trusted_avoid) > 0
+    trusted_class_bias_split = bool(
+        trusted_active
+        and size > 1
+        and trusted_avoid_present
+        and task_class in {"multi_file_orchestration", "retrieval_orchestration"}
+        and (split_rate >= grouped_rate - 0.03 or risk_score >= 0.7)
+    )
 
     strategy = "run_grouped"
     reason = "default_grouped"
@@ -455,6 +463,13 @@ def _choose_subplan_strategy(
         strategy = "split_first"
         reason = "resume_failure_bias_split"
         decision_tags.append("resume_bias")
+    elif trusted_class_bias_split:
+        strategy = "split_first"
+        reason = "trusted_guidance_class_bias_split"
+        decision_tags.extend(["trusted_guidance", "trusted_guidance_class_bias"])
+        trusted_applied = True
+        trusted_applied_rule = "class_bias_split"
+        trusted_applied_avoid = str((trusted_avoid[0] or {}).get("reason") or "")
     elif trusted_active and size > 1 and len(trusted_avoid) > 0 and risk_score >= 1.0:
         strategy = "split_first"
         reason = "trusted_guidance_avoidance_bias_split"
@@ -545,6 +560,14 @@ def _choose_subplan_strategy(
             "applied": trusted_applied,
             "applied_rule": trusted_applied_rule,
             "applied_avoidance": trusted_applied_avoid,
+            "evaluation": {
+                "trusted_avoid_present": trusted_avoid_present,
+                "trusted_class_bias_split": trusted_class_bias_split,
+                "grouped_rate": round(grouped_rate, 3),
+                "split_rate": round(split_rate, 3),
+                "risk_score": round(risk_score, 3),
+                "subplan_size": int(size),
+            },
         },
         "risk_score": round(risk_score, 3),
         "yield_score": round(yield_score, 3),
