@@ -611,6 +611,13 @@ def main() -> int:
     ]
     attribution_counter = aggregate_attribution(attribution_rows)
     summary["attribution"]["exact_counter"] = attribution_counter
+    existing_report: dict[str, Any] = {}
+    attribution_report_path = Path(args.attribution_report).resolve()
+    if attribution_report_path.exists():
+        try:
+            existing_report = json.loads(attribution_report_path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError:
+            existing_report = {}
     attribution_report = {
         "generated_at_utc": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "source": {
@@ -619,8 +626,10 @@ def main() -> int:
         },
         "benchmark_aggregate": attribution_counter,
     }
-    write_attribution_report(Path(args.attribution_report).resolve(), attribution_report)
-    summary["attribution"]["report_path"] = str(Path(args.attribution_report).resolve())
+    if isinstance(existing_report.get("campaign_aggregate"), dict):
+        attribution_report["campaign_aggregate"] = existing_report["campaign_aggregate"]
+    write_attribution_report(attribution_report_path, attribution_report)
+    summary["attribution"]["report_path"] = str(attribution_report_path)
 
     markdown = to_markdown(summary)
     if args.write_report:
