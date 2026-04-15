@@ -33,6 +33,7 @@ DEFAULT_MANAGER6_PLANS_DIR = REPO_ROOT / "artifacts" / "manager6" / "plans"
 DEFAULT_OUT_DIR = REPO_ROOT / "artifacts" / "codex51" / "learning"
 DEFAULT_EXTERNAL_PATTERNS = REPO_ROOT / "artifacts" / "codex51" / "external_patterns" / "patterns.jsonl"
 DEFAULT_EXTERNAL_PRIORS = REPO_ROOT / "artifacts" / "codex51" / "external_patterns" / "best_practice_priors.json"
+DEFAULT_TRUSTED_SOURCES = REPO_ROOT / "config" / "trusted_pattern_sources.json"
 
 STOPWORDS = {
     "and",
@@ -1823,6 +1824,154 @@ def _trusted_external_summary(
     }
 
 
+def _task_class_to_prior_families(task_class: str) -> list[str]:
+    mapping = {
+        "safe_contracts": ["shell_safety_patterns", "typed_schema_patterns"],
+        "resumable_checkpointed": ["shell_safety_patterns", "testing_patterns"],
+        "retrieval_orchestration": ["browser_operator_patterns", "python_helper_patterns"],
+        "multi_file_orchestration": ["browser_operator_patterns", "testing_patterns", "python_helper_patterns"],
+        "bounded_architecture": ["typed_schema_patterns", "python_helper_patterns"],
+    }
+    return mapping.get(task_class, ["python_helper_patterns", "typed_schema_patterns"])
+
+
+def _build_trusted_decision_support(
+    *,
+    external_patterns: list[dict[str, Any]],
+    external_priors: dict[str, Any],
+    trusted_sources_registry: dict[str, Any],
+    class_reuse: dict[str, dict[str, Any]],
+    max_items: int,
+) -> dict[str, Any]:
+    priors_families = (
+        external_priors.get("families")
+        if isinstance(external_priors.get("families"), dict)
+        else {}
+    )
+    registry_sources = (
+        trusted_sources_registry.get("sources")
+        if isinstance(trusted_sources_registry.get("sources"), list)
+        else []
+    )
+
+    by_task_class: list[dict[str, Any]] = []
+    for cls in sorted(class_reuse.keys()):
+        family_names = _task_class_to_prior_families(cls)
+        trusted_candidates = [
+            row
+            for row in external_patterns
+            if isinstance(row, dict) and cls in [str(x) for x in (row.get("task_class_hints") or [])]
+        ]
+        trusted_candidates.sort(key=lambda row: _safe_float(row.get("reuse_confidence"), 0.0), reverse=True)
+
+        use_first: list[dict[str, Any]] = []
+        seen = set()
+        for row in trusted_candidates:
+            key = str(
+                row.get("key")
+                or f"trusted:{row.get('source_name')}:{row.get('source_path')}:{row.get('name')}"
+            )
+            if not key or key in seen:
+                continue
+            seen.add(key)
+            use_first.append(
+                {
+                    "key": key,
+                    "source_name": str(row.get("source_name") or ""),
+                    "source_repo": str(row.get("source_repo") or ""),
+                    "source_path": str(row.get("source_path") or ""),
+                    "pattern_type": str(row.get("pattern_type") or "snippet"),
+                    "reuse_confidence": _safe_float(row.get("reuse_confidence"), 0.0),
+                    "adaptation_required": bool(row.get("adaptation_required", True)),
+                    "direct_reuse_allowed": bool(row.get("direct_reuse_allowed", True)),
+                }
+            )
+            if len(use_first) >= max(1, max_items):
+                break
+
+        avoid: list[dict[str, Any]] = []
+        for source in registry_sources:
+            if not isinstance(source, dict):
+                continue
+            if cls not in [str(x) for x in (source.get("task_class_hints") or [])]:
+                continue
+            for rule in source.get("disallowed_direct_reuse_cases") or []:
+                avoid.append(
+                    {
+                        "source_name": str(source.get("source_name") or ""),
+                        "source_repo": str(source.get("upstream_repo") or ""),
+                        "reason": str(rule),
+                        "avoid_type": "disallowed_direct_reuse_case",
+                    }
+                )
+
+        for family in family_names:
+            fam = priors_families.get(family) if isinstance(priors_families, dict) else None
+            anti = (
+                fam.get("anti_patterns")
+                if isinstance(fam, dict) and isinstance(fam.get("anti_patterns"), list)
+                else []
+            )
+            for item in anti:
+                if not isinstance(item, dict):
+                    continue
+                avoid.append(
+                    {
+                        "source_name": str(item.get("source_name") or ""),
+                        "source_repo": str(item.get("source_repo") or ""),
+                        "reason": str(item.get("guidance") or item.get("name") or "trusted_anti_pattern"),
+                        "avoid_type": "best_practice_anti_pattern",
+                    }
+                )
+
+        dedup_avoid: list[dict[str, Any]] = []
+        seen_avoid = set()
+        for row in avoid:
+            sig = (row.get("source_name"), row.get("reason"), row.get("avoid_type"))
+            if sig in seen_avoid:
+                continue
+            seen_avoid.add(sig)
+            dedup_avoid.append(row)
+            if len(dedup_avoid) >= max(1, max_items):
+                break
+
+        preferred_library = (class_reuse.get(cls) or {}).get("preferred_library_items") or []
+        combinations: list[dict[str, Any]] = []
+        for lrow in preferred_library[:3]:
+            for trow in use_first[:3]:
+                combinations.append(
+                    {
+                        "task_class": cls,
+                        "library_key": str(lrow.get("key") or ""),
+                        "library_kind": str(lrow.get("library_kind") or "unknown"),
+                        "trusted_key": str(trow.get("key") or ""),
+                        "trusted_source": str(trow.get("source_name") or ""),
+                        "combo_intent": "use_local_library_skeleton_with_trusted_external_shape",
+                    }
+                )
+                if len(combinations) >= max(1, max_items):
+                    break
+            if len(combinations) >= max(1, max_items):
+                break
+
+        preferred_complexity = (
+            str((class_reuse.get(cls) or {}).get("recommended_complexity_level") or "")
+            or "medium"
+        )
+        by_task_class.append(
+            {
+                "task_class": cls,
+                "prior_families": family_names,
+                "use_first_trusted_patterns": use_first,
+                "avoid_trusted_patterns": dedup_avoid,
+                "preferred_complexity_level": preferred_complexity,
+                "recommended_library_plus_trusted_combinations": combinations,
+            }
+        )
+
+    return {"by_task_class": by_task_class}
+
+
 def _candidate_splits_from_lessons(lessons: list[dict[str, Any]], *, max_items: int) -> dict[str, list[dict[str, Any]]]:
     def _pick(flag: str) -> list[dict[str, Any]]:
         rows = [row for row in lessons if bool((row.get("promotion_recommendations") or {}).get(flag))]
@@ -2045,6 +2194,17 @@ def _report_markdown(report: dict[str, Any]) -> str:
         )
     lines.append("")
 
+    lines.append("## Trusted Decision Support")
+    tds = report.get("trusted_decision_support") or {}
+    lines.append(f"- by_task_class: {len(tds.get('by_task_class') or [])}")
+    for row in (tds.get("by_task_class") or [])[:4]:
+        lines.append(
+            f"- {row.get('task_class')}: use_first={len(row.get('use_first_trusted_patterns') or [])} "
+            f"avoid={len(row.get('avoid_trusted_patterns') or [])} "
+            f"complexity={row.get('preferred_complexity_level')}"
+        )
+    lines.append("")
+
     lines.append("## Weak Classes")
     for row in (report.get("weak_class_summary") or [])[:6]:
         lines.append(
@@ -2095,6 +2255,7 @@ def build_learning_report(
     commit_records: list[dict[str, Any]],
     external_patterns: list[dict[str, Any]],
     external_priors: dict[str, Any],
+    trusted_sources_registry: dict[str, Any],
     max_replay: int,
     max_candidates: int,
 ) -> tuple[dict[str, Any], dict[str, list[dict[str, Any]]]]:
@@ -2150,6 +2311,13 @@ def build_learning_report(
         external_priors=external_priors,
         max_items=max_candidates,
     )
+    trusted_decision_support = _build_trusted_decision_support(
+        external_patterns=external_patterns,
+        external_priors=external_priors,
+        trusted_sources_registry=trusted_sources_registry,
+        class_reuse=class_reuse_recommendations,
+        max_items=max_candidates,
+    )
     model_wrapper = _model_vs_wrapper_summary(weak_classes, attribution)
     recommendations = _next_step_recommendations(
         weak_classes=weak_classes,
@@ -2187,6 +2355,7 @@ def build_learning_report(
         "execution_acceleration": acceleration,
         "reuse_recommendations": reuse_recommendations,
         "trusted_external_patterns": trusted_external,
+        "trusted_decision_support": trusted_decision_support,
         "code_library": {
             "generated_at_utc": code_library.get("generated_at_utc"),
             "summary": code_library.get("summary"),
@@ -2209,6 +2378,7 @@ def build_learning_report(
             "manager6_plans_dir": str(DEFAULT_MANAGER6_PLANS_DIR),
             "external_patterns": str(DEFAULT_EXTERNAL_PATTERNS),
             "external_priors": str(DEFAULT_EXTERNAL_PRIORS),
+            "trusted_sources_registry": str(DEFAULT_TRUSTED_SOURCES),
         },
     }
 
@@ -2225,6 +2395,7 @@ def build_learning_report(
         "code_library_modules": code_library.get("modules") or [],
         "code_library_patterns": code_library.get("patterns") or [],
         "trusted_external_patterns": external_patterns,
+        "trusted_decision_support": trusted_decision_support.get("by_task_class") or [],
     }
     return report, jsonl_outputs
 
@@ -2240,6 +2411,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--manager6-plans-dir", default=str(DEFAULT_MANAGER6_PLANS_DIR))
     parser.add_argument("--external-patterns", default=str(DEFAULT_EXTERNAL_PATTERNS))
     parser.add_argument("--external-priors", default=str(DEFAULT_EXTERNAL_PRIORS))
+    parser.add_argument("--trusted-sources", default=str(DEFAULT_TRUSTED_SOURCES))
     parser.add_argument("--out-dir", default=str(DEFAULT_OUT_DIR))
     parser.add_argument("--window-days", type=int, default=14)
     parser.add_argument("--max-replay", type=int, default=8)
@@ -2260,6 +2432,7 @@ def main() -> int:
     manager6_plans_dir = Path(args.manager6_plans_dir).resolve()
     external_patterns_path = Path(args.external_patterns).resolve()
     external_priors_path = Path(args.external_priors).resolve()
+    trusted_sources_path = Path(args.trusted_sources).resolve()
 
     for required_path, label in [
         (benchmark_path, "benchmark"),
@@ -2277,6 +2450,7 @@ def main() -> int:
     attribution = _read_json(attribution_path)
     external_patterns = _read_jsonl(external_patterns_path)
     external_priors = _load_optional_json(external_priors_path)
+    trusted_sources_registry = _load_optional_json(trusted_sources_path)
     runs = _load_campaign_runs(campaign_runs_path, window_days=max(1, args.window_days))
     curation_rows = _load_curation_rows(curation_dir)
 
@@ -2295,6 +2469,7 @@ def main() -> int:
         commit_records=commit_records,
         external_patterns=external_patterns,
         external_priors=external_priors,
+        trusted_sources_registry=trusted_sources_registry,
         max_replay=max(1, args.max_replay),
         max_candidates=max(1, args.max_candidates),
     )
@@ -2318,6 +2493,7 @@ def main() -> int:
         _write_jsonl(out_dir / "reuse_recommendations.jsonl", jsonl_outputs["reuse_recommendations"])
         _write_jsonl(out_dir / "weak_class_targets.jsonl", jsonl_outputs["weak_class_targets"])
         _write_jsonl(out_dir / "trusted_external_patterns.jsonl", jsonl_outputs["trusted_external_patterns"])
+        _write_jsonl(out_dir / "trusted_decision_support.jsonl", jsonl_outputs["trusted_decision_support"])
 
         code_library_dir = out_dir / "code_library"
         code_library_dir.mkdir(parents=True, exist_ok=True)
