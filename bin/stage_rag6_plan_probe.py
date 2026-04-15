@@ -75,6 +75,15 @@ def _is_retrieval_orchestration_query(query_tokens: list[str]) -> bool:
     return bool(tokens & orchestration_tokens)
 
 
+def _is_safe_contract_query(query_tokens: list[str]) -> bool:
+    tokens = {str(t).strip().lower() for t in query_tokens if str(t).strip()}
+    contract_tokens = {"contract", "literal", "shell", "script"}
+    shaping_tokens = {"synthesis", "validation", "grouped", "heterogeneous", "rollback", "reconcile"}
+    if not (tokens & contract_tokens):
+        return False
+    return bool(tokens & shaping_tokens)
+
+
 def _inject_retrieval_code_targets(
     *,
     targets: list[dict[str, Any]],
@@ -114,6 +123,54 @@ def _inject_retrieval_code_targets(
                 "selection_reason": {
                     "source": "rag15_retrieval_anchor_injection",
                     "reason": "docs_only_retrieval_orchestration_query",
+                },
+            }
+        )
+        rank -= 0.25
+    if not injected:
+        return targets
+    return injected + targets
+
+
+def _inject_safe_contract_code_targets(
+    *,
+    targets: list[dict[str, Any]],
+    query_tokens: list[str],
+    preferred_prefixes: list[str],
+) -> list[dict[str, Any]]:
+    # Safe-contract queries should seed executable shell/stage anchors when retrieval returns docs-only.
+    if not _is_safe_contract_query(query_tokens):
+        return targets
+    if not _all_targets_under_docs(targets):
+        return targets
+
+    anchors = [
+        "bin/stage7_manager.py",
+        "bin/stage6_manager.py",
+        "bin/stage5_manager.py",
+        "bin/quick_check.sh",
+        "shell/common.sh",
+    ]
+    max_rank = max(float(t.get("rank_score") or 0.0) for t in targets) if targets else 20.0
+    existing_paths = {str(t.get("path") or "") for t in targets}
+    injected: list[dict[str, Any]] = []
+    rank = max_rank + 1.0
+    for rel_path in anchors:
+        path = REPO_ROOT / rel_path
+        if not path.exists():
+            continue
+        if preferred_prefixes and not any(rel_path.startswith(prefix) for prefix in preferred_prefixes):
+            continue
+        if rel_path in existing_paths:
+            continue
+        injected.append(
+            {
+                "path": rel_path,
+                "confidence": 7,
+                "rank_score": round(rank, 4),
+                "selection_reason": {
+                    "source": "rag15_safe_contract_anchor_injection",
+                    "reason": "docs_only_safe_contract_query",
                 },
             }
         )
@@ -681,6 +738,11 @@ def main() -> int:
         preferred_prefixes=preferred_prefixes,
     )
     targets = _inject_retrieval_code_targets(
+        targets=targets,
+        query_tokens=args.query,
+        preferred_prefixes=preferred_prefixes,
+    )
+    targets = _inject_safe_contract_code_targets(
         targets=targets,
         query_tokens=args.query,
         preferred_prefixes=preferred_prefixes,
