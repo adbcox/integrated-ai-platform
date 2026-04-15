@@ -13,6 +13,7 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import subprocess
 from collections import Counter, defaultdict
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
@@ -1028,6 +1029,533 @@ def _build_execution_acceleration(lessons: list[dict[str, Any]], priors: list[di
     }
 
 
+def _git_recent_commit_records(*, window_days: int, max_commits: int = 500) -> list[dict[str, Any]]:
+    since = (datetime.now(UTC) - timedelta(days=max(1, window_days))).strftime("%Y-%m-%dT%H:%M:%SZ")
+    cmd = [
+        "git",
+        "log",
+        f"--since={since}",
+        f"-n{max(20, max_commits)}",
+        "--name-only",
+        "--pretty=format:%H%x1f%cI%x1f%s%x1e",
+    ]
+    try:
+        raw = subprocess.check_output(cmd, cwd=REPO_ROOT, text=True, stderr=subprocess.DEVNULL)
+    except Exception:
+        return []
+
+    records: list[dict[str, Any]] = []
+    for block in raw.split("\x1e"):
+        block = block.strip()
+        if not block:
+            continue
+        lines = block.splitlines()
+        if not lines:
+            continue
+        header = lines[0].split("\x1f")
+        if len(header) < 3:
+            continue
+        commit_hash, committed_at, subject = header[0], header[1], header[2]
+        files = [line.strip() for line in lines[1:] if line.strip()]
+        records.append(
+            {
+                "commit_hash": commit_hash,
+                "committed_at": committed_at,
+                "subject": subject,
+                "files": files,
+            }
+        )
+    return records
+
+
+def _extract_py_functions(content: str) -> list[dict[str, Any]]:
+    lines = content.splitlines()
+    starts: list[tuple[int, str]] = []
+    for idx, line in enumerate(lines):
+        m = re.match(r"^def\s+([A-Za-z_][A-Za-z0-9_]*)\s*\(", line)
+        if m:
+            starts.append((idx, m.group(1)))
+    out: list[dict[str, Any]] = []
+    for i, (start, name) in enumerate(starts):
+        end = starts[i + 1][0] if i + 1 < len(starts) else len(lines)
+        body_lines = lines[start:end]
+        while body_lines and not body_lines[-1].strip():
+            body_lines.pop()
+        if not body_lines:
+            continue
+        out.append(
+            {
+                "name": name,
+                "start_line": start + 1,
+                "end_line": start + len(body_lines),
+                "line_count": len(body_lines),
+                "snippet": "\n".join(body_lines[: min(len(body_lines), 14)]),
+            }
+        )
+    return out
+
+
+def _extract_sh_functions(content: str) -> list[dict[str, Any]]:
+    lines = content.splitlines()
+    starts: list[tuple[int, str]] = []
+    for idx, line in enumerate(lines):
+        m = re.match(r"^([A-Za-z_][A-Za-z0-9_]*)\(\)\s*\{", line.strip())
+        if m:
+            starts.append((idx, m.group(1)))
+    out: list[dict[str, Any]] = []
+    for i, (start, name) in enumerate(starts):
+        end = starts[i + 1][0] if i + 1 < len(starts) else len(lines)
+        body_lines = lines[start:end]
+        while body_lines and not body_lines[-1].strip():
+            body_lines.pop()
+        if not body_lines:
+            continue
+        out.append(
+            {
+                "name": name,
+                "start_line": start + 1,
+                "end_line": start + len(body_lines),
+                "line_count": len(body_lines),
+                "snippet": "\n".join(body_lines[: min(len(body_lines), 16)]),
+            }
+        )
+    return out
+
+
+def _file_dependencies(path: Path, content: str) -> list[str]:
+    deps: set[str] = set()
+    if path.suffix == ".py":
+        for line in content.splitlines():
+            line = line.strip()
+            m1 = re.match(r"^import\s+([A-Za-z0-9_., ]+)", line)
+            m2 = re.match(r"^from\s+([A-Za-z0-9_.]+)\s+import\s+", line)
+            if m1:
+                for item in m1.group(1).split(","):
+                    dep = item.strip().split(" as ")[0].strip()
+                    if dep:
+                        deps.add(dep)
+            elif m2:
+                deps.add(m2.group(1).strip())
+    elif path.suffix == ".sh":
+        for line in content.splitlines():
+            line = line.strip()
+            if line.startswith("source "):
+                deps.add(line.replace("source", "", 1).strip().strip('"'))
+            elif line.startswith(". "):
+                deps.add(line[2:].strip().strip('"'))
+    return sorted(dep for dep in deps if dep)
+
+
+def _complexity_level(*, kind: str, line_count: int, file_count: int, reuse_hits: int) -> str:
+    score = 0
+    score += 1 if kind in {"snippet", "template"} else 2
+    score += 1 if line_count > 24 else 0
+    score += 1 if line_count > 80 else 0
+    score += 1 if file_count > 1 else 0
+    score += 1 if reuse_hits >= 4 else 0
+    if score <= 2:
+        return "low"
+    if score <= 4:
+        return "medium"
+    return "high"
+
+
+def _reuse_confidence(*, success_hits: int, commit_hits: int, positive_hits: int, negative_hits: int) -> float:
+    raw = success_hits * 0.9 + commit_hits * 0.5 + positive_hits * 0.8 - negative_hits * 0.6
+    return round(max(0.0, min(1.0, raw / 6.0)), 3)
+
+
+def _build_code_library(
+    *,
+    lessons: list[dict[str, Any]],
+    commit_records: list[dict[str, Any]],
+    max_items: int,
+) -> dict[str, Any]:
+    successful_lessons = [
+        row
+        for row in lessons
+        if bool((row.get("what_eventually_worked") or {}).get("success"))
+    ]
+
+    file_to_runs: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    file_to_bad_runs: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    for row in lessons:
+        targets = (row.get("attempted") or {}).get("target_paths") or []
+        for path in targets:
+            if bool((row.get("what_eventually_worked") or {}).get("success")):
+                file_to_runs[str(path)].append(row)
+            else:
+                file_to_bad_runs[str(path)].append(row)
+
+    commit_by_file: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    for commit in commit_records:
+        for file_path in commit.get("files") or []:
+            commit_by_file[str(file_path)].append(commit)
+
+    snippets: list[dict[str, Any]] = []
+    helpers: list[dict[str, Any]] = []
+    templates: list[dict[str, Any]] = []
+    modules: list[dict[str, Any]] = []
+    patterns: list[dict[str, Any]] = []
+
+    # Templates from recurring successful dispatch shapes.
+    command_patterns: Counter[str] = Counter()
+    command_sources: dict[str, list[str]] = defaultdict(list)
+    for row in successful_lessons:
+        cmd = str(((row.get("task") or {}).get("command")) or "")
+        if not cmd:
+            continue
+        normalized = re.sub(r"\d{6,}", "<num>", cmd)
+        normalized = re.sub(r"campaign-[A-Za-z0-9_-]+", "campaign-<task>", normalized)
+        normalized = re.sub(r"--plan-id\s+\S+", "--plan-id <plan>", normalized)
+        normalized = re.sub(r"--commit-msg\s+\S+", "--commit-msg <msg>", normalized)
+        command_patterns[normalized] += 1
+        command_sources[normalized].append(str(row.get("plan_id") or ""))
+
+    for cmd, count in command_patterns.most_common(max(1, max_items)):
+        src = command_sources.get(cmd, [])
+        templates.append(
+            {
+                "library_kind": "template",
+                "key": f"template:{abs(hash(cmd))}",
+                "template_text": cmd,
+                "source_runs": src[:10],
+                "source_commits": [],
+                "reuse_confidence": _reuse_confidence(
+                    success_hits=count,
+                    commit_hits=0,
+                    positive_hits=count,
+                    negative_hits=0,
+                ),
+                "dependencies": [],
+                "known_good_use_cases": sorted(
+                    {
+                        str(((row.get("task") or {}).get("task_class")) or "unknown")
+                        for row in successful_lessons
+                        if str(((row.get("task") or {}).get("command")) or "") and re.sub(r"\d{6,}", "<num>", str(((row.get("task") or {}).get("command")) or "")) == cmd
+                    }
+                ),
+                "known_bad_use_cases": [],
+                "complexity_level": _complexity_level(kind="template", line_count=1, file_count=1, reuse_hits=count),
+                "classification": {
+                    "family": "dispatch",
+                    "class": "command_template",
+                    "complexity": _complexity_level(kind="template", line_count=1, file_count=1, reuse_hits=count),
+                },
+            }
+        )
+
+    # File-backed helpers/modules/snippets from successful run targets.
+    for file_path, rows in sorted(file_to_runs.items(), key=lambda item: len(item[1]), reverse=True):
+        path = (REPO_ROOT / file_path).resolve()
+        if not path.exists() or not path.is_file():
+            continue
+        try:
+            content = path.read_text(encoding="utf-8")
+        except Exception:
+            continue
+        line_count = len(content.splitlines())
+        deps = _file_dependencies(path, content)
+        success_hits = len(rows)
+        negative_hits = len(file_to_bad_runs.get(file_path, []))
+        commits = commit_by_file.get(file_path, [])
+        source_commits = [str(c.get("commit_hash") or "") for c in commits[:12] if c.get("commit_hash")]
+        source_runs = [str(r.get("plan_id") or "") for r in rows[:12] if r.get("plan_id")]
+        classes_good = sorted({str(((r.get("task") or {}).get("task_class")) or "unknown") for r in rows})
+        classes_bad = sorted(
+            {
+                str(((r.get("task") or {}).get("task_class")) or "unknown")
+                for r in file_to_bad_runs.get(file_path, [])
+            }
+        )
+
+        if path.suffix == ".py":
+            funcs = _extract_py_functions(content)
+        elif path.suffix == ".sh":
+            funcs = _extract_sh_functions(content)
+        else:
+            funcs = []
+
+        if funcs:
+            for fn in funcs[: max(1, min(max_items, 20))]:
+                helper_conf = _reuse_confidence(
+                    success_hits=success_hits,
+                    commit_hits=len(commits),
+                    positive_hits=success_hits,
+                    negative_hits=negative_hits,
+                )
+                helper = {
+                    "library_kind": "helper",
+                    "key": f"helper:{file_path}:{fn['name']}",
+                    "name": fn["name"],
+                    "path": file_path,
+                    "line_span": {"start": fn["start_line"], "end": fn["end_line"]},
+                    "snippet": fn["snippet"],
+                    "source_runs": source_runs,
+                    "source_commits": source_commits,
+                    "reuse_confidence": helper_conf,
+                    "dependencies": deps,
+                    "known_good_use_cases": classes_good,
+                    "known_bad_use_cases": classes_bad,
+                    "complexity_level": _complexity_level(
+                        kind="helper",
+                        line_count=fn["line_count"],
+                        file_count=1,
+                        reuse_hits=success_hits,
+                    ),
+                    "classification": {
+                        "family": _prefix(file_path).replace("/", ""),
+                        "class": "function_helper",
+                        "complexity": _complexity_level(
+                            kind="helper",
+                            line_count=fn["line_count"],
+                            file_count=1,
+                            reuse_hits=success_hits,
+                        ),
+                    },
+                }
+                helpers.append(helper)
+                snippets.append(
+                    {
+                        "library_kind": "snippet",
+                        "key": f"snippet:{file_path}:{fn['name']}",
+                        "path": file_path,
+                        "name": fn["name"],
+                        "snippet": "\n".join(fn["snippet"].splitlines()[:8]),
+                        "source_runs": source_runs[:6],
+                        "source_commits": source_commits[:6],
+                        "reuse_confidence": round(min(1.0, helper_conf + 0.05), 3),
+                        "dependencies": deps,
+                        "known_good_use_cases": classes_good,
+                        "known_bad_use_cases": classes_bad,
+                        "complexity_level": _complexity_level(
+                            kind="snippet",
+                            line_count=min(8, fn["line_count"]),
+                            file_count=1,
+                            reuse_hits=success_hits,
+                        ),
+                        "classification": {
+                            "family": _prefix(file_path).replace("/", ""),
+                            "class": "code_snippet",
+                            "complexity": _complexity_level(
+                                kind="snippet",
+                                line_count=min(8, fn["line_count"]),
+                                file_count=1,
+                                reuse_hits=success_hits,
+                            ),
+                        },
+                    }
+                )
+
+        module_conf = _reuse_confidence(
+            success_hits=success_hits,
+            commit_hits=len(commits),
+            positive_hits=success_hits + (1 if len(funcs) >= 3 else 0),
+            negative_hits=negative_hits,
+        )
+        modules.append(
+            {
+                "library_kind": "module",
+                "key": f"module:{file_path}",
+                "path": file_path,
+                "function_count": len(funcs),
+                "line_count": line_count,
+                "source_runs": source_runs,
+                "source_commits": source_commits,
+                "reuse_confidence": module_conf,
+                "dependencies": deps,
+                "known_good_use_cases": classes_good,
+                "known_bad_use_cases": classes_bad,
+                "complexity_level": _complexity_level(
+                    kind="module",
+                    line_count=line_count,
+                    file_count=1,
+                    reuse_hits=success_hits,
+                ),
+                "classification": {
+                    "family": _prefix(file_path).replace("/", ""),
+                    "class": "module_pattern",
+                    "complexity": _complexity_level(
+                        kind="module",
+                        line_count=line_count,
+                        file_count=1,
+                        reuse_hits=success_hits,
+                    ),
+                },
+            }
+        )
+
+    # Multi-file patterns from successful lessons + commit co-change.
+    combo_counts: Counter[str] = Counter()
+    combo_runs: dict[str, list[str]] = defaultdict(list)
+    combo_commits: dict[str, list[str]] = defaultdict(list)
+
+    for row in successful_lessons:
+        paths = sorted(set((row.get("attempted") or {}).get("target_paths") or []))
+        if len(paths) < 2:
+            continue
+        key = " | ".join(paths)
+        combo_counts[key] += 1
+        combo_runs[key].append(str(row.get("plan_id") or ""))
+
+    for commit in commit_records:
+        files = sorted(set(str(f) for f in (commit.get("files") or []) if str(f).startswith(("bin/", "shell/", "config/", "docs/"))))
+        if len(files) < 2:
+            continue
+        key = " | ".join(files[:4])
+        combo_counts[key] += 1
+        if commit.get("commit_hash"):
+            combo_commits[key].append(str(commit.get("commit_hash")))
+
+    for key, count in combo_counts.most_common(max(1, max_items)):
+        paths = key.split(" | ")
+        patterns.append(
+            {
+                "library_kind": "multi_file_pattern",
+                "key": f"pattern:{abs(hash(key))}",
+                "paths": paths,
+                "path_count": len(paths),
+                "source_runs": combo_runs.get(key, [])[:12],
+                "source_commits": combo_commits.get(key, [])[:12],
+                "reuse_confidence": _reuse_confidence(
+                    success_hits=len(combo_runs.get(key, [])),
+                    commit_hits=len(combo_commits.get(key, [])),
+                    positive_hits=count,
+                    negative_hits=0,
+                ),
+                "dependencies": sorted({_prefix(path) for path in paths}),
+                "known_good_use_cases": sorted(
+                    {
+                        str(((row.get("task") or {}).get("task_class")) or "unknown")
+                        for row in successful_lessons
+                        if set(paths).issubset(set((row.get("attempted") or {}).get("target_paths") or []))
+                    }
+                ),
+                "known_bad_use_cases": [],
+                "complexity_level": _complexity_level(
+                    kind="multi_file_pattern",
+                    line_count=20 * len(paths),
+                    file_count=len(paths),
+                    reuse_hits=count,
+                ),
+                "classification": {
+                    "family": "cross_target",
+                    "class": "multi_file_pattern",
+                    "complexity": _complexity_level(
+                        kind="multi_file_pattern",
+                        line_count=20 * len(paths),
+                        file_count=len(paths),
+                        reuse_hits=count,
+                    ),
+                },
+            }
+        )
+
+    # Promotion candidates snippet -> helper -> template -> module.
+    helper_index = {row["key"]: row for row in helpers}
+    template_index = {row["key"]: row for row in templates}
+    module_index = {row["key"]: row for row in modules}
+    promotion_candidates: list[dict[str, Any]] = []
+    for row in snippets:
+        base = _safe_float(row.get("reuse_confidence"), 0.0)
+        if base < 0.55:
+            continue
+        helper_key = row["key"].replace("snippet:", "helper:")
+        target_stage = "helper" if helper_key in helper_index else "template"
+        promotion_candidates.append(
+            {
+                "from_kind": "snippet",
+                "to_kind": target_stage,
+                "source_key": row["key"],
+                "target_key": helper_key if target_stage == "helper" else next(iter(template_index.keys()), ""),
+                "reuse_confidence": base,
+                "justification": "Repeated success-backed snippet with high reuse confidence.",
+            }
+        )
+    for row in helpers:
+        base = _safe_float(row.get("reuse_confidence"), 0.0)
+        if base < 0.65:
+            continue
+        module_key = f"module:{row.get('path')}"
+        promotion_candidates.append(
+            {
+                "from_kind": "helper",
+                "to_kind": "module" if module_key in module_index else "template",
+                "source_key": row["key"],
+                "target_key": module_key if module_key in module_index else next(iter(template_index.keys()), ""),
+                "reuse_confidence": base,
+                "justification": "Helper appears repeatedly in successful runs and commit history.",
+            }
+        )
+
+    snippets = sorted(snippets, key=lambda item: _safe_float(item.get("reuse_confidence"), 0.0), reverse=True)[
+        : max(1, max_items)
+    ]
+    helpers = sorted(helpers, key=lambda item: _safe_float(item.get("reuse_confidence"), 0.0), reverse=True)[
+        : max(1, max_items)
+    ]
+    templates = sorted(templates, key=lambda item: _safe_float(item.get("reuse_confidence"), 0.0), reverse=True)[
+        : max(1, max_items)
+    ]
+    modules = sorted(modules, key=lambda item: _safe_float(item.get("reuse_confidence"), 0.0), reverse=True)[
+        : max(1, max_items)
+    ]
+    patterns = sorted(patterns, key=lambda item: _safe_float(item.get("reuse_confidence"), 0.0), reverse=True)[
+        : max(1, max_items)
+    ]
+
+    recommended_reuse_targets: list[dict[str, Any]] = []
+    for row in modules[:3] + helpers[:3] + patterns[:3]:
+        recommended_reuse_targets.append(
+            {
+                "library_kind": row.get("library_kind"),
+                "key": row.get("key"),
+                "reuse_confidence": row.get("reuse_confidence"),
+                "recommended_for_next_runs": row.get("known_good_use_cases") or [],
+            }
+        )
+
+    return {
+        "generated_at_utc": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "source_scope": {
+            "successful_lessons": len(successful_lessons),
+            "commit_records": len(commit_records),
+        },
+        "summary": {
+            "snippets": len(snippets),
+            "helpers": len(helpers),
+            "templates": len(templates),
+            "modules": len(modules),
+            "patterns": len(patterns),
+            "promotion_candidates": len(promotion_candidates),
+        },
+        "promotion_candidates": promotion_candidates[: max(1, max_items)],
+        "complexity_progression": {
+            "low": sum(
+                1
+                for row in (snippets + helpers + templates + modules + patterns)
+                if str(row.get("complexity_level")) == "low"
+            ),
+            "medium": sum(
+                1
+                for row in (snippets + helpers + templates + modules + patterns)
+                if str(row.get("complexity_level")) == "medium"
+            ),
+            "high": sum(
+                1
+                for row in (snippets + helpers + templates + modules + patterns)
+                if str(row.get("complexity_level")) == "high"
+            ),
+        },
+        "recommended_reuse_targets": recommended_reuse_targets[: max(1, max_items)],
+        "snippets": snippets,
+        "helpers": helpers,
+        "templates": templates,
+        "modules": modules,
+        "patterns": patterns,
+    }
+
+
 def _candidate_splits_from_lessons(lessons: list[dict[str, Any]], *, max_items: int) -> dict[str, list[dict[str, Any]]]:
     def _pick(flag: str) -> list[dict[str, Any]]:
         rows = [row for row in lessons if bool((row.get("promotion_recommendations") or {}).get(flag))]
@@ -1211,6 +1739,21 @@ def _report_markdown(report: dict[str, Any]) -> str:
     lines.append(f"- reusable_recovery_patterns: {len(accel.get('reusable_recovery_patterns') or [])}")
     lines.append("")
 
+    lines.append("## Reusable Code Library")
+    clib = report.get("code_library") or {}
+    csum = clib.get("summary") if isinstance(clib.get("summary"), dict) else {}
+    lines.append(f"- snippets: {csum.get('snippets', 0)}")
+    lines.append(f"- helpers: {csum.get('helpers', 0)}")
+    lines.append(f"- templates: {csum.get('templates', 0)}")
+    lines.append(f"- modules: {csum.get('modules', 0)}")
+    lines.append(f"- patterns: {csum.get('patterns', 0)}")
+    lines.append(f"- promotion_candidates: {csum.get('promotion_candidates', 0)}")
+    for row in (clib.get("recommended_reuse_targets") or [])[:4]:
+        lines.append(
+            f"- reuse target {row.get('library_kind')}::{row.get('key')} conf={row.get('reuse_confidence')}"
+        )
+    lines.append("")
+
     lines.append("## Weak Classes")
     for row in (report.get("weak_class_summary") or [])[:6]:
         lines.append(
@@ -1258,6 +1801,7 @@ def build_learning_report(
     manifest: dict[str, Any],
     attribution: dict[str, Any],
     plan_index: dict[str, PlanArtifact],
+    commit_records: list[dict[str, Any]],
     max_replay: int,
     max_candidates: int,
 ) -> tuple[dict[str, Any], dict[str, list[dict[str, Any]]]]:
@@ -1282,6 +1826,11 @@ def build_learning_report(
     prevention = _build_prevention_outputs(lessons, max_items=max_candidates)
     first_attempt_priors = _build_first_attempt_priors(lessons, max_items=max_candidates)
     acceleration = _build_execution_acceleration(lessons, first_attempt_priors, max_items=max_candidates)
+    code_library = _build_code_library(
+        lessons=lessons,
+        commit_records=commit_records,
+        max_items=max_candidates,
+    )
     model_wrapper = _model_vs_wrapper_summary(weak_classes, attribution)
     recommendations = _next_step_recommendations(
         weak_classes=weak_classes,
@@ -1317,6 +1866,13 @@ def build_learning_report(
         "prevention_outputs": prevention,
         "first_attempt_priors": first_attempt_priors,
         "execution_acceleration": acceleration,
+        "code_library": {
+            "generated_at_utc": code_library.get("generated_at_utc"),
+            "summary": code_library.get("summary"),
+            "complexity_progression": code_library.get("complexity_progression"),
+            "promotion_candidates": code_library.get("promotion_candidates"),
+            "recommended_reuse_targets": code_library.get("recommended_reuse_targets"),
+        },
         "model_vs_wrapper_summary": model_wrapper,
         "curation_counts": curation_counts,
         "next_recommended_targets": recommendations,
@@ -1336,6 +1892,11 @@ def build_learning_report(
         "first_attempt_priors": first_attempt_priors,
         "execution_acceleration": [acceleration],
         "weak_class_targets": weak_classes,
+        "code_library_snippets": code_library.get("snippets") or [],
+        "code_library_helpers": code_library.get("helpers") or [],
+        "code_library_templates": code_library.get("templates") or [],
+        "code_library_modules": code_library.get("modules") or [],
+        "code_library_patterns": code_library.get("patterns") or [],
     }
     return report, jsonl_outputs
 
@@ -1386,6 +1947,7 @@ def main() -> int:
     curation_rows = _load_curation_rows(curation_dir)
 
     trace_index = _load_manager6_trace_index(manager6_traces_path, window_days=max(1, args.window_days))
+    commit_records = _git_recent_commit_records(window_days=max(1, args.window_days))
     plan_ids = {run.plan_id for run in runs if run.plan_id}
     plan_index = _load_manager6_plan_artifacts(manager6_plans_dir, plan_ids=plan_ids, trace_index=trace_index)
 
@@ -1396,6 +1958,7 @@ def main() -> int:
         manifest=manifest,
         attribution=attribution,
         plan_index=plan_index,
+        commit_records=commit_records,
         max_replay=max(1, args.max_replay),
         max_candidates=max(1, args.max_candidates),
     )
@@ -1417,6 +1980,27 @@ def main() -> int:
         _write_jsonl(out_dir / "first_attempt_priors.jsonl", jsonl_outputs["first_attempt_priors"])
         _write_jsonl(out_dir / "execution_acceleration.jsonl", jsonl_outputs["execution_acceleration"])
         _write_jsonl(out_dir / "weak_class_targets.jsonl", jsonl_outputs["weak_class_targets"])
+
+        code_library_dir = out_dir / "code_library"
+        code_library_dir.mkdir(parents=True, exist_ok=True)
+        code_library_payload = report.get("code_library") if isinstance(report.get("code_library"), dict) else {}
+        code_library_payload = {
+            **code_library_payload,
+            "snippets": jsonl_outputs.get("code_library_snippets") or [],
+            "helpers": jsonl_outputs.get("code_library_helpers") or [],
+            "templates": jsonl_outputs.get("code_library_templates") or [],
+            "modules": jsonl_outputs.get("code_library_modules") or [],
+            "patterns": jsonl_outputs.get("code_library_patterns") or [],
+        }
+        (code_library_dir / "latest.json").write_text(
+            json.dumps(code_library_payload, ensure_ascii=False, indent=2) + "\n",
+            encoding="utf-8",
+        )
+        _write_jsonl(code_library_dir / "snippets.jsonl", jsonl_outputs["code_library_snippets"])
+        _write_jsonl(code_library_dir / "helpers.jsonl", jsonl_outputs["code_library_helpers"])
+        _write_jsonl(code_library_dir / "templates.jsonl", jsonl_outputs["code_library_templates"])
+        _write_jsonl(code_library_dir / "modules.jsonl", jsonl_outputs["code_library_modules"])
+        _write_jsonl(code_library_dir / "patterns.jsonl", jsonl_outputs["code_library_patterns"])
 
     if args.json_only:
         print(json.dumps(report, ensure_ascii=False, indent=2))
