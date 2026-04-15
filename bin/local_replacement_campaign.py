@@ -172,6 +172,23 @@ def _refresh_attribution_report() -> dict[str, Any]:
     return report
 
 
+def _require_clean_worktree() -> None:
+    """Fail fast before launching campaign runs that will dispatch stage6/stage5."""
+    proc = subprocess.run(
+        ["git", "status", "--short"],
+        cwd=REPO_ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    if proc.returncode != 0:
+        raise RuntimeError("unable to verify clean working tree before campaign execution")
+    if proc.stdout.strip():
+        raise RuntimeError(
+            "campaign execution requires a clean working tree before dispatching stage7/stage6/stage5"
+        )
+
+
 def run_task(
     *,
     task: CampaignTask,
@@ -316,6 +333,7 @@ def main() -> int:
         if target is None:
             print(f"unknown task-id: {args.task_id}", file=sys.stderr)
             return 2
+        _require_clean_worktree()
         row = run_task(task=target, lane=args.lane, profile=args.profile, dry_run=dry_run, extra_args=extra_args)
         attribution_report = _refresh_attribution_report()
         row["attribution_report_path"] = str(ATTRIBUTION_REPORT_PATH)
@@ -326,9 +344,11 @@ def main() -> int:
     if args.command == "run-batch":
         rc = 0
         rows: list[dict[str, Any]] = []
+        _require_clean_worktree()
         for task in tasks:
             if not task.in_scope:
                 continue
+            _require_clean_worktree()
             row = run_task(task=task, lane=args.lane, profile=args.profile, dry_run=dry_run, extra_args=extra_args)
             rows.append(row)
             if int(row["return_code"]) != 0:
