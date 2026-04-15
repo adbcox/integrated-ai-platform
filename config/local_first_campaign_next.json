@@ -1,0 +1,48 @@
+{
+  "schema_version": "1",
+  "description": "Next harder bounded local-first campaign slice beyond the passing harder slice.",
+  "default_lane": "stage7",
+  "default_dry_run": true,
+  "tasks": [
+    {
+      "task_id": "next-stage-resume-heterogeneous",
+      "title": "Heterogeneous resume/checkpoint replay with grouped contracts",
+      "in_scope": true,
+      "task_class": "resumable_checkpointed",
+      "query": "stage7 stage8 resume checkpoint replay reconcile grouped heterogeneous shell python rollback contract",
+      "notes": "Harder resumed execution path with mixed family reconciliation pressure"
+    },
+    {
+      "task_id": "next-manager-orchestration-stress",
+      "title": "Manager long-horizon orchestration stress across mixed families",
+      "in_scope": true,
+      "task_class": "multi_file_orchestration",
+      "query": "stage7 manager orchestration long horizon decomposition mixed family split defer ordering shell python",
+      "notes": "Harder manager decomposition and sequencing pressure"
+    },
+    {
+      "task_id": "next-rag-cluster-stress",
+      "title": "RAG mixed-family cohort ordering under execution pressure",
+      "in_scope": true,
+      "task_class": "retrieval_orchestration",
+      "query": "rag retrieval ranking clustering mixed family cohort ordering execution yield conflict shell python",
+      "notes": "Harder retrieval ordering and cohort shaping path"
+    },
+    {
+      "task_id": "next-safe-contracts-heterogeneous",
+      "title": "Heterogeneous safe contract synthesis and verification",
+      "in_scope": true,
+      "task_class": "safe_contracts",
+      "query": "shell script literal contract synthesis verification grouped heterogeneous rollback reconcile",
+      "notes": "Harder safe contract handling over mixed target families"
+    },
+    {
+      "task_id": "next-control-loop-cross-subsystem",
+      "title": "Cross-subsystem bounded control-loop coordination path",
+      "in_scope": true,
+      "task_class": "bounded_architecture",
+      "query": "stage manager rag worker routing qualify promotion control loop bounded cross subsystem evolution",
+      "notes": "Harder bounded architecture/control-loop coordination path"
+    }
+  ]
+}
