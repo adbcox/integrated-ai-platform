@@ -37,6 +37,7 @@ DEFAULT_LEARNING_LATEST = DEFAULT_STATE_ROOT / "learning" / "latest.json"
 DEFAULT_CODE_LIBRARY_LATEST = REPO_ROOT / "artifacts" / "codex51" / "learning" / "code_library" / "latest.json"
 DEFAULT_TRUSTED_PATTERNS_LATEST = REPO_ROOT / "artifacts" / "codex51" / "trusted_patterns" / "latest.json"
 DEFAULT_REPLAY_QUEUE = REPO_ROOT / "artifacts" / "framework" / "replay_queue_latest.json"
+DEFAULT_CODEX51_LEARNING_LATEST = REPO_ROOT / "artifacts" / "codex51" / "learning" / "latest.json"
 
 
 def parse_args() -> argparse.Namespace:
@@ -70,6 +71,7 @@ def parse_args() -> argparse.Namespace:
             "validation_check_inner_loop",
             "validation_check_tracked_inner_loop",
             "validation_check_tracked_multi_file_inner_loop",
+            "validation_check_artifact_backed_multi_file_inner_loop",
             "trusted_pattern_refresh",
             "replay_queue_generation",
             "replay_queue_execution",
@@ -411,6 +413,136 @@ def _validation_check_tracked_multi_file_inner_loop_template() -> dict[str, Any]
     }
 
 
+def _load_artifact_backed_failure_evidence() -> dict[str, Any]:
+    if not DEFAULT_CODEX51_LEARNING_LATEST.exists():
+        raise RuntimeError(f"missing_learning_artifact:{DEFAULT_CODEX51_LEARNING_LATEST}")
+    payload = json.loads(DEFAULT_CODEX51_LEARNING_LATEST.read_text(encoding="utf-8"))
+    lessons = payload.get("lessons") if isinstance(payload, dict) else []
+    if not isinstance(lessons, list):
+        raise RuntimeError("invalid_learning_lessons_payload")
+
+    target_pair = {"bin/stage_rag6_plan_probe.py", "bin/stage_rag4_plan_probe.py"}
+    for row in lessons:
+        if not isinstance(row, dict):
+            continue
+        task = row.get("task") if isinstance(row.get("task"), dict) else {}
+        attempted = row.get("attempted") if isinstance(row.get("attempted"), dict) else {}
+        wrong = row.get("what_initially_went_wrong") or []
+        signature = (row.get("prevention") or {}).get("failure_signature")
+        targets = set(str(path) for path in (attempted.get("target_paths") or []) if str(path))
+        if task.get("task_class") != "multi_file_orchestration":
+            continue
+        if not target_pair.issubset(targets):
+            continue
+        if "first attempt did not fully succeed" not in wrong:
+            continue
+        if not signature:
+            continue
+        return {
+            "plan_id": str(row.get("plan_id") or ""),
+            "task_id": str(task.get("task_id") or ""),
+            "query": str(task.get("query") or "stage7 manager orchestration subplan split defer rescue"),
+            "failure_signature": str(signature),
+            "target_paths": sorted(targets),
+            "weak_signals": list(wrong),
+            "source_artifact": str(DEFAULT_CODEX51_LEARNING_LATEST),
+        }
+    raise RuntimeError("no_matching_artifact_backed_failure_class_found")
+
+
+def _validation_check_artifact_backed_multi_file_inner_loop_template() -> dict[str, Any]:
+    evidence = _load_artifact_backed_failure_evidence()
+    rag6_file = REPO_ROOT / "bin" / "stage_rag6_plan_probe.py"
+    rag4_file = REPO_ROOT / "bin" / "stage_rag4_plan_probe.py"
+    rag6_rel = "bin/stage_rag6_plan_probe.py"
+    rag4_rel = "bin/stage_rag4_plan_probe.py"
+
+    rag6_baseline = rag6_file.read_text(encoding="utf-8")
+    rag4_baseline = rag4_file.read_text(encoding="utf-8")
+    rag6_broken = rag6_baseline.replace(
+        'STAGE_RAG4_PLAN = REPO_ROOT / "bin" / "stage_rag4_plan_probe.py"',
+        'STAGE_RAG4_PLAN = REPO_ROOT / "bin" / "stage_rag4_plan_probe_typo.py"',
+        1,
+    )
+    rag4_broken = rag4_baseline.replace(
+        "Stage RAG-4 planning helper for Stage-6 multi-target orchestration.",
+        "Stage RAG-4 planning helper for Stage-6 multi-target orchestration (drifted).",
+        1,
+    )
+
+    setup_cmd = (
+        "python3 -c \"from pathlib import Path; "
+        "a=Path('bin/stage_rag6_plan_probe.py'); b=Path('bin/stage_rag4_plan_probe.py'); "
+        "ta=a.read_text(encoding='utf-8'); tb=b.read_text(encoding='utf-8'); "
+        "na='STAGE_RAG4_PLAN = REPO_ROOT / \\\"bin\\\" / \\\"stage_rag4_plan_probe.py\\\"'; "
+        "nb='Stage RAG-4 planning helper for Stage-6 multi-target orchestration.'; "
+        "assert na in ta, 'artifact_setup_missing_rag6_anchor'; "
+        "assert nb in tb, 'artifact_setup_missing_rag4_anchor'; "
+        "a.write_text(ta.replace(na, 'STAGE_RAG4_PLAN = REPO_ROOT / \\\"bin\\\" / \\\"stage_rag4_plan_probe_typo.py\\\"', 1), encoding='utf-8'); "
+        "b.write_text(tb.replace(nb, 'Stage RAG-4 planning helper for Stage-6 multi-target orchestration (drifted).', 1), encoding='utf-8')\""
+    )
+    validate_cmd = (
+        "python3 -c \"import json, subprocess, pathlib; "
+        "cmd=['python3','bin/stage_rag6_plan_probe.py','--plan-id','framework-artifact-backed-multi-file','--max-targets','3','--max-subplans','2','--subplan-size','2','--preferred-prefix','bin/'] + "
+        "'stage7 manager orchestration subplan split defer rescue'.split(); "
+        "proc=subprocess.run(cmd,capture_output=True,text=True,check=True); "
+        "payload=json.loads(proc.stdout); "
+        "assert payload.get('subplans'), 'missing_subplans'; "
+        "txt=pathlib.Path('bin/stage_rag4_plan_probe.py').read_text(encoding='utf-8'); "
+        "assert 'Stage RAG-4 planning helper for Stage-6 multi-target orchestration.' in txt, 'rag4_contract_drift'\""
+    )
+    return {
+        "task_class": JobClass.VALIDATION_CHECK_EXECUTION.value,
+        "shell_command": "true",
+        "inference_prompt": (
+            "Run artifact-backed bounded coordinated multi-file edit-test-fix loop for a real "
+            "multi_file_orchestration failure class with strict contracts and rollback safety."
+        ),
+        "permission_policy": {
+            "allow_command_patterns": [
+                r"^python3\s+-c\s+.*$",
+                r"^python3\s+bin/stage_rag6_plan_probe\.py(\s+.*)?$",
+            ],
+            "allow_edit_path_patterns": [
+                r"/bin/stage_rag6_plan_probe\.py$",
+                r"/bin/stage_rag4_plan_probe\.py$",
+            ],
+            "deny_command_patterns": [r"\brm\b\s+-rf\b"],
+        },
+        "artifact_inputs": [
+            evidence["source_artifact"],
+            rag6_rel,
+            rag4_rel,
+        ],
+        "requested_outputs": [rag6_rel, rag4_rel],
+        "inner_loop": {
+            "enabled": True,
+            "coordinated_repairs": True,
+            "max_cycles": 2,
+            "tracked_paths": [rag6_rel, rag4_rel],
+            "setup_command": setup_cmd,
+            "validate_command": validate_cmd,
+            "repair_edits": [
+                {
+                    "path": rag6_rel,
+                    "find": 'STAGE_RAG4_PLAN = REPO_ROOT / "bin" / "stage_rag4_plan_probe_typo.py"',
+                    "replace": 'STAGE_RAG4_PLAN = REPO_ROOT / "bin" / "stage_rag4_plan_probe.py"',
+                    "expected_before_sha256": hashlib.sha256(rag6_broken.encode("utf-8")).hexdigest(),
+                    "expected_after_sha256": hashlib.sha256(rag6_baseline.encode("utf-8")).hexdigest(),
+                },
+                {
+                    "path": rag4_rel,
+                    "find": "Stage RAG-4 planning helper for Stage-6 multi-target orchestration (drifted).",
+                    "replace": "Stage RAG-4 planning helper for Stage-6 multi-target orchestration.",
+                    "expected_before_sha256": hashlib.sha256(rag4_broken.encode("utf-8")).hexdigest(),
+                    "expected_after_sha256": hashlib.sha256(rag4_baseline.encode("utf-8")).hexdigest(),
+                },
+            ],
+        },
+        "artifact_evidence": evidence,
+    }
+
+
 def _trusted_pattern_refresh_template() -> dict[str, Any]:
     return {
         "task_class": JobClass.TRUSTED_PATTERN_REFRESH.value,
@@ -662,6 +794,8 @@ def _template_payload(name: str) -> dict[str, Any]:
         return _validation_check_tracked_inner_loop_template()
     if name == "validation_check_tracked_multi_file_inner_loop":
         return _validation_check_tracked_multi_file_inner_loop_template()
+    if name == "validation_check_artifact_backed_multi_file_inner_loop":
+        return _validation_check_artifact_backed_multi_file_inner_loop_template()
     if name == "trusted_pattern_refresh":
         return _trusted_pattern_refresh_template()
     if name == "replay_queue_generation":
@@ -731,6 +865,9 @@ def build_job(args: argparse.Namespace, *, template_name: str | None = None) -> 
             if isinstance(template_payload.get("permission_policy"), dict)
             else {},
             "inner_loop": template_payload.get("inner_loop") if isinstance(template_payload.get("inner_loop"), dict) else {},
+            "artifact_evidence": template_payload.get("artifact_evidence")
+            if isinstance(template_payload.get("artifact_evidence"), dict)
+            else {},
         },
     )
 
