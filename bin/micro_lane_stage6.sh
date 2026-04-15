@@ -41,6 +41,20 @@ print(f"state={state}")
 PY
 }
 
+latest_plan_file() {
+  python3 - "$PLAN_DIR" <<'PY'
+from pathlib import Path
+import sys
+
+plan_dir = Path(sys.argv[1])
+candidates = list(plan_dir.glob("stage6-reg-*.json"))
+if not candidates:
+    raise SystemExit("no stage6-reg plan files found")
+latest = max(candidates, key=lambda p: p.stat().st_mtime)
+print(str(latest))
+PY
+}
+
 run_probe() {
   local label="$1"
   local expected="$2"
@@ -90,15 +104,15 @@ fi
 ensure_clean_tree
 
 run_probe "basic-dryrun" "success" --dry-run --max-entries 2
-latest_basic_plan="$(ls -1t "$PLAN_DIR"/stage6-reg-*.json | head -n 1)"
+latest_basic_plan="$(latest_plan_file)"
 assert_plan_state "$latest_basic_plan" "succeeded"
 
 run_probe "confidence-empty" "success" --dry-run --max-entries 2 --min-confidence 99
-latest_empty_plan="$(ls -1t "$PLAN_DIR"/stage6-reg-*.json | head -n 1)"
+latest_empty_plan="$(latest_plan_file)"
 assert_plan_state "$latest_empty_plan" "no_eligible_targets"
 
 run_probe "fallback-allowed" "success" --dry-run --max-entries 2 --min-confidence 99 --retry-class fallback_on_empty --fallback-target "bin/stage6_manager.py"
-latest_fallback_plan="$(ls -1t "$PLAN_DIR"/stage6-reg-*.json | head -n 1)"
+latest_fallback_plan="$(latest_plan_file)"
 assert_plan_state "$latest_fallback_plan" "succeeded"
 
 run_probe "fallback-disallowed" "failure" --dry-run --max-entries 2 --min-confidence 99 --retry-class fallback_on_empty --fallback-target "docs/stage6-preview.md"
