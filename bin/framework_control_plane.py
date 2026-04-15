@@ -69,6 +69,7 @@ def parse_args() -> argparse.Namespace:
             "validation_check_execution",
             "validation_check_inner_loop",
             "validation_check_tracked_inner_loop",
+            "validation_check_tracked_multi_file_inner_loop",
             "trusted_pattern_refresh",
             "replay_queue_generation",
             "replay_queue_execution",
@@ -325,6 +326,91 @@ def _validation_check_tracked_inner_loop_template() -> dict[str, Any]:
     }
 
 
+def _validation_check_tracked_multi_file_inner_loop_template() -> dict[str, Any]:
+    tool_file = REPO_ROOT / "framework" / "tool_system.py"
+    permission_file = REPO_ROOT / "framework" / "permission_engine.py"
+    tool_rel = "framework/tool_system.py"
+    permission_rel = "framework/permission_engine.py"
+
+    tool_baseline = tool_file.read_text(encoding="utf-8")
+    permission_baseline = permission_file.read_text(encoding="utf-8")
+    tool_broken = tool_baseline.replace('APPLY_EDIT = "apply_edit"', 'APPLY_EDIT = "apply_patch"', 1)
+    permission_broken = permission_baseline.replace(
+        '"apply_edit": ToolName.APPLY_EDIT.value,',
+        '"apply_edit": "apply_patch",',
+        1,
+    )
+
+    setup_cmd = (
+        "python3 -c \"from pathlib import Path; "
+        "tool=Path('framework/tool_system.py'); perm=Path('framework/permission_engine.py'); "
+        "t=tool.read_text(encoding='utf-8'); p=perm.read_text(encoding='utf-8'); "
+        "a='APPLY_EDIT = \\\"apply_edit\\\"'; b='\\\"apply_edit\\\": ToolName.APPLY_EDIT.value,'; "
+        "assert a in t, 'multi_setup_tool_missing'; assert b in p, 'multi_setup_perm_missing'; "
+        "tool.write_text(t.replace(a, 'APPLY_EDIT = \\\"apply_patch\\\"', 1), encoding='utf-8'); "
+        "perm.write_text(p.replace(b, '\\\"apply_edit\\\": \\\"apply_patch\\\",', 1), encoding='utf-8')\""
+    )
+    validate_cmd = (
+        "python3 -c \"from framework.tool_system import ToolName, ToolAction; "
+        "from framework.permission_engine import PermissionEngine; "
+        "assert ToolName.APPLY_EDIT.value == 'apply_edit'; "
+        "engine=PermissionEngine(); "
+        "decision=engine.evaluate("
+        "action=ToolAction(job_id='v', tool=ToolName.APPLY_EDIT, arguments={'path':'/tmp/x'}), "
+        "allowed_tools_actions=['apply_edit'], "
+        "metadata={'permission_policy': {'allow_edit_path_patterns': ['.*']}}); "
+        "assert decision.allowed, decision.reason\""
+    )
+    return {
+        "task_class": JobClass.VALIDATION_CHECK_EXECUTION.value,
+        "shell_command": "true",
+        "inference_prompt": (
+            "Run bounded coordinated multi-file edit-test-fix loop on tracked framework code "
+            "with strict per-file hash contracts and conflict-aware stop semantics."
+        ),
+        "permission_policy": {
+            "allow_command_patterns": [
+                r"^python3\s+-c\s+.*$",
+            ],
+            "allow_edit_path_patterns": [
+                r"/framework/tool_system\.py$",
+                r"/framework/permission_engine\.py$",
+            ],
+            "deny_command_patterns": [r"\brm\b\s+-rf\b"],
+        },
+        "artifact_inputs": [
+            tool_rel,
+            permission_rel,
+            "framework/worker_runtime.py",
+        ],
+        "requested_outputs": [tool_rel, permission_rel],
+        "inner_loop": {
+            "enabled": True,
+            "coordinated_repairs": True,
+            "max_cycles": 2,
+            "tracked_paths": [tool_rel, permission_rel],
+            "setup_command": setup_cmd,
+            "validate_command": validate_cmd,
+            "repair_edits": [
+                {
+                    "path": tool_rel,
+                    "find": 'APPLY_EDIT = "apply_patch"',
+                    "replace": 'APPLY_EDIT = "apply_edit"',
+                    "expected_before_sha256": hashlib.sha256(tool_broken.encode("utf-8")).hexdigest(),
+                    "expected_after_sha256": hashlib.sha256(tool_baseline.encode("utf-8")).hexdigest(),
+                },
+                {
+                    "path": permission_rel,
+                    "find": '"apply_edit": "apply_patch",',
+                    "replace": '"apply_edit": ToolName.APPLY_EDIT.value,',
+                    "expected_before_sha256": hashlib.sha256(permission_broken.encode("utf-8")).hexdigest(),
+                    "expected_after_sha256": hashlib.sha256(permission_baseline.encode("utf-8")).hexdigest(),
+                },
+            ],
+        },
+    }
+
+
 def _trusted_pattern_refresh_template() -> dict[str, Any]:
     return {
         "task_class": JobClass.TRUSTED_PATTERN_REFRESH.value,
@@ -574,6 +660,8 @@ def _template_payload(name: str) -> dict[str, Any]:
         return _validation_check_inner_loop_template()
     if name == "validation_check_tracked_inner_loop":
         return _validation_check_tracked_inner_loop_template()
+    if name == "validation_check_tracked_multi_file_inner_loop":
+        return _validation_check_tracked_multi_file_inner_loop_template()
     if name == "trusted_pattern_refresh":
         return _trusted_pattern_refresh_template()
     if name == "replay_queue_generation":

@@ -271,6 +271,7 @@ class WorkerRuntime:
         setup_command = str(config.get("setup_command") or "").strip()
         validate_command = str(config.get("validate_command") or "").strip()
         repair_edits = config.get("repair_edits") if isinstance(config.get("repair_edits"), list) else []
+        coordinated_repairs = bool(config.get("coordinated_repairs"))
         max_cycles = max(1, int(config.get("max_cycles") or (len(repair_edits) + 1)))
         tracked_paths = [
             self._workspace_controller.resolve_in_repo(workspace, str(path))
@@ -342,9 +343,15 @@ class WorkerRuntime:
                 )
 
             repair = repair_edits[repair_index] if isinstance(repair_edits[repair_index], dict) else {}
-            repair_index += 1
-            applied, apply_error = self._apply_edit_tool(job=job, workspace=workspace, repair=repair)
-            loop_notes.append(f"repair_{repair_index}:{'applied' if applied else 'failed'}")
+            if coordinated_repairs:
+                batch = [row for row in repair_edits[repair_index:] if isinstance(row, dict)]
+                applied, apply_error = self._apply_edit_batch_tool(job=job, workspace=workspace, repairs=batch)
+                repair_index = len(repair_edits)
+                loop_notes.append(f"repair_batch:{'applied' if applied else 'failed'}")
+            else:
+                repair_index += 1
+                applied, apply_error = self._apply_edit_tool(job=job, workspace=workspace, repair=repair)
+                loop_notes.append(f"repair_{repair_index}:{'applied' if applied else 'failed'}")
             if not applied:
                 self._restore_snapshot(snapshots, reason="repair_failed", job=job)
                 validation = self._validate(job=job, return_code=rc)
@@ -510,6 +517,140 @@ class WorkerRuntime:
                 "path": str(resolved),
                 "sha256_before": original_sha,
                 "sha256_after": updated_sha,
+            },
+        )
+        self.store.append_trace(
+            {"kind": "tool_observation", "worker_id": self.worker_id, "job_id": job.job_id, "observation": observation.to_dict()}
+        )
+        return True, ""
+
+    def _apply_edit_batch_tool(self, *, job: Job, workspace, repairs: list[dict[str, Any]]) -> tuple[bool, str]:
+        if not repairs:
+            return False, "missing_repair_batch"
+
+        preflight: list[dict[str, Any]] = []
+        seen_paths: set[str] = set()
+        for index, repair in enumerate(repairs, start=1):
+            target_path = str(repair.get("path") or "").strip()
+            find_text = str(repair.get("find") or "")
+            replace_text = str(repair.get("replace") or "")
+            expected_before_sha = str(repair.get("expected_before_sha256") or "").strip()
+            expected_after_sha = str(repair.get("expected_after_sha256") or "").strip()
+            if not target_path:
+                return False, f"repair_{index}_missing_path"
+
+            resolved = self._workspace_controller.resolve_in_repo(workspace, target_path)
+            normalized = str(resolved)
+            if normalized in seen_paths:
+                self.store.append_trace(
+                    {
+                        "kind": "inner_loop_conflict",
+                        "worker_id": self.worker_id,
+                        "job_id": job.job_id,
+                        "reason": "duplicate_edit_target",
+                        "path": normalized,
+                    }
+                )
+                return False, "conflict_duplicate_edit_target"
+            seen_paths.add(normalized)
+
+            action = ToolAction(
+                job_id=job.job_id,
+                tool=ToolName.APPLY_EDIT,
+                arguments={"path": normalized, "mode": "replace_text"},
+            )
+            decision = self._permission_engine.evaluate(
+                action=action,
+                allowed_tools_actions=job.allowed_tools_actions,
+                metadata=job.metadata,
+            )
+            self.store.append_trace(
+                {
+                    "kind": "tool_permission_decision",
+                    "worker_id": self.worker_id,
+                    "job_id": job.job_id,
+                    "tool_action": action.to_dict(),
+                    "permission": decision.to_dict(),
+                }
+            )
+            if not decision.allowed:
+                return False, f"permission_denied:{decision.reason}"
+
+            try:
+                original = resolved.read_text(encoding="utf-8")
+            except OSError as exc:
+                return False, f"repair_{index}_read_error:{exc}"
+
+            original_sha = self._sha256_text(original)
+            if expected_before_sha and expected_before_sha != original_sha:
+                self.store.append_trace(
+                    {
+                        "kind": "inner_loop_conflict",
+                        "worker_id": self.worker_id,
+                        "job_id": job.job_id,
+                        "reason": "precondition_sha_mismatch",
+                        "path": normalized,
+                        "expected": expected_before_sha,
+                        "actual": original_sha,
+                    }
+                )
+                return False, "precondition_sha_mismatch"
+            if find_text and find_text not in original:
+                return False, f"repair_{index}_find_text_missing"
+
+            updated = original.replace(find_text, replace_text, 1) if find_text else replace_text
+            updated_sha = self._sha256_text(updated)
+            if expected_after_sha and expected_after_sha != updated_sha:
+                self.store.append_trace(
+                    {
+                        "kind": "inner_loop_conflict",
+                        "worker_id": self.worker_id,
+                        "job_id": job.job_id,
+                        "reason": "postcondition_sha_mismatch",
+                        "path": normalized,
+                        "expected": expected_after_sha,
+                        "actual": updated_sha,
+                    }
+                )
+                return False, "postcondition_sha_mismatch"
+
+            preflight.append(
+                {
+                    "path": resolved,
+                    "original": original,
+                    "updated": updated,
+                    "sha_before": original_sha,
+                    "sha_after": updated_sha,
+                }
+            )
+
+        written: list[Path] = []
+        try:
+            for row in preflight:
+                path = row["path"]
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text(row["updated"], encoding="utf-8")
+                written.append(path)
+        except OSError as exc:
+            for row in preflight:
+                if row["path"] in written:
+                    try:
+                        row["path"].write_text(row["original"], encoding="utf-8")
+                    except OSError:
+                        pass
+            return False, f"batch_write_error:{exc}"
+
+        observation = ToolObservation(
+            job_id=job.job_id,
+            tool=ToolName.APPLY_EDIT,
+            status=ToolStatus.EXECUTED,
+            allowed=True,
+            output=f"edited_batch:{len(preflight)}",
+            return_code=0,
+            metadata={
+                "paths": [str(row["path"]) for row in preflight],
+                "sha256_before": {str(row["path"]): row["sha_before"] for row in preflight},
+                "sha256_after": {str(row["path"]): row["sha_after"] for row in preflight},
             },
         )
         self.store.append_trace(
