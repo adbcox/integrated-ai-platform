@@ -1,7 +1,7 @@
 #!/bin/sh
 set -eu
 
-BASE_DIR="$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)"  # stage7-op
+BASE_DIR="$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)"  # stage7-op  # stage7-op
 DETECT="$BASE_DIR/bin/detect_changed_files.sh"
 PY_CACHE_PREFIX="${PYTHONPYCACHEPREFIX:-${TMPDIR:-/tmp}/quick_pycache}"
 mkdir -p "$PY_CACHE_PREFIX" 2>/dev/null || true
