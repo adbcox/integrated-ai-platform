@@ -1,0 +1,48 @@
+{
+  "schema_version": "1",
+  "description": "Harder bounded local-first campaign tasks for Codex 5.1 replacement benchmark progression.",
+  "default_lane": "stage7",
+  "default_dry_run": true,
+  "tasks": [
+    {
+      "task_id": "harder-stage-resume-mixed",
+      "title": "Resume/checkpoint with mixed-family grouped execution",
+      "in_scope": true,
+      "task_class": "resumable_checkpointed",
+      "query": "stage7 resume checkpoint reconcile grouped mixed family rollback shell script",
+      "notes": "Harder resume and grouped-mixed reconciliation path"
+    },
+    {
+      "task_id": "harder-manager-orchestration-mixed",
+      "title": "Manager hierarchical mixed-family orchestration",
+      "in_scope": true,
+      "task_class": "multi_file_orchestration",
+      "query": "stage7 manager orchestration hierarchical split ordering mixed family shell python",
+      "notes": "Harder manager decomposition and dispatch path"
+    },
+    {
+      "task_id": "harder-rag-planning-mixed",
+      "title": "RAG clustered planning with mixed-family cohorts",
+      "in_scope": true,
+      "task_class": "retrieval_orchestration",
+      "query": "rag retrieval ranking clustered subplans execution feedback mixed family shell python",
+      "notes": "Harder retrieval-to-execution mixed cohort path"
+    },
+    {
+      "task_id": "harder-safe-contracts",
+      "title": "Safe literal contract handling for shell/script targets",
+      "in_scope": true,
+      "task_class": "safe_contracts",
+      "query": "shell script literal contract grouped execution rollback contract validation",
+      "notes": "Harder safe-contract handling path"
+    },
+    {
+      "task_id": "harder-bounded-architecture",
+      "title": "Bounded architecture control-loop evolution path",
+      "in_scope": true,
+      "task_class": "bounded_architecture",
+      "query": "stage manager rag promotion control loop bounded architecture multi file",
+      "notes": "Harder bounded architecture and control-loop path"
+    }
+  ]
+}
