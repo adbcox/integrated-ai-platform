@@ -31,6 +31,7 @@ STAGE6_MANAGER = REPO_ROOT / "bin" / "stage6_manager.py"
 STAGE_RAG6_PLAN = REPO_ROOT / "bin" / "stage_rag6_plan_probe.py"
 TRACE_DIR = REPO_ROOT / "artifacts" / "manager6"
 QUAL_HISTORY_PATH = REPO_ROOT / "artifacts" / "promotion" / "qualification_history.jsonl"
+LEARNING_LATEST_PATH = REPO_ROOT / "artifacts" / "codex51" / "learning" / "latest.json"
 DEFAULT_MANAGER6_HISTORY_WINDOW_DAYS = 14
 IMPORT_BASE_RE = re.compile(r"^(import|from)\s+")
 SHELL_STRICT_RE = re.compile(r"^\s*set -euo pipefail\s*$")
@@ -376,10 +377,12 @@ def _strategy_scorecard(*, family: str, historical: list[dict[str, Any]]) -> dic
 def _choose_subplan_strategy(
     *,
     subplan: dict[str, Any],
+    task_class: str,
     scorecard: dict[str, Any],
     family_memory: dict[str, Any],
     qualification_posture: dict[str, Any],
     budget_forecast: dict[str, Any],
+    learning_priors: dict[str, Any],
     resume_source_status: str | None,
 ) -> dict[str, Any]:
     risk_score = float(subplan.get("risk_score") or 0.0)
@@ -393,6 +396,11 @@ def _choose_subplan_strategy(
     budget_remaining = int(budget_forecast.get("remaining") or 0)
     worker_pressure = bool(qualification_posture.get("worker_pressure"))
     qualification_caution = bool(qualification_posture.get("caution_mode"))
+    learning_active = bool(learning_priors.get("active"))
+    weak_classes = {str(item) for item in (learning_priors.get("weak_classes") or []) if item}
+    recurrence_pressure = bool(learning_priors.get("recurrence_pressure"))
+    benchmark_escalation = float(learning_priors.get("benchmark_escalation_rate") or 0.0)
+    benchmark_quality = float(learning_priors.get("benchmark_first_attempt_quality_rate") or 1.0)
     resume_status = str(resume_source_status or "")
 
     strategy = "run_grouped"
@@ -403,6 +411,19 @@ def _choose_subplan_strategy(
         strategy = "split_first"
         reason = "resume_failure_bias_split"
         decision_tags.append("resume_bias")
+    elif (
+        learning_active
+        and task_class in weak_classes
+        and size > 1
+        and (
+            recurrence_pressure
+            or benchmark_escalation >= 0.22
+            or benchmark_quality < 0.52
+        )
+    ):
+        strategy = "split_first"
+        reason = "learning_priors_bias_split"
+        decision_tags.append("learning_priors")
     elif worker_pressure and qualification_caution and budget_remaining <= 0 and yield_score < 12.0:
         strategy = "defer_manual"
         reason = "qualification_worker_pressure_budget_forecast"
@@ -425,10 +446,79 @@ def _choose_subplan_strategy(
         "family_memory": family_memory,
         "qualification_posture": qualification_posture,
         "budget_forecast": budget_forecast,
+        "learning_priors": learning_priors,
         "resume_source_status": resume_status or "",
         "decision_tags": decision_tags,
         "risk_score": round(risk_score, 3),
         "yield_score": round(yield_score, 3),
+    }
+
+
+def _load_learning_priors(*, path: Path, max_age_hours: int = 72) -> dict[str, Any]:
+    if not path.exists():
+        return {"active": False, "reason": "learning_priors_missing"}
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        return {"active": False, "reason": "learning_priors_invalid_json"}
+
+    generated_raw = str(payload.get("generated_at_utc") or "")
+    generated_ts = None
+    if generated_raw:
+        try:
+            generated_ts = datetime.fromisoformat(generated_raw.replace("Z", "+00:00"))
+        except ValueError:
+            generated_ts = None
+    age_hours: float | None = None
+    if generated_ts is not None:
+        age_hours = max((datetime.now(timezone.utc) - generated_ts).total_seconds() / 3600.0, 0.0)
+    fresh = age_hours is not None and age_hours <= max(1, max_age_hours)
+
+    class_rows = payload.get("class_metrics")
+    weak_classes: list[str] = []
+    if isinstance(class_rows, list):
+        for row in class_rows:
+            if not isinstance(row, dict):
+                continue
+            class_id = str(row.get("class_id") or "")
+            if not class_id:
+                continue
+            success_rate = float(row.get("success_rate") or 0.0)
+            first_attempt = float(row.get("first_attempt_quality_rate") or 0.0)
+            escalation_rate = float(row.get("escalation_rate") or 0.0)
+            if success_rate < 0.7 or first_attempt < 0.5 or escalation_rate > 0.35:
+                weak_classes.append(class_id)
+    if not weak_classes:
+        replay_queue = payload.get("replay_queue")
+        if isinstance(replay_queue, list):
+            weak_classes = sorted(
+                {
+                    str(item.get("task_class") or "")
+                    for item in replay_queue
+                    if isinstance(item, dict) and item.get("task_class")
+                }
+            )
+        else:
+            weak_classes = []
+
+    metrics = payload.get("benchmark_metrics") if isinstance(payload.get("benchmark_metrics"), dict) else {}
+    recurrence_rate = float(metrics.get("recurrence_rate") or 0.0)
+    escalation_rate = float(metrics.get("escalation_rate") or 0.0)
+    first_attempt_rate = float(metrics.get("first_attempt_quality_rate") or 0.0)
+
+    active = bool(fresh and weak_classes)
+    return {
+        "active": active,
+        "reason": "learning_priors_loaded" if active else ("learning_priors_stale_or_empty" if fresh else "learning_priors_stale"),
+        "path": str(path),
+        "generated_at_utc": generated_raw,
+        "age_hours": round(age_hours, 3) if age_hours is not None else None,
+        "fresh": fresh,
+        "weak_classes": weak_classes,
+        "recurrence_pressure": recurrence_rate > 0.35,
+        "benchmark_recurrence_rate": recurrence_rate,
+        "benchmark_escalation_rate": escalation_rate,
+        "benchmark_first_attempt_quality_rate": first_attempt_rate,
     }
 
 
@@ -1044,6 +1134,22 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--worker-budget-single", type=int, default=8)
     parser.add_argument("--worker-budget-adaptive-window-days", type=int, default=14)
     parser.add_argument(
+        "--learning-priors-path",
+        default=str(LEARNING_LATEST_PATH),
+        help="Learning-loop priors artifact used by Manager-10 policy adaptation.",
+    )
+    parser.add_argument(
+        "--learning-priors-max-age-hours",
+        type=int,
+        default=72,
+        help="Maximum artifact age for learning priors before ignored as stale.",
+    )
+    parser.add_argument(
+        "--disable-learning-priors",
+        action="store_true",
+        help="Disable learning-prior strategy adaptation and use baseline manager policy.",
+    )
+    parser.add_argument(
         "--worker-budget-profile",
         default="auto",
         help="Worker budget profile from manifest worker_budget_profiles (or auto).",
@@ -1151,6 +1257,14 @@ def main() -> int:
     checkpoint_subplans = checkpoint.get("subplans", {}) if isinstance(checkpoint, dict) else {}
     historical_outcomes = _load_recent_manager6_outcomes(days=args.manager_history_window_days)
     qualification_posture = _load_latest_qualification_posture(max_age_hours=args.qualification_max_age_hours)
+    learning_priors = (
+        {"active": False, "reason": "learning_priors_disabled"}
+        if args.disable_learning_priors
+        else _load_learning_priors(
+            path=Path(args.learning_priors_path).resolve(),
+            max_age_hours=args.learning_priors_max_age_hours,
+        )
+    )
     task_class = _infer_task_class_from_query(str(plan_payload.get("query") or ""))
     for subplan in subplans:
         subplan_id = str(subplan.get("subplan_id") or "")
@@ -1213,10 +1327,12 @@ def main() -> int:
         scorecard = _strategy_scorecard(family=family, historical=historical_outcomes)
         strategy_decision = _choose_subplan_strategy(
             subplan=subplan,
+            task_class=task_class,
             scorecard=scorecard,
             family_memory=family_memory,
             qualification_posture=qualification_posture,
             budget_forecast=forecast,
+            learning_priors=learning_priors,
             resume_source_status=str(prior.get("status") or "") if isinstance(prior, dict) else None,
         )
         strategy_decision["family"] = family
@@ -1228,11 +1344,24 @@ def main() -> int:
     plan_payload["manager_decisions"].update(
         {
             "strategy_decisions": strategy_decisions,
-            "manager_version": "manager9-v1",
+            "manager_version": "manager10-v1",
             "history_window_days": args.manager_history_window_days,
             "memory_window_days": args.manager_memory_window_days,
             "family_rescue_budget": args.family_rescue_budget,
             "qualification_posture": qualification_posture,
+            "learning_priors": {
+                "active": bool(learning_priors.get("active")),
+                "reason": str(learning_priors.get("reason") or ""),
+                "path": str(learning_priors.get("path") or ""),
+                "generated_at_utc": str(learning_priors.get("generated_at_utc") or ""),
+                "age_hours": learning_priors.get("age_hours"),
+                "weak_classes": list(learning_priors.get("weak_classes") or []),
+                "recurrence_pressure": bool(learning_priors.get("recurrence_pressure")),
+                "benchmark_escalation_rate": float(learning_priors.get("benchmark_escalation_rate") or 0.0),
+                "benchmark_first_attempt_quality_rate": float(
+                    learning_priors.get("benchmark_first_attempt_quality_rate") or 0.0
+                ),
+            },
         }
     )
 

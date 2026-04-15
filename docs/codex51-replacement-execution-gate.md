@@ -8,7 +8,7 @@ It complements `docs/codex51-replacement-gate.md` with explicit version and thre
 The gate is not eligible until all of the following are true in `config/promotion_manifest.json`:
 
 - stage system: `current_version >= stage9-v1`
-- manager/orchestration: `current_version >= manager9-v1`
+- manager/orchestration: `current_version >= manager10-v1`
 - retrieval/RAG: `current_version >= rag9-v1`
 - worker utilization: `current_version >= worker-routing-v3`
 - regression/qualification: `current_version >= qualify-v3`

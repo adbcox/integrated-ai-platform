@@ -12,7 +12,7 @@ This document is the coordinated implementation ladder from current subsystem ve
 | Subsystem | Current Version | Next Version | After Next | Version 15 Target | Current Status |
 | --- | --- | --- | --- | --- | --- |
 | Stage system | `stage9-v1` | `stage10-v1` | `stage11-v1` | `stage15-v1` | building |
-| Manager/orchestration | `manager9-v1` | `manager10-v1` | `manager11-v1` | `manager15-v1` | building |
+| Manager/orchestration | `manager10-v1` | `manager11-v1` | `manager12-v1` | `manager15-v1` | building |
 | Retrieval / RAG | `rag9-v1` | `rag10-v1` | `rag11-v1` | `rag15-v1` | building |
 | Promotion engine / control loop | `level10-promote-v2` | `level10-promote-v3` | `level10-promote-v4` | `level10-promote-v15` | validated |
 | Worker utilization / local execution | `worker-routing-v2` | `worker-routing-v3` | `worker-routing-v4` | `worker-routing-v15` | building |
@@ -28,8 +28,8 @@ This document is the coordinated implementation ladder from current subsystem ve
 - `stage15-v1`: high-confidence autonomous stage planner with verified replay/rollback correctness.
 
 ### Manager/orchestration
-- `manager10-v1`: cross-family policy adaptation with explicit horizon-aware state transitions.
 - `manager11-v1`: hierarchical planner for decomposition/escalation across subplan families.
+- `manager12-v1`: broader long-horizon policy adaptation driven by recurrence-aware execution cohorts.
 - `manager13-v1`: proactive repackaging before repeated failure recurrence.
 - `manager15-v1`: robust autonomous orchestration with explainable policy trace lineage.
 
@@ -66,7 +66,7 @@ This document is the coordinated implementation ladder from current subsystem ve
 ## Dependency Graph (Execution Order)
 
 1. `worker-routing-v3` + `qualify-v3` + `learning-v10`
-2. `manager10-v1` + `rag10-v1`
+2. `manager11-v1` + `rag10-v1`
 3. `stage10-v1`
 4. `level10-promote-v3`
 5. `manager11-v1` + `rag11-v1` + `stage11-v1`
@@ -83,7 +83,7 @@ Rationale:
 ## Codex 5.1 Replacement Prerequisite Versions (Minimum Gate)
 
 - Stage: `stage9-v1` validated with deterministic reconciliation evidence
-- Manager: `manager9-v1` validated with qualification-aware strategy evidence
+- Manager: `manager10-v1` validated with learning-prior strategy adaptation and qualification-aware strategy evidence
 - RAG: `rag9-v1` validated with execution-feedback-aware clustered planning
 - Worker: `worker-routing-v3` validated (adaptive budgets operational)
 - Regression: `qualify-v3` validated (deterministic stage assertions operational)

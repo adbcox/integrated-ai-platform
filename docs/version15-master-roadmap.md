@@ -1,6 +1,6 @@
 # Version 15 Master Roadmap
 
-This is the canonical review roadmap for taking the current Stage-9/Manager-9/RAG-9 stack to **Version 15** across:
+This is the canonical review roadmap for taking the current Stage-9/Manager-10/RAG-9 stack to **Version 15** across:
 1. stage system
 2. manager/orchestration
 3. retrieval/RAG
@@ -26,7 +26,7 @@ This document is planning-only and review-first. It is grounded in current repo 
 - Current contribution to Codex-5.1 replacement: medium. It can run bounded complex multi-target workflows, but still needs stronger deterministic recovery guarantees.
 
 ### 2) Manager/orchestration system
-- Current version/level: `manager9-v1`, level 9 (building).
+- Current version/level: `manager10-v1`, level 10 (building).
 - Current real capability:
   - History-weighted strategy selection.
   - Explicit retry/split/defer state transitions.
@@ -165,9 +165,9 @@ Coarse major milestones only.
 - Target: `stage15` — high-confidence autonomous stage planner with verified replay/rollback correctness.
 
 ### Manager system ladder
-- Current: `manager8-v1`
-- Next: `manager9` — long-horizon adaptive strategy memory.
-- Mid: `manager11` — hierarchical policy planner across subplan families and escalation modes.
+- Current: `manager10-v1`
+- Next: `manager11` — hierarchical policy planner across subplan families and escalation modes.
+- Mid: `manager12` — longer-horizon policy adaptation from replay/recurrence cohorts.
 - Mid: `manager13` — proactive failure prevention and dynamic plan repackaging.
 - Target: `manager15` — robust autonomous orchestration with explainable policy actions.
 

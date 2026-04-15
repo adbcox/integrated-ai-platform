@@ -83,6 +83,10 @@
         "manager9-v1": {
             "entry": "bin/stage7_manager.py",
             "description": "Manager-9 long-horizon orchestration step: qualification-aware strategy posture, worker family-memory scoring, resume-failure biasing, and budget-forecast preemptive defer/split decision tags for Stage-8 runs"
+        },
+        "manager10-v1": {
+            "entry": "bin/stage7_manager.py",
+            "description": "Manager-10 policy adaptation step: consumes learning-loop replay/benchmark priors to bias split/defer strategy for weak bounded-complex classes before first dispatch."
         }
     },
     "rag_versions": {
@@ -146,7 +150,7 @@
         },
         "stage7": {
             "stage_version": "stage9-v1",
-            "manager_version": "manager9-v1",
+            "manager_version": "manager10-v1",
             "rag_version": "rag9-v1"
         }
     },
@@ -202,14 +206,14 @@
         "stage7": {
             "label": "Stage-7 preview lane",
             "stage_version": "stage9-v1",
-            "manager_version": "manager9-v1",
+            "manager_version": "manager10-v1",
             "rag_version": "rag9-v1",
             "allowed_targets": [
                 "bin/"
             ],
             "regression_pack": "bin/micro_lane_stage7.sh",
             "status": "building",
-            "notes": "Stage-9 deterministic resume/checkpoint preview lane with rollback-contract verification, reconciliation guarantees, Manager-9 strategy memory, and RAG-9 execution-feedback-calibrated clustered planning"
+            "notes": "Stage-9 deterministic resume/checkpoint preview lane with rollback-contract verification, reconciliation guarantees, Manager-10 learning-prior strategy adaptation, and RAG-9 execution-feedback-calibrated clustered planning"
         }
     },
     "lane_rules": {
@@ -515,13 +519,13 @@
             "status": "building"
         },
         "manager_system": {
-            "current_version": "manager9-v1",
-            "next_version": "manager10-v1",
-            "after_next_version": "manager11-v1",
-            "upgrade_goal": "Manager-10 extends Manager-9 with richer hierarchical policy adaptation across multi-family subplans and escalation outcomes",
+            "current_version": "manager10-v1",
+            "next_version": "manager11-v1",
+            "after_next_version": "manager12-v1",
+            "upgrade_goal": "Manager-11 extends Manager-10 with hierarchical autonomous decomposition and longer-horizon policy planning across cross-family subplans",
             "minimum_validation": [
-                "One Stage-8 run emits qualification-aware strategy decisions with family-memory and budget-forecast tags",
-                "Resume-aware run shows prior failure/defer status can bias split/defer decisions before dispatch"
+                "One Stage-8 run emits learning-prior-aware strategy decisions for weak classes before first dispatch",
+                "Decision traces show learning-prior reason tags and explicit interaction with qualification+budget posture"
             ],
             "status": "building"
         },
