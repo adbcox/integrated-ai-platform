@@ -11,6 +11,7 @@ class ToolName(StrEnum):
     INFERENCE = "inference"
     RUN_COMMAND = "run_command"
     RUN_TESTS = "run_tests"
+    APPLY_EDIT = "apply_edit"
 
 
 class ToolStatus(StrEnum):

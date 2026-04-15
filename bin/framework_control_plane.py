@@ -66,6 +66,7 @@ def parse_args() -> argparse.Namespace:
             "benchmark_refresh",
             "campaign_artifact_processing",
             "validation_check_execution",
+            "validation_check_inner_loop",
             "trusted_pattern_refresh",
             "replay_queue_generation",
             "replay_queue_execution",
@@ -221,6 +222,50 @@ def _validation_check_execution_template() -> dict[str, Any]:
         "requested_outputs": [
             "artifacts/framework/validation_quick_stdout.txt",
         ],
+    }
+
+
+def _validation_check_inner_loop_template() -> dict[str, Any]:
+    target_file = "artifacts/framework/inner_loop_target.py"
+    return {
+        "task_class": JobClass.VALIDATION_CHECK_EXECUTION.value,
+        "shell_command": "true",
+        "inference_prompt": (
+            "Run bounded edit-test-fix inner loop for validation execution. "
+            "Repair a deterministic syntax failure and stop on successful validation."
+        ),
+        "permission_policy": {
+            "allow_command_patterns": [
+                r"^python3\s+-c\s+.*$",
+                r"^python3\s+-m\s+py_compile\s+artifacts/framework/inner_loop_target\.py$",
+            ],
+            "allow_edit_path_patterns": [r"artifacts/framework/inner_loop_target\.py$"],
+            "deny_command_patterns": [r"\brm\b\s+-rf\b"],
+        },
+        "artifact_inputs": [
+            "framework/worker_runtime.py",
+            "bin/framework_control_plane.py",
+        ],
+        "requested_outputs": [
+            target_file,
+        ],
+        "inner_loop": {
+            "enabled": True,
+            "max_cycles": 2,
+            "setup_command": (
+                "python3 -c \"from pathlib import Path; p=Path('artifacts/framework/inner_loop_target.py'); "
+                "p.parent.mkdir(parents=True, exist_ok=True); "
+                "p.write_text('def value():\\n    return 1+\\n', encoding='utf-8')\""
+            ),
+            "validate_command": "python3 -m py_compile artifacts/framework/inner_loop_target.py",
+            "repair_edits": [
+                {
+                    "path": target_file,
+                    "find": "return 1+",
+                    "replace": "return 1+1",
+                }
+            ],
+        },
     }
 
 
@@ -469,6 +514,8 @@ def _template_payload(name: str) -> dict[str, Any]:
         return _campaign_artifact_processing_template()
     if name == "validation_check_execution":
         return _validation_check_execution_template()
+    if name == "validation_check_inner_loop":
+        return _validation_check_inner_loop_template()
     if name == "trusted_pattern_refresh":
         return _trusted_pattern_refresh_template()
     if name == "replay_queue_generation":
@@ -508,7 +555,7 @@ def build_job(args: argparse.Namespace, *, template_name: str | None = None) -> 
         action=JobAction.INFERENCE_AND_SHELL,
         artifact_inputs=artifact_inputs,
         requested_outputs=requested_outputs,
-        allowed_tools_actions=["inference", "shell_command"],
+        allowed_tools_actions=["inference", "shell_command", "apply_edit"],
         retry_policy=RetryPolicy(
             retry_budget=max(0, int(args.retry_budget)),
             retry_backoff_seconds=max(0, int(args.retry_backoff_seconds)),
@@ -537,6 +584,7 @@ def build_job(args: argparse.Namespace, *, template_name: str | None = None) -> 
             "permission_policy": template_payload.get("permission_policy")
             if isinstance(template_payload.get("permission_policy"), dict)
             else {},
+            "inner_loop": template_payload.get("inner_loop") if isinstance(template_payload.get("inner_loop"), dict) else {},
         },
     )
 

@@ -17,6 +17,13 @@ class JobClass(StrEnum):
     SAFE_CONTRACTS = "safe_contracts"
     BOUNDED_ARCHITECTURE = "bounded_architecture"
     FRAMEWORK_BOOTSTRAP = "framework_bootstrap"
+    LEARNING_ARTIFACT_SYNTHESIS = "learning_artifact_synthesis"
+    BENCHMARK_ANALYSIS = "benchmark_analysis"
+    CAMPAIGN_ARTIFACT_PROCESSING = "campaign_artifact_processing"
+    VALIDATION_CHECK_EXECUTION = "validation_check_execution"
+    TRUSTED_PATTERN_REFRESH = "trusted_pattern_refresh"
+    REPLAY_QUEUE_GENERATION = "replay_queue_generation"
+    REPLAY_QUEUE_EXECUTION = "replay_queue_execution"
 
 
 class JobPriority(StrEnum):

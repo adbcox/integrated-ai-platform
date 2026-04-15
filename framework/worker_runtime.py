@@ -227,6 +227,15 @@ class WorkerRuntime:
         }
         inference = self.inference.run(InferenceRequest(job_id=job.job_id, prompt=prompt, context=context))
 
+        inner_loop = job.metadata.get("inner_loop") if isinstance(job.metadata.get("inner_loop"), dict) else {}
+        if bool(inner_loop.get("enabled")):
+            return self._execute_inner_loop(
+                job=job,
+                workspace=workspace,
+                inference_output=inference.output_text,
+                config=inner_loop,
+            )
+
         output = inference.output_text
         error = ""
         rc = 0
@@ -236,87 +245,8 @@ class WorkerRuntime:
                 rc = 2
                 error = "missing_shell_command"
             else:
-                tool_action = ToolAction(
-                    job_id=job.job_id,
-                    tool=ToolName.RUN_COMMAND,
-                    arguments={"command": command},
-                )
-                permission = self._permission_engine.evaluate(
-                    action=tool_action,
-                    allowed_tools_actions=job.allowed_tools_actions,
-                    metadata=job.metadata,
-                )
-                self.store.append_trace(
-                    {
-                        "kind": "tool_permission_decision",
-                        "worker_id": self.worker_id,
-                        "job_id": job.job_id,
-                        "tool_action": tool_action.to_dict(),
-                        "permission": permission.to_dict(),
-                    }
-                )
-                if not permission.allowed:
-                    rc = 126
-                    error = f"permission_denied:{permission.reason}"
-                    observation = ToolObservation(
-                        job_id=job.job_id,
-                        tool=ToolName.RUN_COMMAND,
-                        status=ToolStatus.BLOCKED,
-                        allowed=False,
-                        output=output,
-                        error=error,
-                        return_code=rc,
-                        metadata={"permission_reason": permission.reason},
-                    )
-                    self.store.append_trace(
-                        {
-                            "kind": "tool_observation",
-                            "worker_id": self.worker_id,
-                            "job_id": job.job_id,
-                            "observation": observation.to_dict(),
-                        }
-                    )
-                else:
-                    try:
-                        sandbox_result = self._sandbox_runner.run_command(
-                            command=command,
-                            cwd=workspace.worktree_target,
-                            env=self._build_env(job),
-                        )
-                        rc = sandbox_result.return_code
-                        output = f"{inference.output_text}\n{sandbox_result.stdout}".strip()
-                        error = sandbox_result.stderr.strip()
-                        observation = ToolObservation(
-                            job_id=job.job_id,
-                            tool=ToolName.RUN_COMMAND,
-                            status=ToolStatus.EXECUTED if rc == 0 else ToolStatus.FAILED,
-                            allowed=True,
-                            output=output[-4000:],
-                            error=error[-2000:],
-                            return_code=rc,
-                            metadata={"sandbox_mode": self._sandbox_runner.mode},
-                        )
-                    except subprocess.TimeoutExpired:
-                        rc = 124
-                        error = "sandbox_timeout"
-                        observation = ToolObservation(
-                            job_id=job.job_id,
-                            tool=ToolName.RUN_COMMAND,
-                            status=ToolStatus.FAILED,
-                            allowed=True,
-                            output=output,
-                            error=error,
-                            return_code=rc,
-                            metadata={"sandbox_mode": self._sandbox_runner.mode},
-                        )
-                    self.store.append_trace(
-                        {
-                            "kind": "tool_observation",
-                            "worker_id": self.worker_id,
-                            "job_id": job.job_id,
-                            "observation": observation.to_dict(),
-                        }
-                    )
+                rc, command_output, error = self._run_command_tool(job=job, workspace=workspace, command=command)
+                output = f"{inference.output_text}\n{command_output}".strip()
 
         validation = self._validate(job=job, return_code=rc)
         status = "completed" if rc == 0 else "failed"
@@ -328,6 +258,240 @@ class WorkerRuntime:
             error=error,
             validation=validation,
         )
+
+    def _execute_inner_loop(
+        self,
+        *,
+        job: Job,
+        workspace,
+        inference_output: str,
+        config: dict[str, Any],
+    ) -> WorkerOutcome:
+        setup_command = str(config.get("setup_command") or "").strip()
+        validate_command = str(config.get("validate_command") or "").strip()
+        repair_edits = config.get("repair_edits") if isinstance(config.get("repair_edits"), list) else []
+        max_cycles = max(1, int(config.get("max_cycles") or (len(repair_edits) + 1)))
+
+        loop_notes: list[str] = []
+        if setup_command:
+            setup_rc, _, setup_err = self._run_command_tool(job=job, workspace=workspace, command=setup_command)
+            if setup_rc != 0:
+                return WorkerOutcome(
+                    job_id=job.job_id,
+                    status="failed",
+                    return_code=setup_rc,
+                    output=inference_output,
+                    error=f"inner_loop_setup_failed:{setup_err}",
+                    validation={"passed": False, "checks": [{"requirement": "inner_loop_setup", "passed": False}]},
+                )
+            loop_notes.append("setup_completed")
+
+        if not validate_command:
+            return WorkerOutcome(
+                job_id=job.job_id,
+                status="failed",
+                return_code=2,
+                output=inference_output,
+                error="inner_loop_missing_validate_command",
+                validation={"passed": False, "checks": [{"requirement": "inner_loop_config", "passed": False}]},
+            )
+
+        repair_index = 0
+        for cycle in range(1, max_cycles + 1):
+            rc, validate_out, validate_err = self._run_command_tool(job=job, workspace=workspace, command=validate_command)
+            self.store.append_trace(
+                {
+                    "kind": "inner_loop_cycle",
+                    "worker_id": self.worker_id,
+                    "job_id": job.job_id,
+                    "cycle": cycle,
+                    "validate_command": validate_command,
+                    "return_code": rc,
+                }
+            )
+            if rc == 0:
+                validation = self._validate(job=job, return_code=0)
+                return WorkerOutcome(
+                    job_id=job.job_id,
+                    status="completed",
+                    return_code=0,
+                    output=f"{inference_output}\n{validate_out}".strip(),
+                    error="",
+                    validation=validation,
+                )
+
+            if repair_index >= len(repair_edits):
+                validation = self._validate(job=job, return_code=rc)
+                return WorkerOutcome(
+                    job_id=job.job_id,
+                    status="failed",
+                    return_code=rc,
+                    output=f"{inference_output}\n{validate_out}".strip(),
+                    error=f"inner_loop_exhausted:{validate_err}",
+                    validation=validation,
+                )
+
+            repair = repair_edits[repair_index] if isinstance(repair_edits[repair_index], dict) else {}
+            repair_index += 1
+            applied, apply_error = self._apply_edit_tool(job=job, workspace=workspace, repair=repair)
+            loop_notes.append(f"repair_{repair_index}:{'applied' if applied else 'failed'}")
+            if not applied:
+                validation = self._validate(job=job, return_code=rc)
+                return WorkerOutcome(
+                    job_id=job.job_id,
+                    status="failed",
+                    return_code=rc,
+                    output=f"{inference_output}\n{validate_out}".strip(),
+                    error=f"inner_loop_repair_failed:{apply_error}",
+                    validation=validation,
+                )
+
+        validation = self._validate(job=job, return_code=1)
+        return WorkerOutcome(
+            job_id=job.job_id,
+            status="failed",
+            return_code=1,
+            output=inference_output,
+            error=f"inner_loop_cycle_limit_reached:{'|'.join(loop_notes)}",
+            validation=validation,
+        )
+
+    def _run_command_tool(self, *, job: Job, workspace, command: str) -> tuple[int, str, str]:
+        tool_action = ToolAction(
+            job_id=job.job_id,
+            tool=ToolName.RUN_COMMAND,
+            arguments={"command": command},
+        )
+        permission = self._permission_engine.evaluate(
+            action=tool_action,
+            allowed_tools_actions=job.allowed_tools_actions,
+            metadata=job.metadata,
+        )
+        self.store.append_trace(
+            {
+                "kind": "tool_permission_decision",
+                "worker_id": self.worker_id,
+                "job_id": job.job_id,
+                "tool_action": tool_action.to_dict(),
+                "permission": permission.to_dict(),
+            }
+        )
+        if not permission.allowed:
+            error = f"permission_denied:{permission.reason}"
+            observation = ToolObservation(
+                job_id=job.job_id,
+                tool=ToolName.RUN_COMMAND,
+                status=ToolStatus.BLOCKED,
+                allowed=False,
+                output="",
+                error=error,
+                return_code=126,
+                metadata={"permission_reason": permission.reason},
+            )
+            self.store.append_trace(
+                {"kind": "tool_observation", "worker_id": self.worker_id, "job_id": job.job_id, "observation": observation.to_dict()}
+            )
+            return 126, "", error
+
+        try:
+            sandbox_result = self._sandbox_runner.run_command(
+                command=command,
+                cwd=workspace.worktree_target,
+                env=self._build_env(job),
+            )
+            rc = sandbox_result.return_code
+            command_output = sandbox_result.stdout.strip()
+            error = sandbox_result.stderr.strip()
+        except subprocess.TimeoutExpired:
+            rc = 124
+            command_output = ""
+            error = "sandbox_timeout"
+
+        observation = ToolObservation(
+            job_id=job.job_id,
+            tool=ToolName.RUN_COMMAND,
+            status=ToolStatus.EXECUTED if rc == 0 else ToolStatus.FAILED,
+            allowed=True,
+            output=command_output[-4000:],
+            error=error[-2000:],
+            return_code=rc,
+            metadata={"sandbox_mode": self._sandbox_runner.mode},
+        )
+        self.store.append_trace(
+            {"kind": "tool_observation", "worker_id": self.worker_id, "job_id": job.job_id, "observation": observation.to_dict()}
+        )
+        return rc, command_output, error
+
+    def _apply_edit_tool(self, *, job: Job, workspace, repair: dict[str, Any]) -> tuple[bool, str]:
+        target_path = str(repair.get("path") or "").strip()
+        find_text = str(repair.get("find") or "")
+        replace_text = str(repair.get("replace") or "")
+        if not target_path:
+            return False, "missing_repair_path"
+
+        resolved = self._workspace_controller.resolve_in_repo(workspace, target_path)
+        action = ToolAction(
+            job_id=job.job_id,
+            tool=ToolName.APPLY_EDIT,
+            arguments={"path": str(resolved), "mode": "replace_text"},
+        )
+        decision = self._permission_engine.evaluate(
+            action=action,
+            allowed_tools_actions=job.allowed_tools_actions,
+            metadata=job.metadata,
+        )
+        self.store.append_trace(
+            {
+                "kind": "tool_permission_decision",
+                "worker_id": self.worker_id,
+                "job_id": job.job_id,
+                "tool_action": action.to_dict(),
+                "permission": decision.to_dict(),
+            }
+        )
+        if not decision.allowed:
+            observation = ToolObservation(
+                job_id=job.job_id,
+                tool=ToolName.APPLY_EDIT,
+                status=ToolStatus.BLOCKED,
+                allowed=False,
+                error=f"permission_denied:{decision.reason}",
+                return_code=126,
+                metadata={"permission_reason": decision.reason},
+            )
+            self.store.append_trace(
+                {"kind": "tool_observation", "worker_id": self.worker_id, "job_id": job.job_id, "observation": observation.to_dict()}
+            )
+            return False, "permission_denied"
+
+        try:
+            original = resolved.read_text(encoding="utf-8")
+        except OSError as exc:
+            return False, f"read_error:{exc}"
+
+        if find_text and find_text not in original:
+            return False, "find_text_missing"
+
+        updated = original.replace(find_text, replace_text, 1) if find_text else replace_text
+        try:
+            resolved.parent.mkdir(parents=True, exist_ok=True)
+            resolved.write_text(updated, encoding="utf-8")
+        except OSError as exc:
+            return False, f"write_error:{exc}"
+
+        observation = ToolObservation(
+            job_id=job.job_id,
+            tool=ToolName.APPLY_EDIT,
+            status=ToolStatus.EXECUTED,
+            allowed=True,
+            output=f"edited:{resolved}",
+            return_code=0,
+            metadata={"path": str(resolved)},
+        )
+        self.store.append_trace(
+            {"kind": "tool_observation", "worker_id": self.worker_id, "job_id": job.job_id, "observation": observation.to_dict()}
+        )
+        return True, ""
 
     def _artifact_context(self, inputs: list[str]) -> list[dict[str, Any]]:
         artifacts: list[dict[str, Any]] = []

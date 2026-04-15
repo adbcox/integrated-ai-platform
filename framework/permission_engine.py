@@ -39,7 +39,12 @@ class PermissionEngine:
     """Evaluates allow/deny rules for tool invocations."""
 
     def __init__(self, *, default_allow_tools: set[str] | None = None) -> None:
-        self.default_allow_tools = default_allow_tools or {ToolName.INFERENCE.value, ToolName.RUN_COMMAND.value, ToolName.RUN_TESTS.value}
+        self.default_allow_tools = default_allow_tools or {
+            ToolName.INFERENCE.value,
+            ToolName.RUN_COMMAND.value,
+            ToolName.RUN_TESTS.value,
+            ToolName.APPLY_EDIT.value,
+        }
 
     def evaluate(self, *, action: ToolAction, allowed_tools_actions: list[str], metadata: dict[str, Any]) -> PermissionDecision:
         declared = self._normalize_declared_tools(allowed_tools_actions) if allowed_tools_actions else set(self.default_allow_tools)
@@ -78,6 +83,19 @@ class PermissionEngine:
                         )
             return PermissionDecision(True, "allowed", evaluated_segments=segments)
 
+        if action.tool is ToolName.APPLY_EDIT:
+            edit_path = str(action.arguments.get("path") or "").strip()
+            if not edit_path:
+                return PermissionDecision(False, "missing_edit_path")
+            deny_path_patterns = [str(x) for x in (policy.get("deny_edit_path_patterns") or [])]
+            allow_path_patterns = [str(x) for x in (policy.get("allow_edit_path_patterns") or [])]
+            for pattern in deny_path_patterns:
+                if re.search(pattern, edit_path):
+                    return PermissionDecision(False, "edit_path_denied", matched_rule=pattern)
+            if allow_path_patterns and not any(re.search(pattern, edit_path) for pattern in allow_path_patterns):
+                return PermissionDecision(False, "edit_path_not_allowed")
+            return PermissionDecision(True, "allowed")
+
         return PermissionDecision(True, "allowed")
 
     def _normalize_declared_tools(self, allowed_tools_actions: list[str]) -> set[str]:
@@ -88,6 +106,8 @@ class PermissionEngine:
             "inference": ToolName.INFERENCE.value,
             "run_tests": ToolName.RUN_TESTS.value,
             "validation": ToolName.RUN_TESTS.value,
+            "apply_edit": ToolName.APPLY_EDIT.value,
+            "edit": ToolName.APPLY_EDIT.value,
         }
         normalized: set[str] = set()
         for raw in allowed_tools_actions:
