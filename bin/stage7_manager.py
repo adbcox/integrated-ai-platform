@@ -2044,10 +2044,20 @@ def main() -> int:
                     if isinstance(strategy_decision.get("predispatch_shape"), dict)
                     else {}
                 )
+                scorecard = (
+                    strategy_decision.get("scorecard")
+                    if isinstance(strategy_decision.get("scorecard"), dict)
+                    else {}
+                )
                 family_bad_rate = float(predispatch_shape.get("family_bad_rate") or 0.0)
                 grouped_bad_rate = float(predispatch_shape.get("grouped_bad_rate") or 0.0)
+                grouped_rate = float(scorecard.get("grouped_rate") or 0.0)
+                split_rate = float(scorecard.get("split_rate") or 0.0)
                 all_low_risk_targets = bool(targets) and all(
                     int(target_risk_by_path.get(path, 2)) <= 1 for path in targets
+                )
+                split_history_favors_singletons = (
+                    split_rate >= 0.8 and (split_rate - grouped_rate) >= 0.2
                 )
                 bounded_low_risk_split_relief = (
                     grouped_carryover_cap == 0
@@ -2055,8 +2065,11 @@ def main() -> int:
                     and str(strategy_decision.get("strategy") or "") == "split_first"
                     and len(targets) <= 2
                     and all_low_risk_targets
-                    and family_bad_rate <= 0.26
                     and grouped_bad_rate <= 0.2
+                    and (
+                        family_bad_rate <= 0.26
+                        or (family_bad_rate <= 0.5 and split_history_favors_singletons)
+                    )
                 )
                 low_risk_dispatch_quota_cap = (
                     1
