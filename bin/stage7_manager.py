@@ -1991,6 +1991,20 @@ def main() -> int:
                     int(args.family_rescue_budget) - int(family_rescue_usage.get(family, 0)),
                 )
                 grouped_carryover_cap = min(2, grouped_family_budget_remaining)
+                recurrence_adaptation = (
+                    strategy_decision.get("recurrence_adaptation")
+                    if isinstance(strategy_decision.get("recurrence_adaptation"), dict)
+                    else {}
+                )
+                replay_pressure = bool(recurrence_adaptation.get("replay_pressure"))
+                low_risk_dispatch_quota_cap = (
+                    1
+                    if grouped_carryover_cap == 0
+                    and replay_pressure
+                    and task_class in {"multi_file_orchestration", "retrieval_orchestration"}
+                    else 0
+                )
+                low_risk_dispatch_quota_used = 0
                 for split_idx, target_path in enumerate(targets, start=1):
                     single_budget_decision = apply_worker_budget(
                         lane=lane_name,
@@ -2012,6 +2026,7 @@ def main() -> int:
                     single_budget_payload["budget_profile"] = strategy_decision.get("budget_profile", {})
                     single_budget_payload["manager14_budget_fallback"] = True
                     single_override_used = False
+                    used_low_risk_quota = False
                     if not single_budget_payload.get("allowed"):
                         target_risk_rank = int(target_risk_by_path.get(target_path, 2))
                         family_budget_remaining = int(args.family_rescue_budget) - int(
@@ -2033,6 +2048,25 @@ def main() -> int:
                                     "manager14_grouped_budget_carryover_risk_rank": int(target_risk_rank),
                                     "manager14_grouped_budget_carryover_family_budget_remaining": int(
                                         family_budget_remaining - 1
+                                    ),
+                                }
+                            )
+                        elif (
+                            target_risk_rank <= 1
+                            and low_risk_dispatch_quota_used < low_risk_dispatch_quota_cap
+                        ):
+                            single_override_used = True
+                            used_low_risk_quota = True
+                            low_risk_dispatch_quota_used += 1
+                            single_budget_payload.update(
+                                {
+                                    "allowed": True,
+                                    "reason": "manager14_grouped_low_risk_dispatch_quota",
+                                    "manager14_grouped_budget_carryover_used": True,
+                                    "manager14_grouped_budget_carryover_risk_rank": int(target_risk_rank),
+                                    "manager14_grouped_low_risk_dispatch_quota_used": True,
+                                    "manager14_grouped_low_risk_dispatch_quota_remaining": int(
+                                        max(0, low_risk_dispatch_quota_cap - low_risk_dispatch_quota_used)
                                     ),
                                 }
                             )
@@ -2079,8 +2113,12 @@ def main() -> int:
                                 "manager14_budget_fallback_used": True,
                                 "manager14_budget_fallback_reason": (
                                     "grouped_budget_to_singleton_dispatch_via_carryover"
-                                    if single_override_used
-                                    else "grouped_budget_to_singleton_dispatch"
+                                    if single_override_used and not used_low_risk_quota
+                                    else (
+                                        "grouped_budget_to_singleton_dispatch_via_low_risk_quota"
+                                        if single_override_used and used_low_risk_quota
+                                        else "grouped_budget_to_singleton_dispatch"
+                                    )
                                 ),
                             },
                         )
