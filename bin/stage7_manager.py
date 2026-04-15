@@ -2078,7 +2078,7 @@ def main() -> int:
                         replay_pressure
                         or bounded_low_risk_split_relief
                     )
-                    and task_class in {"multi_file_orchestration", "retrieval_orchestration"}
+                    and task_class in {"multi_file_orchestration", "retrieval_orchestration", "bounded_architecture"}
                     else 0
                 )
                 # Bounded extension: for tiny low-risk grouped orchestration subplans with
@@ -2109,7 +2109,7 @@ def main() -> int:
                     strict_first_attempt_mode
                     and low_risk_dispatch_quota_cap > 0
                     and split_history_favors_singletons
-                    and task_class in {"multi_file_orchestration", "retrieval_orchestration"}
+                    and task_class in {"multi_file_orchestration", "retrieval_orchestration", "bounded_architecture"}
                     and len(targets) <= 2
                     and family_bad_rate <= 0.35
                     and grouped_bad_rate <= 0.15
@@ -2117,6 +2117,26 @@ def main() -> int:
                     # Bounded extension for first-attempt-only pressure:
                     # allow a single medium-risk singleton dispatch when recurrence
                     # history strongly favors split execution.
+                    quota_risk_rank_limit = 2
+                low_risk_targets = sum(1 for path in targets if int(target_risk_by_path.get(path, 2)) <= 1)
+                medium_or_lower_targets = sum(
+                    1 for path in targets if int(target_risk_by_path.get(path, 2)) <= 2
+                )
+                if (
+                    strict_first_attempt_mode
+                    and low_risk_dispatch_quota_cap == 1
+                    and task_class in {"retrieval_orchestration", "bounded_architecture"}
+                    and len(targets) <= 2
+                    and low_risk_targets >= 1
+                    and medium_or_lower_targets == len(targets)
+                    and family_bad_rate <= 0.35
+                    and grouped_bad_rate <= 0.2
+                ):
+                    # Shared edge blocker fix: tiny low/medium mixed-family grouped
+                    # pairs were exhausting a single quota dispatch and then deferring.
+                    # Under strict first-attempt constraints, allow dispatch of both
+                    # singleton splits while preserving bounded risk guards.
+                    low_risk_dispatch_quota_cap = 2
                     quota_risk_rank_limit = 2
                 low_risk_dispatch_quota_used = 0
                 for split_idx, target_path in enumerate(targets, start=1):
