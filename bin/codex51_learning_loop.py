@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
 """Operational learning loop from real Codex51 artifacts.
 
-learning-v14 objective:
+learning-v15 objective:
 - capture verbose run-level lessons from real benchmark/campaign/curation/trace artifacts,
 - emit prevention candidates that reduce repeated failures,
 - publish first-attempt shaping priors by class/family,
 - publish execution-acceleration outputs for reuse,
-- consume the reusable code library into first-attempt and replay recommendations.
+- consume the reusable code library into first-attempt and replay recommendations,
+- emit ranked first-attempt decision-support cards that combine weak-class pressure,
+  trusted guidance, and reusable code recommendations.
 """
 
 from __future__ import annotations
@@ -1790,6 +1792,143 @@ def _build_reuse_recommendation_outputs(
     }
 
 
+def _build_first_attempt_decision_support(
+    *,
+    weak_classes: list[dict[str, Any]],
+    first_attempt_priors: list[dict[str, Any]],
+    prevention_outputs: dict[str, Any],
+    reuse_recommendations: dict[str, Any],
+    trusted_decision_support: dict[str, Any],
+    max_items: int,
+) -> dict[str, Any]:
+    weak_by_class = {str(row.get("class_id") or "unknown"): row for row in weak_classes if isinstance(row, dict)}
+    priors_by_class = {
+        str(row.get("task_class") or "unknown"): row for row in first_attempt_priors if isinstance(row, dict)
+    }
+    reuse_by_class = {
+        str(row.get("task_class") or "unknown"): row
+        for row in ((reuse_recommendations.get("by_task_class") or []) if isinstance(reuse_recommendations, dict) else [])
+        if isinstance(row, dict)
+    }
+    trusted_by_class = {
+        str(row.get("task_class") or "unknown"): row
+        for row in ((trusted_decision_support.get("by_task_class") or []) if isinstance(trusted_decision_support, dict) else [])
+        if isinstance(row, dict)
+    }
+
+    repeated = (
+        prevention_outputs.get("repeated_failure_signatures")
+        if isinstance(prevention_outputs.get("repeated_failure_signatures"), list)
+        else []
+    )
+    contract_risk = (
+        prevention_outputs.get("contract_risk_warnings")
+        if isinstance(prevention_outputs.get("contract_risk_warnings"), list)
+        else []
+    )
+    failure_count_by_class: Counter[str] = Counter()
+    contract_risk_by_class: Counter[str] = Counter()
+    for row in repeated:
+        if not isinstance(row, dict):
+            continue
+        signature = str(row.get("signature") or "")
+        class_hint = signature.split("|", 1)[0].strip() if "|" in signature else ""
+        if class_hint:
+            failure_count_by_class[class_hint] += _safe_int(row.get("occurrence_count"), 1)
+    for row in contract_risk:
+        if not isinstance(row, dict):
+            continue
+        signature = str(row.get("signature") or "")
+        class_hint = signature.split("|", 1)[0].strip() if "|" in signature else ""
+        if class_hint:
+            contract_risk_by_class[class_hint] += 1
+
+    classes = sorted(
+        set(weak_by_class.keys())
+        | set(priors_by_class.keys())
+        | set(reuse_by_class.keys())
+        | set(trusted_by_class.keys())
+    )
+    cards: list[dict[str, Any]] = []
+    for cls in classes:
+        weak = weak_by_class.get(cls) or {}
+        prior = priors_by_class.get(cls) or {}
+        reuse = reuse_by_class.get(cls) or {}
+        trusted = trusted_by_class.get(cls) or {}
+
+        bad_sample = _safe_int(prior.get("bad_sample_size"), 0)
+        sample_size = max(1, _safe_int(prior.get("sample_size"), 0))
+        bad_ratio = bad_sample / sample_size
+        weakness_score = _safe_float(weak.get("weakness_score"), 0.0)
+        failure_count = _safe_int(failure_count_by_class.get(cls), 0)
+        contract_risk_count = _safe_int(contract_risk_by_class.get(cls), 0)
+
+        priority_score = round(
+            (weakness_score * 2.0)
+            + (bad_ratio * 1.5)
+            + (min(5, failure_count) * 0.35)
+            + (min(4, contract_risk_count) * 0.25),
+            3,
+        )
+
+        use_first = {
+            "library_items": (prior.get("preferred_library_items") or [])[: max(1, max_items)],
+            "trusted_patterns": (trusted.get("use_first_trusted_patterns") or [])[: max(1, max_items)],
+            "library_plus_trusted_combinations": (
+                trusted.get("recommended_library_plus_trusted_combinations") or []
+            )[: max(1, max_items)],
+        }
+        avoid_first = {
+            "library_items": (prior.get("avoid_library_items") or [])[: max(1, max_items)],
+            "trusted_patterns": (trusted.get("avoid_trusted_patterns") or [])[: max(1, max_items)],
+            "known_bad_wording_patterns": (prior.get("known_bad_wording_patterns") or [])[: max(1, max_items)],
+        }
+        recommended_complexity = (
+            str(trusted.get("preferred_complexity_level") or "")
+            or str(reuse.get("recommended_complexity_level") or "")
+            or str(prior.get("recommended_complexity_level") or "medium")
+        )
+        prompt_defaults = {
+            "prompt_tokens": (prior.get("recommended_prompt_framing_tokens") or [])[: max(1, max_items)],
+            "prompt_bigrams": (prior.get("recommended_prompt_bigrams") or [])[: max(1, max_items)],
+            "target_selection_hints": (prior.get("recommended_target_selection_hints") or [])[: max(1, max_items)],
+            "contract_patterns": (prior.get("recommended_contract_patterns") or [])[: max(1, max_items)],
+            "decomposition_style": (prior.get("recommended_decomposition_style") or [])[: max(1, max_items)],
+        }
+        evidence = {
+            "sample_size": sample_size,
+            "good_sample_size": _safe_int(prior.get("good_sample_size"), 0),
+            "bad_sample_size": bad_sample,
+            "weakness_score": weakness_score,
+            "dominant_weakness": str(weak.get("dominant_weakness") or "mixed"),
+            "repeated_failure_count": failure_count,
+            "contract_risk_warning_count": contract_risk_count,
+            "source_plan_ids": [
+                str(row.get("plan_id") or "")
+                for row in ((prior.get("known_good_task_shapes") or []) if isinstance(prior.get("known_good_task_shapes"), list) else [])
+                if isinstance(row, dict) and str(row.get("plan_id") or "")
+            ][: max(1, max_items)],
+        }
+
+        cards.append(
+            {
+                "task_class": cls,
+                "priority_score": priority_score,
+                "recommended_complexity_level": recommended_complexity,
+                "use_first": use_first,
+                "avoid_first": avoid_first,
+                "prompt_contract_defaults": prompt_defaults,
+                "evidence": evidence,
+            }
+        )
+
+    cards.sort(key=lambda row: (_safe_float(row.get("priority_score"), 0.0), row.get("task_class") or ""), reverse=True)
+    return {
+        "by_task_class": cards[: max(1, max_items)],
+        "highest_priority_class": (cards[0].get("task_class") if cards else "unknown"),
+    }
+
+
 def _trusted_external_summary(
     *,
     external_patterns: list[dict[str, Any]],
@@ -2205,6 +2344,23 @@ def _report_markdown(report: dict[str, Any]) -> str:
         )
     lines.append("")
 
+    lines.append("## First-Attempt Decision Support")
+    ds = report.get("first_attempt_decision_support") or {}
+    lines.append(f"- by_task_class: {len(ds.get('by_task_class') or [])}")
+    lines.append(f"- highest_priority_class: {ds.get('highest_priority_class', 'unknown')}")
+    for row in (ds.get("by_task_class") or [])[:4]:
+        use_first = row.get("use_first") or {}
+        avoid_first = row.get("avoid_first") or {}
+        evidence = row.get("evidence") or {}
+        lines.append(
+            f"- {row.get('task_class')}: priority={row.get('priority_score')} "
+            f"complexity={row.get('recommended_complexity_level')} "
+            f"use={len(use_first.get('library_items') or []) + len(use_first.get('trusted_patterns') or [])} "
+            f"avoid={len(avoid_first.get('library_items') or []) + len(avoid_first.get('trusted_patterns') or [])} "
+            f"failures={evidence.get('repeated_failure_count', 0)}"
+        )
+    lines.append("")
+
     lines.append("## Weak Classes")
     for row in (report.get("weak_class_summary") or [])[:6]:
         lines.append(
@@ -2318,6 +2474,14 @@ def build_learning_report(
         class_reuse=class_reuse_recommendations,
         max_items=max_candidates,
     )
+    first_attempt_decision_support = _build_first_attempt_decision_support(
+        weak_classes=weak_classes,
+        first_attempt_priors=first_attempt_priors,
+        prevention_outputs=prevention,
+        reuse_recommendations=reuse_recommendations,
+        trusted_decision_support=trusted_decision_support,
+        max_items=max_candidates,
+    )
     model_wrapper = _model_vs_wrapper_summary(weak_classes, attribution)
     recommendations = _next_step_recommendations(
         weak_classes=weak_classes,
@@ -2330,7 +2494,7 @@ def build_learning_report(
     curation_counts = {key: len(rows) for key, rows in curation_rows.items()}
 
     report = {
-        "schema_version": "learning_report_v14",
+        "schema_version": "learning_report_v15",
         "generated_at_utc": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "learning_subsystem": learning_version,
         "benchmark_metrics": {
@@ -2356,6 +2520,7 @@ def build_learning_report(
         "reuse_recommendations": reuse_recommendations,
         "trusted_external_patterns": trusted_external,
         "trusted_decision_support": trusted_decision_support,
+        "first_attempt_decision_support": first_attempt_decision_support,
         "code_library": {
             "generated_at_utc": code_library.get("generated_at_utc"),
             "summary": code_library.get("summary"),
@@ -2396,12 +2561,13 @@ def build_learning_report(
         "code_library_patterns": code_library.get("patterns") or [],
         "trusted_external_patterns": external_patterns,
         "trusted_decision_support": trusted_decision_support.get("by_task_class") or [],
+        "first_attempt_decision_support": first_attempt_decision_support.get("by_task_class") or [],
     }
     return report, jsonl_outputs
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Run learning-v14 loop from Codex51 artifacts.")
+    parser = argparse.ArgumentParser(description="Run learning-v15 loop from Codex51 artifacts.")
     parser.add_argument("--benchmark", default=str(DEFAULT_BENCHMARK))
     parser.add_argument("--campaign-runs", default=str(DEFAULT_CAMPAIGN_RUNS))
     parser.add_argument("--curation-dir", default=str(DEFAULT_CURATION))
@@ -2494,6 +2660,7 @@ def main() -> int:
         _write_jsonl(out_dir / "weak_class_targets.jsonl", jsonl_outputs["weak_class_targets"])
         _write_jsonl(out_dir / "trusted_external_patterns.jsonl", jsonl_outputs["trusted_external_patterns"])
         _write_jsonl(out_dir / "trusted_decision_support.jsonl", jsonl_outputs["trusted_decision_support"])
+        _write_jsonl(out_dir / "first_attempt_decision_support.jsonl", jsonl_outputs["first_attempt_decision_support"])
 
         code_library_dir = out_dir / "code_library"
         code_library_dir.mkdir(parents=True, exist_ok=True)
