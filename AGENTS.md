@@ -1,73 +1,169 @@
+
 # Instructions
+
+Read and follow these documents first, in order, before any major work:
+
+1. docs/progress-contract.md
+2. docs/codex51-replacement-gate.md
+3. docs/version15-master-roadmap.md
+4. docs/subsystem-versioning-policy.md
+5. docs/promotion-engine.md
 
 ## Mission
 
-Advance this repository toward the next production-capable stage, not just by measuring the current stage, but by implementing the next useful system layers.
+Advance this repository toward the Codex 5.1 replacement milestone as the first major strategic gate, and then toward the broader Version 15 goal.
 
-## Operating mode
+The system must optimize for real capability gain:
 
-* Continue working in batches inside the current session until a real stop condition is met.
-* Do not stop after a single batch, a summary, or a checklist update.
-* Do not treat "more telemetry is needed" as a sufficient reason to stop if safe implementation work remains.
+* better local-first coding performance
+* better first-attempt quality
+* better bounded complex-task completion
+* better trustworthy attribution of gains
 
-## Priority order
+Do not optimize mainly for:
 
-1. Implement code that advances the current architecture.
-2. Use the local worker for low-level safe tasks whenever possible.
-3. Improve the manager when it limits forward progress.
-4. Improve retrieval when it limits forward progress.
-5. Run only the minimum validation needed to confirm new code paths work.
+* benchmark plumbing
+* docs-only motion
+* version-label churn
+* telemetry loops
+* fixture-only proof
+* summary quality
 
-## Do not default to
+## Primary operating rule
 
-* repeated Stage-3-only telemetry
-* repeated summaries
-* repeated checklist narration
-* stopping because "organic work is scarce"
+Every session must declare exactly one primary objective and one primary session type.
 
-If organic work is scarce, generate safe repo-grounded promotability tasks.
+Allowed session types:
 
-## Required behavior
+* capability_session
+* measurement_session
+* planning_session
+* governance_session
 
-* Keep the repo clean between batches.
-* Commit meaningful bounded progress immediately.
-* If a file change is intended and is the only dirty change, commit it before moving on.
-* When a blocker is found, fix it and rerun the relevant path before stopping.
+Default is capability_session.
 
-## Worker-first policy
+A session is incomplete unless it satisfies the progress contract in docs/progress-contract.md.
 
-Use the local worker by default for:
+## Required preamble for each session
 
-* single-file safe edits
-* bounded literal/comment changes
-* currently promoted task classes
+Before major work, determine internally and then act consistently on:
 
-Use Codex directly for:
+1. primary_session_type
+2. primary_objective
+3. blocker_or_capability_gap
+4. why_this_is_the_highest_leverage_move
+5. real_path_to_rerun_before_stopping
 
-* manager changes
-* retrieval changes
-* architecture changes
-* broader guarded promotions
+## Capability-first rule
 
-## Stage advancement policy
+Prefer work that directly improves:
 
-* Stage-3 is not the final goal.
-* Reopen Stage-4 as soon as the entry criteria are actually satisfied.
-* Once Stage-4 is reopened, stabilize it instead of drifting back to Stage-3-only work.
-* Advance retrieval and manager architecture whenever they are the limiting factor.
-* Build toward a justified Stage-5 candidate.
+* local-first task execution
+* Codex 5.1 replacement benchmark performance
+* first-attempt model quality
+* bounded complex-task success
+* manager/RAG/stage behavior only where it materially supports the above
+
+Do not drift into supporting infrastructure unless it is required by a current blocker.
+
+## Real-path rule
+
+No session is complete unless a real local-first path is rerun and used to state a net capability gain, unless a true external blocker prevents it.
+
+Dry-run-only or fixture-only validation is acceptable only to prove a newly added code path before the real rerun in the same session.
+
+## Versioning rule
+
+Version movement must stay explicit and trackable, but do not create micro-subversions unless a real code-path change landed.
+
+Only change a version label when one of these is true:
+
+* new code path exists
+* routing behavior changed
+* retrieval behavior changed
+* stage behavior changed
+* promotion or qualification behavior changed
+* safety or operator workflow changed
+
+## Local-first rule
+
+Use the local system as the primary executor for in-scope bounded complex tasks whenever safe.
+
+Use Codex/manual help primarily for:
+
+* architecture
+* blocker removal
+* governance
+* orchestration
+* training/attribution pipeline work
+* capability jumps the local system cannot yet perform safely
+
+Do not let Codex displace the local system on work the local system should be learning to do.
+
+## Human review gates
+
+Do not proceed without human review for:
+
+* benchmark set definition changes
+* pass/fail threshold changes
+* model training or fine-tuning rollout
+* major promotion-policy changes
+* unsafe scope expansion
+* declaring the Codex 5.1 replacement milestone passed
+
+## Anti-drift constraints
+
+Do not:
+
+* run two measurement sessions in a row unless a named blocker requires it
+* run planning sessions repeatedly without a capability follow-through session
+* stop after docs-only progress
+* stop after benchmark-only progress
+* stop after version-bookkeeping-only progress
+* stop after fixture-only validation
+* optimize reporting over capability gain
+
+## Preferred order of work
+
+When choosing between options, prefer:
+
+1. fixing a real blocker on a real local-first path
+2. implementing the next highest-leverage capability step
+3. rerunning the affected real path
+4. using existing benchmark/curation tooling on the real artifacts
+5. only then making roadmap or governance updates if needed
+
+## Final report requirements
+
+Every final report must include:
+
+1. primary_session_type
+2. primary_objective
+3. blocker_attacked
+4. code_changed
+5. real_path_rerun
+6. net_capability_gain
+7. remaining_blocker
+8. repo_clean
 
 ## Stop conditions
 
 Stop only if:
 
-1. a true external blocker prevents further safe progress,
-2. the repo enters an unrelated inconsistent state that cannot be safely resolved, or
-3. the targeted next-stage implementation for the session is complete and no further safe in-session action remains.
+1. the declared capability blocker was fixed and the real path was rerun
+2. the declared version step was implemented and proven on real work
+3. a true external blocker prevents safe continuation
+4. a named human review gate blocks the next step
 
-Do not stop merely because:
+## Final instruction
 
-* one batch finished
-* you can summarize progress
-* a checklist is not yet complete
-* telemetry exists
+Optimize for actual replacement capability.
+
+If a task does not clearly move the system toward:
+
+* local-first completion,
+* first-attempt model quality,
+* bounded complex-task success,
+* or trusted evidence for the replacement gate,
+
+then it is lower priority until a justified review gate says otherwise.

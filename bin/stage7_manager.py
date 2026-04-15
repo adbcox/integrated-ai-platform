@@ -272,6 +272,7 @@ def _resolve_worker_budget_limits(
     worker_budget_profile: str,
     task_class: str,
     complexity: str,
+    learning_priors: dict[str, Any],
     grouped_limit: int,
     single_limit: int,
 ) -> dict[str, Any]:
@@ -295,6 +296,24 @@ def _resolve_worker_budget_limits(
     multiplier = float(multipliers.get(complexity, 1.0) or 1.0)
     effective_grouped = max(1, int(round(base_grouped * multiplier)))
     effective_single = max(1, int(round(base_single * multiplier)))
+
+    learning_adjust_grouped = 0
+    learning_adjust_single = 0
+    learning_reason = "none"
+    if bool(learning_priors.get("active")):
+        weak_classes = {str(item) for item in (learning_priors.get("weak_classes") or []) if item}
+        recurrence_pressure = bool(learning_priors.get("recurrence_pressure"))
+        benchmark_escalation = float(learning_priors.get("benchmark_escalation_rate") or 0.0)
+        benchmark_quality = float(learning_priors.get("benchmark_first_attempt_quality_rate") or 1.0)
+        if task_class in weak_classes and (recurrence_pressure or benchmark_quality < 0.5):
+            learning_adjust_grouped = 1 if complexity != "high" else 0
+            learning_adjust_single = 2 if complexity != "high" else 1
+            if benchmark_escalation >= 0.2:
+                learning_adjust_single += 1
+            learning_reason = "weak_class_recurrence_or_quality"
+
+    effective_grouped = max(1, effective_grouped + learning_adjust_grouped)
+    effective_single = max(1, effective_single + learning_adjust_single)
     return {
         "profile": selected_profile,
         "task_class": task_class,
@@ -304,6 +323,10 @@ def _resolve_worker_budget_limits(
         "effective_grouped_limit": effective_grouped,
         "effective_single_limit": effective_single,
         "complexity_multiplier": multiplier,
+        "learning_adjustment_applied": bool(learning_adjust_grouped or learning_adjust_single),
+        "learning_adjustment_reason": learning_reason,
+        "learning_adjustment_grouped": learning_adjust_grouped,
+        "learning_adjustment_single": learning_adjust_single,
     }
 
 
@@ -1310,6 +1333,7 @@ def main() -> int:
             worker_budget_profile=args.worker_budget_profile,
             task_class=task_class,
             complexity=complexity,
+            learning_priors=learning_priors,
             grouped_limit=args.worker_budget_grouped,
             single_limit=args.worker_budget_single,
         )
