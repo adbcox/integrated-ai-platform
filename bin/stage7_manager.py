@@ -1385,6 +1385,7 @@ def main() -> int:
         subplan_id = str(subplan.get("subplan_id") or f"subplan-{idx + 1}")
         strategy_decision = strategy_decisions.get(subplan_id, {"strategy": "run_grouped", "reason": "default_grouped"})
         family = str(strategy_decision.get("family") or _subplan_family_key(subplan))
+        target_count = len([str(t) for t in subplan.get("targets", []) if t])
         budget_class = "grouped" if len(subplan.get("targets", [])) > 1 else "single"
         if strategy_decision.get("strategy") == "defer_manual":
             preemptive_budget = {
@@ -1439,8 +1440,24 @@ def main() -> int:
         )
         budget_decision_payload = budget_decision.to_dict()
         budget_decision_payload["budget_profile"] = strategy_decision.get("budget_profile", {})
+        learning_override_used = False
+        if (
+            not budget_decision.allowed
+            and target_count == 1
+            and "learning_priors" in set(strategy_decision.get("decision_tags") or [])
+            and int(family_rescue_usage.get(family, 0)) < 1
+        ):
+            learning_override_used = True
+            family_rescue_usage[family] = int(family_rescue_usage.get(family, 0)) + 1
+            budget_decision_payload.update(
+                {
+                    "allowed": True,
+                    "reason": "manager10_learning_prior_budget_override",
+                    "learning_override_used": True,
+                }
+            )
         worker_budget_decisions.append(budget_decision_payload)
-        if not budget_decision.allowed:
+        if not budget_decision_payload.get("allowed"):
             status = {
                 "subplan_id": subplan_id,
                 "targets": [str(t) for t in subplan.get("targets", []) if t],
@@ -1541,6 +1558,11 @@ def main() -> int:
                 strategy_decision=strategy_decision,
             )
             status["worker_budget_decision"] = budget_decision_payload
+            if learning_override_used:
+                status["strategy_decision"] = {
+                    **dict(status.get("strategy_decision") or {}),
+                    "learning_budget_override_used": True,
+                }
         statuses.append(status)
         rollback_verification = _verify_rollback_contract_for_status(status)
         status["rollback_verification"] = rollback_verification
