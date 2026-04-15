@@ -424,6 +424,10 @@ def _choose_subplan_strategy(
         strategy = "split_first"
         reason = "learning_priors_bias_split"
         decision_tags.append("learning_priors")
+    elif learning_active and task_class in weak_classes and size == 1 and benchmark_quality < 0.55:
+        strategy = "run_grouped"
+        reason = "learning_priors_single_target_guarded_grouped"
+        decision_tags.append("learning_priors")
     elif worker_pressure and qualification_caution and budget_remaining <= 0 and yield_score < 12.0:
         strategy = "defer_manual"
         reason = "qualification_worker_pressure_budget_forecast"
