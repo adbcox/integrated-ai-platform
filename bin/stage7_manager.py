@@ -2068,7 +2068,7 @@ def main() -> int:
                     and grouped_bad_rate <= 0.2
                     and (
                         family_bad_rate <= 0.26
-                        or (family_bad_rate <= 0.5 and split_history_favors_singletons)
+                        or (family_bad_rate <= 0.6 and split_history_favors_singletons)
                     )
                 )
                 low_risk_dispatch_quota_cap = (
@@ -2089,6 +2089,15 @@ def main() -> int:
                     and all_low_risk_targets
                     and family_bad_rate <= 0.3
                     and grouped_bad_rate <= 0.35
+                ):
+                    low_risk_dispatch_quota_cap = 2
+                # When split history clearly dominates grouped history for a tiny
+                # low-risk subplan, allow dispatch of both singleton splits.
+                if (
+                    low_risk_dispatch_quota_cap < 2
+                    and bounded_low_risk_split_relief
+                    and split_history_favors_singletons
+                    and grouped_bad_rate <= 0.16
                 ):
                     low_risk_dispatch_quota_cap = 2
                 low_risk_dispatch_quota_used = 0
