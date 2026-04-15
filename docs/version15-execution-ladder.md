@@ -12,7 +12,7 @@ This document is the coordinated implementation ladder from current subsystem ve
 | Subsystem | Current Version | Next Version | After Next | Version 15 Target | Current Status |
 | --- | --- | --- | --- | --- | --- |
 | Stage system | `stage9-v1` | `stage10-v1` | `stage11-v1` | `stage15-v1` | building |
-| Manager/orchestration | `manager10-v1` | `manager11-v1` | `manager12-v1` | `manager15-v1` | building |
+| Manager/orchestration | `manager11-v1` | `manager12-v1` | `manager13-v1` | `manager15-v1` | building |
 | Retrieval / RAG | `rag10-v1` | `rag11-v1` | `rag12-v1` | `rag15-v1` | building |
 | Promotion engine / control loop | `level10-promote-v2` | `level10-promote-v3` | `level10-promote-v4` | `level10-promote-v15` | validated |
 | Worker utilization / local execution | `worker-routing-v2` | `worker-routing-v3` | `worker-routing-v4` | `worker-routing-v15` | building |

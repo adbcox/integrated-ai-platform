@@ -1102,6 +1102,116 @@ def _order_subplans(subplans: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return ordered
 
 
+def _subplan_families(subplan: dict[str, Any]) -> set[str]:
+    meta = subplan.get("target_meta") or []
+    families = {str(m.get("family") or "") for m in meta if m.get("family")}
+    if families:
+        return {f for f in families if f}
+    targets = [str(t) for t in (subplan.get("targets") or []) if t]
+    return {Path(t).stem.split("_")[0] for t in targets if t}
+
+
+def _build_hierarchical_decomposition(subplans: list[dict[str, Any]]) -> dict[str, Any]:
+    """Manager-11 hierarchical decomposition for mixed-family cohort construction.
+
+    This is a bounded two-level hierarchy:
+    - parent cohorts (priority groups)
+    - child subplans within each cohort
+    """
+
+    pending = [dict(item) for item in subplans]
+    cohorts: list[dict[str, Any]] = []
+    ordered: list[dict[str, Any]] = []
+    contexts: dict[str, dict[str, Any]] = {}
+    cohort_idx = 1
+
+    def _seed_key(item: dict[str, Any]) -> tuple[float, float, float]:
+        return (
+            float(item.get("yield_score") or 0.0),
+            float(item.get("confidence") or 0.0),
+            -float(item.get("risk_score") or 0.0),
+        )
+
+    while pending:
+        pending.sort(key=_seed_key, reverse=True)
+        seed = pending.pop(0)
+        members = [seed]
+        seed_families = set(_subplan_families(seed))
+        cohort_families = set(seed_families)
+
+        best_idx: int | None = None
+        best_score = -999.0
+        for idx, cand in enumerate(pending):
+            cand_families = set(_subplan_families(cand))
+            if not cand_families:
+                continue
+            overlap = len(cohort_families & cand_families)
+            if overlap >= len(cand_families):
+                continue
+            risk_penalty = float(cand.get("risk_score") or 0.0) * 0.6
+            yield_bonus = float(cand.get("yield_score") or 0.0) * 0.25
+            novelty = float(len(cand_families - cohort_families)) * 1.8
+            score = novelty + yield_bonus - risk_penalty - (overlap * 1.5)
+            if score > best_score:
+                best_score = score
+                best_idx = idx
+
+        # Keep the hierarchy bounded: at most 2 child subplans per cohort.
+        if best_idx is not None and best_score >= 0.5:
+            child = pending.pop(best_idx)
+            members.append(child)
+            cohort_families |= _subplan_families(child)
+
+        cohort_id = f"cohort-{cohort_idx}"
+        cohort_idx += 1
+        mixed_family = len(cohort_families) > 1
+        ordered_members = sorted(
+            members,
+            key=lambda item: (
+                float(item.get("risk_score") or 0.0),
+                -float(item.get("yield_score") or 0.0),
+                -float(item.get("confidence") or 0.0),
+            ),
+        )
+        for member_idx, item in enumerate(ordered_members, start=1):
+            subplan_id = str(item.get("subplan_id") or "")
+            role = "parent_head" if member_idx == 1 else "child_member"
+            item["hierarchy_context"] = {
+                "manager_version": "manager11-v1",
+                "cohort_id": cohort_id,
+                "cohort_role": role,
+                "cohort_size": len(ordered_members),
+                "cohort_families": sorted(cohort_families),
+                "mixed_family_cohort": mixed_family,
+                "decomposition_depth": 2,
+            }
+            if subplan_id:
+                contexts[subplan_id] = dict(item["hierarchy_context"])
+            ordered.append(item)
+        cohorts.append(
+            {
+                "cohort_id": cohort_id,
+                "strategy": "mixed_family_hierarchical_cohort" if mixed_family else "single_family_hierarchical_cohort",
+                "subplan_ids": [str(item.get("subplan_id") or "") for item in ordered_members],
+                "families": sorted(cohort_families),
+                "mixed_family": mixed_family,
+                "cohort_priority": len(cohorts) + 1,
+            }
+        )
+
+    mixed_count = sum(1 for c in cohorts if bool(c.get("mixed_family")))
+    return {
+        "ordered_subplans": ordered,
+        "cohorts": cohorts,
+        "contexts": contexts,
+        "summary": {
+            "cohort_count": len(cohorts),
+            "mixed_family_cohort_count": mixed_count,
+            "single_family_cohort_count": len(cohorts) - mixed_count,
+        },
+    }
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Stage-7 multi-plan manager")
     parser.add_argument("--query", nargs="+", required=True)
@@ -1279,6 +1389,7 @@ def main() -> int:
     resumed_completed: list[str] = []
     subplans_to_run: list[dict[str, Any]] = []
     strategy_decisions: dict[str, dict[str, Any]] = {}
+    hierarchy_contexts: dict[str, dict[str, Any]] = {}
     worker_budget_decisions: list[dict[str, Any]] = []
     family_rescue_usage: dict[str, int] = {}
     checkpoint_subplans = checkpoint.get("subplans", {}) if isinstance(checkpoint, dict) else {}
@@ -1368,11 +1479,32 @@ def main() -> int:
         strategy_decisions[subplan_id] = strategy_decision
         subplans_to_run.append(subplan)
 
+    hierarchical_plan = _build_hierarchical_decomposition(subplans_to_run)
+    subplans_to_run = list(hierarchical_plan.get("ordered_subplans") or subplans_to_run)
+    hierarchy_contexts = {
+        str(k): dict(v)
+        for k, v in (hierarchical_plan.get("contexts") or {}).items()
+        if str(k)
+    }
+    for subplan in subplans_to_run:
+        subplan_id = str(subplan.get("subplan_id") or "")
+        if not subplan_id:
+            continue
+        if subplan_id in hierarchy_contexts:
+            strategy_decisions.setdefault(subplan_id, {}).update(
+                {"hierarchy_context": hierarchy_contexts[subplan_id]}
+            )
+
     plan_payload.setdefault("manager_decisions", {})
     plan_payload["manager_decisions"].update(
         {
             "strategy_decisions": strategy_decisions,
-            "manager_version": "manager10-v1",
+            "hierarchical_decomposition": {
+                "cohorts": list(hierarchical_plan.get("cohorts") or []),
+                "summary": dict(hierarchical_plan.get("summary") or {}),
+                "strategy": "manager11_hierarchical_two_level",
+            },
+            "manager_version": "manager11-v1",
             "history_window_days": args.manager_history_window_days,
             "memory_window_days": args.manager_memory_window_days,
             "family_rescue_budget": args.family_rescue_budget,

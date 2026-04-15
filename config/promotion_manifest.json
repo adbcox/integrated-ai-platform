@@ -87,6 +87,10 @@
         "manager10-v1": {
             "entry": "bin/stage7_manager.py",
             "description": "Manager-10 policy adaptation step: consumes learning-loop replay/benchmark priors to bias split/defer strategy for weak bounded-complex classes before first dispatch."
+        },
+        "manager11-v1": {
+            "entry": "bin/stage7_manager.py",
+            "description": "Manager-11 hierarchical decomposition step: builds two-level execution cohorts and mixed-family parent/child subplan context before dispatch."
         }
     },
     "rag_versions": {
@@ -154,7 +158,7 @@
         },
         "stage7": {
             "stage_version": "stage9-v1",
-            "manager_version": "manager10-v1",
+            "manager_version": "manager11-v1",
             "rag_version": "rag10-v1"
         }
     },
@@ -210,14 +214,14 @@
         "stage7": {
             "label": "Stage-7 preview lane",
             "stage_version": "stage9-v1",
-            "manager_version": "manager10-v1",
+            "manager_version": "manager11-v1",
             "rag_version": "rag10-v1",
             "allowed_targets": [
                 "bin/"
             ],
             "regression_pack": "bin/micro_lane_stage7.sh",
             "status": "building",
-            "notes": "Stage-9 deterministic resume/checkpoint preview lane with rollback-contract verification, reconciliation guarantees, Manager-10 learning-prior strategy adaptation, and RAG-10 execution-cohort clustered planning"
+            "notes": "Stage-9 deterministic resume/checkpoint preview lane with rollback-contract verification, reconciliation guarantees, Manager-11 hierarchical decomposition and learning-prior strategy adaptation, and RAG-10 execution-cohort clustered planning"
         }
     },
     "lane_rules": {
@@ -523,13 +527,13 @@
             "status": "building"
         },
         "manager_system": {
-            "current_version": "manager10-v1",
-            "next_version": "manager11-v1",
-            "after_next_version": "manager12-v1",
-            "upgrade_goal": "Manager-11 extends Manager-10 with hierarchical autonomous decomposition and longer-horizon policy planning across cross-family subplans",
+            "current_version": "manager11-v1",
+            "next_version": "manager12-v1",
+            "after_next_version": "manager13-v1",
+            "upgrade_goal": "Manager-12 extends Manager-11 with broader long-horizon policy adaptation and proactive re-packaging from recurrence cohorts",
             "minimum_validation": [
                 "One Stage-8 run emits learning-prior-aware strategy decisions for weak classes before first dispatch",
-                "Decision traces show learning-prior reason tags and explicit interaction with qualification+budget posture"
+                "Decision traces show hierarchical decomposition cohorts with explicit parent/child mixed-family context"
             ],
             "status": "building"
         },
