@@ -17,7 +17,7 @@ This document is the coordinated implementation ladder from current subsystem ve
 | Promotion engine / control loop | `level10-promote-v2` | `level10-promote-v3` | `level10-promote-v4` | `level10-promote-v15` | validated |
 | Worker utilization / local execution | `worker-routing-v2` | `worker-routing-v3` | `worker-routing-v4` | `worker-routing-v15` | building |
 | Regression / qualification | `qualify-v2` | `qualify-v3` | `qualify-v4` | `qualify-v15` | validated |
-| Learning / training / attribution | `learning-v10` | `learning-v11` | `learning-v12` | `learning-v15` | building |
+| Learning / training / attribution | `learning-v11` | `learning-v12` | `learning-v13` | `learning-v15` | validated |
 
 ## What Each Version Step Unlocks
 
@@ -57,9 +57,9 @@ This document is the coordinated implementation ladder from current subsystem ve
 - `qualify-v15`: decision-grade subsystem qualification for autonomous operation.
 
 ### Learning / training / attribution
-- `learning-v10`: operational loop converting real benchmark/campaign/curation artifacts into replay/training queues.
-- `learning-v11`: curriculum cohorts tied to failure signatures and class-level first-attempt deficits.
+- `learning-v11`: operational class-level curriculum loop with weak-class scoring, prioritized replay, and deterministic guard/manager/retrieval/training/template candidate splits from real artifacts.
 - `learning-v12`: controlled adaptation experiments with gate-linked rollback criteria.
+- `learning-v13`: automated class-targeted promotion of validated templates and negative-example bundles into execution defaults.
 - `learning-v15`: continuous model-improvement loop with auditable model-vs-wrapper gains.
 
 ## Dependency Graph (Execution Order)
@@ -87,7 +87,7 @@ Rationale:
 - Worker: `worker-routing-v3` validated (adaptive budgets operational)
 - Regression: `qualify-v3` validated (deterministic stage assertions operational)
 - Promotion: `level10-promote-v3` validated (subsystem-weighted enforcement)
-- Learning: `learning-v10` building/validated (artifact-to-action loop operational)
+- Learning: `learning-v11` validated (class-level artifact-to-action loop operational)
 
 ## Current-Codex Gap-Closing Prerequisite Versions
 
@@ -95,6 +95,6 @@ Rationale:
 - Worker at least `v7`
 - Qualification at least `v7`
 - Promotion at least `v5`
-- Learning loop at least `v12`
+- Learning loop at least `v13`
 
 These are required before claiming meaningful convergence toward current Codex-level capability on bounded complex classes.
