@@ -219,7 +219,8 @@ def _subplan_coverage_summary(subplans: list[dict[str, Any]], statuses: list[dic
             accounted.add(sid)
             continue
         for exp in expected_ids:
-            if sid.startswith(f"{exp}-split-"):
+            # Account for derived subplan identifiers emitted by bounded fallback paths.
+            if sid.startswith(f"{exp}-split-") or sid.startswith(f"{exp}-manager14-"):
                 accounted.add(exp)
                 break
     missing = sorted([sid for sid in expected_ids if sid and sid not in accounted])
