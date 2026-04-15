@@ -1,0 +1,48 @@
+{
+  "schema_version": "1",
+  "description": "Edge harder bounded local-first campaign slice: first-attempt-only mixed-family cross-subplan stress.",
+  "default_lane": "stage7",
+  "default_dry_run": true,
+  "tasks": [
+    {
+      "task_id": "edge-stage-resume-xsubplan",
+      "title": "First-attempt heterogeneous resume/replay across mixed grouped subplans",
+      "in_scope": true,
+      "task_class": "resumable_checkpointed",
+      "query": "stage7 stage8 first attempt resume checkpoint replay reconcile rollback grouped mixed family shell python contracts",
+      "notes": "Edge resumed execution under strict first-attempt policy."
+    },
+    {
+      "task_id": "edge-manager-orchestration-xsubplan",
+      "title": "First-attempt manager orchestration mixed-family decomposition stress",
+      "in_scope": true,
+      "task_class": "multi_file_orchestration",
+      "query": "stage7 manager orchestration first attempt mixed family decomposition split ordering grouped shell python bounded",
+      "notes": "Edge manager decomposition and dispatch stress without rescue."
+    },
+    {
+      "task_id": "edge-rag-planning-xsubplan",
+      "title": "First-attempt RAG mixed-family cohort planning stress",
+      "in_scope": true,
+      "task_class": "retrieval_orchestration",
+      "query": "rag retrieval ranking clustering first attempt mixed family cohorts conflict yield grouped shell python",
+      "notes": "Edge retrieval-to-execution path under reduced support."
+    },
+    {
+      "task_id": "edge-safe-contracts-xsubplan",
+      "title": "First-attempt heterogeneous safe contract synthesis and validation stress",
+      "in_scope": true,
+      "task_class": "safe_contracts",
+      "query": "shell script literal contract synthesis validation first attempt grouped heterogeneous rollback reconcile bounded",
+      "notes": "Edge contract handling across mixed targets without retries."
+    },
+    {
+      "task_id": "edge-control-loop-xsubplan",
+      "title": "First-attempt cross-subsystem bounded control-loop stress",
+      "in_scope": true,
+      "task_class": "bounded_architecture",
+      "query": "stage manager rag worker routing qualify promotion first attempt cross subsystem grouped bounded evolution",
+      "notes": "Edge control-loop path with reduced assist and strict first-attempt behavior."
+    }
+  ]
+}
