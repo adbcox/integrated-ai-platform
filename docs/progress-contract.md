@@ -96,6 +96,19 @@ unless a true external blocker prevents the rerun.
 
 Fixture-only or dry-run-only evidence is acceptable only to prove a newly added code path before the real rerun in the same session.
 
+## Full validation completion rule
+
+After any meaningful code change, a session is incomplete unless it finishes with:
+
+* the affected real-path rerun, and
+* the full discovered repo check surface rerun,
+
+unless a true external blocker prevents the full check-surface rerun.
+
+Benchmark green alone is not sufficient.
+Real-path success alone is not sufficient.
+Capability proof must be paired with repo validation proof.
+
 ## Required net capability gain rule
 
 Every final report must include:
@@ -118,6 +131,7 @@ Do not:
 * run two measurement sessions in a row unless a named blocker requires it
 * run planning sessions repeatedly without capability follow-through
 * stop after benchmark improvements alone
+* stop after capability-path success alone when full repo validation has not been rerun
 * stop after source-of-truth or docs changes alone
 * stop after version bookkeeping alone
 * optimize reporting over capability movement
@@ -138,7 +152,7 @@ The local system should not be displaced by Codex for routine in-scope bounded c
 
 A session may stop only if one of these is true:
 
-1. the declared capability blocker was fixed and the real path was rerun
+1. the declared capability blocker was fixed, the real path was rerun, and the full discovered repo check surface was rerun after meaningful code changes
 2. the declared version step was implemented and proven on real work
 3. a true external blocker prevents safe continuation
 4. a named human review gate blocks the next step

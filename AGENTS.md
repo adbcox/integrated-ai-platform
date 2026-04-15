@@ -72,6 +72,18 @@ No session is complete unless a real local-first path is rerun and used to state
 
 Dry-run-only or fixture-only validation is acceptable only to prove a newly added code path before the real rerun in the same session.
 
+## Full repo validation rule
+
+After any meaningful code change:
+
+* rerun the affected real local-first path,
+* rerun the benchmark if relevant,
+* rerun the full discovered repo check surface.
+
+Do not stop after only capability proof.
+Do not stop after only benchmark proof.
+A session is incomplete without full repo validation unless a true external blocker prevents it.
+
 ## Versioning rule
 
 Version movement must stay explicit and trackable, but do not create micro-subversions unless a real code-path change landed.
@@ -119,6 +131,7 @@ Do not:
 * run planning sessions repeatedly without a capability follow-through session
 * stop after docs-only progress
 * stop after benchmark-only progress
+* stop after path-only capability proof when full repo validation has not been rerun
 * stop after version-bookkeeping-only progress
 * stop after fixture-only validation
 * optimize reporting over capability gain
@@ -150,7 +163,7 @@ Every final report must include:
 
 Stop only if:
 
-1. the declared capability blocker was fixed and the real path was rerun
+1. the declared capability blocker was fixed, the real path was rerun, and the full discovered repo check surface was rerun after meaningful code changes
 2. the declared version step was implemented and proven on real work
 3. a true external blocker prevents safe continuation
 4. a named human review gate blocks the next step
