@@ -2204,7 +2204,7 @@ def main() -> int:
                                     "strategy": "manager14_singleton_fallback_bounded_drop",
                                     "rollback_scope": [],
                                     "trigger_on_failure": False,
-                                    "verification": "not_applicable_pre_dispatch_drop",
+                                    "verification": "not_applicable_no_dispatch",
                                     "notes": "Manager-14 performed bounded low-risk partial drop after successful singleton dispatch.",
                                 },
                                 "code_outcomes": {
