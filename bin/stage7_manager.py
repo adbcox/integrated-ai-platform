@@ -2046,10 +2046,22 @@ def main() -> int:
                 all_low_risk_targets = bool(targets) and all(
                     int(target_risk_by_path.get(path, 2)) <= 1 for path in targets
                 )
+                bounded_low_risk_split_relief = (
+                    grouped_carryover_cap == 0
+                    and task_class in {"multi_file_orchestration", "retrieval_orchestration"}
+                    and str(strategy_decision.get("strategy") or "") == "split_first"
+                    and len(targets) <= 2
+                    and all_low_risk_targets
+                    and family_bad_rate <= 0.26
+                    and grouped_bad_rate <= 0.2
+                )
                 low_risk_dispatch_quota_cap = (
                     1
                     if grouped_carryover_cap == 0
-                    and replay_pressure
+                    and (
+                        replay_pressure
+                        or bounded_low_risk_split_relief
+                    )
                     and task_class in {"multi_file_orchestration", "retrieval_orchestration"}
                     else 0
                 )
