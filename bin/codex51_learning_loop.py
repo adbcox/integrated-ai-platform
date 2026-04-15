@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Operational learning loop from real Codex51 artifacts.
 
-learning-v13 objective:
+learning-v14 objective:
 - capture verbose run-level lessons from real benchmark/campaign/curation/trace artifacts,
 - emit prevention candidates that reduce repeated failures,
 - publish first-attempt shaping priors by class/family,
@@ -31,6 +31,8 @@ DEFAULT_ATTRIBUTION = REPO_ROOT / "artifacts" / "codex51" / "attribution" / "lat
 DEFAULT_MANAGER6_TRACES = REPO_ROOT / "artifacts" / "manager6" / "traces.jsonl"
 DEFAULT_MANAGER6_PLANS_DIR = REPO_ROOT / "artifacts" / "manager6" / "plans"
 DEFAULT_OUT_DIR = REPO_ROOT / "artifacts" / "codex51" / "learning"
+DEFAULT_EXTERNAL_PATTERNS = REPO_ROOT / "artifacts" / "codex51" / "external_patterns" / "patterns.jsonl"
+DEFAULT_EXTERNAL_PRIORS = REPO_ROOT / "artifacts" / "codex51" / "external_patterns" / "best_practice_priors.json"
 
 STOPWORDS = {
     "and",
@@ -122,6 +124,16 @@ def _read_jsonl(path: Path) -> list[dict[str, Any]]:
             if isinstance(payload, dict):
                 rows.append(payload)
     return rows
+
+
+def _load_optional_json(path: Path) -> dict[str, Any]:
+    if not path.exists():
+        return {}
+    try:
+        payload = _read_json(path)
+    except json.JSONDecodeError:
+        return {}
+    return payload if isinstance(payload, dict) else {}
 
 
 def _parse_ts(ts: str) -> datetime | None:
@@ -935,6 +947,8 @@ def _build_first_attempt_priors(
                 ],
                 "preferred_library_items": reuse.get("preferred_library_items") or [],
                 "avoid_library_items": reuse.get("avoid_library_items") or [],
+                "trusted_external_suggestions": reuse.get("trusted_external_suggestions") or [],
+                "trusted_external_avoid": reuse.get("trusted_external_avoid") or [],
                 "recommended_complexity_level": reuse.get("recommended_complexity_level") or "medium",
                 "known_good_reuse_patterns": reuse.get("known_good_reuse_patterns") or [],
             }
@@ -1587,6 +1601,7 @@ def _build_code_library(
 def _build_library_class_recommendations(
     *,
     code_library: dict[str, Any],
+    external_patterns: list[dict[str, Any]],
     lessons: list[dict[str, Any]],
     max_items: int,
 ) -> dict[str, dict[str, Any]]:
@@ -1605,6 +1620,26 @@ def _build_library_class_recommendations(
         rows = code_library.get(key)
         if isinstance(rows, list):
             all_items.extend(row for row in rows if isinstance(row, dict))
+    for row in external_patterns:
+        if not isinstance(row, dict):
+            continue
+        all_items.append(
+            {
+                "key": str(row.get("key") or f"trusted:{row.get('source_name')}:{row.get('source_path')}:{row.get('name')}"),
+                "library_kind": str(row.get("pattern_type") or "snippet"),
+                "reuse_confidence": _safe_float(row.get("reuse_confidence"), 0.0),
+                "complexity_level": str(row.get("complexity_level") or "medium"),
+                "dependencies": row.get("dependencies") or [],
+                "known_good_use_cases": row.get("known_good_use_cases") or row.get("task_class_hints") or [],
+                "known_bad_use_cases": row.get("known_bad_use_cases") or [],
+                "trusted_external_reference": True,
+                "source_name": row.get("source_name"),
+                "source_repo": row.get("source_repo"),
+                "source_path": row.get("source_path"),
+                "source_revision": row.get("source_revision"),
+                "direct_reuse_allowed": bool(row.get("direct_reuse_allowed", True)),
+            }
+        )
 
     def _mode_complexity(rows: list[dict[str, Any]]) -> str:
         counts = Counter(str(row.get("complexity_level") or "medium") for row in rows)
@@ -1618,6 +1653,7 @@ def _build_library_class_recommendations(
             row
             for row in all_items
             if cls in [str(x) for x in (row.get("known_good_use_cases") or [])]
+            and bool(row.get("direct_reuse_allowed", True))
         ]
         bad_items = [
             row
@@ -1636,6 +1672,11 @@ def _build_library_class_recommendations(
                     "reuse_confidence": _safe_float(row.get("reuse_confidence"), 0.0),
                     "complexity_level": str(row.get("complexity_level") or "medium"),
                     "dependency_hints": (row.get("dependencies") or [])[:4],
+                    "trusted_external_reference": bool(row.get("trusted_external_reference")),
+                    "source_name": str(row.get("source_name") or ""),
+                    "source_repo": str(row.get("source_repo") or ""),
+                    "source_path": str(row.get("source_path") or ""),
+                    "source_revision": str(row.get("source_revision") or ""),
                 }
             )
         avoid: list[dict[str, Any]] = []
@@ -1654,9 +1695,30 @@ def _build_library_class_recommendations(
             if len(avoid) >= max(1, max_items):
                 break
 
+        trusted_from_good = [
+            {
+                "key": str(row.get("key") or ""),
+                "library_kind": str(row.get("library_kind") or "unknown"),
+                "reuse_confidence": _safe_float(row.get("reuse_confidence"), 0.0),
+                "source_name": str(row.get("source_name") or ""),
+                "source_repo": str(row.get("source_repo") or ""),
+                "source_path": str(row.get("source_path") or ""),
+                "source_revision": str(row.get("source_revision") or ""),
+                "trusted_external_reference": True,
+            }
+            for row in good_items
+            if bool(row.get("trusted_external_reference"))
+        ][: max(1, max_items)]
+
         recommendations[cls] = {
             "preferred_library_items": preferred,
             "avoid_library_items": avoid,
+            "trusted_external_suggestions": trusted_from_good,
+            "trusted_external_avoid": [
+                item
+                for item in avoid
+                if "trusted:" in str(item.get("key") or "")
+            ][: max(1, max_items)],
             "recommended_complexity_level": _mode_complexity(good_items),
             "known_good_reuse_patterns": [
                 {
@@ -1685,6 +1747,8 @@ def _build_reuse_recommendation_outputs(
                 "preferred_library_items": rec.get("preferred_library_items") or [],
                 "known_good_patterns_first": rec.get("known_good_reuse_patterns") or [],
                 "avoid_items": rec.get("avoid_library_items") or [],
+                "trusted_external_suggestions": rec.get("trusted_external_suggestions") or [],
+                "trusted_external_avoid": rec.get("trusted_external_avoid") or [],
                 "recommended_complexity_level": rec.get("recommended_complexity_level") or "medium",
             }
         )
@@ -1699,6 +1763,7 @@ def _build_reuse_recommendation_outputs(
                 "dominant_weakness": str(row.get("dominant_weakness") or "mixed"),
                 "recommended_reuse": (class_reuse.get(cls) or {}).get("preferred_library_items") or [],
                 "avoid_reuse": (class_reuse.get(cls) or {}).get("avoid_library_items") or [],
+                "trusted_external_suggestions": (class_reuse.get(cls) or {}).get("trusted_external_suggestions") or [],
                 "recommended_complexity_level": (class_reuse.get(cls) or {}).get("recommended_complexity_level") or "medium",
             }
         )
@@ -1712,6 +1777,7 @@ def _build_reuse_recommendation_outputs(
                 "task_class": cls,
                 "reuse_first": (class_reuse.get(cls) or {}).get("preferred_library_items") or [],
                 "avoid_first": (class_reuse.get(cls) or {}).get("avoid_library_items") or [],
+                "trusted_external_suggestions": (class_reuse.get(cls) or {}).get("trusted_external_suggestions") or [],
                 "recommended_complexity_level": (class_reuse.get(cls) or {}).get("recommended_complexity_level") or "medium",
             }
         )
@@ -1720,6 +1786,40 @@ def _build_reuse_recommendation_outputs(
         "by_task_class": by_class[: max(1, max_items)],
         "weak_class_reuse_rankings": weak_class_targets[: max(1, max_items)],
         "replay_reuse_suggestions": replay_suggestions[: max(1, max_items)],
+    }
+
+
+def _trusted_external_summary(
+    *,
+    external_patterns: list[dict[str, Any]],
+    external_priors: dict[str, Any],
+    max_items: int,
+) -> dict[str, Any]:
+    by_source = Counter(str(row.get("source_name") or "unknown") for row in external_patterns)
+    by_type = Counter(str(row.get("pattern_type") or "snippet") for row in external_patterns)
+    top = sorted(
+        external_patterns,
+        key=lambda row: _safe_float(row.get("reuse_confidence"), 0.0),
+        reverse=True,
+    )
+    return {
+        "pattern_count": len(external_patterns),
+        "by_source": dict(by_source),
+        "by_pattern_type": dict(by_type),
+        "top_trusted_patterns": [
+            {
+                "source_name": str(row.get("source_name") or ""),
+                "pattern_type": str(row.get("pattern_type") or "snippet"),
+                "source_path": str(row.get("source_path") or ""),
+                "name": str(row.get("name") or ""),
+                "reuse_confidence": _safe_float(row.get("reuse_confidence"), 0.0),
+                "task_class_hints": row.get("task_class_hints") or row.get("known_good_use_cases") or [],
+                "direct_reuse_allowed": bool(row.get("direct_reuse_allowed", True)),
+                "adaptation_required": bool(row.get("adaptation_required", True)),
+            }
+            for row in top[: max(1, max_items)]
+        ],
+        "best_practice_priors": external_priors,
     }
 
 
@@ -1933,6 +2033,18 @@ def _report_markdown(report: dict[str, Any]) -> str:
         )
     lines.append("")
 
+    lines.append("## Trusted External Patterns")
+    ext = report.get("trusted_external_patterns") or {}
+    lines.append(f"- pattern_count: {ext.get('pattern_count', 0)}")
+    lines.append(f"- by_source: {ext.get('by_source', {})}")
+    lines.append(f"- by_pattern_type: {ext.get('by_pattern_type', {})}")
+    for row in (ext.get("top_trusted_patterns") or [])[:4]:
+        lines.append(
+            f"- {row.get('source_name')}::{row.get('pattern_type')}::{row.get('name')} "
+            f"path={row.get('source_path')} conf={row.get('reuse_confidence')}"
+        )
+    lines.append("")
+
     lines.append("## Weak Classes")
     for row in (report.get("weak_class_summary") or [])[:6]:
         lines.append(
@@ -1981,6 +2093,8 @@ def build_learning_report(
     attribution: dict[str, Any],
     plan_index: dict[str, PlanArtifact],
     commit_records: list[dict[str, Any]],
+    external_patterns: list[dict[str, Any]],
+    external_priors: dict[str, Any],
     max_replay: int,
     max_candidates: int,
 ) -> tuple[dict[str, Any], dict[str, list[dict[str, Any]]]]:
@@ -2010,6 +2124,7 @@ def build_learning_report(
     )
     class_reuse_recommendations = _build_library_class_recommendations(
         code_library=code_library,
+        external_patterns=external_patterns,
         lessons=lessons,
         max_items=max_candidates,
     )
@@ -2030,6 +2145,11 @@ def build_learning_report(
         class_reuse=class_reuse_recommendations,
         max_items=max_candidates,
     )
+    trusted_external = _trusted_external_summary(
+        external_patterns=external_patterns,
+        external_priors=external_priors,
+        max_items=max_candidates,
+    )
     model_wrapper = _model_vs_wrapper_summary(weak_classes, attribution)
     recommendations = _next_step_recommendations(
         weak_classes=weak_classes,
@@ -2042,7 +2162,7 @@ def build_learning_report(
     curation_counts = {key: len(rows) for key, rows in curation_rows.items()}
 
     report = {
-        "schema_version": "learning_report_v13",
+        "schema_version": "learning_report_v14",
         "generated_at_utc": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "learning_subsystem": learning_version,
         "benchmark_metrics": {
@@ -2066,6 +2186,7 @@ def build_learning_report(
         "first_attempt_priors": first_attempt_priors,
         "execution_acceleration": acceleration,
         "reuse_recommendations": reuse_recommendations,
+        "trusted_external_patterns": trusted_external,
         "code_library": {
             "generated_at_utc": code_library.get("generated_at_utc"),
             "summary": code_library.get("summary"),
@@ -2073,6 +2194,8 @@ def build_learning_report(
             "promotion_candidates": code_library.get("promotion_candidates"),
             "recommended_reuse_targets": code_library.get("recommended_reuse_targets"),
             "consumption_by_task_class": class_reuse_recommendations,
+            "trusted_external_pattern_count": trusted_external.get("pattern_count", 0),
+            "trusted_external_sources": trusted_external.get("by_source", {}),
         },
         "model_vs_wrapper_summary": model_wrapper,
         "curation_counts": curation_counts,
@@ -2084,6 +2207,8 @@ def build_learning_report(
             "attribution": str(DEFAULT_ATTRIBUTION),
             "manager6_traces": str(DEFAULT_MANAGER6_TRACES),
             "manager6_plans_dir": str(DEFAULT_MANAGER6_PLANS_DIR),
+            "external_patterns": str(DEFAULT_EXTERNAL_PATTERNS),
+            "external_priors": str(DEFAULT_EXTERNAL_PRIORS),
         },
     }
 
@@ -2099,12 +2224,13 @@ def build_learning_report(
         "code_library_templates": code_library.get("templates") or [],
         "code_library_modules": code_library.get("modules") or [],
         "code_library_patterns": code_library.get("patterns") or [],
+        "trusted_external_patterns": external_patterns,
     }
     return report, jsonl_outputs
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Run learning-v13 loop from Codex51 artifacts.")
+    parser = argparse.ArgumentParser(description="Run learning-v14 loop from Codex51 artifacts.")
     parser.add_argument("--benchmark", default=str(DEFAULT_BENCHMARK))
     parser.add_argument("--campaign-runs", default=str(DEFAULT_CAMPAIGN_RUNS))
     parser.add_argument("--curation-dir", default=str(DEFAULT_CURATION))
@@ -2112,6 +2238,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--attribution", default=str(DEFAULT_ATTRIBUTION))
     parser.add_argument("--manager6-traces", default=str(DEFAULT_MANAGER6_TRACES))
     parser.add_argument("--manager6-plans-dir", default=str(DEFAULT_MANAGER6_PLANS_DIR))
+    parser.add_argument("--external-patterns", default=str(DEFAULT_EXTERNAL_PATTERNS))
+    parser.add_argument("--external-priors", default=str(DEFAULT_EXTERNAL_PRIORS))
     parser.add_argument("--out-dir", default=str(DEFAULT_OUT_DIR))
     parser.add_argument("--window-days", type=int, default=14)
     parser.add_argument("--max-replay", type=int, default=8)
@@ -2130,6 +2258,8 @@ def main() -> int:
     attribution_path = Path(args.attribution).resolve()
     manager6_traces_path = Path(args.manager6_traces).resolve()
     manager6_plans_dir = Path(args.manager6_plans_dir).resolve()
+    external_patterns_path = Path(args.external_patterns).resolve()
+    external_priors_path = Path(args.external_priors).resolve()
 
     for required_path, label in [
         (benchmark_path, "benchmark"),
@@ -2145,6 +2275,8 @@ def main() -> int:
     benchmark = _read_json(benchmark_path)
     manifest = _read_json(manifest_path)
     attribution = _read_json(attribution_path)
+    external_patterns = _read_jsonl(external_patterns_path)
+    external_priors = _load_optional_json(external_priors_path)
     runs = _load_campaign_runs(campaign_runs_path, window_days=max(1, args.window_days))
     curation_rows = _load_curation_rows(curation_dir)
 
@@ -2161,6 +2293,8 @@ def main() -> int:
         attribution=attribution,
         plan_index=plan_index,
         commit_records=commit_records,
+        external_patterns=external_patterns,
+        external_priors=external_priors,
         max_replay=max(1, args.max_replay),
         max_candidates=max(1, args.max_candidates),
     )
@@ -2183,6 +2317,7 @@ def main() -> int:
         _write_jsonl(out_dir / "execution_acceleration.jsonl", jsonl_outputs["execution_acceleration"])
         _write_jsonl(out_dir / "reuse_recommendations.jsonl", jsonl_outputs["reuse_recommendations"])
         _write_jsonl(out_dir / "weak_class_targets.jsonl", jsonl_outputs["weak_class_targets"])
+        _write_jsonl(out_dir / "trusted_external_patterns.jsonl", jsonl_outputs["trusted_external_patterns"])
 
         code_library_dir = out_dir / "code_library"
         code_library_dir.mkdir(parents=True, exist_ok=True)

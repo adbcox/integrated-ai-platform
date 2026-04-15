@@ -1,0 +1,121 @@
+{
+  "schema_version": "trusted_pattern_sources_v1",
+  "updated_at_utc": "2026-04-15T00:00:00Z",
+  "sources": [
+    {
+      "source_name": "ruff",
+      "upstream_repo": "astral-sh/ruff",
+      "upstream_url": "https://github.com/astral-sh/ruff.git",
+      "trust_level": "high_official_upstream",
+      "intended_use": "Python lint/format/code quality patterns, config examples, helper structure, tooling conventions",
+      "language_family": ["python", "toml", "rust"],
+      "license": "MIT",
+      "extraction_policy": "extract_small_reusable_patterns_with_attribution_and_license",
+      "allowed_pattern_types": ["snippet", "helper", "template", "module", "multi_file_pattern"],
+      "disallowed_direct_reuse_cases": [
+        "copying_large_upstream_implementation_blocks_without_adaptation",
+        "vendoring_entire_tooling_subsystems"
+      ],
+      "preferred_ref": "main",
+      "ref_type": "branch",
+      "include_paths": ["python", "crates", "docs", "README.md", "pyproject.toml"],
+      "extract_globs": ["python/**/*.py", "crates/**/*.rs", "docs/**/*.md", "pyproject.toml", "README.md"],
+      "task_class_hints": ["multi_file_orchestration", "bounded_architecture", "retrieval_orchestration"]
+    },
+    {
+      "source_name": "pytest",
+      "upstream_repo": "pytest-dev/pytest",
+      "upstream_url": "https://github.com/pytest-dev/pytest.git",
+      "trust_level": "high_official_upstream",
+      "intended_use": "test structure patterns, fixture patterns, assertion style, CLI/testing conventions",
+      "language_family": ["python", "ini", "toml"],
+      "license": "MIT",
+      "extraction_policy": "extract_test_and_fixture_patterns_with_usage_metadata",
+      "allowed_pattern_types": ["snippet", "helper", "template", "module", "multi_file_pattern"],
+      "disallowed_direct_reuse_cases": [
+        "copying_pytest_internal_runtime_logic_verbatim_into_local_execution_paths"
+      ],
+      "preferred_ref": "main",
+      "ref_type": "branch",
+      "include_paths": ["src", "testing", "doc", "README.rst", "pyproject.toml"],
+      "extract_globs": ["src/**/*.py", "testing/**/*.py", "doc/**/*.rst", "pyproject.toml", "README.rst"],
+      "task_class_hints": ["multi_file_orchestration", "resumable_checkpointed"]
+    },
+    {
+      "source_name": "shellcheck",
+      "upstream_repo": "koalaman/shellcheck",
+      "upstream_url": "https://github.com/koalaman/shellcheck.git",
+      "trust_level": "high_official_upstream",
+      "intended_use": "shell safety/best-practice anti-patterns and safer shell scripting rules",
+      "language_family": ["shell", "haskell", "markdown"],
+      "license": "GPL-3.0",
+      "extraction_policy": "extract_shell_safety_rules_and_anti_patterns_without_large_code_copy",
+      "allowed_pattern_types": ["snippet", "helper", "template", "module", "multi_file_pattern"],
+      "disallowed_direct_reuse_cases": [
+        "copying_entire_shellcheck_rule_engine_or_parser_components"
+      ],
+      "preferred_ref": "master",
+      "ref_type": "branch",
+      "include_paths": ["src", "README.md", "CHANGELOG.md"],
+      "extract_globs": ["src/**/*.hs", "README.md", "CHANGELOG.md"],
+      "task_class_hints": ["safe_contracts", "resumable_checkpointed", "bounded_architecture"]
+    },
+    {
+      "source_name": "mvdan_sh",
+      "upstream_repo": "mvdan/sh",
+      "upstream_url": "https://github.com/mvdan/sh.git",
+      "trust_level": "high_official_upstream",
+      "intended_use": "shfmt/shell formatting/parser-backed shell patterns, shell structure conventions",
+      "language_family": ["shell", "go", "markdown"],
+      "license": "BSD-3-Clause",
+      "extraction_policy": "extract_shell_formatting_and_parser-backed_scripting_conventions",
+      "allowed_pattern_types": ["snippet", "helper", "template", "module", "multi_file_pattern"],
+      "disallowed_direct_reuse_cases": [
+        "copying_whole_parser_implementation_into_local_repo"
+      ],
+      "preferred_ref": "master",
+      "ref_type": "branch",
+      "include_paths": ["cmd", "syntax", "README.md", "_js"],
+      "extract_globs": ["cmd/**/*.go", "syntax/**/*.go", "README.md", "**/*.sh"],
+      "task_class_hints": ["safe_contracts", "resumable_checkpointed"]
+    },
+    {
+      "source_name": "playwright_python",
+      "upstream_repo": "microsoft/playwright-python",
+      "upstream_url": "https://github.com/microsoft/playwright-python.git",
+      "trust_level": "high_official_upstream",
+      "intended_use": "browser automation/test orchestration patterns relevant to browser/operator workflows",
+      "language_family": ["python", "typescript", "markdown"],
+      "license": "Apache-2.0",
+      "extraction_policy": "extract_browser_automation_templates_helpers_and_safe_usage_patterns",
+      "allowed_pattern_types": ["snippet", "helper", "template", "module", "multi_file_pattern"],
+      "disallowed_direct_reuse_cases": [
+        "copying_large_internal_transport_or_codegen_modules"
+      ],
+      "preferred_ref": "main",
+      "ref_type": "branch",
+      "include_paths": ["playwright", "tests", "README.md", "docs"],
+      "extract_globs": ["playwright/**/*.py", "tests/**/*.py", "README.md", "docs/**/*.md"],
+      "task_class_hints": ["retrieval_orchestration", "multi_file_orchestration"]
+    },
+    {
+      "source_name": "pydantic",
+      "upstream_repo": "pydantic/pydantic",
+      "upstream_url": "https://github.com/pydantic/pydantic.git",
+      "trust_level": "high_official_upstream",
+      "intended_use": "typed validation, config/schema patterns, structured payload/model patterns",
+      "language_family": ["python", "markdown", "toml"],
+      "license": "MIT",
+      "extraction_policy": "extract_typed_validation_helpers_templates_and_schema_defaults",
+      "allowed_pattern_types": ["snippet", "helper", "template", "module", "multi_file_pattern"],
+      "disallowed_direct_reuse_cases": [
+        "copying_internal_validation_engine_logic_verbatim"
+      ],
+      "preferred_ref": "main",
+      "ref_type": "branch",
+      "include_paths": ["pydantic", "docs", "tests", "README.md", "pyproject.toml"],
+      "extract_globs": ["pydantic/**/*.py", "docs/**/*.md", "tests/**/*.py", "README.md", "pyproject.toml"],
+      "task_class_hints": ["bounded_architecture", "safe_contracts", "multi_file_orchestration"]
+    }
+  ]
+}

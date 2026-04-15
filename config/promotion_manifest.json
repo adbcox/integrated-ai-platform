@@ -595,14 +595,15 @@
       "status": "validated"
     },
     "learning_training_attribution_loop": {
-      "current_version": "learning-v13",
-      "next_version": "learning-v14",
+      "current_version": "learning-v14",
+      "next_version": "learning-v15",
       "after_next_version": "learning-v15",
-      "upgrade_goal": "Learning v14 operationalizes adaptation-ready promotion from reusable code-library consumption paths, class-targeted reuse recommendations, and rollback-bound controlled experiments.",
+      "upgrade_goal": "Learning v15 operationalizes controlled adaptation experiments with rollback-bound promotion gates on top of trusted external pattern intake, class-targeted reuse recommendations, and the learning-v14 lesson/prevention/prior/reuse engine.",
       "minimum_validation": [
         "Learning loop report emits verbose lessons, prevention_outputs, first_attempt_priors, execution_acceleration, reuse_recommendations, and prioritized_replay_queue from real benchmark/campaign/curation/attribution/manager-trace artifacts",
         "Learning artifacts are persisted as stable machine-readable outputs: latest.json/latest.md plus lessons.jsonl, prevention_candidates.jsonl, first_attempt_priors.jsonl, execution_acceleration.jsonl, reuse_recommendations.jsonl, and weak_class_targets.jsonl",
-        "Code-library consumption map is present per task class with preferred/avoid items and recommended complexity level for first-attempt shaping"
+        "Code-library consumption map is present per task class with preferred/avoid items and recommended complexity level for first-attempt shaping",
+        "Trusted external intake emits approved-source pinned revision metadata, extracted pattern classifications with license/attribution fields, and best-practice priors consumed by learning outputs"
       ],
       "status": "building"
     }
