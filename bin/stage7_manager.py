@@ -529,6 +529,17 @@ def _load_learning_priors(*, path: Path, max_age_hours: int = 72) -> dict[str, A
             weak_classes = []
 
     metrics = payload.get("benchmark_metrics") if isinstance(payload.get("benchmark_metrics"), dict) else {}
+    replay_queue = payload.get("replay_queue") if isinstance(payload.get("replay_queue"), list) else []
+    bounded_replay_queue = [
+        {
+            "task_id": str(item.get("task_id") or ""),
+            "task_class": str(item.get("task_class") or ""),
+            "reason": str(item.get("reason") or ""),
+            "source_plan_id": str(item.get("source_plan_id") or ""),
+        }
+        for item in replay_queue
+        if isinstance(item, dict)
+    ][:20]
     recurrence_rate = float(metrics.get("recurrence_rate") or 0.0)
     escalation_rate = float(metrics.get("escalation_rate") or 0.0)
     first_attempt_rate = float(metrics.get("first_attempt_quality_rate") or 0.0)
@@ -546,6 +557,7 @@ def _load_learning_priors(*, path: Path, max_age_hours: int = 72) -> dict[str, A
         "benchmark_recurrence_rate": recurrence_rate,
         "benchmark_escalation_rate": escalation_rate,
         "benchmark_first_attempt_quality_rate": first_attempt_rate,
+        "replay_queue": bounded_replay_queue,
     }
 
 
@@ -1111,7 +1123,11 @@ def _subplan_families(subplan: dict[str, Any]) -> set[str]:
     return {Path(t).stem.split("_")[0] for t in targets if t}
 
 
-def _build_hierarchical_decomposition(subplans: list[dict[str, Any]]) -> dict[str, Any]:
+def _build_hierarchical_decomposition(
+    subplans: list[dict[str, Any]],
+    *,
+    recurrence_memory: dict[str, Any],
+) -> dict[str, Any]:
     """Manager-11 hierarchical decomposition for mixed-family cohort construction.
 
     This is a bounded two-level hierarchy:
@@ -1132,6 +1148,7 @@ def _build_hierarchical_decomposition(subplans: list[dict[str, Any]]) -> dict[st
             -float(item.get("risk_score") or 0.0),
         )
 
+    conservative_split = bool(recurrence_memory.get("conservative_split"))
     while pending:
         pending.sort(key=_seed_key, reverse=True)
         seed = pending.pop(0)
@@ -1157,10 +1174,14 @@ def _build_hierarchical_decomposition(subplans: list[dict[str, Any]]) -> dict[st
                 best_idx = idx
 
         # Keep the hierarchy bounded: at most 2 child subplans per cohort.
-        if best_idx is not None and best_score >= 0.5:
+        if best_idx is not None and best_score >= (2.5 if conservative_split else 0.5):
             child = pending.pop(best_idx)
-            members.append(child)
-            cohort_families |= _subplan_families(child)
+            child_families = _subplan_families(child)
+            if conservative_split and len((cohort_families | child_families)) > 1:
+                pending.append(child)
+            else:
+                members.append(child)
+                cohort_families |= child_families
 
         cohort_id = f"cohort-{cohort_idx}"
         cohort_idx += 1
@@ -1177,7 +1198,7 @@ def _build_hierarchical_decomposition(subplans: list[dict[str, Any]]) -> dict[st
             subplan_id = str(item.get("subplan_id") or "")
             role = "parent_head" if member_idx == 1 else "child_member"
             item["hierarchy_context"] = {
-                "manager_version": "manager11-v1",
+                "manager_version": "manager12-v1",
                 "cohort_id": cohort_id,
                 "cohort_role": role,
                 "cohort_size": len(ordered_members),
@@ -1191,7 +1212,11 @@ def _build_hierarchical_decomposition(subplans: list[dict[str, Any]]) -> dict[st
         cohorts.append(
             {
                 "cohort_id": cohort_id,
-                "strategy": "mixed_family_hierarchical_cohort" if mixed_family else "single_family_hierarchical_cohort",
+                "strategy": (
+                    "recurrence_split_cohort"
+                    if conservative_split
+                    else ("mixed_family_hierarchical_cohort" if mixed_family else "single_family_hierarchical_cohort")
+                ),
                 "subplan_ids": [str(item.get("subplan_id") or "") for item in ordered_members],
                 "families": sorted(cohort_families),
                 "mixed_family": mixed_family,
@@ -1208,7 +1233,100 @@ def _build_hierarchical_decomposition(subplans: list[dict[str, Any]]) -> dict[st
             "cohort_count": len(cohorts),
             "mixed_family_cohort_count": mixed_count,
             "single_family_cohort_count": len(cohorts) - mixed_count,
+            "decomposition_mode": str(recurrence_memory.get("decomposition_mode") or "balanced_hierarchical"),
         },
+    }
+
+
+def _load_cross_run_recurrence_memory(
+    *,
+    task_class: str,
+    history_window_days: int,
+    learning_priors: dict[str, Any],
+) -> dict[str, Any]:
+    """Manager-12 recurrence/cohort memory from replay queue + recent outcomes."""
+
+    replay_queue = learning_priors.get("replay_queue")
+    if not isinstance(replay_queue, list):
+        replay_queue = []
+    replay_rows = [
+        row
+        for row in replay_queue
+        if isinstance(row, dict) and str(row.get("task_class") or "") == task_class
+    ]
+    replay_reasons = sorted({str(row.get("reason") or "") for row in replay_rows if row.get("reason")})
+    replay_pressure = bool(replay_rows)
+
+    recent_runs = 0
+    bad_runs = 0
+    strategy_totals: dict[str, int] = {}
+    strategy_bad: dict[str, int] = {}
+    now_ts = datetime.now(timezone.utc).timestamp()
+    cutoff_ts = now_ts - (max(1, history_window_days) * 86400)
+    plans_dir = TRACE_DIR / "plans"
+    if plans_dir.exists():
+        for path in plans_dir.glob("*.json"):
+            try:
+                data = json.loads(path.read_text(encoding="utf-8"))
+            except json.JSONDecodeError:
+                continue
+            plan_payload = data.get("plan_payload") if isinstance(data.get("plan_payload"), dict) else {}
+            row_task_class = _infer_task_class_from_query(str(plan_payload.get("query") or ""))
+            if row_task_class != task_class:
+                continue
+            finished = None
+            history = data.get("history") if isinstance(data.get("history"), list) else []
+            for event in reversed(history):
+                if isinstance(event, dict) and str(event.get("event_type") or "") == "attempt_finished":
+                    finished = event
+                    break
+            if not isinstance(finished, dict):
+                continue
+            try:
+                ts = datetime.fromisoformat(str(finished.get("timestamp") or "").replace("Z", "+00:00")).timestamp()
+            except ValueError:
+                continue
+            if ts < cutoff_ts:
+                continue
+            recent_runs += 1
+            statuses = finished.get("statuses") if isinstance(finished.get("statuses"), list) else []
+            run_bad = False
+            for row in statuses:
+                if not isinstance(row, dict):
+                    continue
+                status = str(row.get("status") or "")
+                strategy = str(row.get("strategy") or "unknown")
+                strategy_totals[strategy] = strategy_totals.get(strategy, 0) + 1
+                is_bad = status in {
+                    "failure",
+                    "deferred_worker_budget",
+                    "deferred_manager_policy",
+                    "dropped_family_budget",
+                    "rollback_contract_invalid",
+                }
+                if is_bad:
+                    run_bad = True
+                    strategy_bad[strategy] = strategy_bad.get(strategy, 0) + 1
+            if run_bad:
+                bad_runs += 1
+
+    bad_rate = round((bad_runs / recent_runs), 3) if recent_runs > 0 else 0.0
+    strategy_bad_rates = {
+        key: round((strategy_bad.get(key, 0) / total), 3) if total > 0 else 0.0
+        for key, total in strategy_totals.items()
+    }
+    conservative_split = bool(replay_pressure or bad_rate >= 0.35)
+    return {
+        "task_class": task_class,
+        "replay_pressure": replay_pressure,
+        "replay_count": len(replay_rows),
+        "replay_reasons": replay_reasons,
+        "recent_runs": recent_runs,
+        "recent_bad_runs": bad_runs,
+        "recent_bad_rate": bad_rate,
+        "strategy_bad_rates": strategy_bad_rates,
+        "conservative_split": conservative_split,
+        "decomposition_mode": "recurrence_aware_conservative_split" if conservative_split else "balanced_hierarchical",
     }
 
 
@@ -1404,6 +1522,11 @@ def main() -> int:
         )
     )
     task_class = _infer_task_class_from_query(str(plan_payload.get("query") or ""))
+    recurrence_memory = _load_cross_run_recurrence_memory(
+        task_class=task_class,
+        history_window_days=args.manager_history_window_days,
+        learning_priors=learning_priors,
+    )
     for subplan in subplans:
         subplan_id = str(subplan.get("subplan_id") or "")
         prior = checkpoint_subplans.get(subplan_id)
@@ -1474,12 +1597,20 @@ def main() -> int:
             learning_priors=learning_priors,
             resume_source_status=str(prior.get("status") or "") if isinstance(prior, dict) else None,
         )
+        strategy_decision["recurrence_adaptation"] = {
+            "replay_pressure": bool(recurrence_memory.get("replay_pressure")),
+            "conservative_split": bool(recurrence_memory.get("conservative_split")),
+            "recent_bad_rate": float(recurrence_memory.get("recent_bad_rate") or 0.0),
+        }
         strategy_decision["family"] = family
         strategy_decision["budget_profile"] = budget_limits
         strategy_decisions[subplan_id] = strategy_decision
         subplans_to_run.append(subplan)
 
-    hierarchical_plan = _build_hierarchical_decomposition(subplans_to_run)
+    hierarchical_plan = _build_hierarchical_decomposition(
+        subplans_to_run,
+        recurrence_memory=recurrence_memory,
+    )
     subplans_to_run = list(hierarchical_plan.get("ordered_subplans") or subplans_to_run)
     hierarchy_contexts = {
         str(k): dict(v)
@@ -1502,12 +1633,18 @@ def main() -> int:
             "hierarchical_decomposition": {
                 "cohorts": list(hierarchical_plan.get("cohorts") or []),
                 "summary": dict(hierarchical_plan.get("summary") or {}),
-                "strategy": "manager11_hierarchical_two_level",
+                "strategy": (
+                    "manager12_recurrence_aware_hierarchical_repackaging"
+                    if bool(recurrence_memory.get("replay_pressure"))
+                    or bool(recurrence_memory.get("conservative_split"))
+                    else "manager11_hierarchical_two_level"
+                ),
             },
-            "manager_version": "manager11-v1",
+            "manager_version": "manager12-v1",
             "history_window_days": args.manager_history_window_days,
             "memory_window_days": args.manager_memory_window_days,
             "family_rescue_budget": args.family_rescue_budget,
+            "recurrence_memory": recurrence_memory,
             "qualification_posture": qualification_posture,
             "learning_priors": {
                 "active": bool(learning_priors.get("active")),

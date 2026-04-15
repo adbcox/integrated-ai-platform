@@ -91,6 +91,10 @@
         "manager11-v1": {
             "entry": "bin/stage7_manager.py",
             "description": "Manager-11 hierarchical decomposition step: builds two-level execution cohorts and mixed-family parent/child subplan context before dispatch."
+        },
+        "manager12-v1": {
+            "entry": "bin/stage7_manager.py",
+            "description": "Manager-12 cross-run recurrence adaptation step: consumes replay queue and recent run outcomes to proactively repackage hierarchical cohorts before dispatch."
         }
     },
     "rag_versions": {
@@ -158,7 +162,7 @@
         },
         "stage7": {
             "stage_version": "stage9-v1",
-            "manager_version": "manager11-v1",
+            "manager_version": "manager12-v1",
             "rag_version": "rag10-v1"
         }
     },
@@ -214,14 +218,14 @@
         "stage7": {
             "label": "Stage-7 preview lane",
             "stage_version": "stage9-v1",
-            "manager_version": "manager11-v1",
+            "manager_version": "manager12-v1",
             "rag_version": "rag10-v1",
             "allowed_targets": [
                 "bin/"
             ],
             "regression_pack": "bin/micro_lane_stage7.sh",
             "status": "building",
-            "notes": "Stage-9 deterministic resume/checkpoint preview lane with rollback-contract verification, reconciliation guarantees, Manager-11 hierarchical decomposition and learning-prior strategy adaptation, and RAG-10 execution-cohort clustered planning"
+            "notes": "Stage-9 deterministic resume/checkpoint preview lane with rollback-contract verification, reconciliation guarantees, Manager-12 cross-run recurrence-aware hierarchical repackaging, and RAG-10 execution-cohort clustered planning"
         }
     },
     "lane_rules": {
@@ -527,13 +531,13 @@
             "status": "building"
         },
         "manager_system": {
-            "current_version": "manager11-v1",
-            "next_version": "manager12-v1",
-            "after_next_version": "manager13-v1",
-            "upgrade_goal": "Manager-12 extends Manager-11 with broader long-horizon policy adaptation and proactive re-packaging from recurrence cohorts",
+            "current_version": "manager12-v1",
+            "next_version": "manager13-v1",
+            "after_next_version": "manager14-v1",
+            "upgrade_goal": "Manager-13 extends Manager-12 with autonomous long-horizon replay-queue prioritization and pre-dispatch rescue/split policy shaping",
             "minimum_validation": [
-                "One Stage-8 run emits learning-prior-aware strategy decisions for weak classes before first dispatch",
-                "Decision traces show hierarchical decomposition cohorts with explicit parent/child mixed-family context"
+                "One Stage-8 run emits recurrence_memory with replay_pressure/recent_bad_rate and adaptive decomposition_mode",
+                "Decision traces show hierarchical decomposition strategy manager12_recurrence_aware_hierarchical_repackaging when recurrence pressure is present"
             ],
             "status": "building"
         },
