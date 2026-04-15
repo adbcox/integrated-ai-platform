@@ -3,11 +3,12 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass, field
-from datetime import UTC, datetime
-from enum import StrEnum
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 from uuid import uuid4
+
+from .compat import StrEnum, UTC
 
 
 class JobClass(StrEnum):

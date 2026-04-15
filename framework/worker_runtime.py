@@ -9,10 +9,11 @@ import threading
 import time
 from hashlib import sha256
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
+from .compat import UTC
 from .inference_adapter import InferenceAdapter, InferenceRequest
 from .job_schema import Job, JobAction, JobLifecycle, ValidationRequirement
 from .learning_hooks import LearningHooks
@@ -32,6 +33,8 @@ class WorkerOutcome:
     output: str
     error: str
     validation: dict[str, Any]
+    failure_class: str = ""
+    retry_recommended: bool = True
 
 
 class WorkerRuntime:
@@ -134,6 +137,17 @@ class WorkerRuntime:
 
                 outcome = self._execute_attempt(job)
                 passed = bool(outcome.validation.get("passed", False))
+                self.store.append_trace(
+                    {
+                        "kind": "worker_failure_diagnosis",
+                        "worker_id": self.worker_id,
+                        "job_id": job.job_id,
+                        "attempt": attempts,
+                        "failure_class": outcome.failure_class,
+                        "retry_recommended": outcome.retry_recommended,
+                        "return_code": outcome.return_code,
+                    }
+                )
                 if outcome.status == "completed" and passed:
                     job.set_lifecycle(JobLifecycle.COMPLETED, reason="worker_completed")
                     self.store.save_job(job)
@@ -146,11 +160,12 @@ class WorkerRuntime:
                         "output": outcome.output,
                         "error": outcome.error,
                         "validation": outcome.validation,
+                        "failure_class": outcome.failure_class,
                         "requested_outputs": job.requested_outputs,
                     }
 
                 budget = max(0, job.retry_policy.retry_budget)
-                if attempts <= budget:
+                if attempts <= budget and outcome.retry_recommended:
                     job.set_lifecycle(JobLifecycle.RETRY_WAITING, reason="retry_budget_available")
                     self.store.save_job(job)
                     if job.retry_policy.retry_backoff_seconds > 0:
@@ -169,6 +184,8 @@ class WorkerRuntime:
                         "output": outcome.output,
                         "error": outcome.error,
                         "validation": outcome.validation,
+                        "failure_class": outcome.failure_class,
+                        "retry_recommended": outcome.retry_recommended,
                         "status_reason": job.status_reason,
                         "requested_outputs": job.requested_outputs,
                     }
@@ -190,6 +207,8 @@ class WorkerRuntime:
                     "output": outcome.output,
                     "error": outcome.error,
                     "validation": outcome.validation,
+                    "failure_class": outcome.failure_class,
+                    "retry_recommended": outcome.retry_recommended,
                     "status_reason": job.status_reason,
                     "requested_outputs": job.requested_outputs,
                 }
@@ -216,6 +235,7 @@ class WorkerRuntime:
     def _execute_attempt(self, job: Job) -> WorkerOutcome:
         workspace = self._workspace_controller.for_job(job)
         prompt = str(job.metadata.get("inference_prompt") or "")
+        output_snapshot_before = self._snapshot_requested_outputs(job.requested_outputs)
         context = {
             "task_class": job.task_class.value,
             "requested_outputs": job.requested_outputs,
@@ -235,6 +255,7 @@ class WorkerRuntime:
                 workspace=workspace,
                 inference_output=inference.output_text,
                 config=inner_loop,
+                output_snapshot_before=output_snapshot_before,
             )
 
         output = inference.output_text
@@ -249,8 +270,13 @@ class WorkerRuntime:
                 rc, command_output, error = self._run_command_tool(job=job, workspace=workspace, command=command)
                 output = f"{inference.output_text}\n{command_output}".strip()
 
-        validation = self._validate(job=job, return_code=rc)
+        validation = self._validate(job=job, return_code=rc, output_snapshot_before=output_snapshot_before)
         status = "completed" if rc == 0 else "failed"
+        failure_class = "" if (status == "completed" and bool(validation.get("passed", False))) else self._derive_failure_class(
+            return_code=rc,
+            error=error,
+            validation=validation,
+        )
         return WorkerOutcome(
             job_id=job.job_id,
             status=status,
@@ -258,6 +284,8 @@ class WorkerRuntime:
             output=output,
             error=error,
             validation=validation,
+            failure_class=failure_class,
+            retry_recommended=self._is_retryable_failure(failure_class),
         )
 
     def _execute_inner_loop(
@@ -267,6 +295,7 @@ class WorkerRuntime:
         workspace,
         inference_output: str,
         config: dict[str, Any],
+        output_snapshot_before: dict[str, dict[str, Any]],
     ) -> WorkerOutcome:
         setup_command = str(config.get("setup_command") or "").strip()
         validate_command = str(config.get("validate_command") or "").strip()
@@ -292,6 +321,8 @@ class WorkerRuntime:
                     output=inference_output,
                     error=f"inner_loop_setup_failed:{setup_err}",
                     validation={"passed": False, "checks": [{"requirement": "inner_loop_setup", "passed": False}]},
+                    failure_class="inner_loop_setup_failed",
+                    retry_recommended=False,
                 )
             loop_notes.append("setup_completed")
 
@@ -304,6 +335,8 @@ class WorkerRuntime:
                 output=inference_output,
                 error="inner_loop_missing_validate_command",
                 validation={"passed": False, "checks": [{"requirement": "inner_loop_config", "passed": False}]},
+                failure_class="inner_loop_config_error",
+                retry_recommended=False,
             )
 
         repair_index = 0
@@ -320,7 +353,7 @@ class WorkerRuntime:
                 }
             )
             if rc == 0:
-                validation = self._validate(job=job, return_code=0)
+                validation = self._validate(job=job, return_code=0, output_snapshot_before=output_snapshot_before)
                 return WorkerOutcome(
                     job_id=job.job_id,
                     status="completed",
@@ -328,18 +361,28 @@ class WorkerRuntime:
                     output=f"{inference_output}\n{validate_out}".strip(),
                     error="",
                     validation=validation,
+                    failure_class="",
+                    retry_recommended=False,
                 )
 
             if repair_index >= len(repair_edits):
                 self._restore_snapshot(snapshots, reason="repairs_exhausted", job=job)
-                validation = self._validate(job=job, return_code=rc)
+                validation = self._validate(job=job, return_code=rc, output_snapshot_before=output_snapshot_before)
+                error_text = f"inner_loop_exhausted:{validate_err}"
+                failure_class = self._derive_failure_class(
+                    return_code=rc,
+                    error=error_text,
+                    validation=validation,
+                )
                 return WorkerOutcome(
                     job_id=job.job_id,
                     status="failed",
                     return_code=rc,
                     output=f"{inference_output}\n{validate_out}".strip(),
-                    error=f"inner_loop_exhausted:{validate_err}",
+                    error=error_text,
                     validation=validation,
+                    failure_class=failure_class,
+                    retry_recommended=self._is_retryable_failure(failure_class),
                 )
 
             repair = repair_edits[repair_index] if isinstance(repair_edits[repair_index], dict) else {}
@@ -354,25 +397,41 @@ class WorkerRuntime:
                 loop_notes.append(f"repair_{repair_index}:{'applied' if applied else 'failed'}")
             if not applied:
                 self._restore_snapshot(snapshots, reason="repair_failed", job=job)
-                validation = self._validate(job=job, return_code=rc)
+                validation = self._validate(job=job, return_code=rc, output_snapshot_before=output_snapshot_before)
+                error_text = f"inner_loop_repair_failed:{apply_error}"
+                failure_class = self._derive_failure_class(
+                    return_code=rc,
+                    error=error_text,
+                    validation=validation,
+                )
                 return WorkerOutcome(
                     job_id=job.job_id,
                     status="failed",
                     return_code=rc,
                     output=f"{inference_output}\n{validate_out}".strip(),
-                    error=f"inner_loop_repair_failed:{apply_error}",
+                    error=error_text,
                     validation=validation,
+                    failure_class=failure_class,
+                    retry_recommended=self._is_retryable_failure(failure_class),
                 )
 
         self._restore_snapshot(snapshots, reason="cycle_limit_reached", job=job)
-        validation = self._validate(job=job, return_code=1)
+        validation = self._validate(job=job, return_code=1, output_snapshot_before=output_snapshot_before)
+        error_text = f"inner_loop_cycle_limit_reached:{'|'.join(loop_notes)}"
+        failure_class = self._derive_failure_class(
+            return_code=1,
+            error=error_text,
+            validation=validation,
+        )
         return WorkerOutcome(
             job_id=job.job_id,
             status="failed",
             return_code=1,
             output=inference_output,
-            error=f"inner_loop_cycle_limit_reached:{'|'.join(loop_notes)}",
+            error=error_text,
             validation=validation,
+            failure_class=failure_class,
+            retry_recommended=self._is_retryable_failure(failure_class),
         )
 
     def _run_command_tool(self, *, job: Job, workspace, command: str) -> tuple[int, str, str]:
@@ -718,9 +777,36 @@ class WorkerRuntime:
             artifacts.append(row)
         return artifacts
 
-    def _validate(self, *, job: Job, return_code: int) -> dict[str, Any]:
+    def _snapshot_requested_outputs(self, paths: list[str]) -> dict[str, dict[str, Any]]:
+        snapshot: dict[str, dict[str, Any]] = {}
+        for raw in paths:
+            candidate = str(raw).strip()
+            if not candidate:
+                continue
+            path = Path(candidate)
+            exists = path.exists()
+            row: dict[str, Any] = {"exists": exists}
+            if exists and path.is_file():
+                try:
+                    stat = path.stat()
+                    row["mtime_ns"] = int(stat.st_mtime_ns)
+                    row["size_bytes"] = int(stat.st_size)
+                except OSError:
+                    pass
+            snapshot[candidate] = row
+        return snapshot
+
+    def _validate(
+        self,
+        *,
+        job: Job,
+        return_code: int,
+        output_snapshot_before: dict[str, dict[str, Any]] | None = None,
+    ) -> dict[str, Any]:
         checks: list[dict[str, Any]] = []
         passed = True
+        output_snapshot_before = output_snapshot_before or {}
+        output_snapshot_after = self._snapshot_requested_outputs(job.requested_outputs)
         for requirement in job.validation_requirements:
             req_ok = True
             detail = ""
@@ -728,8 +814,16 @@ class WorkerRuntime:
                 req_ok = return_code == 0
                 detail = f"return_code={return_code}"
             elif requirement == ValidationRequirement.ARTIFACT_WRITTEN:
-                req_ok = any(Path(path).exists() for path in job.requested_outputs)
-                detail = f"requested_outputs={len(job.requested_outputs)}"
+                missing_outputs = [
+                    path
+                    for path in job.requested_outputs
+                    if not output_snapshot_after.get(str(path), {}).get("exists", False)
+                ]
+                req_ok = not missing_outputs
+                detail = (
+                    f"requested_outputs={len(job.requested_outputs)}; "
+                    f"missing_outputs={len(missing_outputs)}"
+                )
             elif requirement == ValidationRequirement.PYTHON_COMPILE:
                 req_ok = self._python_compile_check(job.requested_outputs)
                 detail = "python_compile"
@@ -739,7 +833,74 @@ class WorkerRuntime:
             checks.append({"requirement": requirement.value, "passed": req_ok, "detail": detail})
             if not req_ok:
                 passed = False
-        return {"passed": passed, "checks": checks}
+        modified_outputs = 0
+        for path, after in output_snapshot_after.items():
+            before = output_snapshot_before.get(path, {})
+            if not before.get("exists", False) and after.get("exists", False):
+                modified_outputs += 1
+                continue
+            if before.get("exists", False) and after.get("exists", False):
+                if before.get("mtime_ns") != after.get("mtime_ns") or before.get("size_bytes") != after.get("size_bytes"):
+                    modified_outputs += 1
+        return {
+            "passed": passed,
+            "checks": checks,
+            "output_snapshot_before": output_snapshot_before,
+            "output_snapshot_after": output_snapshot_after,
+            "modified_requested_outputs": modified_outputs,
+        }
+
+    def _derive_failure_class(self, *, return_code: int, error: str, validation: dict[str, Any]) -> str:
+        normalized_error = str(error or "").strip().lower()
+        if normalized_error.startswith("permission_denied"):
+            return "permission_denied"
+        if normalized_error == "sandbox_timeout" or "sandbox_timeout" in normalized_error:
+            return "sandbox_timeout"
+        if normalized_error.startswith("inner_loop_missing_validate_command"):
+            return "inner_loop_config_error"
+        if normalized_error.startswith("inner_loop_setup_failed"):
+            return "inner_loop_setup_failed"
+        if "precondition_sha_mismatch" in normalized_error:
+            return "inner_loop_precondition_mismatch"
+        if "postcondition_sha_mismatch" in normalized_error:
+            return "inner_loop_postcondition_mismatch"
+        if "find_text_missing" in normalized_error:
+            return "inner_loop_find_text_missing"
+        if normalized_error.startswith("inner_loop_cycle_limit_reached"):
+            return "inner_loop_cycle_limit"
+        for row in validation.get("checks", []):
+            if not isinstance(row, dict) or row.get("passed") is not False:
+                continue
+            requirement = str(row.get("requirement") or "")
+            if requirement == ValidationRequirement.ARTIFACT_WRITTEN.value:
+                return "missing_requested_outputs"
+            if requirement == ValidationRequirement.PYTHON_COMPILE.value:
+                return "python_compile_failure"
+            if requirement == ValidationRequirement.SHELL_SYNTAX.value:
+                return "shell_syntax_failure"
+            if requirement == ValidationRequirement.EXIT_CODE_ZERO.value:
+                return "nonzero_exit_code"
+        if return_code == 126:
+            return "permission_denied"
+        if return_code == 124:
+            return "sandbox_timeout"
+        if return_code != 0:
+            return "nonzero_exit_code"
+        return "validation_failed"
+
+    @staticmethod
+    def _is_retryable_failure(failure_class: str) -> bool:
+        if not failure_class:
+            return False
+        non_retryable = {
+            "permission_denied",
+            "inner_loop_config_error",
+            "inner_loop_setup_failed",
+            "inner_loop_precondition_mismatch",
+            "inner_loop_postcondition_mismatch",
+            "inner_loop_find_text_missing",
+        }
+        return failure_class not in non_retryable
 
     def _python_compile_check(self, paths: list[str]) -> bool:
         for raw in paths:
