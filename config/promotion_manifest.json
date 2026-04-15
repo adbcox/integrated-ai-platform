@@ -102,7 +102,7 @@
         },
         "manager14-v1": {
             "entry": "bin/stage7_manager.py",
-            "description": "Manager-14 budget-constrained singleton fallback step: when grouped budget blocks dispatch under recurrence pressure, proactively split to bounded singleton execution before full manual defer."
+            "description": "Manager-14 budget-constrained fallback step: when grouped budget blocks dispatch under recurrence pressure, proactively split to bounded singleton execution and allow capped low-risk singleton carryover overrides before full manual defer."
         }
     },
     "rag_versions": {
@@ -545,6 +545,7 @@
             "upgrade_goal": "Manager-15 extends Manager-14 with autonomous replay-priority adaptation and multi-run policy shaping across bounded-complex classes",
             "minimum_validation": [
                 "One Stage-8 run emits manager14_budget_fallback with grouped->singleton fallback outcomes from recurrence pressure",
+                "One low-risk singleton subplan shows manager14_singleton_budget_carryover_override instead of deferred_worker_budget",
                 "Decision traces show manager14_budget_fallback_predispatch_hierarchy strategy and manager_version=manager14-v1"
             ],
             "status": "building"

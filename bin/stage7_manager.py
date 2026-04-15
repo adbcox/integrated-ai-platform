@@ -1923,6 +1923,7 @@ def main() -> int:
         budget_decision_payload = budget_decision.to_dict()
         budget_decision_payload["budget_profile"] = strategy_decision.get("budget_profile", {})
         learning_override_used = False
+        manager14_singleton_carryover_used = False
         if (
             not budget_decision.allowed
             and target_count == 1
@@ -1938,6 +1939,29 @@ def main() -> int:
                     "learning_override_used": True,
                 }
             )
+        if not budget_decision_payload.get("allowed") and target_count == 1:
+            manager14_enabled = bool(strategy_decision.get("manager14_budget_fallback_enabled"))
+            target_meta = subplan.get("target_meta") if isinstance(subplan.get("target_meta"), list) else []
+            risk_rank = max((_risk_rank(str(m.get("risk_bucket") or "high")) for m in target_meta), default=2)
+            family_budget_remaining = int(args.family_rescue_budget) - int(family_rescue_usage.get(family, 0))
+            if (
+                manager14_enabled
+                and risk_rank <= 1
+                and family_budget_remaining > 0
+            ):
+                manager14_singleton_carryover_used = True
+                family_rescue_usage[family] = int(family_rescue_usage.get(family, 0)) + 1
+                budget_decision_payload.update(
+                    {
+                        "allowed": True,
+                        "reason": "manager14_singleton_budget_carryover_override",
+                        "manager14_singleton_budget_carryover_used": True,
+                        "manager14_singleton_budget_carryover_risk_rank": int(risk_rank),
+                        "manager14_singleton_budget_carryover_family_budget_remaining": int(
+                            family_budget_remaining - 1
+                        ),
+                    }
+                )
         worker_budget_decisions.append(budget_decision_payload)
         if not budget_decision_payload.get("allowed"):
             manager14_fallback_enabled = bool(strategy_decision.get("manager14_budget_fallback_enabled"))
@@ -2180,6 +2204,11 @@ def main() -> int:
                 status["strategy_decision"] = {
                     **dict(status.get("strategy_decision") or {}),
                     "learning_budget_override_used": True,
+                }
+            if manager14_singleton_carryover_used:
+                status["strategy_decision"] = {
+                    **dict(status.get("strategy_decision") or {}),
+                    "manager14_singleton_budget_carryover_used": True,
                 }
         statuses.append(status)
         rollback_verification = _verify_rollback_contract_for_status(status)
