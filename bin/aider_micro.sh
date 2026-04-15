@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 
-SCRIPT_PATH="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)/$(basename -- "$0")"  # stage7-op
+SCRIPT_PATH="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)/$(basename -- "$0")"  # stage7-op  # stage7-op
 REPO_ROOT="$(git rev-parse --show-toplevel)"
 ALLOW_LITERAL_DIFF=${AIDER_MICRO_ALLOW_LITERAL_DIFF:-0}
 LITERAL_DIFF_ALLOWED=false
