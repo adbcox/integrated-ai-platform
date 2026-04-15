@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 """Operational learning loop from real Codex51 artifacts.
 
-learning-v12 objective:
+learning-v13 objective:
 - capture verbose run-level lessons from real benchmark/campaign/curation/trace artifacts,
 - emit prevention candidates that reduce repeated failures,
 - publish first-attempt shaping priors by class/family,
-- publish execution-acceleration outputs for reuse.
+- publish execution-acceleration outputs for reuse,
+- consume the reusable code library into first-attempt and replay recommendations.
 """
 
 from __future__ import annotations
@@ -854,7 +855,12 @@ def _build_prevention_outputs(lessons: list[dict[str, Any]], *, max_items: int) 
     }
 
 
-def _build_first_attempt_priors(lessons: list[dict[str, Any]], *, max_items: int) -> list[dict[str, Any]]:
+def _build_first_attempt_priors(
+    lessons: list[dict[str, Any]],
+    *,
+    class_reuse_recommendations: dict[str, dict[str, Any]],
+    max_items: int,
+) -> list[dict[str, Any]]:
     by_class: dict[str, list[dict[str, Any]]] = defaultdict(list)
     for lesson in lessons:
         cls = str((((lesson.get("task") or {}).get("task_class")) or "unknown"))
@@ -898,6 +904,7 @@ def _build_first_attempt_priors(lessons: list[dict[str, Any]], *, max_items: int
                 if transition:
                     strategy_counts[str(transition)] += 1
 
+        reuse = class_reuse_recommendations.get(cls) or {}
         priors.append(
             {
                 "task_class": cls,
@@ -926,6 +933,10 @@ def _build_first_attempt_priors(lessons: list[dict[str, Any]], *, max_items: int
                     }
                     for row in bad[:3]
                 ],
+                "preferred_library_items": reuse.get("preferred_library_items") or [],
+                "avoid_library_items": reuse.get("avoid_library_items") or [],
+                "recommended_complexity_level": reuse.get("recommended_complexity_level") or "medium",
+                "known_good_reuse_patterns": reuse.get("known_good_reuse_patterns") or [],
             }
         )
 
@@ -933,7 +944,13 @@ def _build_first_attempt_priors(lessons: list[dict[str, Any]], *, max_items: int
     return priors[: max(1, max_items)]
 
 
-def _build_execution_acceleration(lessons: list[dict[str, Any]], priors: list[dict[str, Any]], *, max_items: int) -> dict[str, Any]:
+def _build_execution_acceleration(
+    lessons: list[dict[str, Any]],
+    priors: list[dict[str, Any]],
+    *,
+    class_reuse_recommendations: dict[str, dict[str, Any]],
+    max_items: int,
+) -> dict[str, Any]:
     template_rows = [row for row in lessons if bool((row.get("promotion_recommendations") or {}).get("template"))]
     template_rows = sorted(
         template_rows,
@@ -989,6 +1006,16 @@ def _build_execution_acceleration(lessons: list[dict[str, Any]], priors: list[di
         for row in priors
     ]
 
+    reuse_suggestions = [
+        {
+            "task_class": cls,
+            "reuse_first": (rec.get("preferred_library_items") or [])[:4],
+            "avoid_first": (rec.get("avoid_library_items") or [])[:4],
+            "recommended_complexity_level": rec.get("recommended_complexity_level") or "medium",
+        }
+        for cls, rec in sorted(class_reuse_recommendations.items())
+    ]
+
     return {
         "top_reusable_templates": [
             {
@@ -1026,6 +1053,7 @@ def _build_execution_acceleration(lessons: list[dict[str, Any]], priors: list[di
             {"pattern": key, "count": count}
             for key, count in dispatch_counts.most_common(max(1, max_items))
         ],
+        "reusable_code_suggestions_by_class": reuse_suggestions[: max(1, max_items)],
     }
 
 
@@ -1556,6 +1584,145 @@ def _build_code_library(
     }
 
 
+def _build_library_class_recommendations(
+    *,
+    code_library: dict[str, Any],
+    lessons: list[dict[str, Any]],
+    max_items: int,
+) -> dict[str, dict[str, Any]]:
+    classes = sorted(
+        {
+            str(((row.get("task") or {}).get("task_class")) or "unknown")
+            for row in lessons
+            if isinstance(row, dict)
+        }
+    )
+    if not classes:
+        return {}
+
+    all_items: list[dict[str, Any]] = []
+    for key in ("helpers", "templates", "modules", "patterns", "snippets"):
+        rows = code_library.get(key)
+        if isinstance(rows, list):
+            all_items.extend(row for row in rows if isinstance(row, dict))
+
+    def _mode_complexity(rows: list[dict[str, Any]]) -> str:
+        counts = Counter(str(row.get("complexity_level") or "medium") for row in rows)
+        if not counts:
+            return "medium"
+        return counts.most_common(1)[0][0]
+
+    recommendations: dict[str, dict[str, Any]] = {}
+    for cls in classes:
+        good_items = [
+            row
+            for row in all_items
+            if cls in [str(x) for x in (row.get("known_good_use_cases") or [])]
+        ]
+        bad_items = [
+            row
+            for row in all_items
+            if cls in [str(x) for x in (row.get("known_bad_use_cases") or [])]
+            and cls not in [str(x) for x in (row.get("known_good_use_cases") or [])]
+        ]
+        good_items.sort(key=lambda row: _safe_float(row.get("reuse_confidence"), 0.0), reverse=True)
+        bad_items.sort(key=lambda row: _safe_float(row.get("reuse_confidence"), 0.0), reverse=True)
+        preferred: list[dict[str, Any]] = []
+        for row in good_items[: max(1, max_items)]:
+            preferred.append(
+                {
+                    "key": str(row.get("key") or ""),
+                    "library_kind": str(row.get("library_kind") or "unknown"),
+                    "reuse_confidence": _safe_float(row.get("reuse_confidence"), 0.0),
+                    "complexity_level": str(row.get("complexity_level") or "medium"),
+                    "dependency_hints": (row.get("dependencies") or [])[:4],
+                }
+            )
+        avoid: list[dict[str, Any]] = []
+        preferred_keys = {str(item.get("key") or "") for item in preferred}
+        for row in bad_items[: max(1, max_items * 2)]:
+            if str(row.get("key") or "") in preferred_keys:
+                continue
+            avoid.append(
+                {
+                    "key": str(row.get("key") or ""),
+                    "library_kind": str(row.get("library_kind") or "unknown"),
+                    "reason": "known_bad_use_case_for_class",
+                    "reuse_confidence": _safe_float(row.get("reuse_confidence"), 0.0),
+                }
+            )
+            if len(avoid) >= max(1, max_items):
+                break
+
+        recommendations[cls] = {
+            "preferred_library_items": preferred,
+            "avoid_library_items": avoid,
+            "recommended_complexity_level": _mode_complexity(good_items),
+            "known_good_reuse_patterns": [
+                {
+                    "key": str(row.get("key") or ""),
+                    "library_kind": str(row.get("library_kind") or "unknown"),
+                }
+                for row in good_items
+                if str(row.get("library_kind") or "") in {"template", "module", "multi_file_pattern"}
+            ][: max(1, max_items)],
+        }
+    return recommendations
+
+
+def _build_reuse_recommendation_outputs(
+    *,
+    weak_classes: list[dict[str, Any]],
+    replay_queue: list[dict[str, Any]],
+    class_reuse: dict[str, dict[str, Any]],
+    max_items: int,
+) -> dict[str, Any]:
+    by_class: list[dict[str, Any]] = []
+    for cls, rec in sorted(class_reuse.items()):
+        by_class.append(
+            {
+                "task_class": cls,
+                "preferred_library_items": rec.get("preferred_library_items") or [],
+                "known_good_patterns_first": rec.get("known_good_reuse_patterns") or [],
+                "avoid_items": rec.get("avoid_library_items") or [],
+                "recommended_complexity_level": rec.get("recommended_complexity_level") or "medium",
+            }
+        )
+
+    weak_class_targets: list[dict[str, Any]] = []
+    for row in weak_classes[: max(1, max_items)]:
+        cls = str(row.get("class_id") or "unknown")
+        weak_class_targets.append(
+            {
+                "task_class": cls,
+                "weakness_score": _safe_float(row.get("weakness_score"), 0.0),
+                "dominant_weakness": str(row.get("dominant_weakness") or "mixed"),
+                "recommended_reuse": (class_reuse.get(cls) or {}).get("preferred_library_items") or [],
+                "avoid_reuse": (class_reuse.get(cls) or {}).get("avoid_library_items") or [],
+                "recommended_complexity_level": (class_reuse.get(cls) or {}).get("recommended_complexity_level") or "medium",
+            }
+        )
+
+    replay_suggestions: list[dict[str, Any]] = []
+    for row in replay_queue[: max(1, max_items)]:
+        cls = str(row.get("task_class") or "unknown")
+        replay_suggestions.append(
+            {
+                "task_id": str(row.get("task_id") or ""),
+                "task_class": cls,
+                "reuse_first": (class_reuse.get(cls) or {}).get("preferred_library_items") or [],
+                "avoid_first": (class_reuse.get(cls) or {}).get("avoid_library_items") or [],
+                "recommended_complexity_level": (class_reuse.get(cls) or {}).get("recommended_complexity_level") or "medium",
+            }
+        )
+
+    return {
+        "by_task_class": by_class[: max(1, max_items)],
+        "weak_class_reuse_rankings": weak_class_targets[: max(1, max_items)],
+        "replay_reuse_suggestions": replay_suggestions[: max(1, max_items)],
+    }
+
+
 def _candidate_splits_from_lessons(lessons: list[dict[str, Any]], *, max_items: int) -> dict[str, list[dict[str, Any]]]:
     def _pick(flag: str) -> list[dict[str, Any]]:
         rows = [row for row in lessons if bool((row.get("promotion_recommendations") or {}).get(flag))]
@@ -1739,6 +1906,18 @@ def _report_markdown(report: dict[str, Any]) -> str:
     lines.append(f"- reusable_recovery_patterns: {len(accel.get('reusable_recovery_patterns') or [])}")
     lines.append("")
 
+    lines.append("## Reuse Recommendations")
+    reuse = report.get("reuse_recommendations") or {}
+    lines.append(f"- by_task_class: {len(reuse.get('by_task_class') or [])}")
+    lines.append(f"- weak_class_reuse_rankings: {len(reuse.get('weak_class_reuse_rankings') or [])}")
+    lines.append(f"- replay_reuse_suggestions: {len(reuse.get('replay_reuse_suggestions') or [])}")
+    for row in (reuse.get("by_task_class") or [])[:4]:
+        lines.append(
+            f"- {row.get('task_class')}: preferred={len(row.get('preferred_library_items') or [])} "
+            f"avoid={len(row.get('avoid_items') or [])} complexity={row.get('recommended_complexity_level')}"
+        )
+    lines.append("")
+
     lines.append("## Reusable Code Library")
     clib = report.get("code_library") or {}
     csum = clib.get("summary") if isinstance(clib.get("summary"), dict) else {}
@@ -1824,11 +2003,31 @@ def build_learning_report(
     replay_queue = _replay_queue_from_lessons(lessons, max_items=max_replay)
     candidate_splits = _candidate_splits_from_lessons(lessons, max_items=max_candidates)
     prevention = _build_prevention_outputs(lessons, max_items=max_candidates)
-    first_attempt_priors = _build_first_attempt_priors(lessons, max_items=max_candidates)
-    acceleration = _build_execution_acceleration(lessons, first_attempt_priors, max_items=max_candidates)
     code_library = _build_code_library(
         lessons=lessons,
         commit_records=commit_records,
+        max_items=max_candidates,
+    )
+    class_reuse_recommendations = _build_library_class_recommendations(
+        code_library=code_library,
+        lessons=lessons,
+        max_items=max_candidates,
+    )
+    first_attempt_priors = _build_first_attempt_priors(
+        lessons,
+        class_reuse_recommendations=class_reuse_recommendations,
+        max_items=max_candidates,
+    )
+    acceleration = _build_execution_acceleration(
+        lessons,
+        first_attempt_priors,
+        class_reuse_recommendations=class_reuse_recommendations,
+        max_items=max_candidates,
+    )
+    reuse_recommendations = _build_reuse_recommendation_outputs(
+        weak_classes=weak_classes,
+        replay_queue=replay_queue,
+        class_reuse=class_reuse_recommendations,
         max_items=max_candidates,
     )
     model_wrapper = _model_vs_wrapper_summary(weak_classes, attribution)
@@ -1843,7 +2042,7 @@ def build_learning_report(
     curation_counts = {key: len(rows) for key, rows in curation_rows.items()}
 
     report = {
-        "schema_version": "learning_report_v12",
+        "schema_version": "learning_report_v13",
         "generated_at_utc": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "learning_subsystem": learning_version,
         "benchmark_metrics": {
@@ -1866,12 +2065,14 @@ def build_learning_report(
         "prevention_outputs": prevention,
         "first_attempt_priors": first_attempt_priors,
         "execution_acceleration": acceleration,
+        "reuse_recommendations": reuse_recommendations,
         "code_library": {
             "generated_at_utc": code_library.get("generated_at_utc"),
             "summary": code_library.get("summary"),
             "complexity_progression": code_library.get("complexity_progression"),
             "promotion_candidates": code_library.get("promotion_candidates"),
             "recommended_reuse_targets": code_library.get("recommended_reuse_targets"),
+            "consumption_by_task_class": class_reuse_recommendations,
         },
         "model_vs_wrapper_summary": model_wrapper,
         "curation_counts": curation_counts,
@@ -1891,6 +2092,7 @@ def build_learning_report(
         "prevention_candidates": prevention.get("repeated_failure_signatures") or [],
         "first_attempt_priors": first_attempt_priors,
         "execution_acceleration": [acceleration],
+        "reuse_recommendations": reuse_recommendations.get("by_task_class") or [],
         "weak_class_targets": weak_classes,
         "code_library_snippets": code_library.get("snippets") or [],
         "code_library_helpers": code_library.get("helpers") or [],
@@ -1902,7 +2104,7 @@ def build_learning_report(
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Run learning-v12 loop from Codex51 artifacts.")
+    parser = argparse.ArgumentParser(description="Run learning-v13 loop from Codex51 artifacts.")
     parser.add_argument("--benchmark", default=str(DEFAULT_BENCHMARK))
     parser.add_argument("--campaign-runs", default=str(DEFAULT_CAMPAIGN_RUNS))
     parser.add_argument("--curation-dir", default=str(DEFAULT_CURATION))
@@ -1979,6 +2181,7 @@ def main() -> int:
         _write_jsonl(out_dir / "prevention_candidates.jsonl", jsonl_outputs["prevention_candidates"])
         _write_jsonl(out_dir / "first_attempt_priors.jsonl", jsonl_outputs["first_attempt_priors"])
         _write_jsonl(out_dir / "execution_acceleration.jsonl", jsonl_outputs["execution_acceleration"])
+        _write_jsonl(out_dir / "reuse_recommendations.jsonl", jsonl_outputs["reuse_recommendations"])
         _write_jsonl(out_dir / "weak_class_targets.jsonl", jsonl_outputs["weak_class_targets"])
 
         code_library_dir = out_dir / "code_library"

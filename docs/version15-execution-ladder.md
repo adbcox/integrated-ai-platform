@@ -17,7 +17,7 @@ This document is the coordinated implementation ladder from current subsystem ve
 | Promotion engine / control loop | `level10-promote-v2` | `level10-promote-v3` | `level10-promote-v4` | `level10-promote-v15` | validated |
 | Worker utilization / local execution | `worker-routing-v2` | `worker-routing-v3` | `worker-routing-v4` | `worker-routing-v15` | building |
 | Regression / qualification | `qualify-v2` | `qualify-v3` | `qualify-v4` | `qualify-v15` | validated |
-| Learning / training / attribution | `learning-v12` | `learning-v13` | `learning-v14` | `learning-v15` | building |
+| Learning / training / attribution | `learning-v13` | `learning-v14` | `learning-v15` | `learning-v15` | building |
 
 ## What Each Version Step Unlocks
 
@@ -57,8 +57,8 @@ This document is the coordinated implementation ladder from current subsystem ve
 - `qualify-v15`: decision-grade subsystem qualification for autonomous operation.
 
 ### Learning / training / attribution
-- `learning-v12`: operational lesson/prevention/prior/reuse loop with verbose run-level lessons and stable machine-readable outputs from benchmark/campaign/curation/attribution/manager-trace artifacts.
-- `learning-v13`: controlled adaptation experiments with gate-linked rollback criteria.
+- `learning-v13`: operational lesson/prevention/prior/reuse loop with verbose run-level lessons and stable machine-readable outputs from benchmark/campaign/curation/attribution/manager-trace artifacts, now with code-library consumption paths wired into class-based reuse recommendations.
+- `learning-v14`: controlled adaptation experiments with gate-linked rollback criteria.
 - `learning-v14`: automated class-targeted promotion of validated templates and negative-example bundles into execution defaults.
 - `learning-v15`: continuous model-improvement loop with auditable model-vs-wrapper gains.
 
@@ -87,7 +87,7 @@ Rationale:
 - Worker: `worker-routing-v3` validated (adaptive budgets operational)
 - Regression: `qualify-v3` validated (deterministic stage assertions operational)
 - Promotion: `level10-promote-v3` validated (subsystem-weighted enforcement)
-- Learning: `learning-v12` building (verbose artifact-to-action lesson/prevention/prior/reuse loop operational)
+- Learning: `learning-v13` building (verbose artifact-to-action lesson/prevention/prior/reuse loop operational with code-library consumption)
 
 ## Current-Codex Gap-Closing Prerequisite Versions
 
