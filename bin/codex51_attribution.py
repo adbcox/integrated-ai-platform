@@ -7,7 +7,8 @@ import json
 import subprocess
 from collections import Counter, defaultdict
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import datetime
+from _datetime_compat import UTC
 from pathlib import Path
 from typing import Any
 

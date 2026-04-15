@@ -4,7 +4,8 @@
 from __future__ import annotations
 
 import argparse
-from datetime import UTC, datetime
+from datetime import datetime
+from _datetime_compat import UTC
 import json
 import os
 import re
