@@ -35,6 +35,21 @@ iso_utc_now() {
   date -u '+%Y-%m-%dT%H:%M:%SZ'
 }
 
+readarray_compat() {
+  local __resultvar="$1"
+  shift
+  local __data
+  __data="$("$@")"
+  local -a __tmp=()
+  if [ -n "$__data" ]; then
+    while IFS= read -r __line; do
+      [ -n "$__line" ] || continue
+      __tmp+=("$__line")
+    done <<<"$__data"
+  fi
+  eval "$__resultvar=(\"\${__tmp[@]}\")"
+}
+
 classify_failure_phase() {
   local tag="$1"
   case "$tag" in
@@ -562,12 +577,12 @@ if [ -n "${AIDER_MICRO_FAKE_DIFF_FILE:-}" ]; then
   CHANGED_TARGET=("${CHANGED_TOTAL[@]}")
   cp "$AIDER_MICRO_FAKE_DIFF_FILE" "$diff_file"
 elif [ "$HEAD_BEFORE" != "$HEAD_AFTER" ]; then
-  mapfile -t CHANGED_TOTAL < <(git diff --name-only "$HEAD_BEFORE" "$HEAD_AFTER")
-  mapfile -t CHANGED_TARGET < <(git diff --name-only "$HEAD_BEFORE" "$HEAD_AFTER" -- "${TARGET_FILES[@]}")
+  readarray_compat CHANGED_TOTAL git diff --name-only "$HEAD_BEFORE" "$HEAD_AFTER"
+  readarray_compat CHANGED_TARGET git diff --name-only "$HEAD_BEFORE" "$HEAD_AFTER" -- "${TARGET_FILES[@]}"
   git diff "$HEAD_BEFORE" "$HEAD_AFTER" -- "${TARGET_FILES[@]}" >"$diff_file"
 else
-  mapfile -t CHANGED_TOTAL < <(git diff --name-only)
-  mapfile -t CHANGED_TARGET < <(git diff --name-only -- "${TARGET_FILES[@]}")
+  readarray_compat CHANGED_TOTAL git diff --name-only
+  readarray_compat CHANGED_TARGET git diff --name-only -- "${TARGET_FILES[@]}"
   git diff -- "${TARGET_FILES[@]}" >"$diff_file"
 fi
 

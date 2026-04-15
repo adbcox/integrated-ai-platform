@@ -7,7 +7,9 @@ BROWSER_OPERATOR_REPO="${BROWSER_OPERATOR_REPO:-${REPOS_ROOT}/platform-browser-o
 CONTROL_PLANE_REPO="${CONTROL_PLANE_REPO:-${REPOS_ROOT}/control-plane}"
 EXPECTED_BRANCH="${EXPECTED_BRANCH:-main}"
 ALLOW_DIRTY="${ALLOW_DIRTY:-0}"
-REQUIRED_TOOLS_DEFAULT=(bash git sed awk python3 aider ollama)
+REQUIRE_EXTERNAL_REPOS="${REQUIRE_EXTERNAL_REPOS:-0}"
+REQUIRED_TOOLS_DEFAULT=(bash git sed awk python3 aider)
+OPTIONAL_TOOLS_DEFAULT=(ollama)
 
 augment_path_for_user_site_bins() {
   local py_bin_root="${HOME}/Library/Python"
@@ -31,6 +33,13 @@ else
   REQUIRED_TOOLS_LIST=("${REQUIRED_TOOLS_DEFAULT[@]}")
 fi
 
+if [[ -n "${OPTIONAL_TOOLS:-}" ]]; then
+  # shellcheck disable=SC2206
+  OPTIONAL_TOOLS_LIST=(${OPTIONAL_TOOLS})
+else
+  OPTIONAL_TOOLS_LIST=("${OPTIONAL_TOOLS_DEFAULT[@]}")
+fi
+
 pass() { printf 'PASS: %s\n' "$1"; }
 warn() { printf 'WARN: %s\n' "$1"; }
 fail() { printf 'FAIL: %s\n' "$1" >&2; exit 1; }
@@ -39,7 +48,13 @@ require_repo() {
   local label="$1"
   local repo_path="$2"
 
-  [[ -d "$repo_path" ]] || fail "${label}: repo path missing: ${repo_path}"
+  if [[ ! -d "$repo_path" ]]; then
+    if [[ "$REQUIRE_EXTERNAL_REPOS" == "1" ]]; then
+      fail "${label}: repo path missing: ${repo_path}"
+    fi
+    warn "${label}: repo path missing; skipping external repo checks (${repo_path})"
+    return 0
+  fi
   pass "${label}: repo path exists (${repo_path})"
 
   git -C "$repo_path" rev-parse --is-inside-work-tree >/dev/null 2>&1 || fail "${label}: not a valid git repo"
@@ -85,12 +100,20 @@ check_tools() {
     command -v "$tool" >/dev/null 2>&1 || fail "required tool missing: ${tool}"
     pass "tool available: ${tool}"
   done
+  for tool in "${OPTIONAL_TOOLS_LIST[@]}"; do
+    if command -v "$tool" >/dev/null 2>&1; then
+      pass "optional tool available: ${tool}"
+    else
+      warn "optional tool missing: ${tool} (local model-backed flows may be limited)"
+    fi
+  done
 }
 
 printf '=== Preflight Normalization Guard ===\n'
 printf 'REPOS_ROOT=%s\n' "$REPOS_ROOT"
 printf 'EXPECTED_BRANCH=%s\n' "$EXPECTED_BRANCH"
 printf 'ALLOW_DIRTY=%s\n' "$ALLOW_DIRTY"
+printf 'REQUIRE_EXTERNAL_REPOS=%s\n' "$REQUIRE_EXTERNAL_REPOS"
 
 augment_path_for_user_site_bins
 check_tools
