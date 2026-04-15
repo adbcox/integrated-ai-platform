@@ -7,6 +7,7 @@ import queue
 import subprocess
 import threading
 import time
+from hashlib import sha256
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
@@ -271,11 +272,18 @@ class WorkerRuntime:
         validate_command = str(config.get("validate_command") or "").strip()
         repair_edits = config.get("repair_edits") if isinstance(config.get("repair_edits"), list) else []
         max_cycles = max(1, int(config.get("max_cycles") or (len(repair_edits) + 1)))
+        tracked_paths = [
+            self._workspace_controller.resolve_in_repo(workspace, str(path))
+            for path in (config.get("tracked_paths") or [])
+            if str(path).strip()
+        ]
+        snapshots = self._snapshot_paths(tracked_paths)
 
         loop_notes: list[str] = []
         if setup_command:
             setup_rc, _, setup_err = self._run_command_tool(job=job, workspace=workspace, command=setup_command)
             if setup_rc != 0:
+                self._restore_snapshot(snapshots, reason="setup_failed", job=job)
                 return WorkerOutcome(
                     job_id=job.job_id,
                     status="failed",
@@ -287,6 +295,7 @@ class WorkerRuntime:
             loop_notes.append("setup_completed")
 
         if not validate_command:
+            self._restore_snapshot(snapshots, reason="missing_validate_command", job=job)
             return WorkerOutcome(
                 job_id=job.job_id,
                 status="failed",
@@ -321,6 +330,7 @@ class WorkerRuntime:
                 )
 
             if repair_index >= len(repair_edits):
+                self._restore_snapshot(snapshots, reason="repairs_exhausted", job=job)
                 validation = self._validate(job=job, return_code=rc)
                 return WorkerOutcome(
                     job_id=job.job_id,
@@ -336,6 +346,7 @@ class WorkerRuntime:
             applied, apply_error = self._apply_edit_tool(job=job, workspace=workspace, repair=repair)
             loop_notes.append(f"repair_{repair_index}:{'applied' if applied else 'failed'}")
             if not applied:
+                self._restore_snapshot(snapshots, reason="repair_failed", job=job)
                 validation = self._validate(job=job, return_code=rc)
                 return WorkerOutcome(
                     job_id=job.job_id,
@@ -346,6 +357,7 @@ class WorkerRuntime:
                     validation=validation,
                 )
 
+        self._restore_snapshot(snapshots, reason="cycle_limit_reached", job=job)
         validation = self._validate(job=job, return_code=1)
         return WorkerOutcome(
             job_id=job.job_id,
@@ -426,6 +438,8 @@ class WorkerRuntime:
         target_path = str(repair.get("path") or "").strip()
         find_text = str(repair.get("find") or "")
         replace_text = str(repair.get("replace") or "")
+        expected_before_sha = str(repair.get("expected_before_sha256") or "").strip()
+        expected_after_sha = str(repair.get("expected_after_sha256") or "").strip()
         if not target_path:
             return False, "missing_repair_path"
 
@@ -468,11 +482,17 @@ class WorkerRuntime:
             original = resolved.read_text(encoding="utf-8")
         except OSError as exc:
             return False, f"read_error:{exc}"
+        original_sha = self._sha256_text(original)
+        if expected_before_sha and expected_before_sha != original_sha:
+            return False, "precondition_sha_mismatch"
 
         if find_text and find_text not in original:
             return False, "find_text_missing"
 
         updated = original.replace(find_text, replace_text, 1) if find_text else replace_text
+        updated_sha = self._sha256_text(updated)
+        if expected_after_sha and expected_after_sha != updated_sha:
+            return False, "postcondition_sha_mismatch"
         try:
             resolved.parent.mkdir(parents=True, exist_ok=True)
             resolved.write_text(updated, encoding="utf-8")
@@ -486,12 +506,57 @@ class WorkerRuntime:
             allowed=True,
             output=f"edited:{resolved}",
             return_code=0,
-            metadata={"path": str(resolved)},
+            metadata={
+                "path": str(resolved),
+                "sha256_before": original_sha,
+                "sha256_after": updated_sha,
+            },
         )
         self.store.append_trace(
             {"kind": "tool_observation", "worker_id": self.worker_id, "job_id": job.job_id, "observation": observation.to_dict()}
         )
         return True, ""
+
+    def _snapshot_paths(self, paths: list[Path]) -> dict[Path, str | None]:
+        snapshot: dict[Path, str | None] = {}
+        for path in paths:
+            try:
+                snapshot[path] = path.read_text(encoding="utf-8")
+            except OSError:
+                snapshot[path] = None
+        return snapshot
+
+    def _restore_snapshot(self, snapshot: dict[Path, str | None], *, reason: str, job: Job) -> None:
+        if not snapshot:
+            return
+        restored = 0
+        removed = 0
+        for path, content in snapshot.items():
+            try:
+                if content is None:
+                    if path.exists():
+                        path.unlink()
+                        removed += 1
+                    continue
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text(content, encoding="utf-8")
+                restored += 1
+            except OSError:
+                continue
+        self.store.append_trace(
+            {
+                "kind": "inner_loop_rollback",
+                "worker_id": self.worker_id,
+                "job_id": job.job_id,
+                "reason": reason,
+                "restored_files": restored,
+                "removed_files": removed,
+            }
+        )
+
+    @staticmethod
+    def _sha256_text(payload: str) -> str:
+        return sha256(payload.encode("utf-8")).hexdigest()
 
     def _artifact_context(self, inputs: list[str]) -> list[dict[str, Any]]:
         artifacts: list[dict[str, Any]] = []

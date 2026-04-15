@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import shlex
 import sys
@@ -67,6 +68,7 @@ def parse_args() -> argparse.Namespace:
             "campaign_artifact_processing",
             "validation_check_execution",
             "validation_check_inner_loop",
+            "validation_check_tracked_inner_loop",
             "trusted_pattern_refresh",
             "replay_queue_generation",
             "replay_queue_execution",
@@ -263,6 +265,60 @@ def _validation_check_inner_loop_template() -> dict[str, Any]:
                     "path": target_file,
                     "find": "return 1+",
                     "replace": "return 1+1",
+                }
+            ],
+        },
+    }
+
+
+def _validation_check_tracked_inner_loop_template() -> dict[str, Any]:
+    tracked_file = REPO_ROOT / "framework" / "queue_types.py"
+    tracked_rel = "framework/queue_types.py"
+    baseline_text = tracked_file.read_text(encoding="utf-8")
+    broken_text = baseline_text.replace("from dataclasses import dataclass, field", "from dataclasses import dataclass,", 1)
+    baseline_sha = hashlib.sha256(baseline_text.encode("utf-8")).hexdigest()
+    broken_sha = hashlib.sha256(broken_text.encode("utf-8")).hexdigest()
+    setup_cmd = (
+        "python3 -c \"from pathlib import Path; p=Path('framework/queue_types.py'); "
+        "txt=p.read_text(encoding='utf-8'); "
+        "needle='from dataclasses import dataclass, field'; "
+        "assert needle in txt, 'tracked_setup_missing_needle'; "
+        "p.write_text(txt.replace(needle, 'from dataclasses import dataclass,', 1), encoding='utf-8')\""
+    )
+    return {
+        "task_class": JobClass.VALIDATION_CHECK_EXECUTION.value,
+        "shell_command": "true",
+        "inference_prompt": (
+            "Run bounded tracked-source edit-test-fix loop with strict patch contracts and rollback support. "
+            "Repair deterministic syntax break in framework/queue_types.py."
+        ),
+        "permission_policy": {
+            "allow_command_patterns": [
+                r"^python3\s+-c\s+.*$",
+                r"^python3\s+-m\s+py_compile\s+framework/queue_types\.py$",
+            ],
+            "allow_edit_path_patterns": [r"/framework/queue_types\.py$"],
+            "deny_command_patterns": [r"\brm\b\s+-rf\b"],
+        },
+        "artifact_inputs": [
+            tracked_rel,
+            "framework/worker_runtime.py",
+            "framework/permission_engine.py",
+        ],
+        "requested_outputs": [tracked_rel],
+        "inner_loop": {
+            "enabled": True,
+            "max_cycles": 2,
+            "tracked_paths": [tracked_rel],
+            "setup_command": setup_cmd,
+            "validate_command": "python3 -m py_compile framework/queue_types.py",
+            "repair_edits": [
+                {
+                    "path": tracked_rel,
+                    "find": "from dataclasses import dataclass,",
+                    "replace": "from dataclasses import dataclass, field",
+                    "expected_before_sha256": broken_sha,
+                    "expected_after_sha256": baseline_sha,
                 }
             ],
         },
@@ -516,6 +572,8 @@ def _template_payload(name: str) -> dict[str, Any]:
         return _validation_check_execution_template()
     if name == "validation_check_inner_loop":
         return _validation_check_inner_loop_template()
+    if name == "validation_check_tracked_inner_loop":
+        return _validation_check_tracked_inner_loop_template()
     if name == "trusted_pattern_refresh":
         return _trusted_pattern_refresh_template()
     if name == "replay_queue_generation":
