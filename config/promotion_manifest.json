@@ -258,6 +258,62 @@
             "regression_pack": "bin/micro_lane_stage7.sh"
         }
     },
+    "worker_budget_profiles": {
+        "default": {
+            "grouped_limit": 4,
+            "single_limit": 8,
+            "complexity_multipliers": {
+                "low": 1.0,
+                "medium": 0.85,
+                "high": 0.7
+            }
+        },
+        "multi_file_orchestration": {
+            "grouped_limit": 5,
+            "single_limit": 10,
+            "complexity_multipliers": {
+                "low": 1.0,
+                "medium": 0.9,
+                "high": 0.75
+            }
+        },
+        "retrieval_orchestration": {
+            "grouped_limit": 4,
+            "single_limit": 8,
+            "complexity_multipliers": {
+                "low": 1.0,
+                "medium": 0.85,
+                "high": 0.7
+            }
+        },
+        "resumable_checkpointed": {
+            "grouped_limit": 6,
+            "single_limit": 12,
+            "complexity_multipliers": {
+                "low": 1.0,
+                "medium": 0.9,
+                "high": 0.8
+            }
+        },
+        "safe_contracts": {
+            "grouped_limit": 4,
+            "single_limit": 8,
+            "complexity_multipliers": {
+                "low": 1.0,
+                "medium": 0.85,
+                "high": 0.7
+            }
+        },
+        "bounded_architecture": {
+            "grouped_limit": 5,
+            "single_limit": 10,
+            "complexity_multipliers": {
+                "low": 1.0,
+                "medium": 0.85,
+                "high": 0.75
+            }
+        }
+    },
     "subsystem_levels": {
         "stage_system": {
             "current_level": 8,

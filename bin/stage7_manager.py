@@ -242,6 +242,70 @@ def _subplan_family_key(subplan: dict[str, Any]) -> str:
     return ",".join(stems) if stems else "unknown"
 
 
+def _infer_task_class_from_query(query: str) -> str:
+    q = query.lower()
+    if any(token in q for token in ("resume", "checkpoint", "reconcile", "rollback")):
+        return "resumable_checkpointed"
+    if any(token in q for token in ("rag", "retrieval", "ranking", "cluster")):
+        return "retrieval_orchestration"
+    if any(token in q for token in ("contract", "literal", "shell", "script")):
+        return "safe_contracts"
+    if any(token in q for token in ("stage", "manager", "orchestration")):
+        return "multi_file_orchestration"
+    return "bounded_architecture"
+
+
+def _subplan_complexity(subplan: dict[str, Any]) -> str:
+    targets = [str(t) for t in subplan.get("targets", []) if t]
+    risk_score = float(subplan.get("risk_score") or 0.0)
+    if len(targets) >= 3 or risk_score >= 0.6:
+        return "high"
+    if len(targets) >= 2 or risk_score >= 0.3:
+        return "medium"
+    return "low"
+
+
+def _resolve_worker_budget_limits(
+    *,
+    manifest_data: dict[str, Any],
+    worker_budget_profile: str,
+    task_class: str,
+    complexity: str,
+    grouped_limit: int,
+    single_limit: int,
+) -> dict[str, Any]:
+    profiles = manifest_data.get("worker_budget_profiles")
+    if not isinstance(profiles, dict):
+        profiles = {}
+
+    selected_profile = "default"
+    class_key = task_class if task_class in profiles else "default"
+    if worker_budget_profile != "auto" and worker_budget_profile in profiles:
+        class_key = worker_budget_profile
+    profile_payload = profiles.get(class_key) if isinstance(profiles.get(class_key), dict) else {}
+    if profile_payload:
+        selected_profile = class_key
+
+    base_grouped = int(profile_payload.get("grouped_limit", grouped_limit) or grouped_limit)
+    base_single = int(profile_payload.get("single_limit", single_limit) or single_limit)
+    multipliers = profile_payload.get("complexity_multipliers")
+    if not isinstance(multipliers, dict):
+        multipliers = {}
+    multiplier = float(multipliers.get(complexity, 1.0) or 1.0)
+    effective_grouped = max(1, int(round(base_grouped * multiplier)))
+    effective_single = max(1, int(round(base_single * multiplier)))
+    return {
+        "profile": selected_profile,
+        "task_class": task_class,
+        "complexity": complexity,
+        "base_grouped_limit": base_grouped,
+        "base_single_limit": base_single,
+        "effective_grouped_limit": effective_grouped,
+        "effective_single_limit": effective_single,
+        "complexity_multiplier": multiplier,
+    }
+
+
 def _load_recent_manager6_outcomes(*, days: int = DEFAULT_MANAGER6_HISTORY_WINDOW_DAYS) -> list[dict[str, Any]]:
     cutoff = datetime.now(timezone.utc).timestamp() - (max(1, days) * 86400)
     outcomes: list[dict[str, Any]] = []
@@ -980,6 +1044,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--worker-budget-single", type=int, default=8)
     parser.add_argument("--worker-budget-adaptive-window-days", type=int, default=14)
     parser.add_argument(
+        "--worker-budget-profile",
+        default="auto",
+        help="Worker budget profile from manifest worker_budget_profiles (or auto).",
+    )
+    parser.add_argument(
         "--resume",
         action="store_true",
         help="Resume an existing Stage-7 plan from persisted checkpoints and skip completed subplans.",
@@ -1082,6 +1151,7 @@ def main() -> int:
     checkpoint_subplans = checkpoint.get("subplans", {}) if isinstance(checkpoint, dict) else {}
     historical_outcomes = _load_recent_manager6_outcomes(days=args.manager_history_window_days)
     qualification_posture = _load_latest_qualification_posture(max_age_hours=args.qualification_max_age_hours)
+    task_class = _infer_task_class_from_query(str(plan_payload.get("query") or ""))
     for subplan in subplans:
         subplan_id = str(subplan.get("subplan_id") or "")
         prior = checkpoint_subplans.get(subplan_id)
@@ -1116,6 +1186,15 @@ def main() -> int:
                 )
         family = _subplan_family_key(subplan)
         budget_class = "grouped" if len(subplan.get("targets", [])) > 1 else "single"
+        complexity = _subplan_complexity(subplan)
+        budget_limits = _resolve_worker_budget_limits(
+            manifest_data=manifest_cfg.data,
+            worker_budget_profile=args.worker_budget_profile,
+            task_class=task_class,
+            complexity=complexity,
+            grouped_limit=args.worker_budget_grouped,
+            single_limit=args.worker_budget_single,
+        )
         family_memory = summarize_worker_family_outcomes(
             lane=lane_name,
             worker_class=budget_class,
@@ -1125,11 +1204,12 @@ def main() -> int:
         forecast = worker_budget_forecast(
             lane=lane_name,
             worker_class=budget_class,
-            grouped_limit=args.worker_budget_grouped,
-            single_limit=args.worker_budget_single,
+            grouped_limit=int(budget_limits["effective_grouped_limit"]),
+            single_limit=int(budget_limits["effective_single_limit"]),
             family=family,
             adaptive_window_days=args.worker_budget_adaptive_window_days,
         )
+        forecast["budget_profile"] = budget_limits
         scorecard = _strategy_scorecard(family=family, historical=historical_outcomes)
         strategy_decision = _choose_subplan_strategy(
             subplan=subplan,
@@ -1140,6 +1220,7 @@ def main() -> int:
             resume_source_status=str(prior.get("status") or "") if isinstance(prior, dict) else None,
         )
         strategy_decision["family"] = family
+        strategy_decision["budget_profile"] = budget_limits
         strategy_decisions[subplan_id] = strategy_decision
         subplans_to_run.append(subplan)
 
@@ -1179,6 +1260,7 @@ def main() -> int:
                 "allowed": False,
                 "reason": "manager9_preemptive_defer",
                 "forecast": strategy_decision.get("budget_forecast", {}),
+                "budget_profile": strategy_decision.get("budget_profile", {}),
             }
             worker_budget_decisions.append(preemptive_budget)
             status = {
@@ -1217,12 +1299,14 @@ def main() -> int:
         budget_decision: WorkerBudgetDecision = apply_worker_budget(
             lane=lane_name,
             worker_class=budget_class,
-            grouped_limit=args.worker_budget_grouped,
-            single_limit=args.worker_budget_single,
+            grouped_limit=int(strategy_decision.get("budget_profile", {}).get("effective_grouped_limit", args.worker_budget_grouped)),
+            single_limit=int(strategy_decision.get("budget_profile", {}).get("effective_single_limit", args.worker_budget_single)),
             family=family,
             adaptive_window_days=args.worker_budget_adaptive_window_days,
         )
-        worker_budget_decisions.append(budget_decision.to_dict())
+        budget_decision_payload = budget_decision.to_dict()
+        budget_decision_payload["budget_profile"] = strategy_decision.get("budget_profile", {})
+        worker_budget_decisions.append(budget_decision_payload)
         if not budget_decision.allowed:
             status = {
                 "subplan_id": subplan_id,
@@ -1235,7 +1319,7 @@ def main() -> int:
                 "finished_at": datetime.now(timezone.utc).isoformat(),
                 "strategy": "defer_manual",
                 "strategy_decision": strategy_decision,
-                "worker_budget_decision": budget_decision.to_dict(),
+                "worker_budget_decision": budget_decision_payload,
                 "escalation_hint": "manual_lane_budget_exhausted",
                 "rollback_contract": {
                     "contract_version": "stage9-v1",
@@ -1257,7 +1341,7 @@ def main() -> int:
             for split_status in split_statuses:
                 split_status["strategy"] = "split_subplan"
                 split_status["strategy_decision"] = strategy_decision
-                split_status["worker_budget_decision"] = budget_decision.to_dict()
+                split_status["worker_budget_decision"] = budget_decision_payload
                 split_verification = _verify_rollback_contract_for_status(split_status)
                 split_status["rollback_verification"] = split_verification
                 if not split_verification.get("ok"):
@@ -1297,7 +1381,7 @@ def main() -> int:
                         "finished_at": datetime.now(timezone.utc).isoformat(),
                         "strategy": "drop",
                         "strategy_decision": strategy_decision,
-                        "worker_budget_decision": budget_decision.to_dict(),
+                        "worker_budget_decision": budget_decision_payload,
                         "rollback_contract": {
                             "contract_version": "stage9-v1",
                             "strategy": "drop_after_family_budget_exhaustion",
@@ -1323,7 +1407,7 @@ def main() -> int:
                 strategy_tag="grouped_subplan",
                 strategy_decision=strategy_decision,
             )
-            status["worker_budget_decision"] = budget_decision.to_dict()
+            status["worker_budget_decision"] = budget_decision_payload
         statuses.append(status)
         rollback_verification = _verify_rollback_contract_for_status(status)
         status["rollback_verification"] = rollback_verification
