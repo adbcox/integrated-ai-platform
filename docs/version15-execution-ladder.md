@@ -17,7 +17,7 @@ This document is the coordinated implementation ladder from current subsystem ve
 | Promotion engine / control loop | `level10-promote-v2` | `level10-promote-v3` | `level10-promote-v4` | `level10-promote-v15` | validated |
 | Worker utilization / local execution | `worker-routing-v2` | `worker-routing-v3` | `worker-routing-v4` | `worker-routing-v15` | building |
 | Regression / qualification | `qualify-v2` | `qualify-v3` | `qualify-v4` | `qualify-v15` | validated |
-| Learning / training / attribution | `learning-v11` | `learning-v12` | `learning-v13` | `learning-v15` | validated |
+| Learning / training / attribution | `learning-v12` | `learning-v13` | `learning-v14` | `learning-v15` | building |
 
 ## What Each Version Step Unlocks
 
@@ -57,9 +57,9 @@ This document is the coordinated implementation ladder from current subsystem ve
 - `qualify-v15`: decision-grade subsystem qualification for autonomous operation.
 
 ### Learning / training / attribution
-- `learning-v11`: operational class-level curriculum loop with weak-class scoring, prioritized replay, and deterministic guard/manager/retrieval/training/template candidate splits from real artifacts.
-- `learning-v12`: controlled adaptation experiments with gate-linked rollback criteria.
-- `learning-v13`: automated class-targeted promotion of validated templates and negative-example bundles into execution defaults.
+- `learning-v12`: operational lesson/prevention/prior/reuse loop with verbose run-level lessons and stable machine-readable outputs from benchmark/campaign/curation/attribution/manager-trace artifacts.
+- `learning-v13`: controlled adaptation experiments with gate-linked rollback criteria.
+- `learning-v14`: automated class-targeted promotion of validated templates and negative-example bundles into execution defaults.
 - `learning-v15`: continuous model-improvement loop with auditable model-vs-wrapper gains.
 
 ## Dependency Graph (Execution Order)
@@ -69,7 +69,7 @@ This document is the coordinated implementation ladder from current subsystem ve
 3. `stage10-v1`
 4. `level10-promote-v3`
 5. `manager11-v1` + `rag11-v1` + `stage11-v1`
-6. `qualify-v7` + `worker-routing-v7` + `learning-v11`
+6. `qualify-v7` + `worker-routing-v7` + `learning-v12`
 7. `promotion v5+` rollout controls
 8. `v13` wave across stage/manager/rag/learning
 9. `v15` convergence wave
@@ -87,7 +87,7 @@ Rationale:
 - Worker: `worker-routing-v3` validated (adaptive budgets operational)
 - Regression: `qualify-v3` validated (deterministic stage assertions operational)
 - Promotion: `level10-promote-v3` validated (subsystem-weighted enforcement)
-- Learning: `learning-v11` validated (class-level artifact-to-action loop operational)
+- Learning: `learning-v12` building (verbose artifact-to-action lesson/prevention/prior/reuse loop operational)
 
 ## Current-Codex Gap-Closing Prerequisite Versions
 

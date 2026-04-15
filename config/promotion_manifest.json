@@ -595,15 +595,15 @@
       "status": "validated"
     },
     "learning_training_attribution_loop": {
-      "current_version": "learning-v11",
-      "next_version": "learning-v12",
-      "after_next_version": "learning-v13",
-      "upgrade_goal": "Learning v12 runs controlled adaptation experiments with rollback-bound promotion gates on top of class-level curriculum cohorts.",
+      "current_version": "learning-v12",
+      "next_version": "learning-v13",
+      "after_next_version": "learning-v14",
+      "upgrade_goal": "Learning v13 operationalizes controlled adaptation experiments with rollback-bound promotion gates on top of the learning-v12 lesson/prevention/prior/reuse engine.",
       "minimum_validation": [
-        "Learning loop report emits weak_class_summary, weak_first_attempt_paths, prioritized_replay_queue, and candidate_splits from real artifacts",
-        "Model-vs-wrapper dominant gap and next_recommended_targets are persisted from benchmark/campaign/curation/attribution inputs"
+        "Learning loop report emits verbose lessons, prevention_outputs, first_attempt_priors, execution_acceleration, and prioritized_replay_queue from real benchmark/campaign/curation/attribution/manager-trace artifacts",
+        "Learning artifacts are persisted as stable machine-readable outputs: latest.json/latest.md plus lessons.jsonl, prevention_candidates.jsonl, first_attempt_priors.jsonl, execution_acceleration.jsonl, and weak_class_targets.jsonl"
       ],
-      "status": "validated"
+      "status": "building"
     }
   },
   "version8_upgrade_list": {

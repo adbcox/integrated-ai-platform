@@ -1,16 +1,18 @@
 #!/usr/bin/env python3
 """Operational learning loop from real Codex51 artifacts.
 
-learning-v11 objective:
-- rank weak classes deterministically from real benchmark/campaign evidence,
-- split action candidates (guard/manager/retrieval/training/template),
-- emit prioritized replay + improvement targets with model-vs-wrapper attribution.
+learning-v12 objective:
+- capture verbose run-level lessons from real benchmark/campaign/curation/trace artifacts,
+- emit prevention candidates that reduce repeated failures,
+- publish first-attempt shaping priors by class/family,
+- publish execution-acceleration outputs for reuse.
 """
 
 from __future__ import annotations
 
 import argparse
 import json
+import re
 from collections import Counter, defaultdict
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
@@ -24,25 +26,78 @@ DEFAULT_CAMPAIGN_RUNS = REPO_ROOT / "artifacts" / "codex51" / "campaign" / "runs
 DEFAULT_CURATION = REPO_ROOT / "artifacts" / "codex51" / "curation"
 DEFAULT_MANIFEST = REPO_ROOT / "config" / "promotion_manifest.json"
 DEFAULT_ATTRIBUTION = REPO_ROOT / "artifacts" / "codex51" / "attribution" / "latest.json"
+DEFAULT_MANAGER6_TRACES = REPO_ROOT / "artifacts" / "manager6" / "traces.jsonl"
+DEFAULT_MANAGER6_PLANS_DIR = REPO_ROOT / "artifacts" / "manager6" / "plans"
 DEFAULT_OUT_DIR = REPO_ROOT / "artifacts" / "codex51" / "learning"
+
+STOPWORDS = {
+    "and",
+    "or",
+    "the",
+    "for",
+    "with",
+    "from",
+    "into",
+    "that",
+    "this",
+    "then",
+    "than",
+    "when",
+    "where",
+    "while",
+    "over",
+    "under",
+    "before",
+    "after",
+    "across",
+    "without",
+    "within",
+    "only",
+    "safe",
+    "stage",
+    "manager",
+    "plan",
+    "task",
+}
 
 
 @dataclass(frozen=True)
 class CampaignRun:
+    campaign_run_id: str
     plan_id: str
     task_id: str
+    task_title: str
     task_class: str
+    lane: str
     timestamp_utc: str
+    started_at_utc: str
     success: bool
+    in_scope: bool
+    dry_run: bool
+    return_code: int
+    outcome: str
     rescue_count: int
     escalation_count: int
     guard_count: int
     first_attempt_quality_rate: float
+    attribution_profile: str
     attribution_primary: str
-    attribution_bucket: str
     ranking_version: str
-    families: tuple[str, ...]
     command: str
+    plan_result: dict[str, Any]
+
+
+@dataclass(frozen=True)
+class PlanArtifact:
+    plan_id: str
+    query: str
+    notes: str
+    subplans: list[dict[str, Any]]
+    manager_decisions: dict[str, Any]
+    stage_reconciliation: dict[str, Any]
+    history: list[dict[str, Any]]
+    checkpoints: dict[str, dict[str, Any]]
+    trace_extra: dict[str, Any]
 
 
 def _read_json(path: Path) -> dict[str, Any]:
@@ -53,7 +108,7 @@ def _read_jsonl(path: Path) -> list[dict[str, Any]]:
     if not path.exists():
         return []
     rows: list[dict[str, Any]] = []
-    with path.open(encoding="utf-8") as fh:
+    with path.open(encoding="utf-8", errors="ignore") as fh:
         for line in fh:
             line = line.strip()
             if not line:
@@ -91,31 +146,74 @@ def _safe_int(value: Any, default: int = 0) -> int:
         return default
 
 
+def _normalize_text(value: Any) -> str:
+    text = str(value or "").strip()
+    return re.sub(r"\s+", " ", text)
+
+
+def _tokenize(text: str) -> list[str]:
+    tokens = re.findall(r"[a-z0-9_]{3,}", text.lower())
+    return [tok for tok in tokens if tok not in STOPWORDS]
+
+
+def _top_tokens(texts: list[str], *, top_n: int) -> list[str]:
+    counts: Counter[str] = Counter()
+    for text in texts:
+        counts.update(_tokenize(text))
+    return [tok for tok, _ in counts.most_common(max(1, top_n))]
+
+
+def _top_bigrams(texts: list[str], *, top_n: int) -> list[str]:
+    counts: Counter[str] = Counter()
+    for text in texts:
+        toks = _tokenize(text)
+        for idx in range(len(toks) - 1):
+            counts[f"{toks[idx]} {toks[idx + 1]}"] += 1
+    return [tok for tok, _ in counts.most_common(max(1, top_n))]
+
+
+def _prefix(path: str) -> str:
+    value = str(path or "").strip().lstrip("./")
+    if not value:
+        return "unknown"
+    bits = value.split("/")
+    return f"{bits[0]}/" if len(bits) > 1 else bits[0]
+
+
 def _load_campaign_runs(path: Path, *, window_days: int) -> list[CampaignRun]:
     now = datetime.now(UTC)
     cutoff = now - timedelta(days=max(1, window_days))
     runs: list[CampaignRun] = []
     for row in _read_jsonl(path):
-        ts = _parse_ts(str(row.get("timestamp_utc") or ""))
+        ts_raw = str(row.get("timestamp_utc") or row.get("started_at_utc") or "")
+        ts = _parse_ts(ts_raw)
         if ts is None or ts < cutoff:
             continue
-        families = tuple(str(item).strip() for item in (row.get("families") or []) if str(item).strip())
+        plan_result = row.get("plan_result") if isinstance(row.get("plan_result"), dict) else {}
         runs.append(
             CampaignRun(
+                campaign_run_id=str(row.get("campaign_run_id") or ""),
                 plan_id=str(row.get("plan_id") or ""),
                 task_id=str(row.get("task_id") or ""),
+                task_title=str(row.get("task_title") or ""),
                 task_class=str(row.get("task_class") or "unknown"),
+                lane=str(row.get("lane") or "unknown"),
                 timestamp_utc=str(row.get("timestamp_utc") or ""),
+                started_at_utc=str(row.get("started_at_utc") or ""),
                 success=bool(row.get("success")),
+                in_scope=bool(row.get("in_scope", True)),
+                dry_run=bool(row.get("dry_run")),
+                return_code=_safe_int(row.get("return_code"), default=0),
+                outcome=str(row.get("outcome") or ""),
                 rescue_count=_safe_int(row.get("rescue_count")),
                 escalation_count=_safe_int(row.get("escalation_count")),
                 guard_count=_safe_int(row.get("guard_count")),
                 first_attempt_quality_rate=_safe_float(row.get("first_attempt_quality_rate")),
+                attribution_profile=str(row.get("attribution_profile") or "normal"),
                 attribution_primary=str(row.get("attribution_primary") or "mixed_gain"),
-                attribution_bucket=str(row.get("attribution_bucket") or "mixed_or_shared"),
                 ranking_version=str(row.get("ranking_version") or ""),
-                families=families,
                 command=str(row.get("command") or ""),
+                plan_result=plan_result,
             )
         )
     runs.sort(key=lambda x: x.timestamp_utc, reverse=True)
@@ -146,6 +244,15 @@ def _learning_status_from_manifest(manifest: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _extract_benchmark_items(benchmark: dict[str, Any]) -> list[dict[str, Any]]:
+    task_set = benchmark.get("task_set")
+    if isinstance(task_set, dict):
+        rows = task_set.get("items")
+        if isinstance(rows, list):
+            return [row for row in rows if isinstance(row, dict)]
+    return []
+
+
 def _class_metrics_from_benchmark(benchmark: dict[str, Any]) -> list[dict[str, Any]]:
     rows = benchmark.get("class_metrics")
     if not isinstance(rows, list):
@@ -153,312 +260,824 @@ def _class_metrics_from_benchmark(benchmark: dict[str, Any]) -> list[dict[str, A
     return [row for row in rows if isinstance(row, dict)]
 
 
-def _local_first_share(runs: list[CampaignRun]) -> float:
-    if not runs:
-        return 0.0
-    local_success = sum(
-        1
-        for run in runs
-        if run.success and run.rescue_count == 0 and run.escalation_count == 0 and run.guard_count == 0
+def _load_manager6_trace_index(trace_path: Path, *, window_days: int) -> dict[str, dict[str, Any]]:
+    now = datetime.now(UTC)
+    cutoff = now - timedelta(days=max(1, window_days))
+    by_plan: dict[str, dict[str, Any]] = {}
+    for row in _read_jsonl(trace_path):
+        extra = row.get("extra") if isinstance(row.get("extra"), dict) else {}
+        plan_id = str(extra.get("plan_id") or "")
+        if not plan_id:
+            continue
+        ts_raw = str(row.get("timestamp") or row.get("timestamp_utc") or "")
+        ts = _parse_ts(ts_raw)
+        if ts is not None and ts < cutoff:
+            continue
+        if (
+            plan_id not in by_plan
+            or str(by_plan[plan_id].get("timestamp") or "") < str(row.get("timestamp") or row.get("timestamp_utc") or "")
+        ):
+            by_plan[plan_id] = row
+    return by_plan
+
+
+def _load_manager6_plan_artifacts(
+    plans_dir: Path,
+    *,
+    plan_ids: set[str],
+    trace_index: dict[str, dict[str, Any]],
+) -> dict[str, PlanArtifact]:
+    out: dict[str, PlanArtifact] = {}
+    for plan_id in sorted(plan_ids):
+        if not plan_id:
+            continue
+        plan_path = plans_dir / f"{plan_id}.json"
+        payload: dict[str, Any] = {}
+        if plan_path.exists():
+            try:
+                raw = _read_json(plan_path)
+            except json.JSONDecodeError:
+                raw = {}
+            if isinstance(raw, dict):
+                payload = raw.get("plan_payload") if isinstance(raw.get("plan_payload"), dict) else {}
+                history = raw.get("history") if isinstance(raw.get("history"), list) else []
+            else:
+                history = []
+        else:
+            history = []
+
+        query = _normalize_text(payload.get("query"))
+        notes = _normalize_text(payload.get("notes"))
+        subplans = payload.get("subplans") if isinstance(payload.get("subplans"), list) else []
+        manager_decisions = payload.get("manager_decisions") if isinstance(payload.get("manager_decisions"), dict) else {}
+        stage_reconciliation = payload.get("stage_reconciliation") if isinstance(payload.get("stage_reconciliation"), dict) else {}
+
+        checkpoint_path = plans_dir / plan_id / "checkpoints.json"
+        checkpoints: dict[str, dict[str, Any]] = {}
+        if checkpoint_path.exists():
+            try:
+                cp_raw = _read_json(checkpoint_path)
+            except json.JSONDecodeError:
+                cp_raw = {}
+            cp_subplans = cp_raw.get("subplans") if isinstance(cp_raw.get("subplans"), dict) else {}
+            for subplan_id, row in cp_subplans.items():
+                if isinstance(row, dict):
+                    checkpoints[str(subplan_id)] = row
+
+        trace = trace_index.get(plan_id, {})
+        trace_extra = trace.get("extra") if isinstance(trace.get("extra"), dict) else {}
+        if not subplans and isinstance(trace_extra.get("subplans"), list):
+            subplans = [row for row in trace_extra.get("subplans") if isinstance(row, dict)]
+        if not manager_decisions and isinstance(trace_extra.get("manager_decisions"), dict):
+            manager_decisions = trace_extra.get("manager_decisions")
+        if not stage_reconciliation and isinstance((trace_extra.get("plan_payload") or {}).get("stage_reconciliation"), dict):
+            stage_reconciliation = trace_extra["plan_payload"]["stage_reconciliation"]
+        if not query and isinstance(trace_extra.get("plan_payload"), dict):
+            query = _normalize_text(trace_extra["plan_payload"].get("query"))
+
+        out[plan_id] = PlanArtifact(
+            plan_id=plan_id,
+            query=query,
+            notes=notes,
+            subplans=subplans,
+            manager_decisions=manager_decisions,
+            stage_reconciliation=stage_reconciliation,
+            history=[row for row in history if isinstance(row, dict)],
+            checkpoints=checkpoints,
+            trace_extra=trace_extra,
+        )
+    return out
+
+
+def _collect_subplan_rows(plan: PlanArtifact) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    if plan.checkpoints:
+        rows.extend(row for row in plan.checkpoints.values() if isinstance(row, dict))
+    if not rows:
+        rows.extend(row for row in plan.subplans if isinstance(row, dict))
+    return rows
+
+
+def _extract_target_paths(subplan_rows: list[dict[str, Any]]) -> list[str]:
+    targets: list[str] = []
+    for row in subplan_rows:
+        for target in row.get("targets") or []:
+            value = _normalize_text(target)
+            if value:
+                targets.append(value)
+    seen: set[str] = set()
+    unique: list[str] = []
+    for target in targets:
+        if target in seen:
+            continue
+        seen.add(target)
+        unique.append(target)
+    return unique
+
+
+def _extract_contract_strategies(subplan_rows: list[dict[str, Any]]) -> list[str]:
+    out: list[str] = []
+    for row in subplan_rows:
+        for contract in row.get("target_contracts") or []:
+            if not isinstance(contract, dict):
+                continue
+            strategy = _normalize_text(contract.get("contract_strategy"))
+            if strategy:
+                out.append(strategy)
+    return out
+
+
+def _first_failure_event(history: list[dict[str, Any]]) -> dict[str, Any] | None:
+    for event in history:
+        if str(event.get("state") or "") == "failed":
+            return event
+    return None
+
+
+def _history_transitions(history: list[dict[str, Any]]) -> list[str]:
+    transitions: list[str] = []
+    for event in history:
+        et = _normalize_text(event.get("event_type"))
+        st = _normalize_text(event.get("state"))
+        if et or st:
+            transitions.append(f"{et or 'event'}:{st or 'state'}")
+    return transitions
+
+
+def _dominant_weakness(run: CampaignRun, lesson_query: str, *, plan: PlanArtifact) -> tuple[str, dict[str, float]]:
+    model = max(0.0, 1.0 - run.first_attempt_quality_rate) * 2.0
+    manager = run.rescue_count * 0.8 + run.escalation_count * 0.9
+    retrieval = 0.0
+    guard = run.guard_count * 1.1
+
+    lower_query = lesson_query.lower()
+    if run.task_class == "retrieval_orchestration" or run.attribution_primary == "retrieval_gain":
+        retrieval += 1.6
+    if any(tok in lower_query for tok in ["retrieval", "rag", "anchor", "search", "cluster"]):
+        retrieval += 0.7
+    if any(tok in lower_query for tok in ["contract", "literal", "guard"]):
+        guard += 0.4
+
+    strategy_rows = plan.manager_decisions.get("strategy_decisions") if isinstance(plan.manager_decisions, dict) else []
+    if isinstance(strategy_rows, list):
+        for row in strategy_rows:
+            if not isinstance(row, dict):
+                continue
+            reason = str(row.get("reason") or "").lower()
+            if any(tok in reason for tok in ["split", "defer", "budget", "fallback", "rescue"]):
+                manager += 0.3
+            if "learning_priors" in str(row.get("decision_tags") or ""):
+                manager += 0.1
+
+    scores = {
+        "model_weakness": round(model, 3),
+        "manager_weakness": round(manager, 3),
+        "retrieval_weakness": round(retrieval, 3),
+        "guard_weakness": round(guard, 3),
+    }
+    ordered = sorted(scores.items(), key=lambda item: item[1], reverse=True)
+    if len(ordered) < 2:
+        return "mixed", scores
+    if ordered[0][1] <= 0.0:
+        return "mixed", scores
+    if ordered[0][1] - ordered[1][1] < 0.25:
+        return "mixed", scores
+    return ordered[0][0], scores
+
+
+def _derive_prevention_patterns(
+    run: CampaignRun,
+    *,
+    dominant_weakness: str,
+    target_paths: list[str],
+    first_failure: dict[str, Any] | None,
+) -> tuple[str, list[str]]:
+    signatures: list[str] = [run.task_class, dominant_weakness]
+    if run.first_attempt_quality_rate < 0.5:
+        signatures.append("low_first_attempt")
+    if run.rescue_count > 0:
+        signatures.append("rescue_dependency")
+    if run.escalation_count > 0:
+        signatures.append("escalation_present")
+    if run.guard_count > 0:
+        signatures.append("guard_triggered")
+    if first_failure is not None:
+        signatures.append(f"failure_code_{_safe_int(first_failure.get('failure_code'), 0)}")
+    if target_paths:
+        signatures.append(_prefix(target_paths[0]).replace("/", ""))
+    signature = "|".join(signatures)
+
+    actions: list[str] = []
+    if dominant_weakness == "model_weakness":
+        actions.append("Add class-targeted positive/negative training bundle from this lesson.")
+        actions.append("Strengthen first-attempt contract text prior for this task family.")
+    elif dominant_weakness == "manager_weakness":
+        actions.append("Add manager pre-dispatch split/defer heuristic for this failure signature.")
+        actions.append("Raise recurrence-pressure handling before grouped dispatch.")
+    elif dominant_weakness == "retrieval_weakness":
+        actions.append("Inject retrieval anchor prefixes and demote stale target families for this class.")
+        actions.append("Increase conflict/yield prior penalty for this signature.")
+    elif dominant_weakness == "guard_weakness":
+        actions.append("Add deterministic preflight guard for this signature before dispatch.")
+        actions.append("Emit contract-risk warning when this query/target shape appears.")
+    else:
+        actions.append("Apply combined guard + manager preflight + retrieval shaping for this mixed signature.")
+    return signature, actions
+
+
+def _lesson_object(
+    run: CampaignRun,
+    *,
+    plan: PlanArtifact,
+    benchmark_item: dict[str, Any] | None,
+    curation_matches: list[dict[str, Any]],
+) -> dict[str, Any]:
+    subplan_rows = _collect_subplan_rows(plan)
+    target_paths = _extract_target_paths(subplan_rows)
+    contract_strategies = _extract_contract_strategies(subplan_rows)
+    lesson_query = _normalize_text(plan.query or (benchmark_item or {}).get("query") or run.task_title)
+    history = plan.history
+    first_failure = _first_failure_event(history)
+    history_transitions = _history_transitions(history)
+    had_failure_then_success = bool(first_failure is not None and run.success)
+
+    dominant, weakness_scores = _dominant_weakness(run, lesson_query, plan=plan)
+    signature, prevention_actions = _derive_prevention_patterns(
+        run,
+        dominant_weakness=dominant,
+        target_paths=target_paths,
+        first_failure=first_failure,
     )
-    return round(local_success / len(runs), 3)
+
+    rescue_or_fallback: list[str] = []
+    if run.rescue_count > 0:
+        rescue_or_fallback.append(f"manager_or_family_rescue_count={run.rescue_count}")
+    if run.escalation_count > 0:
+        rescue_or_fallback.append(f"escalation_count={run.escalation_count}")
+    if run.guard_count > 0:
+        rescue_or_fallback.append(f"guard_count={run.guard_count}")
+    if had_failure_then_success:
+        rescue_or_fallback.append("history shows failed attempt followed by successful completion")
+
+    initial_wrong: list[str] = []
+    if run.first_attempt_quality_rate < 1.0:
+        initial_wrong.append("first attempt did not fully succeed")
+    if first_failure is not None:
+        initial_wrong.append(
+            f"attempt failed in history with failure_code={_safe_int(first_failure.get('failure_code'), 0)}"
+        )
+    if run.return_code != 0:
+        initial_wrong.append(f"non-zero return_code={run.return_code}")
+    if run.guard_count > 0:
+        initial_wrong.append("guard intervention was required")
+
+    eventually_worked = "success" if run.success else "failed"
+    if run.success and run.first_attempt_quality_rate >= 0.85 and not rescue_or_fallback:
+        eventually_worked = "clean_first_attempt_success"
+    elif run.success and rescue_or_fallback:
+        eventually_worked = "success_after_rescue_or_retry"
+
+    contract_risk_score = round(
+        (1.0 if run.guard_count > 0 else 0.0)
+        + (0.8 if any("literal" in s for s in contract_strategies) else 0.0)
+        + (0.5 if any("safe_contract" in run.task_class for _ in [0]) else 0.0),
+        3,
+    )
+
+    promote = {
+        "template": bool(run.success and run.first_attempt_quality_rate >= 0.85 and not rescue_or_fallback),
+        "replay_target": bool((not run.success) or run.first_attempt_quality_rate < 0.7),
+        "training_example": bool(run.first_attempt_quality_rate < 0.75 or dominant == "model_weakness"),
+        "guard_candidate": bool(run.guard_count > 0 or dominant == "guard_weakness"),
+        "retrieval_rule_candidate": bool(dominant == "retrieval_weakness"),
+        "manager_policy_candidate": bool(dominant == "manager_weakness" or run.rescue_count > 0 or run.escalation_count > 0),
+    }
+
+    curation_destinations = sorted(
+        {
+            str(row.get("curation_destination") or "")
+            for row in curation_matches
+            if isinstance(row, dict) and str(row.get("curation_destination") or "")
+        }
+    )
+
+    lesson = {
+        "schema_version": "learning_lesson_v12",
+        "plan_id": run.plan_id,
+        "campaign_run_id": run.campaign_run_id,
+        "timestamp_utc": run.timestamp_utc,
+        "started_at_utc": run.started_at_utc,
+        "task": {
+            "task_id": run.task_id,
+            "task_title": run.task_title,
+            "task_class": run.task_class,
+            "lane": run.lane,
+            "in_scope": run.in_scope,
+            "query": lesson_query,
+            "command": run.command,
+            "attribution_profile": run.attribution_profile,
+            "attribution_primary": run.attribution_primary,
+            "ranking_version": run.ranking_version,
+        },
+        "attempted": {
+            "subplan_count": len(subplan_rows),
+            "target_count": len(target_paths),
+            "target_paths": target_paths,
+            "target_prefixes": sorted({_prefix(path) for path in target_paths}),
+            "contract_strategies": sorted(set(contract_strategies)),
+            "history_transitions": history_transitions,
+        },
+        "what_initially_went_wrong": initial_wrong,
+        "what_eventually_worked": {
+            "outcome": eventually_worked,
+            "success": run.success,
+            "return_code": run.return_code,
+            "had_failure_then_success": had_failure_then_success,
+            "reconciliation_present": bool(plan.stage_reconciliation),
+        },
+        "rescue_or_fallback_required": rescue_or_fallback,
+        "prevention": {
+            "failure_signature": signature,
+            "would_have_prevented_issue": prevention_actions,
+            "contract_risk_score": contract_risk_score,
+        },
+        "weakness_classification": {
+            "dominant": dominant,
+            "scores": weakness_scores,
+            "is_mixed": dominant == "mixed",
+        },
+        "promotion_recommendations": promote,
+        "reusable_signals": {
+            "curation_destinations": curation_destinations,
+            "manager_decision_keys": sorted((plan.manager_decisions or {}).keys()),
+            "stage_reconciliation_keys": sorted((plan.stage_reconciliation or {}).keys()),
+        },
+        "first_attempt_quality": {
+            "rate": round(run.first_attempt_quality_rate, 3),
+            "rescue_count": run.rescue_count,
+            "escalation_count": run.escalation_count,
+            "guard_count": run.guard_count,
+        },
+    }
+    return lesson
 
 
-def _attribution_mix(runs: list[CampaignRun]) -> dict[str, int]:
-    return dict(Counter(run.attribution_primary for run in runs))
+def _build_lessons(
+    *,
+    runs: list[CampaignRun],
+    plan_index: dict[str, PlanArtifact],
+    benchmark_items_by_plan: dict[str, dict[str, Any]],
+    curation_rows: dict[str, list[dict[str, Any]]],
+) -> list[dict[str, Any]]:
+    curation_by_plan: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    for rows in curation_rows.values():
+        for row in rows:
+            if not isinstance(row, dict):
+                continue
+            plan_id = str(row.get("plan_id") or "")
+            if plan_id:
+                curation_by_plan[plan_id].append(row)
 
-
-def _weak_class_summary(benchmark_classes: list[dict[str, Any]], runs: list[CampaignRun]) -> list[dict[str, Any]]:
-    run_by_class: dict[str, list[CampaignRun]] = defaultdict(list)
+    lessons: list[dict[str, Any]] = []
     for run in runs:
-        run_by_class[run.task_class].append(run)
+        plan = plan_index.get(run.plan_id)
+        if plan is None:
+            plan = PlanArtifact(
+                plan_id=run.plan_id,
+                query="",
+                notes="",
+                subplans=[],
+                manager_decisions={},
+                stage_reconciliation={},
+                history=[],
+                checkpoints={},
+                trace_extra={},
+            )
+        benchmark_item = benchmark_items_by_plan.get(run.plan_id)
+        curation_matches = curation_by_plan.get(run.plan_id, [])
+        lessons.append(
+            _lesson_object(
+                run,
+                plan=plan,
+                benchmark_item=benchmark_item,
+                curation_matches=curation_matches,
+            )
+        )
+    lessons.sort(key=lambda row: row.get("timestamp_utc") or "", reverse=True)
+    return lessons
+
+
+def _weak_class_summary(benchmark_classes: list[dict[str, Any]], lessons: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    by_class: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    for lesson in lessons:
+        cls = str((((lesson.get("task") or {}).get("task_class")) or "unknown"))
+        by_class[cls].append(lesson)
 
     summary: list[dict[str, Any]] = []
     for row in benchmark_classes:
         class_id = str(row.get("class_id") or "unknown")
-        class_runs = run_by_class.get(class_id, [])
-        task_count = max(1, _safe_int(row.get("task_count"), 1))
-        success_rate = _safe_float(row.get("success_rate"))
-        rescue_rate = _safe_float(row.get("rescue_rate"))
-        escalation_rate = _safe_float(row.get("escalation_rate"))
-        recurrence_rate = _safe_float(row.get("recurrence_rate"))
-        first_attempt_quality_rate = _safe_float(row.get("first_attempt_quality_rate"))
-        model_pressure = max(0.0, 1.0 - first_attempt_quality_rate)
-        wrapper_pressure = min(1.0, rescue_rate + escalation_rate + recurrence_rate)
-        if class_runs:
-            class_run_model_pressure = sum(1.0 - r.first_attempt_quality_rate for r in class_runs) / len(class_runs)
-            class_run_wrapper_pressure = sum(
-                (1 if (r.rescue_count > 0 or r.escalation_count > 0 or r.guard_count > 0) else 0) for r in class_runs
-            ) / len(class_runs)
-            model_pressure = round((model_pressure + class_run_model_pressure) / 2.0, 3)
-            wrapper_pressure = round((wrapper_pressure + class_run_wrapper_pressure) / 2.0, 3)
-        else:
-            model_pressure = round(model_pressure, 3)
-            wrapper_pressure = round(wrapper_pressure, 3)
+        cls_lessons = by_class.get(class_id, [])
+        success_rate = _safe_float(row.get("success_rate"), 0.0)
+        rescue_rate = _safe_float(row.get("rescue_rate"), 0.0)
+        escalation_rate = _safe_float(row.get("escalation_rate"), 0.0)
+        recurrence_rate = _safe_float(row.get("recurrence_rate"), 0.0)
+        first_attempt = _safe_float(row.get("first_attempt_quality_rate"), 0.0)
+
+        lesson_penalty = 0.0
+        if cls_lessons:
+            lesson_penalty = sum(
+                1.0 - _safe_float(((lesson.get("first_attempt_quality") or {}).get("rate")), 0.0)
+                for lesson in cls_lessons
+            ) / len(cls_lessons)
 
         weakness_score = round(
-            (1.0 - success_rate) * 4.0
-            + recurrence_rate * 3.0
-            + escalation_rate * 2.0
+            (1.0 - success_rate) * 3.0
             + rescue_rate * 2.0
-            + max(0.0, 0.7 - first_attempt_quality_rate) * 2.5
-            + model_pressure,
+            + escalation_rate * 2.0
+            + recurrence_rate * 2.5
+            + max(0.0, 0.7 - first_attempt) * 3.0
+            + lesson_penalty,
             3,
         )
-        if model_pressure > wrapper_pressure + 0.1:
-            dominant_weakness = "model"
-        elif wrapper_pressure > model_pressure + 0.1:
-            dominant_weakness = "wrapper"
-        else:
-            dominant_weakness = "mixed"
+
+        dominant_counts = Counter(
+            str((lesson.get("weakness_classification") or {}).get("dominant") or "mixed")
+            for lesson in cls_lessons
+        )
+        dominant = dominant_counts.most_common(1)[0][0] if dominant_counts else "mixed"
 
         summary.append(
             {
                 "class_id": class_id,
                 "class_label": str(row.get("class_label") or class_id),
-                "task_count": task_count,
+                "task_count": _safe_int(row.get("task_count"), 0),
                 "success_rate": round(success_rate, 3),
                 "rescue_rate": round(rescue_rate, 3),
                 "escalation_rate": round(escalation_rate, 3),
                 "recurrence_rate": round(recurrence_rate, 3),
-                "first_attempt_quality_rate": round(first_attempt_quality_rate, 3),
+                "first_attempt_quality_rate": round(first_attempt, 3),
                 "weakness_score": weakness_score,
-                "model_pressure": model_pressure,
-                "wrapper_pressure": wrapper_pressure,
-                "dominant_weakness": dominant_weakness,
+                "dominant_weakness": dominant,
+                "lesson_count": len(cls_lessons),
             }
         )
     summary.sort(key=lambda item: item["weakness_score"], reverse=True)
     return summary
 
 
-def _weak_first_attempt_paths(runs: list[CampaignRun], *, max_items: int) -> list[dict[str, Any]]:
-    ordered = sorted(
-        runs,
-        key=lambda run: (
-            run.first_attempt_quality_rate,
-            -(run.rescue_count + run.escalation_count + run.guard_count),
-            run.timestamp_utc,
-        ),
-    )
-    out: list[dict[str, Any]] = []
-    for run in ordered[: max(1, max_items)]:
-        out.append(
-            {
-                "plan_id": run.plan_id,
-                "task_id": run.task_id,
-                "task_class": run.task_class,
-                "timestamp_utc": run.timestamp_utc,
-                "first_attempt_quality_rate": round(run.first_attempt_quality_rate, 3),
-                "rescue_count": run.rescue_count,
-                "escalation_count": run.escalation_count,
-                "guard_count": run.guard_count,
-                "attribution_primary": run.attribution_primary,
-                "attribution_bucket": run.attribution_bucket,
-            }
-        )
-    return out
-
-
-def _replay_queue(
-    *,
-    weak_classes: list[dict[str, Any]],
-    runs: list[CampaignRun],
-    max_items: int,
-) -> list[dict[str, Any]]:
-    weak_class_ids = {row["class_id"] for row in weak_classes[: max(1, min(len(weak_classes), 5))]}
-    candidates: list[CampaignRun] = []
-    for run in runs:
-        if run.task_class not in weak_class_ids:
-            continue
-        if run.first_attempt_quality_rate >= 0.8 and run.success:
-            continue
-        candidates.append(run)
-    candidates.sort(
-        key=lambda run: (
-            run.first_attempt_quality_rate,
-            -(run.rescue_count + run.escalation_count + run.guard_count),
-            run.timestamp_utc,
-        )
-    )
-
-    queued: list[dict[str, Any]] = []
+def _replay_queue_from_lessons(lessons: list[dict[str, Any]], *, max_items: int) -> list[dict[str, Any]]:
+    queue: list[dict[str, Any]] = []
     seen: set[str] = set()
-    for run in candidates:
-        if not run.task_id or run.task_id in seen:
+    for lesson in lessons:
+        promote = lesson.get("promotion_recommendations") or {}
+        if not bool(promote.get("replay_target")):
             continue
-        reason: list[str] = []
-        if not run.success:
-            reason.append("recent_failure")
-        if run.first_attempt_quality_rate < 0.5:
-            reason.append("low_first_attempt_quality")
-        if run.rescue_count > 0:
-            reason.append("rescue_dependency")
-        if run.escalation_count > 0:
-            reason.append("escalation_present")
-        if run.guard_count > 0:
-            reason.append("guard_dependency")
-        queued.append(
+        task = lesson.get("task") or {}
+        task_id = str(task.get("task_id") or "")
+        if not task_id or task_id in seen:
+            continue
+        prevention = lesson.get("prevention") or {}
+        queue.append(
             {
-                "task_id": run.task_id,
-                "task_class": run.task_class,
-                "source_plan_id": run.plan_id,
-                "reason": ",".join(reason) if reason else "weak_class_priority",
+                "task_id": task_id,
+                "task_class": str(task.get("task_class") or "unknown"),
+                "source_plan_id": str(lesson.get("plan_id") or ""),
+                "reason": str(prevention.get("failure_signature") or "replay_needed"),
                 "replay_command": (
                     "python3 bin/local_replacement_campaign.py --config config/local_first_campaign.json "
-                    f"run --task-id {run.task_id} --profile normal --no-dry-run "
-                    "--extra-arg=--preferred-prefix --extra-arg=bin/ "
-                    "--extra-arg=--preferred-prefix --extra-arg=shell/ "
-                    "--extra-arg=--worker-budget-grouped --extra-arg=40 "
-                    "--extra-arg=--worker-budget-single --extra-arg=80"
+                    f"run --task-id {task_id} --profile normal --no-dry-run"
                 ),
             }
         )
-        seen.add(run.task_id)
-        if len(queued) >= max_items:
+        seen.add(task_id)
+        if len(queue) >= max(1, max_items):
             break
-    return queued
+    return queue
 
 
-def _candidate_splits(
-    *,
-    curation_rows: dict[str, list[dict[str, Any]]],
-    weak_classes: list[dict[str, Any]],
-    max_items: int,
-) -> dict[str, list[dict[str, Any]]]:
-    weak_class_ids = {row["class_id"] for row in weak_classes[: max(1, min(len(weak_classes), 6))]}
-    failures = curation_rows.get("failures_for_training", [])
-    training_examples = curation_rows.get("training_examples", [])
-    guard_rows = curation_rows.get("guard_candidates", [])
-    benchmark_wins = curation_rows.get("benchmark_wins", [])
-    existing_templates = curation_rows.get("template_candidates", [])
+def _build_prevention_outputs(lessons: list[dict[str, Any]], *, max_items: int) -> dict[str, Any]:
+    by_signature: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    for lesson in lessons:
+        signature = str(((lesson.get("prevention") or {}).get("failure_signature")) or "")
+        if signature:
+            by_signature[signature].append(lesson)
 
-    def _compact(row: dict[str, Any]) -> dict[str, Any]:
-        return {
-            "plan_id": str(row.get("plan_id") or ""),
-            "task_id": str(row.get("task_id") or ""),
-            "task_class": str(row.get("task_class") or "unknown"),
-            "first_attempt_quality_score": round(_safe_float(row.get("first_attempt_quality_score")), 3),
-            "rescue_count": _safe_int(row.get("rescue_count")),
-            "escalation_count": _safe_int(row.get("escalation_count")),
-            "guard_count": _safe_int(row.get("guard_count")),
-            "attribution_primary": str(row.get("attribution_primary") or "mixed_gain"),
-            "reason": str(
-                row.get("training_reason")
-                or row.get("guard_reason")
-                or row.get("recurrence_signature")
-                or "artifact_signal"
-            ),
-        }
-
-    guard_candidates: list[dict[str, Any]] = []
-    seen_guard: set[str] = set()
-    for row in guard_rows:
-        cls = str(row.get("task_class") or "unknown")
-        if cls not in weak_class_ids:
+    repeated: list[dict[str, Any]] = []
+    for signature, rows in by_signature.items():
+        if len(rows) < 2:
             continue
-        key = str(row.get("plan_id") or "")
-        if not key or key in seen_guard:
-            continue
-        guard_candidates.append(_compact(row))
-        seen_guard.add(key)
-        if len(guard_candidates) >= max_items:
-            break
+        task_classes = sorted({str(((row.get("task") or {}).get("task_class")) or "unknown") for row in rows})
+        weaknesses = sorted(
+            {str(((row.get("weakness_classification") or {}).get("dominant")) or "mixed") for row in rows}
+        )
+        plan_ids = [str(row.get("plan_id") or "") for row in rows]
+        timestamps = [str(row.get("timestamp_utc") or "") for row in rows]
+        actions = []
+        for row in rows[:3]:
+            actions.extend((row.get("prevention") or {}).get("would_have_prevented_issue") or [])
+        dedup_actions = []
+        for action in actions:
+            if action not in dedup_actions:
+                dedup_actions.append(action)
+        owner = "mixed"
+        if "guard_weakness" in weaknesses and len(weaknesses) == 1:
+            owner = "guard"
+        elif "manager_weakness" in weaknesses and len(weaknesses) == 1:
+            owner = "manager"
+        elif "retrieval_weakness" in weaknesses and len(weaknesses) == 1:
+            owner = "retrieval"
+        elif "model_weakness" in weaknesses and len(weaknesses) == 1:
+            owner = "model"
 
-    manager_rule_candidates: list[dict[str, Any]] = []
-    retrieval_rule_candidates: list[dict[str, Any]] = []
-    training_candidates: list[dict[str, Any]] = []
-    seen_mgr: set[str] = set()
-    seen_rag: set[str] = set()
-    seen_train: set[str] = set()
+        repeated.append(
+            {
+                "signature": signature,
+                "occurrence_count": len(rows),
+                "task_classes": task_classes,
+                "dominant_weaknesses": weaknesses,
+                "first_seen_utc": min(timestamps) if timestamps else "",
+                "last_seen_utc": max(timestamps) if timestamps else "",
+                "impacted_plan_ids": plan_ids,
+                "recommended_owner": owner,
+                "recommended_actions": dedup_actions[:8],
+                "known_bad_task_shapes": [
+                    {
+                        "plan_id": str(row.get("plan_id") or ""),
+                        "query": str(((row.get("task") or {}).get("query")) or ""),
+                        "target_prefixes": (row.get("attempted") or {}).get("target_prefixes") or [],
+                    }
+                    for row in rows[:5]
+                ],
+            }
+        )
 
-    ordered_failures = sorted(
-        failures,
-        key=lambda row: (
-            _safe_float(row.get("first_attempt_quality_score"), 1.0),
-            -(_safe_int(row.get("rescue_count")) + _safe_int(row.get("escalation_count"))),
+    repeated.sort(key=lambda row: row.get("occurrence_count", 0), reverse=True)
+
+    contract_risk = sorted(
+        (
+            {
+                "plan_id": str(row.get("plan_id") or ""),
+                "task_id": str(((row.get("task") or {}).get("task_id")) or ""),
+                "task_class": str(((row.get("task") or {}).get("task_class")) or "unknown"),
+                "contract_risk_score": _safe_float(((row.get("prevention") or {}).get("contract_risk_score")), 0.0),
+                "warning": "contract-risk warning: tighten literal/guard preflight before dispatch",
+            }
+            for row in lessons
+            if _safe_float(((row.get("prevention") or {}).get("contract_risk_score")), 0.0) >= 1.2
         ),
+        key=lambda item: item["contract_risk_score"],
+        reverse=True,
     )
-    for row in ordered_failures:
-        cls = str(row.get("task_class") or "unknown")
-        if cls not in weak_class_ids:
-            continue
-        plan_id = str(row.get("plan_id") or "")
-        if not plan_id:
-            continue
 
-        reason = str(row.get("recurrence_signature") or row.get("training_reason") or "")
-        compact = _compact(row)
-        if (
-            ("deferred_worker_budget" in reason or _safe_int(row.get("rescue_count")) > 0 or _safe_int(row.get("escalation_count")) > 0)
-            and plan_id not in seen_mgr
-            and len(manager_rule_candidates) < max_items
-        ):
-            manager_rule_candidates.append(compact)
-            seen_mgr.add(plan_id)
-
-        if (
-            (
-                "retrieval" in cls
-                or str(row.get("attribution_primary") or "") in {"retrieval_gain", "mixed_gain"}
-                or "anchor" in str(row.get("query") or "").lower()
+    stale_warnings: list[dict[str, Any]] = []
+    for row in repeated:
+        first_seen = _parse_ts(str(row.get("first_seen_utc") or ""))
+        last_seen = _parse_ts(str(row.get("last_seen_utc") or ""))
+        if first_seen is None or last_seen is None:
+            continue
+        if (last_seen - first_seen).total_seconds() >= 6 * 3600:
+            stale_warnings.append(
+                {
+                    "signature": row["signature"],
+                    "warning": "stale-pattern warning: signature persists across multiple windows",
+                    "occurrence_count": row["occurrence_count"],
+                    "first_seen_utc": row["first_seen_utc"],
+                    "last_seen_utc": row["last_seen_utc"],
+                }
             )
-            and plan_id not in seen_rag
-            and len(retrieval_rule_candidates) < max_items
-        ):
-            retrieval_rule_candidates.append(compact)
-            seen_rag.add(plan_id)
-
-        if plan_id not in seen_train and len(training_candidates) < max_items:
-            training_candidates.append(compact)
-            seen_train.add(plan_id)
-
-    template_candidates: list[dict[str, Any]] = []
-    seen_tpl: set[str] = set()
-    template_source = benchmark_wins + existing_templates + training_examples
-    template_source_sorted = sorted(
-        template_source,
-        key=lambda row: (
-            -_safe_float(row.get("first_attempt_quality_score"), 0.0),
-            _safe_int(row.get("rescue_count")) + _safe_int(row.get("escalation_count")) + _safe_int(row.get("guard_count")),
-        ),
-    )
-    for row in template_source_sorted:
-        cls = str(row.get("task_class") or "unknown")
-        if cls not in weak_class_ids:
-            continue
-        plan_id = str(row.get("plan_id") or "")
-        if not plan_id or plan_id in seen_tpl:
-            continue
-        quality = _safe_float(row.get("first_attempt_quality_score"), 0.0)
-        if quality < 0.8:
-            continue
-        if _safe_int(row.get("rescue_count")) > 0 or _safe_int(row.get("escalation_count")) > 0 or _safe_int(row.get("guard_count")) > 0:
-            continue
-        template_candidates.append(_compact(row))
-        seen_tpl.add(plan_id)
-        if len(template_candidates) >= max_items:
-            break
 
     return {
-        "guard_rule_candidates": guard_candidates,
-        "manager_rule_candidates": manager_rule_candidates,
-        "retrieval_rule_candidates": retrieval_rule_candidates,
-        "training_example_candidates": training_candidates,
-        "template_promotion_candidates": template_candidates,
+        "repeated_failure_signatures": repeated[: max(1, max_items)],
+        "contract_risk_warnings": contract_risk[: max(1, max_items)],
+        "stale_pattern_warnings": stale_warnings[: max(1, max_items)],
+    }
+
+
+def _build_first_attempt_priors(lessons: list[dict[str, Any]], *, max_items: int) -> list[dict[str, Any]]:
+    by_class: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    for lesson in lessons:
+        cls = str((((lesson.get("task") or {}).get("task_class")) or "unknown"))
+        by_class[cls].append(lesson)
+
+    priors: list[dict[str, Any]] = []
+    for cls, rows in by_class.items():
+        good = [
+            row
+            for row in rows
+            if bool((row.get("what_eventually_worked") or {}).get("success"))
+            and _safe_float(((row.get("first_attempt_quality") or {}).get("rate"), 0.0)) >= 0.8
+            and not (row.get("rescue_or_fallback_required") or [])
+        ]
+        bad = [
+            row
+            for row in rows
+            if (not bool((row.get("what_eventually_worked") or {}).get("success")))
+            or _safe_float(((row.get("first_attempt_quality") or {}).get("rate"), 1.0)) < 0.55
+        ]
+
+        good_queries = [str(((row.get("task") or {}).get("query")) or "") for row in good]
+        bad_queries = [str(((row.get("task") or {}).get("query")) or "") for row in bad]
+
+        good_targets = [
+            prefix
+            for row in good
+            for prefix in ((row.get("attempted") or {}).get("target_prefixes") or [])
+            if prefix
+        ]
+        good_contracts = [
+            strategy
+            for row in good
+            for strategy in ((row.get("attempted") or {}).get("contract_strategies") or [])
+            if strategy
+        ]
+
+        strategy_counts: Counter[str] = Counter()
+        for row in good:
+            for transition in (row.get("attempted") or {}).get("history_transitions") or []:
+                if transition:
+                    strategy_counts[str(transition)] += 1
+
+        priors.append(
+            {
+                "task_class": cls,
+                "sample_size": len(rows),
+                "good_sample_size": len(good),
+                "bad_sample_size": len(bad),
+                "recommended_prompt_framing_tokens": _top_tokens(good_queries, top_n=10),
+                "recommended_prompt_bigrams": _top_bigrams(good_queries, top_n=8),
+                "known_bad_wording_patterns": _top_bigrams(bad_queries, top_n=8),
+                "recommended_target_selection_hints": [tok for tok, _ in Counter(good_targets).most_common(6)],
+                "recommended_contract_patterns": [tok for tok, _ in Counter(good_contracts).most_common(6)],
+                "recommended_decomposition_style": [tok for tok, _ in strategy_counts.most_common(6)],
+                "known_good_task_shapes": [
+                    {
+                        "plan_id": str(row.get("plan_id") or ""),
+                        "query": str(((row.get("task") or {}).get("query")) or ""),
+                        "target_prefixes": (row.get("attempted") or {}).get("target_prefixes") or [],
+                    }
+                    for row in good[:3]
+                ],
+                "known_bad_task_shapes": [
+                    {
+                        "plan_id": str(row.get("plan_id") or ""),
+                        "query": str(((row.get("task") or {}).get("query")) or ""),
+                        "target_prefixes": (row.get("attempted") or {}).get("target_prefixes") or [],
+                    }
+                    for row in bad[:3]
+                ],
+            }
+        )
+
+    priors.sort(key=lambda row: row.get("sample_size", 0), reverse=True)
+    return priors[: max(1, max_items)]
+
+
+def _build_execution_acceleration(lessons: list[dict[str, Any]], priors: list[dict[str, Any]], *, max_items: int) -> dict[str, Any]:
+    template_rows = [row for row in lessons if bool((row.get("promotion_recommendations") or {}).get("template"))]
+    template_rows = sorted(
+        template_rows,
+        key=lambda row: _safe_float(((row.get("first_attempt_quality") or {}).get("rate"), 0.0)),
+        reverse=True,
+    )
+
+    exemplars = sorted(
+        lessons,
+        key=lambda row: (
+            1 if bool((row.get("what_eventually_worked") or {}).get("success")) else 0,
+            _safe_float(((row.get("first_attempt_quality") or {}).get("rate"), 0.0)),
+            -len((row.get("rescue_or_fallback_required") or [])),
+        ),
+        reverse=True,
+    )
+
+    decomposition_counts: Counter[str] = Counter()
+    recovery_counts: Counter[str] = Counter()
+    anchor_counts: Counter[str] = Counter()
+    dispatch_counts: Counter[str] = Counter()
+
+    for row in lessons:
+        for transition in (row.get("attempted") or {}).get("history_transitions") or []:
+            if transition.startswith("attempt_"):
+                decomposition_counts[transition] += 1
+        rescue = row.get("rescue_or_fallback_required") or []
+        if rescue and bool((row.get("what_eventually_worked") or {}).get("success")):
+            for item in rescue:
+                recovery_counts[str(item)] += 1
+        for prefix in (row.get("attempted") or {}).get("target_prefixes") or []:
+            if bool((row.get("what_eventually_worked") or {}).get("success")):
+                anchor_counts[str(prefix)] += 1
+        cmd = str(((row.get("task") or {}).get("command")) or "")
+        if "--profile first_attempt_only" in cmd:
+            dispatch_counts["profile:first_attempt_only"] += 1
+        if "--profile manager_reduced" in cmd:
+            dispatch_counts["profile:manager_reduced"] += 1
+        if "--profile rag_reduced" in cmd:
+            dispatch_counts["profile:rag_reduced"] += 1
+        if "--no-dry-run" in cmd:
+            dispatch_counts["dispatch:no_dry_run"] += 1
+
+    class_defaults = [
+        {
+            "task_class": row.get("task_class"),
+            "high_confidence_defaults": {
+                "prompt_tokens": row.get("recommended_prompt_framing_tokens") or [],
+                "target_hints": row.get("recommended_target_selection_hints") or [],
+                "contract_patterns": row.get("recommended_contract_patterns") or [],
+            },
+        }
+        for row in priors
+    ]
+
+    return {
+        "top_reusable_templates": [
+            {
+                "plan_id": str(row.get("plan_id") or ""),
+                "task_id": str(((row.get("task") or {}).get("task_id")) or ""),
+                "task_class": str(((row.get("task") or {}).get("task_class")) or "unknown"),
+                "query": str(((row.get("task") or {}).get("query")) or ""),
+            }
+            for row in template_rows[: max(1, max_items)]
+        ],
+        "strong_exemplar_runs": [
+            {
+                "plan_id": str(row.get("plan_id") or ""),
+                "task_id": str(((row.get("task") or {}).get("task_id")) or ""),
+                "task_class": str(((row.get("task") or {}).get("task_class")) or "unknown"),
+                "first_attempt_quality_rate": _safe_float(((row.get("first_attempt_quality") or {}).get("rate"), 0.0)),
+                "rescue_or_fallback_required": row.get("rescue_or_fallback_required") or [],
+            }
+            for row in exemplars[: max(1, max_items)]
+        ],
+        "high_confidence_task_family_defaults": class_defaults[: max(1, max_items)],
+        "reusable_decomposition_patterns": [
+            {"pattern": key, "count": count}
+            for key, count in decomposition_counts.most_common(max(1, max_items))
+        ],
+        "reusable_recovery_patterns": [
+            {"pattern": key, "count": count}
+            for key, count in recovery_counts.most_common(max(1, max_items))
+        ],
+        "known_effective_code_anchor_strategies": [
+            {"target_prefix": key, "count": count}
+            for key, count in anchor_counts.most_common(max(1, max_items))
+        ],
+        "preferred_dispatch_patterns": [
+            {"pattern": key, "count": count}
+            for key, count in dispatch_counts.most_common(max(1, max_items))
+        ],
+    }
+
+
+def _candidate_splits_from_lessons(lessons: list[dict[str, Any]], *, max_items: int) -> dict[str, list[dict[str, Any]]]:
+    def _pick(flag: str) -> list[dict[str, Any]]:
+        rows = [row for row in lessons if bool((row.get("promotion_recommendations") or {}).get(flag))]
+        rows.sort(
+            key=lambda row: (
+                0 if bool((row.get("what_eventually_worked") or {}).get("success")) else 1,
+                _safe_float(((row.get("first_attempt_quality") or {}).get("rate"), 0.0)),
+            )
+        )
+        out: list[dict[str, Any]] = []
+        for row in rows[: max(1, max_items)]:
+            out.append(
+                {
+                    "plan_id": str(row.get("plan_id") or ""),
+                    "task_id": str(((row.get("task") or {}).get("task_id")) or ""),
+                    "task_class": str(((row.get("task") or {}).get("task_class")) or "unknown"),
+                    "first_attempt_quality_rate": _safe_float(((row.get("first_attempt_quality") or {}).get("rate"), 0.0)),
+                    "reason": str(((row.get("prevention") or {}).get("failure_signature")) or ""),
+                }
+            )
+        return out
+
+    return {
+        "guard_rule_candidates": _pick("guard_candidate"),
+        "manager_rule_candidates": _pick("manager_policy_candidate"),
+        "retrieval_rule_candidates": _pick("retrieval_rule_candidate"),
+        "training_example_candidates": _pick("training_example"),
+        "template_promotion_candidates": _pick("template"),
     }
 
 
 def _model_vs_wrapper_summary(weak_classes: list[dict[str, Any]], attribution: dict[str, Any]) -> dict[str, Any]:
-    model_dominant = [row["class_id"] for row in weak_classes if row.get("dominant_weakness") == "model"]
-    wrapper_dominant = [row["class_id"] for row in weak_classes if row.get("dominant_weakness") == "wrapper"]
+    model_dominant = [row["class_id"] for row in weak_classes if row.get("dominant_weakness") == "model_weakness"]
+    wrapper_dominant = [
+        row["class_id"]
+        for row in weak_classes
+        if row.get("dominant_weakness") in {"manager_weakness", "retrieval_weakness", "guard_weakness"}
+    ]
     mixed = [row["class_id"] for row in weak_classes if row.get("dominant_weakness") == "mixed"]
 
     campaign_agg = attribution.get("campaign_aggregate") if isinstance(attribution.get("campaign_aggregate"), dict) else {}
-    bucket_counts = campaign_agg.get("attribution_bucket_counts") if isinstance(campaign_agg.get("attribution_bucket_counts"), dict) else {}
-    local_with_assist = int(bucket_counts.get("local_with_manager_rescue", 0)) + int(bucket_counts.get("local_with_rag_assist", 0))
+    bucket_counts = (
+        campaign_agg.get("attribution_bucket_counts")
+        if isinstance(campaign_agg.get("attribution_bucket_counts"), dict)
+        else {}
+    )
+    local_with_assist = int(bucket_counts.get("local_with_manager_rescue", 0)) + int(
+        bucket_counts.get("local_with_rag_assist", 0)
+    )
     codex_or_manual = int(bucket_counts.get("codex_or_manual_primary", 0))
-    mixed_or_shared = int(bucket_counts.get("mixed_or_shared", 0))
 
     if len(model_dominant) > len(wrapper_dominant) + 1:
         dominant = "model_weakness"
@@ -477,7 +1096,7 @@ def _model_vs_wrapper_summary(weak_classes: list[dict[str, Any]], attribution: d
         "campaign_bucket_snapshot": {
             "local_with_assist": local_with_assist,
             "codex_or_manual_primary": codex_or_manual,
-            "mixed_or_shared": mixed_or_shared,
+            "mixed_or_shared": int(bucket_counts.get("mixed_or_shared", 0)),
         },
     }
 
@@ -486,7 +1105,7 @@ def _next_step_recommendations(
     *,
     weak_classes: list[dict[str, Any]],
     replay_queue: list[dict[str, Any]],
-    candidate_splits: dict[str, list[dict[str, Any]]],
+    prevention: dict[str, Any],
     model_wrapper: dict[str, Any],
 ) -> list[str]:
     recs: list[str] = []
@@ -496,82 +1115,42 @@ def _next_step_recommendations(
             f"Replay weakest class first: {top['class_id']} (weakness_score={top['weakness_score']}, dominant={top['dominant_weakness']})."
         )
     if replay_queue:
+        recs.append(f"Execute blocker-first replay task: {replay_queue[0]['task_id']} ({replay_queue[0]['reason']}).")
+
+    repeated = prevention.get("repeated_failure_signatures") or []
+    if repeated:
+        first = repeated[0]
         recs.append(
-            f"Execute blocker-first replay task: {replay_queue[0]['task_id']} ({replay_queue[0]['reason']})."
+            f"Install prevention owner={first['recommended_owner']} for signature {first['signature']} (count={first['occurrence_count']})."
         )
-    if candidate_splits.get("guard_rule_candidates"):
-        recs.append("Convert top guard candidate into a deterministic pre-dispatch guard rule before next campaign batch.")
-    if candidate_splits.get("manager_rule_candidates"):
-        recs.append("Apply manager strategy memory/routing adjustment for top manager-rule candidate to reduce repeat rescue/escalation.")
-    if candidate_splits.get("retrieval_rule_candidates"):
-        recs.append("Apply retrieval anchor/grouping refinement for top retrieval-rule candidate and rerun first_attempt_only path.")
+
+    contract_risk = prevention.get("contract_risk_warnings") or []
+    if contract_risk:
+        recs.append("Add pre-dispatch contract-risk warning and guard candidate for highest-risk lesson.")
+
     if model_wrapper.get("dominant_gap") == "model_weakness":
-        recs.append("Prioritize training-example curation for model-dominant weak classes before broad wrapper changes.")
+        recs.append("Prioritize first-attempt priors + training-example promotion before broad wrapper changes.")
     elif model_wrapper.get("dominant_gap") == "wrapper_weakness":
-        recs.append("Prioritize guard/manager/retrieval rule updates before adding new training batches.")
+        recs.append("Prioritize guard/manager/retrieval policy updates before adding more training data.")
+
     if not recs:
         recs.append("No high-pressure weak class detected; run next harder first_attempt_only mixed-family slice.")
     return recs
 
 
-def build_learning_report(
-    *,
-    benchmark: dict[str, Any],
-    runs: list[CampaignRun],
-    curation_rows: dict[str, list[dict[str, Any]]],
-    manifest: dict[str, Any],
-    attribution: dict[str, Any],
-    max_replay: int,
-    max_candidates: int,
-) -> dict[str, Any]:
-    metrics = benchmark.get("metrics") if isinstance(benchmark.get("metrics"), dict) else {}
-    benchmark_classes = _class_metrics_from_benchmark(benchmark)
-    weak_classes = _weak_class_summary(benchmark_classes, runs)
-    weak_paths = _weak_first_attempt_paths(runs, max_items=max_candidates)
-    replay_queue = _replay_queue(weak_classes=weak_classes, runs=runs, max_items=max_replay)
-    candidate_splits = _candidate_splits(
-        curation_rows=curation_rows,
-        weak_classes=weak_classes,
-        max_items=max_candidates,
+def _local_first_share(runs: list[CampaignRun]) -> float:
+    if not runs:
+        return 0.0
+    local_success = sum(
+        1
+        for run in runs
+        if run.success and run.rescue_count == 0 and run.escalation_count == 0 and run.guard_count == 0
     )
-    model_wrapper = _model_vs_wrapper_summary(weak_classes, attribution)
-    recommendations = _next_step_recommendations(
-        weak_classes=weak_classes,
-        replay_queue=replay_queue,
-        candidate_splits=candidate_splits,
-        model_wrapper=model_wrapper,
-    )
+    return round(local_success / len(runs), 3)
 
-    learning_version = _learning_status_from_manifest(manifest)
-    curation_counts = {key: len(rows) for key, rows in curation_rows.items()}
-    report = {
-        "generated_at_utc": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
-        "learning_subsystem": learning_version,
-        "benchmark_metrics": {
-            "success_rate": _safe_float(metrics.get("success_rate")),
-            "rescue_rate": _safe_float(metrics.get("rescue_rate")),
-            "escalation_rate": _safe_float(metrics.get("escalation_rate")),
-            "recurrence_rate": _safe_float(metrics.get("recurrence_rate")),
-            "first_attempt_quality_rate": _safe_float(metrics.get("first_attempt_quality_rate")),
-        },
-        "campaign_window_runs": len(runs),
-        "local_first_share_window": _local_first_share(runs),
-        "attribution_mix": _attribution_mix(runs),
-        "weak_class_summary": weak_classes,
-        "weak_first_attempt_paths": weak_paths,
-        "prioritized_replay_queue": replay_queue,
-        "candidate_splits": candidate_splits,
-        "model_vs_wrapper_summary": model_wrapper,
-        "curation_counts": curation_counts,
-        "next_recommended_targets": recommendations,
-        "source_artifacts": {
-            "benchmark": str(DEFAULT_BENCHMARK),
-            "campaign_runs": str(DEFAULT_CAMPAIGN_RUNS),
-            "curation_dir": str(DEFAULT_CURATION),
-            "attribution": str(DEFAULT_ATTRIBUTION),
-        },
-    }
-    return report
+
+def _attribution_mix(runs: list[CampaignRun]) -> dict[str, int]:
+    return dict(Counter(run.attribution_primary for run in runs))
 
 
 def _report_markdown(report: dict[str, Any]) -> str:
@@ -585,65 +1164,195 @@ def _report_markdown(report: dict[str, Any]) -> str:
     lines.append(f"- campaign_window_runs: {report.get('campaign_window_runs', 0)}")
     lines.append(f"- local_first_share_window: {report.get('local_first_share_window', 0.0)}")
     lines.append("")
-    lines.append("## Benchmark Snapshot")
-    for key, value in (report.get("benchmark_metrics") or {}).items():
-        lines.append(f"- {key}: {value}")
+
+    lines.append("## Verbose Lesson Capture")
+    lessons = report.get("lessons") or []
+    lines.append(f"- lessons_captured: {len(lessons)}")
+    for row in lessons[:5]:
+        task = row.get("task") or {}
+        lines.append(
+            f"- {task.get('task_id', 'unknown')} ({task.get('task_class', 'unknown')}): "
+            f"dominant={((row.get('weakness_classification') or {}).get('dominant', 'mixed'))} "
+            f"first_attempt={((row.get('first_attempt_quality') or {}).get('rate', 0.0))} "
+            f"outcome={((row.get('what_eventually_worked') or {}).get('outcome', 'unknown'))}"
+        )
     lines.append("")
+
+    lines.append("## Future-Error Prevention")
+    prevention = report.get("prevention_outputs") or {}
+    lines.append(
+        f"- repeated_failure_signatures: {len(prevention.get('repeated_failure_signatures') or [])}"
+    )
+    lines.append(f"- contract_risk_warnings: {len(prevention.get('contract_risk_warnings') or [])}")
+    lines.append(f"- stale_pattern_warnings: {len(prevention.get('stale_pattern_warnings') or [])}")
+    for row in (prevention.get("repeated_failure_signatures") or [])[:4]:
+        lines.append(
+            f"- signature={row['signature']} count={row['occurrence_count']} owner={row['recommended_owner']}"
+        )
+    lines.append("")
+
+    lines.append("## First-Attempt Priors")
+    priors = report.get("first_attempt_priors") or []
+    lines.append(f"- priors_by_class: {len(priors)}")
+    for row in priors[:4]:
+        lines.append(
+            f"- {row['task_class']}: good={row['good_sample_size']} bad={row['bad_sample_size']} "
+            f"tokens={', '.join(row.get('recommended_prompt_framing_tokens') or []) or 'none'}"
+        )
+    lines.append("")
+
+    lines.append("## Execution Acceleration")
+    accel = report.get("execution_acceleration") or {}
+    lines.append(f"- top_reusable_templates: {len(accel.get('top_reusable_templates') or [])}")
+    lines.append(f"- strong_exemplar_runs: {len(accel.get('strong_exemplar_runs') or [])}")
+    lines.append(
+        f"- reusable_decomposition_patterns: {len(accel.get('reusable_decomposition_patterns') or [])}"
+    )
+    lines.append(f"- reusable_recovery_patterns: {len(accel.get('reusable_recovery_patterns') or [])}")
+    lines.append("")
+
     lines.append("## Weak Classes")
-    weak = report.get("weak_class_summary") or []
-    if not weak:
-        lines.append("- none")
-    else:
-        for row in weak[:5]:
-            lines.append(
-                f"- {row['class_id']}: weakness_score={row['weakness_score']} "
-                f"first_attempt_quality_rate={row['first_attempt_quality_rate']} "
-                f"dominant={row['dominant_weakness']}"
-            )
+    for row in (report.get("weak_class_summary") or [])[:6]:
+        lines.append(
+            f"- {row['class_id']}: weakness_score={row['weakness_score']} "
+            f"first_attempt_quality_rate={row['first_attempt_quality_rate']} dominant={row['dominant_weakness']}"
+        )
     lines.append("")
-    lines.append("## Candidate Splits")
-    splits = report.get("candidate_splits") or {}
-    for key in [
-        "guard_rule_candidates",
-        "manager_rule_candidates",
-        "retrieval_rule_candidates",
-        "training_example_candidates",
-        "template_promotion_candidates",
-    ]:
-        lines.append(f"- {key}: {len(splits.get(key) or [])}")
-    lines.append("")
+
     lines.append("## Prioritized Replay Queue")
     queue = report.get("prioritized_replay_queue") or []
     if not queue:
         lines.append("- none")
     else:
-        for row in queue:
+        for row in queue[:8]:
             lines.append(f"- {row['task_id']} ({row['task_class']}): {row['reason']}")
     lines.append("")
+
     lines.append("## Model Vs Wrapper")
     mvsw = report.get("model_vs_wrapper_summary") or {}
     lines.append(f"- dominant_gap: {mvsw.get('dominant_gap', 'mixed')}")
     lines.append(f"- model_dominant_classes: {', '.join(mvsw.get('model_dominant_classes') or []) or 'none'}")
-    lines.append(f"- wrapper_dominant_classes: {', '.join(mvsw.get('wrapper_dominant_classes') or []) or 'none'}")
+    lines.append(
+        f"- wrapper_dominant_classes: {', '.join(mvsw.get('wrapper_dominant_classes') or []) or 'none'}"
+    )
     lines.append("")
+
     lines.append("## Next Recommended Targets")
     for item in report.get("next_recommended_targets") or []:
         lines.append(f"- {item}")
     lines.append("")
+
     return "\n".join(lines)
 
 
+def _write_jsonl(path: Path, rows: list[dict[str, Any]]) -> None:
+    lines = [json.dumps(row, ensure_ascii=False) for row in rows]
+    path.write_text("\n".join(lines) + ("\n" if lines else ""), encoding="utf-8")
+
+
+def build_learning_report(
+    *,
+    benchmark: dict[str, Any],
+    runs: list[CampaignRun],
+    curation_rows: dict[str, list[dict[str, Any]]],
+    manifest: dict[str, Any],
+    attribution: dict[str, Any],
+    plan_index: dict[str, PlanArtifact],
+    max_replay: int,
+    max_candidates: int,
+) -> tuple[dict[str, Any], dict[str, list[dict[str, Any]]]]:
+    metrics = benchmark.get("metrics") if isinstance(benchmark.get("metrics"), dict) else {}
+    benchmark_classes = _class_metrics_from_benchmark(benchmark)
+    benchmark_items = _extract_benchmark_items(benchmark)
+    benchmark_items_by_plan = {
+        str(row.get("plan_id") or ""): row
+        for row in benchmark_items
+        if isinstance(row, dict) and str(row.get("plan_id") or "")
+    }
+
+    lessons = _build_lessons(
+        runs=runs,
+        plan_index=plan_index,
+        benchmark_items_by_plan=benchmark_items_by_plan,
+        curation_rows=curation_rows,
+    )
+    weak_classes = _weak_class_summary(benchmark_classes, lessons)
+    replay_queue = _replay_queue_from_lessons(lessons, max_items=max_replay)
+    candidate_splits = _candidate_splits_from_lessons(lessons, max_items=max_candidates)
+    prevention = _build_prevention_outputs(lessons, max_items=max_candidates)
+    first_attempt_priors = _build_first_attempt_priors(lessons, max_items=max_candidates)
+    acceleration = _build_execution_acceleration(lessons, first_attempt_priors, max_items=max_candidates)
+    model_wrapper = _model_vs_wrapper_summary(weak_classes, attribution)
+    recommendations = _next_step_recommendations(
+        weak_classes=weak_classes,
+        replay_queue=replay_queue,
+        prevention=prevention,
+        model_wrapper=model_wrapper,
+    )
+
+    learning_version = _learning_status_from_manifest(manifest)
+    curation_counts = {key: len(rows) for key, rows in curation_rows.items()}
+
+    report = {
+        "schema_version": "learning_report_v12",
+        "generated_at_utc": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "learning_subsystem": learning_version,
+        "benchmark_metrics": {
+            "success_rate": _safe_float(metrics.get("success_rate")),
+            "rescue_rate": _safe_float(metrics.get("rescue_rate")),
+            "escalation_rate": _safe_float(metrics.get("escalation_rate")),
+            "recurrence_rate": _safe_float(metrics.get("recurrence_rate")),
+            "first_attempt_quality_rate": _safe_float(metrics.get("first_attempt_quality_rate")),
+        },
+        "campaign_window_runs": len(runs),
+        "local_first_share_window": _local_first_share(runs),
+        "attribution_mix": _attribution_mix(runs),
+        "class_metrics": weak_classes,
+        "weak_class_summary": weak_classes,
+        "weak_class_targets": weak_classes,
+        "replay_queue": replay_queue,
+        "prioritized_replay_queue": replay_queue,
+        "candidate_splits": candidate_splits,
+        "lessons": lessons,
+        "prevention_outputs": prevention,
+        "first_attempt_priors": first_attempt_priors,
+        "execution_acceleration": acceleration,
+        "model_vs_wrapper_summary": model_wrapper,
+        "curation_counts": curation_counts,
+        "next_recommended_targets": recommendations,
+        "source_artifacts": {
+            "benchmark": str(DEFAULT_BENCHMARK),
+            "campaign_runs": str(DEFAULT_CAMPAIGN_RUNS),
+            "curation_dir": str(DEFAULT_CURATION),
+            "attribution": str(DEFAULT_ATTRIBUTION),
+            "manager6_traces": str(DEFAULT_MANAGER6_TRACES),
+            "manager6_plans_dir": str(DEFAULT_MANAGER6_PLANS_DIR),
+        },
+    }
+
+    jsonl_outputs = {
+        "lessons": lessons,
+        "prevention_candidates": prevention.get("repeated_failure_signatures") or [],
+        "first_attempt_priors": first_attempt_priors,
+        "execution_acceleration": [acceleration],
+        "weak_class_targets": weak_classes,
+    }
+    return report, jsonl_outputs
+
+
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Run learning-v11 loop from Codex51 artifacts.")
+    parser = argparse.ArgumentParser(description="Run learning-v12 loop from Codex51 artifacts.")
     parser.add_argument("--benchmark", default=str(DEFAULT_BENCHMARK))
     parser.add_argument("--campaign-runs", default=str(DEFAULT_CAMPAIGN_RUNS))
     parser.add_argument("--curation-dir", default=str(DEFAULT_CURATION))
     parser.add_argument("--manifest", default=str(DEFAULT_MANIFEST))
     parser.add_argument("--attribution", default=str(DEFAULT_ATTRIBUTION))
+    parser.add_argument("--manager6-traces", default=str(DEFAULT_MANAGER6_TRACES))
+    parser.add_argument("--manager6-plans-dir", default=str(DEFAULT_MANAGER6_PLANS_DIR))
     parser.add_argument("--out-dir", default=str(DEFAULT_OUT_DIR))
     parser.add_argument("--window-days", type=int, default=14)
-    parser.add_argument("--max-replay", type=int, default=5)
-    parser.add_argument("--max-candidates", type=int, default=5)
+    parser.add_argument("--max-replay", type=int, default=8)
+    parser.add_argument("--max-candidates", type=int, default=12)
     parser.add_argument("--write-report", action="store_true")
     parser.add_argument("--json-only", action="store_true")
     return parser.parse_args()
@@ -656,6 +1365,8 @@ def main() -> int:
     curation_dir = Path(args.curation_dir).resolve()
     manifest_path = Path(args.manifest).resolve()
     attribution_path = Path(args.attribution).resolve()
+    manager6_traces_path = Path(args.manager6_traces).resolve()
+    manager6_plans_dir = Path(args.manager6_plans_dir).resolve()
 
     for required_path, label in [
         (benchmark_path, "benchmark"),
@@ -674,12 +1385,17 @@ def main() -> int:
     runs = _load_campaign_runs(campaign_runs_path, window_days=max(1, args.window_days))
     curation_rows = _load_curation_rows(curation_dir)
 
-    report = build_learning_report(
+    trace_index = _load_manager6_trace_index(manager6_traces_path, window_days=max(1, args.window_days))
+    plan_ids = {run.plan_id for run in runs if run.plan_id}
+    plan_index = _load_manager6_plan_artifacts(manager6_plans_dir, plan_ids=plan_ids, trace_index=trace_index)
+
+    report, jsonl_outputs = build_learning_report(
         benchmark=benchmark,
         runs=runs,
         curation_rows=curation_rows,
         manifest=manifest,
         attribution=attribution,
+        plan_index=plan_index,
         max_replay=max(1, args.max_replay),
         max_candidates=max(1, args.max_candidates),
     )
@@ -688,12 +1404,19 @@ def main() -> int:
         out_dir = Path(args.out_dir).resolve()
         out_dir.mkdir(parents=True, exist_ok=True)
         ts = datetime.now(UTC).strftime("%Y%m%d_%H%M%S")
+
         (out_dir / "latest.json").write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
         (out_dir / "latest.md").write_text(_report_markdown(report) + "\n", encoding="utf-8")
         (out_dir / f"learning_{ts}.json").write_text(
             json.dumps(report, ensure_ascii=False, indent=2) + "\n",
             encoding="utf-8",
         )
+
+        _write_jsonl(out_dir / "lessons.jsonl", jsonl_outputs["lessons"])
+        _write_jsonl(out_dir / "prevention_candidates.jsonl", jsonl_outputs["prevention_candidates"])
+        _write_jsonl(out_dir / "first_attempt_priors.jsonl", jsonl_outputs["first_attempt_priors"])
+        _write_jsonl(out_dir / "execution_acceleration.jsonl", jsonl_outputs["execution_acceleration"])
+        _write_jsonl(out_dir / "weak_class_targets.jsonl", jsonl_outputs["weak_class_targets"])
 
     if args.json_only:
         print(json.dumps(report, ensure_ascii=False, indent=2))
