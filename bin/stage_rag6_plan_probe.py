@@ -46,6 +46,74 @@ def _path_tokens(path: str) -> set[str]:
     return {t for t in tokens if t and len(t) > 1}
 
 
+def _all_targets_under_docs(targets: list[dict[str, Any]]) -> bool:
+    if not targets:
+        return False
+    for target in targets:
+        path = str(target.get("path") or "")
+        if not path.startswith("docs/"):
+            return False
+    return True
+
+
+def _is_control_loop_architecture_query(query_tokens: list[str]) -> bool:
+    tokens = {str(t).strip().lower() for t in query_tokens if str(t).strip()}
+    if "docs" in tokens:
+        return False
+    required = {"stage", "manager", "rag"}
+    if not required.issubset(tokens):
+        return False
+    return bool(tokens & {"worker", "routing", "qualify", "promotion", "subsystem", "bounded"})
+
+
+def _inject_control_loop_code_targets(
+    *,
+    targets: list[dict[str, Any]],
+    query_tokens: list[str],
+    preferred_prefixes: list[str],
+) -> list[dict[str, Any]]:
+    # If retrieval is docs-only for a control-loop architecture query, seed bounded
+    # code anchors so stage7 can execute real control-loop edits instead of docs-only drift.
+    if not _is_control_loop_architecture_query(query_tokens):
+        return targets
+    if not _all_targets_under_docs(targets):
+        return targets
+
+    anchors = [
+        "bin/stage7_manager.py",
+        "bin/stage_rag6_plan_probe.py",
+        "bin/level10_qualify.py",
+        "promotion/worker_budget.py",
+    ]
+    max_rank = max(float(t.get("rank_score") or 0.0) for t in targets) if targets else 20.0
+    existing_paths = {str(t.get("path") or "") for t in targets}
+    injected: list[dict[str, Any]] = []
+    rank = max_rank + 1.0
+    for rel_path in anchors:
+        path = REPO_ROOT / rel_path
+        if not path.exists():
+            continue
+        if preferred_prefixes and not any(rel_path.startswith(prefix) for prefix in preferred_prefixes):
+            continue
+        if rel_path in existing_paths:
+            continue
+        injected.append(
+            {
+                "path": rel_path,
+                "confidence": 7,
+                "rank_score": round(rank, 4),
+                "selection_reason": {
+                    "source": "rag10_control_loop_anchor_injection",
+                    "reason": "docs_only_control_loop_query",
+                },
+            }
+        )
+        rank -= 0.25
+    if not injected:
+        return targets
+    return injected + targets
+
+
 def _link_score(candidate: dict[str, Any], primary_path: str) -> float:
     reason = candidate.get("selection_reason", {}) or {}
     related = {str(p) for p in reason.get("related_paths", []) if p}
@@ -550,6 +618,11 @@ def main() -> int:
         # Stage-7 should consume lane-clean candidates whenever available.
         if lane_aligned:
             targets = lane_aligned
+    targets = _inject_control_loop_code_targets(
+        targets=targets,
+        query_tokens=args.query,
+        preferred_prefixes=preferred_prefixes,
+    )
     execution_feedback = load_execution_feedback(
         window_days=max(1, args.feedback_window_days),
         sample_limit=max(1, args.feedback_sample_limit),
