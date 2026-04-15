@@ -1970,6 +1970,20 @@ def main() -> int:
                 split_success = True
                 split_dispatched = 0
                 targets = [str(t) for t in subplan.get("targets", []) if t]
+                target_meta_entries = (
+                    subplan.get("target_meta") if isinstance(subplan.get("target_meta"), list) else []
+                )
+                target_risk_by_path = {
+                    str(entry.get("path")): _risk_rank(str(entry.get("risk_bucket") or "high"))
+                    for entry in target_meta_entries
+                    if isinstance(entry, dict) and entry.get("path")
+                }
+                grouped_carryover_used = 0
+                grouped_family_budget_remaining = max(
+                    0,
+                    int(args.family_rescue_budget) - int(family_rescue_usage.get(family, 0)),
+                )
+                grouped_carryover_cap = min(2, grouped_family_budget_remaining)
                 for split_idx, target_path in enumerate(targets, start=1):
                     single_budget_decision = apply_worker_budget(
                         lane=lane_name,
@@ -1990,6 +2004,31 @@ def main() -> int:
                     single_budget_payload = single_budget_decision.to_dict()
                     single_budget_payload["budget_profile"] = strategy_decision.get("budget_profile", {})
                     single_budget_payload["manager14_budget_fallback"] = True
+                    single_override_used = False
+                    if not single_budget_payload.get("allowed"):
+                        target_risk_rank = int(target_risk_by_path.get(target_path, 2))
+                        family_budget_remaining = int(args.family_rescue_budget) - int(
+                            family_rescue_usage.get(family, 0)
+                        )
+                        if (
+                            target_risk_rank <= 1
+                            and family_budget_remaining > 0
+                            and grouped_carryover_used < grouped_carryover_cap
+                        ):
+                            single_override_used = True
+                            grouped_carryover_used += 1
+                            family_rescue_usage[family] = int(family_rescue_usage.get(family, 0)) + 1
+                            single_budget_payload.update(
+                                {
+                                    "allowed": True,
+                                    "reason": "manager14_grouped_budget_carryover_override",
+                                    "manager14_grouped_budget_carryover_used": True,
+                                    "manager14_grouped_budget_carryover_risk_rank": int(target_risk_rank),
+                                    "manager14_grouped_budget_carryover_family_budget_remaining": int(
+                                        family_budget_remaining - 1
+                                    ),
+                                }
+                            )
                     worker_budget_decisions.append(single_budget_payload)
 
                     if not single_budget_payload.get("allowed"):
@@ -2031,7 +2070,11 @@ def main() -> int:
                             strategy_decision={
                                 **dict(strategy_decision),
                                 "manager14_budget_fallback_used": True,
-                                "manager14_budget_fallback_reason": "grouped_budget_to_singleton_dispatch",
+                                "manager14_budget_fallback_reason": (
+                                    "grouped_budget_to_singleton_dispatch_via_carryover"
+                                    if single_override_used
+                                    else "grouped_budget_to_singleton_dispatch"
+                                ),
                             },
                         )
                         split_status["worker_budget_decision"] = single_budget_payload
@@ -2066,6 +2109,7 @@ def main() -> int:
                         "strategy": "manager14_budget_constrained_singleton_fallback",
                         "split_count": len(split_statuses),
                         "dispatched_count": split_dispatched,
+                        "manager14_grouped_carryover_dispatches": grouped_carryover_used,
                         "result": "success" if split_success and split_dispatched > 0 else "partial_or_failed",
                         "decision_state": "evaluate->budget_fallback_split->reconcile",
                     }
