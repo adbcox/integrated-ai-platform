@@ -407,6 +407,7 @@ def _choose_subplan_strategy(
     qualification_posture: dict[str, Any],
     budget_forecast: dict[str, Any],
     learning_priors: dict[str, Any],
+    success_memory: dict[str, Any],
     resume_source_status: str | None,
 ) -> dict[str, Any]:
     risk_score = float(subplan.get("risk_score") or 0.0)
@@ -425,6 +426,9 @@ def _choose_subplan_strategy(
     recurrence_pressure = bool(learning_priors.get("recurrence_pressure"))
     benchmark_escalation = float(learning_priors.get("benchmark_escalation_rate") or 0.0)
     benchmark_quality = float(learning_priors.get("benchmark_first_attempt_quality_rate") or 1.0)
+    success_preferred = str(success_memory.get("preferred_strategy") or "")
+    success_confidence = float(success_memory.get("confidence") or 0.0)
+    success_samples = int(success_memory.get("total_samples") or 0)
     resume_status = str(resume_source_status or "")
 
     strategy = "run_grouped"
@@ -473,6 +477,15 @@ def _choose_subplan_strategy(
     elif size == 1 and grouped_rate < 0.35 and yield_score < 6.0:
         strategy = "run_grouped"
         reason = "single_target_grouped_only"
+    elif (
+        size > 1
+        and success_samples >= 3
+        and success_confidence >= 0.65
+        and success_preferred in {"split_first", "run_grouped"}
+    ):
+        strategy = success_preferred
+        reason = f"manager15_success_memory_prefers_{success_preferred}"
+        decision_tags.append("manager15_success_memory")
 
     return {
         "strategy": strategy,
@@ -482,6 +495,7 @@ def _choose_subplan_strategy(
         "qualification_posture": qualification_posture,
         "budget_forecast": budget_forecast,
         "learning_priors": learning_priors,
+        "success_memory": success_memory,
         "resume_source_status": resume_status or "",
         "decision_tags": decision_tags,
         "risk_score": round(risk_score, 3),
@@ -1206,7 +1220,7 @@ def _build_hierarchical_decomposition(
             subplan_id = str(item.get("subplan_id") or "")
             role = "parent_head" if member_idx == 1 else "child_member"
             item["hierarchy_context"] = {
-                "manager_version": "manager14-v1",
+                "manager_version": "manager15-v1",
                 "cohort_id": cohort_id,
                 "cohort_role": role,
                 "cohort_size": len(ordered_members),
@@ -1346,6 +1360,111 @@ def _load_cross_run_recurrence_memory(
         "family_bad_rates": family_bad_rates,
         "conservative_split": conservative_split,
         "decomposition_mode": "recurrence_aware_conservative_split" if conservative_split else "balanced_hierarchical",
+    }
+
+
+def _load_cross_run_success_memory(
+    *,
+    task_class: str,
+    history_window_days: int,
+) -> dict[str, Any]:
+    """Manager-15 success-memory signals for proactive first-attempt strategy biasing."""
+
+    now_ts = datetime.now(timezone.utc).timestamp()
+    cutoff_ts = now_ts - (max(1, history_window_days) * 86400)
+    family_stats: dict[str, dict[str, int]] = {}
+    plans_dir = TRACE_DIR / "plans"
+    if not plans_dir.exists():
+        return {"task_class": task_class, "families": {}, "history_rows": 0}
+
+    history_rows = 0
+    for path in plans_dir.glob("*.json"):
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError:
+            continue
+        plan_payload = data.get("plan_payload") if isinstance(data.get("plan_payload"), dict) else {}
+        row_task_class = _infer_task_class_from_query(str(plan_payload.get("query") or ""))
+        if row_task_class != task_class:
+            continue
+        finished = None
+        history = data.get("history") if isinstance(data.get("history"), list) else []
+        for event in reversed(history):
+            if isinstance(event, dict) and str(event.get("event_type") or "") == "attempt_finished":
+                finished = event
+                break
+        if not isinstance(finished, dict):
+            continue
+        try:
+            ts = datetime.fromisoformat(str(finished.get("timestamp") or "").replace("Z", "+00:00")).timestamp()
+        except ValueError:
+            continue
+        if ts < cutoff_ts:
+            continue
+
+        statuses = finished.get("statuses") if isinstance(finished.get("statuses"), list) else []
+        for row in statuses:
+            if not isinstance(row, dict):
+                continue
+            subplan_id = str(row.get("subplan_id") or "")
+            if "-split-" in subplan_id or "-manager14-" in subplan_id:
+                continue
+            strategy_decision = row.get("strategy_decision") if isinstance(row.get("strategy_decision"), dict) else {}
+            strategy = str(strategy_decision.get("strategy") or "")
+            if strategy not in {"run_grouped", "split_first"}:
+                continue
+            family = str(strategy_decision.get("family") or _subplan_family_key(row) or "unknown")
+            if not family:
+                family = "unknown"
+            status = str(row.get("status") or "")
+            ok = status in {"success", "partial_success", "dropped_preflight", "resumed_skip_completed"}
+            bucket = family_stats.setdefault(
+                family,
+                {
+                    "run_grouped_total": 0,
+                    "run_grouped_success": 0,
+                    "split_first_total": 0,
+                    "split_first_success": 0,
+                },
+            )
+            key_total = f"{strategy}_total"
+            key_success = f"{strategy}_success"
+            bucket[key_total] += 1
+            if ok:
+                bucket[key_success] += 1
+            history_rows += 1
+
+    families: dict[str, dict[str, Any]] = {}
+    for family, row in family_stats.items():
+        grouped_total = int(row.get("run_grouped_total") or 0)
+        grouped_success = int(row.get("run_grouped_success") or 0)
+        split_total = int(row.get("split_first_total") or 0)
+        split_success = int(row.get("split_first_success") or 0)
+        grouped_rate = (grouped_success / grouped_total) if grouped_total else 0.0
+        split_rate = (split_success / split_total) if split_total else 0.0
+        total_samples = grouped_total + split_total
+        preferred_strategy = ""
+        confidence = 0.0
+        if total_samples >= 3:
+            if split_rate >= grouped_rate + 0.12 and split_total >= 2:
+                preferred_strategy = "split_first"
+                confidence = split_rate
+            elif grouped_rate >= split_rate + 0.12 and grouped_total >= 2:
+                preferred_strategy = "run_grouped"
+                confidence = grouped_rate
+        families[family] = {
+            "preferred_strategy": preferred_strategy,
+            "confidence": round(confidence, 3),
+            "grouped_rate": round(grouped_rate, 3),
+            "split_rate": round(split_rate, 3),
+            "grouped_samples": grouped_total,
+            "split_samples": split_total,
+            "total_samples": total_samples,
+        }
+    return {
+        "task_class": task_class,
+        "history_rows": history_rows,
+        "families": families,
     }
 
 
@@ -1710,6 +1829,10 @@ def main() -> int:
         history_window_days=args.manager_history_window_days,
         learning_priors=learning_priors,
     )
+    success_memory = _load_cross_run_success_memory(
+        task_class=task_class,
+        history_window_days=args.manager_history_window_days,
+    )
     for subplan in subplans:
         subplan_id = str(subplan.get("subplan_id") or "")
         prior = checkpoint_subplans.get(subplan_id)
@@ -1778,6 +1901,7 @@ def main() -> int:
             qualification_posture=qualification_posture,
             budget_forecast=forecast,
             learning_priors=learning_priors,
+            success_memory=dict(success_memory.get("families", {}).get(family, {})),
             resume_source_status=str(prior.get("status") or "") if isinstance(prior, dict) else None,
         )
         strategy_decision["recurrence_adaptation"] = {
@@ -1843,7 +1967,18 @@ def main() -> int:
             },
             "predispatch_shaping": predispatch_shaping,
             "manager14_budget_fallback": manager14_budget_fallback,
-            "manager_version": "manager14-v1",
+            "manager15_success_memory": {
+                "task_class": str(success_memory.get("task_class") or task_class),
+                "history_rows": int(success_memory.get("history_rows") or 0),
+                "families_with_preferences": int(
+                    sum(
+                        1
+                        for row in (success_memory.get("families") or {}).values()
+                        if isinstance(row, dict) and str(row.get("preferred_strategy") or "")
+                    )
+                ),
+            },
+            "manager_version": "manager15-v1",
             "history_window_days": args.manager_history_window_days,
             "memory_window_days": args.manager_memory_window_days,
             "family_rescue_budget": args.family_rescue_budget,

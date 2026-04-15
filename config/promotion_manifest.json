@@ -538,18 +538,18 @@
             ],
             "status": "building"
         },
-        "manager_system": {
-            "current_version": "manager14-v1",
-            "next_version": "manager15-v1",
-            "after_next_version": "manager15-v1",
-            "upgrade_goal": "Manager-15 extends Manager-14 with autonomous replay-priority adaptation and multi-run policy shaping across bounded-complex classes",
-            "minimum_validation": [
-                "One Stage-8 run emits manager14_budget_fallback with grouped->singleton fallback outcomes from recurrence pressure",
-                "One low-risk singleton subplan shows manager14_singleton_budget_carryover_override instead of deferred_worker_budget",
-                "Decision traces show manager14_budget_fallback_predispatch_hierarchy strategy and manager_version=manager14-v1"
-            ],
-            "status": "building"
-        },
+    "manager_system": {
+      "current_version": "manager15-v1",
+      "next_version": "manager15-v1",
+      "after_next_version": "manager15-v1",
+      "upgrade_goal": "Manager-15 extends Manager-14 with autonomous replay-priority adaptation and cross-run success-memory shaping for first-attempt strategy selection on bounded-complex classes",
+      "minimum_validation": [
+        "One Stage-8 run emits manager14_budget_fallback with grouped->singleton fallback outcomes from recurrence pressure",
+        "One Stage-8 run records manager15_success_memory with at least one family preferred_strategy in manager_decisions",
+        "Decision traces show manager14_budget_fallback_predispatch_hierarchy strategy and manager_version=manager15-v1"
+      ],
+      "status": "building"
+    },
         "rag_system": {
             "current_version": "rag10-v1",
             "next_version": "rag11-v1",
