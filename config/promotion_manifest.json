@@ -354,6 +354,22 @@
                 "Qualification report verifies required regression packs per active lane",
                 "Manager and stage traces are correlated with policy thresholds"
             ]
+        },
+        "learning_training_attribution_loop": {
+            "current_level": 10,
+            "production_level": 0,
+            "candidate_level": 0,
+            "preview_level": 10,
+            "next_target_level": 11,
+            "level10_definition": "Operational learning loop that converts real benchmark/campaign/curation artifacts into replay queues, training priorities, and model-vs-wrapper attribution evidence.",
+            "key_blockers": [
+                "Replay and training actions are not yet fed back automatically into manager/routing policy updates",
+                "Class-level curriculum cohorts are not yet persisted as adaptation-ready datasets"
+            ],
+            "evidence_to_advance": [
+                "Learning loop artifact is generated from real campaign+benchmark+curation runs",
+                "Next execution queue is explicitly tied to recurrence and first-attempt quality deficits"
+            ]
         }
     },
     "promotion_policy": {
@@ -496,6 +512,17 @@
                 "Regression path fails deterministically when required Stage-8 evidence is missing"
             ],
             "status": "validated"
+        },
+        "learning_training_attribution_loop": {
+            "current_version": "learning-v10",
+            "next_version": "learning-v11",
+            "after_next_version": "learning-v12",
+            "upgrade_goal": "Learning v11 builds class-level curriculum cohorts and replay bundles from Codex51 benchmark/campaign/curation artifacts to drive first-attempt quality gains",
+            "minimum_validation": [
+                "Learning loop report emits replay_queue and training_priority_queue from real artifacts",
+                "Attribution mix and local_first_share_window are persisted for the active run window"
+            ],
+            "status": "building"
         }
     },
     "version8_upgrade_list": {
