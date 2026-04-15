@@ -4,9 +4,14 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass
-from datetime import UTC, datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
+
+try:  # Python 3.11+
+    from datetime import UTC  # type: ignore[attr-defined]
+except ImportError:  # pragma: no cover - exercised on Python < 3.11
+    UTC = timezone.utc
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_STAGE4_TRACE = REPO_ROOT / "artifacts" / "stage4_manager" / "traces.jsonl"
@@ -147,4 +152,3 @@ def assess_target_risk(
         should_reroute_manual=should_reroute_manual,
         reason=reason,
     )
-

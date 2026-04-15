@@ -9,6 +9,21 @@ EXPECTED_BRANCH="${EXPECTED_BRANCH:-main}"
 ALLOW_DIRTY="${ALLOW_DIRTY:-0}"
 REQUIRED_TOOLS_DEFAULT=(bash git sed awk python3 aider ollama)
 
+augment_path_for_user_site_bins() {
+  local py_bin_root="${HOME}/Library/Python"
+  local candidate
+  if [[ -d "$py_bin_root" ]]; then
+    for candidate in "$py_bin_root"/*/bin; do
+      [[ -d "$candidate" ]] || continue
+      case ":${PATH}:" in
+        *":${candidate}:"*) ;;
+        *) PATH="${candidate}:${PATH}" ;;
+      esac
+    done
+    export PATH
+  fi
+}
+
 if [[ -n "${REQUIRED_TOOLS:-}" ]]; then
   # shellcheck disable=SC2206
   REQUIRED_TOOLS_LIST=(${REQUIRED_TOOLS})
@@ -77,6 +92,7 @@ printf 'REPOS_ROOT=%s\n' "$REPOS_ROOT"
 printf 'EXPECTED_BRANCH=%s\n' "$EXPECTED_BRANCH"
 printf 'ALLOW_DIRTY=%s\n' "$ALLOW_DIRTY"
 
+augment_path_for_user_site_bins
 check_tools
 require_repo "platform-browser-operator" "$BROWSER_OPERATOR_REPO"
 require_repo "control-plane" "$CONTROL_PLANE_REPO"

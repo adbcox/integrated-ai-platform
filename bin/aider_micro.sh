@@ -31,6 +31,10 @@ MICRO_STAGE="${AIDER_MICRO_STAGE:-stage3}"
 MICRO_PLAN_ID="${AIDER_MICRO_PLAN_ID:-}"
 TARGET_FILES=()
 
+iso_utc_now() {
+  date -u '+%Y-%m-%dT%H:%M:%SZ'
+}
+
 classify_failure_phase() {
   local tag="$1"
   case "$tag" in
@@ -50,7 +54,7 @@ log_micro_event() {
   local exit_code="${4:-0}"
   local phase="${5:-$(classify_failure_phase "$tag")}"
   local ts
-  ts=$(date -Is)
+  ts=$(iso_utc_now)
   local files_payload=""
   if [ ${#TARGET_FILES[@]} -gt 0 ]; then
     files_payload=$(printf '%s\n' "${TARGET_FILES[@]}")
@@ -664,7 +668,7 @@ status: success
 run_number: $count
 files: ${TARGET_FILES[*]}
 message: $MESSAGE
-timestamp: $(date -Is)
+timestamp: $(iso_utc_now)
 SUMMARY
 log_micro_event "success" "completed" "micro lane run succeeded" 0 "execution"
 info "wrote summary to $summary_path"
