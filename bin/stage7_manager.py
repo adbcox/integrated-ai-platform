@@ -452,9 +452,16 @@ def _choose_subplan_strategy(
         reason = "learning_priors_single_target_guarded_grouped"
         decision_tags.append("learning_priors")
     elif worker_pressure and qualification_caution and budget_remaining <= 0 and yield_score < 12.0:
-        strategy = "defer_manual"
-        reason = "qualification_worker_pressure_budget_forecast"
         decision_tags.append("qualification_budget_pressure")
+        if size > 1:
+            strategy = "split_first"
+            reason = "qualification_worker_pressure_split_first"
+        elif risk_score >= 2.0:
+            strategy = "defer_manual"
+            reason = "qualification_worker_pressure_high_risk_singleton_defer"
+        else:
+            strategy = "run_grouped"
+            reason = "qualification_worker_pressure_low_risk_singleton_allow"
     elif size > 1 and (risk_score >= 1.8 or split_rate > grouped_rate + 0.12):
         strategy = "split_first"
         reason = "history_or_risk_prefers_split"
