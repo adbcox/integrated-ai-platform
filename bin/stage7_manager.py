@@ -1475,13 +1475,17 @@ def _apply_manager14_budget_fallback_shaping(
     grouped_bad_rate = float(strategy_bad_rates.get("grouped_subplan") or 0.0)
 
     enabled = bool(replay_pressure or recent_bad_rate >= 0.35 or grouped_bad_rate >= 0.35)
-    candidate_count = 0
+    grouped_candidate_count = 0
+    singleton_candidate_count = 0
     enabled_count = 0
     for subplan in subplans:
         targets = [str(t) for t in (subplan.get("targets") or []) if t]
-        if len(targets) <= 1:
+        if not targets:
             continue
-        candidate_count += 1
+        if len(targets) > 1:
+            grouped_candidate_count += 1
+        else:
+            singleton_candidate_count += 1
         subplan_id = str(subplan.get("subplan_id") or "")
         decision = strategy_decisions.setdefault(subplan_id, {})
         decision["manager14_budget_fallback_enabled"] = bool(enabled)
@@ -1498,7 +1502,8 @@ def _apply_manager14_budget_fallback_shaping(
     return {
         "enabled": enabled,
         "strategy": "manager14_budget_constrained_singleton_fallback",
-        "candidate_grouped_subplans": candidate_count,
+        "candidate_grouped_subplans": grouped_candidate_count,
+        "candidate_singleton_subplans": singleton_candidate_count,
         "fallback_enabled_subplans": enabled_count,
         "recent_bad_rate": round(recent_bad_rate, 3),
         "grouped_bad_rate": round(grouped_bad_rate, 3),
@@ -1686,6 +1691,7 @@ def main() -> int:
     hierarchy_contexts: dict[str, dict[str, Any]] = {}
     worker_budget_decisions: list[dict[str, Any]] = []
     family_rescue_usage: dict[str, int] = {}
+    manager14_singleton_quota_usage: dict[str, int] = {}
     checkpoint_subplans = checkpoint.get("subplans", {}) if isinstance(checkpoint, dict) else {}
     historical_outcomes = _load_recent_manager6_outcomes(days=args.manager_history_window_days)
     qualification_posture = _load_latest_qualification_posture(max_age_hours=args.qualification_max_age_hours)
@@ -1951,6 +1957,19 @@ def main() -> int:
             target_meta = subplan.get("target_meta") if isinstance(subplan.get("target_meta"), list) else []
             risk_rank = max((_risk_rank(str(m.get("risk_bucket") or "high")) for m in target_meta), default=2)
             family_budget_remaining = int(args.family_rescue_budget) - int(family_rescue_usage.get(family, 0))
+            recurrence_adaptation = (
+                strategy_decision.get("recurrence_adaptation")
+                if isinstance(strategy_decision.get("recurrence_adaptation"), dict)
+                else {}
+            )
+            replay_pressure = bool(recurrence_adaptation.get("replay_pressure"))
+            singleton_quota_cap = (
+                1
+                if manager14_enabled
+                and replay_pressure
+                and task_class in {"multi_file_orchestration", "retrieval_orchestration", "resumable_checkpointed"}
+                else 0
+            )
             if (
                 manager14_enabled
                 and risk_rank <= 1
@@ -1966,6 +1985,25 @@ def main() -> int:
                         "manager14_singleton_budget_carryover_risk_rank": int(risk_rank),
                         "manager14_singleton_budget_carryover_family_budget_remaining": int(
                             family_budget_remaining - 1
+                        ),
+                    }
+                )
+            elif (
+                manager14_enabled
+                and risk_rank <= 1
+                and int(manager14_singleton_quota_usage.get(family, 0)) < singleton_quota_cap
+            ):
+                manager14_singleton_quota_usage[family] = int(manager14_singleton_quota_usage.get(family, 0)) + 1
+                manager14_singleton_carryover_used = True
+                budget_decision_payload.update(
+                    {
+                        "allowed": True,
+                        "reason": "manager14_singleton_low_risk_dispatch_quota",
+                        "manager14_singleton_budget_carryover_used": True,
+                        "manager14_singleton_budget_carryover_risk_rank": int(risk_rank),
+                        "manager14_singleton_low_risk_dispatch_quota_used": True,
+                        "manager14_singleton_low_risk_dispatch_quota_remaining": int(
+                            max(0, singleton_quota_cap - int(manager14_singleton_quota_usage.get(family, 0)))
                         ),
                     }
                 )
