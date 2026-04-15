@@ -99,6 +99,10 @@
         "manager13-v1": {
             "entry": "bin/stage7_manager.py",
             "description": "Manager-13 proactive pre-dispatch shaping step: uses cross-run strategy/family recurrence trends to split, drop, defer, and reorder subplans before first dispatch."
+        },
+        "manager14-v1": {
+            "entry": "bin/stage7_manager.py",
+            "description": "Manager-14 budget-constrained singleton fallback step: when grouped budget blocks dispatch under recurrence pressure, proactively split to bounded singleton execution before full manual defer."
         }
     },
     "rag_versions": {
@@ -166,7 +170,7 @@
         },
         "stage7": {
             "stage_version": "stage9-v1",
-            "manager_version": "manager13-v1",
+            "manager_version": "manager14-v1",
             "rag_version": "rag10-v1"
         }
     },
@@ -222,7 +226,7 @@
         "stage7": {
             "label": "Stage-7 preview lane",
             "stage_version": "stage9-v1",
-            "manager_version": "manager13-v1",
+            "manager_version": "manager14-v1",
             "rag_version": "rag10-v1",
             "allowed_targets": [
                 "bin/"
@@ -535,13 +539,13 @@
             "status": "building"
         },
         "manager_system": {
-            "current_version": "manager13-v1",
-            "next_version": "manager14-v1",
+            "current_version": "manager14-v1",
+            "next_version": "manager15-v1",
             "after_next_version": "manager15-v1",
-            "upgrade_goal": "Manager-14 extends Manager-13 with autonomous replay-priority adaptation and multi-run policy shaping across bounded-complex classes",
+            "upgrade_goal": "Manager-15 extends Manager-14 with autonomous replay-priority adaptation and multi-run policy shaping across bounded-complex classes",
             "minimum_validation": [
-                "One Stage-8 run emits predispatch_shaping with split/drop/defer/order outcomes from recurrence trends",
-                "Decision traces show manager13_proactive_predispatch_recurrence_shaping strategy and manager_version=manager13-v1"
+                "One Stage-8 run emits manager14_budget_fallback with grouped->singleton fallback outcomes from recurrence pressure",
+                "Decision traces show manager14_budget_fallback_predispatch_hierarchy strategy and manager_version=manager14-v1"
             ],
             "status": "building"
         },

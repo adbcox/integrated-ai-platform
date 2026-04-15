@@ -1198,7 +1198,7 @@ def _build_hierarchical_decomposition(
             subplan_id = str(item.get("subplan_id") or "")
             role = "parent_head" if member_idx == 1 else "child_member"
             item["hierarchy_context"] = {
-                "manager_version": "manager13-v1",
+                "manager_version": "manager14-v1",
                 "cohort_id": cohort_id,
                 "cohort_role": role,
                 "cohort_size": len(ordered_members),
@@ -1445,6 +1445,57 @@ def _apply_manager13_predispatch_shaping(
         "ordered_subplan_ids": [str(item.get("subplan_id") or "") for item in ordered],
         "recent_bad_rate": round(recent_bad_rate, 3),
         "grouped_bad_rate": round(grouped_bad_rate, 3),
+    }
+
+
+def _apply_manager14_budget_fallback_shaping(
+    *,
+    subplans: list[dict[str, Any]],
+    strategy_decisions: dict[str, dict[str, Any]],
+    recurrence_memory: dict[str, Any],
+) -> dict[str, Any]:
+    """Manager-14 proactive budget fallback shaping.
+
+    When grouped-budget pressure is likely to defer a whole grouped subplan, enable
+    bounded singleton fallback so at least part of the work can continue locally.
+    """
+
+    strategy_bad_rates = recurrence_memory.get("strategy_bad_rates")
+    if not isinstance(strategy_bad_rates, dict):
+        strategy_bad_rates = {}
+    replay_pressure = bool(recurrence_memory.get("replay_pressure"))
+    recent_bad_rate = float(recurrence_memory.get("recent_bad_rate") or 0.0)
+    grouped_bad_rate = float(strategy_bad_rates.get("grouped_subplan") or 0.0)
+
+    enabled = bool(replay_pressure or recent_bad_rate >= 0.35 or grouped_bad_rate >= 0.35)
+    candidate_count = 0
+    enabled_count = 0
+    for subplan in subplans:
+        targets = [str(t) for t in (subplan.get("targets") or []) if t]
+        if len(targets) <= 1:
+            continue
+        candidate_count += 1
+        subplan_id = str(subplan.get("subplan_id") or "")
+        decision = strategy_decisions.setdefault(subplan_id, {})
+        decision["manager14_budget_fallback_enabled"] = bool(enabled)
+        decision["manager14_budget_fallback_reason"] = (
+            "manager14_replay_or_grouped_budget_recurrence_pressure" if enabled else "manager14_fallback_not_needed"
+        )
+        tags = list(decision.get("decision_tags") or [])
+        if enabled:
+            tags.append("manager14_budget_fallback_ready")
+            enabled_count += 1
+        decision["decision_tags"] = sorted(set(tags))
+        strategy_decisions[subplan_id] = decision
+
+    return {
+        "enabled": enabled,
+        "strategy": "manager14_budget_constrained_singleton_fallback",
+        "candidate_grouped_subplans": candidate_count,
+        "fallback_enabled_subplans": enabled_count,
+        "recent_bad_rate": round(recent_bad_rate, 3),
+        "grouped_bad_rate": round(grouped_bad_rate, 3),
+        "replay_pressure": replay_pressure,
     }
 
 
@@ -1735,6 +1786,11 @@ def main() -> int:
         strategy_decisions=strategy_decisions,
         recurrence_memory=recurrence_memory,
     )
+    manager14_budget_fallback = _apply_manager14_budget_fallback_shaping(
+        subplans=subplans_to_run,
+        strategy_decisions=strategy_decisions,
+        recurrence_memory=recurrence_memory,
+    )
     hierarchy_contexts = {
         str(k): dict(v)
         for k, v in (hierarchical_plan.get("contexts") or {}).items()
@@ -1757,18 +1813,23 @@ def main() -> int:
                 "cohorts": list(hierarchical_plan.get("cohorts") or []),
                 "summary": dict(hierarchical_plan.get("summary") or {}),
                 "strategy": (
-                    "manager13_proactive_predispatch_recurrence_shaping"
-                    if bool(predispatch_shaping.get("enabled"))
+                    "manager14_budget_fallback_predispatch_hierarchy"
+                    if bool(manager14_budget_fallback.get("enabled"))
                     else (
-                        "manager12_recurrence_aware_hierarchical_repackaging"
-                        if bool(recurrence_memory.get("replay_pressure"))
-                        or bool(recurrence_memory.get("conservative_split"))
-                        else "manager11_hierarchical_two_level"
+                        "manager13_proactive_predispatch_recurrence_shaping"
+                        if bool(predispatch_shaping.get("enabled"))
+                        else (
+                            "manager12_recurrence_aware_hierarchical_repackaging"
+                            if bool(recurrence_memory.get("replay_pressure"))
+                            or bool(recurrence_memory.get("conservative_split"))
+                            else "manager11_hierarchical_two_level"
+                        )
                     )
                 ),
             },
             "predispatch_shaping": predispatch_shaping,
-            "manager_version": "manager13-v1",
+            "manager14_budget_fallback": manager14_budget_fallback,
+            "manager_version": "manager14-v1",
             "history_window_days": args.manager_history_window_days,
             "memory_window_days": args.manager_memory_window_days,
             "family_rescue_budget": args.family_rescue_budget,
@@ -1879,29 +1940,165 @@ def main() -> int:
             )
         worker_budget_decisions.append(budget_decision_payload)
         if not budget_decision_payload.get("allowed"):
-            status = {
-                "subplan_id": subplan_id,
-                "targets": [str(t) for t in subplan.get("targets", []) if t],
-                "target_contracts": [],
-                "dropped_targets": [],
-                "status": "deferred_worker_budget",
-                "return_code": 0,
-                "started_at": datetime.now(timezone.utc).isoformat(),
-                "finished_at": datetime.now(timezone.utc).isoformat(),
-                "strategy": "defer_manual",
-                "strategy_decision": strategy_decision,
-                "worker_budget_decision": budget_decision_payload,
-                "escalation_hint": "manual_lane_budget_exhausted",
-                "rollback_contract": {
-                    "contract_version": "stage9-v1",
-                    "strategy": "no_dispatch_budget_exhausted",
-                    "rollback_scope": [],
-                    "trigger_on_failure": False,
-                    "verification": "not_applicable_no_dispatch",
-                    "notes": "Worker budget exhausted before subplan dispatch.",
-                },
-                "code_outcomes": {"available": False, "reason": "worker_budget_defer_no_dispatch"},
-            }
+            manager14_fallback_enabled = bool(strategy_decision.get("manager14_budget_fallback_enabled"))
+            if manager14_fallback_enabled and target_count > 1:
+                split_statuses: list[dict[str, Any]] = []
+                split_success = True
+                split_dispatched = 0
+                targets = [str(t) for t in subplan.get("targets", []) if t]
+                for split_idx, target_path in enumerate(targets, start=1):
+                    single_budget_decision = apply_worker_budget(
+                        lane=lane_name,
+                        worker_class="single",
+                        grouped_limit=int(
+                            strategy_decision.get("budget_profile", {}).get(
+                                "effective_grouped_limit", args.worker_budget_grouped
+                            )
+                        ),
+                        single_limit=int(
+                            strategy_decision.get("budget_profile", {}).get(
+                                "effective_single_limit", args.worker_budget_single
+                            )
+                        ),
+                        family=family,
+                        adaptive_window_days=args.worker_budget_adaptive_window_days,
+                    )
+                    single_budget_payload = single_budget_decision.to_dict()
+                    single_budget_payload["budget_profile"] = strategy_decision.get("budget_profile", {})
+                    single_budget_payload["manager14_budget_fallback"] = True
+                    worker_budget_decisions.append(single_budget_payload)
+
+                    if not single_budget_payload.get("allowed"):
+                        split_status = {
+                            "subplan_id": f"{subplan_id}-manager14-{split_idx}",
+                            "targets": [target_path],
+                            "target_contracts": [],
+                            "dropped_targets": [],
+                            "status": "deferred_worker_budget",
+                            "return_code": 0,
+                            "started_at": datetime.now(timezone.utc).isoformat(),
+                            "finished_at": datetime.now(timezone.utc).isoformat(),
+                            "strategy": "manager14_singleton_fallback_defer",
+                            "strategy_decision": {
+                                **dict(strategy_decision),
+                                "manager14_budget_fallback_used": True,
+                                "manager14_budget_fallback_reason": "singleton_budget_exhausted",
+                            },
+                            "worker_budget_decision": single_budget_payload,
+                            "escalation_hint": "manual_lane_budget_exhausted_singleton_fallback",
+                            "rollback_contract": {
+                                "contract_version": "stage9-v1",
+                                "strategy": "manager14_singleton_fallback_no_dispatch",
+                                "rollback_scope": [],
+                                "trigger_on_failure": False,
+                                "verification": "not_applicable_no_dispatch",
+                                "notes": "Manager-14 singleton fallback exhausted single worker budget.",
+                            },
+                            "code_outcomes": {"available": False, "reason": "worker_budget_defer_no_dispatch"},
+                        }
+                    else:
+                        split_dispatched += 1
+                        split_status = run_stage6_subplan(
+                            subplan={"subplan_id": f"{subplan_id}-manager14-{split_idx}", "targets": [target_path]},
+                            args=args,
+                            env=env,
+                            op_index=(idx * 100) + split_idx,
+                            strategy_tag="manager14_singleton_fallback",
+                            strategy_decision={
+                                **dict(strategy_decision),
+                                "manager14_budget_fallback_used": True,
+                                "manager14_budget_fallback_reason": "grouped_budget_to_singleton_dispatch",
+                            },
+                        )
+                        split_status["worker_budget_decision"] = single_budget_payload
+                    split_verification = _verify_rollback_contract_for_status(split_status)
+                    split_status["rollback_verification"] = split_verification
+                    if not split_verification.get("ok"):
+                        split_status["status"] = "rollback_contract_invalid"
+                        split_status["return_code"] = 1
+                        split_status["failure_reason"] = "stage9_rollback_contract_verification_failed"
+                        split_success = False
+                    if int(split_status.get("return_code") or 0) != 0:
+                        split_success = False
+                    split_statuses.append(split_status)
+
+                for split_checkpoint_idx, split_status in enumerate(split_statuses, start=1):
+                    record_worker_outcome(
+                        lane=lane_name,
+                        worker_class="single",
+                        family=family,
+                        status=str(split_status.get("status") or "unknown"),
+                        escalation_hint=str(split_status.get("escalation_hint") or ""),
+                    )
+                    save_checkpoint(
+                        args.plan_id,
+                        split_status,
+                        attempt_index=(idx + 1) * 100 + split_checkpoint_idx,
+                    )
+                statuses.extend(split_statuses)
+                plan_payload.setdefault("recoveries", []).append(
+                    {
+                        "failed_subplan": subplan_id,
+                        "strategy": "manager14_budget_constrained_singleton_fallback",
+                        "split_count": len(split_statuses),
+                        "dispatched_count": split_dispatched,
+                        "result": "success" if split_success and split_dispatched > 0 else "partial_or_failed",
+                        "decision_state": "evaluate->budget_fallback_split->reconcile",
+                    }
+                )
+                if split_success and split_dispatched > 0:
+                    continue
+                status = {
+                    "subplan_id": subplan_id,
+                    "targets": targets,
+                    "target_contracts": [],
+                    "dropped_targets": [],
+                    "status": "deferred_worker_budget",
+                    "return_code": 0,
+                    "started_at": datetime.now(timezone.utc).isoformat(),
+                    "finished_at": datetime.now(timezone.utc).isoformat(),
+                    "strategy": "defer_manual",
+                    "strategy_decision": {
+                        **dict(strategy_decision),
+                        "manager14_budget_fallback_used": True,
+                        "manager14_budget_fallback_reason": "all_singleton_dispatches_blocked_or_failed",
+                    },
+                    "worker_budget_decision": budget_decision_payload,
+                    "escalation_hint": "manual_lane_budget_exhausted",
+                    "rollback_contract": {
+                        "contract_version": "stage9-v1",
+                        "strategy": "manager14_singleton_fallback_exhausted",
+                        "rollback_scope": [],
+                        "trigger_on_failure": False,
+                        "verification": "not_applicable_no_dispatch",
+                        "notes": "Manager-14 fallback could not dispatch enough singleton work.",
+                    },
+                    "code_outcomes": {"available": False, "reason": "worker_budget_defer_no_dispatch"},
+                }
+            else:
+                status = {
+                    "subplan_id": subplan_id,
+                    "targets": [str(t) for t in subplan.get("targets", []) if t],
+                    "target_contracts": [],
+                    "dropped_targets": [],
+                    "status": "deferred_worker_budget",
+                    "return_code": 0,
+                    "started_at": datetime.now(timezone.utc).isoformat(),
+                    "finished_at": datetime.now(timezone.utc).isoformat(),
+                    "strategy": "defer_manual",
+                    "strategy_decision": strategy_decision,
+                    "worker_budget_decision": budget_decision_payload,
+                    "escalation_hint": "manual_lane_budget_exhausted",
+                    "rollback_contract": {
+                        "contract_version": "stage9-v1",
+                        "strategy": "no_dispatch_budget_exhausted",
+                        "rollback_scope": [],
+                        "trigger_on_failure": False,
+                        "verification": "not_applicable_no_dispatch",
+                        "notes": "Worker budget exhausted before subplan dispatch.",
+                    },
+                    "code_outcomes": {"available": False, "reason": "worker_budget_defer_no_dispatch"},
+                }
         elif strategy_decision.get("strategy") == "split_first" and len(subplan.get("targets", [])) > 1:
             split_success, split_statuses = _run_split_recovery(
                 failed_subplan={"subplan_id": subplan_id, "targets": subplan.get("targets", [])},
