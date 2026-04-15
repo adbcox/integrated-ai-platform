@@ -2036,6 +2036,16 @@ def main() -> int:
                     else {}
                 )
                 replay_pressure = bool(recurrence_adaptation.get("replay_pressure"))
+                predispatch_shape = (
+                    strategy_decision.get("predispatch_shape")
+                    if isinstance(strategy_decision.get("predispatch_shape"), dict)
+                    else {}
+                )
+                family_bad_rate = float(predispatch_shape.get("family_bad_rate") or 0.0)
+                grouped_bad_rate = float(predispatch_shape.get("grouped_bad_rate") or 0.0)
+                all_low_risk_targets = bool(targets) and all(
+                    int(target_risk_by_path.get(path, 2)) <= 1 for path in targets
+                )
                 low_risk_dispatch_quota_cap = (
                     1
                     if grouped_carryover_cap == 0
@@ -2043,6 +2053,16 @@ def main() -> int:
                     and task_class in {"multi_file_orchestration", "retrieval_orchestration"}
                     else 0
                 )
+                # Bounded extension: for tiny low-risk grouped orchestration subplans with
+                # favorable recurrence trends, allow one additional singleton dispatch.
+                if (
+                    low_risk_dispatch_quota_cap == 1
+                    and len(targets) <= 2
+                    and all_low_risk_targets
+                    and family_bad_rate <= 0.3
+                    and grouped_bad_rate <= 0.35
+                ):
+                    low_risk_dispatch_quota_cap = 2
                 low_risk_dispatch_quota_used = 0
                 for split_idx, target_path in enumerate(targets, start=1):
                     single_budget_decision = apply_worker_budget(
