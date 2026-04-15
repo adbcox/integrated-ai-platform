@@ -956,7 +956,7 @@ def run_stage6_subplan(
 
     if not accepted_targets:
         rollback_contract = {
-            "contract_version": "stage8-v1",
+            "contract_version": "stage9-v1",
             "strategy": "preflight_drop_no_dispatch",
             "rollback_scope": [],
             "trigger_on_failure": False,
