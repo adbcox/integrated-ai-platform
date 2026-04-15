@@ -2174,33 +2174,72 @@ def main() -> int:
                     worker_budget_decisions.append(single_budget_payload)
 
                     if not single_budget_payload.get("allowed"):
-                        split_status = {
-                            "subplan_id": f"{subplan_id}-manager14-{split_idx}",
-                            "targets": [target_path],
-                            "target_contracts": [],
-                            "dropped_targets": [],
-                            "status": "deferred_worker_budget",
-                            "return_code": 0,
-                            "started_at": datetime.now(timezone.utc).isoformat(),
-                            "finished_at": datetime.now(timezone.utc).isoformat(),
-                            "strategy": "manager14_singleton_fallback_defer",
-                            "strategy_decision": {
-                                **dict(strategy_decision),
-                                "manager14_budget_fallback_used": True,
-                                "manager14_budget_fallback_reason": "singleton_budget_exhausted",
-                            },
-                            "worker_budget_decision": single_budget_payload,
-                            "escalation_hint": "manual_lane_budget_exhausted_singleton_fallback",
-                            "rollback_contract": {
-                                "contract_version": "stage9-v1",
-                                "strategy": "manager14_singleton_fallback_no_dispatch",
-                                "rollback_scope": [],
-                                "trigger_on_failure": False,
-                                "verification": "not_applicable_no_dispatch",
-                                "notes": "Manager-14 singleton fallback exhausted single worker budget.",
-                            },
-                            "code_outcomes": {"available": False, "reason": "worker_budget_defer_no_dispatch"},
-                        }
+                        bounded_partial_drop_allowed = (
+                            split_dispatched > 0
+                            and target_risk_rank <= 1
+                            and replay_pressure
+                            and task_class in {"multi_file_orchestration", "retrieval_orchestration"}
+                            and grouped_bad_rate <= 0.2
+                        )
+                        if bounded_partial_drop_allowed:
+                            split_status = {
+                                "subplan_id": f"{subplan_id}-manager14-{split_idx}",
+                                "targets": [target_path],
+                                "target_contracts": [],
+                                "dropped_targets": [target_path],
+                                "status": "dropped_preflight",
+                                "return_code": 0,
+                                "started_at": datetime.now(timezone.utc).isoformat(),
+                                "finished_at": datetime.now(timezone.utc).isoformat(),
+                                "strategy": "manager14_singleton_fallback_drop",
+                                "strategy_decision": {
+                                    **dict(strategy_decision),
+                                    "manager14_budget_fallback_used": True,
+                                    "manager14_budget_fallback_reason": "singleton_budget_bounded_partial_drop",
+                                },
+                                "worker_budget_decision": single_budget_payload,
+                                "escalation_hint": "",
+                                "rollback_contract": {
+                                    "contract_version": "stage9-v1",
+                                    "strategy": "manager14_singleton_fallback_bounded_drop",
+                                    "rollback_scope": [],
+                                    "trigger_on_failure": False,
+                                    "verification": "not_applicable_pre_dispatch_drop",
+                                    "notes": "Manager-14 performed bounded low-risk partial drop after successful singleton dispatch.",
+                                },
+                                "code_outcomes": {
+                                    "available": False,
+                                    "reason": "worker_budget_bounded_partial_drop",
+                                },
+                            }
+                        else:
+                            split_status = {
+                                "subplan_id": f"{subplan_id}-manager14-{split_idx}",
+                                "targets": [target_path],
+                                "target_contracts": [],
+                                "dropped_targets": [],
+                                "status": "deferred_worker_budget",
+                                "return_code": 0,
+                                "started_at": datetime.now(timezone.utc).isoformat(),
+                                "finished_at": datetime.now(timezone.utc).isoformat(),
+                                "strategy": "manager14_singleton_fallback_defer",
+                                "strategy_decision": {
+                                    **dict(strategy_decision),
+                                    "manager14_budget_fallback_used": True,
+                                    "manager14_budget_fallback_reason": "singleton_budget_exhausted",
+                                },
+                                "worker_budget_decision": single_budget_payload,
+                                "escalation_hint": "manual_lane_budget_exhausted_singleton_fallback",
+                                "rollback_contract": {
+                                    "contract_version": "stage9-v1",
+                                    "strategy": "manager14_singleton_fallback_no_dispatch",
+                                    "rollback_scope": [],
+                                    "trigger_on_failure": False,
+                                    "verification": "not_applicable_no_dispatch",
+                                    "notes": "Manager-14 singleton fallback exhausted single worker budget.",
+                                },
+                                "code_outcomes": {"available": False, "reason": "worker_budget_defer_no_dispatch"},
+                            }
                     else:
                         split_dispatched += 1
                         split_status = run_stage6_subplan(
