@@ -249,10 +249,10 @@ def _infer_task_class_from_query(query: str) -> str:
         return "resumable_checkpointed"
     if any(token in q for token in ("rag", "retrieval", "ranking", "cluster")):
         return "retrieval_orchestration"
-    if any(token in q for token in ("contract", "literal", "shell", "script")):
-        return "safe_contracts"
     if any(token in q for token in ("stage", "manager", "orchestration")):
         return "multi_file_orchestration"
+    if any(token in q for token in ("contract", "literal", "shell", "script")):
+        return "safe_contracts"
     return "bounded_architecture"
 
 
