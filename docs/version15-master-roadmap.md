@@ -86,15 +86,16 @@ This document is planning-only and review-first. It is grounded in current repo 
 - Current contribution to Codex-5.1 replacement: medium-low (measurement quality improving, but not yet enough to prove replacement at scale).
 
 ### 7) Learning/training/improvement loop for local coding model
-- Current version/level: not formalized as a dedicated versioned subsystem (functionally early-stage).
+- Current version/level: `learning-v10`, level 10 (building).
 - Current real capability:
-  - Rich traces/history are collected.
-  - Failure classes increasingly convert into guards/routing rules.
+  - Operational learning loop from benchmark/campaign/curation artifacts.
+  - Replay queue generation for blocker-first local-first execution.
+  - Training-priority queue generation tied to first-attempt quality deficits.
 - Main blockers:
-  - No formal curriculum pipeline turning traces into training-ready datasets and eval cohorts.
-  - Weak separation between “wrapper got better” vs “model got better.”
+  - Curriculum cohorts are not yet persisted as adaptation-ready datasets by class.
+  - Replay outcomes are not yet auto-fed into manager/routing policy updates.
 - Main dependencies: Worker utilization data quality, regression framework maturity, manager/rag explanation artifacts.
-- Current contribution to Codex-5.1 replacement: low today; this is the key multiplier needed to make the local model itself stronger.
+- Current contribution to Codex-5.1 replacement: medium and rising; this is the primary multiplier for model-first gains.
 
 ## Part 2 — Define the target
 
@@ -199,10 +200,9 @@ Coarse major milestones only.
 - Target: `v15` — decision-grade qualification stack for autonomous operation.
 
 ### Learning/training loop ladder
-- Current: early-stage (implicit, rule-heavy).
-- Next: `v9` equivalent capability — trace curation pipeline + failure/success taxonomy.
-- Mid: `v11` — curriculum and replay datasets tied to benchmark tasks.
-- Mid: `v13` — controlled model adaptation experiments with gating.
+- Current: `learning-v10` — operational artifact-to-replay/training loop.
+- Next: `learning-v11` — curriculum and replay datasets tied to benchmark tasks.
+- Mid: `learning-v13` — controlled model adaptation experiments with gating.
 - Target: `v15` — continuous improvement loop with clear model capability gains.
 
 ## Part 4 — Codex 5.1 replacement milestone
