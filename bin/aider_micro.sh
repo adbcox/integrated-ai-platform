@@ -24,6 +24,7 @@ LITERAL_OLD=""
 LITERAL_NEW=""
 LITERAL_BEFORE_FILE=""
 LITERAL_FALLBACK_USED=false
+COMMENT_FALLBACK_USED=false
 WRITE_CHECK_COUNT=${AIDER_MICRO_WRITE_CHECKS:-3}
 WRITE_CHECK_DELAY=${AIDER_MICRO_WRITE_DELAY_SEC:-1}
 EVENT_LOG="${AIDER_MICRO_EVENT_LOG:-artifacts/micro_runs/events.jsonl}"
@@ -263,6 +264,45 @@ PY
     fail "literal replace fallback could not apply change" "literal_replace_fallback"
   fi
   LITERAL_FALLBACK_USED=true
+}
+
+comment_apply_direct() {
+  local target_file="$1"
+  info "applying comment-only fallback to $target_file"
+  if ! COMMENT_FALLBACK_TARGET="$target_file" python3 - <<'PY'
+import os, sys
+from pathlib import Path
+
+path = Path(os.environ["COMMENT_FALLBACK_TARGET"])
+text = path.read_text(encoding="utf-8")
+marker = "# micro fallback comment-only"
+
+if marker in text:
+    updated = text.replace(marker, marker + " (refreshed)", 1)
+else:
+    lines = text.splitlines(keepends=True)
+    if not lines:
+        updated = marker + "\n"
+    elif lines[0].startswith("#!"):
+        insertion = 1
+        while insertion < len(lines) and lines[insertion].strip() == "":
+            insertion += 1
+        lines.insert(insertion, marker + "\n")
+        updated = "".join(lines)
+    else:
+        updated = marker + "\n" + text
+
+if updated == text:
+    print("comment fallback produced no change", file=sys.stderr)
+    sys.exit(1)
+
+path.write_text(updated, encoding="utf-8")
+sys.exit(0)
+PY
+  then
+    fail "comment-only fallback could not apply change" "comment_fallback_failed"
+  fi
+  COMMENT_FALLBACK_USED=true
 }
 
 if [ $# -lt 2 ]; then
@@ -544,6 +584,15 @@ PY
         fail "make quick failed after fallback; inspect quick logs" "validation"
       fi
       log_micro_event "info" "literal_fallback_applied" "$LITERAL_FILE"
+    elif [ "$TASK_KIND" = "comment-only" ] && [ ${#TARGET_FILES[@]} -eq 1 ]; then
+      info "aider exit detected; attempting comment-only fallback"
+      log_micro_event "warning" "comment_fallback_start" "aider exited status $status"
+      comment_apply_direct "${TARGET_FILES[0]}"
+      info "running quick validation after fallback"
+      if ! PYTHONPYCACHEPREFIX=/tmp/aider_pycache make quick >/dev/null; then
+        fail "make quick failed after comment fallback; inspect quick logs" "validation"
+      fi
+      log_micro_event "info" "comment_fallback_applied" "${TARGET_FILES[0]}"
     else
       fail "aider exited non-zero (status $status). Inspect artifacts/aider_runs for details." "aider_exit" "$status"
     fi
@@ -612,6 +661,8 @@ done
 if [ "$changed_any" = false ]; then
   if [ "$TASK_KIND" = "literal-replace" ] && [ "$LITERAL_FALLBACK_USED" = true ]; then
     info "no diff detected but literal fallback applied; treating as success"
+  elif [ "$TASK_KIND" = "comment-only" ] && [ "$COMMENT_FALLBACK_USED" = true ]; then
+    info "no diff detected but comment fallback applied; treating as success"
   else
     fail "none of the target files changed" "no_change"
   fi
