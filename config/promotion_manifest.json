@@ -125,6 +125,10 @@
         "rag9-v1": {
             "entry": "bin/stage_rag6_plan_probe.py",
             "description": "RAG-9 execution-feedback-calibrated clustered planning with manager-plan outcome weighting for risk/yield ordering and auditable operational provenance"
+        },
+        "rag10-v1": {
+            "entry": "bin/stage_rag6_plan_probe.py",
+            "description": "RAG-10 execution-cohort clustered planning with mixed-family pair feedback priors for conflict-risk and yield ordering"
         }
     },
     "lane_versions": {
@@ -151,7 +155,7 @@
         "stage7": {
             "stage_version": "stage9-v1",
             "manager_version": "manager10-v1",
-            "rag_version": "rag9-v1"
+            "rag_version": "rag10-v1"
         }
     },
     "lanes": {
@@ -207,13 +211,13 @@
             "label": "Stage-7 preview lane",
             "stage_version": "stage9-v1",
             "manager_version": "manager10-v1",
-            "rag_version": "rag9-v1",
+            "rag_version": "rag10-v1",
             "allowed_targets": [
                 "bin/"
             ],
             "regression_pack": "bin/micro_lane_stage7.sh",
             "status": "building",
-            "notes": "Stage-9 deterministic resume/checkpoint preview lane with rollback-contract verification, reconciliation guarantees, Manager-10 learning-prior strategy adaptation, and RAG-9 execution-feedback-calibrated clustered planning"
+            "notes": "Stage-9 deterministic resume/checkpoint preview lane with rollback-contract verification, reconciliation guarantees, Manager-10 learning-prior strategy adaptation, and RAG-10 execution-cohort clustered planning"
         }
     },
     "lane_rules": {
@@ -530,10 +534,10 @@
             "status": "building"
         },
         "rag_system": {
-            "current_version": "rag9-v1",
-            "next_version": "rag10-v1",
-            "after_next_version": "rag11-v1",
-            "upgrade_goal": "RAG-10 strengthens execution-feedback calibration with deeper predictive conflict/yield priors across mixed-family clustered subplans",
+            "current_version": "rag10-v1",
+            "next_version": "rag11-v1",
+            "after_next_version": "rag12-v1",
+            "upgrade_goal": "RAG-11 extends RAG-10 with intent/domain fusion and adaptive confidence shaping over execution-cohort priors for lower-rescue clustered planning",
             "minimum_validation": [
                 "RAG plans include execution-feedback-aware risk/yield and per-subplan operational provenance links",
                 "At least one Stage-7/8 planning run shows ordering/clustering changed by historical execution outcomes"

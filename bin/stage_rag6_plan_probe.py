@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse  # stage7-op
 import collections
 import datetime as dt
+import itertools
 import json
 import subprocess
 import sys
@@ -132,6 +133,7 @@ def load_execution_feedback(*, window_days: int, sample_limit: int) -> dict[str,
     cutoff = now - dt.timedelta(days=max(1, window_days))
     family_counters: dict[str, dict[str, int]] = collections.defaultdict(_new_feedback_counter)
     path_counters: dict[str, dict[str, int]] = collections.defaultdict(_new_feedback_counter)
+    family_pair_counters: dict[str, dict[str, int]] = collections.defaultdict(_new_feedback_counter)
     processed_files = 0
 
     plan_paths = sorted(MANAGER_PLAN_DIR.glob("*.json"), key=lambda p: p.stat().st_mtime, reverse=True)
@@ -218,16 +220,35 @@ def load_execution_feedback(*, window_days: int, sample_limit: int) -> dict[str,
                     ctr["dropped"] += 1
                 elif bucket == "escalated":
                     ctr["escalated"] += 1
+            if len(families) >= 2:
+                for pair in itertools.combinations(sorted(set(families)), 2):
+                    pair_key = "|".join(pair)
+                    ctr = family_pair_counters[pair_key]
+                    ctr["samples"] += 1
+                    if bucket == "success":
+                        ctr["successes"] += 1
+                    elif bucket == "failure":
+                        ctr["failures"] += 1
+                    elif bucket == "deferred":
+                        ctr["deferred"] += 1
+                    elif bucket == "dropped":
+                        ctr["dropped"] += 1
+                    elif bucket == "escalated":
+                        ctr["escalated"] += 1
         processed_files += 1
 
     family_summary = {k: _counter_with_rates(v) for k, v in family_counters.items() if v.get("samples", 0) > 0}
     path_summary = {k: _counter_with_rates(v) for k, v in path_counters.items() if v.get("samples", 0) > 0}
+    family_pair_summary = {
+        k: _counter_with_rates(v) for k, v in family_pair_counters.items() if v.get("samples", 0) > 0
+    }
     return {
         "window_days": max(1, window_days),
         "sample_limit": max(1, sample_limit),
         "processed_plan_files": processed_files,
         "families": family_summary,
         "paths": path_summary,
+        "family_pairs": family_pair_summary,
     }
 
 
@@ -251,6 +272,22 @@ def _target_effective_rank(target: dict[str, Any], feedback: dict[str, Any]) -> 
     signal = _feedback_signal(path_feedback)
     sample_weight = min(1.0, int(path_feedback.get("samples", 0)) / 5.0)
     return round(rank + (conf * 0.12) + (signal * sample_weight), 4)
+
+
+def _family_pair_key(a: str, b: str) -> str:
+    return "|".join(sorted((a, b)))
+
+
+def _pair_feedback_signal(feedback: dict[str, Any]) -> float:
+    samples = int(feedback.get("samples", 0))
+    if samples <= 0:
+        return 0.0
+    success = float(feedback.get("success_rate") or 0.0)
+    failure = float(feedback.get("failure_rate") or 0.0)
+    deferred = float(feedback.get("defer_rate") or 0.0)
+    dropped = float(feedback.get("drop_rate") or 0.0)
+    escalated = float(feedback.get("escalation_rate") or 0.0)
+    return round((success * 3.0) - (failure * 4.8) - (deferred * 2.4) - (dropped * 1.8) - (escalated * 2.8), 3)
 
 
 def _subplan_conflict_meta(cluster: list[dict[str, Any]]) -> tuple[float, list[str]]:
@@ -369,14 +406,34 @@ def build_subplans(
             3,
         ) if len(cluster) > 1 else 0.0
         family_feedback = []
-        for family in sorted({str(item.get("family") or _family_key(str(item.get("path") or ""))) for item in cluster}):
+        cluster_families = sorted({str(item.get("family") or _family_key(str(item.get("path") or ""))) for item in cluster})
+        for family in cluster_families:
             entry = ((execution_feedback.get("families") or {}).get(family) or {})
             if int(entry.get("samples", 0)) > 0:
                 family_feedback.append({"family": family, **entry, "feedback_signal": _feedback_signal(entry)})
+        pair_feedback: list[dict[str, Any]] = []
+        pair_lookup = execution_feedback.get("family_pairs") or {}
+        if len(cluster_families) >= 2:
+            for a, b in itertools.combinations(cluster_families, 2):
+                pair_key = _family_pair_key(a, b)
+                pair_entry = pair_lookup.get(pair_key) or {}
+                if int(pair_entry.get("samples", 0)) <= 0:
+                    continue
+                pair_feedback.append(
+                    {
+                        "pair": pair_key,
+                        **pair_entry,
+                        "feedback_signal": _pair_feedback_signal(pair_entry),
+                    }
+                )
         family_feedback_signal = round(
             sum(float(f.get("feedback_signal") or 0.0) for f in family_feedback) / max(1, len(family_feedback)),
             3,
         ) if family_feedback else 0.0
+        pair_feedback_signal = round(
+            sum(float(f.get("feedback_signal") or 0.0) for f in pair_feedback) / max(1, len(pair_feedback)),
+            3,
+        ) if pair_feedback else 0.0
         feedback_risk_penalty = round(
             sum(
                 (
@@ -390,12 +447,26 @@ def build_subplans(
             ) / max(1, len(family_feedback)),
             3,
         ) if family_feedback else 0.0
-        adjusted_conflict = round(conflict_score + feedback_risk_penalty, 3)
+        pair_risk_penalty = round(
+            sum(
+                (
+                    float(p.get("failure_rate") or 0.0)
+                    + float(p.get("defer_rate") or 0.0)
+                    + float(p.get("drop_rate") or 0.0)
+                    + float(p.get("escalation_rate") or 0.0)
+                )
+                * 1.1
+                for p in pair_feedback
+            ) / max(1, len(pair_feedback)),
+            3,
+        ) if pair_feedback else 0.0
+        adjusted_conflict = round(conflict_score + feedback_risk_penalty + pair_risk_penalty, 3)
         yield_score = round(
             (avg_confidence * 0.85)
             + (avg_rank_score * 0.25)
             + (link_strength * 0.8)
             + family_feedback_signal
+            + pair_feedback_signal
             - adjusted_conflict,
             3,
         )
@@ -425,8 +496,11 @@ def build_subplans(
                 "link_strength": link_strength,
                 "execution_feedback": {
                     "family_feedback": family_feedback[:4],
+                    "pair_feedback": pair_feedback[:4],
                     "family_feedback_signal": family_feedback_signal,
+                    "pair_feedback_signal": pair_feedback_signal,
                     "feedback_risk_penalty": feedback_risk_penalty,
+                    "pair_risk_penalty": pair_risk_penalty,
                 },
             }
         )
@@ -500,7 +574,7 @@ def main() -> int:
             "max_subplans": args.max_subplans,
             "subplan_size": args.subplan_size,
             "preferred_prefixes": preferred_prefixes,
-            "ranking_version": "rag9-v1-execution-feedback-cluster",
+            "ranking_version": "rag10-v1-execution-cohort-cluster",
             "upstream_rag4_plan_id": rag4_plan.get("plan_id"),
             "upstream_ranking_version": (rag4_plan.get("provenance") or {}).get("ranking_version"),
             "retrieved_targets": len(targets),
@@ -509,6 +583,7 @@ def main() -> int:
             "feedback_sample_limit": max(1, args.feedback_sample_limit),
             "feedback_processed_plan_files": int(execution_feedback.get("processed_plan_files") or 0),
             "feedback_family_count": len((execution_feedback.get("families") or {})),
+            "feedback_family_pair_count": len((execution_feedback.get("family_pairs") or {})),
         },
         "raw_payload": rag4_plan,
     }

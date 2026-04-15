@@ -13,7 +13,7 @@ This document is the coordinated implementation ladder from current subsystem ve
 | --- | --- | --- | --- | --- | --- |
 | Stage system | `stage9-v1` | `stage10-v1` | `stage11-v1` | `stage15-v1` | building |
 | Manager/orchestration | `manager10-v1` | `manager11-v1` | `manager12-v1` | `manager15-v1` | building |
-| Retrieval / RAG | `rag9-v1` | `rag10-v1` | `rag11-v1` | `rag15-v1` | building |
+| Retrieval / RAG | `rag10-v1` | `rag11-v1` | `rag12-v1` | `rag15-v1` | building |
 | Promotion engine / control loop | `level10-promote-v2` | `level10-promote-v3` | `level10-promote-v4` | `level10-promote-v15` | validated |
 | Worker utilization / local execution | `worker-routing-v2` | `worker-routing-v3` | `worker-routing-v4` | `worker-routing-v15` | building |
 | Regression / qualification | `qualify-v2` | `qualify-v3` | `qualify-v4` | `qualify-v15` | validated |
@@ -84,7 +84,7 @@ Rationale:
 
 - Stage: `stage9-v1` validated with deterministic reconciliation evidence
 - Manager: `manager10-v1` validated with learning-prior strategy adaptation and qualification-aware strategy evidence
-- RAG: `rag9-v1` validated with execution-feedback-aware clustered planning
+- RAG: `rag10-v1` validated with execution-cohort clustered planning and mixed-family feedback priors
 - Worker: `worker-routing-v3` validated (adaptive budgets operational)
 - Regression: `qualify-v3` validated (deterministic stage assertions operational)
 - Promotion: `level10-promote-v3` validated (subsystem-weighted enforcement)
