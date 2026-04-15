@@ -2100,6 +2100,24 @@ def main() -> int:
                     and grouped_bad_rate <= 0.16
                 ):
                     low_risk_dispatch_quota_cap = 2
+                strict_first_attempt_mode = (
+                    str(args.subplan_failure_policy or "") == "abort"
+                    and int(args.family_rescue_budget) <= 0
+                )
+                quota_risk_rank_limit = 1
+                if (
+                    strict_first_attempt_mode
+                    and low_risk_dispatch_quota_cap > 0
+                    and split_history_favors_singletons
+                    and task_class in {"multi_file_orchestration", "retrieval_orchestration"}
+                    and len(targets) <= 2
+                    and family_bad_rate <= 0.35
+                    and grouped_bad_rate <= 0.15
+                ):
+                    # Bounded extension for first-attempt-only pressure:
+                    # allow a single medium-risk singleton dispatch when recurrence
+                    # history strongly favors split execution.
+                    quota_risk_rank_limit = 2
                 low_risk_dispatch_quota_used = 0
                 for split_idx, target_path in enumerate(targets, start=1):
                     single_budget_decision = apply_worker_budget(
@@ -2153,7 +2171,7 @@ def main() -> int:
                                 }
                             )
                         elif (
-                            target_risk_rank <= 1
+                            target_risk_rank <= quota_risk_rank_limit
                             and low_risk_dispatch_quota_used < low_risk_dispatch_quota_cap
                         ):
                             single_override_used = True
@@ -2168,6 +2186,12 @@ def main() -> int:
                                     "manager14_grouped_low_risk_dispatch_quota_used": True,
                                     "manager14_grouped_low_risk_dispatch_quota_remaining": int(
                                         max(0, low_risk_dispatch_quota_cap - low_risk_dispatch_quota_used)
+                                    ),
+                                    "manager14_grouped_low_risk_dispatch_quota_risk_rank_limit": int(
+                                        quota_risk_rank_limit
+                                    ),
+                                    "manager14_grouped_low_risk_dispatch_quota_first_attempt_mode": bool(
+                                        strict_first_attempt_mode
                                     ),
                                 }
                             )
