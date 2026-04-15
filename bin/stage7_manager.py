@@ -2024,6 +2024,9 @@ def main() -> int:
                     for entry in target_meta_entries
                     if isinstance(entry, dict) and entry.get("path")
                 }
+                target_risk_by_name = {
+                    Path(path).name: int(rank) for path, rank in target_risk_by_path.items() if path
+                }
                 grouped_carryover_used = 0
                 grouped_family_budget_remaining = max(
                     0,
@@ -2099,7 +2102,12 @@ def main() -> int:
                     single_override_used = False
                     used_low_risk_quota = False
                     if not single_budget_payload.get("allowed"):
-                        target_risk_rank = int(target_risk_by_path.get(target_path, 2))
+                        target_risk_rank = int(
+                            target_risk_by_path.get(
+                                target_path,
+                                target_risk_by_name.get(Path(target_path).name, 2),
+                            )
+                        )
                         family_budget_remaining = int(args.family_rescue_budget) - int(
                             family_rescue_usage.get(family, 0)
                         )
