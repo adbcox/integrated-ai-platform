@@ -199,12 +199,21 @@ def run_stage_rag4(args: argparse.Namespace) -> dict[str, Any]:
     for prefix in args.preferred_prefix:
         cmd.extend(["--preferred-prefix", prefix])
     cmd.extend(args.query)
-    proc = subprocess.run(cmd, capture_output=True, text=True, check=True)
+    proc = subprocess.run(cmd, capture_output=True, text=True)
+    if proc.returncode != 0:
+        raise SystemExit(f"[stage6] stage_rag4 failed (plan_id={args.plan_id}, query={' '.join(args.query)}): {proc.stderr}")
     return json.loads(proc.stdout)
 
 
 def load_jobs_from_file(path: Path) -> list[Stage6Job]:
-    data = json.loads(path.read_text(encoding="utf-8"))
+    try:
+        content = path.read_text(encoding="utf-8")
+    except OSError as e:
+        raise SystemExit(f"[stage6] failed to read jobs file {path}: {e}")
+    try:
+        data = json.loads(content)
+    except json.JSONDecodeError as e:
+        raise SystemExit(f"[stage6] invalid JSON in jobs file {path}: {e}")
     if not isinstance(data, list):
         raise RuntimeError("jobs file must be a JSON array")
     jobs: list[Stage6Job] = []

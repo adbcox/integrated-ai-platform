@@ -81,25 +81,27 @@ class WorkerRuntime:
             if self._dequeue_callback is not None:
                 self._dequeue_callback(job)
 
-            job.set_lifecycle(JobLifecycle.DISPATCHED, reason=f"worker={self.worker_id}")
-            self.store.save_job(job)
-            self.store.append_trace({
-                "kind": "worker_job_start",
-                "worker_id": self.worker_id,
-                "job_id": job.job_id,
-            })
-            result_payload = self._execute_job(job)
-            result_path = self.store.save_result(job.job_id, result_payload)
-            learning_event = self.learning.emit(job=job, result=result_payload, result_path=result_path)
-            self.store.append_trace({
-                "kind": "worker_job_end",
-                "worker_id": self.worker_id,
-                "job_id": job.job_id,
-                "status": result_payload.get("status"),
-                "learning_event": learning_event.to_dict(),
-            })
-            self._context_release_callback(job)
-            self.queue.task_done()
+            try:
+                job.set_lifecycle(JobLifecycle.DISPATCHED, reason=f"worker={self.worker_id}")
+                self.store.save_job(job)
+                self.store.append_trace({
+                    "kind": "worker_job_start",
+                    "worker_id": self.worker_id,
+                    "job_id": job.job_id,
+                })
+                result_payload = self._execute_job(job)
+                result_path = self.store.save_result(job.job_id, result_payload)
+                learning_event = self.learning.emit(job=job, result=result_payload, result_path=result_path)
+                self.store.append_trace({
+                    "kind": "worker_job_end",
+                    "worker_id": self.worker_id,
+                    "job_id": job.job_id,
+                    "status": result_payload.get("status"),
+                    "learning_event": learning_event.to_dict(),
+                })
+                self._context_release_callback(job)
+            finally:
+                self.queue.task_done()
 
     def _execute_job(self, job: Job) -> dict[str, Any]:
         conflict_domain = self._resolve_conflict_domain(job)
