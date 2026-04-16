@@ -145,7 +145,7 @@ class BoundedSemanticModificationGenerator:
         """Build task-specific prompt with stronger anchoring."""
 
         if modification_type == "add_docstring":
-            # Specialized prompt for docstring additions with explicit anchoring
+            # Specialized prompt for docstring additions with explicit anchoring and examples
             anchor_context = ""
             if anchor_candidates:
                 anchor_context = f"\nLikely anchor patterns found in file:\n" + "\n".join(
@@ -156,7 +156,6 @@ class BoundedSemanticModificationGenerator:
 
 Task: {description}
 File: {target_path}
-Modification type: add_docstring
 
 IMPORTANT: literal_old MUST be copied EXACTLY from the file content below.
 {anchor_context}
@@ -164,21 +163,23 @@ IMPORTANT: literal_old MUST be copied EXACTLY from the file content below.
 File content (first 1000 chars):
 {content[:1000]}
 
-Generate a JSON object with this exact structure:
+GOOD EXAMPLES of valid JSON output:
+{{"literal_old": "def execute():", "literal_new": "def execute():\\n    \\\"\\\"\\\"Execute the task.\\\"\\\"\\\"", "confidence": 0.85}}
+{{"literal_old": "class Manager:", "literal_new": "class Manager:\\n    \\\"\\\"\\\"Manages orchestration.\\\"\\\"\\\"", "confidence": 0.85}}
+
+Generate a JSON object with EXACTLY this structure:
 {{
-    "literal_old": "exact line from file to use as anchor (e.g., 'class ClassName:' or 'def function_name():')",
-    "literal_new": "anchor line + newline + properly indented docstring (e.g., 'class ClassName:\\n    \"\"\"Docstring here.\"\"\"')",
+    "literal_old": "one definition line copied from file: 'class Name:' or 'def func():'",
+    "literal_new": "that line + newline + indented docstring (one line in triple quotes)",
     "confidence": 0.85,
-    "notes": "brief explanation"
+    "notes": "brief note"
 }}
 
-STRICT REQUIREMENTS:
-1. literal_old MUST be copied WORD-FOR-WORD from the file provided above
-2. literal_old must be a single definition line: "class X:" or "def f():" or "def f(args):"
-3. literal_new must be literal_old + newline + properly indented docstring
-4. docstring must be brief (one line in triple quotes recommended)
-5. Do NOT hallucinate patterns that don't exist in the file
-6. Return ONLY valid JSON, no other text"""
+STRICT RULES:
+1. literal_old MUST exist WORD-FOR-WORD in the file
+2. literal_old is exactly one definition line from above
+3. literal_new = literal_old + newline + docstring
+4. Return ONLY valid JSON, no other text"""
 
         else:
             # Generic prompt for other modification types
