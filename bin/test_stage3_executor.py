@@ -29,8 +29,9 @@ def test_stage3_with_executor() -> int:
     test_file.write_text(original, encoding="utf-8")
     print(f"\n[Setup] Created test file: {test_file.relative_to(REPO_ROOT)}")
 
-    # Create message file
-    message = 'def greet(name)::def greet(name):\n    """Greet a person."""'
+    # Create message file with proper format (target::message)
+    target_relpath = str(test_file.relative_to(REPO_ROOT))
+    message = f'{target_relpath}:: add docstring to greet function'
     message_file = Path(tempfile.gettempdir()) / "stage3_test_message.msg"
     message_file.write_text(message, encoding="utf-8")
     print(f"[Setup] Created message file: {message_file}")
