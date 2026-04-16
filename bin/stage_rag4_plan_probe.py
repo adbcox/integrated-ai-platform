@@ -179,9 +179,12 @@ def _query_intent(tokens: list[str]) -> str:
 
     # Infrastructure files: config, build, manifests (non-code files)
     # These need special handling to avoid being confused with docs
-    infrastructure_terms = {"makefile", "config", "manifest", "json", "yml", "yaml", "toml"}
+    # Require explicit mention or 2+ config-related terms to avoid false positives
+    infrastructure_terms = {"makefile", "config", "manifest", "yml", "yaml", "toml"}
     infrastructure_hits = sum(1 for t in lowered if any(term in t for term in infrastructure_terms))
-    if infrastructure_hits >= 1:
+    # Also accept "promotion_manifest" as explicit infrastructure reference
+    has_manifest_mention = any("manifest" in t for t in lowered)
+    if infrastructure_hits >= 1 or has_manifest_mention:
         return "infrastructure"
 
     doc_terms = {"doc", "docs", "documentation", "readme", "guide", "roadmap", "policy"}
@@ -284,6 +287,15 @@ def _domain_bonus(*, intent: str, domain: str) -> float:
             "tests": -0.5,      # Not infrastructure targets
             "promotion": -0.5,  # Not infrastructure targets
         }.get(domain, 1.5)
+    if intent == "mixed":
+        # Mixed intent queries (unclear if code/docs/modification) should moderately favor code files
+        return {
+            "bin": 0.8,         # Moderate boost for code files
+            "framework": 0.5,   # Small boost for framework
+            "docs": -1.5,       # Moderate penalty for docs
+            "tests": 0.0,       # Neutral for tests
+            "other": 0.2,       # Small boost for other code
+        }.get(domain, 0.2)
     return 0.0
 
 
@@ -531,6 +543,11 @@ def main() -> int:
     elif intent == "infrastructure":
         # Broaden retrieval for infrastructure queries to capture config/build/manifest files
         # Use max_targets * 6 = ~24 to ensure we get infrastructure files before penalizing docs
+        search_top = max(args.top, args.max_targets * 6)
+    elif intent == "mixed":
+        # Broaden retrieval for mixed-intent queries to ensure we capture specific files mentioned
+        # in the query even if they don't rank high in initial BM25 search
+        # Use max_targets * 6 = ~24 to get broader coverage for reranking
         search_top = max(args.top, args.max_targets * 6)
     search_payload = run_search(args, top_override=search_top)
     results = search_payload.get("results", [])
