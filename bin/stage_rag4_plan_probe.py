@@ -71,6 +71,10 @@ def _path_domain(path: str) -> str:
         return "docs"
     if path.startswith("tests/"):
         return "tests"
+    if path.startswith("framework/"):
+        return "framework"
+    if path.startswith("promotion/"):
+        return "promotion"
     if path == "Makefile":
         return "makefile"
     return "other"
@@ -110,8 +114,30 @@ def _query_intent(tokens: list[str]) -> str:
         "lane",
         "target",
     }
+    modification_terms = {
+        "add",
+        "improve",
+        "better",
+        "update",
+        "fix",
+        "enhance",
+        "change",
+        "modify",
+        "refactor",
+        "docstring",
+        "documentation",
+        "comment",
+    }
     doc_hits = sum(1 for t in lowered if any(t.startswith(term) for term in doc_terms))
     code_hits = sum(1 for t in lowered if any(t.startswith(term) for term in code_terms))
+    modification_hits = sum(1 for t in lowered if any(t.startswith(term) for term in modification_terms))
+
+    # If query has modification intent (add, improve, fix, etc) + code terms (function, method, class),
+    # treat as modification task to boost target-specific files over tangentially related ones
+    has_code_object = any(term in lowered for term in {"function", "method", "class", "module", "variable", "parameter"})
+    if modification_hits >= 1 and has_code_object:
+        return "modification"
+
     if code_hits > doc_hits:
         return "code"
     if doc_hits > code_hits:
@@ -120,6 +146,17 @@ def _query_intent(tokens: list[str]) -> str:
 
 
 def _domain_bonus(*, intent: str, domain: str) -> float:
+    if intent == "modification":
+        # For modification tasks, strongly prefer core library/framework files over tools/tests
+        return {
+            "framework": 2.25,  # Core framework classes are prime modification targets
+            "promotion": 1.85,  # Promotion system is also legitimate target
+            "other": 1.45,      # artifacts/ and other actual code
+            "tests": 0.55,      # test files can be targets but less likely
+            "bin": -2.15,       # Heavy penalty: bin files are tooling/scripts, not modification targets
+            "docs": -1.85,
+            "makefile": -1.25,
+        }.get(domain, 1.45)
     if intent == "code":
         return {
             "bin": 1.35,
@@ -139,6 +176,24 @@ def _domain_bonus(*, intent: str, domain: str) -> float:
     return 0.0
 
 
+def _is_modification_target(path: str) -> bool:
+    """Detect if a path looks like a modification target (actual code, not test tooling)."""
+    # Core library/framework files are the prime modification targets
+    if path.startswith("framework/"):
+        return True
+    # Promotion system is legitimate target
+    if path.startswith("promotion/"):
+        return True
+    # Artifacts and explicitly created test directories are likely targets
+    if path.startswith("artifacts/"):
+        return True
+    # Shell scripts are sometimes targets but less likely than code
+    if path.startswith("shell/") and not path.startswith("shell/test"):
+        return True
+    # Exclude bin/ (mostly tooling/tests), docs/, tests/ by default
+    return False
+
+
 def _ranking_score(
     *,
     base_score: float,
@@ -149,7 +204,21 @@ def _ranking_score(
     lane_aligned: bool,
     domain: str,
     intent: str,
+    path: str = "",
 ) -> float:
+    # For modification tasks, lane alignment is less critical; file targeting is critical
+    if intent == "modification":
+        lane_bonus = 0.5 if lane_aligned else -0.5
+        # Strong boost for files that look like modification targets
+        target_bonus = 3.2 if _is_modification_target(path) else -1.8
+        # Git history suggests active development (more likely target)
+        git_bonus = git_history_count * 0.35
+        companion_bonus = (min(related_count, 2) * 0.12) + (sibling_count * 0.08)
+        related_preview_bonus = min(related_score / 420.0, 0.8)
+        domain_intent_bonus = _domain_bonus(intent=intent, domain=domain)
+        return round(base_score + lane_bonus + target_bonus + git_bonus + companion_bonus + related_preview_bonus + domain_intent_bonus, 4)
+
+    # Original scoring for code/docs intents
     # Stage-6 currently executes mostly bin-scoped work; make lane alignment decisive.
     lane_bonus = 2.35 if lane_aligned else -2.35
     companion_bonus = (min(related_count, 4) * 0.18) + (git_history_count * 0.22) + (sibling_count * 0.12)
@@ -338,6 +407,11 @@ def main() -> int:
         # Broaden retrieval for code-intent lane runs so we can recover more
         # lane-aligned candidates without emitting out-of-lane targets.
         search_top = max(args.top, args.max_targets * 4)
+    elif intent == "modification":
+        # Broaden retrieval for modification queries to capture actual modification targets
+        # that might not rank high in token-based search but should be ranked high
+        # by domain/path bonuses (e.g., framework/ files vs test/bin files)
+        search_top = max(args.top, 12)
     search_payload = run_search(args, top_override=search_top)
     results = search_payload.get("results", [])
 
@@ -363,6 +437,7 @@ def main() -> int:
             lane_aligned=lane_aligned,
             domain=domain,
             intent=intent,
+            path=path,
         )
         targets.append(
             {
