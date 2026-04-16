@@ -38,10 +38,13 @@ class StateStore:
             raise RuntimeError(f"Failed to write JSON to {path}: {e}") from e
 
     def _append_jsonl(self, path: Path, payload: dict[str, Any]) -> None:
-        path.parent.mkdir(parents=True, exist_ok=True)
-        with path.open("a", encoding="utf-8") as handle:
-            json.dump(payload, handle, ensure_ascii=False)
-            handle.write("\n")
+        try:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            with path.open("a", encoding="utf-8") as handle:
+                json.dump(payload, handle, ensure_ascii=False)
+                handle.write("\n")
+        except OSError as e:
+            raise RuntimeError(f"Failed to append JSONL to {path}: {e}") from e
 
     def _read_jsonl(self, path: Path) -> list[dict[str, Any]]:
         if not path.exists():
