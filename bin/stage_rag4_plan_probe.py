@@ -631,9 +631,21 @@ def main() -> int:
             deduped[path] = target
 
     # Keep targets deterministic by retrieval score + companion strength.
-    # For modification/infrastructure intent, rank by score; for code intent, prioritize lane-alignment.
-    if intent == "modification" or intent == "infrastructure":
-        # Sort purely by ranking score for modification/infrastructure tasks, ignoring lane alignment
+    # For infrastructure intent, prioritize "other" domain (infrastructure files).
+    # For modification intent, rank by score; for code intent, prioritize lane-alignment.
+    if intent == "infrastructure":
+        # For infrastructure, prioritize "other" domain files (Makefile, config, etc)
+        targets = sorted(
+            deduped.values(),
+            key=lambda item: (
+                int(item.get("domain") == "other"),  # Prioritize "other" domain (1 > 0)
+                item["rank_score"],
+                item["path"]
+            ),
+            reverse=True,
+        )
+    elif intent == "modification":
+        # Sort purely by ranking score for modification tasks, ignoring lane alignment
         targets = sorted(
             deduped.values(),
             key=lambda item: (item["rank_score"], item["path"]),
@@ -649,7 +661,18 @@ def main() -> int:
     _calibrate_confidences(targets)
 
     # Secondary sort for determinism
-    if intent == "modification" or intent == "infrastructure":
+    if intent == "infrastructure":
+        targets = sorted(
+            targets,
+            key=lambda item: (
+                int(item.get("domain") == "other"),  # Prioritize "other" domain
+                item["rank_score"],
+                item["confidence"],
+                item["path"]
+            ),
+            reverse=True,
+        )
+    elif intent == "modification":
         targets = sorted(
             targets,
             key=lambda item: (item["rank_score"], item["confidence"], item["path"]),
@@ -706,6 +729,97 @@ def main() -> int:
                     else:
                         targets.append(all_target)
                     break
+
+    # Fallback for infrastructure intent: if no "other" domain files in top results,
+    # try to inject known infrastructure files that might be missing from search.
+    # This recovers from stage_rag3 search gaps for Makefile, config files, etc.
+    if intent == "infrastructure" and targets:
+        top_domains = {_path_domain(t["path"]) for t in targets[: args.max_targets]}
+        has_infrastructure = "other" in top_domains or "makefile" in top_domains
+        if not has_infrastructure:
+            # Check for known infrastructure files that should exist
+            # Note: injected with "other" domain for consistency with infrastructure classification
+            infrastructure_files = [
+                ("Makefile", "other"),
+                ("config/promotion_manifest.json", "other"),
+                ("promotion/manifest.py", "promotion"),  # Fallback if JSON not found
+            ]
+
+            # Choose which infrastructure file to inject based on query relevance
+            # Score based on token overlap with query
+            query_tokens_set = set(args.query)
+            best_infra_file = None
+            best_score = -1
+
+            for infra_path, infra_domain in infrastructure_files:
+                candidate_path = REPO_ROOT / infra_path
+                if candidate_path.exists():
+                    # Score based on overlap with query tokens
+                    path_tokens = set(infra_path.lower().split('/'))
+                    overlap = len(query_tokens_set & path_tokens)
+                    if overlap > best_score:
+                        best_score = overlap
+                        best_infra_file = (infra_path, infra_domain)
+
+            # If no query overlap, prefer config files over Makefile
+            if best_score == 0:
+                for infra_path, infra_domain in infrastructure_files:
+                    candidate_path = REPO_ROOT / infra_path
+                    if candidate_path.exists() and "config" in infra_path:
+                        best_infra_file = (infra_path, infra_domain)
+                        break
+
+            # If still nothing, use first available
+            if best_infra_file is None:
+                for infra_path, infra_domain in infrastructure_files:
+                    candidate_path = REPO_ROOT / infra_path
+                    if candidate_path.exists():
+                        best_infra_file = (infra_path, infra_domain)
+                        break
+
+            if best_infra_file:
+                infra_path, infra_domain = best_infra_file
+                # File exists but wasn't retrieved; inject it with moderate score
+                fallback_target = {
+                    "path": infra_path,
+                    "preview": None,
+                    "related": [],
+                    "source": "stage_rag4_fallback",
+                    "base_score": 0.0,
+                    "rank_score": 5.0,  # Low but present
+                    "related_score": 0,
+                    "lane_aligned": False,
+                    "domain": infra_domain,
+                    "selection_reason": {
+                        "sibling_count": 0,
+                        "git_history_count": 0,
+                        "related_paths": [],
+                        "related_count": 0,
+                        "preferred_prefixes": preferred_prefixes,
+                        "lane_aligned": False,
+                        "query_intent": intent,
+                        "domain_bonus": _domain_bonus(intent=intent, domain=infra_domain),
+                        "entity_names": [],
+                        "entity_boost": 0.0,
+                        "fallback_reason": "infrastructure_file_not_in_search",
+                    },
+                }
+                # Insert as second choice if we have other results, otherwise append
+                if len(targets) > 0 and not any(infra_path in t["path"] for t in targets):
+                    targets.insert(1, fallback_target)
+                else:
+                    targets.append(fallback_target)
+
+        # Re-sort after fallback injection to prioritize "other" domain files
+        targets = sorted(
+            targets,
+            key=lambda item: (
+                int(item.get("domain") == "other"),  # Prioritize "other" domain
+                item["rank_score"],
+                item["path"]
+            ),
+            reverse=True,
+        )
 
     targets = targets[: args.max_targets]
 
