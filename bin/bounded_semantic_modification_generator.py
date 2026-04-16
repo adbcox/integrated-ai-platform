@@ -331,17 +331,17 @@ Output EXACTLY this JSON structure, nothing else:
             content = self._read_file(target_path)
             if content:
                 # Build a minimal retry prompt focused on finding a single anchor
-                retry_prompt = f"""You are a Python expert. Find ONE single line from the file that starts a class or function definition, then add a docstring.
+                retry_prompt = f"""JSON-only docstring generator.
 
 File: {target_path}
-File content (key section):
+Content:
 {content[:800]}
 
-Return ONLY this JSON, nothing else:
+OUTPUT ONLY THIS JSON:
 {{
-    "literal_old": "one line like 'class X:' or 'def func():' (copy EXACTLY from above)",
-    "literal_new": "that same line + newline + one-line docstring in triple quotes",
-    "confidence": 0.80
+  "literal_old": "one line: class X: or def f(): (copy from above)",
+  "literal_new": "same line + newline + docstring in triple quotes",
+  "confidence": 0.80
 }}"""
 
                 retry_response = self._call_ollama(retry_prompt, model=SEMANTIC_MODEL, temperature=0.1)
