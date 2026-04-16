@@ -98,6 +98,25 @@ class BoundedSemanticModificationGenerator:
         except Exception as e:
             return None
 
+    def _has_docstring_conflict(self, content: str, literal_new: str) -> bool:
+        """Check if modification would create duplicate/conflicting docstrings."""
+        # If literal_new contains a docstring and file already has one, it's a conflict
+        has_new_docstring = '"""' in literal_new or "'''" in literal_new
+        if not has_new_docstring:
+            return False
+
+        # Check if file has existing docstring at module/class level
+        lines = content.split('\n')
+        for line in lines[:50]:  # Check first 50 lines for module docstring
+            stripped = line.strip()
+            if stripped.startswith('#!') or stripped.startswith('# -*-') or stripped.startswith('from ') or stripped.startswith('import '):
+                continue
+            if '"""' in stripped or "'''" in stripped:
+                return True  # File already has a docstring
+            if stripped and not stripped.startswith('#'):
+                break
+        return False
+
     def _generate_semantic_modification(
         self,
         task_id: str,
@@ -105,7 +124,7 @@ class BoundedSemanticModificationGenerator:
         modification_type: str,
         description: str
     ) -> Optional[SemanticModificationSpec]:
-        """Generate modification using semantic model."""
+        """Generate modification using semantic model with post-generation validation."""
         content = self._read_file(target_path)
         if not content:
             return None
@@ -157,6 +176,10 @@ Constraints:
             # Validate that literal_old exists in file
             if not literal_old or literal_old not in content:
                 return None
+
+            # Post-generation validation: check for conflicts
+            if self._has_docstring_conflict(content, literal_new):
+                return None  # Reject and fall back to deterministic
 
             return SemanticModificationSpec(
                 task_id=task_id,
