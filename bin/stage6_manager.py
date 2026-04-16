@@ -15,7 +15,7 @@ import tempfile
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT))
@@ -38,14 +38,14 @@ PLACEHOLDER_BLOCK_RE = re.compile(
 @dataclass
 class Stage6Job:
     path: str
-    notes: str | None = None
-    lines: str | None = None
-    source: str | None = None
-    refinement_of: str | None = None
-    literal_old: str | None = None
-    literal_new: str | None = None
-    sync_reason: str | None = None
-    message: str | None = None
+    notes: Optional[str] = None
+    lines: Optional[str] = None
+    source: Optional[str] = None
+    refinement_of: Optional[str] = None
+    literal_old: Optional[str] = None
+    literal_new: Optional[str] = None
+    sync_reason: Optional[str] = None
+    message: Optional[str] = None
 
 
 LINK_TOKEN_SPLIT_RE = re.compile(r"[^a-z0-9]+")
@@ -373,7 +373,11 @@ def build_promotion_env(lane: str, versions: dict[str, Any], manifest_version: i
     return env
 
 
-def _synchronize_literal_pair(target_contents: str, literal_old: str, literal_new: str) -> tuple[str, str, str | None]:
+def _synchronize_literal_pair(
+    target_contents: str,
+    literal_old: str,
+    literal_new: str,
+) -> tuple[str, str, Optional[str]]:
     if not target_contents:
         return literal_old, literal_new, None
     if literal_old in target_contents:
@@ -395,7 +399,7 @@ def _synchronize_literal_pair(target_contents: str, literal_old: str, literal_ne
     return live_old, literal_new, "sync_live_block"
 
 
-def _single_line_import_base(value: str) -> str | None:
+def _single_line_import_base(value: str) -> Optional[str]:
     if "\n" in value:
         return None
     text = value.strip()
@@ -413,7 +417,7 @@ def _sync_import_literal_pair(
     target_contents: str,
     literal_old: str,
     literal_new: str,
-) -> tuple[str, str] | None:
+) -> Optional[tuple[str, str]]:
     """Adapt import/from literals per-target when only inline comments differ."""
     base_old = _single_line_import_base(literal_old)
     base_new = _single_line_import_base(literal_new)
@@ -421,7 +425,7 @@ def _sync_import_literal_pair(
         return None
 
     lines = target_contents.splitlines()
-    candidate_old: str | None = None
+    candidate_old: Optional[str] = None
     for line in lines:
         stripped = line.strip()
         if stripped.startswith(base_old):

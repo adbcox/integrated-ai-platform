@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, Optional, Union
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 MANIFEST_PATH = REPO_ROOT / "config" / "promotion_manifest.json"
@@ -29,7 +29,7 @@ class PromotionConfig:
         return dict(self.data.get("subsystem_levels", {}))
 
 
-def load_manifest(path: str | Path | None = None) -> PromotionConfig:
+def load_manifest(path: Optional[Union[str, Path]] = None) -> PromotionConfig:
     """Load and parse the promotion manifest."""
     manifest_path = Path(path or MANIFEST_PATH)
     data = json.loads(manifest_path.read_text(encoding="utf-8"))

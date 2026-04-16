@@ -20,6 +20,7 @@ REMOTE_SET=0
 OFFLINE_SET=0
 ESCALATION_TRIGGER="${ESCALATION_TRIGGER:-}"
 GUARD_ENABLED=1
+LOCAL_RUN_ENABLED=1
 
 usage() {
   cat <<'USAGE'
@@ -35,6 +36,7 @@ Options:
   --no-remote              Skip remote handoff step
   --no-export              Skip training JSONL export step
   --no-prompt              Do not pause for manual patch application
+  --no-local-run           Do not auto-run local Aider when --no-remote is set (manual apply only)
   --summary <path>         Feedback summary file for capture step
   --outcome <path>         Feedback outcome file for capture step
   --checks <path>          Feedback checks file for capture step
@@ -43,12 +45,13 @@ Options:
   -h, --help               Show help
 
 Default execution loop:
-  1) create or use task brief file
-  2) prepare a remote-safe handoff bundle
-  3) pause for manual patch application
-  4) run local finalize checks
-  5) capture and annotate feedback notes
-  6) export captured training JSONL records (if enabled)
+  1) create or use task brief file (JSON)
+  2) run local Aider via the router (Ollama-first) when remote is disabled
+  3) enforce scope + validations via guard
+  4) capture and annotate feedback notes
+  5) export captured training JSONL records (if enabled)
+
+Remote handoff is the explicit escalation path (codex-* workflow modes or when remote is enabled).
 USAGE
 }
 
@@ -100,6 +103,10 @@ $inc"
       ;;
     --no-prompt)
       PROMPT_ENABLED=0
+      shift
+      ;;
+    --no-local-run)
+      LOCAL_RUN_ENABLED=0
       shift
       ;;
     --summary)
@@ -181,15 +188,15 @@ if [ -z "$TASK_FILE" ]; then
   if [ -n "$GOAL" ]; then
     run_cmd ./bin/aider_start_task.sh --name "$TASK_NAME" --class "${TASK_CLASS:-targeted-feature-patch}" --goal "$GOAL"
   else
-    run_cmd ./bin/aider_start_task.sh --name "$TASK_NAME" --class "${TASK_CLASS:-targeted-feature-patch}"
+    run_cmd ./bin/aider_start_task.sh --name "$TASK_NAME" --class "${TASK_CLASS:-targeted-feature-patch}" --goal "$TASK_NAME"
   fi
 
   slug="$(printf '%s' "$TASK_NAME" | tr ' ' '-' | tr -cd '[:alnum:]_.-')"
   [ -n "$slug" ] || slug="task"
   if [ "$DRY_RUN" -eq 0 ]; then
-    TASK_FILE="$(ls -1t "$BASE_DIR"/tmp/"$slug"-*.md 2>/dev/null | head -n 1 || true)"
+    TASK_FILE="$(ls -1t "$BASE_DIR"/tmp/"$slug"-*.json 2>/dev/null | head -n 1 || true)"
   else
-    TASK_FILE="$BASE_DIR/tmp/${slug}-<timestamp>.md"
+    TASK_FILE="$BASE_DIR/tmp/${slug}-<timestamp>.json"
   fi
 fi
 
@@ -222,7 +229,18 @@ EOF
   fi
 else
   echo "[aider-loop] Remote handoff disabled (--no-remote)."
-  if [ "$PROMPT_ENABLED" -eq 1 ]; then
+  if [ "$LOCAL_RUN_ENABLED" -eq 1 ] && [ "$DRY_RUN" -eq 0 ]; then
+    echo "[aider-loop] Running local Aider automatically (local-first)..."
+    if ! python3 ./bin/aider_local_router.py --task-file "$TASK_FILE"; then
+      status=$?
+      if [ "$status" -eq 0 ]; then
+        status=1
+      fi
+      echo "ERROR: local Aider routing failed (exit $status)." >&2
+      echo "HINT: rerun with WORKFLOW_MODE=codex-assist (or pass --no-local-run to apply manually) if escalation is required." >&2
+      exit "$status"
+    fi
+  elif [ "$PROMPT_ENABLED" -eq 1 ]; then
     echo
     echo "[aider-loop] Apply the patch now (e.g., run 'aider <files>' using the brief at $TASK_FILE)."
     echo "Press Enter when the edits are complete to continue to guard enforcement."
@@ -231,6 +249,8 @@ else
     else
       echo "[aider-loop] DRY-RUN: would pause for manual edit window."
     fi
+  else
+    echo "[aider-loop] Local run disabled and prompting disabled; proceeding directly to guard."
   fi
 fi
 

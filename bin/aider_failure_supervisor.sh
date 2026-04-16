@@ -182,8 +182,10 @@ main() {
   capture_pre_state
   START_TIME="$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
   start_epoch="$(date +%s)"
+  set +e
   run_aider
   EXIT_CODE="$?"
+  set -e
   duration=$(( $(date +%s) - start_epoch ))
   capture_post_state
   detect_new_untracked
@@ -205,9 +207,15 @@ main() {
   if [ "$validation_failed" -eq 1 ]; then
     failure_signatures+=("validation_failed")
   fi
-  write_failure_signatures "${failure_signatures[@]}" 2>/dev/null || true
+  if [ "${failure_signatures+x}" = "x" ]; then
+    write_failure_signatures "${failure_signatures[@]}" 2>/dev/null || true
+  fi
 
-  if [ "${#failure_signatures[@]}" -gt 0 ]; then
+  sig_count=0
+  if [ "${failure_signatures+x}" = "x" ]; then
+    sig_count="${#failure_signatures[@]}"
+  fi
+  if [ "$sig_count" -gt 0 ]; then
     OVERALL_STATUS="failed"
   elif [ "$EXIT_CODE" -ne 0 ]; then
     OVERALL_STATUS="failed"
