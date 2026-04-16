@@ -253,7 +253,7 @@ def _domain_bonus(*, intent: str, domain: str) -> float:
         return {
             "bin": 1.35,
             "tests": 0.35,
-            "docs": -1.25,
+            "docs": -2.5,  # Increased penalty: code queries should strongly prefer implementation files
             "makefile": -0.55,
             "other": -0.25,
         }.get(domain, -0.25)
@@ -497,10 +497,11 @@ def main() -> int:
     # Extract entity names (CamelCase tokens) for entity-aware reranking
     entity_names = _extract_entities(args.query)
     search_top = args.top
-    if preferred_prefixes and intent == "code":
-        # Broaden retrieval for code-intent lane runs so we can recover more
-        # lane-aligned candidates without emitting out-of-lane targets.
-        search_top = max(args.top, args.max_targets * 4)
+    if intent == "code":
+        # Broaden retrieval for all code-intent queries to ensure we get implementation files
+        # even when docs files rank higher in BM25 (common for "where is..." or "what files..." queries)
+        # Use max_targets * 6 = ~24 to capture more code files before reranking penalizes docs
+        search_top = max(args.top, args.max_targets * 6)
     elif intent == "modification":
         # Broaden retrieval for modification queries to capture actual modification targets
         # that might not rank high in token-based search but should be ranked high
