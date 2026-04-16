@@ -190,6 +190,372 @@ class BoundedModificationGenerator:
             'description': 'Config manifest is valid JSON',
             'confidence': 0.95,
         },
+        # Class G: Implementation-safe guard clauses
+        'G1': {
+            'target_path': 'framework/code_executor.py',
+            'modification_type': 'add_guard_clause',
+            'pattern': {
+                'literal_old': 'message_text = request.message.strip()',
+                'literal_new': 'if not message_text: raise ValueError("Message cannot be empty")\n        message_text = request.message.strip()',
+            },
+            'description': 'Add guard to validate message is not empty',
+            'confidence': 0.95,
+        },
+        'G2': {
+            'target_path': 'framework/code_executor.py',
+            'modification_type': 'add_guard_clause',
+            'pattern': {
+                'literal_old': 'if old_pattern in content:',
+                'literal_new': 'if old_pattern in content:',
+            },
+            'description': 'Verify pattern exists (already has guard)',
+            'confidence': 0.90,
+        },
+        'G3': {
+            'target_path': 'bin/stage_rag4_plan_probe.py',
+            'modification_type': 'add_guard_clause',
+            'pattern': {
+                'literal_old': 'if not targets:',
+                'literal_new': 'if not targets:',
+            },
+            'description': 'Guard for empty targets (already exists)',
+            'confidence': 0.85,
+        },
+        'G4': {
+            'target_path': 'bin/stage_rag4_plan_probe.py',
+            'modification_type': 'add_guard_clause',
+            'pattern': {
+                'literal_old': 'if not entities:',
+                'literal_new': 'if not entities:',
+            },
+            'description': 'Guard for empty entities (already exists)',
+            'confidence': 0.85,
+        },
+        'G5': {
+            'target_path': 'framework/code_executor.py',
+            'modification_type': 'add_guard_clause',
+            'pattern': {
+                'literal_old': 'target_path = (REPO_ROOT / request.target).resolve()',
+                'literal_new': 'target_path = (REPO_ROOT / request.target).resolve()\n        if not str(target_path).startswith(str(REPO_ROOT)): raise ValueError("Path outside repository")',
+            },
+            'description': 'Add guard for path boundary check',
+            'confidence': 0.85,
+        },
+        'G6': {
+            'target_path': 'bin/stage_rag4_plan_probe.py',
+            'modification_type': 'add_guard_clause',
+            'pattern': {
+                'literal_old': 'def _extract_entities(query_tokens: list[str]) -> set[str]:',
+                'literal_new': 'def _extract_entities(query_tokens: list[str]) -> set[str]:\n        if not query_tokens: return set()',
+            },
+            'description': 'Add guard for empty query tokens',
+            'confidence': 0.90,
+        },
+        # Class L: Implementation-safe logging statements
+        'L1': {
+            'target_path': 'bin/stage_rag4_plan_probe.py',
+            'modification_type': 'add_logging',
+            'pattern': {
+                'literal_old': 'def _extract_entities(query_tokens: list[str]) -> set[str]:',
+                'literal_new': 'def _extract_entities(query_tokens: list[str]) -> set[str]:\n    logging.info(f"Extracting entities from {len(query_tokens)} query tokens")',
+            },
+            'description': 'Add logging for entity extraction start',
+            'confidence': 0.85,
+        },
+        'L2': {
+            'target_path': 'framework/code_executor.py',
+            'modification_type': 'add_logging',
+            'pattern': {
+                'literal_old': 'if old_pattern in content:',
+                'literal_new': 'logging.info(f"Replacing pattern in {request.target}")\n        if old_pattern in content:',
+            },
+            'description': 'Add logging for file modification attempt',
+            'confidence': 0.85,
+        },
+        'L3': {
+            'target_path': 'bin/stage_rag4_plan_probe.py',
+            'modification_type': 'add_logging',
+            'pattern': {
+                'literal_old': 'targets = ',
+                'literal_new': 'targets = ',
+            },
+            'description': 'Add logging for target selection (no-op anchor only)',
+            'confidence': 0.80,
+        },
+        'L4': {
+            'target_path': 'framework/code_executor.py',
+            'modification_type': 'add_logging',
+            'pattern': {
+                'literal_old': 'return claude',
+                'literal_new': 'logging.debug(f"Using executor: ClaudeCode")\n        return claude',
+            },
+            'description': 'Add logging for executor selection',
+            'confidence': 0.85,
+        },
+        'L5': {
+            'target_path': 'bin/stage_rag4_plan_probe.py',
+            'modification_type': 'add_logging',
+            'pattern': {
+                'literal_old': 'for target in targets:',
+                'literal_new': 'for target in targets:\n        logging.debug(f"Calibrating confidence for {target.get(\'file\')}")',
+            },
+            'description': 'Add logging for confidence calibration',
+            'confidence': 0.85,
+        },
+        'L6': {
+            'target_path': 'framework/code_executor.py',
+            'modification_type': 'add_logging',
+            'pattern': {
+                'literal_old': 'target_path.write_text(modified, encoding="utf-8")',
+                'literal_new': 'logging.info(f"Successfully wrote {len(modified)} bytes to {request.target}")\n        target_path.write_text(modified, encoding="utf-8")',
+            },
+            'description': 'Add logging for successful file write',
+            'confidence': 0.85,
+        },
+        # Class EH: Implementation-safe error handling
+        'EH1': {
+            'target_path': 'bin/stage_rag4_plan_probe.py',
+            'modification_type': 'add_error_handling',
+            'pattern': {
+                'literal_old': 'content = self._read_file(target_path)',
+                'literal_new': 'try:\n    content = self._read_file(target_path)\nexcept (OSError, UnicodeDecodeError):\n    return {}',
+            },
+            'description': 'Add try-except around file reading',
+            'confidence': 0.85,
+        },
+        'EH2': {
+            'target_path': 'framework/code_executor.py',
+            'modification_type': 'add_error_handling',
+            'pattern': {
+                'literal_old': 'result = json.loads(response)',
+                'literal_new': 'try:\n    result = json.loads(response)\nexcept json.JSONDecodeError:\n    raise ValueError("Invalid JSON response")',
+            },
+            'description': 'Add try-except around JSON parsing',
+            'confidence': 0.85,
+        },
+        'EH3': {
+            'target_path': 'bin/stage_rag4_plan_probe.py',
+            'modification_type': 'add_error_handling',
+            'pattern': {
+                'literal_old': 'entities = re.findall(pattern, query)',
+                'literal_new': 'try:\n    entities = re.findall(pattern, query)\nexcept re.error:\n    return set()',
+            },
+            'description': 'Add try-except around regex operations',
+            'confidence': 0.85,
+        },
+        'EH4': {
+            'target_path': 'framework/code_executor.py',
+            'modification_type': 'add_error_handling',
+            'pattern': {
+                'literal_old': 'target_path.write_text(modified, encoding="utf-8")',
+                'literal_new': 'try:\n    target_path.write_text(modified, encoding="utf-8")\nexcept (IOError, OSError) as e:\n    raise ValueError(f"Failed to write file: {e}")',
+            },
+            'description': 'Add try-except around file write operations',
+            'confidence': 0.85,
+        },
+        'EH5': {
+            'target_path': 'bin/stage_rag4_plan_probe.py',
+            'modification_type': 'add_error_handling',
+            'pattern': {
+                'literal_old': "confidence = target['score']",
+                'literal_new': "try:\n    confidence = target['score']\nexcept KeyError:\n    confidence = 0.0",
+            },
+            'description': 'Add try-except around dictionary access',
+            'confidence': 0.85,
+        },
+        'EH6': {
+            'target_path': 'framework/code_executor.py',
+            'modification_type': 'add_error_handling',
+            'pattern': {
+                'literal_old': 'result = subprocess.run(cmd',
+                'literal_new': 'try:\n    result = subprocess.run(cmd',
+            },
+            'description': 'Add try-except around subprocess calls',
+            'confidence': 0.85,
+        },
+        # Class TY: Implementation-safe type annotations
+        'TY1': {
+            'target_path': 'bin/stage_rag4_plan_probe.py',
+            'modification_type': 'add_type_annotation',
+            'pattern': {
+                'literal_old': 'def _extract_entities(query_tokens: list[str])',
+                'literal_new': 'def _extract_entities(query_tokens: list[str]) -> set[str]',
+            },
+            'description': 'Add return type annotation to _extract_entities',
+            'confidence': 0.95,
+        },
+        'TY2': {
+            'target_path': 'framework/code_executor.py',
+            'modification_type': 'add_type_annotation',
+            'pattern': {
+                'literal_old': 'def is_available(self):',
+                'literal_new': 'def is_available(self) -> bool:',
+            },
+            'description': 'Add return type annotation to is_available',
+            'confidence': 0.95,
+        },
+        'TY3': {
+            'target_path': 'bin/stage_rag4_plan_probe.py',
+            'modification_type': 'add_type_annotation',
+            'pattern': {
+                'literal_old': 'def run_search(args',
+                'literal_new': 'def run_search(args: argparse.Namespace',
+            },
+            'description': 'Add parameter type annotation to run_search',
+            'confidence': 0.90,
+        },
+        'TY4': {
+            'target_path': 'framework/code_executor.py',
+            'modification_type': 'add_type_annotation',
+            'pattern': {
+                'literal_old': 'def execute(self, request: ExecutionRequest):',
+                'literal_new': 'def execute(self, request: ExecutionRequest) -> ExecutionResult:',
+            },
+            'description': 'Add return type annotation to execute',
+            'confidence': 0.95,
+        },
+        'TY5': {
+            'target_path': 'bin/stage_rag4_plan_probe.py',
+            'modification_type': 'add_type_annotation',
+            'pattern': {
+                'literal_old': 'def _entity_definition_score(file_path: str, entities: set[str])',
+                'literal_new': 'def _entity_definition_score(file_path: str, entities: set[str]) -> float:',
+            },
+            'description': 'Add return type annotation to _entity_definition_score',
+            'confidence': 0.95,
+        },
+        'TY6': {
+            'target_path': 'framework/code_executor.py',
+            'modification_type': 'add_type_annotation',
+            'pattern': {
+                'literal_old': 'def execute(self, request: ExecutionRequest)',
+                'literal_new': 'def execute(self, request: ExecutionRequest) -> ExecutionResult',
+            },
+            'description': 'Add return type annotation to execute method',
+            'confidence': 0.95,
+        },
+        # Class PD: Implementation-safe print debug statements
+        'PD1': {
+            'target_path': 'bin/stage_rag4_plan_probe.py',
+            'modification_type': 'add_print_debug',
+            'pattern': {
+                'literal_old': 'entities = set()',
+                'literal_new': 'print(f"Extracting entities from {len(query_tokens)} tokens")\n    entities = set()',
+            },
+            'description': 'Add debug print for entity extraction start',
+            'confidence': 0.90,
+        },
+        'PD2': {
+            'target_path': 'framework/code_executor.py',
+            'modification_type': 'add_print_debug',
+            'pattern': {
+                'literal_old': 'claude = ClaudeCodeExecutor()',
+                'literal_new': 'print("Initializing ClaudeCodeExecutor")\n        claude = ClaudeCodeExecutor()',
+            },
+            'description': 'Add debug print for executor initialization',
+            'confidence': 0.90,
+        },
+        'PD3': {
+            'target_path': 'bin/stage_rag4_plan_probe.py',
+            'modification_type': 'add_print_debug',
+            'pattern': {
+                'literal_old': 'targets = sorted(',
+                'literal_new': 'targets = sorted(',  # No-op: just anchor validation
+            },
+            'description': 'Add debug print for target selection (anchor only)',
+            'confidence': 0.80,
+        },
+        'PD4': {
+            'target_path': 'framework/code_executor.py',
+            'modification_type': 'add_print_debug',
+            'pattern': {
+                'literal_old': 'content = target_path.read_text(encoding="utf-8")',
+                'literal_new': 'print(f"Reading file: {target_path}")\n        content = target_path.read_text(encoding="utf-8")',
+            },
+            'description': 'Add debug print for file reading',
+            'confidence': 0.90,
+        },
+        'PD5': {
+            'target_path': 'bin/stage_rag4_plan_probe.py',
+            'modification_type': 'add_print_debug',
+            'pattern': {
+                'literal_old': 'target["confidence"] = max(1, min(10, confidence))',
+                'literal_new': 'print(f"Calibrated confidence to {confidence}")\n        target["confidence"] = max(1, min(10, confidence))',
+            },
+            'description': 'Add debug print for confidence calibration',
+            'confidence': 0.90,
+        },
+        'PD6': {
+            'target_path': 'framework/code_executor.py',
+            'modification_type': 'add_print_debug',
+            'pattern': {
+                'literal_old': 'target_path.write_text(modified, encoding="utf-8")',
+                'literal_new': 'print(f"Successfully modified {target_path}")\n        target_path.write_text(modified, encoding="utf-8")',
+            },
+            'description': 'Add debug print for successful file modification',
+            'confidence': 0.90,
+        },
+        # Class ER: Implementation-safe early return patterns
+        'ER1': {
+            'target_path': 'bin/stage_rag4_plan_probe.py',
+            'modification_type': 'add_early_return',
+            'pattern': {
+                'literal_old': 'def _extract_entities(query_tokens: list[str]) -> set[str]:',
+                'literal_new': 'def _extract_entities(query_tokens: list[str]) -> set[str]:\n    if not query_tokens:\n        return set()',
+            },
+            'description': 'Add early return for empty token list',
+            'confidence': 0.90,
+        },
+        'ER2': {
+            'target_path': 'framework/code_executor.py',
+            'modification_type': 'add_early_return',
+            'pattern': {
+                'literal_old': 'def execute(self, request: ExecutionRequest) -> ExecutionResult:',
+                'literal_new': 'def execute(self, request: ExecutionRequest) -> ExecutionResult:\n        if not request:\n            return ExecutionResult(success=False, message="Invalid request")',
+            },
+            'description': 'Add early return for invalid request',
+            'confidence': 0.85,
+        },
+        'ER3': {
+            'target_path': 'bin/stage_rag4_plan_probe.py',
+            'modification_type': 'add_early_return',
+            'pattern': {
+                'literal_old': 'def run_search(args: argparse.Namespace, *, top_override: int | None = None) -> dict[str, Any]:',
+                'literal_new': 'def run_search(args: argparse.Namespace, *, top_override: int | None = None) -> dict[str, Any]:\n    if not args:\n        return {"targets": []}',
+            },
+            'description': 'Add early return for empty args',
+            'confidence': 0.85,
+        },
+        'ER4': {
+            'target_path': 'framework/code_executor.py',
+            'modification_type': 'add_early_return',
+            'pattern': {
+                'literal_old': 'def is_available(self) -> bool:',
+                'literal_new': 'def is_available(self) -> bool:\n        if not hasattr(self, "ready"):\n            return False',
+            },
+            'description': 'Add early return for unavailable check',
+            'confidence': 0.80,
+        },
+        'ER5': {
+            'target_path': 'bin/stage_rag4_plan_probe.py',
+            'modification_type': 'add_early_return',
+            'pattern': {
+                'literal_old': 'def _entity_definition_score(file_path: str, entities: set[str]) -> float:',
+                'literal_new': 'def _entity_definition_score(file_path: str, entities: set[str]) -> float:\n    if not entities:\n        return 0.0',
+            },
+            'description': 'Add early return for empty entities',
+            'confidence': 0.90,
+        },
+        'ER6': {
+            'target_path': 'framework/code_executor.py',
+            'modification_type': 'add_early_return',
+            'pattern': {
+                'literal_old': 'def create(cls, executor_name: str | None = None) -> ExecutorBase:',
+                'literal_new': 'def create(cls, executor_name: str | None = None) -> ExecutorBase:\n        if executor_name and executor_name not in cls._executors:\n            raise ValueError(f"Unknown executor: {executor_name}")',
+            },
+            'description': 'Add early return for unknown executor',
+            'confidence': 0.85,
+        },
     }
 
     def __init__(self, repo_root: Path = REPO_ROOT):

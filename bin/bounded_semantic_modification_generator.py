@@ -117,6 +117,89 @@ class BoundedSemanticModificationGenerator:
 
         return False
 
+    def _is_valid_guard_clause(self, literal_new: str) -> bool:
+        """Validate that generated code is actually a guard clause, not hallucination."""
+        # Guard clauses should NOT be function/class definitions, imports, etc.
+        if any(pattern in literal_new for pattern in ['def ', 'class ', '@dataclass', 'import ', 'from ']):
+            return False
+
+        # Guard clauses must contain if statement and action
+        has_if = 'if ' in literal_new
+        has_action = any(x in literal_new for x in ['return', 'raise', ':'])
+
+        if not (has_if and has_action):
+            return False
+
+        # Guard should be reasonably short (not multi-function)
+        line_count = literal_new.count('\n') + 1
+        if line_count > 8:  # More than 8 lines is probably wrong
+            return False
+
+        return True
+
+    def _is_valid_logging_statement(self, literal_new: str) -> bool:
+        """Validate that generated code is actually a logging statement, not hallucination."""
+        # Logging statements should NOT be function/class definitions, imports, logging.basicConfig, etc.
+        if any(pattern in literal_new for pattern in ['def ', 'class ', 'basicConfig', 'import ', 'from ', '@dataclass']):
+            return False
+
+        # Logging statements must contain logging.* or logger.* call
+        has_logging = 'logging.' in literal_new or 'logger.' in literal_new
+        if not has_logging:
+            return False
+
+        # Logging should be short (single statement, 1-3 lines max)
+        line_count = literal_new.count('\n') + 1
+        if line_count > 4:  # More than 4 lines is probably wrong (including indentation)
+            return False
+
+        return True
+
+    def _is_valid_print_debug(self, literal_new: str) -> bool:
+        """Validate that generated code is actually a print statement, not hallucination."""
+        # Print debug statements should NOT be function/class definitions, imports, etc.
+        if any(pattern in literal_new for pattern in ['def ', 'class ', 'import ', 'from ', '@dataclass']):
+            return False
+
+        # Print debug must contain print( call
+        has_print = 'print(' in literal_new
+        if not has_print:
+            return False
+
+        # Print should be short (single statement, 1-2 lines max)
+        line_count = literal_new.count('\n') + 1
+        if line_count > 3:  # More than 3 lines is probably wrong
+            return False
+
+        # Should not be overly complex (no nested function calls, etc.)
+        if literal_new.count('(') > 2:  # More than 2 open parens suggests nested complexity
+            return False
+
+        return True
+
+    def _is_valid_early_return(self, literal_new: str) -> bool:
+        """Validate that generated code is an early return pattern, not hallucination."""
+        # Early return should NOT redefine entire function or class
+        if literal_new.count('def ') > 1 or 'class ' in literal_new:
+            return False
+
+        # Early return MUST contain either 'return ' or 'raise '
+        has_return = 'return ' in literal_new or 'raise ' in literal_new
+        if not has_return:
+            return False
+
+        # Should contain if statement for the condition
+        has_condition = 'if ' in literal_new
+        if not has_condition:
+            return False
+
+        # Should be relatively short (3-5 lines for if+return block)
+        line_count = literal_new.count('\n') + 1
+        if line_count > 6:  # More than 6 lines is too long
+            return False
+
+        return True
+
     def _extract_anchor_candidates(self, content: str, description: str) -> list[str]:
         """Extract likely anchor patterns from description and file content."""
         # Look for patterns like "class X", "def X" mentioned in description
@@ -179,6 +262,105 @@ Output ONLY this JSON, no prefix, no suffix, no explanation:
 - literal_new = literal_old + newline + docstring
 - docstring: \\\"\\\"\\\"Brief description.\\\"\\\"\\\"
 - Return ONLY JSON, absolutely nothing else"""
+
+
+        elif modification_type == "add_logging":
+            # Specialized prompt for logging statement additions - MUST be single statement only
+            return f"""You are a strict JSON-only generator for logging statements.
+
+CRITICAL CONSTRAINTS:
+- Generate ONLY a single logging.info() or logging.debug() call
+- NEVER generate: modules, functions, classes, imports, basicConfig, or multi-line blocks
+- Output must be ONE statement maximum
+- Must use f-string for formatting: logging.info(f"message {{variable}}")
+
+Task: {description}
+File: {target_path}
+
+File content:
+{content[:1000]}
+
+===== OUTPUT FORMAT (ONLY JSON, NOTHING ELSE) =====
+{{
+  "literal_old": "exact text from file that exists above",
+  "literal_new": "ONLY a single logging call like: logging.info(f\\"Message {{var}}\\")",
+  "confidence": 0.85,
+  "notes": "single logging statement"
+}}
+
+===== MANDATORY RULES =====
+1. literal_old MUST appear in file above
+2. literal_new is ONLY ONE logging statement (no function def, no imports, no basicConfig)
+3. literal_new must start with 'logging.' or 'logger.'
+4. Use f-strings for variable formatting
+5. No newlines except as \\n in strings
+6. Return ONLY valid JSON"""
+
+        elif modification_type == "add_print_debug":
+            # Specialized prompt for print debug statement additions - simple and direct
+            return f"""You are a strict JSON-only generator for debug print statements.
+
+CRITICAL CONSTRAINTS:
+- Generate ONLY a single print() statement for debugging
+- NEVER generate: modules, functions, classes, imports, or multi-line blocks
+- Output must be ONE statement maximum
+- Print messages should be informative but brief
+- Use f-strings for variable formatting: print(f"message {{variable}}")
+
+Task: {description}
+File: {target_path}
+
+File content:
+{content[:1000]}
+
+===== OUTPUT FORMAT (ONLY JSON, NOTHING ELSE) =====
+{{
+  "literal_old": "exact text from file that exists above",
+  "literal_new": "ONLY a single print call like: print(f\\"Debug message {{var}}\\")",
+  "confidence": 0.85,
+  "notes": "single print debug statement"
+}}
+
+===== MANDATORY RULES =====
+1. literal_old MUST appear in file above
+2. literal_new is ONLY ONE print statement (no function def, no imports, no loops)
+3. literal_new must start with 'print('
+4. Use f-strings for variable formatting
+5. Keep message concise and informative
+6. Return ONLY valid JSON"""
+
+        elif modification_type == "add_early_return":
+            # Specialized prompt for early return patterns
+            return f"""You are a strict JSON-only generator for early return patterns.
+
+CRITICAL CONSTRAINTS:
+- Generate ONLY an if statement with a return or raise
+- Pattern: if <condition>: return <value> or if <condition>: raise <error>
+- NEVER redefine the entire function
+- Must include the condition and the exit action
+- Keep to 3-5 lines maximum
+
+Task: {description}
+File: {target_path}
+
+File content:
+{content[:1000]}
+
+===== OUTPUT FORMAT (ONLY JSON, NOTHING ELSE) =====
+{{
+  "literal_old": "exact function definition from file that exists above",
+  "literal_new": "function definition + newline + indented if+return/raise block",
+  "confidence": 0.85,
+  "notes": "early return pattern"
+}}
+
+===== MANDATORY RULES =====
+1. literal_old MUST be a function definition line from file above
+2. literal_new = literal_old + newline + indented if <condition>: (return|raise)
+3. Must have 'if' keyword and either 'return' or 'raise'
+4. Keep total lines <= 6 (including the function def)
+5. Do NOT redefine entire function body
+6. Return ONLY valid JSON"""
 
         else:
             # Generic prompt for other modification types - stricter formatting
@@ -253,9 +435,21 @@ Output EXACTLY this JSON structure, nothing else:
             if not literal_old or literal_old not in content:
                 return None
 
-            # Post-generation validation: check for conflicts
-            if self._has_docstring_conflict(content, literal_new):
-                return None  # Reject and fall back to deterministic
+            # Post-generation validation: check for conflicts/hallucinations based on type
+            if modification_type == "add_guard_clause":
+                if not self._is_valid_guard_clause(literal_new):
+                    return None  # Reject hallucination, fall back to deterministic
+            elif modification_type == "add_logging":
+                if not self._is_valid_logging_statement(literal_new):
+                    return None  # Reject hallucination, fall back to deterministic
+            elif modification_type == "add_print_debug":
+                if not self._is_valid_print_debug(literal_new):
+                    return None  # Reject hallucination, fall back to deterministic
+            elif modification_type == "add_early_return":
+                if not self._is_valid_early_return(literal_new):
+                    return None  # Reject hallucination, fall back to deterministic
+            elif self._has_docstring_conflict(content, literal_new):
+                return None  # Reject docstring conflicts
 
             return SemanticModificationSpec(
                 task_id=task_id,
@@ -325,8 +519,62 @@ Output EXACTLY this JSON structure, nothing else:
         if semantic_spec and semantic_spec.confidence >= 0.75:
             return semantic_spec
 
+        # For guard clause tasks that failed validation, try one targeted retry
+        if modification_type == "add_guard_clause" and not semantic_spec:
+            content = self._read_file(target_path)
+            if content:
+                # Retry with explicit guard pattern examples
+                retry_prompt = f"""JSON-only guard clause generator.
+
+File: {target_path}
+Description: {description}
+
+Content:
+{content[:1000]}
+
+OUTPUT ONLY THIS JSON (no prefix, no suffix):
+{{
+  "literal_old": "exact line from file (copy from above)",
+  "literal_new": "if <condition>: <action>\\n<exact line>",
+  "confidence": 0.80
+}}
+
+RULES:
+- literal_old: copy exact line from file
+- Guard condition: not variable, empty check, etc
+- Guard action: return, raise ValueError(...), or similar
+- Replaces literal_old with guard + literal_old
+- ONLY valid Python code"""
+
+                retry_response = self._call_ollama(retry_prompt, model=SEMANTIC_MODEL, temperature=0.1)
+                if retry_response:
+                    try:
+                        json_match = re.search(r'\{[^{}]*\}', retry_response, re.DOTALL)
+                        if json_match:
+                            result = json.loads(json_match.group(0))
+                            retry_old = result.get("literal_old", "")
+                            retry_new = result.get("literal_new", "")
+
+                            # Validate retry attempt
+                            if retry_old and retry_old in content and retry_new:
+                                if self._is_valid_guard_clause(retry_new):
+                                    return SemanticModificationSpec(
+                                        task_id=task_id,
+                                        literal_old=retry_old,
+                                        literal_new=retry_new,
+                                        modification_type=modification_type,
+                                        description=description,
+                                        confidence=0.75,
+                                        attribution="local_semantic_retry",
+                                        model_used=SEMANTIC_MODEL,
+                                        generation_tokens=len(retry_response.split()),
+                                        validation_passed=True
+                                    )
+                    except (json.JSONDecodeError, ValueError):
+                        pass
+
         # For docstring tasks that failed, try one targeted retry with explicit examples
-        if modification_type == "add_docstring" and not semantic_spec:
+        elif modification_type == "add_docstring" and not semantic_spec:
             # Retry with a simpler, more constrained approach
             content = self._read_file(target_path)
             if content:
