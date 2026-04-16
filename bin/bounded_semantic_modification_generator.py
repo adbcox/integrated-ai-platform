@@ -119,21 +119,31 @@ class BoundedSemanticModificationGenerator:
 
     def _is_valid_guard_clause(self, literal_new: str) -> bool:
         """Validate that generated code is actually a guard clause, not hallucination."""
-        # Guard clauses should NOT be function/class definitions, imports, etc.
-        if any(pattern in literal_new for pattern in ['def ', 'class ', '@dataclass', 'import ', 'from ']):
-            return False
-
         # Guard clauses must contain if statement and action
         has_if = 'if ' in literal_new
-        has_action = any(x in literal_new for x in ['return', 'raise', ':'])
+        has_action = any(x in literal_new for x in ['return', 'raise'])
 
         if not (has_if and has_action):
             return False
 
         # Guard should be reasonably short (not multi-function)
         line_count = literal_new.count('\n') + 1
-        if line_count > 8:  # More than 8 lines is probably wrong
+        if line_count > 9:  # More than 9 lines is probably wrong
             return False
+
+        # Reject if it's defining NEW functions/classes (not just including def/class in replacement)
+        # But allow if the def/class line is FIRST (part of the anchor)
+        import_pattern = any(pattern in literal_new for pattern in ['import ', 'from '])
+        if import_pattern:
+            return False
+
+        # If literal_new has 'def ' or 'class ', it should only be at the very start (1 line)
+        lines = literal_new.split('\n')
+        if len(lines) > 1:
+            # Multiple lines - first line can have def/class, but not others
+            for i, line in enumerate(lines[1:], 1):
+                if any(pattern in line for pattern in ['def ', 'class ', '@dataclass']):
+                    return False
 
         return True
 
@@ -196,6 +206,33 @@ class BoundedSemanticModificationGenerator:
         # Should be relatively short (3-5 lines for if+return block)
         line_count = literal_new.count('\n') + 1
         if line_count > 6:  # More than 6 lines is too long
+            return False
+
+        return True
+
+    def _is_valid_assertion(self, literal_new: str) -> bool:
+        """Validate that generated code is actually an assertion statement, not hallucination."""
+        # Assertion statements should NOT be function/class definitions, imports, etc.
+        if any(pattern in literal_new for pattern in ['def ', 'class ', 'import ', 'from ', '@dataclass']):
+            return False
+
+        # Assertion must contain 'assert ' keyword
+        has_assert = 'assert ' in literal_new
+        if not has_assert:
+            return False
+
+        # Assertion should have a message string (assert <condition>, "message")
+        has_message = ',' in literal_new  # Most assertions have comma + message
+        # Allow single assertions without message (rare but valid: assert not None)
+        if not has_message and 'assert' in literal_new:
+            # Check if it at least has a substantive condition
+            parts = literal_new.split('assert')
+            if len(parts) < 2:
+                return False
+
+        # Assertion should be short (single statement, 1-2 lines max)
+        line_count = literal_new.count('\n') + 1
+        if line_count > 3:  # More than 3 lines is probably wrong
             return False
 
         return True
@@ -362,6 +399,105 @@ File content:
 5. Do NOT redefine entire function body
 6. Return ONLY valid JSON"""
 
+        elif modification_type == "add_assertion":
+            # Specialized prompt for assertion additions - contract validation
+            return f"""You are a strict JSON-only generator for assertion statements.
+
+CRITICAL CONSTRAINTS:
+- Generate ONLY an assertion statement for contract validation
+- Pattern: assert <condition>, "message"
+- Assertions check preconditions, postconditions, and invariants
+- NEVER generate: modules, functions, classes, imports, or multi-line blocks
+- Output must be ONE assertion maximum
+
+Task: {description}
+File: {target_path}
+
+File content:
+{content[:1000]}
+
+===== OUTPUT FORMAT (ONLY JSON, NOTHING ELSE) =====
+{{
+  "literal_old": "exact text from file that exists above",
+  "literal_new": "assert <condition>, \\"Clear error message\\"",
+  "confidence": 0.85,
+  "notes": "contract validation assertion"
+}}
+
+===== MANDATORY RULES =====
+1. literal_old MUST appear in file above
+2. literal_new starts with 'assert'
+3. Must include a condition and an error message
+4. Message should be clear and specific
+5. Pattern: assert <variable>, "Variable must not be empty" or assert <variable>, "Variable must be valid"
+6. Keep to 1-2 lines maximum
+7. No function defs, no imports, no loops
+8. Return ONLY valid JSON"""
+
+        elif modification_type == "add_guard_clause":
+            # Specialized prompt for guard clauses with explicit anchor grounding
+            # Extract local variables and function anchors from file
+            local_vars = set()
+            function_defs = []
+            import re as regex_module
+
+            # Find function definitions as potential anchors
+            for match in regex_module.finditer(r'^\s*def\s+(\w+)\s*\([^)]*\):', content, regex_module.MULTILINE):
+                function_defs.append(match.group(0).strip())
+
+            # Find local variables
+            var_patterns = [
+                r'(\w+)\s*=\s*(?:None|False|True|\[\]|{}|"")',
+                r'def\s+\w+\([^)]*(\w+)[^)]*\)',
+                r'if\s+not\s+(\w+)',
+            ]
+            for pattern in var_patterns:
+                for match in regex_module.finditer(pattern, content):
+                    var = match.group(1)
+                    if var and not var[0].isupper() and var not in ['self', 'cls']:
+                        local_vars.add(var)
+
+            var_examples = ", ".join(sorted(local_vars)[:5]) if local_vars else "targets, query_tokens, items"
+            function_example = function_defs[0][:60] if function_defs else "def function_name():"
+
+            return f"""You are a strict JSON-only generator for guard clauses.
+
+Task: {description}
+File: {target_path}
+
+File content (first 1200 chars):
+{content[:1200]}
+
+GUARD CLAUSE PLACEMENT:
+- Placed AFTER a function definition or variable assignment line
+- Checks preconditions: empty lists, None values, zero length, False booleans
+- Variables to check: {var_examples}
+
+GUARD CLAUSE EXAMPLES (copy exact pattern):
+1. Line to replace: "message_text = request.message.strip()"
+   With: "if not message_text: raise ValueError(...)\\nmessage_text = request.message.strip()"
+2. Line to replace: "def process(targets):"
+   With: "def process(targets):\\n    if not targets: raise ValueError(...)"
+3. Line to replace: "return search_results"
+   With: "if not search_results: return None\\nreturn search_results"
+
+===== OUTPUT FORMAT (ONLY JSON, NOTHING ELSE) =====
+{{
+  "literal_old": "EXACT LINE FROM FILE ABOVE (copy-paste, not paraphrased)",
+  "literal_new": "if <condition>: <action>\\n<literal_old or continuation>",
+  "confidence": 0.85,
+  "notes": "guard clause"
+}}
+
+===== MANDATORY RULES =====
+1. literal_old MUST be copied EXACTLY from file above
+2. literal_new starts with "if not " or "if len(...) ==" or "if ... is None"
+3. Action: raise ValueError("msg") or return <value>
+4. Total output <= 8 lines
+5. Guard checks: emptiness, None, False, zero length
+6. NO function defs, class defs, imports in literal_new
+7. Return ONLY valid JSON"""
+
         else:
             # Generic prompt for other modification types - stricter formatting
             return f"""You are a strict JSON-only generator for code modifications.
@@ -448,6 +584,9 @@ Output EXACTLY this JSON structure, nothing else:
             elif modification_type == "add_early_return":
                 if not self._is_valid_early_return(literal_new):
                     return None  # Reject hallucination, fall back to deterministic
+            elif modification_type == "add_assertion":
+                if not self._is_valid_assertion(literal_new):
+                    return None  # Reject hallucination, fall back to deterministic
             elif self._has_docstring_conflict(content, literal_new):
                 return None  # Reject docstring conflicts
 
@@ -524,32 +663,121 @@ Output EXACTLY this JSON structure, nothing else:
         if semantic_spec and semantic_spec.confidence >= 0.75:
             return semantic_spec
 
-        # For guard clause tasks that failed validation, try one targeted retry
+        # For guard clause tasks that failed validation, try one targeted retry with variable grounding
         if modification_type == "add_guard_clause" and not semantic_spec:
             content = self._read_file(target_path)
             if content:
-                # Retry with explicit guard pattern examples
-                retry_prompt = f"""JSON-only guard clause generator.
+                # Extract function-local variables to ground the guard clause
+                import re as regex_module
+                local_vars = set()
+
+                # Find variables in common patterns
+                for pattern in [r'(\w+)\s*=', r'\b(targets|items|query_tokens|entities|args|data|content|value|result)\b']:
+                    for match in regex_module.finditer(pattern, content):
+                        var = match.group(1)
+                        if var and not var[0].isupper() and var not in ['self', 'cls', 'import']:
+                            local_vars.add(var)
+
+                var_list = ", ".join(sorted(local_vars)[:8]) if local_vars else "targets, query_tokens, entities, items"
+
+                # Retry with explicit variable grounding and strict structure validation
+                retry_prompt = f"""JSON-only guard clause retry generator.
 
 File: {target_path}
-Description: {description}
+Task: {description}
 
-Content:
-{content[:1000]}
+Local variables to check: {var_list}
 
-OUTPUT ONLY THIS JSON (no prefix, no suffix):
+File content:
+{content[:1200]}
+
+REQUIRED GUARD PATTERN (one of these):
+- if not <variable>: return <value>
+- if not <variable>: raise ValueError("message")
+- if len(<variable>) == 0: raise ValueError("message")
+- if <variable> is None: raise ValueError("message")
+
+OUTPUT ONLY THIS JSON:
 {{
-  "literal_old": "exact line from file (copy from above)",
-  "literal_new": "if <condition>: <action>\\n<exact line>",
+  "literal_old": "copy exact line from above (variable or condition)",
+  "literal_new": "if <condition>:\\n    <action>\\n    <literal_old or indent next line>",
   "confidence": 0.80
 }}
 
-RULES:
-- literal_old: copy exact line from file
-- Guard condition: not variable, empty check, etc
-- Guard action: return, raise ValueError(...), or similar
-- Replaces literal_old with guard + literal_old
-- ONLY valid Python code"""
+STRICT RULES:
+1. literal_old MUST be from file above
+2. literal_new MUST start with 'if '
+3. Must use one of: if not, if len(), if is None
+4. Action MUST be: return ... or raise ValueError(...)
+5. Max 6 lines total
+6. No function defs, classes, imports
+7. Return ONLY valid JSON"""
+
+                retry_response = self._call_ollama(retry_prompt, model=SEMANTIC_MODEL, temperature=0.1)
+                if retry_response:
+                    try:
+                        json_match = re.search(r'\{[^{}]*\}', retry_response, re.DOTALL)
+                        if json_match:
+                            result = json.loads(json_match.group(0))
+                            retry_old = result.get("literal_old", "")
+                            retry_new = result.get("literal_new", "")
+
+                            # Validate retry attempt with strict grounding checks
+                            if retry_old and retry_old in content and retry_new:
+                                # Must have if statement with action
+                                has_if = 'if ' in retry_new
+                                has_action = any(x in retry_new for x in ['return', 'raise'])
+                                # Must not be trivial or too long
+                                line_count = retry_new.count('\n') + 1
+
+                                if has_if and has_action and line_count <= 8 and self._is_valid_guard_clause(retry_new):
+                                    return SemanticModificationSpec(
+                                        task_id=task_id,
+                                        literal_old=retry_old,
+                                        literal_new=retry_new,
+                                        modification_type=modification_type,
+                                        description=description,
+                                        confidence=0.75,
+                                        attribution="local_semantic_retry",
+                                        model_used=SEMANTIC_MODEL,
+                                        generation_tokens=len(retry_response.split()),
+                                        validation_passed=True
+                                    )
+                    except (json.JSONDecodeError, ValueError):
+                        pass
+
+        # For early return tasks that failed validation, try one targeted retry
+        if modification_type == "add_early_return" and not semantic_spec:
+            content = self._read_file(target_path)
+            if content:
+                # Retry with explicit early return pattern examples
+                retry_prompt = f"""JSON-only early return generator.
+
+File: {target_path}
+Task: {description}
+
+File content:
+{content[:1200]}
+
+REQUIRED PATTERN (pick one):
+- if not <variable>: return <value>
+- if not <variable>: raise ValueError("message")
+- if <variable> is None: return None
+- if isinstance(<variable>, <wrong_type>): raise ValueError("message")
+
+OUTPUT ONLY THIS JSON:
+{{
+  "literal_old": "exact function definition from file above",
+  "literal_new": "def function():...\\n    if <condition>: (return|raise)...",
+  "confidence": 0.80
+}}
+
+STRICT RULES:
+1. literal_old MUST be a function definition line from file above
+2. literal_new starts with function def + newline + indented if statement
+3. Must have 'if' and either 'return' or 'raise'
+4. Total lines <= 6
+5. Return ONLY valid JSON"""
 
                 retry_response = self._call_ollama(retry_prompt, model=SEMANTIC_MODEL, temperature=0.1)
                 if retry_response:
@@ -562,7 +790,202 @@ RULES:
 
                             # Validate retry attempt
                             if retry_old and retry_old in content and retry_new:
-                                if self._is_valid_guard_clause(retry_new):
+                                if self._is_valid_early_return(retry_new):
+                                    return SemanticModificationSpec(
+                                        task_id=task_id,
+                                        literal_old=retry_old,
+                                        literal_new=retry_new,
+                                        modification_type=modification_type,
+                                        description=description,
+                                        confidence=0.75,
+                                        attribution="local_semantic_retry",
+                                        model_used=SEMANTIC_MODEL,
+                                        generation_tokens=len(retry_response.split()),
+                                        validation_passed=True
+                                    )
+                    except (json.JSONDecodeError, ValueError):
+                        pass
+
+        # For print_debug tasks that failed validation, try one targeted retry
+        if modification_type == "add_print_debug" and not semantic_spec:
+            content = self._read_file(target_path)
+            if content:
+                # Retry with explicit print statement examples
+                retry_prompt = f"""JSON-only print debug generator.
+
+File: {target_path}
+Task: {description}
+
+File content:
+{content[:1200]}
+
+REQUIRED PATTERN:
+- print(f"Debug: {{variable}}")
+- print(f"Found {{variable}}: {{value}}")
+
+OUTPUT ONLY THIS JSON:
+{{
+  "literal_old": "exact line from file above (copy-paste)",
+  "literal_new": "print(f\\"debug message with context\\")",
+  "confidence": 0.80
+}}
+
+STRICT RULES:
+1. literal_old MUST be from file above
+2. literal_new is ONE print call (no function defs, imports, loops)
+3. Must start with 'print('
+4. Must be 1-2 lines max
+5. Return ONLY valid JSON"""
+
+                retry_response = self._call_ollama(retry_prompt, model=SEMANTIC_MODEL, temperature=0.1)
+                if retry_response:
+                    try:
+                        json_match = re.search(r'\{[^{}]*\}', retry_response, re.DOTALL)
+                        if json_match:
+                            result = json.loads(json_match.group(0))
+                            retry_old = result.get("literal_old", "")
+                            retry_new = result.get("literal_new", "")
+
+                            # Validate retry attempt
+                            if retry_old and retry_old in content and retry_new:
+                                if self._is_valid_print_debug(retry_new):
+                                    return SemanticModificationSpec(
+                                        task_id=task_id,
+                                        literal_old=retry_old,
+                                        literal_new=retry_new,
+                                        modification_type=modification_type,
+                                        description=description,
+                                        confidence=0.75,
+                                        attribution="local_semantic_retry",
+                                        model_used=SEMANTIC_MODEL,
+                                        generation_tokens=len(retry_response.split()),
+                                        validation_passed=True
+                                    )
+                    except (json.JSONDecodeError, ValueError):
+                        pass
+
+        # For logging tasks that failed validation, try one targeted retry
+        elif modification_type == "add_logging" and not semantic_spec:
+            content = self._read_file(target_path)
+            if content:
+                # Retry with explicit logging statement examples
+                retry_prompt = f"""JSON-only logging statement generator.
+
+File: {target_path}
+Task: {description}
+
+File content:
+{content[:1200]}
+
+REQUIRED PATTERN:
+- logging.info(f"message {{variable}}")
+- logging.debug(f"message {{variable}}")
+- logger.info(f"message {{variable}}")
+
+OUTPUT ONLY THIS JSON:
+{{
+  "literal_old": "exact line from file above (copy-paste)",
+  "literal_new": "logging.info(f\\"message with context\\") or logging.debug(...)",
+  "confidence": 0.80
+}}
+
+STRICT RULES:
+1. literal_old MUST be from file above
+2. literal_new is ONE logging call (no functions, imports, basicConfig)
+3. Must start with 'logging.' or 'logger.'
+4. Must be 1-3 lines max
+5. Return ONLY valid JSON"""
+
+                retry_response = self._call_ollama(retry_prompt, model=SEMANTIC_MODEL, temperature=0.1)
+                if retry_response:
+                    try:
+                        json_match = re.search(r'\{[^{}]*\}', retry_response, re.DOTALL)
+                        if json_match:
+                            result = json.loads(json_match.group(0))
+                            retry_old = result.get("literal_old", "")
+                            retry_new = result.get("literal_new", "")
+
+                            # Validate retry attempt
+                            if retry_old and retry_old in content and retry_new:
+                                if self._is_valid_logging_statement(retry_new):
+                                    return SemanticModificationSpec(
+                                        task_id=task_id,
+                                        literal_old=retry_old,
+                                        literal_new=retry_new,
+                                        modification_type=modification_type,
+                                        description=description,
+                                        confidence=0.75,
+                                        attribution="local_semantic_retry",
+                                        model_used=SEMANTIC_MODEL,
+                                        generation_tokens=len(retry_response.split()),
+                                        validation_passed=True
+                                    )
+                    except (json.JSONDecodeError, ValueError):
+                        pass
+
+        # For assertion tasks that failed validation, try one targeted retry
+        if modification_type == "add_assertion" and not semantic_spec:
+            content = self._read_file(target_path)
+            if content:
+                # Extract function-local variables to ground the assertion
+                import re as regex_module
+                local_vars = set()
+
+                # Find variables in common patterns
+                for pattern in [r'(\w+)\s*=', r'\b(request|content|targets|items|query_tokens|entities|args|data|value|result|executor|executor_class)\b']:
+                    for match in regex_module.finditer(pattern, content):
+                        var = match.group(1)
+                        if var and not var[0].isupper() and var not in ['self', 'cls', 'import']:
+                            local_vars.add(var)
+
+                var_list = ", ".join(sorted(local_vars)[:8]) if local_vars else "request, content, targets, entities"
+
+                # Retry with explicit assertion pattern examples
+                retry_prompt = f"""JSON-only assertion generator.
+
+File: {target_path}
+Task: {description}
+
+Local variables to check: {var_list}
+
+File content:
+{content[:1200]}
+
+REQUIRED ASSERTION PATTERNS (pick one):
+- assert <variable>, "Variable must not be None"
+- assert <variable>, "Variable must not be empty"
+- assert not <variable>, "Condition should not be true"
+- assert <variable> is not None, "Must have valid value"
+- assert len(<variable>) > 0, "Must have items"
+
+OUTPUT ONLY THIS JSON:
+{{
+  "literal_old": "copy exact line from above (variable assignment or condition)",
+  "literal_new": "assert <condition>, \\"Clear error message\\"",
+  "confidence": 0.80
+}}
+
+STRICT RULES:
+1. literal_old MUST be from file above
+2. literal_new MUST start with 'assert'
+3. Must have a condition and a message string
+4. Message should be clear and specific
+5. Max 2 lines total
+6. No function defs, classes, imports
+7. Return ONLY valid JSON"""
+
+                retry_response = self._call_ollama(retry_prompt, model=SEMANTIC_MODEL, temperature=0.1)
+                if retry_response:
+                    try:
+                        json_match = re.search(r'\{[^{}]*\}', retry_response, re.DOTALL)
+                        if json_match:
+                            result = json.loads(json_match.group(0))
+                            retry_old = result.get("literal_old", "")
+                            retry_new = result.get("literal_new", "")
+
+                            # Validate retry attempt
+                            if retry_old and retry_old in content and retry_new:
+                                if self._is_valid_assertion(retry_new):
                                     return SemanticModificationSpec(
                                         task_id=task_id,
                                         literal_old=retry_old,
