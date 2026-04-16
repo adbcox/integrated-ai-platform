@@ -14,6 +14,9 @@ from pathlib import Path
 from typing import Any
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(REPO_ROOT))
+
+from framework.retrieval_repomap_integration import RepomapAwareRetrieval
 STAGE_RAG4_PLAN = REPO_ROOT / "bin" / "stage_rag4_plan_probe.py"
 LOG_DIR = REPO_ROOT / "artifacts" / "stage_rag6"
 LOG_FILE = LOG_DIR / "usage.jsonl"
@@ -237,6 +240,63 @@ def _link_score(candidate: dict[str, Any], primary_path: str) -> float:
     if primary_path in companion_of:
         return 1.5
     return float(reason.get("companion_link_strength") or 0.0)
+
+
+def _augment_targets_with_repomap(
+    *,
+    targets: list[dict[str, Any]],
+    query_tokens: list[str],
+) -> list[dict[str, Any]]:
+    """Augment RAG4 targets with repomap-aware symbol matching.
+
+    Uses RepomapAwareRetrieval to score files by symbol/name relevance
+    and adds repomap metadata to targets for better context planning.
+    """
+    repomap_path = REPO_ROOT / "artifacts" / "repomap" / "latest.json"
+    if not repomap_path.exists():
+        # Repomap not available; return targets unchanged
+        return targets
+
+    try:
+        retrieval = RepomapAwareRetrieval(repomap_path)
+    except Exception:
+        # If repomap loading fails, return targets unchanged
+        return targets
+
+    # Get repomap-aware scoring for the query
+    repomap_targets = retrieval.select_targets(
+        query=" ".join(query_tokens),
+        query_tokens=query_tokens,
+        max_targets=max(8, len(targets) * 2),
+        include_dependents=True,
+    )
+
+    # Build a map of repomap scores
+    repomap_scores = {t.path: t.relevance_score for t in repomap_targets}
+
+    # Augment existing targets with repomap metadata
+    augmented: list[dict[str, Any]] = []
+    for target in targets:
+        path = str(target.get("path") or "")
+        repomap_score = repomap_scores.get(path, 0.0)
+
+        # Boost rank score if repomap agrees
+        original_rank = float(target.get("rank_score") or 0.0)
+        if repomap_score > 0.5:
+            # Weighted blend: 70% original, 30% repomap
+            new_rank = round(original_rank * 0.7 + repomap_score * 10 * 0.3, 4)
+            target["rank_score"] = new_rank
+            target["repomap_boost"] = round(new_rank - original_rank, 4)
+
+        reason = target.get("selection_reason") or {}
+        if not isinstance(reason, dict):
+            reason = {}
+        reason["repomap_score"] = round(repomap_score, 3)
+        target["selection_reason"] = reason
+
+        augmented.append(target)
+
+    return augmented
 
 
 def _risk_bucket(confidence: int) -> str:
@@ -732,6 +792,13 @@ def main() -> int:
         # Stage-7 should consume lane-clean candidates whenever available.
         if lane_aligned:
             targets = lane_aligned
+
+    # Augment targets with repomap-aware symbol matching (M3 integration)
+    targets = _augment_targets_with_repomap(
+        targets=targets,
+        query_tokens=args.query,
+    )
+
     targets = _inject_control_loop_code_targets(
         targets=targets,
         query_tokens=args.query,
