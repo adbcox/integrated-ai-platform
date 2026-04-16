@@ -31,8 +31,11 @@ class StateStore:
             path.mkdir(parents=True, exist_ok=True)
 
     def _write_json(self, path: Path, payload: dict[str, Any]) -> None:
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+        try:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+        except OSError as e:
+            raise RuntimeError(f"Failed to write JSON to {path}: {e}") from e
 
     def _append_jsonl(self, path: Path, payload: dict[str, Any]) -> None:
         path.parent.mkdir(parents=True, exist_ok=True)
