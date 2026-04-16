@@ -176,6 +176,14 @@ def _family_key(path: str) -> str:
 
 def _query_intent(tokens: list[str]) -> str:
     lowered = [t.lower() for t in tokens]
+
+    # Infrastructure files: config, build, manifests (non-code files)
+    # These need special handling to avoid being confused with docs
+    infrastructure_terms = {"makefile", "config", "manifest", "json", "yml", "yaml", "toml"}
+    infrastructure_hits = sum(1 for t in lowered if any(term in t for term in infrastructure_terms))
+    if infrastructure_hits >= 1:
+        return "infrastructure"
+
     doc_terms = {"doc", "docs", "documentation", "readme", "guide", "roadmap", "policy"}
     code_terms = {
         "stage6",
@@ -265,6 +273,17 @@ def _domain_bonus(*, intent: str, domain: str) -> float:
             "tests": -0.45,
             "other": -0.2,
         }.get(domain, -0.2)
+    if intent == "infrastructure":
+        # Infrastructure queries target config/build/manifest files, not code or docs
+        return {
+            "other": 1.5,       # Infrastructure files (Makefile, config, json, etc.) usually "other"
+            "makefile": 1.5,    # Explicit boost for Makefile
+            "docs": -3.0,       # Heavy penalty: docs not infrastructure targets
+            "framework": -0.5,  # Not infrastructure targets
+            "bin": -0.5,        # Not infrastructure targets
+            "tests": -0.5,      # Not infrastructure targets
+            "promotion": -0.5,  # Not infrastructure targets
+        }.get(domain, 1.5)
     return 0.0
 
 
@@ -509,6 +528,10 @@ def main() -> int:
         # Increase to 48 to ensure we get promotion/ and framework/ files even when they
         # rank lower in BM25 (common for domain-generic queries like "enhance promotion workflow")
         search_top = max(args.top, 48)
+    elif intent == "infrastructure":
+        # Broaden retrieval for infrastructure queries to capture config/build/manifest files
+        # Use max_targets * 6 = ~24 to ensure we get infrastructure files before penalizing docs
+        search_top = max(args.top, args.max_targets * 6)
     search_payload = run_search(args, top_override=search_top)
     results = search_payload.get("results", [])
 
@@ -591,9 +614,9 @@ def main() -> int:
             deduped[path] = target
 
     # Keep targets deterministic by retrieval score + companion strength.
-    # For modification intent, rank by score; for code intent, prioritize lane-alignment.
-    if intent == "modification":
-        # Sort purely by ranking score for modification tasks, ignoring lane alignment
+    # For modification/infrastructure intent, rank by score; for code intent, prioritize lane-alignment.
+    if intent == "modification" or intent == "infrastructure":
+        # Sort purely by ranking score for modification/infrastructure tasks, ignoring lane alignment
         targets = sorted(
             deduped.values(),
             key=lambda item: (item["rank_score"], item["path"]),
@@ -609,7 +632,7 @@ def main() -> int:
     _calibrate_confidences(targets)
 
     # Secondary sort for determinism
-    if intent == "modification":
+    if intent == "modification" or intent == "infrastructure":
         targets = sorted(
             targets,
             key=lambda item: (item["rank_score"], item["confidence"], item["path"]),
