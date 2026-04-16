@@ -41,14 +41,19 @@ readarray_compat() {
   shift
   local __data
   __data="$("$@")"
-  local -a __tmp=()
+  local -a __tmp
+  __tmp=()
   if [ -n "$__data" ]; then
     while IFS= read -r __line; do
       [ -n "$__line" ] || continue
       __tmp+=("$__line")
     done <<<"$__data"
   fi
-  eval "$__resultvar=(\"\${__tmp[@]}\")"
+  if [ "${#__tmp[@]}" -eq 0 ]; then
+    eval "$__resultvar=()"
+  else
+    eval "$__resultvar=(\"\${__tmp[@]}\")"
+  fi
 }
 
 classify_failure_phase() {
@@ -553,7 +558,13 @@ fi
 if [ "$TEST_MODE" = false ]; then
   RESTORE_ON_FAIL=true
   info "running aider on ${TARGET_FILES[*]}"
-  if python3 bin/aider_local_router.py --mode micro --message "$MESSAGE" "${TARGET_FILES[@]}"; then
+  router_env=()
+  if [ "$TASK_KIND" = "guard" ]; then
+    # Regression-only: ensure we still exercise the "aider exit" handling path deterministically.
+    # Keep this bounded so a guard probe never soaks time.
+    router_env=(AIDER_SUP_TIMEOUT=2 AIDER_ROUTER_PRIMARY_RETRY=0)
+  fi
+  if env "${router_env[@]}" python3 bin/aider_local_router.py --mode micro --message "$MESSAGE" "${TARGET_FILES[@]}"; then
     info "running quick validation after aider"
     if ! PYTHONPYCACHEPREFIX=/tmp/aider_pycache make quick >/dev/null; then
       fail "make quick failed; inspect quick logs" "validation"

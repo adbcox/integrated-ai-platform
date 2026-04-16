@@ -241,7 +241,7 @@ if [ "${AIDER_LOCAL_SKIP_PING:-0}" != "1" ]; then
   ping_ollama_or_fail "$OLLAMA_API_BASE" "$MODE_LABEL"
 fi
 
-CMD=(python3 -m aider --no-check-update --no-show-release-notes --analytics-disable --no-auto-commits --no-dirty-commits)
+CMD=(python3 -m aider --no-check-update --no-show-release-notes --analytics-disable --no-auto-commits --no-dirty-commits --yes-always --no-fancy-input --no-browser)
 [ "$HAS_MODEL_OVERRIDE" -eq 1 ] || CMD+=(--model "$MODEL")
 [ "$HAS_MAP_TOKENS_OVERRIDE" -eq 1 ] || CMD+=(--map-tokens "$MAP_TOKENS")
 [ "$HAS_TIMEOUT_OVERRIDE" -eq 1 ] || CMD+=(--timeout "$TIMEOUT")
