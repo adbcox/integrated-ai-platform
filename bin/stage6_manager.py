@@ -82,7 +82,9 @@ def _detect_modification_intent(query_tokens: list[str]) -> bool:
     }
     code_object_terms = {"function", "method", "class", "module", "variable", "parameter", "handler", "manager"}
     code_context_terms = {"validation", "handling", "logic", "algorithm", "error", "exception", "event", "state", "processing"}
-    code_other_terms = {"script", "code", "feature", "implementation", "executor", "classifier"}
+    code_other_terms = {"script", "code", "feature", "implementation", "executor", "classifier", "performance", "optimization"}
+    # Common framework/code-related tokens to detect code context
+    code_hints = {"factory", "schema", "runtime", "engine", "request", "task"}
 
     lowered = query_tokens
     modification_hits = sum(1 for t in lowered if any(t.startswith(term) for term in modification_terms))
@@ -90,8 +92,9 @@ def _detect_modification_intent(query_tokens: list[str]) -> bool:
     has_code_object = any(term in token for token in lowered for term in code_object_terms)
     has_code_context = any(term in lowered for term in code_context_terms)
     has_code_other = any(term in lowered for term in code_other_terms)
+    has_code_hint = any(hint in token.lower() for token in lowered for hint in code_hints)
 
-    has_code_signal = has_code_object or has_code_context or has_code_other
+    has_code_signal = has_code_object or has_code_context or has_code_other or has_code_hint
     return modification_hits >= 1 and has_code_signal
 
 
