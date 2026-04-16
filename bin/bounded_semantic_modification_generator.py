@@ -100,21 +100,20 @@ class BoundedSemanticModificationGenerator:
 
     def _has_docstring_conflict(self, content: str, literal_new: str) -> bool:
         """Check if modification would create duplicate/conflicting docstrings."""
-        # If literal_new contains a docstring and file already has one, it's a conflict
+        # If literal_new contains a docstring, it's a conflict if:
         has_new_docstring = '"""' in literal_new or "'''" in literal_new
         if not has_new_docstring:
             return False
 
-        # Check if file has existing docstring at module/class level
-        lines = content.split('\n')
-        for line in lines[:50]:  # Check first 50 lines for module docstring
-            stripped = line.strip()
-            if stripped.startswith('#!') or stripped.startswith('# -*-') or stripped.startswith('from ') or stripped.startswith('import '):
-                continue
-            if '"""' in stripped or "'''" in stripped:
-                return True  # File already has a docstring
-            if stripped and not stripped.startswith('#'):
-                break
+        # 1. If literal_new already appears in content (exact duplicate)
+        if literal_new in content:
+            return True
+
+        # 2. If literal_new contains multiple docstrings (suspicious - class + method both documented)
+        docstring_count = literal_new.count('"""') + literal_new.count("'''")
+        if docstring_count > 2:  # More than one docstring pair
+            return True
+
         return False
 
     def _generate_semantic_modification(
@@ -199,6 +198,7 @@ Constraints:
     def _get_deterministic_fallback(
         self,
         task_id: str,
+        target_path: str,
         fallback_reason: str
     ) -> Optional[SemanticModificationSpec]:
         """Get deterministic pattern-based modification as fallback."""
@@ -210,6 +210,11 @@ Constraints:
         det_spec = self.deterministic_gen.generate_modification(task_id)
         if not det_spec:
             return None
+
+        # Validate deterministic modification doesn't create conflicts
+        content = self._read_file(target_path)
+        if self._has_docstring_conflict(content, det_spec.literal_new):
+            return None  # Conflict detected, reject this modification
 
         return SemanticModificationSpec(
             task_id=task_id,
@@ -245,7 +250,7 @@ Constraints:
 
         # Fall back to deterministic pattern
         fallback_reason = "semantic_confidence_low" if semantic_spec else "semantic_generation_failed"
-        return self._get_deterministic_fallback(task_id, fallback_reason)
+        return self._get_deterministic_fallback(task_id, target_path, fallback_reason)
 
 
 def main():
