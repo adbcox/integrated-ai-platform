@@ -478,7 +478,12 @@ Output EXACTLY this JSON structure, nothing else:
 
         from bounded_modification_generator import ModificationSpec
 
-        det_spec = self.deterministic_gen.generate_modification(task_id)
+        # Normalize GC* task IDs to existing G* patterns (backward compatible)
+        lookup_task_id = task_id
+        if task_id.startswith('GC') and len(task_id) > 2:
+            lookup_task_id = 'G' + task_id[2:]  # GC1 -> G1, GC2 -> G2, etc.
+
+        det_spec = self.deterministic_gen.generate_modification(lookup_task_id)
         if not det_spec:
             return None
 
