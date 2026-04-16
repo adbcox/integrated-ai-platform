@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import sys
 from dataclasses import asdict, dataclass
 from datetime import datetime
 from pathlib import Path
@@ -189,7 +190,10 @@ class LearningHooks:
             "framework_execution_priors": execution_priors,
         }
         self.learning_latest_path.parent.mkdir(parents=True, exist_ok=True)
-        self.learning_latest_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+        try:
+            self.learning_latest_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+        except OSError as e:
+            sys.stderr.write(f"[warning] Failed to write learning snapshot {self.learning_latest_path}: {e}\n")
         self._write_manager_bridge_snapshot(job=job, event=event, execution_priors=execution_priors)
 
     def _write_manager_bridge_snapshot(
@@ -217,4 +221,7 @@ class LearningHooks:
             "framework_execution_priors": execution_priors,
         }
         self.manager_bridge_path.parent.mkdir(parents=True, exist_ok=True)
-        self.manager_bridge_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+        try:
+            self.manager_bridge_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+        except OSError as e:
+            sys.stderr.write(f"[warning] Failed to write manager bridge snapshot {self.manager_bridge_path}: {e}\n")

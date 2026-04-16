@@ -144,7 +144,10 @@ def write_plan_history(plan_id: str, payload: dict[str, Any]) -> None:
         "attempt_count": attempts,
         "last_updated": payload.get("timestamp"),
     }
-    history_path.write_text(json.dumps(merged, ensure_ascii=False, indent=2), encoding="utf-8")
+    try:
+        history_path.write_text(json.dumps(merged, ensure_ascii=False, indent=2), encoding="utf-8")
+    except OSError as e:
+        sys.stderr.write(f"[warning] Failed to write plan history {history_path}: {e}\n")
 
 
 def _read_jsonl_slice(path: Path, start_line: int) -> list[dict[str, Any]]:
