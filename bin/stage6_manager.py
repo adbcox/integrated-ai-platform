@@ -82,14 +82,19 @@ def _detect_modification_intent(query_tokens: list[str]) -> bool:
     }
     code_object_terms = {"function", "method", "class", "module", "variable", "parameter", "handler", "manager"}
     code_context_terms = {"validation", "handling", "logic", "algorithm", "error", "exception", "event", "state", "processing"}
-    code_other_terms = {"script", "code", "feature", "implementation", "executor", "classifier"}
+    code_other_terms = {"script", "code", "feature", "implementation", "executor", "classifier", "engine", "workflow", "promotion", "pipeline", "system"}
 
     lowered = query_tokens
-    modification_hits = sum(1 for t in lowered if any(t.startswith(term) for term in modification_terms))
+    lowered_lower = [t.lower() for t in lowered]
+    modification_hits = sum(1 for t in lowered_lower if any(t.startswith(term) for term in modification_terms))
 
-    has_code_object = any(term in token for token in lowered for term in code_object_terms)
-    has_code_context = any(term in lowered for term in code_context_terms)
-    has_code_other = any(term in lowered for term in code_other_terms)
+    has_code_object = any(term in token for token in lowered_lower for term in code_object_terms)
+    has_code_context = any(term in lowered_lower for term in code_context_terms)
+    # Enhanced: check for substring matches in lowered tokens to catch ExecutorFactory, etc.
+    has_code_other = any(
+        term in lowered_lower or any(term in token for token in lowered_lower)
+        for term in code_other_terms
+    )
 
     has_code_signal = has_code_object or has_code_context or has_code_other
     return modification_hits >= 1 and has_code_signal

@@ -138,12 +138,15 @@ def _query_intent(tokens: list[str]) -> str:
     # or manager/system/handler files all indicate code being modified
     code_object_terms = {"function", "method", "class", "module", "variable", "parameter", "handler", "manager"}
     code_context_terms = {"validation", "handling", "logic", "algorithm", "error", "exception", "event", "state", "processing"}
-    code_other_terms = {"script", "code", "feature", "implementation", "executor", "classifier"}
+    code_other_terms = {"script", "code", "feature", "implementation", "executor", "classifier", "engine", "workflow", "promotion", "pipeline", "system"}
 
     # Check if any token contains a code-related term (substring match, not exact)
     has_code_object = any(term in token for token in lowered for term in code_object_terms)
     has_code_context = any(term in lowered for term in code_context_terms)
-    has_code_other = any(term in lowered for term in code_other_terms)
+    has_code_other = any(
+        term in lowered or any(term in token for token in lowered)
+        for term in code_other_terms
+    )
 
     has_code_signal = has_code_object or has_code_context or has_code_other
     if modification_hits >= 1 and has_code_signal:
@@ -158,16 +161,17 @@ def _query_intent(tokens: list[str]) -> str:
 
 def _domain_bonus(*, intent: str, domain: str) -> float:
     if intent == "modification":
-        # For modification tasks, strongly prefer core library/framework files over tools/tests
+        # For modification tasks, prefer library/framework files but also support bin managers
+        # Bin files include both tooling/tests AND legitimate manager scripts
         return {
-            "framework": 2.25,  # Core framework classes are prime modification targets
-            "promotion": 1.85,  # Promotion system is also legitimate target
-            "other": 1.45,      # artifacts/ and other actual code
-            "tests": 0.55,      # test files can be targets but less likely
-            "bin": -2.15,       # Heavy penalty: bin files are tooling/scripts, not modification targets
-            "docs": -1.85,
-            "makefile": -1.25,
-        }.get(domain, 1.45)
+            "framework": 1.25,  # Core framework classes are preferred modification targets
+            "promotion": 1.15,  # Promotion system is also legitimate target
+            "other": 0.75,      # artifacts/ and other actual code
+            "bin": 0.0,         # Neutral: bin has both tooling and legitimate manager code
+            "tests": -0.45,     # test files less likely targets
+            "docs": -0.75,      # docs are not modification targets
+            "makefile": -0.65,
+        }.get(domain, 0.75)
     if intent == "code":
         return {
             "bin": 1.35,
@@ -421,8 +425,10 @@ def main() -> int:
     elif intent == "modification":
         # Broaden retrieval for modification queries to capture actual modification targets
         # that might not rank high in token-based search but should be ranked high
-        # by domain/path bonuses (e.g., framework/ files vs test/bin files)
-        search_top = max(args.top, 24)
+        # by domain/path bonuses (e.g., framework/ files vs test/bin files).
+        # Increase to 48 to ensure we get promotion/ and framework/ files even when they
+        # rank lower in BM25 (common for domain-generic queries like "enhance promotion workflow")
+        search_top = max(args.top, 48)
     search_payload = run_search(args, top_override=search_top)
     results = search_payload.get("results", [])
 
@@ -552,6 +558,23 @@ def main() -> int:
             )
         else:
             targets = non_lane_targets
+
+    # Fallback for modification intent: if all top results are from non-preferred domains,
+    # include at least one preferred-domain candidate even if its score is lower.
+    # This handles BM25 ranking biases where unrelated files score higher by chance.
+    if preferred_prefixes and intent == "modification" and targets:
+        top_domains = {_path_domain(t["path"]) for t in targets[: args.max_targets]}
+        has_preferred = any(_path_matches_prefix(t["path"], preferred_prefixes) for t in targets[: args.max_targets])
+        if not has_preferred:
+            # Find the best-scoring preferred-domain candidate from all retrieved targets
+            for all_target in deduped.values():
+                if _path_matches_prefix(all_target["path"], preferred_prefixes):
+                    # Insert it as second choice (after best overall result)
+                    if len(targets) > 0:
+                        targets.insert(1, all_target)
+                    else:
+                        targets.append(all_target)
+                    break
 
     targets = targets[: args.max_targets]
 
