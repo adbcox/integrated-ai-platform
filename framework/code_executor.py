@@ -87,12 +87,33 @@ class ClaudeCodeExecutor(ExecutorBase):
         target_path = (REPO_ROOT / request.target).resolve()
 
         # Verify target exists and is readable
-        if not target_path.exists() or not target_path.is_file():
+        if not target_path.exists():
             events.append({
                 "timestamp": datetime.now().isoformat(),
                 "executor": "claude_code",
                 "status": "failure",
                 "tag": "missing_file_ref",
+                "note": "path does not exist",
+                "plan_id": request.plan_id,
+            })
+            finished = datetime.now().isoformat()
+            return ExecutionResult(
+                success=False,
+                executor_name="claude_code",
+                return_code=1,
+                started_at=started,
+                finished_at=finished,
+                events=events,
+                classification="missing_file_ref",
+            )
+
+        if not target_path.is_file():
+            events.append({
+                "timestamp": datetime.now().isoformat(),
+                "executor": "claude_code",
+                "status": "failure",
+                "tag": "missing_file_ref",
+                "note": "path exists but is not a file",
                 "plan_id": request.plan_id,
             })
             finished = datetime.now().isoformat()
@@ -162,6 +183,7 @@ class ClaudeCodeExecutor(ExecutorBase):
 
         # Try simple replacement if patterns were found
         success = False
+        _failure_classification = "literal_replace_missing_old"
         modified = content
         if old_pattern and new_pattern:
             if old_pattern in content:
@@ -181,7 +203,7 @@ class ClaudeCodeExecutor(ExecutorBase):
                     "executor": "claude_code",
                     "status": "failure",
                     "tag": "literal_replace_missing_old",
-                    "note": f"pattern not found in {request.target}",
+                    "note": f"pattern not found in {request.target}: old={repr(old_pattern[:40])}",
                     "plan_id": request.plan_id,
                 })
 
@@ -198,6 +220,7 @@ class ClaudeCodeExecutor(ExecutorBase):
                 })
             except OSError as e:
                 success = False
+                _failure_classification = "repo_unwritable"
                 events.append({
                     "timestamp": datetime.now().isoformat(),
                     "executor": "claude_code",
@@ -216,7 +239,7 @@ class ClaudeCodeExecutor(ExecutorBase):
             started_at=started,
             finished_at=finished,
             events=events,
-            classification="accepted_change" if success else "literal_replace_missing_old",
+            classification="accepted_change" if success else _failure_classification,
         )
 
 
