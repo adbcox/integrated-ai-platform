@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Test real bounded task execution through Stage 7 with executor abstraction."""
 
-from __future__ import annotations
+from __future__ import annotations  # stage7-op
 
 import json
 import subprocess
