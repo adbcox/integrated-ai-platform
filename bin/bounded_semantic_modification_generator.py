@@ -181,30 +181,31 @@ Output ONLY this JSON, no prefix, no suffix, no explanation:
 - Return ONLY JSON, absolutely nothing else"""
 
         else:
-            # Generic prompt for other modification types
-            return f"""You are a code modification assistant. Generate a precise code modification.
+            # Generic prompt for other modification types - stricter formatting
+            return f"""You are a strict JSON-only generator for code modifications.
 
 Task: {description}
 File: {target_path}
-Modification type: {modification_type}
+Type: {modification_type}
 
-Current file content (first 1000 chars):
+File content (key section):
 {content[:1000]}
 
-Generate a JSON object with exactly this structure:
+===== OUTPUT FORMAT (ONLY JSON) =====
+Output EXACTLY this JSON structure, nothing else:
+
 {{
-    "literal_old": "exact text to find in the file (multiline ok, must exist in file)",
-    "literal_new": "replacement text (must be a valid modification)",
-    "confidence": 0.85,
-    "notes": "brief explanation of the change"
+  "literal_old": "exact text from file above (must exist in file)",
+  "literal_new": "replacement text (valid Python/shell syntax)",
+  "confidence": 0.85,
+  "notes": "brief explanation"
 }}
 
-Constraints:
-1. literal_old MUST exist exactly in the file (use context from file content above)
-2. Keep changes minimal and focused
-3. For add_comment: add a single comment line with context
-4. For add_field: add field definition matching existing patterns
-5. Return ONLY valid JSON, no additional text"""
+===== RULES =====
+1. literal_old MUST appear in file above
+2. literal_new must be valid code
+3. Keep changes minimal
+4. Return ONLY valid JSON, no other text"""
 
     def _generate_semantic_modification(
         self,
