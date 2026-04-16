@@ -563,7 +563,7 @@ if [ "$TEST_MODE" = false ]; then
   if [ "$TASK_KIND" = "guard" ]; then
     # Regression-only: ensure we still exercise the "aider exit" handling path deterministically.
     # Keep this bounded so a guard probe never soaks time.
-    router_env=(AIDER_SUP_TIMEOUT=2 AIDER_ROUTER_PRIMARY_RETRY=0)
+    router_env=(AIDER_SUP_WRAP_TIMEOUT=2 AIDER_ROUTER_PRIMARY_RETRY=0)
   fi
   if [ "${#router_env[@]}" -gt 0 ]; then
     aider_cmd=(env "${router_env[@]}" python3 bin/aider_local_router.py --mode micro --message "$MESSAGE" "${TARGET_FILES[@]}")
