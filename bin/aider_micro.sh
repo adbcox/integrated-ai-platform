@@ -558,13 +558,19 @@ fi
 if [ "$TEST_MODE" = false ]; then
   RESTORE_ON_FAIL=true
   info "running aider on ${TARGET_FILES[*]}"
+  declare -a router_env
   router_env=()
   if [ "$TASK_KIND" = "guard" ]; then
     # Regression-only: ensure we still exercise the "aider exit" handling path deterministically.
     # Keep this bounded so a guard probe never soaks time.
     router_env=(AIDER_SUP_TIMEOUT=2 AIDER_ROUTER_PRIMARY_RETRY=0)
   fi
-  if env "${router_env[@]}" python3 bin/aider_local_router.py --mode micro --message "$MESSAGE" "${TARGET_FILES[@]}"; then
+  if [ "${#router_env[@]}" -gt 0 ]; then
+    aider_cmd=(env "${router_env[@]}" python3 bin/aider_local_router.py --mode micro --message "$MESSAGE" "${TARGET_FILES[@]}")
+  else
+    aider_cmd=(python3 bin/aider_local_router.py --mode micro --message "$MESSAGE" "${TARGET_FILES[@]}")
+  fi
+  if "${aider_cmd[@]}"; then
     info "running quick validation after aider"
     if ! PYTHONPYCACHEPREFIX=/tmp/aider_pycache make quick >/dev/null; then
       fail "make quick failed; inspect quick logs" "validation"
