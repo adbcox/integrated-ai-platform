@@ -64,6 +64,37 @@ GENERIC_LINK_TOKENS = {
 }
 
 
+def _detect_modification_intent(query_tokens: list[str]) -> bool:
+    """Detect if query indicates modification intent (add, fix, improve, etc.)."""
+    modification_terms = {
+        "add",
+        "improve",
+        "better",
+        "update",
+        "fix",
+        "enhance",
+        "change",
+        "modify",
+        "refactor",
+        "docstring",
+        "documentation",
+        "comment",
+    }
+    code_object_terms = {"function", "method", "class", "module", "variable", "parameter", "handler", "manager"}
+    code_context_terms = {"validation", "handling", "logic", "algorithm", "error", "exception", "event", "state", "processing"}
+    code_other_terms = {"script", "code", "feature", "implementation", "executor", "classifier"}
+
+    lowered = query_tokens
+    modification_hits = sum(1 for t in lowered if any(t.startswith(term) for term in modification_terms))
+
+    has_code_object = any(term in token for token in lowered for term in code_object_terms)
+    has_code_context = any(term in lowered for term in code_context_terms)
+    has_code_other = any(term in lowered for term in code_other_terms)
+
+    has_code_signal = has_code_object or has_code_context or has_code_other
+    return modification_hits >= 1 and has_code_signal
+
+
 def plan_history_path(plan_id: str) -> Path:
     return TRACE_DIR / "plans" / f"{plan_id}.json"
 
@@ -874,6 +905,13 @@ def main() -> int:
     allowed_targets = lane_cfg.get("allowed_targets", ["bin/"])
     if not args.preferred_prefix:
         args.preferred_prefix = list(allowed_targets)
+        # For modification-intent queries, expand preferred_prefix to include framework and promotion
+        if _detect_modification_intent(args.query):
+            expanded_prefixes = set(args.preferred_prefix)
+            expanded_prefixes.update(["framework/", "promotion/"])
+            args.preferred_prefix = sorted(list(expanded_prefixes))
+            # Also expand allowed_targets so plan_to_jobs doesn't filter results
+            allowed_targets = sorted(list(expanded_prefixes))
 
     plan_payload: dict[str, Any] = {}
     if args.jobs_file:
