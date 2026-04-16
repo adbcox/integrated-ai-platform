@@ -6,7 +6,7 @@ Stage 6 → Stage 5 → Stage 4 → Stage 3 pipeline, proving that Claude Code
 executor handles actual code modifications.
 """
 
-from __future__ import annotations  # stage7-op  # stage7-op  # stage7-op  # stage7-op  # stage7-op
+from __future__ import annotations  # stage7-op  # stage7-op  # stage7-op  # stage7-op  # stage7-op  # stage7-op
 
 import json
 import subprocess
