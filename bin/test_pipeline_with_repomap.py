@@ -5,7 +5,7 @@ This script demonstrates that bounded task planning now benefits from
 symbol-aware file selection in the real execution pipeline.
 """
 
-from __future__ import annotations
+from __future__ import annotations  # stage7-op
 
 import json
 import subprocess
