@@ -5,7 +5,7 @@ This demonstrates the full integration: Stage 6 planning with repomap-aware
 retrieval → Stage 6 manager execution → Actual task completion with metrics.
 """
 
-from __future__ import annotations  # stage7-op
+from __future__ import annotations  # stage7-op  # stage7-op
 
 import json
 import subprocess
