@@ -98,7 +98,7 @@ class StateStore:
         
         # Extract outcome metadata with defaults
         outcome_class = payload.get("outcome_class", "unknown")
-        error_category = payload.get("error_category", "none")
+        error_category = payload.get("error_category", "")
         recovery_attempted = payload.get("recovery_attempted", False)
         
         stamped = {
