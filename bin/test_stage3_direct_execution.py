@@ -50,14 +50,15 @@ def calculate_product(a, b):
     print(f"Original content ({len(original_content)} bytes)")
     
     # Create properly formatted bounded task message
-    # Format: target_relpath::old_pattern::new_pattern
+    # Format required: target:: replace exact text 'old' with 'new'
     target_relpath = str(test_file.relative_to(REPO_ROOT))
-    old_pattern = "def calculate_sum(a, b):\n    return a + b"
-    new_pattern = '''def calculate_sum(a, b):
+    old_literal = "def calculate_sum(a, b):\n    return a + b"
+    new_literal = '''def calculate_sum(a, b):
     """Add two numbers and return the sum."""
     return a + b'''
     
-    message = f"{target_relpath}::{old_pattern}::{new_pattern}"
+    # Message must have: target:: and match "replace exact text '...' with '...'"
+    message = f"{target_relpath}:: replace exact text '{old_literal}' with '{new_literal}'"
     
     # Call stage3_manager with the test file and bounded task message
     cmd = [
@@ -72,14 +73,18 @@ def calculate_product(a, b):
     ]
     
     print(f"\n[Execution] Calling stage3_manager with bounded task message...")
-    print(f"Message format: target::old::new")
+    print(f"Message format: target:: replace exact text 'old' with 'new'")
     print(f"Target: {target_relpath}")
     
     result = subprocess.run(cmd, capture_output=True, text=True)
     
     print(f"\nReturn code: {result.returncode}")
     if result.stdout:
-        print(f"Output:\n{result.stdout[-400:]}")
+        lines = result.stdout.split('\n')
+        # Show last few meaningful lines
+        for line in lines[-10:]:
+            if line.strip():
+                print(f"  {line}")
     if result.stderr:
         print(f"Stderr:\n{result.stderr[-400:]}")
     
@@ -106,7 +111,7 @@ def calculate_product(a, b):
     print(f"\n[File Modification]")
     modified_content = test_file.read_text(encoding="utf-8")
     
-    if new_pattern in modified_content:
+    if new_literal in modified_content:
         print(f"✓ File was modified successfully!")
         print(f"  Original length: {len(original_content)} bytes")
         print(f"  Modified length: {len(modified_content)} bytes")
