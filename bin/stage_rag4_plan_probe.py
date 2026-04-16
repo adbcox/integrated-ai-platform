@@ -132,10 +132,21 @@ def _query_intent(tokens: list[str]) -> str:
     code_hits = sum(1 for t in lowered if any(t.startswith(term) for term in code_terms))
     modification_hits = sum(1 for t in lowered if any(t.startswith(term) for term in modification_terms))
 
-    # If query has modification intent (add, improve, fix, etc) + code terms (function, method, class),
+    # If query has modification intent (add, improve, fix, etc) + code-related context,
     # treat as modification task to boost target-specific files over tangentially related ones
-    has_code_object = any(term in lowered for term in {"function", "method", "class", "module", "variable", "parameter"})
-    if modification_hits >= 1 and has_code_object:
+    # Expand detection: code objects (function/class), code-related terms (validation/handling/logic/algorithm),
+    # or manager/system/handler files all indicate code being modified
+    code_object_terms = {"function", "method", "class", "module", "variable", "parameter", "handler", "manager"}
+    code_context_terms = {"validation", "handling", "logic", "algorithm", "error", "exception", "event", "state", "processing"}
+    code_other_terms = {"script", "code", "feature", "implementation", "executor", "classifier"}
+
+    # Check if any token contains a code-related term (substring match, not exact)
+    has_code_object = any(term in token for token in lowered for term in code_object_terms)
+    has_code_context = any(term in lowered for term in code_context_terms)
+    has_code_other = any(term in lowered for term in code_other_terms)
+
+    has_code_signal = has_code_object or has_code_context or has_code_other
+    if modification_hits >= 1 and has_code_signal:
         return "modification"
 
     if code_hits > doc_hits:
