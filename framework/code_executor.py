@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -127,27 +128,36 @@ class ClaudeCodeExecutor(ExecutorBase):
                 classification="repo_unwritable",
             )
 
-        # Parse message for literal replacement pattern: "old::new" or "target::old::new"
-        # Also accept standard "file::message" format where message may contain replacement hints
-        message_lines = request.message.strip().split("\n")
+        # Parse message for literal replacement pattern
+        # Supports multiple formats:
+        # 1. "target:: replace exact text 'old' with 'new'" (from stage3_manager validation)
+        # 2. "filename::old::new" (simple format)
+        # 3. "code_pattern::replacement" (inline format)
+        message_text = request.message.strip()
         old_pattern = None
         new_pattern = None
 
-        # Try to extract literal replacement from message
-        # Look for patterns like "old_code::new_code" or markers in the message
-        for line in message_lines:
-            if "::" in line:
-                parts = line.split("::", 2)  # Split on first two "::"
-                if len(parts) == 3 and parts[0].strip() == request.target.split("/")[-1]:
-                    # Format: "filename::old::new"
-                    old_pattern = parts[1].strip()
-                    new_pattern = parts[2].strip()
-                    break
-                elif len(parts) == 2 and "def " in parts[0] or "class " in parts[0]:
-                    # Format: "code_pattern::replacement"
-                    old_pattern = parts[0].strip()
-                    new_pattern = parts[1].strip()
-                    break
+        # First, try to extract from "replace exact text '...' with '...'" format
+        literal_match = re.search(r"replace exact text '(.+?)' with '(.+?)'", message_text, re.DOTALL)
+        if literal_match:
+            old_pattern = literal_match.group(1)
+            new_pattern = literal_match.group(2)
+        else:
+            # Fall back to simple :: parsing
+            message_lines = message_text.split("\n")
+            for line in message_lines:
+                if "::" in line:
+                    parts = line.split("::", 2)  # Split on first two "::"
+                    if len(parts) == 3 and parts[0].strip() == request.target.split("/")[-1]:
+                        # Format: "filename::old::new"
+                        old_pattern = parts[1].strip()
+                        new_pattern = parts[2].strip()
+                        break
+                    elif len(parts) == 2 and ("def " in parts[0] or "class " in parts[0]):
+                        # Format: "code_pattern::replacement"
+                        old_pattern = parts[0].strip()
+                        new_pattern = parts[1].strip()
+                        break
 
         # Try simple replacement if patterns were found
         success = False
