@@ -105,6 +105,9 @@ class Job:
     lifecycle: JobLifecycle = JobLifecycle.ACCEPTED
     status_reason: str = ""
     created_at_utc: str = field(default_factory=lambda: datetime.now(UTC).isoformat(timespec="seconds"))
+    task_category: str = ""  # New field
+    complexity_estimate: int = 5  # New field
+    pattern_type: str = ""  # New field
     updated_at_utc: str = field(default_factory=lambda: datetime.now(UTC).isoformat(timespec="seconds"))
     attempts_used: int = 0
     execution_context_id: str = ""
