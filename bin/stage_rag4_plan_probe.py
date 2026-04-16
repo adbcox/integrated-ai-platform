@@ -494,17 +494,36 @@ def main() -> int:
             deduped[path] = target
 
     # Keep targets deterministic by retrieval score + companion strength.
-    targets = sorted(
-        deduped.values(),
-        key=lambda item: (int(item.get("lane_aligned", False)), item["rank_score"], item["path"]),
-        reverse=True,
-    )
+    # For modification intent, rank by score; for code intent, prioritize lane-alignment.
+    if intent == "modification":
+        # Sort purely by ranking score for modification tasks, ignoring lane alignment
+        targets = sorted(
+            deduped.values(),
+            key=lambda item: (item["rank_score"], item["path"]),
+            reverse=True,
+        )
+    else:
+        # For code/docs intent, lane alignment is important
+        targets = sorted(
+            deduped.values(),
+            key=lambda item: (int(item.get("lane_aligned", False)), item["rank_score"], item["path"]),
+            reverse=True,
+        )
     _calibrate_confidences(targets)
-    targets = sorted(
-        targets,
-        key=lambda item: (int(item.get("lane_aligned", False)), item["rank_score"], item["confidence"], item["path"]),
-        reverse=True,
-    )
+
+    # Secondary sort for determinism
+    if intent == "modification":
+        targets = sorted(
+            targets,
+            key=lambda item: (item["rank_score"], item["confidence"], item["path"]),
+            reverse=True,
+        )
+    else:
+        targets = sorted(
+            targets,
+            key=lambda item: (int(item.get("lane_aligned", False)), item["rank_score"], item["confidence"], item["path"]),
+            reverse=True,
+        )
 
     # For code-intent lane-focused planning, emit lane-aligned targets only when
     # available so Stage-6 does not receive avoidable out-of-lane noise.
