@@ -8,10 +8,11 @@ import subprocess
 import sys
 import time
 from pathlib import Path
+from typing import Optional
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
-def find_latest_executor_log() -> Path | None:
+def find_latest_executor_log() -> Optional[Path]:
     """Find the most recently created executor log."""
     stage3_dir = REPO_ROOT / "artifacts" / "stage3_manager"
     if not stage3_dir.exists():
@@ -24,7 +25,7 @@ def find_latest_executor_log() -> Path | None:
     executor_logs.sort(key=lambda p: p.stat().st_mtime, reverse=True)
     return executor_logs[0]
 
-def find_stage7_plan(plan_id: str) -> Path | None:
+def find_stage7_plan(plan_id: str) -> Optional[Path]:
     """Find Stage 7 plan history file."""
     plan_path = REPO_ROOT / "artifacts" / "manager6" / "plans" / f"{plan_id}.json"
     return plan_path if plan_path.exists() else None
@@ -69,9 +70,9 @@ def main() -> int:
     if result.returncode != 0:
         print(f"Stderr: {result.stderr[-300:] if result.stderr else 'None'}")
     
-    # Wait for async processing
-    time.sleep(1)
-    
+    # Wait for processing
+    time.sleep(2)
+
     # Check Stage 7 plan
     print(f"\n[Stage 7] Checking plan creation...")
     stage7_plan = find_stage7_plan(plan_id)
@@ -85,9 +86,10 @@ def main() -> int:
             print(f"  (Could not parse plan)")
     else:
         print(f"✗ Stage 7 plan not found")
-    
+
     # Check if Stage 3 was reached (by looking for executor logs)
     print(f"\n[Stage 3] Checking executor invocation...")
+    # Look for the most recent executor log (assumes it was just created)
     latest_executor_log = find_latest_executor_log()
     
     executor_name = None
