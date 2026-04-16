@@ -72,7 +72,8 @@ class BoundedSemanticModificationGenerator:
         self,
         prompt: str,
         model: str = SEMANTIC_MODEL,
-        max_tokens: int = 500
+        max_tokens: int = 500,
+        temperature: float = 0.1
     ) -> Optional[str]:
         """Call local Ollama model for generation."""
         try:
@@ -80,7 +81,7 @@ class BoundedSemanticModificationGenerator:
                 "model": model,
                 "prompt": prompt,
                 "stream": False,
-                "temperature": 0.1,  # Very low temperature for strict deterministic JSON output
+                "temperature": temperature,  # Configurable temperature
             }
 
             response = subprocess.run(
@@ -116,20 +117,72 @@ class BoundedSemanticModificationGenerator:
 
         return False
 
-    def _generate_semantic_modification(
+    def _extract_anchor_candidates(self, content: str, description: str) -> list[str]:
+        """Extract likely anchor patterns from description and file content."""
+        # Look for patterns like "class X", "def X" mentioned in description
+        candidates = []
+
+        # Extract CamelCase/snake_case identifiers from description
+        import re as regex_module
+        identifiers = regex_module.findall(r'\b([A-Z][a-zA-Z0-9]*|[a-z_][a-z0-9_]*)\b', description)
+
+        for ident in set(identifiers):
+            # Look for exact pattern matches in file
+            for pattern in [f"class {ident}:", f"def {ident}", f"def {ident}(", f"{ident}("]:
+                if pattern in content:
+                    candidates.append(pattern)
+
+        return candidates
+
+    def _build_prompt_for_modification(
         self,
-        task_id: str,
         target_path: str,
         modification_type: str,
-        description: str
-    ) -> Optional[SemanticModificationSpec]:
-        """Generate modification using semantic model with post-generation validation."""
-        content = self._read_file(target_path)
-        if not content:
-            return None
+        description: str,
+        content: str,
+        anchor_candidates: list[str]
+    ) -> str:
+        """Build task-specific prompt with stronger anchoring."""
 
-        # Build semantic prompt
-        prompt = f"""You are a code modification assistant. Generate a precise code modification.
+        if modification_type == "add_docstring":
+            # Specialized prompt for docstring additions with explicit anchoring
+            anchor_context = ""
+            if anchor_candidates:
+                anchor_context = f"\nLikely anchor patterns found in file:\n" + "\n".join(
+                    [f"  - {a}" for a in anchor_candidates[:3]]
+                )
+
+            return f"""You are a Python code modification expert. Generate a precise docstring addition.
+
+Task: {description}
+File: {target_path}
+Modification type: add_docstring
+
+IMPORTANT: literal_old MUST be copied EXACTLY from the file content below.
+{anchor_context}
+
+File content (first 1000 chars):
+{content[:1000]}
+
+Generate a JSON object with this exact structure:
+{{
+    "literal_old": "exact line from file to use as anchor (e.g., 'class ClassName:' or 'def function_name():')",
+    "literal_new": "anchor line + newline + properly indented docstring (e.g., 'class ClassName:\\n    \"\"\"Docstring here.\"\"\"')",
+    "confidence": 0.85,
+    "notes": "brief explanation"
+}}
+
+STRICT REQUIREMENTS:
+1. literal_old MUST be copied WORD-FOR-WORD from the file provided above
+2. literal_old must be a single definition line: "class X:" or "def f():" or "def f(args):"
+3. literal_new must be literal_old + newline + properly indented docstring
+4. docstring must be brief (one line in triple quotes recommended)
+5. Do NOT hallucinate patterns that don't exist in the file
+6. Return ONLY valid JSON, no other text"""
+
+        else:
+            # Generic prompt for other modification types
+            return f"""You are a code modification assistant. Generate a precise code modification.
 
 Task: {description}
 File: {target_path}
@@ -149,13 +202,37 @@ Generate a JSON object with exactly this structure:
 Constraints:
 1. literal_old MUST exist exactly in the file (use context from file content above)
 2. Keep changes minimal and focused
-3. For add_docstring: add docstring right after class/function definition
-4. For add_comment: add a single comment line with context
-5. For add_field: add field definition matching existing patterns
-6. Return ONLY valid JSON, no additional text"""
+3. For add_comment: add a single comment line with context
+4. For add_field: add field definition matching existing patterns
+5. Return ONLY valid JSON, no additional text"""
 
-        # Call Ollama
-        response_text = self._call_ollama(prompt, model=SEMANTIC_MODEL)
+    def _generate_semantic_modification(
+        self,
+        task_id: str,
+        target_path: str,
+        modification_type: str,
+        description: str
+    ) -> Optional[SemanticModificationSpec]:
+        """Generate modification using semantic model with post-generation validation."""
+        content = self._read_file(target_path)
+        if not content:
+            return None
+
+        # Extract anchor candidates for better grounding (especially docstrings)
+        anchor_candidates = self._extract_anchor_candidates(content, description)
+
+        # Build task-specific prompt
+        prompt = self._build_prompt_for_modification(
+            target_path,
+            modification_type,
+            description,
+            content,
+            anchor_candidates
+        )
+
+        # Call Ollama - use slightly higher temperature for docstrings to allow more flexibility
+        temp = 0.15 if modification_type == "add_docstring" else 0.1
+        response_text = self._call_ollama(prompt, model=SEMANTIC_MODEL, temperature=temp)
         if not response_text:
             return None
 
@@ -172,7 +249,7 @@ Constraints:
             literal_new = result.get("literal_new", "")
             confidence = float(result.get("confidence", 0.0))
 
-            # Validate that literal_old exists in file
+            # Strict validation: literal_old MUST exist in file
             if not literal_old or literal_old not in content:
                 return None
 
@@ -247,6 +324,52 @@ Constraints:
 
         if semantic_spec and semantic_spec.confidence >= 0.75:
             return semantic_spec
+
+        # For docstring tasks that failed, try one targeted retry with explicit examples
+        if modification_type == "add_docstring" and not semantic_spec:
+            # Retry with a simpler, more constrained approach
+            content = self._read_file(target_path)
+            if content:
+                # Build a minimal retry prompt focused on finding a single anchor
+                retry_prompt = f"""You are a Python expert. Find ONE single line from the file that starts a class or function definition, then add a docstring.
+
+File: {target_path}
+File content (key section):
+{content[:800]}
+
+Return ONLY this JSON, nothing else:
+{{
+    "literal_old": "one line like 'class X:' or 'def func():' (copy EXACTLY from above)",
+    "literal_new": "that same line + newline + one-line docstring in triple quotes",
+    "confidence": 0.80
+}}"""
+
+                retry_response = self._call_ollama(retry_prompt, model=SEMANTIC_MODEL, temperature=0.12)
+                if retry_response:
+                    try:
+                        json_match = re.search(r'\{[^{}]*\}', retry_response, re.DOTALL)
+                        if json_match:
+                            result = json.loads(json_match.group(0))
+                            retry_old = result.get("literal_old", "")
+                            retry_new = result.get("literal_new", "")
+
+                            # Validate retry attempt
+                            if retry_old and retry_old in content and retry_new:
+                                if not self._has_docstring_conflict(content, retry_new):
+                                    return SemanticModificationSpec(
+                                        task_id=task_id,
+                                        literal_old=retry_old,
+                                        literal_new=retry_new,
+                                        modification_type=modification_type,
+                                        description=description,
+                                        confidence=0.75,
+                                        attribution="local_semantic_retry",
+                                        model_used=SEMANTIC_MODEL,
+                                        generation_tokens=len(retry_response.split()),
+                                        validation_passed=True
+                                    )
+                    except (json.JSONDecodeError, ValueError):
+                        pass
 
         # Fall back to deterministic pattern
         fallback_reason = "semantic_confidence_low" if semantic_spec else "semantic_generation_failed"
