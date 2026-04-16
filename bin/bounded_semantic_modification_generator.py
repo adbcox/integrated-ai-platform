@@ -152,34 +152,33 @@ class BoundedSemanticModificationGenerator:
                     [f"  - {a}" for a in anchor_candidates[:3]]
                 )
 
-            return f"""You are a Python code modification expert. Generate a precise docstring addition.
+            return f"""You are a strict Python JSON generator. Do NOTHING but output JSON.
 
 Task: {description}
 File: {target_path}
 
-IMPORTANT: literal_old MUST be copied EXACTLY from the file content below.
+CRITICAL: Use ONLY text that appears in the file below.
 {anchor_context}
 
-File content (first 1000 chars):
+File content:
 {content[:1000]}
 
-GOOD EXAMPLES of valid JSON output:
-{{"literal_old": "def execute():", "literal_new": "def execute():\\n    \\\"\\\"\\\"Execute the task.\\\"\\\"\\\"", "confidence": 0.85}}
-{{"literal_old": "class Manager:", "literal_new": "class Manager:\\n    \\\"\\\"\\\"Manages orchestration.\\\"\\\"\\\"", "confidence": 0.85}}
+===== OUTPUT FORMAT (DO NOT DEVIATE) =====
+Output ONLY this JSON, no prefix, no suffix, no explanation:
 
-Generate a JSON object with EXACTLY this structure:
 {{
-    "literal_old": "one definition line copied from file: 'class Name:' or 'def func():'",
-    "literal_new": "that line + newline + indented docstring (one line in triple quotes)",
-    "confidence": 0.85,
-    "notes": "brief note"
+  "literal_old": "exact definition line from above (class X: or def f(): or def f(...):)",
+  "literal_new": "same line + \\n + proper indent + docstring in triple quotes",
+  "confidence": 0.85,
+  "notes": "brief"
 }}
 
-STRICT RULES:
-1. literal_old MUST exist WORD-FOR-WORD in the file
-2. literal_old is exactly one definition line from above
-3. literal_new = literal_old + newline + docstring
-4. Return ONLY valid JSON, no other text"""
+===== RULES (MANDATORY) =====
+- literal_old MUST appear in file content above
+- literal_old is single line with "class" or "def"
+- literal_new = literal_old + newline + docstring
+- docstring: \\\"\\\"\\\"Brief description.\\\"\\\"\\\"
+- Return ONLY JSON, absolutely nothing else"""
 
         else:
             # Generic prompt for other modification types
@@ -231,9 +230,8 @@ Constraints:
             anchor_candidates
         )
 
-        # Call Ollama - use slightly higher temperature for docstrings to allow more flexibility
-        temp = 0.15 if modification_type == "add_docstring" else 0.1
-        response_text = self._call_ollama(prompt, model=SEMANTIC_MODEL, temperature=temp)
+        # Call Ollama - use consistent low temperature for deterministic output
+        response_text = self._call_ollama(prompt, model=SEMANTIC_MODEL, temperature=0.1)
         if not response_text:
             return None
 
@@ -345,7 +343,7 @@ Return ONLY this JSON, nothing else:
     "confidence": 0.80
 }}"""
 
-                retry_response = self._call_ollama(retry_prompt, model=SEMANTIC_MODEL, temperature=0.12)
+                retry_response = self._call_ollama(retry_prompt, model=SEMANTIC_MODEL, temperature=0.1)
                 if retry_response:
                     try:
                         json_match = re.search(r'\{[^{}]*\}', retry_response, re.DOTALL)
