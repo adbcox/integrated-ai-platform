@@ -422,7 +422,7 @@ def main() -> int:
         # Broaden retrieval for modification queries to capture actual modification targets
         # that might not rank high in token-based search but should be ranked high
         # by domain/path bonuses (e.g., framework/ files vs test/bin files)
-        search_top = max(args.top, 12)
+        search_top = max(args.top, 24)
     search_payload = run_search(args, top_override=search_top)
     results = search_payload.get("results", [])
 
