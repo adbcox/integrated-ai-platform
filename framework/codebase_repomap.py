@@ -7,6 +7,7 @@ and inter-file dependencies to enable better multi-file code editing decisions.
 from __future__ import annotations
 
 import ast
+import datetime as dt
 import json
 import re
 from dataclasses import dataclass, field, asdict
@@ -349,7 +350,3 @@ class RepomapGenerator:
             json.dumps(payload, indent=2, ensure_ascii=False),
             encoding="utf-8",
         )
-
-
-# Import datetime for timestamp
-import datetime as dt

@@ -141,5 +141,5 @@ class RepomapAwareRetrieval:
             "estimated_tokens": estimated_tokens,
             "file_count": file_count,
             "total_loc": total_loc,
-            "within_budget": estimated_tokens < 8000,  # Conservative budget
+            "within_budget": estimated_tokens < 32000,  # Budget for bounded multi-file task context
         }
