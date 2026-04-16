@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse  # stage7-op  # stage7-op  # stage7-op  # stage7-op  # stage7-op  # stage7-op  # stage7-op  # stage7-op  # stage7-op  # stage7-op  # stage7-op  # stage7-op  # stage7-op  # stage7-op  # stage7-op  # stage6-rag4-v4b  # stage6-rag4-v3b
 import datetime as dt
 import json  # stage6-linkscore-v2
+import logging
 import math
 import re
 import subprocess
@@ -21,6 +22,7 @@ LOG_FILE = LOG_DIR / "usage.jsonl"
 
 def run_search(args: argparse.Namespace, *, top_override: int | None = None) -> dict[str, Any]:
     top_value = top_override if top_override is not None else args.top
+    logging.debug(f"Running search with top value: {top_value}")
     cmd = [
         sys.executable,
         str(STAGE_RAG3_SEARCH),
@@ -94,6 +96,7 @@ def _extract_entities(query_tokens: list[str]) -> set[str]:
     - "enhance promotion workflow" → {} (lowercase, not entities)
     - "improve Stage RAG" → {"Stage", "RAG"}
     """
+    assert query_tokens, "Query tokens must not be empty"
     entities = set()
     for token in query_tokens:
         token_str = str(token).strip()

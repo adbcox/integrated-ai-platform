@@ -80,6 +80,7 @@ class ClaudeCodeExecutor(ExecutorBase):
         This implementation handles literal replacements directly in Python,
         and logs changes as "accepted_change" when modifications succeed.
         """
+        assert request is not None, "ExecutionRequest must not be None"
         started = datetime.now().isoformat()
         events = []
 
@@ -236,6 +237,7 @@ class AiderExecutor(ExecutorBase):
 
     def execute(self, request: ExecutionRequest) -> ExecutionResult:
         """Execute using Aider via make target."""
+        assert request is not None, "ExecutionRequest must not be None"
         started = datetime.now().isoformat()
 
         message_file = self._write_message_file(request.plan_id, request.message)
