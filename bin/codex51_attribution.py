@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Deterministic attribution counters for Codex 5.1 replacement artifacts."""
 
-from __future__ import annotations
+from __future__ import annotations  # stage7-op
 
 import json
 import subprocess
