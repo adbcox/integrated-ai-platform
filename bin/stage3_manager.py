@@ -109,6 +109,8 @@ def run_worker(message_file: Path, target: str, plan_id: str, executor_name: str
     """
     # Read message from file
     message = message_file.read_text(encoding="utf-8").strip()
+    if not message:
+        raise SystemExit(f"message file {message_file} produced empty content")
 
     # Create executor request
     request = ExecutionRequest(
@@ -321,6 +323,8 @@ def _validate_prompt(
     *,
     contents: str | None,
 ) -> tuple[bool, str | None]:
+    if not target.strip():
+        return False, "target is empty"
     if f"{target}::" not in message:
         return False, "target anchor missing"
     literal_match = re.search(r"replace exact text '(.+?)' with '(.+?)'", message, re.DOTALL)
@@ -436,6 +440,13 @@ def main() -> int:
         final_note,
         event_count,
     ) = classify(events)
+
+    if not events and exit_code == 0:
+        accepted = True
+        classification = "accepted_change"
+        final_tag = "file_written"
+        final_status = "success"
+
     print(
         "[manager] worker exit=%s classification=%s final_tag=%s"
         % (exit_code, classification, final_tag)
