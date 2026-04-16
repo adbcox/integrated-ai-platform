@@ -83,6 +83,83 @@ def _path_domain(path: str) -> str:
 TOKEN_SPLIT_RE = re.compile(r"[^a-z0-9]+")
 
 
+def _extract_entities(query_tokens: list[str]) -> set[str]:
+    """Extract potential class/function/variable names from query.
+
+    Strategy: Tokens with capital letters (CamelCase) or all-caps are likely entities.
+    Avoids false positives from common lowercase words that appear in many files.
+
+    Examples:
+    - "improve ExecutorFactory" → {"ExecutorFactory"}
+    - "enhance promotion workflow" → {} (lowercase, not entities)
+    - "improve Stage RAG" → {"Stage", "RAG"}
+    """
+    entities = set()
+    for token in query_tokens:
+        token_str = str(token).strip()
+        if not token_str:
+            continue
+        # CamelCase detection: at least one uppercase, mix of cases, reasonable length
+        has_upper = any(c.isupper() for c in token_str)
+        has_lower = any(c.islower() for c in token_str)
+        if has_upper and has_lower and len(token_str) > 2:
+            entities.add(token_str)
+        # Also capture all-caps if length > 2 (e.g., "RAG4")
+        if token_str.isupper() and len(token_str) > 2:
+            entities.add(token_str)
+    return entities
+
+
+def _entity_definition_score(file_path: str, entities: set[str]) -> float:
+    """Score how strongly a file defines/declares query entities.
+
+    For each entity, checks if the file explicitly defines/declares it:
+    - File defines class/function with entity name → +2.5
+    - File has variable assignment with entity name → +1.0
+
+    Returns score in range [0.0, 3.0] per entity, capped at 3.0 total.
+    Avoids false positives from comments/docstrings by checking line starts.
+    """
+    if not entities:
+        return 0.0
+
+    score = 0.0
+
+    # Try to read file and check for entity definitions
+    try:
+        file_full_path = REPO_ROOT / file_path
+        if not file_full_path.exists():
+            return 0.0
+        file_text = file_full_path.read_text(encoding="utf-8", errors="ignore")
+    except (OSError, ValueError):
+        return 0.0
+
+    lines = file_text.splitlines()
+
+    for entity in entities:
+        entity_lower = entity.lower()
+        entity_score = 0.0
+
+        # Look for actual class/function definitions (at line start after whitespace)
+        for line in lines:
+            stripped = line.lstrip()
+            stripped_lower = stripped.lower()
+
+            # Definition patterns (highest signal)
+            if (stripped_lower.startswith(f"class {entity_lower}") or
+                stripped_lower.startswith(f"def {entity_lower}")):
+                entity_score = 2.5
+                break
+            # Variable/assignment at line start
+            elif stripped_lower.startswith(f"{entity_lower} ="):
+                entity_score = 1.0
+                break  # Found match, move to next entity
+
+        score += entity_score
+
+    return min(score, 3.0)
+
+
 def _path_tokens(path: str) -> set[str]:
     stem = Path(path).stem.lower()
     parts = TOKEN_SPLIT_RE.split(stem)
@@ -417,6 +494,8 @@ def main() -> int:
     preferred_prefixes = [prefix for prefix in args.preferred_prefix if prefix]
     intent = _query_intent(args.query)
     query_tokens = {t.lower() for t in args.query if t}
+    # Extract entity names (CamelCase tokens) for entity-aware reranking
+    entity_names = _extract_entities(args.query)
     search_top = args.top
     if preferred_prefixes and intent == "code":
         # Broaden retrieval for code-intent lane runs so we can recover more
@@ -445,6 +524,12 @@ def main() -> int:
         sibling_count, git_history_count = _count_related_sources(related_entries)
         base_score = float(entry.get("score") or 0.0)
         lane_aligned = _path_matches_prefix(path, preferred_prefixes)
+
+        # Entity-aware reranking: boost files that define/declare query entities
+        entity_boost = 0.0
+        if entity_names:
+            entity_boost = _entity_definition_score(path, entity_names)
+
         rank_score = _ranking_score(
             base_score=base_score,
             sibling_count=sibling_count,
@@ -456,6 +541,9 @@ def main() -> int:
             intent=intent,
             path=path,
         )
+        # Apply entity boost after base ranking
+        rank_score = round(rank_score + entity_boost, 4)
+
         targets.append(
             {
                 "path": path,
@@ -476,6 +564,8 @@ def main() -> int:
                     "lane_aligned": lane_aligned,
                     "query_intent": intent,
                     "domain_bonus": _domain_bonus(intent=intent, domain=domain),
+                    "entity_names": list(entity_names),
+                    "entity_boost": entity_boost,
                 },
             }
         )
