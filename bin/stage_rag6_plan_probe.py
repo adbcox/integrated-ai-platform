@@ -249,8 +249,8 @@ def _augment_targets_with_repomap(
 ) -> list[dict[str, Any]]:
     """Augment RAG4 targets with repomap-aware symbol matching.
 
-    Uses RepomapAwareRetrieval to score files by symbol/name relevance
-    and adds repomap metadata to targets for better context planning.
+    Uses RepomapAwareRetrieval to score files by symbol/name relevance,
+    prioritizing those targets in the final result set.
     """
     repomap_path = REPO_ROOT / "artifacts" / "repomap" / "latest.json"
     if not repomap_path.exists():
@@ -271,11 +271,15 @@ def _augment_targets_with_repomap(
         include_dependents=True,
     )
 
-    # Build a map of repomap scores
+    # Build maps for repomap data
     repomap_scores = {t.path: t.relevance_score for t in repomap_targets}
+    repomap_by_path = {t.path: t for t in repomap_targets}
 
-    # Augment existing targets with repomap metadata
+    # Augment existing targets and inject high-scoring repomap targets
+    existing_paths = {str(t.get("path") or "") for t in targets}
     augmented: list[dict[str, Any]] = []
+
+    # First, add existing targets with repomap boost if available
     for target in targets:
         path = str(target.get("path") or "")
         repomap_score = repomap_scores.get(path, 0.0)
@@ -295,6 +299,32 @@ def _augment_targets_with_repomap(
         target["selection_reason"] = reason
 
         augmented.append(target)
+
+    # Then inject high-scoring repomap targets not in RAG4 results
+    max_rank = max((float(t.get("rank_score") or 0.0) for t in augmented), default=20.0)
+    injected_rank = max_rank + 2.0
+
+    for repomap_target in repomap_targets:
+        if repomap_target.path in existing_paths:
+            # Already in results, skip
+            continue
+        if repomap_target.relevance_score < 0.5:
+            # Below relevance threshold, skip
+            continue
+
+        # Inject as new target with high priority
+        injected = {
+            "path": repomap_target.path,
+            "confidence": 7,
+            "rank_score": round(injected_rank, 4),
+            "selection_reason": {
+                "source": "repomap_aware_retrieval",
+                "reason": f"symbol_matches={repomap_target.symbol_match_count}",
+                "repomap_score": round(repomap_target.relevance_score, 3),
+            },
+        }
+        augmented.append(injected)
+        injected_rank -= 0.25
 
     return augmented
 
