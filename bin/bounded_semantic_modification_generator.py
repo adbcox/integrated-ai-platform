@@ -80,7 +80,7 @@ class BoundedSemanticModificationGenerator:
                 "model": model,
                 "prompt": prompt,
                 "stream": False,
-                "temperature": 0.3,  # Low temperature for deterministic code generation
+                "temperature": 0.1,  # Very low temperature for strict deterministic JSON output
             }
 
             response = subprocess.run(
