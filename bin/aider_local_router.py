@@ -310,6 +310,7 @@ def main() -> int:
         env["AIDER_RUN_ROOT"] = str(attempt_root)
         env["AIDER_SUP_LABEL"] = f"router-{idx}"
         env["AIDER_SUP_FAIL_FAST"] = "0"
+        env["OLLAMA_API_BASE"] = api_base
 
         cmd = [
             "bash",
