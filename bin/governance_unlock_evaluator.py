@@ -9,6 +9,24 @@ Deterministically generates:
 Every family in this packet remains ``locked``. The file encodes the
 preconditions that a later reconciliation package must satisfy in order to
 promote a family to ``eligible_for_review`` or ``unlocked``.
+
+Hybrid-ownership rule (ratified by
+``governance/authority_adr_0017_tactical_unlock_living_surface_fields.md``):
+
+- Decision-owned fields inside each family row — ``unlock_state``,
+  ``currently_met_preconditions``, ``review_packet_required``,
+  ``canonical_phase_dependency``, and ``unlock_preconditions`` — are
+  governance-owned and only change when a per-family review packet
+  (ADR 0006) or tactical unlock packet says so.
+- Living surface-count fields — currently ``total_family_files`` — are
+  living generator-owned under ADR 0009. They re-render mechanically
+  from the live committed repo on every write and may drift without
+  changing any decision field above.
+
+The renderer in this module implements that hybrid contract: decision
+fields are hardcoded / inherited from prior review packets; the surface
+count is computed from ``git ls-files`` on each call. A surface-count
+drift is not a decision change.
 """
 
 from __future__ import annotations

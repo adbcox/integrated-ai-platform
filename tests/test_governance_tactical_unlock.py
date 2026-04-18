@@ -67,6 +67,40 @@ class TacticalUnlockTest(unittest.TestCase):
         for family in payload["families"]:
             self.assertTrue(family["review_packet_required"])
 
+    def test_total_family_files_is_living_surface_measurement(self) -> None:
+        """ADR 0017: total_family_files is a living generator-owned subfield.
+
+        It must be a non-negative integer that reflects a static scan of
+        the committed tree. It is not a decision invariant and is allowed
+        to drift mechanically without changing decision fields.
+        """
+        payload = _load("tactical_unlock_criteria.json")
+        files = subprocess.check_output(
+            ["git", "ls-files", "framework/"],
+            cwd=REPO_ROOT,
+            text=True,
+        ).splitlines()
+        for family in payload["families"]:
+            count = family.get("total_family_files")
+            self.assertIsInstance(count, int)
+            assert isinstance(count, int)
+            self.assertGreaterEqual(count, 0)
+            prefixes = family.get("prefixes") or []
+            observed = 0
+            for prefix in prefixes:
+                observed += sum(
+                    1
+                    for f in files
+                    if f[len("framework/") :].startswith(prefix)
+                )
+            self.assertEqual(
+                count,
+                observed,
+                f"total_family_files for {family['family_id']!r} must equal "
+                f"the live scan result; decision fields must remain locked",
+            )
+            self.assertEqual(family["unlock_state"], "locked")
+
 
 if __name__ == "__main__":
     unittest.main()

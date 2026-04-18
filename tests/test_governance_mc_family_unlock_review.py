@@ -64,7 +64,11 @@ class McFamilyUnlockReviewTest(unittest.TestCase):
         ]
         self.assertEqual(mc_framework, [])
 
-    def test_unlock_criteria_mc_row_is_unchanged(self) -> None:
+    def test_unlock_criteria_mc_decision_fields_unchanged(self) -> None:
+        """Under ADR 0017 the decision fields of the MC row remain
+        governance-owned; only ``total_family_files`` is allowed to
+        drift mechanically as a living surface measurement. MC unlock
+        remains gated on canonical Phase 4 authority."""
         unlock = _load("tactical_unlock_criteria.json")
         mc = next((f for f in unlock["families"] if f["family_id"] == "mc"), None)
         self.assertIsNotNone(mc)
@@ -73,6 +77,8 @@ class McFamilyUnlockReviewTest(unittest.TestCase):
         self.assertTrue(mc["review_packet_required"])
         self.assertEqual(mc["currently_met_preconditions"], [])
         self.assertEqual(mc["prefixes"], ["mc_", "multi_phase_"])
+        self.assertIsInstance(mc.get("total_family_files"), int)
+        self.assertGreaterEqual(mc["total_family_files"], 0)
 
     def test_family_classification_mc_row_is_unchanged(self) -> None:
         classification = _load("tactical_family_classification.json")

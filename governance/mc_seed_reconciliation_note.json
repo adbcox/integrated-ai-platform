@@ -1,0 +1,21 @@
+{
+  "accepted_prior_seed_commit": "b9cdf651e0495a463cc130ec81d65256cfe68d5f",
+  "accepted_state": {
+    "current_allowed_class": "ratification_only",
+    "mc_review_classification": "provisional_precursor",
+    "mc_seeded_preconditions": 2,
+    "mc_unlock_state": "locked"
+  },
+  "authority_owner": "governance",
+  "baseline_commit": "b9cdf651e0495a463cc130ec81d65256cfe68d5f",
+  "invariants_preserved": {
+    "lob_w3_pause_preserved": true,
+    "no_family_unlocked": true,
+    "no_framework_edits": true,
+    "no_phase_state_change": true
+  },
+  "issue": "tactical_unlock_criteria mixed decision fields with living surface counts; governance-ratify would mutate total_family_files for MC from 271 to 272 after MC-SEED-1 while MC decision fields remained frozen, producing an ambiguous DIFF under prior byte-freeze forbidden-edit interpretations",
+  "packet_id": "RECON-W2D-MC-RATIFIER-BOUNDARY-1",
+  "resolved_by_adr": "governance/authority_adr_0017_tactical_unlock_living_surface_fields.md",
+  "schema_version": 1
+}
