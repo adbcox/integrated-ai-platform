@@ -892,6 +892,26 @@ def build_job(args: argparse.Namespace, *, template_name: str | None = None) -> 
     )
 
 
+def _compute_phase2_exit_code(output: dict[str, Any], result_rows: list[dict[str, Any]]) -> int:
+    """Return the process exit code from a completed scheduler output dict.
+
+    Exit codes:
+      0 — idle, all jobs terminal, no all-tools-blocked signal
+      2 — scheduler did not reach idle
+      3 — idle but jobs not yet in a terminal state
+      4 — idle, terminal, but all tool attempts were blocked by the permission engine
+    """
+    if not output.get("idle_reached"):
+        return 2
+    statuses = {str((row.get("result") or {}).get("status") or "") for row in result_rows}
+    if not (statuses and statuses.issubset({"completed", "escalated", "failed"})):
+        return 3
+    signal = str((output.get("phase2_operational_signal") or {}).get("signal") or "")
+    if signal == "all_tools_blocked":
+        return 4
+    return 0
+
+
 def main() -> int:
     args = parse_args()
 
@@ -1015,10 +1035,7 @@ def main() -> int:
         if len(job_rows) > 1:
             print(f"framework_jobs_submitted={len(job_rows)}")
 
-    if not output["idle_reached"]:
-        return 2
-    statuses = {str((row.get("result") or {}).get("status") or "") for row in result_rows}
-    return 0 if statuses and statuses.issubset({"completed", "escalated", "failed"}) else 3
+    return _compute_phase2_exit_code(output, result_rows)
 
 
 if __name__ == "__main__":

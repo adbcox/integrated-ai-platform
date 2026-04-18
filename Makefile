@@ -464,3 +464,13 @@ phase2-manager-decision-test:
 
 phase2-manager-decision-validate:
 	@python3 ./artifacts/phase2_manager_decision_validation_report.py
+
+.PHONY: phase2-exit-wire-test phase2-exit-wire-validate
+
+phase2-exit-wire-test:
+	@python3 -m unittest -v \
+		tests.test_bin_framework_control_plane_phase2_exit_wire \
+		tests.test_phase2_exit_wire_validation
+
+phase2-exit-wire-validate:
+	@PYTHONPATH=. python3 ./artifacts/phase2_exit_wire_validation_report.py
