@@ -1,0 +1,39 @@
+{
+  "as_of_commit": "53ae4d4f177b176a7bffaa63988f63fa0efa622c",
+  "authority_owner": "governance",
+  "baseline_commit": "53ae4d4f177b176a7bffaa63988f63fa0efa622c",
+  "closure_criteria": [
+    {
+      "description": "every framework/*_schema.py classified",
+      "gap_id": "G0.1",
+      "met": true
+    },
+    {
+      "description": "every schema entry has an ADR reference",
+      "gap_id": "G0.2",
+      "met": true
+    },
+    {
+      "description": "promotion/__init__.py legacy-freeze skip recorded as followup in governance/phase_gate_status.json",
+      "gap_id": "G0.3",
+      "met": true
+    }
+  ],
+  "decision": "closed",
+  "generated_at": "2026-04-18T08:33:06-04:00",
+  "phase_id": 0,
+  "ratified_by_adr": "governance/authority_adr_0004_phase1_closure.md",
+  "residual_followups": [
+    "promotion manifest migration tracked as a later reconciliation package"
+  ],
+  "schema_version": 2,
+  "supersedes": [
+    "config/promotion_manifest.json (legacy; frozen pending migration)",
+    "docs/* narrative roadmaps (advisory only)"
+  ],
+  "supersedes_gaps": [
+    "G0.1",
+    "G0.2",
+    "G0.3"
+  ]
+}

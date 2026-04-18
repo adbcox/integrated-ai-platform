@@ -1,0 +1,99 @@
+{
+  "authority_owner": "governance",
+  "baseline_commit": "53ae4d4f177b176a7bffaa63988f63fa0efa622c",
+  "failure_classes": [
+    "inner_loop_config_error",
+    "inner_loop_cycle_limit",
+    "inner_loop_find_text_missing",
+    "inner_loop_postcondition_mismatch",
+    "inner_loop_precondition_mismatch",
+    "inner_loop_setup_failed",
+    "missing_requested_outputs",
+    "nonzero_exit_code",
+    "permission_denied",
+    "python_compile_failure",
+    "sandbox_timeout",
+    "shell_syntax_failure",
+    "validation_failed"
+  ],
+  "generated_at": "2026-04-18T08:33:06-04:00",
+  "max_cycles_source": {
+    "line": 306,
+    "source": "max_cycles = max(1, int(config.get(\"max_cycles\") or (len(repair_edits) + 1)))"
+  },
+  "non_retryable_failure_classes": [],
+  "notes": "Extraction is static; runtime-observed trace kinds may be a superset. The packet pins this to Phase 2 adopted_partial only.",
+  "repair_edits_shape": {
+    "config_key": "repair_edits",
+    "expected_type": "list[dict]",
+    "per_cycle_consumption": "one entry per cycle unless batch is allowed",
+    "probe_line": {
+      "line": 304,
+      "source": "repair_edits = config.get(\"repair_edits\") if isinstance(config.get(\"repair_edits\"), list) else []"
+    },
+    "snapshot_restore_reason_on_exhaustion": "repairs_exhausted",
+    "snapshot_restore_reason_on_repair_failure": "repair_failed"
+  },
+  "retryable_failure_classes": [
+    "inner_loop_config_error",
+    "inner_loop_cycle_limit",
+    "inner_loop_find_text_missing",
+    "inner_loop_postcondition_mismatch",
+    "inner_loop_precondition_mismatch",
+    "inner_loop_setup_failed",
+    "missing_requested_outputs",
+    "nonzero_exit_code",
+    "permission_denied",
+    "python_compile_failure",
+    "sandbox_timeout",
+    "shell_syntax_failure",
+    "validation_failed"
+  ],
+  "schema_version": 2,
+  "setup_command_semantics": {
+    "config_key": "setup_command",
+    "failure_class_on_failure": "inner_loop_setup_failed",
+    "probe_line": {
+      "line": 302,
+      "source": "setup_command = str(config.get(\"setup_command\") or \"\").strip()"
+    },
+    "snapshot_restore_reason": "setup_failed"
+  },
+  "snapshot_restore_triggers": [
+    "cycle_limit_reached",
+    "missing_validate_command",
+    "repair_failed",
+    "repairs_exhausted",
+    "setup_failed"
+  ],
+  "supersedes": [
+    "config/promotion_manifest.json (legacy; frozen pending migration)",
+    "docs/* narrative roadmaps (advisory only)"
+  ],
+  "trace_kinds_emitted": [
+    "class_slot_acquired",
+    "class_slot_released",
+    "class_slot_wait_start",
+    "conflict_domain_acquired",
+    "conflict_domain_released",
+    "conflict_domain_wait_start",
+    "inner_loop_conflict",
+    "inner_loop_cycle",
+    "inner_loop_rollback",
+    "tool_observation",
+    "tool_permission_decision",
+    "worker_failure_diagnosis",
+    "worker_job_end",
+    "worker_job_start"
+  ],
+  "validate_command_semantics": {
+    "config_key": "validate_command",
+    "missing_failure_class": "inner_loop_config_error",
+    "probe_line": {
+      "line": 303,
+      "source": "validate_command = str(config.get(\"validate_command\") or \"\").strip()"
+    },
+    "snapshot_restore_reason_on_missing": "missing_validate_command",
+    "success_failure_class": ""
+  }
+}

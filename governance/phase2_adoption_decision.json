@@ -1,0 +1,25 @@
+{
+  "as_of_commit": "53ae4d4f177b176a7bffaa63988f63fa0efa622c",
+  "authority_owner": "governance",
+  "baseline_commit": "53ae4d4f177b176a7bffaa63988f63fa0efa622c",
+  "code_anchors": [
+    "framework/worker_runtime.py",
+    "bin/framework_control_plane.py"
+  ],
+  "contract_ref": "governance/inner_loop_contract.json",
+  "decision": "adopted_partial",
+  "generated_at": "2026-04-18T08:33:06-04:00",
+  "next_blocker_class": "capability_session",
+  "open_blockers": [
+    "tactical families not reclassified onto the shared runtime",
+    "real-capability evidence (measurement_session) not yet captured",
+    "adoption coverage for multi_phase_/live_bridge_/ort_/pgs_ remains zero"
+  ],
+  "phase_id": 2,
+  "ratified_by_adr": "governance/authority_adr_0005_phase2_partial_adoption.md",
+  "schema_version": 2,
+  "supersedes": [
+    "config/promotion_manifest.json (legacy; frozen pending migration)",
+    "docs/* narrative roadmaps (advisory only)"
+  ]
+}

@@ -1,0 +1,27 @@
+{
+  "authority_owner": "governance",
+  "baseline_commit": "53ae4d4f177b176a7bffaa63988f63fa0efa622c",
+  "current_allowed_class": "ratification_only",
+  "generated_at": "2026-04-18T08:33:06-04:00",
+  "justification": "RECON-W2 closes Phase 0 and Phase 1 and records Phase 2 as adopted_partial. No tactical family is unlocked; the next allowed package class is therefore ratification_only.",
+  "ratified_by_adr": "governance/authority_adr_0007_next_class_ratification_only.md",
+  "schema_version": 2,
+  "supersedes": [
+    "config/promotion_manifest.json (legacy; frozen pending migration)",
+    "docs/* narrative roadmaps (advisory only)"
+  ],
+  "transitions": [
+    {
+      "blocked_until": "phase2_adoption_decision.json decision == closed",
+      "from": "ratification_only",
+      "gate": "Phase 2 closure evidence (real-capability measurement_session) must be ratified by a later reconciliation package",
+      "to": "capability_session"
+    },
+    {
+      "blocked_until": "all tactical families remain locked at baseline_commit",
+      "from": "ratification_only",
+      "gate": "per-family unlock review packet that satisfies the preconditions recorded in tactical_unlock_criteria.json",
+      "to": "tactical_review"
+    }
+  ]
+}

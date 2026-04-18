@@ -1,0 +1,96 @@
+{
+  "authority_owner": "governance",
+  "baseline_commit": "53ae4d4f177b176a7bffaa63988f63fa0efa622c",
+  "edges": [
+    {
+      "from": "permission_engine",
+      "kind": "import",
+      "to": "tool_system"
+    },
+    {
+      "from": "permission_engine",
+      "kind": "invoke",
+      "to": "tool_system"
+    },
+    {
+      "from": "worker_runtime",
+      "kind": "import",
+      "to": "permission_engine"
+    },
+    {
+      "from": "worker_runtime",
+      "kind": "invoke",
+      "to": "permission_engine"
+    },
+    {
+      "from": "worker_runtime",
+      "kind": "import",
+      "to": "sandbox"
+    },
+    {
+      "from": "worker_runtime",
+      "kind": "invoke",
+      "to": "sandbox"
+    },
+    {
+      "from": "worker_runtime",
+      "kind": "import",
+      "to": "tool_system"
+    },
+    {
+      "from": "worker_runtime",
+      "kind": "invoke",
+      "to": "tool_system"
+    },
+    {
+      "from": "worker_runtime",
+      "kind": "import",
+      "to": "workspace"
+    },
+    {
+      "from": "worker_runtime",
+      "kind": "invoke",
+      "to": "workspace"
+    }
+  ],
+  "generated_at": "2026-04-18T08:33:06-04:00",
+  "nodes": [
+    {
+      "loc": 1004,
+      "name": "worker_runtime",
+      "path": "framework/worker_runtime.py"
+    },
+    {
+      "loc": 53,
+      "name": "tool_system",
+      "path": "framework/tool_system.py"
+    },
+    {
+      "loc": 40,
+      "name": "workspace",
+      "path": "framework/workspace.py"
+    },
+    {
+      "loc": 150,
+      "name": "permission_engine",
+      "path": "framework/permission_engine.py"
+    },
+    {
+      "loc": 53,
+      "name": "sandbox",
+      "path": "framework/sandbox.py"
+    }
+  ],
+  "required_worker_runtime_edges": [
+    "tool_system",
+    "permission_engine",
+    "sandbox",
+    "workspace"
+  ],
+  "schema_version": 2,
+  "self_adoption_complete": true,
+  "supersedes": [
+    "config/promotion_manifest.json (legacy; frozen pending migration)",
+    "docs/* narrative roadmaps (advisory only)"
+  ]
+}

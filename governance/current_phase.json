@@ -1,8 +1,10 @@
 {
-  "as_of_commit": "cc8e510261e7ec1a89c383db826f05c1ad32988d",
-  "authority_owner": "governance/authority_adr_0001_source_of_truth.md",
+  "as_of_commit": "53ae4d4f177b176a7bffaa63988f63fa0efa622c",
+  "authority_owner": "governance",
+  "baseline_commit": "53ae4d4f177b176a7bffaa63988f63fa0efa622c",
   "blocked_package_classes": [
     "canonical_phase_advancement",
+    "capability_session",
     "feature_expansion",
     "tactical_family_extension"
   ],
@@ -14,13 +16,22 @@
     "ort",
     "pgs"
   ],
-  "current_phase_id": 0,
-  "current_phase_name": "governance_source_of_truth_reconciliation",
-  "current_phase_status": "open",
-  "generated_at": "2026-04-18T02:35:18-04:00",
-  "next_allowed_package_class": "reconciliation_only",
-  "notes": "current_phase_id intentionally reflects reconciliation reality rather than the legacy Stage/Manager labels in config/promotion_manifest.json.",
-  "schema_version": "1.0.0",
+  "current_phase_id": 2,
+  "current_phase_name": "Phase 2",
+  "current_phase_status": "adopted_partial",
+  "generated_at": "2026-04-18T08:33:06-04:00",
+  "next_allowed_package_class": "ratification_only",
+  "notes": "Post-RECON-W2: Phase 0 closed_ratified, Phase 1 closed_ratified, Phase 2 adopted_partial; next allowed package class is ratification_only. See ADR 0005 — Phase 2 is explicitly NOT closed.",
+  "phase0_status": "closed_ratified",
+  "phase1_status": "closed_ratified",
+  "phase2_status": "adopted_partial",
+  "ratified_by_adrs": [
+    "governance/authority_adr_0004_phase1_closure.md",
+    "governance/authority_adr_0005_phase2_partial_adoption.md",
+    "governance/authority_adr_0006_tactical_unlock_criteria.md",
+    "governance/authority_adr_0007_next_class_ratification_only.md"
+  ],
+  "schema_version": 2,
   "supersedes": [
     "docs/claude-code-roadmap.md (narrative only; not machine authority)",
     "docs/version15-master-roadmap.md (historical/legacy narrative only)",

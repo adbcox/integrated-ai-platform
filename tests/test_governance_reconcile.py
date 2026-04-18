@@ -68,9 +68,9 @@ class GovernanceArtifactsTest(unittest.TestCase):
             f"missing tactical families: {REQUIRED_FAMILIES - fids}",
         )
 
-    def test_current_phase_next_allowed_package_class_is_reconciliation_only(self) -> None:
+    def test_current_phase_next_allowed_package_class_is_ratification_only(self) -> None:
         payload = _load("current_phase.json")
-        self.assertEqual(payload["next_allowed_package_class"], "reconciliation_only")
+        self.assertEqual(payload["next_allowed_package_class"], "ratification_only")
 
     def test_current_phase_records_as_of_commit(self) -> None:
         payload = _load("current_phase.json")

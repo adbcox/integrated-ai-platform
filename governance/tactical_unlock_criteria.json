@@ -1,0 +1,112 @@
+{
+  "authority_owner": "governance",
+  "baseline_commit": "53ae4d4f177b176a7bffaa63988f63fa0efa622c",
+  "families": [
+    {
+      "currently_met_preconditions": [],
+      "family_id": "eo",
+      "notes": "no eo_* files at baseline_commit",
+      "prefixes": [
+        "eo_"
+      ],
+      "review_packet_required": true,
+      "total_family_files": 0,
+      "unlock_preconditions": [
+        "canonical phase authority permits EO work",
+        "runtime-primitive adoption measured in runtime_adoption_report.json",
+        "named offline regression scenario covers EO"
+      ],
+      "unlock_state": "locked"
+    },
+    {
+      "currently_met_preconditions": [],
+      "family_id": "ed",
+      "notes": "no ed_* files at baseline_commit",
+      "prefixes": [
+        "ed_"
+      ],
+      "review_packet_required": true,
+      "total_family_files": 0,
+      "unlock_preconditions": [
+        "canonical phase authority permits ED work",
+        "runtime-primitive adoption measured in runtime_adoption_report.json",
+        "named offline regression scenario covers ED"
+      ],
+      "unlock_state": "locked"
+    },
+    {
+      "currently_met_preconditions": [],
+      "family_id": "mc",
+      "notes": "evidence surface is framework/multi_phase_*",
+      "prefixes": [
+        "mc_",
+        "multi_phase_"
+      ],
+      "review_packet_required": true,
+      "total_family_files": 271,
+      "unlock_preconditions": [
+        "canonical phase 4 authority explicitly authorizes MC family",
+        "runtime-primitive adoption measured for multi_phase_* helpers",
+        "named offline regression scenario covers multi-phase autonomy"
+      ],
+      "unlock_state": "locked"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0003_lob_w3_classification.md",
+      "currently_met_preconditions": [],
+      "family_id": "live_bridge",
+      "notes": "LOB-W3 remains paused under ADR 0003",
+      "prefixes": [
+        "live_bridge_"
+      ],
+      "review_packet_required": true,
+      "total_family_files": 919,
+      "unlock_preconditions": [
+        "ADR 0003 pause explicitly lifted",
+        "canonical phase 6 authority permits LOB work",
+        "runtime-primitive adoption measured for live_bridge_* helpers",
+        "named offline regression scenario covers live_bridge operations"
+      ],
+      "unlock_state": "locked"
+    },
+    {
+      "currently_met_preconditions": [],
+      "family_id": "ort",
+      "notes": "ORT committed surface is provisional_precursor",
+      "prefixes": [
+        "ort_"
+      ],
+      "review_packet_required": true,
+      "total_family_files": 1350,
+      "unlock_preconditions": [
+        "canonical phase 5 authority permits ORT work",
+        "runtime-primitive adoption measured for ort_* helpers",
+        "named offline regression scenario covers ORT integration"
+      ],
+      "unlock_state": "locked"
+    },
+    {
+      "currently_met_preconditions": [],
+      "family_id": "pgs",
+      "notes": "PGS committed surface is provisional_precursor",
+      "prefixes": [
+        "pgs_"
+      ],
+      "review_packet_required": true,
+      "total_family_files": 1500,
+      "unlock_preconditions": [
+        "canonical phase 5 authority permits PGS work",
+        "runtime-primitive adoption measured for pgs_* helpers",
+        "named offline regression scenario covers PGS governance helpers"
+      ],
+      "unlock_state": "locked"
+    }
+  ],
+  "generated_at": "2026-04-18T08:33:06-04:00",
+  "ratified_by_adr": "governance/authority_adr_0006_tactical_unlock_criteria.md",
+  "schema_version": 2,
+  "supersedes": [
+    "config/promotion_manifest.json (legacy; frozen pending migration)",
+    "docs/* narrative roadmaps (advisory only)"
+  ]
+}

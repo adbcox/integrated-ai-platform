@@ -1,0 +1,1636 @@
+{
+  "active_count": 1,
+  "authority_owner": "governance",
+  "baseline_commit": "53ae4d4f177b176a7bffaa63988f63fa0efa622c",
+  "generated_at": "2026-04-18T08:33:06-04:00",
+  "legacy_frozen_count": 178,
+  "schema_version": 2,
+  "schemas": [
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.approval_record_schema",
+      "path": "framework/approval_record_schema.py",
+      "rationale": "core schema retained as legacy_frozen at baseline_commit; no direct importer detected via static scan"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.artifact_index_schema",
+      "path": "framework/artifact_index_schema.py",
+      "rationale": "core schema retained as legacy_frozen at baseline_commit; no direct importer detected via static scan"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.artifact_link_index_schema",
+      "path": "framework/artifact_link_index_schema.py",
+      "rationale": "core schema retained as legacy_frozen at baseline_commit; no direct importer detected via static scan"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.artifact_manifest_schema",
+      "path": "framework/artifact_manifest_schema.py",
+      "rationale": "core schema retained as legacy_frozen at baseline_commit; no direct importer detected via static scan"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.artifact_package_audit_schema",
+      "path": "framework/artifact_package_audit_schema.py",
+      "rationale": "core schema retained as legacy_frozen at baseline_commit; no direct importer detected via static scan"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.artifact_package_result_schema",
+      "path": "framework/artifact_package_result_schema.py",
+      "rationale": "core schema retained as legacy_frozen at baseline_commit; no direct importer detected via static scan"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.artifact_package_schema",
+      "path": "framework/artifact_package_schema.py",
+      "rationale": "core schema retained as legacy_frozen at baseline_commit; no direct importer detected via static scan"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.artifact_record_schema",
+      "path": "framework/artifact_record_schema.py",
+      "rationale": "core schema retained as legacy_frozen at baseline_commit; no direct importer detected via static scan"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.command_plan_schema",
+      "path": "framework/command_plan_schema.py",
+      "rationale": "core schema retained as legacy_frozen at baseline_commit; no direct importer detected via static scan"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.command_result_schema",
+      "path": "framework/command_result_schema.py",
+      "rationale": "core schema retained as legacy_frozen at baseline_commit; no direct importer detected via static scan"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.completion_record_schema",
+      "path": "framework/completion_record_schema.py",
+      "rationale": "core schema retained as legacy_frozen at baseline_commit; no direct importer detected via static scan"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.diff_summary_schema",
+      "path": "framework/diff_summary_schema.py",
+      "rationale": "core schema retained as legacy_frozen at baseline_commit; no direct importer detected via static scan"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.execution_attempt_schema",
+      "path": "framework/execution_attempt_schema.py",
+      "rationale": "core schema retained as legacy_frozen at baseline_commit; no direct importer detected via static scan"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.execution_audit_trail_schema",
+      "path": "framework/execution_audit_trail_schema.py",
+      "rationale": "core schema retained as legacy_frozen at baseline_commit; no direct importer detected via static scan"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.execution_checkpoint_schema",
+      "path": "framework/execution_checkpoint_schema.py",
+      "rationale": "core schema retained as legacy_frozen at baseline_commit; no direct importer detected via static scan"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.execution_completion_summary_schema",
+      "path": "framework/execution_completion_summary_schema.py",
+      "rationale": "core schema retained as legacy_frozen at baseline_commit; no direct importer detected via static scan"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.execution_decision_schema",
+      "path": "framework/execution_decision_schema.py",
+      "rationale": "core schema retained as legacy_frozen at baseline_commit; no direct importer detected via static scan"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.execution_envelope_schema",
+      "path": "framework/execution_envelope_schema.py",
+      "rationale": "core schema retained as legacy_frozen at baseline_commit; no direct importer detected via static scan"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.execution_outcome_schema",
+      "path": "framework/execution_outcome_schema.py",
+      "rationale": "core schema retained as legacy_frozen at baseline_commit; no direct importer detected via static scan"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.execution_policy_schema",
+      "path": "framework/execution_policy_schema.py",
+      "rationale": "core schema retained as legacy_frozen at baseline_commit; no direct importer detected via static scan"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.execution_record_plan_schema",
+      "path": "framework/execution_record_plan_schema.py",
+      "rationale": "core schema retained as legacy_frozen at baseline_commit; no direct importer detected via static scan"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.execution_record_result_schema",
+      "path": "framework/execution_record_result_schema.py",
+      "rationale": "core schema retained as legacy_frozen at baseline_commit; no direct importer detected via static scan"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.execution_record_summary_schema",
+      "path": "framework/execution_record_summary_schema.py",
+      "rationale": "core schema retained as legacy_frozen at baseline_commit; no direct importer detected via static scan"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.execution_report_schema",
+      "path": "framework/execution_report_schema.py",
+      "rationale": "core schema retained as legacy_frozen at baseline_commit; no direct importer detected via static scan"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.execution_route_audit_schema",
+      "path": "framework/execution_route_audit_schema.py",
+      "rationale": "core schema retained as legacy_frozen at baseline_commit; no direct importer detected via static scan"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.execution_route_plan_schema",
+      "path": "framework/execution_route_plan_schema.py",
+      "rationale": "core schema retained as legacy_frozen at baseline_commit; no direct importer detected via static scan"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.execution_route_result_schema",
+      "path": "framework/execution_route_result_schema.py",
+      "rationale": "core schema retained as legacy_frozen at baseline_commit; no direct importer detected via static scan"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.execution_snapshot_result_schema",
+      "path": "framework/execution_snapshot_result_schema.py",
+      "rationale": "core schema retained as legacy_frozen at baseline_commit; no direct importer detected via static scan"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.execution_snapshot_schema",
+      "path": "framework/execution_snapshot_schema.py",
+      "rationale": "core schema retained as legacy_frozen at baseline_commit; no direct importer detected via static scan"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.execution_summary_schema",
+      "path": "framework/execution_summary_schema.py",
+      "rationale": "core schema retained as legacy_frozen at baseline_commit; no direct importer detected via static scan"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.execution_trace_plan_schema",
+      "path": "framework/execution_trace_plan_schema.py",
+      "rationale": "core schema retained as legacy_frozen at baseline_commit; no direct importer detected via static scan"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.execution_trace_result_schema",
+      "path": "framework/execution_trace_result_schema.py",
+      "rationale": "core schema retained as legacy_frozen at baseline_commit; no direct importer detected via static scan"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.execution_trace_summary_schema",
+      "path": "framework/execution_trace_summary_schema.py",
+      "rationale": "core schema retained as legacy_frozen at baseline_commit; no direct importer detected via static scan"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.execution_window_schema",
+      "path": "framework/execution_window_schema.py",
+      "rationale": "core schema retained as legacy_frozen at baseline_commit; no direct importer detected via static scan"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.failure_record_schema",
+      "path": "framework/failure_record_schema.py",
+      "rationale": "core schema retained as legacy_frozen at baseline_commit; no direct importer detected via static scan"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.file_change_plan_schema",
+      "path": "framework/file_change_plan_schema.py",
+      "rationale": "core schema retained as legacy_frozen at baseline_commit; no direct importer detected via static scan"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.file_change_result_schema",
+      "path": "framework/file_change_result_schema.py",
+      "rationale": "core schema retained as legacy_frozen at baseline_commit; no direct importer detected via static scan"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.file_scope_record_schema",
+      "path": "framework/file_scope_record_schema.py",
+      "rationale": "core schema retained as legacy_frozen at baseline_commit; no direct importer detected via static scan"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.file_target_schema",
+      "path": "framework/file_target_schema.py",
+      "rationale": "core schema retained as legacy_frozen at baseline_commit; no direct importer detected via static scan"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.file_write_plan_schema",
+      "path": "framework/file_write_plan_schema.py",
+      "rationale": "core schema retained as legacy_frozen at baseline_commit; no direct importer detected via static scan"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.file_write_result_schema",
+      "path": "framework/file_write_result_schema.py",
+      "rationale": "core schema retained as legacy_frozen at baseline_commit; no direct importer detected via static scan"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.gate_audit_schema",
+      "path": "framework/gate_audit_schema.py",
+      "rationale": "core schema retained as legacy_frozen at baseline_commit; no direct importer detected via static scan"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0001_source_of_truth.md",
+      "classification": "active",
+      "consumer_count": 9,
+      "consumer_modules": [
+        "artifacts/task_success_predictor.py",
+        "bin/framework_control_plane.py",
+        "framework/__init__.py",
+        "framework/learning_hooks.py",
+        "framework/queue_types.py",
+        "framework/scheduler.py",
+        "framework/state_store.py",
+        "framework/worker_runtime.py",
+        "framework/workspace.py"
+      ],
+      "module": "framework.job_schema",
+      "path": "framework/job_schema.py",
+      "rationale": "imported by 9 non-schema module(s); required surface of active runtime/tactical code"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.output_bundle_audit_schema",
+      "path": "framework/output_bundle_audit_schema.py",
+      "rationale": "core schema retained as legacy_frozen at baseline_commit; no direct importer detected via static scan"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.output_bundle_result_schema",
+      "path": "framework/output_bundle_result_schema.py",
+      "rationale": "core schema retained as legacy_frozen at baseline_commit; no direct importer detected via static scan"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.output_bundle_schema",
+      "path": "framework/output_bundle_schema.py",
+      "rationale": "core schema retained as legacy_frozen at baseline_commit; no direct importer detected via static scan"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.pgs_w2_b10_change_schema",
+      "path": "framework/pgs_w2_b10_change_schema.py",
+      "rationale": "tactical-family schema retained as provisional_precursor; no consumer outside its family at baseline_commit"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.pgs_w2_b10_release_schema",
+      "path": "framework/pgs_w2_b10_release_schema.py",
+      "rationale": "tactical-family schema retained as provisional_precursor; no consumer outside its family at baseline_commit"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.pgs_w2_b11_change_schema",
+      "path": "framework/pgs_w2_b11_change_schema.py",
+      "rationale": "tactical-family schema retained as provisional_precursor; no consumer outside its family at baseline_commit"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.pgs_w2_b11_release_schema",
+      "path": "framework/pgs_w2_b11_release_schema.py",
+      "rationale": "tactical-family schema retained as provisional_precursor; no consumer outside its family at baseline_commit"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.pgs_w2_b12_change_schema",
+      "path": "framework/pgs_w2_b12_change_schema.py",
+      "rationale": "tactical-family schema retained as provisional_precursor; no consumer outside its family at baseline_commit"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.pgs_w2_b12_release_schema",
+      "path": "framework/pgs_w2_b12_release_schema.py",
+      "rationale": "tactical-family schema retained as provisional_precursor; no consumer outside its family at baseline_commit"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.pgs_w2_b13_change_schema",
+      "path": "framework/pgs_w2_b13_change_schema.py",
+      "rationale": "tactical-family schema retained as provisional_precursor; no consumer outside its family at baseline_commit"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.pgs_w2_b13_release_schema",
+      "path": "framework/pgs_w2_b13_release_schema.py",
+      "rationale": "tactical-family schema retained as provisional_precursor; no consumer outside its family at baseline_commit"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.pgs_w2_b14_change_schema",
+      "path": "framework/pgs_w2_b14_change_schema.py",
+      "rationale": "tactical-family schema retained as provisional_precursor; no consumer outside its family at baseline_commit"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.pgs_w2_b14_release_schema",
+      "path": "framework/pgs_w2_b14_release_schema.py",
+      "rationale": "tactical-family schema retained as provisional_precursor; no consumer outside its family at baseline_commit"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.pgs_w2_b15_change_schema",
+      "path": "framework/pgs_w2_b15_change_schema.py",
+      "rationale": "tactical-family schema retained as provisional_precursor; no consumer outside its family at baseline_commit"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.pgs_w2_b15_release_schema",
+      "path": "framework/pgs_w2_b15_release_schema.py",
+      "rationale": "tactical-family schema retained as provisional_precursor; no consumer outside its family at baseline_commit"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.pgs_w2_b16_change_schema",
+      "path": "framework/pgs_w2_b16_change_schema.py",
+      "rationale": "tactical-family schema retained as provisional_precursor; no consumer outside its family at baseline_commit"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.pgs_w2_b16_release_schema",
+      "path": "framework/pgs_w2_b16_release_schema.py",
+      "rationale": "tactical-family schema retained as provisional_precursor; no consumer outside its family at baseline_commit"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.pgs_w2_b17_change_schema",
+      "path": "framework/pgs_w2_b17_change_schema.py",
+      "rationale": "tactical-family schema retained as provisional_precursor; no consumer outside its family at baseline_commit"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.pgs_w2_b17_release_schema",
+      "path": "framework/pgs_w2_b17_release_schema.py",
+      "rationale": "tactical-family schema retained as provisional_precursor; no consumer outside its family at baseline_commit"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.pgs_w2_b18_change_schema",
+      "path": "framework/pgs_w2_b18_change_schema.py",
+      "rationale": "tactical-family schema retained as provisional_precursor; no consumer outside its family at baseline_commit"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.pgs_w2_b18_release_schema",
+      "path": "framework/pgs_w2_b18_release_schema.py",
+      "rationale": "tactical-family schema retained as provisional_precursor; no consumer outside its family at baseline_commit"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.pgs_w2_b19_change_schema",
+      "path": "framework/pgs_w2_b19_change_schema.py",
+      "rationale": "tactical-family schema retained as provisional_precursor; no consumer outside its family at baseline_commit"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.pgs_w2_b19_release_schema",
+      "path": "framework/pgs_w2_b19_release_schema.py",
+      "rationale": "tactical-family schema retained as provisional_precursor; no consumer outside its family at baseline_commit"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.pgs_w2_b1_change_schema",
+      "path": "framework/pgs_w2_b1_change_schema.py",
+      "rationale": "tactical-family schema retained as provisional_precursor; no consumer outside its family at baseline_commit"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.pgs_w2_b1_release_schema",
+      "path": "framework/pgs_w2_b1_release_schema.py",
+      "rationale": "tactical-family schema retained as provisional_precursor; no consumer outside its family at baseline_commit"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.pgs_w2_b20_change_schema",
+      "path": "framework/pgs_w2_b20_change_schema.py",
+      "rationale": "tactical-family schema retained as provisional_precursor; no consumer outside its family at baseline_commit"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.pgs_w2_b20_release_schema",
+      "path": "framework/pgs_w2_b20_release_schema.py",
+      "rationale": "tactical-family schema retained as provisional_precursor; no consumer outside its family at baseline_commit"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.pgs_w2_b2_change_schema",
+      "path": "framework/pgs_w2_b2_change_schema.py",
+      "rationale": "tactical-family schema retained as provisional_precursor; no consumer outside its family at baseline_commit"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.pgs_w2_b2_release_schema",
+      "path": "framework/pgs_w2_b2_release_schema.py",
+      "rationale": "tactical-family schema retained as provisional_precursor; no consumer outside its family at baseline_commit"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.pgs_w2_b3_change_schema",
+      "path": "framework/pgs_w2_b3_change_schema.py",
+      "rationale": "tactical-family schema retained as provisional_precursor; no consumer outside its family at baseline_commit"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.pgs_w2_b3_release_schema",
+      "path": "framework/pgs_w2_b3_release_schema.py",
+      "rationale": "tactical-family schema retained as provisional_precursor; no consumer outside its family at baseline_commit"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.pgs_w2_b4_change_schema",
+      "path": "framework/pgs_w2_b4_change_schema.py",
+      "rationale": "tactical-family schema retained as provisional_precursor; no consumer outside its family at baseline_commit"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.pgs_w2_b4_release_schema",
+      "path": "framework/pgs_w2_b4_release_schema.py",
+      "rationale": "tactical-family schema retained as provisional_precursor; no consumer outside its family at baseline_commit"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.pgs_w2_b5_change_schema",
+      "path": "framework/pgs_w2_b5_change_schema.py",
+      "rationale": "tactical-family schema retained as provisional_precursor; no consumer outside its family at baseline_commit"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.pgs_w2_b5_release_schema",
+      "path": "framework/pgs_w2_b5_release_schema.py",
+      "rationale": "tactical-family schema retained as provisional_precursor; no consumer outside its family at baseline_commit"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.pgs_w2_b6_change_schema",
+      "path": "framework/pgs_w2_b6_change_schema.py",
+      "rationale": "tactical-family schema retained as provisional_precursor; no consumer outside its family at baseline_commit"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.pgs_w2_b6_release_schema",
+      "path": "framework/pgs_w2_b6_release_schema.py",
+      "rationale": "tactical-family schema retained as provisional_precursor; no consumer outside its family at baseline_commit"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.pgs_w2_b7_change_schema",
+      "path": "framework/pgs_w2_b7_change_schema.py",
+      "rationale": "tactical-family schema retained as provisional_precursor; no consumer outside its family at baseline_commit"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.pgs_w2_b7_release_schema",
+      "path": "framework/pgs_w2_b7_release_schema.py",
+      "rationale": "tactical-family schema retained as provisional_precursor; no consumer outside its family at baseline_commit"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.pgs_w2_b8_change_schema",
+      "path": "framework/pgs_w2_b8_change_schema.py",
+      "rationale": "tactical-family schema retained as provisional_precursor; no consumer outside its family at baseline_commit"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.pgs_w2_b8_release_schema",
+      "path": "framework/pgs_w2_b8_release_schema.py",
+      "rationale": "tactical-family schema retained as provisional_precursor; no consumer outside its family at baseline_commit"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.pgs_w2_b9_change_schema",
+      "path": "framework/pgs_w2_b9_change_schema.py",
+      "rationale": "tactical-family schema retained as provisional_precursor; no consumer outside its family at baseline_commit"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.pgs_w2_b9_release_schema",
+      "path": "framework/pgs_w2_b9_release_schema.py",
+      "rationale": "tactical-family schema retained as provisional_precursor; no consumer outside its family at baseline_commit"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.pgs_w3_b10_disclosure_schema",
+      "path": "framework/pgs_w3_b10_disclosure_schema.py",
+      "rationale": "tactical-family schema retained as provisional_precursor; no consumer outside its family at baseline_commit"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.pgs_w3_b10_evidence_schema",
+      "path": "framework/pgs_w3_b10_evidence_schema.py",
+      "rationale": "tactical-family schema retained as provisional_precursor; no consumer outside its family at baseline_commit"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.pgs_w3_b11_disclosure_schema",
+      "path": "framework/pgs_w3_b11_disclosure_schema.py",
+      "rationale": "tactical-family schema retained as provisional_precursor; no consumer outside its family at baseline_commit"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.pgs_w3_b11_evidence_schema",
+      "path": "framework/pgs_w3_b11_evidence_schema.py",
+      "rationale": "tactical-family schema retained as provisional_precursor; no consumer outside its family at baseline_commit"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.pgs_w3_b12_disclosure_schema",
+      "path": "framework/pgs_w3_b12_disclosure_schema.py",
+      "rationale": "tactical-family schema retained as provisional_precursor; no consumer outside its family at baseline_commit"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.pgs_w3_b12_evidence_schema",
+      "path": "framework/pgs_w3_b12_evidence_schema.py",
+      "rationale": "tactical-family schema retained as provisional_precursor; no consumer outside its family at baseline_commit"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.pgs_w3_b13_disclosure_schema",
+      "path": "framework/pgs_w3_b13_disclosure_schema.py",
+      "rationale": "tactical-family schema retained as provisional_precursor; no consumer outside its family at baseline_commit"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.pgs_w3_b13_evidence_schema",
+      "path": "framework/pgs_w3_b13_evidence_schema.py",
+      "rationale": "tactical-family schema retained as provisional_precursor; no consumer outside its family at baseline_commit"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.pgs_w3_b14_disclosure_schema",
+      "path": "framework/pgs_w3_b14_disclosure_schema.py",
+      "rationale": "tactical-family schema retained as provisional_precursor; no consumer outside its family at baseline_commit"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.pgs_w3_b14_evidence_schema",
+      "path": "framework/pgs_w3_b14_evidence_schema.py",
+      "rationale": "tactical-family schema retained as provisional_precursor; no consumer outside its family at baseline_commit"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.pgs_w3_b15_disclosure_schema",
+      "path": "framework/pgs_w3_b15_disclosure_schema.py",
+      "rationale": "tactical-family schema retained as provisional_precursor; no consumer outside its family at baseline_commit"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.pgs_w3_b15_evidence_schema",
+      "path": "framework/pgs_w3_b15_evidence_schema.py",
+      "rationale": "tactical-family schema retained as provisional_precursor; no consumer outside its family at baseline_commit"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.pgs_w3_b16_disclosure_schema",
+      "path": "framework/pgs_w3_b16_disclosure_schema.py",
+      "rationale": "tactical-family schema retained as provisional_precursor; no consumer outside its family at baseline_commit"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.pgs_w3_b16_evidence_schema",
+      "path": "framework/pgs_w3_b16_evidence_schema.py",
+      "rationale": "tactical-family schema retained as provisional_precursor; no consumer outside its family at baseline_commit"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.pgs_w3_b17_disclosure_schema",
+      "path": "framework/pgs_w3_b17_disclosure_schema.py",
+      "rationale": "tactical-family schema retained as provisional_precursor; no consumer outside its family at baseline_commit"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.pgs_w3_b17_evidence_schema",
+      "path": "framework/pgs_w3_b17_evidence_schema.py",
+      "rationale": "tactical-family schema retained as provisional_precursor; no consumer outside its family at baseline_commit"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.pgs_w3_b18_disclosure_schema",
+      "path": "framework/pgs_w3_b18_disclosure_schema.py",
+      "rationale": "tactical-family schema retained as provisional_precursor; no consumer outside its family at baseline_commit"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.pgs_w3_b18_evidence_schema",
+      "path": "framework/pgs_w3_b18_evidence_schema.py",
+      "rationale": "tactical-family schema retained as provisional_precursor; no consumer outside its family at baseline_commit"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.pgs_w3_b19_disclosure_schema",
+      "path": "framework/pgs_w3_b19_disclosure_schema.py",
+      "rationale": "tactical-family schema retained as provisional_precursor; no consumer outside its family at baseline_commit"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.pgs_w3_b19_evidence_schema",
+      "path": "framework/pgs_w3_b19_evidence_schema.py",
+      "rationale": "tactical-family schema retained as provisional_precursor; no consumer outside its family at baseline_commit"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.pgs_w3_b1_disclosure_schema",
+      "path": "framework/pgs_w3_b1_disclosure_schema.py",
+      "rationale": "tactical-family schema retained as provisional_precursor; no consumer outside its family at baseline_commit"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.pgs_w3_b1_evidence_schema",
+      "path": "framework/pgs_w3_b1_evidence_schema.py",
+      "rationale": "tactical-family schema retained as provisional_precursor; no consumer outside its family at baseline_commit"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.pgs_w3_b20_disclosure_schema",
+      "path": "framework/pgs_w3_b20_disclosure_schema.py",
+      "rationale": "tactical-family schema retained as provisional_precursor; no consumer outside its family at baseline_commit"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.pgs_w3_b20_evidence_schema",
+      "path": "framework/pgs_w3_b20_evidence_schema.py",
+      "rationale": "tactical-family schema retained as provisional_precursor; no consumer outside its family at baseline_commit"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.pgs_w3_b2_disclosure_schema",
+      "path": "framework/pgs_w3_b2_disclosure_schema.py",
+      "rationale": "tactical-family schema retained as provisional_precursor; no consumer outside its family at baseline_commit"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.pgs_w3_b2_evidence_schema",
+      "path": "framework/pgs_w3_b2_evidence_schema.py",
+      "rationale": "tactical-family schema retained as provisional_precursor; no consumer outside its family at baseline_commit"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.pgs_w3_b3_disclosure_schema",
+      "path": "framework/pgs_w3_b3_disclosure_schema.py",
+      "rationale": "tactical-family schema retained as provisional_precursor; no consumer outside its family at baseline_commit"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.pgs_w3_b3_evidence_schema",
+      "path": "framework/pgs_w3_b3_evidence_schema.py",
+      "rationale": "tactical-family schema retained as provisional_precursor; no consumer outside its family at baseline_commit"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.pgs_w3_b4_disclosure_schema",
+      "path": "framework/pgs_w3_b4_disclosure_schema.py",
+      "rationale": "tactical-family schema retained as provisional_precursor; no consumer outside its family at baseline_commit"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.pgs_w3_b4_evidence_schema",
+      "path": "framework/pgs_w3_b4_evidence_schema.py",
+      "rationale": "tactical-family schema retained as provisional_precursor; no consumer outside its family at baseline_commit"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.pgs_w3_b5_disclosure_schema",
+      "path": "framework/pgs_w3_b5_disclosure_schema.py",
+      "rationale": "tactical-family schema retained as provisional_precursor; no consumer outside its family at baseline_commit"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.pgs_w3_b5_evidence_schema",
+      "path": "framework/pgs_w3_b5_evidence_schema.py",
+      "rationale": "tactical-family schema retained as provisional_precursor; no consumer outside its family at baseline_commit"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.pgs_w3_b6_disclosure_schema",
+      "path": "framework/pgs_w3_b6_disclosure_schema.py",
+      "rationale": "tactical-family schema retained as provisional_precursor; no consumer outside its family at baseline_commit"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.pgs_w3_b6_evidence_schema",
+      "path": "framework/pgs_w3_b6_evidence_schema.py",
+      "rationale": "tactical-family schema retained as provisional_precursor; no consumer outside its family at baseline_commit"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.pgs_w3_b7_disclosure_schema",
+      "path": "framework/pgs_w3_b7_disclosure_schema.py",
+      "rationale": "tactical-family schema retained as provisional_precursor; no consumer outside its family at baseline_commit"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.pgs_w3_b7_evidence_schema",
+      "path": "framework/pgs_w3_b7_evidence_schema.py",
+      "rationale": "tactical-family schema retained as provisional_precursor; no consumer outside its family at baseline_commit"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.pgs_w3_b8_disclosure_schema",
+      "path": "framework/pgs_w3_b8_disclosure_schema.py",
+      "rationale": "tactical-family schema retained as provisional_precursor; no consumer outside its family at baseline_commit"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.pgs_w3_b8_evidence_schema",
+      "path": "framework/pgs_w3_b8_evidence_schema.py",
+      "rationale": "tactical-family schema retained as provisional_precursor; no consumer outside its family at baseline_commit"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.pgs_w3_b9_disclosure_schema",
+      "path": "framework/pgs_w3_b9_disclosure_schema.py",
+      "rationale": "tactical-family schema retained as provisional_precursor; no consumer outside its family at baseline_commit"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.pgs_w3_b9_evidence_schema",
+      "path": "framework/pgs_w3_b9_evidence_schema.py",
+      "rationale": "tactical-family schema retained as provisional_precursor; no consumer outside its family at baseline_commit"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.prompt_envelope_schema",
+      "path": "framework/prompt_envelope_schema.py",
+      "rationale": "core schema retained as legacy_frozen at baseline_commit; no direct importer detected via static scan"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.prompt_result_schema",
+      "path": "framework/prompt_result_schema.py",
+      "rationale": "core schema retained as legacy_frozen at baseline_commit; no direct importer detected via static scan"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.prompt_segment_schema",
+      "path": "framework/prompt_segment_schema.py",
+      "rationale": "core schema retained as legacy_frozen at baseline_commit; no direct importer detected via static scan"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.request_batch_audit_schema",
+      "path": "framework/request_batch_audit_schema.py",
+      "rationale": "core schema retained as legacy_frozen at baseline_commit; no direct importer detected via static scan"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.request_batch_result_schema",
+      "path": "framework/request_batch_result_schema.py",
+      "rationale": "core schema retained as legacy_frozen at baseline_commit; no direct importer detected via static scan"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.request_batch_schema",
+      "path": "framework/request_batch_schema.py",
+      "rationale": "core schema retained as legacy_frozen at baseline_commit; no direct importer detected via static scan"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.request_context_schema",
+      "path": "framework/request_context_schema.py",
+      "rationale": "core schema retained as legacy_frozen at baseline_commit; no direct importer detected via static scan"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.request_queue_audit_schema",
+      "path": "framework/request_queue_audit_schema.py",
+      "rationale": "core schema retained as legacy_frozen at baseline_commit; no direct importer detected via static scan"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.request_queue_result_schema",
+      "path": "framework/request_queue_result_schema.py",
+      "rationale": "core schema retained as legacy_frozen at baseline_commit; no direct importer detected via static scan"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.request_queue_schema",
+      "path": "framework/request_queue_schema.py",
+      "rationale": "core schema retained as legacy_frozen at baseline_commit; no direct importer detected via static scan"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.retry_policy_schema",
+      "path": "framework/retry_policy_schema.py",
+      "rationale": "core schema retained as legacy_frozen at baseline_commit; no direct importer detected via static scan"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.review_record_schema",
+      "path": "framework/review_record_schema.py",
+      "rationale": "core schema retained as legacy_frozen at baseline_commit; no direct importer detected via static scan"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.review_summary_schema",
+      "path": "framework/review_summary_schema.py",
+      "rationale": "core schema retained as legacy_frozen at baseline_commit; no direct importer detected via static scan"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.rollback_record_schema",
+      "path": "framework/rollback_record_schema.py",
+      "rationale": "core schema retained as legacy_frozen at baseline_commit; no direct importer detected via static scan"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.route_audit_schema",
+      "path": "framework/route_audit_schema.py",
+      "rationale": "core schema retained as legacy_frozen at baseline_commit; no direct importer detected via static scan"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.route_constraint_schema",
+      "path": "framework/route_constraint_schema.py",
+      "rationale": "core schema retained as legacy_frozen at baseline_commit; no direct importer detected via static scan"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.route_plan_schema",
+      "path": "framework/route_plan_schema.py",
+      "rationale": "core schema retained as legacy_frozen at baseline_commit; no direct importer detected via static scan"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.route_result_schema",
+      "path": "framework/route_result_schema.py",
+      "rationale": "core schema retained as legacy_frozen at baseline_commit; no direct importer detected via static scan"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.route_selection_schema",
+      "path": "framework/route_selection_schema.py",
+      "rationale": "core schema retained as legacy_frozen at baseline_commit; no direct importer detected via static scan"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.route_summary_schema",
+      "path": "framework/route_summary_schema.py",
+      "rationale": "core schema retained as legacy_frozen at baseline_commit; no direct importer detected via static scan"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.run_ledger_schema",
+      "path": "framework/run_ledger_schema.py",
+      "rationale": "core schema retained as legacy_frozen at baseline_commit; no direct importer detected via static scan"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.run_manifest_schema",
+      "path": "framework/run_manifest_schema.py",
+      "rationale": "core schema retained as legacy_frozen at baseline_commit; no direct importer detected via static scan"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.run_metrics_schema",
+      "path": "framework/run_metrics_schema.py",
+      "rationale": "core schema retained as legacy_frozen at baseline_commit; no direct importer detected via static scan"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.run_request_schema",
+      "path": "framework/run_request_schema.py",
+      "rationale": "core schema retained as legacy_frozen at baseline_commit; no direct importer detected via static scan"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.run_result_schema",
+      "path": "framework/run_result_schema.py",
+      "rationale": "core schema retained as legacy_frozen at baseline_commit; no direct importer detected via static scan"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.run_state_schema",
+      "path": "framework/run_state_schema.py",
+      "rationale": "core schema retained as legacy_frozen at baseline_commit; no direct importer detected via static scan"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.scope_audit_result_schema",
+      "path": "framework/scope_audit_result_schema.py",
+      "rationale": "core schema retained as legacy_frozen at baseline_commit; no direct importer detected via static scan"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.scope_guard_schema",
+      "path": "framework/scope_guard_schema.py",
+      "rationale": "core schema retained as legacy_frozen at baseline_commit; no direct importer detected via static scan"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.scope_result_schema",
+      "path": "framework/scope_result_schema.py",
+      "rationale": "core schema retained as legacy_frozen at baseline_commit; no direct importer detected via static scan"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.session_audit_plan_schema",
+      "path": "framework/session_audit_plan_schema.py",
+      "rationale": "core schema retained as legacy_frozen at baseline_commit; no direct importer detected via static scan"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.session_audit_result_schema",
+      "path": "framework/session_audit_result_schema.py",
+      "rationale": "core schema retained as legacy_frozen at baseline_commit; no direct importer detected via static scan"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.session_audit_summary_schema",
+      "path": "framework/session_audit_summary_schema.py",
+      "rationale": "core schema retained as legacy_frozen at baseline_commit; no direct importer detected via static scan"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.session_prompt_plan_schema",
+      "path": "framework/session_prompt_plan_schema.py",
+      "rationale": "core schema retained as legacy_frozen at baseline_commit; no direct importer detected via static scan"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.session_prompt_result_schema",
+      "path": "framework/session_prompt_result_schema.py",
+      "rationale": "core schema retained as legacy_frozen at baseline_commit; no direct importer detected via static scan"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.session_route_record_schema",
+      "path": "framework/session_route_record_schema.py",
+      "rationale": "core schema retained as legacy_frozen at baseline_commit; no direct importer detected via static scan"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.session_schema",
+      "path": "framework/session_schema.py",
+      "rationale": "core schema retained as legacy_frozen at baseline_commit; no direct importer detected via static scan"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.session_window_audit_schema",
+      "path": "framework/session_window_audit_schema.py",
+      "rationale": "core schema retained as legacy_frozen at baseline_commit; no direct importer detected via static scan"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.session_window_plan_schema",
+      "path": "framework/session_window_plan_schema.py",
+      "rationale": "core schema retained as legacy_frozen at baseline_commit; no direct importer detected via static scan"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.session_window_result_schema",
+      "path": "framework/session_window_result_schema.py",
+      "rationale": "core schema retained as legacy_frozen at baseline_commit; no direct importer detected via static scan"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.task_artifact_link_schema",
+      "path": "framework/task_artifact_link_schema.py",
+      "rationale": "core schema retained as legacy_frozen at baseline_commit; no direct importer detected via static scan"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.tool_invocation_schema",
+      "path": "framework/tool_invocation_schema.py",
+      "rationale": "core schema retained as legacy_frozen at baseline_commit; no direct importer detected via static scan"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.tool_result_schema",
+      "path": "framework/tool_result_schema.py",
+      "rationale": "core schema retained as legacy_frozen at baseline_commit; no direct importer detected via static scan"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.validation_failure_summary_schema",
+      "path": "framework/validation_failure_summary_schema.py",
+      "rationale": "core schema retained as legacy_frozen at baseline_commit; no direct importer detected via static scan"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.validation_gate_audit_result_schema",
+      "path": "framework/validation_gate_audit_result_schema.py",
+      "rationale": "core schema retained as legacy_frozen at baseline_commit; no direct importer detected via static scan"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.validation_gate_result_schema",
+      "path": "framework/validation_gate_result_schema.py",
+      "rationale": "core schema retained as legacy_frozen at baseline_commit; no direct importer detected via static scan"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.validation_gate_schema",
+      "path": "framework/validation_gate_schema.py",
+      "rationale": "core schema retained as legacy_frozen at baseline_commit; no direct importer detected via static scan"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.validation_outcome_schema",
+      "path": "framework/validation_outcome_schema.py",
+      "rationale": "core schema retained as legacy_frozen at baseline_commit; no direct importer detected via static scan"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.validation_plan_result_schema",
+      "path": "framework/validation_plan_result_schema.py",
+      "rationale": "core schema retained as legacy_frozen at baseline_commit; no direct importer detected via static scan"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.validation_plan_schema",
+      "path": "framework/validation_plan_schema.py",
+      "rationale": "core schema retained as legacy_frozen at baseline_commit; no direct importer detected via static scan"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.validation_session_record_schema",
+      "path": "framework/validation_session_record_schema.py",
+      "rationale": "core schema retained as legacy_frozen at baseline_commit; no direct importer detected via static scan"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.validation_summary_schema",
+      "path": "framework/validation_summary_schema.py",
+      "rationale": "core schema retained as legacy_frozen at baseline_commit; no direct importer detected via static scan"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.workspace_schema",
+      "path": "framework/workspace_schema.py",
+      "rationale": "core schema retained as legacy_frozen at baseline_commit; no direct importer detected via static scan"
+    },
+    {
+      "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
+      "classification": "legacy_frozen",
+      "consumer_count": 0,
+      "consumer_modules": [],
+      "module": "framework.write_intent_schema",
+      "path": "framework/write_intent_schema.py",
+      "rationale": "core schema retained as legacy_frozen at baseline_commit; no direct importer detected via static scan"
+    }
+  ],
+  "supersedes": [
+    "config/promotion_manifest.json (legacy; frozen pending migration)",
+    "docs/* narrative roadmaps (advisory only)"
+  ],
+  "total": 179
+}

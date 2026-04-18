@@ -334,5 +334,25 @@ governance-check:
 	@python3 ./bin/governance_reconcile.py --check --fail-on-diff
 
 governance-test:
-	@python3 -m unittest -v tests.test_governance_reconcile
+	@python3 -m unittest -v tests.test_governance_reconcile tests.test_governance_phase0_closure tests.test_governance_phase1_ratification tests.test_governance_phase2_adoption tests.test_governance_tactical_unlock tests.test_governance_next_class
+
+.PHONY: governance-phase0-close governance-phase1-ratify governance-phase2-extract governance-unlock-eval governance-ratify
+
+governance-phase0-close:
+	@python3 ./bin/governance_phase0_closer.py --write --fail-on-diff
+
+governance-phase1-ratify:
+	@python3 ./bin/governance_phase1_ratifier.py --write --fail-on-diff
+
+governance-phase2-extract:
+	@python3 ./bin/governance_phase2_extractor.py --write --fail-on-diff
+
+governance-unlock-eval:
+	@python3 ./bin/governance_unlock_evaluator.py --write --fail-on-diff
+
+governance-ratify: governance-phase0-close governance-phase1-ratify governance-phase2-extract governance-unlock-eval
+	@python3 ./bin/governance_phase0_closer.py --check --fail-on-diff
+	@python3 ./bin/governance_phase1_ratifier.py --check --fail-on-diff
+	@python3 ./bin/governance_phase2_extractor.py --check --fail-on-diff
+	@python3 ./bin/governance_unlock_evaluator.py --check --fail-on-diff
 

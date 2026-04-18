@@ -290,3 +290,11 @@ authority only and is frozen pending explicit migration (see
 - [governance/phase_gate_status.json](governance/phase_gate_status.json) — gate table for canonical phases 0..6
 - [governance/runtime_contract_version.json](governance/runtime_contract_version.json) — runtime primitive surface and contract version
 - [governance/tactical_family_classification.json](governance/tactical_family_classification.json) — EO / ED / MC / LOB / ORT / PGS classification
+
+## Governance ratification state (machine-readable)
+
+- [governance/phase0_closure_decision.json](governance/phase0_closure_decision.json) — Phase 0 closure decision (closed_ratified)
+- [governance/phase1_ratification_decision.json](governance/phase1_ratification_decision.json) — Phase 1 ratification decision (closed_ratified)
+- [governance/phase2_adoption_decision.json](governance/phase2_adoption_decision.json) — Phase 2 adoption decision (adopted_partial; not closed)
+- [governance/tactical_unlock_criteria.json](governance/tactical_unlock_criteria.json) — per-family unlock preconditions (all locked)
+- [governance/next_package_class.json](governance/next_package_class.json) — current_allowed_class = ratification_only
