@@ -147,6 +147,8 @@ __all__ = [
     "run_phase2_typed_tool_impl_3_validation",
     "run_phase2_manager_wire_validation",
     "assert_phase2_manager_wire_present",
+    "run_phase2_manager_decision_validation",
+    "assert_phase2_manager_decision_present",
 ]
 
 
@@ -706,4 +708,56 @@ def assert_phase2_manager_wire_present(result: dict) -> list:
     tool_summary = view.get("typed_tool_summary") or {}
     if (tool_summary.get("tool_count") or 0) < 1:
         errors.append("typed_tool_summary_tool_count_lt_1")
+    return errors
+
+
+# ------------------------------------------------------------------
+# Phase 2 manager-decision validation helpers
+# ------------------------------------------------------------------
+
+_VALID_DECISION_SIGNALS = frozenset(
+    {"ok", "all_tools_blocked", "no_tools_ran", "partial_block", "phase2_absent"}
+)
+
+
+def run_phase2_manager_decision_validation(
+    *,
+    base_root: _P2Path,
+    session_id: str = "phase2-manager-decision-1",
+) -> dict:
+    """Run a real runtime job and derive the operational signal.
+
+    Returns dict with keys: runtime_payload, manager_view, operational_signal.
+    """
+    from .framework_control_plane import _phase2_manager_decision, _phase2_manager_extract
+
+    runtime_payload = run_phase2_runtime_wire_validation(
+        allow_run_command=True,
+        tmp_root=_P2Path(base_root),
+    )
+    manager_view = _phase2_manager_extract(runtime_payload)
+    operational_signal = _phase2_manager_decision(manager_view)
+    return {
+        "runtime_payload": runtime_payload,
+        "manager_view": manager_view,
+        "operational_signal": operational_signal,
+    }
+
+
+def assert_phase2_manager_decision_present(result: dict) -> list:
+    """Validate manager decision result; return list of error labels (empty = OK)."""
+    errors: list[str] = []
+    if "manager_view" not in result:
+        errors.append("missing_manager_view")
+    if "operational_signal" not in result:
+        errors.append("missing_operational_signal")
+        return errors
+    sig = result["operational_signal"]
+    if sig.get("signal") not in _VALID_DECISION_SIGNALS:
+        errors.append(f"invalid_signal_value:{sig.get('signal')!r}")
+    if "reason" not in sig:
+        errors.append("missing_reason_field")
+    for k in ("blocked_count", "executed_count", "tool_count"):
+        if not isinstance(sig.get(k), int):
+            errors.append(f"non_int_field:{k}")
     return errors

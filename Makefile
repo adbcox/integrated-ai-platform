@@ -453,3 +453,14 @@ phase2-manager-wire-test:
 
 phase2-manager-wire-validate:
 	@python3 ./artifacts/phase2_manager_wire_validation_report.py
+
+.PHONY: phase2-manager-decision-test phase2-manager-decision-validate
+
+phase2-manager-decision-test:
+	@python3 -m unittest -v \
+		tests.test_framework_control_plane_phase2_manager_decision \
+		tests.test_runtime_validation_pack_phase2_manager_decision \
+		tests.test_phase2_manager_decision_validation
+
+phase2-manager-decision-validate:
+	@python3 ./artifacts/phase2_manager_decision_validation_report.py

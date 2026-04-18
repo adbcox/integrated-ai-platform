@@ -137,9 +137,50 @@ def run_managed_job(job: Any, *, runtime: Any) -> dict[str, Any]:
     return payload
 
 
+def _phase2_manager_decision(manager_view: dict[str, Any]) -> dict[str, Any]:
+    """Derive a deterministic operational signal from a phase2_manager_view dict.
+
+    Returns a dict with keys: signal, reason, blocked_count,
+    executed_count, tool_count, final_outcome.
+    signal is one of: ok | all_tools_blocked | no_tools_ran |
+    partial_block | phase2_absent.
+    """
+    if not manager_view.get("phase2_payload_present"):
+        return {
+            "signal": "phase2_absent",
+            "reason": "phase2 payload not present in result",
+            "blocked_count": 0,
+            "executed_count": 0,
+            "tool_count": 0,
+            "final_outcome": str(manager_view.get("final_outcome") or ""),
+        }
+    tool_summary = manager_view.get("typed_tool_summary") or {}
+    tool_count = int(tool_summary.get("tool_count") or 0)
+    blocked_count = int(tool_summary.get("blocked_count") or 0)
+    executed_count = int(tool_summary.get("executed_count") or 0)
+    final_outcome = str(manager_view.get("final_outcome") or "")
+    if tool_count == 0:
+        signal, reason = "no_tools_ran", "no typed tool observations recorded"
+    elif blocked_count > 0 and executed_count == 0:
+        signal, reason = "all_tools_blocked", "all tool attempts were blocked by permission engine"
+    elif blocked_count > 0 and executed_count > 0:
+        signal, reason = "partial_block", "some tool attempts were blocked; some executed"
+    else:
+        signal, reason = "ok", "all observed tools executed without block"
+    return {
+        "signal": signal,
+        "reason": reason,
+        "blocked_count": blocked_count,
+        "executed_count": executed_count,
+        "tool_count": tool_count,
+        "final_outcome": final_outcome,
+    }
+
+
 __all__ = [
     "_phase2_manager_present",
     "_phase2_manager_tool_summary",
     "_phase2_manager_extract",
+    "_phase2_manager_decision",
     "run_managed_job",
 ]
