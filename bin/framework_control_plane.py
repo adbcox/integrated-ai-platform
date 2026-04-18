@@ -31,6 +31,7 @@ from framework import (
     select_backend_profile_auto,
 )
 from framework.job_schema import LearningHooksConfig
+from framework.framework_control_plane import _phase2_manager_extract
 
 DEFAULT_STATE_ROOT = REPO_ROOT / "artifacts" / "framework"
 DEFAULT_LEARNING_LATEST = DEFAULT_STATE_ROOT / "learning" / "latest.json"
@@ -1000,6 +1001,7 @@ def main() -> int:
         "manager_learning_bridge": str(manager_bridge_latest),
         "task_portfolio": args.task_portfolio,
     }
+    output["phase2_manager_view"] = _phase2_manager_extract(primary_result_payload)
 
     if args.json:
         print(json.dumps(output, ensure_ascii=False, indent=2))
