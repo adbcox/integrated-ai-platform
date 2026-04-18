@@ -1,5 +1,5 @@
 {
-  "active_count": 1,
+  "active_count": 2,
   "authority_owner": "governance",
   "baseline_commit": "53ae4d4f177b176a7bffaa63988f63fa0efa622c",
   "generated_at": "2026-04-18T08:33:06-04:00",
@@ -1387,6 +1387,22 @@
       "rationale": "core schema retained as legacy_frozen at baseline_commit; no direct importer detected via static scan"
     },
     {
+      "adr_ref": "governance/authority_adr_0001_source_of_truth.md",
+      "classification": "active",
+      "consumer_count": 6,
+      "consumer_modules": [
+        "framework/inference_gateway.py",
+        "framework/local_command_runner.py",
+        "framework/runtime_artifact_service.py",
+        "framework/runtime_validation_pack.py",
+        "tests/test_inference_gateway.py",
+        "tests/test_runtime_artifact_service.py"
+      ],
+      "module": "framework.runtime_telemetry_schema",
+      "path": "framework/runtime_telemetry_schema.py",
+      "rationale": "imported by 6 non-schema module(s); required surface of active runtime/tactical code"
+    },
+    {
       "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
       "classification": "legacy_frozen",
       "consumer_count": 0,
@@ -1634,5 +1650,5 @@
     "config/promotion_manifest.json (legacy; frozen pending migration)",
     "docs/* narrative roadmaps (advisory only)"
   ],
-  "total": 179
+  "total": 180
 }

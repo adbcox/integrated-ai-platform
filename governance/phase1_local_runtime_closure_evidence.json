@@ -1,0 +1,64 @@
+{
+  "authority_owner": "governance",
+  "baseline_commit": "4ab27440264e16c5b0db8bb736f822d4fbc706c6",
+  "closure_adr_ref": "governance/authority_adr_0018_phase1_local_runtime_closure.md",
+  "closure_package_id": "PHASE-1-CLOSE-1",
+  "deliverables": {
+    "baseline_validation_pack": {
+      "cli_entrypoint": "artifacts/phase1_local_runtime_validation_report.py",
+      "module": "framework/runtime_validation_pack.py",
+      "offline_test": "tests/test_phase1_local_runtime_validation.py"
+    },
+    "deterministic_workspace_artifact_contract": {
+      "artifact_service": "framework/runtime_artifact_service.py",
+      "offline_tests": [
+        "tests/test_runtime_artifact_service.py",
+        "tests/test_runtime_workspace_contract.py"
+      ],
+      "workspace_contract": "framework/runtime_workspace_contract.py"
+    },
+    "internal_inference_gateway": {
+      "module": "framework/inference_gateway.py",
+      "offline_test": "tests/test_inference_gateway.py"
+    },
+    "normalized_telemetry_schema": {
+      "module": "framework/runtime_telemetry_schema.py"
+    },
+    "stable_model_profiles": {
+      "module": "framework/model_profiles.py",
+      "offline_test": "tests/test_model_profiles.py"
+    },
+    "wrapped_local_command_runner": {
+      "module": "framework/local_command_runner.py",
+      "offline_test": "tests/test_local_command_runner.py"
+    }
+  },
+  "make_targets": {
+    "phase1_runtime_test": "phase1-runtime-test",
+    "phase1_runtime_validate": "phase1-runtime-validate"
+  },
+  "phase_authority_refs": {
+    "adr_0004_phase1_closure": "governance/authority_adr_0004_phase1_closure.md",
+    "phase1_ratification_decision": "governance/phase1_ratification_decision.json"
+  },
+  "phase_id": 1,
+  "phase_scope": "local_runtime_hardening_for_ollama_first_execution",
+  "schema_version": 1,
+  "success_invariants": {
+    "artifact_bundle_emitted_per_run": true,
+    "baseline_validation_pack_succeeds_deterministically": true,
+    "make_check_passes": true,
+    "make_quick_passes": true,
+    "model_profiles_exercised_by_tests": true,
+    "second_validation_run_uses_fresh_roots_without_manual_repair": true,
+    "workspace_and_artifact_contract_exercised_by_tests": true,
+    "wrapped_command_runner_exercised_by_tests": true
+  },
+  "supersedes": [],
+  "validation_evidence": {
+    "phase1_runtime_test_result": "passed (29 tests)",
+    "phase1_runtime_validate_final_outcome": "completed",
+    "run_bundle_manifest_schema_version": 1,
+    "second_run_reproducibility": "verified (fresh per-run scratch/artifact roots)"
+  }
+}

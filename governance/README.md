@@ -35,6 +35,7 @@ frozen pending explicit migration (see ADR 0001).
 - [governance/authority_adr_0015_pgs_family_unlock_review.md](authority_adr_0015_pgs_family_unlock_review.md) — per-family tactical review for PGS (TREV-PGS-1); decision: remains_locked at baseline d8addca14c9a6b76e1a4e0cf1b45ef1e31e470f8
 - [governance/authority_adr_0016_mc_review_amendment_for_seed_compatibility.md](authority_adr_0016_mc_review_amendment_for_seed_compatibility.md) — amends TREV-MC-1 enforcement so future additive MC seed packets can add adoption/regression evidence without unlocking MC
 - [governance/authority_adr_0017_tactical_unlock_living_surface_fields.md](authority_adr_0017_tactical_unlock_living_surface_fields.md) — classifies `total_family_files` inside `tactical_unlock_criteria.json` as a living generator-owned subfield (decision fields remain governance-owned); accepts MC-SEED-1
+- [governance/authority_adr_0018_phase1_local_runtime_closure.md](authority_adr_0018_phase1_local_runtime_closure.md) — records Phase 1 local runtime hardening closure (PHASE-1-CLOSE-1); owns evidence at `governance/phase1_local_runtime_closure_evidence.json`
 
 ## How to update
 
