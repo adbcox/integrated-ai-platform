@@ -1,0 +1,46 @@
+{
+  "accepted_commits": [
+    "0981c22b17a87d3e6548c0b337a40305c068c3d3",
+    "864945ce43edd5f9bd7385eeb26740eabe94d969"
+  ],
+  "accepted_state": {
+    "current_allowed_class": "ratification_only",
+    "lob_w3_paused_under_adr_0003": true,
+    "phase2_status": "closed_ratified",
+    "tactical_families_locked": true
+  },
+  "authority_owner": "governance",
+  "baseline_commit": "864945ce43edd5f9bd7385eeb26740eabe94d969",
+  "generated_at": "2026-04-18T14:08:23Z",
+  "invariants": {
+    "machine_acceptance_recorded_here": true,
+    "phase0_closure_invariant_under_consumer_drift": true,
+    "phase2_closure_authority_adr": "governance/authority_adr_0008_phase2_closure.md"
+  },
+  "living_artifacts": [
+    {
+      "classification": "living_generator_owned",
+      "owner_generator": "bin/governance_phase0_closer.py",
+      "path": "governance/schema_contract_registry.json",
+      "rationale": "phase0_closer statically scans committed Python sources for schema consumer modules; freezing the registry while tracked consumers legally change would make deterministic regeneration impossible and would break tests/test_governance_phase0_closure.py::test_closer_check_is_idempotent"
+    },
+    {
+      "classification": "living_generator_owned",
+      "owner_generator": "bin/governance_reconcile.py",
+      "path": "governance/runtime_contract_version.json",
+      "rationale": "governance_reconcile derives the contract version fingerprint from the sha256 of each runtime primitive and records observed_adoption_paths from committed static imports; the file must track the tree"
+    },
+    {
+      "classification": "living_generator_owned",
+      "owner_generator": "bin/governance_reconcile.py",
+      "path": "governance/runtime_adoption_report.json",
+      "rationale": "governance_reconcile enumerates direct_runtime_paths and per-family adoption by static import scan; the file must track the tree"
+    }
+  ],
+  "schema_version": 1,
+  "supersedes": [
+    "RECON-W2B forbidden-edit invariant for schema_contract_registry.json",
+    "RECON-W2B forbidden-edit invariant for runtime_contract_version.json",
+    "RECON-W2B forbidden-edit invariant for runtime_adoption_report.json"
+  ]
+}

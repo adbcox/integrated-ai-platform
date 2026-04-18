@@ -25,6 +25,8 @@ frozen pending explicit migration (see ADR 0001).
 - [ADR 0001 — Machine-Readable Source of Truth](authority_adr_0001_source_of_truth.md)
 - [ADR 0002 — Tactical Family Classification](authority_adr_0002_tactical_family_classification.md)
 - [ADR 0003 — LOB-W3 Classification](authority_adr_0003_lob_w3_classification.md)
+- [governance/living_generator_artifacts.json](living_generator_artifacts.json) — machine-readable classification of living generator-owned artifacts and acceptance record for CAP-P2-CLOSE-1 / RECON-W2B
+- [governance/authority_adr_0009_living_generator_artifacts.md](authority_adr_0009_living_generator_artifacts.md) — narrative authority for the living-artifact classification and acceptance event
 
 ## How to update
 
