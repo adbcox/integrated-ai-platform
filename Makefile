@@ -364,3 +364,17 @@ capability-phase2-run:
 capability-phase2-record:
 	@python3 ./bin/governance_phase2_evidence_recorder.py --write --fail-on-diff
 
+.PHONY: phase1-runtime-test phase1-runtime-validate
+
+phase1-runtime-test:
+	@python3 -m unittest -v \
+		tests.test_inference_gateway \
+		tests.test_model_profiles \
+		tests.test_runtime_workspace_contract \
+		tests.test_runtime_artifact_service \
+		tests.test_local_command_runner \
+		tests.test_phase1_local_runtime_validation
+
+phase1-runtime-validate:
+	@python3 ./artifacts/phase1_local_runtime_validation_report.py
+
