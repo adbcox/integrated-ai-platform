@@ -295,6 +295,7 @@ authority only and is frozen pending explicit migration (see
 
 - [governance/phase0_closure_decision.json](governance/phase0_closure_decision.json) — Phase 0 closure decision (closed_ratified)
 - [governance/phase1_ratification_decision.json](governance/phase1_ratification_decision.json) — Phase 1 ratification decision (closed_ratified)
-- [governance/phase2_adoption_decision.json](governance/phase2_adoption_decision.json) — Phase 2 adoption decision (adopted_partial; not closed)
+- [governance/phase2_adoption_decision.json](governance/phase2_adoption_decision.json) — Phase 2 adoption decision (closed by CAP-P2-CLOSE-1)
+- [governance/phase2_closure_evidence.json](governance/phase2_closure_evidence.json) — Phase 2 closure evidence (CAP-P2-CLOSE-1)
 - [governance/tactical_unlock_criteria.json](governance/tactical_unlock_criteria.json) — per-family unlock preconditions (all locked)
 - [governance/next_package_class.json](governance/next_package_class.json) — current_allowed_class = ratification_only

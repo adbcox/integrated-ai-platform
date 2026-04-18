@@ -356,3 +356,11 @@ governance-ratify: governance-phase0-close governance-phase1-ratify governance-p
 	@python3 ./bin/governance_phase2_extractor.py --check --fail-on-diff
 	@python3 ./bin/governance_unlock_evaluator.py --check --fail-on-diff
 
+.PHONY: capability-phase2-run capability-phase2-record
+
+capability-phase2-run:
+	@python3 -m pytest -q tests/capability/test_phase2_innerloop_closure.py tests/capability/test_phase2_innerloop_closure_negative.py
+
+capability-phase2-record:
+	@python3 ./bin/governance_phase2_evidence_recorder.py --write --fail-on-diff
+

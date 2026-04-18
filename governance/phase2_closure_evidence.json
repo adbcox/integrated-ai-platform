@@ -1,0 +1,30 @@
+{
+  "adr_ref": "governance/authority_adr_0008_phase2_closure.md",
+  "authority_owner": "governance",
+  "baseline_commit": "595dc8750ed671fb23d3cec0be434c76dad818f5",
+  "driver_path": "tests/capability/test_phase2_innerloop_closure.py",
+  "final_worker_outcome_failure_class": "",
+  "final_worker_outcome_status": "completed",
+  "framework_edit_justification": "",
+  "framework_edits_required": false,
+  "generated_at": "2026-04-18T08:57:50-04:00",
+  "negative_driver_path": "tests/capability/test_phase2_innerloop_closure_negative.py",
+  "negative_pytest_outcome": "passed",
+  "negative_test_outcome": "passed",
+  "notes": "Positive probe drives _execute_inner_loop through two failing validate cycles and a successful third cycle. Negative probe uses two non-converging repair edits with max_cycles=2 to walk the cycle-limit termination path.",
+  "observed_cycle_count": 3,
+  "observed_trace_kinds": [
+    "inner_loop_cycle",
+    "inner_loop_rollback",
+    "tool_observation",
+    "tool_permission_decision"
+  ],
+  "package_id": "CAP-P2-CLOSE-1",
+  "positive_pytest_outcome": "passed",
+  "positive_test_outcome": "passed",
+  "repair_edits_applied": 2,
+  "schema_version": 1,
+  "supersedes": [
+    "governance/phase2_adoption_decision.json (adopted_partial; superseded by closure decision)"
+  ]
+}

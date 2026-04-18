@@ -48,18 +48,23 @@
       "phase_name": "runtime_contract_foundation"
     },
     {
-      "blocking_reason_if_open": "tactical families have not been reclassified onto the shared runtime; adoption is partial and unratified",
-      "classification": "partially_adopted_open_governance",
+      "blocking_reason_if_open": "",
+      "classification": "closed_ratified",
+      "closure_evidence_ref": "governance/phase2_closure_evidence.json",
+      "closure_package_id": "CAP-P2-CLOSE-1",
       "code_evidence": [
         "framework/worker_runtime.py",
         "bin/framework_control_plane.py"
       ],
       "governance_evidence": [
-        "governance/runtime_adoption_report.json"
+        "governance/runtime_adoption_report.json",
+        "governance/phase2_closure_evidence.json",
+        "governance/authority_adr_0008_phase2_closure.md"
       ],
-      "notes": "worker_runtime emits bounded retry, tool_permission_decision, and tool_observation traces; phase stays open on governance until adoption coverage is measured and ratified.",
+      "notes": "Phase 2 closed by CAP-P2-CLOSE-1 via bounded inner_loop repair evidence. No tactical family unlocked; LOB-W3 remains paused under ADR 0003.",
       "phase_id": 2,
-      "phase_name": "inner_loop_autonomous_repair_and_shared_runtime_adoption"
+      "phase_name": "inner_loop_autonomous_repair_and_shared_runtime_adoption",
+      "ratified_by_adr": "governance/authority_adr_0008_phase2_closure.md"
     },
     {
       "blocking_reason_if_open": "retrieval/repomap evidence exists in code but has not been ratified as phase advancement",
