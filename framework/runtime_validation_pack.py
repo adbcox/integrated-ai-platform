@@ -145,6 +145,8 @@ __all__ = [
     "run_phase2_typed_tool_impl_2_validation",
     "REQUIRED_PHASE2_TYPED_TOOLS_IMPL_3",
     "run_phase2_typed_tool_impl_3_validation",
+    "run_phase2_manager_wire_validation",
+    "assert_phase2_manager_wire_present",
 ]
 
 
@@ -659,3 +661,49 @@ def run_phase2_typed_tool_impl_3_validation(
     )
 
     return runtime._execute_job(job)
+
+
+# ------------------------------------------------------------------ #
+# Phase 2 manager-wire validation helpers                              #
+# ------------------------------------------------------------------ #
+
+def run_phase2_manager_wire_validation(
+    *,
+    base_root: _P2Path,
+    session_id: str = "phase2-manager-wire-1",
+) -> dict:
+    """Run a real runtime job and pass the result through the manager extract surface.
+
+    Returns a dict with keys ``runtime_payload`` and ``manager_view``.
+    """
+    from .framework_control_plane import _phase2_manager_extract
+
+    runtime_payload = run_phase2_runtime_wire_validation(
+        allow_run_command=True,
+        tmp_root=_P2Path(base_root),
+    )
+    manager_view = _phase2_manager_extract(runtime_payload)
+    return {
+        "runtime_payload": runtime_payload,
+        "manager_view": manager_view,
+    }
+
+
+def assert_phase2_manager_wire_present(result: dict) -> list:
+    """Validate manager wire result; return list of error labels (empty = OK)."""
+    errors: list[str] = []
+    if "runtime_payload" not in result:
+        errors.append("missing_runtime_payload")
+    if "manager_view" not in result:
+        errors.append("missing_manager_view")
+        return errors
+    view = result["manager_view"]
+    if not view.get("phase2_payload_present"):
+        errors.append("phase2_payload_present_false")
+    session_summary = view.get("canonical_session_summary") or {}
+    if not session_summary.get("session_id"):
+        errors.append("canonical_session_summary_session_id_empty")
+    tool_summary = view.get("typed_tool_summary") or {}
+    if (tool_summary.get("tool_count") or 0) < 1:
+        errors.append("typed_tool_summary_tool_count_lt_1")
+    return errors

@@ -442,3 +442,14 @@ phase2-tool-impl-3-test:
 
 phase2-tool-impl-3-validate:
 	@PYTHONPATH=. python3 ./artifacts/phase2_tool_impl_3_validation_report.py
+
+.PHONY: phase2-manager-wire-test phase2-manager-wire-validate
+
+phase2-manager-wire-test:
+	@python3 -m unittest -v \
+		tests.test_framework_control_plane_phase2_manager_wire \
+		tests.test_runtime_validation_pack_phase2_manager_wire \
+		tests.test_phase2_manager_wire_validation
+
+phase2-manager-wire-validate:
+	@python3 ./artifacts/phase2_manager_wire_validation_report.py
