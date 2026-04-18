@@ -1,6 +1,6 @@
 {
   "adoption_summary": {
-    "direct_runtime_paths_count": 0,
+    "direct_runtime_paths_count": 4,
     "primitives_measured": [
       "worker_runtime",
       "tool_system",
@@ -18,7 +18,38 @@
     ]
   },
   "authority_owner": "governance/authority_adr_0001_source_of_truth.md",
-  "direct_runtime_paths": [],
+  "direct_runtime_paths": [
+    {
+      "path": "bin/governance_phase2_evidence_recorder.py",
+      "primitives_used": [
+        "permission_engine",
+        "sandbox",
+        "worker_runtime",
+        "workspace"
+      ]
+    },
+    {
+      "path": "tests/capability/conftest.py",
+      "primitives_used": [
+        "permission_engine",
+        "sandbox",
+        "worker_runtime",
+        "workspace"
+      ]
+    },
+    {
+      "path": "tests/capability/test_phase2_innerloop_closure.py",
+      "primitives_used": [
+        "worker_runtime"
+      ]
+    },
+    {
+      "path": "tests/capability/test_phase2_innerloop_closure_negative.py",
+      "primitives_used": [
+        "worker_runtime"
+      ]
+    }
+  ],
   "generated_at": "2026-04-18T02:35:18-04:00",
   "non_adopting_families": [
     "mc",

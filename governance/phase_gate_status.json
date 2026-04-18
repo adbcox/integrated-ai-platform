@@ -48,7 +48,7 @@
       "phase_name": "runtime_contract_foundation"
     },
     {
-      "blocking_reason_if_open": "",
+      "blocking_reason_if_open": null,
       "classification": "closed_ratified",
       "closure_evidence_ref": "governance/phase2_closure_evidence.json",
       "closure_package_id": "CAP-P2-CLOSE-1",

@@ -26,17 +26,22 @@ class Phase2AdoptionTest(unittest.TestCase):
         payload = _load("inner_loop_contract.json")
         self.assertGreaterEqual(len(payload["trace_kinds_emitted"]), 1)
 
-    def test_phase2_decision_is_adopted_partial(self) -> None:
+    def test_phase2_decision_is_closed(self) -> None:
         decision = _load("phase2_adoption_decision.json")
-        self.assertEqual(decision["decision"], "adopted_partial")
+        self.assertEqual(decision["decision"], "closed")
 
-    def test_phase2_decision_never_closed_in_recon_w2(self) -> None:
+    def test_phase2_closure_metadata_present(self) -> None:
         decision = _load("phase2_adoption_decision.json")
-        self.assertNotEqual(
-            decision["decision"],
-            "closed",
-            "RECON-W2 must not set Phase 2 decision to closed",
+        self.assertEqual(
+            decision["closure_evidence_ref"],
+            "governance/phase2_closure_evidence.json",
         )
+        self.assertEqual(
+            decision["closure_adr_ref"],
+            "governance/authority_adr_0008_phase2_closure.md",
+        )
+        self.assertEqual(decision["closure_package_id"], "CAP-P2-CLOSE-1")
+        self.assertTrue(decision.get("closed_at_commit"))
 
     def test_phase2_records_baseline_commit(self) -> None:
         decision = _load("phase2_adoption_decision.json")

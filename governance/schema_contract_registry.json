@@ -387,21 +387,23 @@
     {
       "adr_ref": "governance/authority_adr_0001_source_of_truth.md",
       "classification": "active",
-      "consumer_count": 9,
+      "consumer_count": 11,
       "consumer_modules": [
         "artifacts/task_success_predictor.py",
         "bin/framework_control_plane.py",
+        "bin/governance_phase2_evidence_recorder.py",
         "framework/__init__.py",
         "framework/learning_hooks.py",
         "framework/queue_types.py",
         "framework/scheduler.py",
         "framework/state_store.py",
         "framework/worker_runtime.py",
-        "framework/workspace.py"
+        "framework/workspace.py",
+        "tests/capability/conftest.py"
       ],
       "module": "framework.job_schema",
       "path": "framework/job_schema.py",
-      "rationale": "imported by 9 non-schema module(s); required surface of active runtime/tactical code"
+      "rationale": "imported by 11 non-schema module(s); required surface of active runtime/tactical code"
     },
     {
       "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",

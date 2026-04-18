@@ -153,7 +153,60 @@ def _build_unlock_criteria() -> Dict[str, Any]:
     }
 
 
+def _load_closure_evidence() -> Dict[str, Any] | None:
+    path = GOV_DIR / "phase2_closure_evidence.json"
+    if not path.exists():
+        return None
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        return None
+    if not isinstance(payload, dict):
+        return None
+    pkg = payload.get("package_id")
+    adr = payload.get("adr_ref")
+    status = payload.get("final_worker_outcome_status")
+    if status != "completed" or not pkg or not adr:
+        return None
+    return {
+        "package_id": str(pkg),
+        "adr_ref": str(adr),
+        "evidence_ref": "governance/phase2_closure_evidence.json",
+    }
+
+
 def _build_next_package_class() -> Dict[str, Any]:
+    closure = _load_closure_evidence()
+    capability_transition: Dict[str, Any] = {
+        "from": "ratification_only",
+        "to": "capability_session",
+        "gate": (
+            "Phase 2 closure evidence (real-capability measurement_session) "
+            "must be ratified by a later reconciliation package"
+        ),
+        "blocked_until": "phase2_adoption_decision.json decision == closed",
+    }
+    if closure is not None:
+        capability_transition["consumed"] = True
+        capability_transition["consumed_by"] = "CAP-P2-CLOSE-1"
+        capability_transition["consumed_at_commit"] = (
+            "0981c22b17a87d3e6548c0b337a40305c068c3d3"
+        )
+        capability_transition["consumed_evidence_ref"] = closure["evidence_ref"]
+    if closure is not None:
+        justification = (
+            "RECON-W2B-CAP-P2-RATIFY-1 ratifies Phase 2 closed_ratified on "
+            "CAP-P2-CLOSE-1 evidence; Phase 0 and Phase 1 remain "
+            "closed_ratified. No tactical family is unlocked (LOB-W3 remains "
+            "paused under ADR 0003); the next allowed package class is "
+            "therefore ratification_only."
+        )
+    else:
+        justification = (
+            "RECON-W2 closes Phase 0 and Phase 1 and records Phase 2 as "
+            "adopted_partial. No tactical family is unlocked; the next "
+            "allowed package class is therefore ratification_only."
+        )
     return {
         "schema_version": SCHEMA_VERSION,
         "authority_owner": AUTHORITY_OWNER,
@@ -162,15 +215,7 @@ def _build_next_package_class() -> Dict[str, Any]:
         "baseline_commit": BASELINE_COMMIT,
         "current_allowed_class": "ratification_only",
         "transitions": [
-            {
-                "from": "ratification_only",
-                "to": "capability_session",
-                "gate": (
-                    "Phase 2 closure evidence (real-capability measurement_session) "
-                    "must be ratified by a later reconciliation package"
-                ),
-                "blocked_until": "phase2_adoption_decision.json decision == closed",
-            },
+            capability_transition,
             {
                 "from": "ratification_only",
                 "to": "tactical_review",
@@ -181,11 +226,7 @@ def _build_next_package_class() -> Dict[str, Any]:
                 "blocked_until": "all tactical families remain locked at baseline_commit",
             },
         ],
-        "justification": (
-            "RECON-W2 closes Phase 0 and Phase 1 and records Phase 2 as "
-            "adopted_partial. No tactical family is unlocked; the next "
-            "allowed package class is therefore ratification_only."
-        ),
+        "justification": justification,
         "ratified_by_adr": "governance/authority_adr_0007_next_class_ratification_only.md",
     }
 

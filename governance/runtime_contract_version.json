@@ -3,7 +3,12 @@
   "contract_version": "rt-1.0.0+d935b41a6621",
   "generated_at": "2026-04-18T02:35:18-04:00",
   "notes": "contract_version fingerprint derives from the sha256 of each primitive; any primitive change advances the contract version.",
-  "observed_adoption_paths": [],
+  "observed_adoption_paths": [
+    "bin/governance_phase2_evidence_recorder.py",
+    "tests/capability/conftest.py",
+    "tests/capability/test_phase2_innerloop_closure.py",
+    "tests/capability/test_phase2_innerloop_closure_negative.py"
+  ],
   "primitives": [
     {
       "line_count": 1004,

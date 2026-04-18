@@ -52,21 +52,21 @@
       "status": "materially_implemented_open_governance"
     },
     {
-      "blocking_reasons": [
-        "tactical families have not been reclassified onto the shared runtime; adoption is partial and unratified"
-      ],
+      "blocking_reasons": [],
       "code_anchors": [
         "framework/worker_runtime.py",
         "bin/framework_control_plane.py"
       ],
       "governance_evidence": [
-        "governance/runtime_adoption_report.json"
+        "governance/runtime_adoption_report.json",
+        "governance/phase2_closure_evidence.json",
+        "governance/authority_adr_0008_phase2_closure.md"
       ],
       "milestone_ref": null,
-      "notes": "worker_runtime emits bounded retry, tool_permission_decision, and tool_observation traces; phase stays open on governance until adoption coverage is measured and ratified.",
+      "notes": "Phase 2 closed by CAP-P2-CLOSE-1 via bounded inner_loop repair evidence. No tactical family unlocked; LOB-W3 remains paused under ADR 0003.",
       "phase_id": 2,
       "phase_name": "inner_loop_autonomous_repair_and_shared_runtime_adoption",
-      "status": "partially_adopted_open_governance"
+      "status": "closed_ratified"
     },
     {
       "blocking_reasons": [

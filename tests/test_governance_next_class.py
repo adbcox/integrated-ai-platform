@@ -60,8 +60,24 @@ class NextClassTest(unittest.TestCase):
         self.assertEqual(phase1["phase_id"], 1)
         self.assertEqual(phase1["decision"], "closed")
         self.assertEqual(phase2["phase_id"], 2)
-        self.assertEqual(phase2["decision"], "adopted_partial")
+        self.assertEqual(phase2["decision"], "closed")
         self.assertEqual(nextc["current_allowed_class"], "ratification_only")
+
+    def test_capability_session_transition_is_consumed(self) -> None:
+        payload = _load("next_package_class.json")
+        cap = next(
+            (t for t in payload["transitions"] if t["to"] == "capability_session"),
+            None,
+        )
+        self.assertIsNotNone(cap, "capability_session transition missing")
+        assert cap is not None
+        self.assertIs(cap.get("consumed"), True)
+        self.assertEqual(cap.get("consumed_by"), "CAP-P2-CLOSE-1")
+        self.assertEqual(
+            cap.get("consumed_evidence_ref"),
+            "governance/phase2_closure_evidence.json",
+        )
+        self.assertTrue(cap.get("consumed_at_commit"))
 
 
 if __name__ == "__main__":

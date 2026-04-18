@@ -154,7 +154,66 @@ def _build_contract() -> Dict[str, Any]:
     }
 
 
+def _load_closure_evidence() -> Dict[str, Any] | None:
+    path = GOV_DIR / "phase2_closure_evidence.json"
+    if not path.exists():
+        return None
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        return None
+    if not isinstance(payload, dict):
+        return None
+    pkg = payload.get("package_id")
+    adr = payload.get("adr_ref")
+    status = payload.get("final_worker_outcome_status")
+    pos = payload.get("positive_test_outcome")
+    neg = payload.get("negative_test_outcome")
+    cycles = payload.get("observed_cycle_count")
+    if status != "completed" or pos != "passed" or neg != "passed":
+        return None
+    try:
+        cycles_ok = int(cycles) >= 2
+    except (TypeError, ValueError):
+        cycles_ok = False
+    if not cycles_ok or not pkg or not adr:
+        return None
+    return {
+        "package_id": str(pkg),
+        "adr_ref": str(adr),
+        "evidence_ref": "governance/phase2_closure_evidence.json",
+    }
+
+
 def _build_decision() -> Dict[str, Any]:
+    closure = _load_closure_evidence()
+    if closure is not None:
+        return {
+            "schema_version": SCHEMA_VERSION,
+            "authority_owner": AUTHORITY_OWNER,
+            "generated_at": _head_iso(),
+            "supersedes": [
+                "governance/authority_adr_0005_phase2_partial_adoption.md "
+                "(adopted_partial snapshot; superseded by CAP-P2-CLOSE-1 closure)",
+                *SUPERSEDES,
+            ],
+            "baseline_commit": BASELINE_COMMIT,
+            "phase_id": 2,
+            "decision": "closed",
+            "code_anchors": [
+                "framework/worker_runtime.py",
+                "bin/framework_control_plane.py",
+            ],
+            "contract_ref": "governance/inner_loop_contract.json",
+            "open_blockers": [],
+            "next_blocker_class": "ratification_only",
+            "as_of_commit": BASELINE_COMMIT,
+            "ratified_by_adr": closure["adr_ref"],
+            "closed_at_commit": "0981c22b17a87d3e6548c0b337a40305c068c3d3",
+            "closure_evidence_ref": closure["evidence_ref"],
+            "closure_adr_ref": closure["adr_ref"],
+            "closure_package_id": closure["package_id"],
+        }
     return {
         "schema_version": SCHEMA_VERSION,
         "authority_owner": AUTHORITY_OWNER,

@@ -1,8 +1,8 @@
 {
-  "as_of_commit": "595dc8750ed671fb23d3cec0be434c76dad818f5",
+  "as_of_commit": "53ae4d4f177b176a7bffaa63988f63fa0efa622c",
   "authority_owner": "governance",
   "baseline_commit": "53ae4d4f177b176a7bffaa63988f63fa0efa622c",
-  "closed_at_commit": "595dc8750ed671fb23d3cec0be434c76dad818f5",
+  "closed_at_commit": "0981c22b17a87d3e6548c0b337a40305c068c3d3",
   "closure_adr_ref": "governance/authority_adr_0008_phase2_closure.md",
   "closure_evidence_ref": "governance/phase2_closure_evidence.json",
   "closure_package_id": "CAP-P2-CLOSE-1",
