@@ -474,3 +474,13 @@ phase2-exit-wire-test:
 
 phase2-exit-wire-validate:
 	@PYTHONPATH=. python3 ./artifacts/phase2_exit_wire_validation_report.py
+
+.PHONY: phase2-probe-wire-test phase2-probe-wire-validate
+
+phase2-probe-wire-test:
+	@python3 -m unittest -v \
+		tests.test_bin_framework_control_plane_typed_tool_probe \
+		tests.test_phase2_probe_wire_validation
+
+phase2-probe-wire-validate:
+	@PYTHONPATH=. python3 ./artifacts/phase2_probe_wire_validation_report.py

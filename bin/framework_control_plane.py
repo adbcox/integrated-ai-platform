@@ -77,6 +77,7 @@ def parse_args() -> argparse.Namespace:
             "replay_queue_generation",
             "replay_queue_execution",
             "campaign_profile_matrix",
+            "typed_tool_probe",
         ],
         help="Predefined real repo workflow template routed through framework execution.",
     )
@@ -645,6 +646,37 @@ def _campaign_profile_matrix_template() -> dict[str, Any]:
     }
 
 
+def _typed_tool_probe_template() -> dict[str, Any]:
+    return {
+        "task_class": JobClass.VALIDATION_CHECK_EXECUTION.value,
+        "shell_command": "true",
+        "inference_prompt": (
+            "Phase 2 typed tool probe: read "
+            "framework/framework_control_plane.py "
+            "then write probe artifact via APPLY_PATCH write_text contract."
+        ),
+        "artifact_inputs": ["framework/framework_control_plane.py"],
+        "requested_outputs": ["artifacts/framework/typed_tool_probe_output.txt"],
+        "phase2_typed_tools": [
+            {
+                "contract_name": "read_file",
+                "arguments": {"path": "framework/framework_control_plane.py"},
+            },
+            {
+                "contract_name": "apply_patch",
+                "arguments": {
+                    "path": "artifacts/framework/typed_tool_probe_output.txt",
+                    "mode": "write_text",
+                    "content": "phase2_typed_tool_probe_ok\n",
+                },
+            },
+        ],
+        "permission_policy": {
+            "allow_edit_path_patterns": [r"artifacts/framework/typed_tool_probe_output\.txt$"],
+        },
+    }
+
+
 def _coerce_job_class(value: str) -> JobClass:
     try:
         return JobClass(str(value))
@@ -830,6 +862,8 @@ def _template_payload(name: str) -> dict[str, Any]:
         }
     if name == "campaign_profile_matrix":
         return _campaign_profile_matrix_template()
+    if name == "typed_tool_probe":
+        return _typed_tool_probe_template()
     return {}
 
 
@@ -888,6 +922,11 @@ def build_job(args: argparse.Namespace, *, template_name: str | None = None) -> 
             "artifact_evidence": template_payload.get("artifact_evidence")
             if isinstance(template_payload.get("artifact_evidence"), dict)
             else {},
+            "phase2_typed_tools": (
+                template_payload.get("phase2_typed_tools")
+                if isinstance(template_payload.get("phase2_typed_tools"), list)
+                else []
+            ),
         },
     )
 
