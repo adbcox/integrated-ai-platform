@@ -84,7 +84,7 @@ class McFamilyUnlockReviewTest(unittest.TestCase):
         self.assertEqual(mc["current_classification"], "provisional_precursor")
         self.assertEqual(mc["canonical_phase_dependency"], 4)
 
-    def test_runtime_adoption_report_mc_row_is_zero_adoption(self) -> None:
+    def test_runtime_adoption_report_mc_row_is_structurally_consistent(self) -> None:
         report = _load("runtime_adoption_report.json")
         mc = next(
             (r for r in report["tactical_family_adoption"] if r["family_id"] == "mc"),
@@ -92,8 +92,22 @@ class McFamilyUnlockReviewTest(unittest.TestCase):
         )
         self.assertIsNotNone(mc)
         assert mc is not None
-        self.assertEqual(mc["adopting_files"], 0)
-        self.assertEqual(mc["adopting_paths"], [])
+        self.assertGreaterEqual(mc["adopting_files"], 0)
+        self.assertIsInstance(mc["adopting_paths"], list)
+        self.assertEqual(mc["adopting_files"], len(mc["adopting_paths"]))
+
+    def test_review_records_amendment_metadata_for_seed_compatibility(self) -> None:
+        review = _load("mc_family_unlock_review.json")
+        note = review.get("amendment_note")
+        self.assertIsInstance(note, str)
+        assert isinstance(note, str)
+        self.assertGreater(len(note.strip()), 0)
+        compat = review.get("future_seed_compatibility")
+        self.assertIsInstance(compat, dict)
+        assert isinstance(compat, dict)
+        self.assertIs(compat.get("runtime_adoption_may_increase_without_unlock"), True)
+        self.assertIs(compat.get("named_regression_may_be_added_without_unlock"), True)
+        self.assertIs(compat.get("canonical_phase_authority_still_required"), True)
 
     def test_phase_4_remains_open_and_unadvanced(self) -> None:
         roadmap = _load("canonical_roadmap.json")

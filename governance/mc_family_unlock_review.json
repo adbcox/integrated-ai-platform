@@ -1,4 +1,5 @@
 {
+  "amendment_note": "This review is baseline-scoped. Future additive MC seed packets may introduce runtime adoption and regression evidence without invalidating this review's remains_locked decision, so long as canonical phase authority remains unmet until a later TREV-MC review reevaluates the family.",
   "authority_owner": "governance",
   "baseline_commit": "9c2420736e9542596b0d37c581cef3cba7fd2402",
   "evidence_inputs": [
@@ -14,6 +15,11 @@
     "mc_",
     "multi_phase_"
   ],
+  "future_seed_compatibility": {
+    "canonical_phase_authority_still_required": true,
+    "named_regression_may_be_added_without_unlock": true,
+    "runtime_adoption_may_increase_without_unlock": true
+  },
   "invariants_preserved": {
     "canonical_phases_unchanged": true,
     "current_allowed_class_unchanged": true,
@@ -42,12 +48,12 @@
     },
     {
       "met": false,
-      "observation": "runtime_adoption_report.json tactical_family_adoption for mc reports adopting_files=0 and adopting_paths=[] despite total_family_files=271 framework/multi_phase_* helpers. No multi_phase_*/mc_* file statically imports any framework runtime primitive (worker_runtime, tool_system, workspace, permission_engine, sandbox).",
+      "observation": "At baseline_commit 9c2420736e9542596b0d37c581cef3cba7fd2402 runtime_adoption_report.json tactical_family_adoption for mc reported adopting_files=0 and adopting_paths=[] despite total_family_files=271 framework/multi_phase_* helpers. This observation is baseline-scoped; see amendment_note for forward compatibility with later additive seed packets.",
       "precondition": "runtime-primitive adoption measured for multi_phase_* helpers"
     },
     {
       "met": false,
-      "observation": "No tests/test_mc_.py exists, no multi-phase-autonomy case exists in tests/run_offline_scenarios.sh, and no MC regression fixture is present.",
+      "observation": "At baseline_commit 9c2420736e9542596b0d37c581cef3cba7fd2402 no tests/test_mc_.py existed, no multi-phase-autonomy case existed in tests/run_offline_scenarios.sh, and no MC regression fixture was present. This observation is baseline-scoped; see amendment_note for forward compatibility with later additive seed packets.",
       "precondition": "named offline regression scenario covers multi-phase autonomy"
     }
   ],
