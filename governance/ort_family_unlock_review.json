@@ -1,0 +1,64 @@
+{
+  "authority_owner": "governance",
+  "baseline_commit": "2d51712ae6e0015a8fbb5faed3da08004267ada6",
+  "evidence_inputs": [
+    "governance/tactical_unlock_criteria.json",
+    "governance/tactical_family_classification.json",
+    "governance/runtime_adoption_report.json",
+    "governance/schema_contract_registry.json",
+    "governance/phase2_adoption_decision.json",
+    "governance/next_package_class.json"
+  ],
+  "family_id": "ort",
+  "family_prefixes": [
+    "ort_"
+  ],
+  "invariants_preserved": {
+    "canonical_phases_unchanged": true,
+    "current_allowed_class_unchanged": true,
+    "lob_w3_pause_preserved": true,
+    "no_framework_edits": true,
+    "no_tactical_code_generated": true,
+    "other_families_unchanged": true
+  },
+  "next_review_preconditions": [
+    "canonical Phase 5 advanced to closed_ratified (or otherwise explicitly authorized to admit ORT work) via a separate non-review packet",
+    "at least one framework/ort_*.py file with a real static import of a Phase-1 runtime primitive such that runtime_adoption_report.json tactical_family_adoption for ort shows adopting_files >= 1",
+    "at least one tests/test_ort_*.py regression scenario wired into tests/run_offline_scenarios.sh covering ORT integration"
+  ],
+  "packet_id": "TREV-ORT-1",
+  "post_review_state": {
+    "canonical_phase_dependency": 5,
+    "classification": "provisional_precursor",
+    "review_packet_required": true,
+    "unlock_state": "locked"
+  },
+  "precondition_evaluation": [
+    {
+      "met": false,
+      "observation": "governance/canonical_roadmap.json records Phase 5 (qualification_promotion_learning_convergence) as status=open and 'not canonically authorized until Phase 4 closure'; ort has canonical_phase_dependency=5 per governance/tactical_family_classification.json, so Phase 5 authority does not permit ORT advancement at baseline_commit 2d51712ae6e0015a8fbb5faed3da08004267ada6.",
+      "precondition": "canonical phase 5 authority permits ORT work"
+    },
+    {
+      "met": false,
+      "observation": "runtime_adoption_report.json tactical_family_adoption for ort reports adopting_files=0 and adopting_paths=[] despite total_family_files=1350 framework/ort_* helpers. No ort_* file statically imports any framework runtime primitive (worker_runtime, tool_system, workspace, permission_engine, sandbox). Adoption is unmeasured.",
+      "precondition": "runtime-primitive adoption measured for ort_* helpers"
+    },
+    {
+      "met": false,
+      "observation": "No tests/test_ort_*.py exists, no ORT case exists in tests/run_offline_scenarios.sh, and no ORT regression fixture is present.",
+      "precondition": "named offline regression scenario covers ORT integration"
+    }
+  ],
+  "preconditions_met": 0,
+  "preconditions_total": 3,
+  "ratified_by_adr": "governance/authority_adr_0014_ort_family_unlock_review.md",
+  "review_class": "tactical_review",
+  "review_decision": "remains_locked",
+  "schema_version": 1,
+  "supersedes": [],
+  "surface_observation": {
+    "note": "A very substantial ort_* evidence surface is committed but has no authorized unlock path at this baseline; it remains provisional_precursor pending Phase 5 authority, runtime adoption, and a named regression scenario.",
+    "ort_framework_file_count": 1350
+  }
+}
