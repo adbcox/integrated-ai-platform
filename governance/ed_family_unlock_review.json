@@ -1,0 +1,60 @@
+{
+  "authority_owner": "governance",
+  "baseline_commit": "ae4077bc8b48b445e6e783e772e6ccc58c53b525",
+  "evidence_inputs": [
+    "governance/tactical_unlock_criteria.json",
+    "governance/tactical_family_classification.json",
+    "governance/runtime_adoption_report.json",
+    "governance/schema_contract_registry.json",
+    "governance/phase2_adoption_decision.json",
+    "governance/next_package_class.json"
+  ],
+  "family_id": "ed",
+  "family_prefixes": [
+    "ed_"
+  ],
+  "invariants_preserved": {
+    "canonical_phases_unchanged": true,
+    "current_allowed_class_unchanged": true,
+    "lob_w3_pause_preserved": true,
+    "no_framework_edits": true,
+    "no_tactical_code_generated": true,
+    "other_families_unchanged": true
+  },
+  "next_review_preconditions": [
+    "at least one framework/ed_.py file committed with a real import of framework.worker_runtime, framework.tool_system, framework.workspace, framework.permission_engine, or framework.sandbox",
+    "runtime_adoption_report.json tactical_family_adoption for ed shows adopting_files >= 1 from generator-rendered static imports",
+    "at least one named offline regression scenario covering ED committed under tests/ and wired into tests/run_offline_scenarios.sh"
+  ],
+  "packet_id": "TREV-ED-1",
+  "post_review_state": {
+    "canonical_phase_dependency": 2,
+    "classification": "provisional_precursor",
+    "review_packet_required": true,
+    "unlock_state": "locked"
+  },
+  "precondition_evaluation": [
+    {
+      "met": false,
+      "observation": "git ls-files framework/ contains zero ed_-prefixed files at baseline_commit ae4077bc8b48b445e6e783e772e6ccc58c53b525. ED is classified provisional_precursor with canonical_phase_dependency=2; Phase 2 is closed_ratified but no ED code surface has been committed for review.",
+      "precondition": "canonical phase authority permits ED work"
+    },
+    {
+      "met": false,
+      "observation": "runtime_adoption_report.json tactical_family_adoption for ed reports adopting_files=0, adopting_paths=[], total_family_files=0. No ed_-prefixed consumer exists in schema_contract_registry.json.",
+      "precondition": "runtime-primitive adoption measured in runtime_adoption_report.json"
+    },
+    {
+      "met": false,
+      "observation": "No tests/test_ed_.py exists, no ED case exists in tests/run_offline_scenarios.sh, and no ED regression fixture is present.",
+      "precondition": "named offline regression scenario covers ED"
+    }
+  ],
+  "preconditions_met": 0,
+  "preconditions_total": 3,
+  "ratified_by_adr": "governance/authority_adr_0011_ed_family_unlock_review.md",
+  "review_class": "tactical_review",
+  "review_decision": "remains_locked",
+  "schema_version": 1,
+  "supersedes": []
+}
