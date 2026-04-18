@@ -430,3 +430,15 @@ phase2-tool-impl-2-test:
 
 phase2-tool-impl-2-validate:
 	@python3 ./artifacts/phase2_tool_impl_2_validation_report.py
+
+.PHONY: phase2-tool-impl-3-test phase2-tool-impl-3-validate
+
+phase2-tool-impl-3-test:
+	@python3 -m unittest -v \
+		tests.test_worker_runtime_typed_tool_apply_patch \
+		tests.test_worker_runtime_typed_tool_publish_artifact \
+		tests.test_worker_runtime_typed_tool_dispatcher_phase2_tool_impl_3 \
+		tests.test_phase2_tool_impl_3_validation
+
+phase2-tool-impl-3-validate:
+	@PYTHONPATH=. python3 ./artifacts/phase2_tool_impl_3_validation_report.py

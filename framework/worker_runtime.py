@@ -84,6 +84,9 @@ _PHASE2_REPO_MAP_EXCLUDED_NAMES = {
     ".pytest_cache",
 }
 
+_PHASE2_APPLY_PATCH_MAX_BYTES = 128 * 1024
+_PHASE2_PUBLISH_ARTIFACT_MAX_BYTES = 256 * 1024
+
 
 def _phase2_run_tests_head_allowed(command_argv: list[str]) -> bool:
     if not command_argv:
@@ -1754,6 +1757,293 @@ class WorkerRuntime:
             return_code=0,
         )
 
+    def _tool_apply_patch(
+        self,
+        *,
+        job: Job,
+        workspace,
+        arguments: dict[str, Any],
+    ) -> ToolObservationRecord:
+        t0 = time.monotonic()
+        candidate = str(arguments.get("path") or "").strip()
+        mode = str(arguments.get("mode") or "").strip()
+        typed_action = build_tool_action(
+            action_id=self._phase2_next_action_id(job),
+            session_id=self._phase2_session_id(job),
+            job_id=job.job_id,
+            tool_name=ToolContractName.APPLY_PATCH,
+            arguments={"path": candidate, "mode": mode},
+            requested_by="worker_runtime",
+        )
+        if self._phase2_has_collector(job):
+            self._phase2_collectors[job.job_id]["tool_actions"].append(typed_action)
+        perm_action = ToolAction(
+            job_id=job.job_id,
+            tool=ToolName.APPLY_EDIT,
+            arguments={"path": candidate or ".", "mode": mode},
+        )
+        decision = self._permission_engine.evaluate(
+            action=perm_action,
+            allowed_tools_actions=job.allowed_tools_actions,
+            metadata=job.metadata,
+        )
+        self._phase2_record_permission_decision(
+            job=job, action=perm_action, decision_payload=decision.to_dict()
+        )
+        self.store.append_trace({
+            "kind": "tool_permission_decision",
+            "worker_id": self.worker_id,
+            "job_id": job.job_id,
+            "tool_action": {"tool": "apply_patch", "arguments": {"path": candidate, "mode": mode}},
+            "permission": decision.to_dict(),
+        })
+        if not decision.allowed:
+            return self._phase2_record_blocked(
+                job=job, typed_action=typed_action,
+                reason=decision.reason or "permission_denied",
+            )
+        if mode not in ("replace_text", "write_text"):
+            duration_ms = int((time.monotonic() - t0) * 1000)
+            return self._phase2_emit_typed_failure(
+                job=job, typed_action=typed_action,
+                error=f"apply_patch_invalid_mode:{mode}",
+                duration_ms=duration_ms, return_code=2,
+            )
+        resolved, err = self._phase2_resolve_bounded_path(workspace=workspace, candidate=candidate)
+        if resolved is None:
+            duration_ms = int((time.monotonic() - t0) * 1000)
+            return self._phase2_emit_typed_failure(
+                job=job, typed_action=typed_action,
+                error=err, duration_ms=duration_ms, return_code=2,
+            )
+        if mode == "write_text":
+            content = str(arguments.get("content") or "")
+            try:
+                resolved.parent.mkdir(parents=True, exist_ok=True)
+                encoded = content.encode("utf-8")
+                resolved.write_bytes(encoded)
+            except OSError as exc:
+                duration_ms = int((time.monotonic() - t0) * 1000)
+                return self._phase2_emit_typed_failure(
+                    job=job, typed_action=typed_action,
+                    error=f"write_error:{exc}", duration_ms=duration_ms, return_code=2,
+                )
+            duration_ms = int((time.monotonic() - t0) * 1000)
+            return self._phase2_emit_typed_success(
+                job=job,
+                typed_action=typed_action,
+                duration_ms=duration_ms,
+                stdout=f"written:{resolved}",
+                structured_payload={
+                    "path": str(resolved),
+                    "mode": mode,
+                    "bytes_written": len(encoded),
+                    "replacements_applied": 0,
+                },
+                return_code=0,
+            )
+        # replace_text mode
+        find_text = str(arguments.get("find") or "")
+        replace_text = str(arguments.get("replace") or "")
+        if not find_text:
+            duration_ms = int((time.monotonic() - t0) * 1000)
+            return self._phase2_emit_typed_failure(
+                job=job, typed_action=typed_action,
+                error="apply_patch_missing_find",
+                duration_ms=duration_ms, return_code=2,
+            )
+        if not resolved.exists():
+            duration_ms = int((time.monotonic() - t0) * 1000)
+            return self._phase2_emit_typed_failure(
+                job=job, typed_action=typed_action,
+                error=f"file_not_found:{resolved}",
+                duration_ms=duration_ms, return_code=2,
+            )
+        try:
+            raw = resolved.read_bytes()
+        except OSError as exc:
+            duration_ms = int((time.monotonic() - t0) * 1000)
+            return self._phase2_emit_typed_failure(
+                job=job, typed_action=typed_action,
+                error=f"read_error:{exc}", duration_ms=duration_ms, return_code=2,
+            )
+        if len(raw) > _PHASE2_APPLY_PATCH_MAX_BYTES:
+            duration_ms = int((time.monotonic() - t0) * 1000)
+            return self._phase2_emit_typed_failure(
+                job=job, typed_action=typed_action,
+                error=f"file_too_large:{len(raw)}_bytes",
+                duration_ms=duration_ms, return_code=2,
+            )
+        try:
+            original = raw.decode("utf-8")
+        except UnicodeDecodeError:
+            duration_ms = int((time.monotonic() - t0) * 1000)
+            return self._phase2_emit_typed_failure(
+                job=job, typed_action=typed_action,
+                error="binary_file_not_supported",
+                duration_ms=duration_ms, return_code=2,
+            )
+        replacements = original.count(find_text)
+        if replacements == 0:
+            duration_ms = int((time.monotonic() - t0) * 1000)
+            return self._phase2_emit_typed_failure(
+                job=job, typed_action=typed_action,
+                error="apply_patch_no_match",
+                duration_ms=duration_ms, return_code=2,
+            )
+        updated = original.replace(find_text, replace_text)
+        encoded = updated.encode("utf-8")
+        try:
+            resolved.write_bytes(encoded)
+        except OSError as exc:
+            duration_ms = int((time.monotonic() - t0) * 1000)
+            return self._phase2_emit_typed_failure(
+                job=job, typed_action=typed_action,
+                error=f"write_error:{exc}", duration_ms=duration_ms, return_code=2,
+            )
+        duration_ms = int((time.monotonic() - t0) * 1000)
+        return self._phase2_emit_typed_success(
+            job=job,
+            typed_action=typed_action,
+            duration_ms=duration_ms,
+            stdout=f"patched:{resolved}",
+            structured_payload={
+                "path": str(resolved),
+                "mode": mode,
+                "bytes_written": len(encoded),
+                "replacements_applied": replacements,
+            },
+            return_code=0,
+        )
+
+    def _tool_publish_artifact(
+        self,
+        *,
+        job: Job,
+        workspace,
+        arguments: dict[str, Any],
+    ) -> ToolObservationRecord:
+        t0 = time.monotonic()
+        source_path_str = str(arguments.get("source") or arguments.get("source_path") or "").strip()
+        artifact_path_str = str(arguments.get("artifact_path") or "").strip()
+        typed_action = build_tool_action(
+            action_id=self._phase2_next_action_id(job),
+            session_id=self._phase2_session_id(job),
+            job_id=job.job_id,
+            tool_name=ToolContractName.PUBLISH_ARTIFACT,
+            arguments={"source": source_path_str, "artifact_path": artifact_path_str},
+            requested_by="worker_runtime",
+        )
+        if self._phase2_has_collector(job):
+            self._phase2_collectors[job.job_id]["tool_actions"].append(typed_action)
+        perm_action = ToolAction(
+            job_id=job.job_id,
+            tool=ToolName.RUN_COMMAND,
+            arguments={"command": "publish_artifact", "source": source_path_str, "tool_contract": "publish_artifact"},
+        )
+        decision = self._permission_engine.evaluate(
+            action=perm_action,
+            allowed_tools_actions=job.allowed_tools_actions,
+            metadata=job.metadata,
+        )
+        self._phase2_record_permission_decision(
+            job=job, action=perm_action, decision_payload=decision.to_dict()
+        )
+        self.store.append_trace({
+            "kind": "tool_permission_decision",
+            "worker_id": self.worker_id,
+            "job_id": job.job_id,
+            "tool_action": {"tool": "publish_artifact", "arguments": {"source": source_path_str}},
+            "permission": decision.to_dict(),
+        })
+        if not decision.allowed:
+            return self._phase2_record_blocked(
+                job=job, typed_action=typed_action,
+                reason=decision.reason or "permission_denied",
+            )
+        if not source_path_str:
+            duration_ms = int((time.monotonic() - t0) * 1000)
+            return self._phase2_emit_typed_failure(
+                job=job, typed_action=typed_action,
+                error="publish_artifact_missing_source_path",
+                duration_ms=duration_ms, return_code=2,
+            )
+        if not artifact_path_str:
+            duration_ms = int((time.monotonic() - t0) * 1000)
+            return self._phase2_emit_typed_failure(
+                job=job, typed_action=typed_action,
+                error="publish_artifact_missing_artifact_path",
+                duration_ms=duration_ms, return_code=2,
+            )
+        source_resolved, err = self._phase2_resolve_bounded_path(
+            workspace=workspace, candidate=source_path_str
+        )
+        if source_resolved is None:
+            duration_ms = int((time.monotonic() - t0) * 1000)
+            return self._phase2_emit_typed_failure(
+                job=job, typed_action=typed_action,
+                error=f"source_{err}", duration_ms=duration_ms, return_code=2,
+            )
+        if not source_resolved.exists() or not source_resolved.is_file():
+            duration_ms = int((time.monotonic() - t0) * 1000)
+            return self._phase2_emit_typed_failure(
+                job=job, typed_action=typed_action,
+                error=f"source_not_a_file:{source_resolved}",
+                duration_ms=duration_ms, return_code=2,
+            )
+        try:
+            raw = source_resolved.read_bytes()
+        except OSError as exc:
+            duration_ms = int((time.monotonic() - t0) * 1000)
+            return self._phase2_emit_typed_failure(
+                job=job, typed_action=typed_action,
+                error=f"source_read_error:{exc}", duration_ms=duration_ms, return_code=2,
+            )
+        if len(raw) > _PHASE2_PUBLISH_ARTIFACT_MAX_BYTES:
+            duration_ms = int((time.monotonic() - t0) * 1000)
+            return self._phase2_emit_typed_failure(
+                job=job, typed_action=typed_action,
+                error=f"source_too_large:{len(raw)}_bytes",
+                duration_ms=duration_ms, return_code=2,
+            )
+        artifact_root = workspace.artifact_root.resolve()
+        artifact_path_candidate = Path(artifact_path_str)
+        if artifact_path_candidate.is_absolute():
+            dest = artifact_path_candidate.resolve()
+        else:
+            dest = (artifact_root / artifact_path_candidate).resolve()
+        try:
+            dest.relative_to(artifact_root)
+        except ValueError:
+            duration_ms = int((time.monotonic() - t0) * 1000)
+            return self._phase2_emit_typed_failure(
+                job=job, typed_action=typed_action,
+                error=f"artifact_path_escapes_artifact_root:{dest}",
+                duration_ms=duration_ms, return_code=2,
+            )
+        try:
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            dest.write_bytes(raw)
+        except OSError as exc:
+            duration_ms = int((time.monotonic() - t0) * 1000)
+            return self._phase2_emit_typed_failure(
+                job=job, typed_action=typed_action,
+                error=f"artifact_write_error:{exc}", duration_ms=duration_ms, return_code=2,
+            )
+        duration_ms = int((time.monotonic() - t0) * 1000)
+        return self._phase2_emit_typed_success(
+            job=job,
+            typed_action=typed_action,
+            duration_ms=duration_ms,
+            stdout=f"published:{dest}",
+            structured_payload={
+                "source_path": str(source_resolved),
+                "artifact_path": str(dest),
+                "bytes_written": len(raw),
+            },
+            return_code=0,
+        )
+
     def _execute_phase2_typed_tool(
         self,
         *,
@@ -1767,6 +2057,8 @@ class WorkerRuntime:
             ToolContractName.LIST_DIR: self._tool_list_dir,
             ToolContractName.GIT_DIFF: self._tool_git_diff,
             ToolContractName.RUN_TESTS: self._tool_run_tests,
+            ToolContractName.APPLY_PATCH: self._tool_apply_patch,
+            ToolContractName.PUBLISH_ARTIFACT: self._tool_publish_artifact,
         }
         handler = _dispatch.get(contract_name)
         if handler is None:
