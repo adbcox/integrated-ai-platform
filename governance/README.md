@@ -30,6 +30,7 @@ frozen pending explicit migration (see ADR 0001).
 - [governance/authority_adr_0010_eo_family_unlock_review.md](authority_adr_0010_eo_family_unlock_review.md) — per-family tactical review for EO (TREV-EO-1); decision: remains_locked at baseline 6b244618
 - [governance/authority_adr_0011_ed_family_unlock_review.md](authority_adr_0011_ed_family_unlock_review.md) — per-family tactical review for ED (TREV-ED-1); decision: remains_locked at baseline ae4077bc8b48b445e6e783e772e6ccc58c53b525
 - [governance/authority_adr_0012_mc_family_unlock_review.md](authority_adr_0012_mc_family_unlock_review.md) — per-family tactical review for MC (TREV-MC-1); decision: remains_locked at baseline 9c2420736e9542596b0d37c581cef3cba7fd2402
+- [governance/authority_adr_0013_live_bridge_family_unlock_review.md](authority_adr_0013_live_bridge_family_unlock_review.md) — per-family tactical review for LIVE_BRIDGE (TREV-LIVE_BRIDGE-1); decision: remains_locked at baseline 3b7278b533ed9f5ea726c75a721f09cec0e959ba
 
 ## How to update
 

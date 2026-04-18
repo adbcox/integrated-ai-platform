@@ -1,0 +1,66 @@
+{
+  "authority_owner": "governance",
+  "baseline_commit": "3b7278b533ed9f5ea726c75a721f09cec0e959ba",
+  "evidence_inputs": [
+    "governance/tactical_unlock_criteria.json",
+    "governance/tactical_family_classification.json",
+    "governance/runtime_adoption_report.json",
+    "governance/schema_contract_registry.json",
+    "governance/phase2_adoption_decision.json",
+    "governance/next_package_class.json",
+    "governance/authority_adr_0003_lob_w3_classification.md"
+  ],
+  "family_id": "live_bridge",
+  "family_prefixes": [
+    "live_bridge_"
+  ],
+  "invariants_preserved": {
+    "canonical_phases_unchanged": true,
+    "current_allowed_class_unchanged": true,
+    "lob_w3_pause_preserved": true,
+    "no_framework_edits": true,
+    "no_tactical_code_generated": true,
+    "other_families_unchanged": true
+  },
+  "next_review_preconditions": [
+    "ADR 0003 LOB-W3 pause explicitly lifted by a separate governance packet",
+    "canonical Phase 6 advanced to closed_ratified (or otherwise explicitly authorized to admit LOB work) via a separate non-review packet",
+    "at least one framework/live_bridge_*.py file with a real static import of a Phase-1 runtime primitive such that runtime_adoption_report.json tactical_family_adoption for live_bridge shows adopting_files >= 1",
+    "at least one tests/test_live_bridge_*.py regression scenario wired into tests/run_offline_scenarios.sh covering live_bridge operations"
+  ],
+  "packet_id": "TREV-LIVE_BRIDGE-1",
+  "post_review_state": {
+    "canonical_phase_dependency": 6,
+    "classification": "provisional_precursor",
+    "review_packet_required": true,
+    "unlock_state": "locked"
+  },
+  "precondition_evaluation": [
+    {
+      "met": false,
+      "observation": "Two compounding authority constraints are unmet at baseline_commit 3b7278b533ed9f5ea726c75a721f09cec0e959ba. (a) governance/authority_adr_0003_lob_w3_classification.md pauses LOB-W3 and has not been explicitly lifted; governance/tactical_unlock_criteria.json live_bridge row still lists 'ADR 0003 pause explicitly lifted' as an unmet precondition. (b) governance/canonical_roadmap.json records Phase 6 (controlled_expansion) as status=open and 'not canonically authorized until Phase 5 closure'; live_bridge has canonical_phase_dependency=6 per governance/tactical_family_classification.json, so Phase 6 authority does not permit LOB advancement at this baseline.",
+      "precondition": "canonical phase authority permits LIVE_BRIDGE work (ADR 0003 pause lifted AND canonical Phase 6 authorized)"
+    },
+    {
+      "met": false,
+      "observation": "runtime_adoption_report.json tactical_family_adoption for live_bridge reports adopting_files=0 and adopting_paths=[] despite total_family_files=919 framework/live_bridge_* helpers. No live_bridge_* file statically imports any framework runtime primitive (worker_runtime, tool_system, workspace, permission_engine, sandbox). Adoption is unmeasured.",
+      "precondition": "runtime-primitive adoption measured for live_bridge_* helpers"
+    },
+    {
+      "met": false,
+      "observation": "No tests/test_live_bridge_*.py exists, no live_bridge case exists in tests/run_offline_scenarios.sh, and no live_bridge regression fixture is present.",
+      "precondition": "named offline regression scenario covers live_bridge operations"
+    }
+  ],
+  "preconditions_met": 0,
+  "preconditions_total": 3,
+  "ratified_by_adr": "governance/authority_adr_0013_live_bridge_family_unlock_review.md",
+  "review_class": "tactical_review",
+  "review_decision": "remains_locked",
+  "schema_version": 1,
+  "supersedes": [],
+  "surface_observation": {
+    "live_bridge_framework_file_count": 919,
+    "note": "A substantial live_bridge_* evidence surface is committed but has no authorized unlock path at this baseline; it remains provisional_precursor under ADR 0003."
+  }
+}
