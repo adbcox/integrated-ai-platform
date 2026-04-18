@@ -1,13 +1,12 @@
 {
-  "authority_owner": "governance",
-  "baseline_commit": "53ae4d4f177b176a7bffaa63988f63fa0efa622c",
+  "authority_owner": "governance/authority_adr_0001_source_of_truth.md",
   "followups": [
     "promotion/__init__.py reconciliation skipped by RECON-W1 per packet guidance; revisit when promotion manifest migration is explicitly authorized."
   ],
   "gates": [
     {
-      "blocking_reason_if_open": null,
-      "classification": "closed_ratified",
+      "blocking_reason_if_open": "machine-readable authority artifacts are being introduced by RECON-W1 and have not yet been ratified as closed",
+      "classification": "open",
       "code_evidence": [
         "bin/governance_reconcile.py",
         "tests/test_governance_reconcile.py"
@@ -26,12 +25,11 @@
       ],
       "notes": "Phase 0 stays open until a subsequent reconciliation package ratifies these artifacts and mints a closure record.",
       "phase_id": 0,
-      "phase_name": "governance_source_of_truth_reconciliation",
-      "ratified_by_adr": "governance/authority_adr_0004_phase1_closure.md"
+      "phase_name": "governance_source_of_truth_reconciliation"
     },
     {
-      "blocking_reason_if_open": null,
-      "classification": "closed_ratified",
+      "blocking_reason_if_open": "runtime primitives exist in framework/ but no governance artifact has yet ratified the contract version",
+      "classification": "materially_implemented_open_governance",
       "code_evidence": [
         "framework/worker_runtime.py",
         "framework/job_schema.py",
@@ -47,12 +45,11 @@
       ],
       "notes": "Runtime primitives are present and bound in runtime_contract_version.json; Phase 1 closes only when governance explicitly ratifies that contract version.",
       "phase_id": 1,
-      "phase_name": "runtime_contract_foundation",
-      "ratified_by_adr": "governance/authority_adr_0004_phase1_closure.md"
+      "phase_name": "runtime_contract_foundation"
     },
     {
-      "blocking_reason_if_open": "tactical families not reclassified onto the shared runtime; real-capability evidence not yet captured",
-      "classification": "adopted_partial",
+      "blocking_reason_if_open": "tactical families have not been reclassified onto the shared runtime; adoption is partial and unratified",
+      "classification": "partially_adopted_open_governance",
       "code_evidence": [
         "framework/worker_runtime.py",
         "bin/framework_control_plane.py"
@@ -62,8 +59,7 @@
       ],
       "notes": "worker_runtime emits bounded retry, tool_permission_decision, and tool_observation traces; phase stays open on governance until adoption coverage is measured and ratified.",
       "phase_id": 2,
-      "phase_name": "inner_loop_autonomous_repair_and_shared_runtime_adoption",
-      "ratified_by_adr": "governance/authority_adr_0005_phase2_partial_adoption.md"
+      "phase_name": "inner_loop_autonomous_repair_and_shared_runtime_adoption"
     },
     {
       "blocking_reason_if_open": "retrieval/repomap evidence exists in code but has not been ratified as phase advancement",
@@ -107,8 +103,8 @@
       "phase_name": "controlled_expansion"
     }
   ],
-  "generated_at": "2026-04-18T08:33:06-04:00",
-  "schema_version": 2,
+  "generated_at": "2026-04-18T02:35:18-04:00",
+  "schema_version": "1.0.0",
   "supersedes": [
     "docs/claude-code-roadmap.md (narrative only; not machine authority)",
     "docs/version15-master-roadmap.md (historical/legacy narrative only)",

@@ -50,14 +50,18 @@ class NextClassTest(unittest.TestCase):
         assert tactical is not None
         self.assertIn("per-family", tactical["gate"])
 
-    def test_current_phase_reflects_post_recon_w2_state(self) -> None:
-        cp = _load("current_phase.json")
-        self.assertEqual(cp["current_phase_id"], 2)
-        self.assertEqual(cp["current_phase_status"], "adopted_partial")
-        self.assertEqual(cp["phase0_status"], "closed_ratified")
-        self.assertEqual(cp["phase1_status"], "closed_ratified")
-        self.assertEqual(cp["phase2_status"], "adopted_partial")
-        self.assertEqual(cp["next_allowed_package_class"], "ratification_only")
+    def test_decision_files_reflect_post_recon_w2_state(self) -> None:
+        phase0 = _load("phase0_closure_decision.json")
+        phase1 = _load("phase1_ratification_decision.json")
+        phase2 = _load("phase2_adoption_decision.json")
+        nextc = _load("next_package_class.json")
+        self.assertEqual(phase0["phase_id"], 0)
+        self.assertEqual(phase0["decision"], "closed")
+        self.assertEqual(phase1["phase_id"], 1)
+        self.assertEqual(phase1["decision"], "closed")
+        self.assertEqual(phase2["phase_id"], 2)
+        self.assertEqual(phase2["decision"], "adopted_partial")
+        self.assertEqual(nextc["current_allowed_class"], "ratification_only")
 
 
 if __name__ == "__main__":

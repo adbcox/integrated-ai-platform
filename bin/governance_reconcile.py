@@ -33,13 +33,7 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 GOV_DIR = REPO_ROOT / "governance"
 
 SCHEMA_VERSION = "1.0.0"
-SCHEMA_VERSION_V2 = 2
 AUTHORITY_OWNER = "governance/authority_adr_0001_source_of_truth.md"
-AUTHORITY_OWNER_V2 = "governance"
-BASELINE_COMMIT_V2 = "53ae4d4f177b176a7bffaa63988f63fa0efa622c"
-# Legacy RECON-W1 artifacts keep their original as_of_commit so their
-# deterministic ``generated_at`` is pinned to RECON-W1's baseline.
-RECON_W1_BASELINE = "cc8e510261e7ec1a89c383db826f05c1ad32988d"
 
 RUNTIME_PRIMITIVES: Sequence[str] = (
     "framework/worker_runtime.py",
@@ -497,39 +491,26 @@ def build_canonical_roadmap(as_of_commit: str) -> Dict[str, Any]:
 
 
 def build_current_phase(as_of_commit: str) -> Dict[str, Any]:
+    header = _common_header(as_of_commit)
     return {
-        "schema_version": SCHEMA_VERSION_V2,
-        "authority_owner": AUTHORITY_OWNER_V2,
-        "generated_at": _git_commit_iso(BASELINE_COMMIT_V2),
-        "supersedes": list(SUPERSEDES),
-        "baseline_commit": BASELINE_COMMIT_V2,
-        "as_of_commit": BASELINE_COMMIT_V2,
-        "current_phase_id": 2,
-        "current_phase_name": "Phase 2",
-        "current_phase_status": "adopted_partial",
-        "phase0_status": "closed_ratified",
-        "phase1_status": "closed_ratified",
-        "phase2_status": "adopted_partial",
-        "next_allowed_package_class": "ratification_only",
+        **header,
+        "as_of_commit": as_of_commit,
+        "current_phase_id": 0,
+        "current_phase_name": "governance_source_of_truth_reconciliation",
+        "current_phase_status": "open",
+        "next_allowed_package_class": "reconciliation_only",
         "blocked_package_classes": [
             "canonical_phase_advancement",
-            "capability_session",
             "feature_expansion",
             "tactical_family_extension",
         ],
         "blocked_tactical_families": [
             family["family_id"] for family in TACTICAL_FAMILIES
         ],
-        "ratified_by_adrs": [
-            "governance/authority_adr_0004_phase1_closure.md",
-            "governance/authority_adr_0005_phase2_partial_adoption.md",
-            "governance/authority_adr_0006_tactical_unlock_criteria.md",
-            "governance/authority_adr_0007_next_class_ratification_only.md",
-        ],
         "notes": (
-            "Post-RECON-W2: Phase 0 closed_ratified, Phase 1 closed_ratified, "
-            "Phase 2 adopted_partial; next allowed package class is "
-            "ratification_only. See ADR 0005 — Phase 2 is explicitly NOT closed."
+            "current_phase_id intentionally reflects reconciliation reality "
+            "rather than the legacy Stage/Manager labels in "
+            "config/promotion_manifest.json."
         ),
     }
 
@@ -552,56 +533,27 @@ def build_runtime_contract_version(
     }
 
 
-_RATIFIED_OVERRIDES = {
-    0: {
-        "classification": "closed_ratified",
-        "blocking_reason_if_open": None,
-        "ratified_by_adr": "governance/authority_adr_0004_phase1_closure.md",
-    },
-    1: {
-        "classification": "closed_ratified",
-        "blocking_reason_if_open": None,
-        "ratified_by_adr": "governance/authority_adr_0004_phase1_closure.md",
-    },
-    2: {
-        "classification": "adopted_partial",
-        "blocking_reason_if_open": (
-            "tactical families not reclassified onto the shared runtime; "
-            "real-capability evidence not yet captured"
-        ),
-        "ratified_by_adr": "governance/authority_adr_0005_phase2_partial_adoption.md",
-    },
-}
-
-
 def build_phase_gate_status(as_of_commit: str) -> Dict[str, Any]:
+    header = _common_header(as_of_commit)
     gates: List[Dict[str, Any]] = []
     for phase in CANONICAL_PHASES:
-        entry: Dict[str, Any] = {
-            "phase_id": phase["phase_id"],
-            "phase_name": phase["phase_name"],
-            "code_evidence": list(phase["code_anchors"]),
-            "governance_evidence": list(phase["governance_evidence"]),
-            "classification": phase["status"],
-            "blocking_reason_if_open": (
-                phase["blocking_reasons"][0]
-                if phase["blocking_reasons"]
-                else None
-            ),
-            "notes": phase["notes"],
-        }
-        override = _RATIFIED_OVERRIDES.get(phase["phase_id"])
-        if override:
-            entry["classification"] = override["classification"]
-            entry["blocking_reason_if_open"] = override["blocking_reason_if_open"]
-            entry["ratified_by_adr"] = override["ratified_by_adr"]
-        gates.append(entry)
+        gates.append(
+            {
+                "phase_id": phase["phase_id"],
+                "phase_name": phase["phase_name"],
+                "code_evidence": list(phase["code_anchors"]),
+                "governance_evidence": list(phase["governance_evidence"]),
+                "classification": phase["status"],
+                "blocking_reason_if_open": (
+                    phase["blocking_reasons"][0]
+                    if phase["blocking_reasons"]
+                    else None
+                ),
+                "notes": phase["notes"],
+            }
+        )
     return {
-        "schema_version": SCHEMA_VERSION_V2,
-        "authority_owner": AUTHORITY_OWNER_V2,
-        "generated_at": _git_commit_iso(BASELINE_COMMIT_V2),
-        "supersedes": list(SUPERSEDES),
-        "baseline_commit": BASELINE_COMMIT_V2,
+        **header,
         "gates": gates,
         "followups": [
             "promotion/__init__.py reconciliation skipped by RECON-W1 per "
@@ -672,21 +624,18 @@ def build_all(as_of_commit: str) -> Dict[str, Dict[str, Any]]:
     primitive_records = _primitive_records()
     direct_paths, _ = _scan_adoption()
     family_adoption, non_adopting = _tactical_family_adoption(direct_paths)
-    # Legacy RECON-W1 artifacts are pinned to the RECON-W1 baseline so their
-    # deterministic ``generated_at`` does not drift when a later packet lands.
-    legacy_commit = RECON_W1_BASELINE
     return {
-        "canonical_roadmap.json": build_canonical_roadmap(legacy_commit),
+        "canonical_roadmap.json": build_canonical_roadmap(as_of_commit),
         "current_phase.json": build_current_phase(as_of_commit),
         "runtime_contract_version.json": build_runtime_contract_version(
-            legacy_commit, primitive_records, direct_paths
+            as_of_commit, primitive_records, direct_paths
         ),
         "phase_gate_status.json": build_phase_gate_status(as_of_commit),
         "runtime_adoption_report.json": build_runtime_adoption_report(
-            legacy_commit, direct_paths, family_adoption, non_adopting
+            as_of_commit, direct_paths, family_adoption, non_adopting
         ),
         "tactical_family_classification.json": build_tactical_family_classification(
-            legacy_commit
+            as_of_commit
         ),
     }
 
@@ -716,15 +665,13 @@ def _validate_schema(payload: Dict[str, Any], name: str) -> List[str]:
                 f"canonical_roadmap.json: phases must be exactly 0..6, got {ids}"
             )
     if name == "current_phase.json":
-        if payload.get("next_allowed_package_class") != "ratification_only":
+        if payload.get("next_allowed_package_class") != "reconciliation_only":
             errors.append(
                 "current_phase.json: next_allowed_package_class must be "
-                "'ratification_only' after RECON-W2"
+                "'reconciliation_only'"
             )
         if "as_of_commit" not in payload:
             errors.append("current_phase.json: missing 'as_of_commit'")
-        if "baseline_commit" not in payload:
-            errors.append("current_phase.json: missing 'baseline_commit'")
     if name == "tactical_family_classification.json":
         fids = {f.get("family_id") for f in payload.get("families", [])}
         required = {"eo", "ed", "mc", "live_bridge", "ort", "pgs"}
