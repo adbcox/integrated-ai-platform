@@ -324,3 +324,15 @@ assess-candidate-class:
 		echo "Usage: CLASS='trigger | fix' make assess-candidate-class"; \
 		echo "   or: TRIGGER='...' FIX_PATTERN='...' make assess-candidate-class"; \
 	fi
+
+.PHONY: governance-check governance-write governance-test
+
+governance-write:
+	@python3 ./bin/governance_reconcile.py --write
+
+governance-check:
+	@python3 ./bin/governance_reconcile.py --check --fail-on-diff
+
+governance-test:
+	@python3 -m unittest -v tests.test_governance_reconcile
+

@@ -1,0 +1,114 @@
+{
+  "authority_owner": "governance/authority_adr_0001_source_of_truth.md",
+  "followups": [
+    "promotion/__init__.py reconciliation skipped by RECON-W1 per packet guidance; revisit when promotion manifest migration is explicitly authorized."
+  ],
+  "gates": [
+    {
+      "blocking_reason_if_open": "machine-readable authority artifacts are being introduced by RECON-W1 and have not yet been ratified as closed",
+      "classification": "open",
+      "code_evidence": [
+        "bin/governance_reconcile.py",
+        "tests/test_governance_reconcile.py"
+      ],
+      "governance_evidence": [
+        "governance/README.md",
+        "governance/canonical_roadmap.json",
+        "governance/current_phase.json",
+        "governance/runtime_contract_version.json",
+        "governance/phase_gate_status.json",
+        "governance/runtime_adoption_report.json",
+        "governance/tactical_family_classification.json",
+        "governance/authority_adr_0001_source_of_truth.md",
+        "governance/authority_adr_0002_tactical_family_classification.md",
+        "governance/authority_adr_0003_lob_w3_classification.md"
+      ],
+      "notes": "Phase 0 stays open until a subsequent reconciliation package ratifies these artifacts and mints a closure record.",
+      "phase_id": 0,
+      "phase_name": "governance_source_of_truth_reconciliation"
+    },
+    {
+      "blocking_reason_if_open": "runtime primitives exist in framework/ but no governance artifact has yet ratified the contract version",
+      "classification": "materially_implemented_open_governance",
+      "code_evidence": [
+        "framework/worker_runtime.py",
+        "framework/job_schema.py",
+        "framework/session_schema.py",
+        "framework/tool_system.py",
+        "framework/workspace.py",
+        "framework/permission_engine.py",
+        "framework/sandbox.py"
+      ],
+      "governance_evidence": [
+        "governance/runtime_contract_version.json",
+        "governance/phase_gate_status.json"
+      ],
+      "notes": "Runtime primitives are present and bound in runtime_contract_version.json; Phase 1 closes only when governance explicitly ratifies that contract version.",
+      "phase_id": 1,
+      "phase_name": "runtime_contract_foundation"
+    },
+    {
+      "blocking_reason_if_open": "tactical families have not been reclassified onto the shared runtime; adoption is partial and unratified",
+      "classification": "partially_adopted_open_governance",
+      "code_evidence": [
+        "framework/worker_runtime.py",
+        "bin/framework_control_plane.py"
+      ],
+      "governance_evidence": [
+        "governance/runtime_adoption_report.json"
+      ],
+      "notes": "worker_runtime emits bounded retry, tool_permission_decision, and tool_observation traces; phase stays open on governance until adoption coverage is measured and ratified.",
+      "phase_id": 2,
+      "phase_name": "inner_loop_autonomous_repair_and_shared_runtime_adoption"
+    },
+    {
+      "blocking_reason_if_open": "retrieval/repomap evidence exists in code but has not been ratified as phase advancement",
+      "classification": "provisionally_evidenced_unratified",
+      "code_evidence": [
+        "framework/codebase_repomap.py",
+        "bin/stage_rag4_plan_probe.py"
+      ],
+      "governance_evidence": [
+        "governance/phase_gate_status.json"
+      ],
+      "notes": "Provisional evidence in stage_rag4 and codebase_repomap; no authority artifact currently ratifies Phase 3 advancement.",
+      "phase_id": 3,
+      "phase_name": "codebase_understanding_retrieval_backed_runtime"
+    },
+    {
+      "blocking_reason_if_open": "not canonically authorized until Phase 2/3 governance closure",
+      "classification": "open",
+      "code_evidence": [],
+      "governance_evidence": [],
+      "notes": "No canonical work is authorized for Phase 4 at as_of_commit.",
+      "phase_id": 4,
+      "phase_name": "autonomy_hardening_safety_policy_uplift"
+    },
+    {
+      "blocking_reason_if_open": "not canonically authorized until Phase 4 closure",
+      "classification": "open",
+      "code_evidence": [],
+      "governance_evidence": [],
+      "notes": "No canonical work is authorized for Phase 5 at as_of_commit.",
+      "phase_id": 5,
+      "phase_name": "qualification_promotion_learning_convergence"
+    },
+    {
+      "blocking_reason_if_open": "not canonically authorized until Phase 5 closure",
+      "classification": "open",
+      "code_evidence": [],
+      "governance_evidence": [],
+      "notes": "Only permitted after canonical authorization of prior phases.",
+      "phase_id": 6,
+      "phase_name": "controlled_expansion"
+    }
+  ],
+  "generated_at": "2026-04-18T02:35:18-04:00",
+  "schema_version": "1.0.0",
+  "supersedes": [
+    "docs/claude-code-roadmap.md (narrative only; not machine authority)",
+    "docs/version15-master-roadmap.md (historical/legacy narrative only)",
+    "docs/system_milestone_roadmap.md (out-of-scope for runtime authority)",
+    "config/promotion_manifest.json (legacy tactical release authority; frozen pending explicit migration)"
+  ]
+}

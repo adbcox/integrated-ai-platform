@@ -1,0 +1,58 @@
+{
+  "authority_owner": "governance/authority_adr_0001_source_of_truth.md",
+  "contract_version": "rt-1.0.0+d935b41a6621",
+  "generated_at": "2026-04-18T02:35:18-04:00",
+  "notes": "contract_version fingerprint derives from the sha256 of each primitive; any primitive change advances the contract version.",
+  "observed_adoption_paths": [],
+  "primitives": [
+    {
+      "line_count": 1004,
+      "name": "worker_runtime",
+      "path": "framework/worker_runtime.py",
+      "sha256": "11f588f54efc1fab0147113d5c07afced2d69ce0ff4af165a512b1945009ef86"
+    },
+    {
+      "line_count": 180,
+      "name": "job_schema",
+      "path": "framework/job_schema.py",
+      "sha256": "948302473443173d3c61c4e9ffbbcf0d323106ed60006196d1fef6b47d2d3712"
+    },
+    {
+      "line_count": 12,
+      "name": "session_schema",
+      "path": "framework/session_schema.py",
+      "sha256": "a6c43d41a3da0996481dded9c1d458f1d0e9e01a701985b2f21a10351698ebfb"
+    },
+    {
+      "line_count": 53,
+      "name": "tool_system",
+      "path": "framework/tool_system.py",
+      "sha256": "878e3baa3f51addd197548a453fbaf51a1b42720a26bee5ee332ef6e98cd6489"
+    },
+    {
+      "line_count": 40,
+      "name": "workspace",
+      "path": "framework/workspace.py",
+      "sha256": "6f2c01f709b5883757db579472e408e34ef8b90d43e217e6a7b8039a20e883ed"
+    },
+    {
+      "line_count": 150,
+      "name": "permission_engine",
+      "path": "framework/permission_engine.py",
+      "sha256": "a6c22c69dc6b00ca34d93252f3781bb8541276330468bad868af921fc60bc4ec"
+    },
+    {
+      "line_count": 53,
+      "name": "sandbox",
+      "path": "framework/sandbox.py",
+      "sha256": "a45a6c41201957bc1b03d165719e39ce5e86474615f123ade4ffe828b4beb6c1"
+    }
+  ],
+  "schema_version": "1.0.0",
+  "supersedes": [
+    "docs/claude-code-roadmap.md (narrative only; not machine authority)",
+    "docs/version15-master-roadmap.md (historical/legacy narrative only)",
+    "docs/system_milestone_roadmap.md (out-of-scope for runtime authority)",
+    "config/promotion_manifest.json (legacy tactical release authority; frozen pending explicit migration)"
+  ]
+}

@@ -1,0 +1,81 @@
+{
+  "adoption_summary": {
+    "direct_runtime_paths_count": 0,
+    "primitives_measured": [
+      "worker_runtime",
+      "tool_system",
+      "workspace",
+      "permission_engine",
+      "sandbox"
+    ],
+    "tactical_families_measured": [
+      "eo",
+      "ed",
+      "mc",
+      "live_bridge",
+      "ort",
+      "pgs"
+    ]
+  },
+  "authority_owner": "governance/authority_adr_0001_source_of_truth.md",
+  "direct_runtime_paths": [],
+  "generated_at": "2026-04-18T02:35:18-04:00",
+  "non_adopting_families": [
+    "mc",
+    "live_bridge",
+    "ort",
+    "pgs"
+  ],
+  "notes": "Adoption is measured by static import of framework.{worker_runtime,tool_system,workspace,permission_engine,sandbox}; dynamic use via plugin registries is not counted.",
+  "schema_version": "1.0.0",
+  "supersedes": [
+    "docs/claude-code-roadmap.md (narrative only; not machine authority)",
+    "docs/version15-master-roadmap.md (historical/legacy narrative only)",
+    "docs/system_milestone_roadmap.md (out-of-scope for runtime authority)",
+    "config/promotion_manifest.json (legacy tactical release authority; frozen pending explicit migration)"
+  ],
+  "tactical_family_adoption": [
+    {
+      "adopting_files": 0,
+      "adopting_paths": [],
+      "classification": "provisional_precursor",
+      "family_id": "eo",
+      "total_family_files": 0
+    },
+    {
+      "adopting_files": 0,
+      "adopting_paths": [],
+      "classification": "provisional_precursor",
+      "family_id": "ed",
+      "total_family_files": 0
+    },
+    {
+      "adopting_files": 0,
+      "adopting_paths": [],
+      "classification": "provisional_precursor",
+      "family_id": "mc",
+      "total_family_files": 271
+    },
+    {
+      "adopting_files": 0,
+      "adopting_paths": [],
+      "classification": "provisional_precursor",
+      "family_id": "live_bridge",
+      "total_family_files": 919
+    },
+    {
+      "adopting_files": 0,
+      "adopting_paths": [],
+      "classification": "provisional_precursor",
+      "family_id": "ort",
+      "total_family_files": 1350
+    },
+    {
+      "adopting_files": 0,
+      "adopting_paths": [],
+      "classification": "provisional_precursor",
+      "family_id": "pgs",
+      "total_family_files": 1500
+    }
+  ]
+}

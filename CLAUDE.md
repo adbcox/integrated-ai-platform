@@ -275,3 +275,18 @@ Output includes:
 6. **Final Report**: Document blockers_resolved, real_paths_rerun, final_remaining_blocker_or_stop_reason
 
 See `/tmp/final_session_report.md` for an example of the expected 12-section format.
+
+## Governance authority (machine-readable)
+
+The coding-runtime side of this repository has machine-readable governance
+authority under `governance/`. Narrative roadmaps under `docs/` are historical
+or advisory. The legacy `config/promotion_manifest.json` is tactical release
+authority only and is frozen pending explicit migration (see
+`governance/authority_adr_0001_source_of_truth.md`).
+
+- [governance/README.md](governance/README.md) — human-readable authority map
+- [governance/current_phase.json](governance/current_phase.json) — current canonical phase and next allowed package class
+- [governance/canonical_roadmap.json](governance/canonical_roadmap.json) — canonical phases 0..6 and statuses
+- [governance/phase_gate_status.json](governance/phase_gate_status.json) — gate table for canonical phases 0..6
+- [governance/runtime_contract_version.json](governance/runtime_contract_version.json) — runtime primitive surface and contract version
+- [governance/tactical_family_classification.json](governance/tactical_family_classification.json) — EO / ED / MC / LOB / ORT / PGS classification

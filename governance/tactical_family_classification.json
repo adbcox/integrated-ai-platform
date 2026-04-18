@@ -1,0 +1,86 @@
+{
+  "authority_owner": "governance/authority_adr_0001_source_of_truth.md",
+  "families": [
+    {
+      "canonical_phase_dependency": 2,
+      "current_classification": "provisional_precursor",
+      "family_id": "eo",
+      "family_prefixes": [
+        "eo_"
+      ],
+      "next_reconciliation_action": "classify precursor evidence and decide whether to ratify, pause, or retire before any new EO tactical package",
+      "notes": "No files in framework/ match eo_ prefix at as_of_commit.",
+      "regression_requirement": "named offline regression scenario",
+      "runtime_adoption_required": true
+    },
+    {
+      "canonical_phase_dependency": 2,
+      "current_classification": "provisional_precursor",
+      "family_id": "ed",
+      "family_prefixes": [
+        "ed_"
+      ],
+      "next_reconciliation_action": "classify precursor evidence and decide whether to ratify, pause, or retire before any new ED tactical package",
+      "notes": "No files in framework/ match ed_ prefix at as_of_commit.",
+      "regression_requirement": "named offline regression scenario",
+      "runtime_adoption_required": true
+    },
+    {
+      "canonical_phase_dependency": 4,
+      "current_classification": "provisional_precursor",
+      "family_id": "mc",
+      "family_prefixes": [
+        "mc_",
+        "multi_phase_"
+      ],
+      "next_reconciliation_action": "evaluate multi_phase_* helper surface for runtime adoption and decide ratification vs. pause before any new MC tactical package",
+      "notes": "Evidence surface is the framework/multi_phase_* helper family committed through MC-W8/MC-W9.",
+      "regression_requirement": "named offline regression scenario covering multi-phase autonomy helpers",
+      "runtime_adoption_required": true
+    },
+    {
+      "canonical_phase_dependency": 6,
+      "current_classification": "provisional_precursor",
+      "family_id": "live_bridge",
+      "family_prefixes": [
+        "live_bridge_"
+      ],
+      "next_reconciliation_action": "LOB-W3 is paused per ADR 0003; retain committed live_bridge code as provisional_precursor until reconciliation ratifies it",
+      "notes": "See governance/authority_adr_0003_lob_w3_classification.md.",
+      "regression_requirement": "named offline regression scenario for live_bridge operations",
+      "runtime_adoption_required": true
+    },
+    {
+      "canonical_phase_dependency": 5,
+      "current_classification": "provisional_precursor",
+      "family_id": "ort",
+      "family_prefixes": [
+        "ort_"
+      ],
+      "next_reconciliation_action": "classify ORT precursor evidence and decide whether to ratify, pause, or retire before any new ORT tactical package",
+      "notes": "Committed ORT surface predates machine-readable authority; not yet mapped to a canonical phase.",
+      "regression_requirement": "named offline regression scenario for ORT integration",
+      "runtime_adoption_required": true
+    },
+    {
+      "canonical_phase_dependency": 5,
+      "current_classification": "provisional_precursor",
+      "family_id": "pgs",
+      "family_prefixes": [
+        "pgs_"
+      ],
+      "next_reconciliation_action": "classify PGS precursor evidence and decide whether to ratify, pause, or retire before any new PGS tactical package",
+      "notes": "Committed PGS surface predates machine-readable authority; not yet mapped to a canonical phase.",
+      "regression_requirement": "named offline regression scenario for PGS governance helpers",
+      "runtime_adoption_required": true
+    }
+  ],
+  "generated_at": "2026-04-18T02:35:18-04:00",
+  "schema_version": "1.0.0",
+  "supersedes": [
+    "docs/claude-code-roadmap.md (narrative only; not machine authority)",
+    "docs/version15-master-roadmap.md (historical/legacy narrative only)",
+    "docs/system_milestone_roadmap.md (out-of-scope for runtime authority)",
+    "config/promotion_manifest.json (legacy tactical release authority; frozen pending explicit migration)"
+  ]
+}

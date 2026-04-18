@@ -1,0 +1,30 @@
+{
+  "as_of_commit": "cc8e510261e7ec1a89c383db826f05c1ad32988d",
+  "authority_owner": "governance/authority_adr_0001_source_of_truth.md",
+  "blocked_package_classes": [
+    "canonical_phase_advancement",
+    "feature_expansion",
+    "tactical_family_extension"
+  ],
+  "blocked_tactical_families": [
+    "eo",
+    "ed",
+    "mc",
+    "live_bridge",
+    "ort",
+    "pgs"
+  ],
+  "current_phase_id": 0,
+  "current_phase_name": "governance_source_of_truth_reconciliation",
+  "current_phase_status": "open",
+  "generated_at": "2026-04-18T02:35:18-04:00",
+  "next_allowed_package_class": "reconciliation_only",
+  "notes": "current_phase_id intentionally reflects reconciliation reality rather than the legacy Stage/Manager labels in config/promotion_manifest.json.",
+  "schema_version": "1.0.0",
+  "supersedes": [
+    "docs/claude-code-roadmap.md (narrative only; not machine authority)",
+    "docs/version15-master-roadmap.md (historical/legacy narrative only)",
+    "docs/system_milestone_roadmap.md (out-of-scope for runtime authority)",
+    "config/promotion_manifest.json (legacy tactical release authority; frozen pending explicit migration)"
+  ]
+}
