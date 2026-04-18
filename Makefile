@@ -378,3 +378,17 @@ phase1-runtime-test:
 phase1-runtime-validate:
 	@python3 ./artifacts/phase1_local_runtime_validation_report.py
 
+.PHONY: phase2-schema-test phase2-schema-validate
+
+phase2-schema-test:
+	@python3 -m unittest \
+		tests.test_canonical_session_schema \
+		tests.test_canonical_job_schema \
+		tests.test_tool_action_observation_contract \
+		tests.test_tool_contract_builders \
+		tests.test_phase2_session_bundle \
+		tests.test_phase2_schema_entry_validation
+
+phase2-schema-validate:
+	@python3 ./artifacts/phase2_schema_entry_validation_report.py
+
