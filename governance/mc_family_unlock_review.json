@@ -1,0 +1,61 @@
+{
+  "authority_owner": "governance",
+  "baseline_commit": "9c2420736e9542596b0d37c581cef3cba7fd2402",
+  "evidence_inputs": [
+    "governance/tactical_unlock_criteria.json",
+    "governance/tactical_family_classification.json",
+    "governance/runtime_adoption_report.json",
+    "governance/schema_contract_registry.json",
+    "governance/phase2_adoption_decision.json",
+    "governance/next_package_class.json"
+  ],
+  "family_id": "mc",
+  "family_prefixes": [
+    "mc_",
+    "multi_phase_"
+  ],
+  "invariants_preserved": {
+    "canonical_phases_unchanged": true,
+    "current_allowed_class_unchanged": true,
+    "lob_w3_pause_preserved": true,
+    "no_framework_edits": true,
+    "no_tactical_code_generated": true,
+    "other_families_unchanged": true
+  },
+  "next_review_preconditions": [
+    "canonical Phase 4 advanced to closed_ratified (or otherwise explicitly authorized to admit MC work) via a separate non-review packet",
+    "runtime_adoption_report.json tactical_family_adoption for mc shows adopting_files >= 1 derived from real static imports of framework runtime primitives by one or more framework/multi_phase_*.py or framework/mc_*.py helpers",
+    "at least one named offline regression scenario covering multi-phase autonomy committed under tests/ and wired into tests/run_offline_scenarios.sh"
+  ],
+  "packet_id": "TREV-MC-1",
+  "post_review_state": {
+    "canonical_phase_dependency": 4,
+    "classification": "provisional_precursor",
+    "review_packet_required": true,
+    "unlock_state": "locked"
+  },
+  "precondition_evaluation": [
+    {
+      "met": false,
+      "observation": "governance/canonical_roadmap.json records Phase 4 (autonomy_hardening_safety_policy_uplift) as status=open and not canonically authorized until Phase 2/3 governance closure; MC has canonical_phase_dependency=4 per governance/tactical_family_classification.json, so Phase 4 authority does not permit MC advancement at baseline_commit 9c2420736e9542596b0d37c581cef3cba7fd2402.",
+      "precondition": "canonical phase 4 authority explicitly authorizes MC family"
+    },
+    {
+      "met": false,
+      "observation": "runtime_adoption_report.json tactical_family_adoption for mc reports adopting_files=0 and adopting_paths=[] despite total_family_files=271 framework/multi_phase_* helpers. No multi_phase_*/mc_* file statically imports any framework runtime primitive (worker_runtime, tool_system, workspace, permission_engine, sandbox).",
+      "precondition": "runtime-primitive adoption measured for multi_phase_* helpers"
+    },
+    {
+      "met": false,
+      "observation": "No tests/test_mc_.py exists, no multi-phase-autonomy case exists in tests/run_offline_scenarios.sh, and no MC regression fixture is present.",
+      "precondition": "named offline regression scenario covers multi-phase autonomy"
+    }
+  ],
+  "preconditions_met": 0,
+  "preconditions_total": 3,
+  "ratified_by_adr": "governance/authority_adr_0012_mc_family_unlock_review.md",
+  "review_class": "tactical_review",
+  "review_decision": "remains_locked",
+  "schema_version": 1,
+  "supersedes": []
+}
