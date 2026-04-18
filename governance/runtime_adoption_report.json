@@ -1,6 +1,6 @@
 {
   "adoption_summary": {
-    "direct_runtime_paths_count": 4,
+    "direct_runtime_paths_count": 6,
     "primitives_measured": [
       "worker_runtime",
       "tool_system",
@@ -29,6 +29,13 @@
       ]
     },
     {
+      "path": "framework/multi_phase_permission_gate.py",
+      "primitives_used": [
+        "permission_engine",
+        "tool_system"
+      ]
+    },
+    {
       "path": "tests/capability/conftest.py",
       "primitives_used": [
         "permission_engine",
@@ -48,11 +55,17 @@
       "primitives_used": [
         "worker_runtime"
       ]
+    },
+    {
+      "path": "tests/test_multi_phase_permission_gate.py",
+      "primitives_used": [
+        "permission_engine",
+        "tool_system"
+      ]
     }
   ],
   "generated_at": "2026-04-18T02:35:18-04:00",
   "non_adopting_families": [
-    "mc",
     "live_bridge",
     "ort",
     "pgs"
@@ -81,11 +94,13 @@
       "total_family_files": 0
     },
     {
-      "adopting_files": 0,
-      "adopting_paths": [],
+      "adopting_files": 1,
+      "adopting_paths": [
+        "framework/multi_phase_permission_gate.py"
+      ],
       "classification": "provisional_precursor",
       "family_id": "mc",
-      "total_family_files": 271
+      "total_family_files": 272
     },
     {
       "adopting_files": 0,

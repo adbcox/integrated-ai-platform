@@ -5,9 +5,11 @@
   "notes": "contract_version fingerprint derives from the sha256 of each primitive; any primitive change advances the contract version.",
   "observed_adoption_paths": [
     "bin/governance_phase2_evidence_recorder.py",
+    "framework/multi_phase_permission_gate.py",
     "tests/capability/conftest.py",
     "tests/capability/test_phase2_innerloop_closure.py",
-    "tests/capability/test_phase2_innerloop_closure_negative.py"
+    "tests/capability/test_phase2_innerloop_closure_negative.py",
+    "tests/test_multi_phase_permission_gate.py"
   ],
   "primitives": [
     {

@@ -1,0 +1,69 @@
+{
+  "authority_owner": "governance",
+  "baseline_commit": "dcb944141f1e8d1a01a991f44546ad99a774511c",
+  "family_id": "mc",
+  "family_prefixes": [
+    "mc_",
+    "multi_phase_"
+  ],
+  "invariants_preserved": {
+    "bin_unchanged": true,
+    "canonical_phases_unchanged": true,
+    "current_allowed_class_unchanged": true,
+    "existing_adrs_unchanged": true,
+    "lob_w3_pause_preserved": true,
+    "no_other_family_touched": true,
+    "no_phase1_primitive_edited": true,
+    "tactical_family_classification_unchanged": true,
+    "tactical_unlock_criteria_unchanged": true
+  },
+  "next_action": "A future TREV-MC-2 may reevaluate MC mechanically against these seeds, but MC remains locked until canonical phase authority is satisfied.",
+  "packet_class": "mc_unlock_precondition_seed",
+  "packet_id": "MC-SEED-1-REV1",
+  "post_seed_state": {
+    "classification": "provisional_precursor",
+    "eligible_for_review": false,
+    "eligible_for_review_reason": "canonical phase authority remains unmet",
+    "preconditions_met_after_seed": 2,
+    "preconditions_total": 3,
+    "review_packet_required": true,
+    "unlock_state": "locked"
+  },
+  "schema_version": 1,
+  "seeded_preconditions": [
+    {
+      "expected_post_regeneration_state": {
+        "adopting_files": 1,
+        "adopting_paths": [
+          "framework/multi_phase_permission_gate.py"
+        ],
+        "non_adopting_families_contains_mc": false
+      },
+      "precondition": "runtime-primitive adoption measured in runtime_adoption_report.json",
+      "primitives_imported": [
+        "permission_engine",
+        "tool_system"
+      ],
+      "seeded_by": [
+        "framework/multi_phase_permission_gate.py"
+      ]
+    },
+    {
+      "determinism": "no I/O, no network, no fs writes",
+      "execution": "python3 -m unittest tests.test_multi_phase_permission_gate",
+      "precondition": "named offline regression scenario covers MC",
+      "scenario_name": "tests.test_multi_phase_permission_gate",
+      "seeded_by": [
+        "tests/test_multi_phase_permission_gate.py"
+      ]
+    }
+  ],
+  "supersedes": [],
+  "unseeded_preconditions": [
+    {
+      "precondition": "canonical phase authority permits MC work",
+      "reason": "canonical_phase_dependency remains unmet for unlock; this packet does not advance canonical phase authority",
+      "resolution_path": "separate governance action plus later TREV-MC review"
+    }
+  ]
+}
