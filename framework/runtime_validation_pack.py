@@ -135,10 +135,12 @@ __all__ = [
     "DEFAULT_PROMPT",
     "DEFAULT_TASK_CLASS",
     "REQUIRED_PHASE2_RUNTIME_KEYS",
+    "REQUIRED_PHASE2_TYPED_TOOLS",
     "ValidationPackResult",
     "assert_phase2_runtime_keys_present",
     "run_baseline_validation",
     "run_phase2_runtime_wire_validation",
+    "run_phase2_typed_tool_validation",
 ]
 
 
@@ -263,3 +265,152 @@ def run_phase2_runtime_wire_validation(
 
     result["__persisted"] = persisted
     return result
+
+
+# ------------------------------------------------------------------ #
+# Phase 2 typed tool validation helpers                                #
+# ------------------------------------------------------------------ #
+
+import os as _p2_os
+import subprocess as _p2_sp
+from pathlib import Path as _P2Path
+
+from .tool_action_observation_contract import ToolContractName as _P2TCN
+
+REQUIRED_PHASE2_TYPED_TOOLS = (
+    _P2TCN.READ_FILE.value,
+    _P2TCN.LIST_DIR.value,
+    _P2TCN.GIT_DIFF.value,
+    _P2TCN.RUN_TESTS.value,
+)
+
+
+def _p2_init_git_repo(repo_root: _P2Path) -> None:
+    repo_root.mkdir(parents=True, exist_ok=True)
+    env = {
+        **_p2_os.environ,
+        "GIT_AUTHOR_NAME": "phase2-tool-impl",
+        "GIT_AUTHOR_EMAIL": "phase2@example.invalid",
+        "GIT_COMMITTER_NAME": "phase2-tool-impl",
+        "GIT_COMMITTER_EMAIL": "phase2@example.invalid",
+    }
+    _p2_sp.run(["git", "init", "-q", "-b", "main", str(repo_root)], check=True, env=env)
+    (repo_root / "seed.txt").write_text("phase2-seed-content\n", encoding="utf-8")
+    _p2_sp.run(["git", "-C", str(repo_root), "add", "seed.txt"], check=True, env=env)
+    _p2_sp.run(["git", "-C", str(repo_root), "commit", "-q", "-m", "seed"], check=True, env=env)
+    (repo_root / "seed.txt").write_text("phase2-seed-content\nline-two\n", encoding="utf-8")
+
+
+def _p2_any_profile_name() -> str:
+    from .backend_profiles import BACKEND_PROFILES
+    if BACKEND_PROFILES:
+        return next(iter(BACKEND_PROFILES))
+    return "mac_local"
+
+
+def run_phase2_typed_tool_validation(
+    *,
+    allow_all_tools: bool,
+    tmp_root: Path,
+) -> dict:
+    """Drive a real WorkerRuntime job with all four Phase 2 typed tools."""
+    import queue as _queue
+    import threading as _threading
+
+    from .backend_profiles import get_backend_profile
+    from .inference_adapter import LocalHeuristicInferenceAdapter
+    from .job_schema import (
+        EscalationPolicy,
+        Job,
+        JobAction,
+        JobClass,
+        JobPriority,
+        RetryPolicy,
+        WorkTarget,
+    )
+    from .learning_hooks import LearningHooks
+    from .permission_engine import PermissionEngine
+    from .sandbox import LocalSandboxRunner
+    from .state_store import StateStore
+    from .worker_runtime import WorkerRuntime
+    from .workspace import WorkspaceController
+
+    tmp_root = tmp_root.resolve()
+    tmp_root.mkdir(parents=True, exist_ok=True)
+    artifact_root = tmp_root / "artifacts"
+    artifact_root.mkdir(parents=True, exist_ok=True)
+    repo_root = tmp_root / "repo"
+    work_root = tmp_root / "work"
+    work_root.mkdir(parents=True, exist_ok=True)
+
+    _p2_init_git_repo(repo_root)
+
+    probe = work_root / "probe.txt"
+    probe.write_text("phase2-typed-tool-probe\nline2\n", encoding="utf-8")
+
+    store = StateStore(artifact_root)
+    learning = LearningHooks(
+        store=store,
+        learning_latest_path=artifact_root / "learning" / "latest.json",
+    )
+    profile_name = _p2_any_profile_name()
+    profile = get_backend_profile(profile_name)
+    inference = LocalHeuristicInferenceAdapter(profile=profile)
+    workspace_controller = WorkspaceController(artifact_root)
+    sandbox_runner = LocalSandboxRunner()
+    permission_engine = PermissionEngine()
+
+    if allow_all_tools:
+        allowed_tools = ["apply_edit", "run_tests", "run_command", "inference"]
+    else:
+        allowed_tools = ["inference"]
+
+    suffix = "allow" if allow_all_tools else "block"
+    session_id = f"phase2-typed-tool-session-{suffix}"
+
+    phase2_typed_tools = [
+        {"contract_name": "read_file", "arguments": {"path": "seed.txt"}},
+        {"contract_name": "list_dir", "arguments": {"path": "."}},
+        {"contract_name": "git_diff", "arguments": {"ref": "HEAD"}},
+        {"contract_name": "run_tests", "arguments": {"command": "python3 -m unittest --help"}},
+    ]
+
+    job = Job(
+        task_class=JobClass.VALIDATION_CHECK_EXECUTION,
+        priority=JobPriority.P2,
+        target=WorkTarget(repo_root=str(repo_root), worktree_target=str(repo_root)),
+        action=JobAction.INFERENCE_AND_SHELL,
+        requested_outputs=[],
+        allowed_tools_actions=allowed_tools,
+        retry_policy=RetryPolicy(retry_budget=0, retry_backoff_seconds=0),
+        escalation_policy=EscalationPolicy(
+            allow_auto_escalation=False,
+            escalate_on_retry_exhaustion=False,
+        ),
+        validation_requirements=[],
+        metadata={
+            "inference_prompt": "phase2 typed tool validation",
+            "shell_command": "echo phase2-typed-tool-ok",
+            "session_id": session_id,
+            "objective": "phase2 typed tool validation",
+            "model_profile": profile_name,
+            "phase2_typed_tools": phase2_typed_tools,
+        },
+        job_id=f"phase2-typed-tool-job-{suffix}",
+    )
+
+    stop_event = _threading.Event()
+    runtime = WorkerRuntime(
+        worker_id=f"phase2-typed-tool-worker-{suffix}",
+        queue_ref=_queue.PriorityQueue(),
+        inference=inference,
+        store=store,
+        learning=learning,
+        stop_event=stop_event,
+        context_release_callback=lambda _job: None,
+        permission_engine=permission_engine,
+        workspace_controller=workspace_controller,
+        sandbox_runner=sandbox_runner,
+    )
+
+    return runtime._execute_job(job)

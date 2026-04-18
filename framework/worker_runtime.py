@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 import queue
+import shlex
 import subprocess
 import threading
 import time
@@ -49,6 +50,37 @@ _RUNTIME_TO_CONTRACT_TOOL: dict[ToolName, ToolContractName] = {
 
 def _runtime_tool_to_contract(tool: ToolName) -> ToolContractName:
     return _RUNTIME_TO_CONTRACT_TOOL.get(tool, ToolContractName.RUN_COMMAND)
+
+
+_PHASE2_READ_FILE_MAX_BYTES = 64 * 1024
+_PHASE2_LIST_DIR_MAX_ENTRIES = 500
+_PHASE2_GIT_DIFF_MAX_BYTES = 256 * 1024
+
+_PHASE2_RUN_TESTS_ALLOWED_HEADS: tuple[tuple[str, ...], ...] = (
+    ("python3", "-m", "unittest"),
+    ("python3", "-m", "pytest"),
+    ("pytest",),
+    ("make", "test"),
+    ("make", "check"),
+    ("make", "quick"),
+    ("./tests/run_offline_scenarios.sh",),
+    ("tests/run_offline_scenarios.sh",),
+)
+
+_PHASE2_TOOL_NAME_MAP: dict[ToolName, ToolContractName] = {
+    ToolName.RUN_COMMAND: ToolContractName.RUN_COMMAND,
+    ToolName.APPLY_EDIT: ToolContractName.APPLY_PATCH,
+}
+_PHASE2_TOOL_NAME_MAP[ToolName.RUN_TESTS] = ToolContractName.RUN_TESTS
+
+
+def _phase2_run_tests_head_allowed(command_argv: list[str]) -> bool:
+    if not command_argv:
+        return False
+    for head in _PHASE2_RUN_TESTS_ALLOWED_HEADS:
+        if tuple(command_argv[: len(head)]) == head:
+            return True
+    return False
 
 
 @dataclass(frozen=True)
@@ -455,6 +487,47 @@ class WorkerRuntime:
 
     def _execute_attempt(self, job: Job) -> WorkerOutcome:
         workspace = self._workspace_controller.for_job(job)
+        # Phase 2 typed tools dispatch — gated; no-op when key absent
+        if isinstance(job.metadata, dict):
+            _p2_typed_specs = job.metadata.get("phase2_typed_tools")
+            if isinstance(_p2_typed_specs, list) and _p2_typed_specs:
+                _p2_obs_list: list[ToolObservationRecord] = []
+                for _p2_spec in _p2_typed_specs:
+                    if not isinstance(_p2_spec, dict):
+                        continue
+                    _p2_cn_raw = str(_p2_spec.get("contract_name") or "").strip()
+                    try:
+                        _p2_cn = ToolContractName(_p2_cn_raw)
+                    except ValueError:
+                        continue
+                    _p2_args = (
+                        _p2_spec.get("arguments")
+                        if isinstance(_p2_spec.get("arguments"), dict)
+                        else {}
+                    )
+                    _obs = self._execute_phase2_typed_tool(
+                        job=job,
+                        workspace=workspace,
+                        contract_name=_p2_cn,
+                        arguments=_p2_args,
+                    )
+                    _p2_obs_list.append(_obs)
+                _p2_out = "; ".join(
+                    f"{o.tool_name.value}:{o.status.value}" for o in _p2_obs_list
+                )
+                _p2_val = self._validate(
+                    job=job, return_code=0, output_snapshot_before={}
+                )
+                return WorkerOutcome(
+                    job_id=job.job_id,
+                    status="completed",
+                    return_code=0,
+                    output=_p2_out,
+                    error="",
+                    validation=_p2_val,
+                    failure_class="",
+                    retry_recommended=False,
+                )
         prompt = str(job.metadata.get("inference_prompt") or "")
         output_snapshot_before = self._snapshot_requested_outputs(job.requested_outputs)
         context = {
@@ -982,6 +1055,489 @@ class WorkerRuntime:
             {"kind": "tool_observation", "worker_id": self.worker_id, "job_id": job.job_id, "observation": observation.to_dict()}
         )
         return True, ""
+
+    # ------------------------------------------------------------------ #
+    # Phase 2 typed tool helpers                                           #
+    # ------------------------------------------------------------------ #
+
+    def _phase2_resolve_bounded_path(
+        self,
+        *,
+        workspace,
+        candidate: str,
+    ) -> tuple[Path | None, str]:
+        if not candidate or not candidate.strip():
+            return None, "empty_path"
+        path = Path(candidate)
+        repo_root = workspace.repo_root.resolve()
+        if path.is_absolute():
+            resolved = path.resolve()
+        else:
+            resolved = (repo_root / path).resolve()
+        try:
+            resolved.relative_to(repo_root)
+        except ValueError:
+            return None, f"path_escapes_workspace:{resolved}"
+        return resolved, ""
+
+    def _phase2_permission_check(
+        self,
+        *,
+        job: Job,
+        tool: ToolName,
+        arguments: dict[str, Any],
+    ):
+        action = ToolAction(job_id=job.job_id, tool=tool, arguments=arguments)
+        return self._permission_engine.evaluate(
+            action=action,
+            allowed_tools_actions=job.allowed_tools_actions,
+            metadata=job.metadata,
+        )
+
+    def _phase2_emit_typed_success(
+        self,
+        *,
+        job: Job,
+        typed_action: ToolActionRecord,
+        duration_ms: int = 0,
+        stdout: str = "",
+        stderr: str = "",
+        structured_payload: dict[str, Any] | None = None,
+        side_effect_metadata: dict[str, Any] | None = None,
+        return_code: int = 0,
+    ) -> ToolObservationRecord:
+        return self._phase2_record_observation(
+            job=job,
+            typed_action=typed_action,
+            status=ToolContractStatus.EXECUTED,
+            allowed=True,
+            duration_ms=duration_ms,
+            stdout=stdout,
+            stderr=stderr,
+            structured_payload=structured_payload,
+            side_effect_metadata=side_effect_metadata,
+            return_code=return_code,
+        )
+
+    def _phase2_emit_typed_failure(
+        self,
+        *,
+        job: Job,
+        typed_action: ToolActionRecord,
+        error: str,
+        duration_ms: int = 0,
+        return_code: int = 1,
+    ) -> ToolObservationRecord:
+        return self._phase2_record_observation(
+            job=job,
+            typed_action=typed_action,
+            status=ToolContractStatus.FAILED,
+            allowed=True,
+            duration_ms=duration_ms,
+            error=error,
+            return_code=return_code,
+        )
+
+    def _phase2_last_observation_or_build(
+        self,
+        *,
+        job: Job,
+        typed_action: ToolActionRecord,
+    ) -> ToolObservationRecord:
+        if self._phase2_has_collector(job):
+            for obs in reversed(self._phase2_collectors[job.job_id]["tool_observations"]):
+                if obs.action_id == typed_action.action_id:
+                    return obs
+        return build_blocked_tool_observation(action=typed_action, reason="observation_not_found")
+
+    def _phase2_synthetic_denied(self, reason: str) -> ToolObservationRecord:
+        return ToolObservationRecord(
+            action_id="synthetic-denied",
+            session_id="unknown",
+            job_id="unknown",
+            tool_name=ToolContractName.RUN_COMMAND,
+            status=ToolContractStatus.BLOCKED,
+            allowed=False,
+            error=reason,
+            return_code=126,
+        )
+
+    def _tool_read_file(
+        self,
+        *,
+        job: Job,
+        workspace,
+        arguments: dict[str, Any],
+    ) -> ToolObservationRecord:
+        t0 = time.monotonic()
+        candidate = str(arguments.get("path") or "").strip()
+        typed_action = build_tool_action(
+            action_id=self._phase2_next_action_id(job),
+            session_id=self._phase2_session_id(job),
+            job_id=job.job_id,
+            tool_name=ToolContractName.READ_FILE,
+            arguments={"path": candidate},
+            requested_by="worker_runtime",
+        )
+        if self._phase2_has_collector(job):
+            self._phase2_collectors[job.job_id]["tool_actions"].append(typed_action)
+        perm_action = ToolAction(
+            job_id=job.job_id,
+            tool=ToolName.APPLY_EDIT,
+            arguments={"path": candidate or ".", "mode": "read_file"},
+        )
+        decision = self._permission_engine.evaluate(
+            action=perm_action,
+            allowed_tools_actions=job.allowed_tools_actions,
+            metadata=job.metadata,
+        )
+        self._phase2_record_permission_decision(
+            job=job, action=perm_action, decision_payload=decision.to_dict()
+        )
+        self.store.append_trace({
+            "kind": "tool_permission_decision",
+            "worker_id": self.worker_id,
+            "job_id": job.job_id,
+            "tool_action": {"tool": "read_file", "arguments": {"path": candidate}},
+            "permission": decision.to_dict(),
+        })
+        if not decision.allowed:
+            return self._phase2_record_blocked(
+                job=job,
+                typed_action=typed_action,
+                reason=decision.reason or "permission_denied",
+            )
+        resolved, err = self._phase2_resolve_bounded_path(
+            workspace=workspace, candidate=candidate
+        )
+        if resolved is None:
+            duration_ms = int((time.monotonic() - t0) * 1000)
+            return self._phase2_emit_typed_failure(
+                job=job, typed_action=typed_action, error=err, duration_ms=duration_ms,
+            )
+        try:
+            raw_bytes = resolved.read_bytes()
+        except OSError as exc:
+            duration_ms = int((time.monotonic() - t0) * 1000)
+            return self._phase2_emit_typed_failure(
+                job=job, typed_action=typed_action,
+                error=f"read_error:{exc}", duration_ms=duration_ms,
+            )
+        try:
+            raw_bytes.decode("utf-8")
+        except UnicodeDecodeError:
+            duration_ms = int((time.monotonic() - t0) * 1000)
+            return self._phase2_emit_typed_failure(
+                job=job, typed_action=typed_action,
+                error="binary_file_not_supported", duration_ms=duration_ms,
+            )
+        if len(raw_bytes) > _PHASE2_READ_FILE_MAX_BYTES:
+            duration_ms = int((time.monotonic() - t0) * 1000)
+            return self._phase2_emit_typed_failure(
+                job=job, typed_action=typed_action,
+                error=f"file_too_large:{len(raw_bytes)}_bytes", duration_ms=duration_ms,
+            )
+        content = raw_bytes.decode("utf-8")
+        duration_ms = int((time.monotonic() - t0) * 1000)
+        return self._phase2_emit_typed_success(
+            job=job,
+            typed_action=typed_action,
+            duration_ms=duration_ms,
+            stdout=content,
+            structured_payload={"path": str(resolved), "size_bytes": len(raw_bytes)},
+            return_code=0,
+        )
+
+    def _tool_list_dir(
+        self,
+        *,
+        job: Job,
+        workspace,
+        arguments: dict[str, Any],
+    ) -> ToolObservationRecord:
+        t0 = time.monotonic()
+        candidate = str(arguments.get("path") or ".").strip() or "."
+        typed_action = build_tool_action(
+            action_id=self._phase2_next_action_id(job),
+            session_id=self._phase2_session_id(job),
+            job_id=job.job_id,
+            tool_name=ToolContractName.LIST_DIR,
+            arguments={"path": candidate},
+            requested_by="worker_runtime",
+        )
+        if self._phase2_has_collector(job):
+            self._phase2_collectors[job.job_id]["tool_actions"].append(typed_action)
+        perm_action = ToolAction(
+            job_id=job.job_id,
+            tool=ToolName.APPLY_EDIT,
+            arguments={"path": candidate, "mode": "list_dir"},
+        )
+        decision = self._permission_engine.evaluate(
+            action=perm_action,
+            allowed_tools_actions=job.allowed_tools_actions,
+            metadata=job.metadata,
+        )
+        self._phase2_record_permission_decision(
+            job=job, action=perm_action, decision_payload=decision.to_dict()
+        )
+        self.store.append_trace({
+            "kind": "tool_permission_decision",
+            "worker_id": self.worker_id,
+            "job_id": job.job_id,
+            "tool_action": {"tool": "list_dir", "arguments": {"path": candidate}},
+            "permission": decision.to_dict(),
+        })
+        if not decision.allowed:
+            return self._phase2_record_blocked(
+                job=job,
+                typed_action=typed_action,
+                reason=decision.reason or "permission_denied",
+            )
+        resolved, err = self._phase2_resolve_bounded_path(
+            workspace=workspace, candidate=candidate
+        )
+        duration_ms = int((time.monotonic() - t0) * 1000)
+        if resolved is None:
+            return self._phase2_emit_typed_failure(
+                job=job, typed_action=typed_action, error=err, duration_ms=duration_ms,
+            )
+        if not resolved.exists():
+            return self._phase2_emit_typed_failure(
+                job=job, typed_action=typed_action,
+                error=f"path_not_found:{resolved}", duration_ms=duration_ms,
+            )
+        if not resolved.is_dir():
+            return self._phase2_emit_typed_failure(
+                job=job, typed_action=typed_action,
+                error=f"not_a_directory:{resolved}", duration_ms=duration_ms,
+            )
+        try:
+            entries = sorted(
+                p.name + ("/" if p.is_dir() else "") for p in resolved.iterdir()
+            )
+        except OSError as exc:
+            duration_ms = int((time.monotonic() - t0) * 1000)
+            return self._phase2_emit_typed_failure(
+                job=job, typed_action=typed_action,
+                error=f"listdir_error:{exc}", duration_ms=duration_ms,
+            )
+        truncated = False
+        if len(entries) > _PHASE2_LIST_DIR_MAX_ENTRIES:
+            entries = entries[:_PHASE2_LIST_DIR_MAX_ENTRIES]
+            truncated = True
+        duration_ms = int((time.monotonic() - t0) * 1000)
+        return self._phase2_emit_typed_success(
+            job=job,
+            typed_action=typed_action,
+            duration_ms=duration_ms,
+            stdout="\n".join(entries),
+            structured_payload={
+                "path": str(resolved),
+                "entry_count": len(entries),
+                "truncated": truncated,
+            },
+            return_code=0,
+        )
+
+    def _tool_git_diff(
+        self,
+        *,
+        job: Job,
+        workspace,
+        arguments: dict[str, Any],
+    ) -> ToolObservationRecord:
+        t0 = time.monotonic()
+        ref = str(arguments.get("ref") or "HEAD").strip() or "HEAD"
+        typed_action = build_tool_action(
+            action_id=self._phase2_next_action_id(job),
+            session_id=self._phase2_session_id(job),
+            job_id=job.job_id,
+            tool_name=ToolContractName.GIT_DIFF,
+            arguments={"ref": ref},
+            requested_by="worker_runtime",
+        )
+        if self._phase2_has_collector(job):
+            self._phase2_collectors[job.job_id]["tool_actions"].append(typed_action)
+        perm_action = ToolAction(
+            job_id=job.job_id,
+            tool=ToolName.APPLY_EDIT,
+            arguments={"path": ".", "mode": "git_diff"},
+        )
+        decision = self._permission_engine.evaluate(
+            action=perm_action,
+            allowed_tools_actions=job.allowed_tools_actions,
+            metadata=job.metadata,
+        )
+        self._phase2_record_permission_decision(
+            job=job, action=perm_action, decision_payload=decision.to_dict()
+        )
+        self.store.append_trace({
+            "kind": "tool_permission_decision",
+            "worker_id": self.worker_id,
+            "job_id": job.job_id,
+            "tool_action": {"tool": "git_diff", "arguments": {"ref": ref}},
+            "permission": decision.to_dict(),
+        })
+        if not decision.allowed:
+            return self._phase2_record_blocked(
+                job=job,
+                typed_action=typed_action,
+                reason=decision.reason or "permission_denied",
+            )
+        repo_root = workspace.repo_root
+        git_env = {**os.environ}
+        try:
+            proc = subprocess.run(
+                ["git", "-C", str(repo_root), "diff", "--no-color", ref],
+                capture_output=True,
+                text=True,
+                env=git_env,
+                timeout=60,
+            )
+        except subprocess.TimeoutExpired:
+            duration_ms = int((time.monotonic() - t0) * 1000)
+            return self._phase2_emit_typed_failure(
+                job=job, typed_action=typed_action,
+                error="git_diff_timeout", duration_ms=duration_ms, return_code=124,
+            )
+        except OSError as exc:
+            duration_ms = int((time.monotonic() - t0) * 1000)
+            return self._phase2_emit_typed_failure(
+                job=job, typed_action=typed_action,
+                error=f"git_not_available:{exc}", duration_ms=duration_ms, return_code=1,
+            )
+        duration_ms = int((time.monotonic() - t0) * 1000)
+        if proc.returncode != 0:
+            return self._phase2_emit_typed_failure(
+                job=job, typed_action=typed_action,
+                error=proc.stderr.strip()[:2000], duration_ms=duration_ms,
+                return_code=proc.returncode,
+            )
+        diff_text = proc.stdout
+        diff_bytes = diff_text.encode("utf-8", errors="replace")
+        if len(diff_bytes) > _PHASE2_GIT_DIFF_MAX_BYTES:
+            diff_text = diff_bytes[:_PHASE2_GIT_DIFF_MAX_BYTES].decode(
+                "utf-8", errors="replace"
+            )
+        return self._phase2_emit_typed_success(
+            job=job,
+            typed_action=typed_action,
+            duration_ms=duration_ms,
+            stdout=diff_text,
+            structured_payload={"ref": ref, "repo_root": str(repo_root)},
+            return_code=0,
+        )
+
+    def _tool_run_tests(
+        self,
+        *,
+        job: Job,
+        workspace,
+        arguments: dict[str, Any],
+    ) -> ToolObservationRecord:
+        t0 = time.monotonic()
+        command = str(arguments.get("command") or "").strip()
+        typed_action = build_tool_action(
+            action_id=self._phase2_next_action_id(job),
+            session_id=self._phase2_session_id(job),
+            job_id=job.job_id,
+            tool_name=ToolContractName.RUN_TESTS,
+            arguments={"command": command},
+            requested_by="worker_runtime",
+        )
+        if self._phase2_has_collector(job):
+            self._phase2_collectors[job.job_id]["tool_actions"].append(typed_action)
+        perm_action = ToolAction(
+            job_id=job.job_id,
+            tool=ToolName.RUN_TESTS,
+            arguments={"command": command},
+        )
+        decision = self._permission_engine.evaluate(
+            action=perm_action,
+            allowed_tools_actions=job.allowed_tools_actions,
+            metadata=job.metadata,
+        )
+        self._phase2_record_permission_decision(
+            job=job, action=perm_action, decision_payload=decision.to_dict()
+        )
+        self.store.append_trace({
+            "kind": "tool_permission_decision",
+            "worker_id": self.worker_id,
+            "job_id": job.job_id,
+            "tool_action": {"tool": "run_tests", "arguments": {"command": command}},
+            "permission": decision.to_dict(),
+        })
+        if not decision.allowed:
+            return self._phase2_record_blocked(
+                job=job,
+                typed_action=typed_action,
+                reason=decision.reason or "permission_denied",
+            )
+        try:
+            command_argv = shlex.split(command)
+        except ValueError:
+            command_argv = []
+        if not _phase2_run_tests_head_allowed(command_argv):
+            duration_ms = int((time.monotonic() - t0) * 1000)
+            return self._phase2_emit_typed_failure(
+                job=job, typed_action=typed_action,
+                error=f"run_tests_head_not_allowed:{command}",
+                duration_ms=duration_ms, return_code=126,
+            )
+        try:
+            sandbox_result = self._sandbox_runner.run_command(
+                command=command,
+                cwd=workspace.worktree_target,
+                env=self._build_env(job),
+            )
+            rc = sandbox_result.return_code
+            stdout = sandbox_result.stdout.strip()
+            stderr = sandbox_result.stderr.strip()
+        except subprocess.TimeoutExpired:
+            duration_ms = int((time.monotonic() - t0) * 1000)
+            return self._phase2_emit_typed_failure(
+                job=job, typed_action=typed_action,
+                error="run_tests_timeout", duration_ms=duration_ms, return_code=124,
+            )
+        duration_ms = int((time.monotonic() - t0) * 1000)
+        if rc != 0:
+            return self._phase2_record_observation(
+                job=job,
+                typed_action=typed_action,
+                status=ToolContractStatus.FAILED,
+                allowed=True,
+                duration_ms=duration_ms,
+                stdout=stdout[-4000:],
+                stderr=stderr[-2000:],
+                return_code=rc,
+            )
+        return self._phase2_emit_typed_success(
+            job=job,
+            typed_action=typed_action,
+            duration_ms=duration_ms,
+            stdout=stdout[-4000:],
+            stderr=stderr[-2000:],
+            return_code=0,
+        )
+
+    def _execute_phase2_typed_tool(
+        self,
+        *,
+        job: Job,
+        workspace,
+        contract_name: ToolContractName,
+        arguments: dict[str, Any],
+    ) -> ToolObservationRecord:
+        _dispatch: dict[ToolContractName, Any] = {
+            ToolContractName.READ_FILE: self._tool_read_file,
+            ToolContractName.LIST_DIR: self._tool_list_dir,
+            ToolContractName.GIT_DIFF: self._tool_git_diff,
+            ToolContractName.RUN_TESTS: self._tool_run_tests,
+        }
+        handler = _dispatch.get(contract_name)
+        if handler is None:
+            return self._phase2_synthetic_denied(f"unregistered_contract:{contract_name}")
+        return handler(job=job, workspace=workspace, arguments=arguments)
 
     def _snapshot_paths(self, paths: list[Path]) -> dict[Path, str | None]:
         snapshot: dict[Path, str | None] = {}

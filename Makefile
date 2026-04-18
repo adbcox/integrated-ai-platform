@@ -404,3 +404,17 @@ phase2-runtime-wire-test:
 phase2-runtime-wire-validate:
 	@python3 ./artifacts/phase2_runtime_wire_validation_report.py
 
+
+.PHONY: phase2-tool-impl-test phase2-tool-impl-validate
+
+phase2-tool-impl-test:
+	@python3 -m unittest -v \
+		tests.test_worker_runtime_typed_tool_read_file \
+		tests.test_worker_runtime_typed_tool_list_dir \
+		tests.test_worker_runtime_typed_tool_git_diff \
+		tests.test_worker_runtime_typed_tool_run_tests \
+		tests.test_worker_runtime_typed_tool_dispatcher \
+		tests.test_phase2_tool_impl_validation
+
+phase2-tool-impl-validate:
+	@python3 ./artifacts/phase2_tool_impl_validation_report.py
