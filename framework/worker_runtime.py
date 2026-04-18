@@ -13,16 +13,42 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
+from .canonical_job_schema import CanonicalJob
+from .canonical_session_schema import CanonicalSession
 from .compat import UTC
 from .inference_adapter import InferenceAdapter, InferenceRequest
 from .job_schema import Job, JobAction, JobLifecycle, ValidationRequirement
 from .learning_hooks import LearningHooks
 from .permission_engine import PermissionEngine
+from .phase2_session_bundle import build_phase2_session_bundle
 from .queue_types import QueueEnvelope
 from .sandbox import LocalSandboxRunner
 from .state_store import StateStore
+from .tool_action_observation_contract import (
+    ToolActionRecord,
+    ToolContractName,
+    ToolContractStatus,
+    ToolObservationRecord,
+)
+from .tool_contract_builders import (
+    build_blocked_tool_observation,
+    build_tool_action,
+    build_tool_observation,
+)
 from .tool_system import ToolAction, ToolName, ToolObservation, ToolStatus
 from .workspace import WorkspaceController
+
+
+_RUNTIME_TO_CONTRACT_TOOL: dict[ToolName, ToolContractName] = {
+    ToolName.RUN_COMMAND: ToolContractName.RUN_COMMAND,
+    ToolName.RUN_TESTS: ToolContractName.RUN_TESTS,
+    ToolName.APPLY_EDIT: ToolContractName.APPLY_PATCH,
+    ToolName.INFERENCE: ToolContractName.READ_FILE,
+}
+
+
+def _runtime_tool_to_contract(tool: ToolName) -> ToolContractName:
+    return _RUNTIME_TO_CONTRACT_TOOL.get(tool, ToolContractName.RUN_COMMAND)
 
 
 @dataclass(frozen=True)
@@ -70,6 +96,193 @@ class WorkerRuntime:
         self._permission_engine = permission_engine or PermissionEngine()
         self._workspace_controller = workspace_controller or WorkspaceController(self.store.root)
         self._sandbox_runner = sandbox_runner or LocalSandboxRunner()
+        self._phase2_collectors: dict[str, dict[str, Any]] = {}
+        self._phase2_action_counters: dict[str, int] = {}
+
+    def _phase2_session_id(self, job: Job) -> str:
+        candidate = job.metadata.get("session_id") if isinstance(job.metadata, dict) else None
+        if isinstance(candidate, str) and candidate.strip():
+            return candidate.strip()
+        return f"session-{job.job_id}"
+
+    def _phase2_build_session(self, job: Job) -> CanonicalSession:
+        metadata = job.metadata if isinstance(job.metadata, dict) else {}
+        allowed_tools = list(job.allowed_tools_actions) if job.allowed_tools_actions else []
+        return CanonicalSession(
+            session_id=self._phase2_session_id(job),
+            task_id=job.job_id,
+            repo_id=str(metadata.get("repo_id") or ""),
+            branch=str(metadata.get("branch") or ""),
+            requester=str(metadata.get("requester") or self.worker_id),
+            created_at=job.created_at_utc,
+            updated_at=job.updated_at_utc,
+            task_class=job.task_class.value,
+            objective=str(metadata.get("objective") or ""),
+            constraints=[str(c) for c in (metadata.get("constraints") or [])],
+            allowed_tools=allowed_tools,
+            risk_tier=str(metadata.get("risk_tier") or "standard"),
+            stop_conditions=[str(c) for c in (metadata.get("stop_conditions") or [])],
+            selected_model_profile=str(metadata.get("model_profile") or ""),
+            selected_runtime=str(metadata.get("runtime") or "local"),
+            critique_model=str(metadata.get("critique_model") or ""),
+            retry_budget=int(job.retry_policy.retry_budget or 0),
+            token_budget=int(metadata.get("token_budget") or 0),
+            workspace_id=str(job.execution_context_id or job.job_id),
+            source_mount=str(job.target.repo_root),
+            scratch_mount=str(job.target.worktree_target),
+            artifact_root=str(self.store.root),
+            network_policy=str(metadata.get("network_policy") or "disabled"),
+        )
+
+    def _phase2_begin(self, job: Job) -> None:
+        session = self._phase2_build_session(job)
+        canonical_job = CanonicalJob.from_session(session, job_id=job.job_id)
+        self._phase2_collectors[job.job_id] = {
+            "session": session,
+            "jobs": [canonical_job],
+            "tool_actions": [],
+            "tool_observations": [],
+            "permission_decisions": [],
+        }
+        self._phase2_action_counters[job.job_id] = 0
+
+    def _phase2_next_action_id(self, job: Job) -> str:
+        count = self._phase2_action_counters.get(job.job_id, 0) + 1
+        self._phase2_action_counters[job.job_id] = count
+        return f"{job.job_id}-action-{count}"
+
+    def _phase2_has_collector(self, job: Job) -> bool:
+        return job.job_id in self._phase2_collectors
+
+    def _phase2_record_typed_action(
+        self,
+        *,
+        job: Job,
+        action: ToolAction,
+    ) -> ToolActionRecord:
+        if not self._phase2_has_collector(job):
+            return ToolActionRecord(
+                action_id=self._phase2_next_action_id(job),
+                session_id=self._phase2_session_id(job),
+                job_id=job.job_id,
+                tool_name=_runtime_tool_to_contract(action.tool),
+                arguments=dict(action.arguments),
+                requested_by="worker_runtime",
+            )
+        record = build_tool_action(
+            action_id=self._phase2_next_action_id(job),
+            session_id=self._phase2_session_id(job),
+            job_id=job.job_id,
+            tool_name=_runtime_tool_to_contract(action.tool),
+            arguments=dict(action.arguments),
+            requested_by="worker_runtime",
+        )
+        self._phase2_collectors[job.job_id]["tool_actions"].append(record)
+        return record
+
+    def _phase2_record_permission_decision(
+        self,
+        *,
+        job: Job,
+        action: ToolAction,
+        decision_payload: dict[str, Any],
+    ) -> None:
+        if not self._phase2_has_collector(job):
+            return
+        self._phase2_collectors[job.job_id]["permission_decisions"].append(
+            {
+                "tool": action.tool.value,
+                "arguments": dict(action.arguments),
+                **decision_payload,
+            }
+        )
+
+    def _phase2_record_blocked(
+        self,
+        *,
+        job: Job,
+        typed_action: ToolActionRecord,
+        reason: str,
+    ) -> ToolObservationRecord:
+        record = build_blocked_tool_observation(action=typed_action, reason=reason)
+        if self._phase2_has_collector(job):
+            self._phase2_collectors[job.job_id]["tool_observations"].append(record)
+        return record
+
+    def _phase2_record_observation(
+        self,
+        *,
+        job: Job,
+        typed_action: ToolActionRecord,
+        status: ToolContractStatus,
+        allowed: bool,
+        duration_ms: int = 0,
+        stdout: str = "",
+        stderr: str = "",
+        structured_payload: dict[str, Any] | None = None,
+        side_effect_metadata: dict[str, Any] | None = None,
+        error: str = "",
+        return_code: int = 0,
+    ) -> ToolObservationRecord:
+        record = build_tool_observation(
+            action=typed_action,
+            status=status,
+            allowed=allowed,
+            duration_ms=duration_ms,
+            stdout=stdout,
+            stderr=stderr,
+            structured_payload=structured_payload,
+            side_effect_metadata=side_effect_metadata,
+            error=error,
+            return_code=return_code,
+        )
+        if self._phase2_has_collector(job):
+            self._phase2_collectors[job.job_id]["tool_observations"].append(record)
+        return record
+
+    def _phase2_finalize(self, job: Job, *, final_outcome: str) -> dict[str, Any]:
+        collector = self._phase2_collectors.get(job.job_id)
+        if collector is None:
+            return {}
+        session: CanonicalSession = collector["session"]
+        canonical_jobs = collector["jobs"]
+        tool_actions = collector["tool_actions"]
+        tool_observations = collector["tool_observations"]
+        permission_decisions = list(collector["permission_decisions"])
+        session.final_outcome = final_outcome
+        session.updated_at = datetime.now(UTC).isoformat(timespec="seconds")
+        session.tool_trace = [a.to_dict() for a in tool_actions] + [
+            o.to_dict() for o in tool_observations
+        ]
+        session.permission_decisions = list(permission_decisions)
+        typed_trace: list[dict[str, Any]] = []
+        for a in tool_actions:
+            typed_trace.append({"kind": "tool_action", **a.to_dict()})
+        for o in tool_observations:
+            typed_trace.append({"kind": "tool_observation", **o.to_dict()})
+        bundle = build_phase2_session_bundle(
+            session=session,
+            jobs=canonical_jobs,
+            tool_actions=tool_actions,
+            tool_observations=tool_observations,
+            permission_decisions=permission_decisions,
+            final_outcome=final_outcome,
+        )
+        for job_obj in canonical_jobs:
+            job_obj.final_outcome = final_outcome
+            job_obj.status = final_outcome
+        return {
+            "canonical_session": session.to_dict(),
+            "canonical_jobs": [j.to_dict() for j in canonical_jobs],
+            "typed_tool_trace": typed_trace,
+            "permission_decisions": permission_decisions,
+            "session_bundle": bundle,
+            "final_outcome": final_outcome,
+        }
+
+    def _phase2_clear(self, job: Job) -> None:
+        self._phase2_collectors.pop(job.job_id, None)
+        self._phase2_action_counters.pop(job.job_id, None)
 
     def run_loop(self) -> None:
         while not self.stop_event.is_set():
@@ -104,6 +317,7 @@ class WorkerRuntime:
                 self.queue.task_done()
 
     def _execute_job(self, job: Job) -> dict[str, Any]:
+        self._phase2_begin(job)
         conflict_domain = self._resolve_conflict_domain(job)
         conflict_lock = self._acquire_conflict_lock(conflict_domain, job)
         class_limit = self._class_semaphores.get(job.task_class.value)
@@ -153,7 +367,7 @@ class WorkerRuntime:
                 if outcome.status == "completed" and passed:
                     job.set_lifecycle(JobLifecycle.COMPLETED, reason="worker_completed")
                     self.store.save_job(job)
-                    return {
+                    payload = {
                         "job_id": job.job_id,
                         "status": "completed",
                         "worker_id": self.worker_id,
@@ -165,6 +379,8 @@ class WorkerRuntime:
                         "failure_class": outcome.failure_class,
                         "requested_outputs": job.requested_outputs,
                     }
+                    payload.update(self._phase2_finalize(job, final_outcome="completed"))
+                    return payload
 
                 budget = max(0, job.retry_policy.retry_budget)
                 if attempts <= budget and outcome.retry_recommended:
@@ -191,6 +407,7 @@ class WorkerRuntime:
                         "status_reason": job.status_reason,
                         "requested_outputs": job.requested_outputs,
                     }
+                    payload.update(self._phase2_finalize(job, final_outcome="escalated"))
                     self.store.save_dead_letter_record(
                         job=job,
                         result_payload=payload,
@@ -214,6 +431,7 @@ class WorkerRuntime:
                     "status_reason": job.status_reason,
                     "requested_outputs": job.requested_outputs,
                 }
+                payload.update(self._phase2_finalize(job, final_outcome="failed"))
                 self.store.save_dead_letter_record(
                     job=job,
                     result_payload=payload,
@@ -221,6 +439,7 @@ class WorkerRuntime:
                 )
                 return payload
         finally:
+            self._phase2_clear(job)
             if class_limit is not None:
                 class_limit.release()
                 self.store.append_trace(
@@ -442,10 +661,16 @@ class WorkerRuntime:
             tool=ToolName.RUN_COMMAND,
             arguments={"command": command},
         )
+        typed_action = self._phase2_record_typed_action(job=job, action=tool_action)
         permission = self._permission_engine.evaluate(
             action=tool_action,
             allowed_tools_actions=job.allowed_tools_actions,
             metadata=job.metadata,
+        )
+        self._phase2_record_permission_decision(
+            job=job,
+            action=tool_action,
+            decision_payload=permission.to_dict(),
         )
         self.store.append_trace(
             {
@@ -467,6 +692,11 @@ class WorkerRuntime:
                 error=error,
                 return_code=126,
                 metadata={"permission_reason": permission.reason},
+            )
+            self._phase2_record_blocked(
+                job=job,
+                typed_action=typed_action,
+                reason=permission.reason or "permission_denied",
             )
             self.store.append_trace(
                 {"kind": "tool_observation", "worker_id": self.worker_id, "job_id": job.job_id, "observation": observation.to_dict()}
@@ -497,6 +727,16 @@ class WorkerRuntime:
             return_code=rc,
             metadata={"sandbox_mode": self._sandbox_runner.mode},
         )
+        self._phase2_record_observation(
+            job=job,
+            typed_action=typed_action,
+            status=ToolContractStatus.EXECUTED if rc == 0 else ToolContractStatus.FAILED,
+            allowed=True,
+            stdout=command_output[-4000:],
+            stderr=error[-2000:],
+            return_code=rc,
+            side_effect_metadata={"sandbox_mode": self._sandbox_runner.mode, "cwd": str(workspace.worktree_target)},
+        )
         self.store.append_trace(
             {"kind": "tool_observation", "worker_id": self.worker_id, "job_id": job.job_id, "observation": observation.to_dict()}
         )
@@ -517,10 +757,16 @@ class WorkerRuntime:
             tool=ToolName.APPLY_EDIT,
             arguments={"path": str(resolved), "mode": "replace_text"},
         )
+        typed_action = self._phase2_record_typed_action(job=job, action=action)
         decision = self._permission_engine.evaluate(
             action=action,
             allowed_tools_actions=job.allowed_tools_actions,
             metadata=job.metadata,
+        )
+        self._phase2_record_permission_decision(
+            job=job,
+            action=action,
+            decision_payload=decision.to_dict(),
         )
         self.store.append_trace(
             {
@@ -540,6 +786,11 @@ class WorkerRuntime:
                 error=f"permission_denied:{decision.reason}",
                 return_code=126,
                 metadata={"permission_reason": decision.reason},
+            )
+            self._phase2_record_blocked(
+                job=job,
+                typed_action=typed_action,
+                reason=decision.reason or "permission_denied",
             )
             self.store.append_trace(
                 {"kind": "tool_observation", "worker_id": self.worker_id, "job_id": job.job_id, "observation": observation.to_dict()}
@@ -575,6 +826,19 @@ class WorkerRuntime:
             output=f"edited:{resolved}",
             return_code=0,
             metadata={
+                "path": str(resolved),
+                "sha256_before": original_sha,
+                "sha256_after": updated_sha,
+            },
+        )
+        self._phase2_record_observation(
+            job=job,
+            typed_action=typed_action,
+            status=ToolContractStatus.EXECUTED,
+            allowed=True,
+            stdout=f"edited:{resolved}",
+            return_code=0,
+            side_effect_metadata={
                 "path": str(resolved),
                 "sha256_before": original_sha,
                 "sha256_after": updated_sha,

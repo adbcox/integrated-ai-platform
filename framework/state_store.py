@@ -95,20 +95,27 @@ class StateStore:
 
     def save_result(self, job_id: str, payload: dict[str, Any]) -> Path:
         path = self.results_dir / f"{job_id}.json"
-        
+
         # Extract outcome metadata with defaults
         outcome_class = payload.get("outcome_class", "unknown")
         error_category = payload.get("error_category", "")
         recovery_attempted = payload.get("recovery_attempted", False)
-        
+
+        phase2_payload_present = bool(
+            isinstance(payload.get("canonical_session"), dict)
+            and isinstance(payload.get("canonical_jobs"), list)
+            and isinstance(payload.get("typed_tool_trace"), list)
+        )
+
         stamped = {
             "saved_at_utc": datetime.now(UTC).isoformat(timespec="seconds"),
             "outcome_class": outcome_class,
             "error_category": error_category,
             "recovery_attempted": recovery_attempted,
+            "phase2_payload_present": phase2_payload_present,
             **payload,
         }
-        
+
         self._write_json(path, stamped)
         return path
 

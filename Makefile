@@ -392,3 +392,15 @@ phase2-schema-test:
 phase2-schema-validate:
 	@python3 ./artifacts/phase2_schema_entry_validation_report.py
 
+.PHONY: phase2-runtime-wire-test phase2-runtime-wire-validate
+
+phase2-runtime-wire-test:
+	@python3 -m unittest \
+		tests.test_worker_runtime_phase2_integration \
+		tests.test_state_store_phase2_payload \
+		tests.test_runtime_validation_pack_phase2 \
+		tests.test_phase2_runtime_wire_validation
+
+phase2-runtime-wire-validate:
+	@python3 ./artifacts/phase2_runtime_wire_validation_report.py
+
