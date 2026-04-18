@@ -141,6 +141,8 @@ __all__ = [
     "run_baseline_validation",
     "run_phase2_runtime_wire_validation",
     "run_phase2_typed_tool_validation",
+    "REQUIRED_PHASE2_TYPED_TOOLS_IMPL_2",
+    "run_phase2_typed_tool_impl_2_validation",
 ]
 
 
@@ -402,6 +404,126 @@ def run_phase2_typed_tool_validation(
     stop_event = _threading.Event()
     runtime = WorkerRuntime(
         worker_id=f"phase2-typed-tool-worker-{suffix}",
+        queue_ref=_queue.PriorityQueue(),
+        inference=inference,
+        store=store,
+        learning=learning,
+        stop_event=stop_event,
+        context_release_callback=lambda _job: None,
+        permission_engine=permission_engine,
+        workspace_controller=workspace_controller,
+        sandbox_runner=sandbox_runner,
+    )
+
+    return runtime._execute_job(job)
+
+
+# ------------------------------------------------------------------ #
+# Phase 2 typed tool impl-2 validation helpers (SEARCH, REPO_MAP)    #
+# ------------------------------------------------------------------ #
+
+from .tool_action_observation_contract import ToolContractName as _P2ToolContractName
+
+REQUIRED_PHASE2_TYPED_TOOLS_IMPL_2 = (
+    _P2ToolContractName.SEARCH.value,
+    _P2ToolContractName.REPO_MAP.value,
+)
+
+
+def run_phase2_typed_tool_impl_2_validation(
+    *,
+    base_root: _P2Path,
+    session_id: str = "phase2-tool-impl-2",
+    allow_all_tools: bool = True,
+) -> dict:
+    """Drive a real WorkerRuntime job with SEARCH and REPO_MAP typed tools."""
+    import queue as _queue
+    import threading as _threading
+    from typing import Any as _Any
+
+    from .backend_profiles import get_backend_profile
+    from .inference_adapter import LocalHeuristicInferenceAdapter
+    from .job_schema import (
+        EscalationPolicy,
+        Job,
+        JobAction,
+        JobClass,
+        JobPriority,
+        RetryPolicy,
+        WorkTarget,
+    )
+    from .learning_hooks import LearningHooks
+    from .permission_engine import PermissionEngine
+    from .sandbox import LocalSandboxRunner
+    from .state_store import StateStore
+    from .worker_runtime import WorkerRuntime
+    from .workspace import WorkspaceController
+
+    base_root = base_root.resolve()
+    base_root.mkdir(parents=True, exist_ok=True)
+    artifact_root = base_root / "artifacts"
+    artifact_root.mkdir(parents=True, exist_ok=True)
+    repo_root = base_root / "repo"
+    repo_root.mkdir(parents=True, exist_ok=True)
+
+    (repo_root / "alpha.txt").write_text(
+        "needle line one\nanother line\n", encoding="utf-8"
+    )
+    nested = repo_root / "nested"
+    nested.mkdir(parents=True, exist_ok=True)
+    (nested / "beta.py").write_text(
+        'def needle_function():\n    return "needle"\n', encoding="utf-8"
+    )
+
+    store = StateStore(artifact_root)
+    learning = LearningHooks(
+        store=store,
+        learning_latest_path=artifact_root / "learning" / "latest.json",
+    )
+    profile_name = _p2_any_profile_name()
+    profile = get_backend_profile(profile_name)
+    inference = LocalHeuristicInferenceAdapter(profile=profile)
+    workspace_controller = WorkspaceController(artifact_root)
+    sandbox_runner = LocalSandboxRunner()
+    permission_engine = PermissionEngine()
+
+    allowed_tools = ["run_command"] if allow_all_tools else ["inference"]
+    suffix = "allow" if allow_all_tools else "block"
+    job_session_id = f"{session_id}-{suffix}"
+
+    phase2_typed_tools = [
+        {"tool_name": "search", "arguments": {"query": "needle"}},
+        {"tool_name": "repo_map", "arguments": {"path": "."}},
+    ]
+
+    job = Job(
+        task_class=JobClass.VALIDATION_CHECK_EXECUTION,
+        priority=JobPriority.P2,
+        target=WorkTarget(repo_root=str(repo_root), worktree_target=str(repo_root)),
+        action=JobAction.INFERENCE_ONLY,
+        requested_outputs=[],
+        allowed_tools_actions=allowed_tools,
+        retry_policy=RetryPolicy(retry_budget=0, retry_backoff_seconds=0),
+        escalation_policy=EscalationPolicy(
+            allow_auto_escalation=False,
+            escalate_on_retry_exhaustion=False,
+        ),
+        validation_requirements=[],
+        metadata={
+            "session_id": job_session_id,
+            "task_id": f"phase2-tool-impl-2-task-{suffix}",
+            "inference_prompt": "phase2 tool impl-2 validation",
+            "risk_tier": "standard",
+            "selected_model_profile": profile_name,
+            "model_profile": profile_name,
+            "phase2_typed_tools": phase2_typed_tools,
+        },
+        job_id=f"phase2-tool-impl-2-job-{suffix}",
+    )
+
+    stop_event = _threading.Event()
+    runtime = WorkerRuntime(
+        worker_id=f"phase2-tool-impl-2-worker-{suffix}",
         queue_ref=_queue.PriorityQueue(),
         inference=inference,
         store=store,

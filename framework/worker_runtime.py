@@ -73,6 +73,17 @@ _PHASE2_TOOL_NAME_MAP: dict[ToolName, ToolContractName] = {
 }
 _PHASE2_TOOL_NAME_MAP[ToolName.RUN_TESTS] = ToolContractName.RUN_TESTS
 
+_PHASE2_SEARCH_MAX_FILES = 1000
+_PHASE2_SEARCH_MAX_MATCHES = 200
+_PHASE2_SEARCH_MAX_BYTES_PER_FILE = 128 * 1024
+_PHASE2_REPO_MAP_MAX_ENTRIES = 1000
+
+_PHASE2_REPO_MAP_EXCLUDED_NAMES = {
+    ".git",
+    "__pycache__",
+    ".pytest_cache",
+}
+
 
 def _phase2_run_tests_head_allowed(command_argv: list[str]) -> bool:
     if not command_argv:
@@ -495,7 +506,7 @@ class WorkerRuntime:
                 for _p2_spec in _p2_typed_specs:
                     if not isinstance(_p2_spec, dict):
                         continue
-                    _p2_cn_raw = str(_p2_spec.get("contract_name") or "").strip()
+                    _p2_cn_raw = str(_p2_spec.get("contract_name") or _p2_spec.get("tool_name") or "").strip()
                     try:
                         _p2_cn = ToolContractName(_p2_cn_raw)
                     except ValueError:
@@ -505,12 +516,18 @@ class WorkerRuntime:
                         if isinstance(_p2_spec.get("arguments"), dict)
                         else {}
                     )
-                    _obs = self._execute_phase2_typed_tool(
-                        job=job,
-                        workspace=workspace,
-                        contract_name=_p2_cn,
-                        arguments=_p2_args,
-                    )
+                    # Impl-2: SEARCH and REPO_MAP dispatch directly to their typed bodies
+                    if _p2_cn is ToolContractName.SEARCH:
+                        _obs = self._tool_search(job=job, workspace=workspace, arguments=_p2_args)
+                    elif _p2_cn is ToolContractName.REPO_MAP:
+                        _obs = self._tool_repo_map(job=job, workspace=workspace, arguments=_p2_args)
+                    else:
+                        _obs = self._execute_phase2_typed_tool(
+                            job=job,
+                            workspace=workspace,
+                            contract_name=_p2_cn,
+                            arguments=_p2_args,
+                        )
                     _p2_obs_list.append(_obs)
                 _p2_out = "; ".join(
                     f"{o.tool_name.value}:{o.status.value}" for o in _p2_obs_list
@@ -1517,6 +1534,223 @@ class WorkerRuntime:
             duration_ms=duration_ms,
             stdout=stdout[-4000:],
             stderr=stderr[-2000:],
+            return_code=0,
+        )
+
+    def _tool_search(
+        self,
+        *,
+        job: Job,
+        workspace,
+        arguments: dict[str, Any],
+    ) -> ToolObservationRecord:
+        t0 = time.monotonic()
+        query = str(arguments.get("query") or "").strip()
+        typed_action = build_tool_action(
+            action_id=self._phase2_next_action_id(job),
+            session_id=self._phase2_session_id(job),
+            job_id=job.job_id,
+            tool_name=ToolContractName.SEARCH,
+            arguments={"query": query},
+            requested_by="worker_runtime",
+        )
+        if self._phase2_has_collector(job):
+            self._phase2_collectors[job.job_id]["tool_actions"].append(typed_action)
+        if not query:
+            duration_ms = int((time.monotonic() - t0) * 1000)
+            return self._phase2_emit_typed_failure(
+                job=job, typed_action=typed_action,
+                error="search_missing_query",
+                duration_ms=duration_ms, return_code=2,
+            )
+        perm_action = ToolAction(
+            job_id=job.job_id,
+            tool=ToolName.RUN_COMMAND,
+            arguments={"command": "search", "query": query, "tool_contract": "search"},
+        )
+        decision = self._permission_engine.evaluate(
+            action=perm_action,
+            allowed_tools_actions=job.allowed_tools_actions,
+            metadata=job.metadata,
+        )
+        self._phase2_record_permission_decision(
+            job=job, action=perm_action, decision_payload=decision.to_dict()
+        )
+        self.store.append_trace({
+            "kind": "tool_permission_decision",
+            "worker_id": self.worker_id,
+            "job_id": job.job_id,
+            "tool_action": {"tool": "search", "arguments": {"query": query}},
+            "permission": decision.to_dict(),
+        })
+        if not decision.allowed:
+            return self._phase2_record_blocked(
+                job=job, typed_action=typed_action,
+                reason=decision.reason or "permission_denied",
+            )
+        repo_root = workspace.repo_root.resolve()
+        all_file_paths: list[Path] = []
+        for dirpath, dirnames, filenames in os.walk(str(repo_root)):
+            dirnames[:] = sorted(
+                d for d in dirnames if d not in _PHASE2_REPO_MAP_EXCLUDED_NAMES
+            )
+            dirpath_obj = Path(dirpath)
+            for fname in sorted(filenames):
+                all_file_paths.append(dirpath_obj / fname)
+        all_file_paths.sort()
+        matches: list[dict[str, Any]] = []
+        files_scanned = 0
+        files_truncated = False
+        matches_truncated = False
+        for fpath in all_file_paths:
+            if files_scanned >= _PHASE2_SEARCH_MAX_FILES:
+                files_truncated = True
+                break
+            files_scanned += 1
+            try:
+                raw = fpath.read_bytes()
+            except OSError:
+                continue
+            if len(raw) > _PHASE2_SEARCH_MAX_BYTES_PER_FILE:
+                continue
+            try:
+                content = raw.decode("utf-8")
+            except UnicodeDecodeError:
+                continue
+            if query not in content:
+                continue
+            try:
+                rel_path = str(fpath.relative_to(repo_root))
+            except ValueError:
+                rel_path = str(fpath)
+            for line_num, line_text in enumerate(content.splitlines(), start=1):
+                if query in line_text:
+                    matches.append({
+                        "path": rel_path,
+                        "line_number": line_num,
+                        "line_text": line_text,
+                    })
+                    if len(matches) >= _PHASE2_SEARCH_MAX_MATCHES:
+                        matches_truncated = True
+                        break
+            if matches_truncated:
+                break
+        stdout = "\n".join(
+            f"{m['path']}:{m['line_number']}:{m['line_text']}" for m in matches
+        )
+        duration_ms = int((time.monotonic() - t0) * 1000)
+        return self._phase2_emit_typed_success(
+            job=job,
+            typed_action=typed_action,
+            duration_ms=duration_ms,
+            stdout=stdout,
+            structured_payload={
+                "query": query,
+                "matches": matches,
+                "match_count": len(matches),
+                "files_scanned": files_scanned,
+                "files_truncated_by_limit": files_truncated,
+                "matches_truncated_by_limit": matches_truncated,
+                "max_files": _PHASE2_SEARCH_MAX_FILES,
+                "max_matches": _PHASE2_SEARCH_MAX_MATCHES,
+            },
+            return_code=0,
+        )
+
+    def _tool_repo_map(
+        self,
+        *,
+        job: Job,
+        workspace,
+        arguments: dict[str, Any],
+    ) -> ToolObservationRecord:
+        t0 = time.monotonic()
+        candidate = str(arguments.get("path") or ".").strip() or "."
+        typed_action = build_tool_action(
+            action_id=self._phase2_next_action_id(job),
+            session_id=self._phase2_session_id(job),
+            job_id=job.job_id,
+            tool_name=ToolContractName.REPO_MAP,
+            arguments={"path": candidate},
+            requested_by="worker_runtime",
+        )
+        if self._phase2_has_collector(job):
+            self._phase2_collectors[job.job_id]["tool_actions"].append(typed_action)
+        perm_action = ToolAction(
+            job_id=job.job_id,
+            tool=ToolName.RUN_COMMAND,
+            arguments={"command": "repo_map", "path": candidate, "tool_contract": "repo_map"},
+        )
+        decision = self._permission_engine.evaluate(
+            action=perm_action,
+            allowed_tools_actions=job.allowed_tools_actions,
+            metadata=job.metadata,
+        )
+        self._phase2_record_permission_decision(
+            job=job, action=perm_action, decision_payload=decision.to_dict()
+        )
+        self.store.append_trace({
+            "kind": "tool_permission_decision",
+            "worker_id": self.worker_id,
+            "job_id": job.job_id,
+            "tool_action": {"tool": "repo_map", "arguments": {"path": candidate}},
+            "permission": decision.to_dict(),
+        })
+        if not decision.allowed:
+            return self._phase2_record_blocked(
+                job=job, typed_action=typed_action,
+                reason=decision.reason or "permission_denied",
+            )
+        resolved, err = self._phase2_resolve_bounded_path(workspace=workspace, candidate=candidate)
+        duration_ms = int((time.monotonic() - t0) * 1000)
+        if resolved is None:
+            return self._phase2_emit_typed_failure(
+                job=job, typed_action=typed_action,
+                error=f"repo_map_{err}", duration_ms=duration_ms,
+            )
+        if not resolved.exists() or not resolved.is_dir():
+            return self._phase2_emit_typed_failure(
+                job=job, typed_action=typed_action,
+                error="repo_map_not_a_directory", duration_ms=duration_ms,
+            )
+        repo_root = workspace.repo_root.resolve()
+        all_entries: list[dict[str, Any]] = []
+        for dirpath, dirnames, filenames in os.walk(str(resolved)):
+            dirnames[:] = sorted(
+                d for d in dirnames if d not in _PHASE2_REPO_MAP_EXCLUDED_NAMES
+            )
+            dirpath_obj = Path(dirpath)
+            for dname in dirnames:
+                dpath = dirpath_obj / dname
+                try:
+                    rel = str(dpath.relative_to(repo_root))
+                except ValueError:
+                    continue
+                all_entries.append({"path": rel, "kind": "dir"})
+            for fname in sorted(filenames):
+                fpath = dirpath_obj / fname
+                try:
+                    rel = str(fpath.relative_to(repo_root))
+                except ValueError:
+                    continue
+                all_entries.append({"path": rel, "kind": "file"})
+        all_entries.sort(key=lambda e: e["path"])
+        truncated = len(all_entries) > _PHASE2_REPO_MAP_MAX_ENTRIES
+        entries = all_entries[:_PHASE2_REPO_MAP_MAX_ENTRIES]
+        stdout = "\n".join(e["path"] for e in entries)
+        duration_ms = int((time.monotonic() - t0) * 1000)
+        return self._phase2_emit_typed_success(
+            job=job,
+            typed_action=typed_action,
+            duration_ms=duration_ms,
+            stdout=stdout,
+            structured_payload={
+                "root": str(resolved),
+                "entries": entries,
+                "entry_count": len(entries),
+                "truncated": truncated,
+                "max_entries": _PHASE2_REPO_MAP_MAX_ENTRIES,
+            },
             return_code=0,
         )
 
