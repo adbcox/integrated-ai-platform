@@ -1,0 +1,5 @@
+from typing import Any
+def report_terminal_aggregate(report_input):
+    if not isinstance(report_input, dict): return {"op_terminal_aggregate_report_status": "invalid"}
+    if report_input.get("op_terminal_aggregate_audit_status") != "audited": return {"op_terminal_aggregate_report_status": "invalid"}
+    return {"op_terminal_aggregate_report_status": "reported", "audit_id": report_input.get("audit_id")}
