@@ -82,6 +82,7 @@ def parse_args() -> argparse.Namespace:
             "replay_queue_execution",
             "campaign_profile_matrix",
             "typed_tool_probe",
+            "retrieval_probe",
         ],
         help="Predefined real repo workflow template routed through framework execution.",
     )
@@ -681,6 +682,40 @@ def _typed_tool_probe_template() -> dict[str, Any]:
     }
 
 
+def _retrieval_probe_template() -> dict[str, Any]:
+    return {
+        "task_class": JobClass.VALIDATION_CHECK_EXECUTION.value,
+        "shell_command": "true",
+        "inference_prompt": (
+            "Phase 3 retrieval probe: search for '_execute_job' across the repo, "
+            "map the framework/ directory, then write a retrieval summary artifact."
+        ),
+        "artifact_inputs": ["framework/worker_runtime.py"],
+        "requested_outputs": ["artifacts/framework/retrieval_probe_output.txt"],
+        "phase2_typed_tools": [
+            {
+                "contract_name": "search",
+                "arguments": {"query": "_execute_job"},
+            },
+            {
+                "contract_name": "repo_map",
+                "arguments": {"path": "framework"},
+            },
+            {
+                "contract_name": "apply_patch",
+                "arguments": {
+                    "path": "artifacts/framework/retrieval_probe_output.txt",
+                    "mode": "write_text",
+                    "content": "phase3_retrieval_probe_ok\n",
+                },
+            },
+        ],
+        "permission_policy": {
+            "allow_edit_path_patterns": [r"artifacts/framework/retrieval_probe_output\.txt$"],
+        },
+    }
+
+
 def _coerce_job_class(value: str) -> JobClass:
     try:
         return JobClass(str(value))
@@ -868,6 +903,8 @@ def _template_payload(name: str) -> dict[str, Any]:
         return _campaign_profile_matrix_template()
     if name == "typed_tool_probe":
         return _typed_tool_probe_template()
+    if name == "retrieval_probe":
+        return _retrieval_probe_template()
     return {}
 
 

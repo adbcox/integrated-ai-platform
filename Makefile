@@ -494,3 +494,13 @@ phase2-results-wire-test:
 
 phase2-results-wire-validate:
 	@PYTHONPATH=. python3 ./artifacts/phase2_results_wire_validation_report.py
+
+.PHONY: phase3-retrieval-probe-test phase3-retrieval-probe-validate
+
+phase3-retrieval-probe-test:
+	@python3 -m unittest -v \
+		tests.test_bin_framework_control_plane_retrieval_probe \
+		tests.test_phase3_retrieval_probe_validation
+
+phase3-retrieval-probe-validate:
+	@PYTHONPATH=. python3 ./artifacts/phase3_retrieval_probe_validation_report.py
