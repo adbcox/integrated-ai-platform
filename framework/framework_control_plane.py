@@ -218,6 +218,11 @@ def _phase2_manager_decision(manager_view: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+_DERIVE_TARGETS_LOW_VALUE_NAMES: frozenset[str] = frozenset(
+    {"__init__.py", "setup.py", "conftest.py", "__main__.py"}
+)
+
+
 def _phase2_derive_read_targets(
     typed_results: list[dict[str, Any]],
     *,
@@ -225,15 +230,17 @@ def _phase2_derive_read_targets(
 ) -> list[dict[str, Any]]:
     """Convert SEARCH observation matches into READ_FILE argument specs.
 
-    Returns up to *max_files* unique-path dicts in first-occurrence order.
+    Returns up to *max_files* unique-path dicts ranked by specificity score.
+    Score = match_frequency + framework/bin/tests bonus (+3) + compound-name bonus (+2)
+            - low-value-name penalty (-5) - __pycache__ penalty (-10).
+    Ties broken by path alphabetical order.
     Returns [] on any malformed or empty input without raising.
     """
     try:
         if not isinstance(typed_results, list):
             return []
         limit = max(1, int(max_files))
-        seen: set[str] = set()
-        targets: list[dict[str, Any]] = []
+        freq: dict[str, int] = {}
         for entry in typed_results:
             try:
                 if not isinstance(entry, dict):
@@ -246,17 +253,33 @@ def _phase2_derive_read_targets(
                 for m in matches:
                     try:
                         path = str(m.get("path") or "").strip()
-                        if not path or path in seen:
-                            continue
-                        seen.add(path)
-                        targets.append({"contract_name": "read_file", "arguments": {"path": path}})
-                        if len(targets) >= limit:
-                            return targets
+                        if path:
+                            freq[path] = freq.get(path, 0) + 1
                     except Exception:
                         continue
             except Exception:
                 continue
-        return targets
+        if not freq:
+            return []
+
+        def _score(path: str) -> int:
+            score = freq[path]
+            p = Path(path)
+            parts = p.parts
+            name = p.name
+            if any(part in ("framework", "bin", "tests") for part in parts):
+                score += 3
+            if "_" in p.stem:
+                score += 2
+            if name in _DERIVE_TARGETS_LOW_VALUE_NAMES:
+                score -= 5
+            if "__pycache__" in parts:
+                score -= 10
+            return score
+
+        ranked = sorted(freq.keys(), key=lambda p: (-_score(p), p))
+        selected = ranked[:limit]
+        return [{"contract_name": "read_file", "arguments": {"path": p}} for p in selected]
     except Exception:
         return []
 
@@ -279,6 +302,8 @@ def _phase2_retrieval_summary(
     repo_map_entry_count = 0
     repo_map_truncated = False
 
+    freq: dict[str, int] = {}
+    first_line: dict[str, int] = {}
     try:
         if not isinstance(typed_results, list):
             pass
@@ -297,19 +322,16 @@ def _phase2_retrieval_summary(
                         search_match_count = int(sp.get("match_count") or 0)
                         search_truncated = bool(sp.get("matches_truncated_by_limit") or False)
                         matches = sp.get("matches") or []
-                        seen: set[str] = set()
                         for m in matches:
                             try:
                                 p = str(m.get("path") or "").strip()
-                                if p and p not in seen:
-                                    seen.add(p)
-                                    if not top_match_file:
-                                        top_match_file = p
+                                if p:
+                                    freq[p] = freq.get(p, 0) + 1
+                                    if p not in first_line:
                                         try:
-                                            top_match_line = int(m.get("line_number") or 0)
+                                            first_line[p] = int(m.get("line_number") or 0)
                                         except Exception:
-                                            top_match_line = 0
-                                    unique_file_paths.append(p)
+                                            first_line[p] = 0
                             except Exception:
                                 continue
                     elif tool == "repo_map" and status == "executed" and repo_map_entry_count == 0:
@@ -320,8 +342,26 @@ def _phase2_retrieval_summary(
     except Exception:
         pass
 
+    def _rs_score(path: str) -> int:
+        score = freq.get(path, 0)
+        p = Path(path)
+        parts = p.parts
+        name = p.name
+        if any(part in ("framework", "bin", "tests") for part in parts):
+            score += 3
+        if "_" in p.stem:
+            score += 2
+        if name in _DERIVE_TARGETS_LOW_VALUE_NAMES:
+            score -= 5
+        if "__pycache__" in parts:
+            score -= 10
+        return score
+
     limit = max(1, int(max_files))
-    unique_file_paths = unique_file_paths[:limit]
+    ranked_paths = sorted(freq.keys(), key=lambda p: (-_rs_score(p), p))
+    unique_file_paths = ranked_paths[:limit]
+    top_match_file = unique_file_paths[0] if unique_file_paths else ""
+    top_match_line = first_line.get(top_match_file, 0) if top_match_file else 0
     read_targets_derived = len(_phase2_derive_read_targets(typed_results, max_files=max_files))
 
     return {
@@ -440,6 +480,7 @@ def _phase3_read_content_summary(
 
 _RE_CLASS = re.compile(r"^class\s+(\w+)", re.MULTILINE)
 _RE_DEF = re.compile(r"^def\s+(\w+)", re.MULTILINE)
+_RE_METHOD = re.compile(r"^    def\s+(\w+)", re.MULTILINE)
 
 
 def _phase3_extract_symbol_index(
@@ -474,11 +515,18 @@ def _phase3_extract_symbol_index(
                     if name not in seen_funcs:
                         seen_funcs.add(name)
                         func_names.append(name)
+                method_names: list[str] = []
+                seen_methods: set[str] = set()
+                for name in _RE_METHOD.findall(stdout):
+                    if name not in seen_methods and name not in seen_funcs:
+                        seen_methods.add(name)
+                        method_names.append(name)
                 out.append({
                     "path": path,
                     "classes": class_names,
                     "functions": func_names,
-                    "symbol_count": len(class_names) + len(func_names),
+                    "methods": method_names,
+                    "symbol_count": len(class_names) + len(func_names) + len(method_names),
                 })
             except Exception:
                 continue
@@ -491,6 +539,7 @@ _SAFE_BUNDLE_DEFAULTS: dict[str, Any] = {
     "query": "",
     "total_files": 0,
     "total_symbols": 0,
+    "total_content_chars": 0,
     "files_with_symbols": 0,
     "files": [],
     "top_file": "",
@@ -569,12 +618,16 @@ def _phase3_assemble_context_bundle(
                 continue
 
         total_files = len(files)
-        prompt_ready = bool(query and total_files > 0 and total_symbols > 0)
+        total_content_chars = sum(int(f.get("size_bytes") or 0) for f in files)
+        prompt_ready = bool(
+            query and total_files > 0 and (total_symbols > 0 or total_content_chars > 200)
+        )
 
         return {
             "query": query,
             "total_files": total_files,
             "total_symbols": total_symbols,
+            "total_content_chars": total_content_chars,
             "files_with_symbols": files_with_symbols,
             "files": files,
             "top_file": top_file,
