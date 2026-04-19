@@ -11,7 +11,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from framework.framework_control_plane import _phase3_assemble_context_bundle
 
 _BUNDLE_KEYS = {"query", "total_files", "total_symbols", "files_with_symbols",
-                "files", "top_file", "top_file_symbol_count", "prompt_ready"}
+                "files", "top_file", "top_file_symbol_count", "prompt_ready",
+                "total_content_chars"}
 _FILE_KEYS = {"path", "classes", "functions", "symbol_count", "size_bytes", "stdout_excerpt"}
 
 

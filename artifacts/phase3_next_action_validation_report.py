@@ -22,7 +22,7 @@ def generate_phase3_next_action_validation_report() -> dict:
     bin_wires_next_action = False
     action_values_bounded = False
 
-    _REQUIRED_KEYS = {"action", "reason", "context_adequate", "total_files", "total_symbols", "inference_has_content"}
+    _REQUIRED_KEYS = {"action", "reason", "context_adequate", "total_files", "total_symbols", "inference_has_content", "total_content_chars"}
 
     try:
         from framework.framework_control_plane import _phase3_derive_next_action
@@ -83,7 +83,7 @@ def generate_phase3_next_action_validation_report() -> dict:
 
         try:
             r = _phase3_derive_next_action(None, None)  # type: ignore[arg-type]
-            non_dict_safe = set(r.keys()) == _REQUIRED_KEYS and r["context_adequate"] is False
+            non_dict_safe = set(r.keys()) == _REQUIRED_KEYS and r["context_adequate"] is False and "total_content_chars" in r
             if not non_dict_safe:
                 failures.append(f"non_dict_safe: got {r!r}")
         except Exception as exc:

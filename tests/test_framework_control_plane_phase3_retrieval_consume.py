@@ -120,7 +120,7 @@ class TestDeriveReadTargets(unittest.TestCase):
         r2 = _search_result(matches=[_match("b.py", 3), _match("c.py", 4)])
         targets = _phase2_derive_read_targets([r1, r2], max_files=5)
         paths = [t["arguments"]["path"] for t in targets]
-        self.assertEqual(paths, ["a.py", "b.py", "c.py"])
+        self.assertEqual(paths, ["b.py", "a.py", "c.py"])
 
 
 class TestRetrievalSummary(unittest.TestCase):

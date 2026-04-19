@@ -10,7 +10,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from framework.framework_control_plane import _phase3_derive_next_action
 
-_REQUIRED_KEYS = {"action", "reason", "context_adequate", "total_files", "total_symbols", "inference_has_content"}
+_REQUIRED_KEYS = {"action", "reason", "context_adequate", "total_files", "total_symbols", "inference_has_content", "total_content_chars"}
 
 
 def _bundle(prompt_ready=True, total_files=2, total_symbols=3):

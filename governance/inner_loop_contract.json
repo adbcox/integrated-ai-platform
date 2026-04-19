@@ -18,7 +18,7 @@
   ],
   "generated_at": "2026-04-18T08:33:06-04:00",
   "max_cycles_source": {
-    "line": 306,
+    "line": 746,
     "source": "max_cycles = max(1, int(config.get(\"max_cycles\") or (len(repair_edits) + 1)))"
   },
   "non_retryable_failure_classes": [],
@@ -28,7 +28,7 @@
     "expected_type": "list[dict]",
     "per_cycle_consumption": "one entry per cycle unless batch is allowed",
     "probe_line": {
-      "line": 304,
+      "line": 744,
       "source": "repair_edits = config.get(\"repair_edits\") if isinstance(config.get(\"repair_edits\"), list) else []"
     },
     "snapshot_restore_reason_on_exhaustion": "repairs_exhausted",
@@ -54,7 +54,7 @@
     "config_key": "setup_command",
     "failure_class_on_failure": "inner_loop_setup_failed",
     "probe_line": {
-      "line": 302,
+      "line": 742,
       "source": "setup_command = str(config.get(\"setup_command\") or \"\").strip()"
     },
     "snapshot_restore_reason": "setup_failed"
@@ -77,9 +77,12 @@
     "conflict_domain_acquired",
     "conflict_domain_released",
     "conflict_domain_wait_start",
+    "dir",
+    "file",
     "inner_loop_conflict",
     "inner_loop_cycle",
     "inner_loop_rollback",
+    "tool_action",
     "tool_observation",
     "tool_permission_decision",
     "worker_failure_diagnosis",
@@ -90,7 +93,7 @@
     "config_key": "validate_command",
     "missing_failure_class": "inner_loop_config_error",
     "probe_line": {
-      "line": 303,
+      "line": 743,
       "source": "validate_command = str(config.get(\"validate_command\") or \"\").strip()"
     },
     "snapshot_restore_reason_on_missing": "missing_validate_command",

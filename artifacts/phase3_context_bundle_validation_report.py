@@ -23,7 +23,8 @@ def generate_phase3_context_bundle_validation_report() -> dict:
     bin_wires_context_bundle = False
 
     _BUNDLE_KEYS = {"query", "total_files", "total_symbols", "files_with_symbols",
-                    "files", "top_file", "top_file_symbol_count", "prompt_ready"}
+                    "files", "top_file", "top_file_symbol_count", "prompt_ready",
+                    "total_content_chars"}
 
     try:
         from framework.framework_control_plane import _phase3_assemble_context_bundle

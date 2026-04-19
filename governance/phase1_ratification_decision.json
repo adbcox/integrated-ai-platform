@@ -16,7 +16,7 @@
   "generated_at": "2026-04-18T08:33:06-04:00",
   "phase_id": 1,
   "ratified_by_adr": "governance/authority_adr_0004_phase1_closure.md",
-  "ratified_contract_version": "rt-1.0.0+4d80fbeedd6c",
+  "ratified_contract_version": "rt-1.0.0+bfd08f607b48",
   "schema_version": 2,
   "supersedes": [
     "config/promotion_manifest.json (legacy; frozen pending migration)",
