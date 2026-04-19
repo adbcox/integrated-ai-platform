@@ -221,6 +221,9 @@ def _phase2_manager_decision(manager_view: dict[str, Any]) -> dict[str, Any]:
 _DERIVE_TARGETS_LOW_VALUE_NAMES: frozenset[str] = frozenset(
     {"__init__.py", "setup.py", "conftest.py", "__main__.py"}
 )
+_DERIVE_TARGETS_LOW_VALUE_DIRS: frozenset[str] = frozenset(
+    {"governance", "config", "docs", "artifacts"}
+)
 
 
 def _phase2_derive_read_targets(
@@ -275,6 +278,13 @@ def _phase2_derive_read_targets(
                 score -= 5
             if "__pycache__" in parts:
                 score -= 10
+            if any(part in _DERIVE_TARGETS_LOW_VALUE_DIRS for part in parts):
+                score -= 5
+            suffix = p.suffix.lower()
+            if suffix == ".md":
+                score -= 3
+            elif suffix == ".json" and not any(part in ("framework", "tests", "bin") for part in parts):
+                score -= 2
             return score
 
         ranked = sorted(freq.keys(), key=lambda p: (-_score(p), p))
@@ -355,6 +365,13 @@ def _phase2_retrieval_summary(
             score -= 5
         if "__pycache__" in parts:
             score -= 10
+        if any(part in _DERIVE_TARGETS_LOW_VALUE_DIRS for part in parts):
+            score -= 5
+        suffix = p.suffix.lower()
+        if suffix == ".md":
+            score -= 3
+        elif suffix == ".json" and not any(part in ("framework", "tests", "bin") for part in parts):
+            score -= 2
         return score
 
     limit = max(1, int(max_files))
@@ -747,6 +764,7 @@ _SAFE_NEXT_ACTION: dict[str, Any] = {
     "context_adequate": False,
     "total_files": 0,
     "total_symbols": 0,
+    "total_content_chars": 0,
     "inference_has_content": False,
 }
 
@@ -770,6 +788,10 @@ def _phase3_derive_next_action(
         except Exception:
             total_symbols = 0
         try:
+            total_content_chars = int(context_bundle.get("total_content_chars") or 0) if isinstance(context_bundle, dict) else 0
+        except Exception:
+            total_content_chars = 0
+        try:
             inference_has_content = bool(inference_response.get("has_content")) if isinstance(inference_response, dict) else False
         except Exception:
             inference_has_content = False
@@ -780,15 +802,15 @@ def _phase3_derive_next_action(
         elif not isinstance(inference_response, dict) or not inference_response.get("has_content"):
             action = "insufficient_context"
             reason = "inference produced no usable content"
-        elif total_symbols == 0:
+        elif total_symbols == 0 and total_content_chars <= 200:
             action = "refine_retrieval"
-            reason = "no symbols extracted from retrieved files; retrieval needs refinement"
+            reason = f"no symbols and insufficient content (chars={total_content_chars}); retrieval needs refinement"
         elif total_files == 0:
             action = "refine_retrieval"
             reason = "no files retrieved; retrieval needs refinement"
         else:
             action = "ready"
-            reason = "context assembled with symbols; inference produced content"
+            reason = f"context assembled (symbols={total_symbols}, chars={total_content_chars}); inference produced content"
 
         return {
             "action": action,
@@ -796,6 +818,7 @@ def _phase3_derive_next_action(
             "context_adequate": action == "ready",
             "total_files": total_files,
             "total_symbols": total_symbols,
+            "total_content_chars": total_content_chars,
             "inference_has_content": inference_has_content,
         }
     except Exception:
