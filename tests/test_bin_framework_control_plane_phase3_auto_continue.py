@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import argparse
 import sys
-import threading
 import unittest
+import unittest.mock
 from pathlib import Path
 from unittest.mock import MagicMock
 
@@ -13,7 +13,16 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from bin.framework_control_plane import _run_phase3_continuation, parse_args
 
-_REQUIRED_KEYS = {"ran", "template_used", "idle_reached", "job_status", "return_code", "typed_tool_count", "error"}
+_REQUIRED_KEYS = {
+    "ran",
+    "template_used",
+    "idle_reached",
+    "job_status",
+    "return_code",
+    "typed_tool_count",
+    "error",
+    "phase3_continuation_next_action",
+}
 _AUTO_CONTINUE_ACTIONS = {"refine_retrieval", "insufficient_context"}
 _NOT_TRIGGER_ACTIONS = {"ready", "no_context"}
 
@@ -37,59 +46,62 @@ class TestRunPhase3ContinuationImport(unittest.TestCase):
 
 class TestRunPhase3ContinuationReturnKeys(unittest.TestCase):
     def _make_raising_scheduler(self):
-        m = MagicMock()
-        m._stop_event = None
-        m.start.side_effect = RuntimeError("mock error")
-        return m
+        """Return a patcher that makes Scheduler construction raise RuntimeError."""
+        return unittest.mock.patch(
+            "bin.framework_control_plane.Scheduler",
+            side_effect=RuntimeError("mock error"),
+        )
 
     def test_returns_dict(self):
-        scheduler = self._make_raising_scheduler()
-        result = _run_phase3_continuation(_make_args(), scheduler, MagicMock(), "retrieval_probe")
+        with self._make_raising_scheduler():
+            result = _run_phase3_continuation(
+                _make_args(), MagicMock(), MagicMock(), MagicMock(), MagicMock(), "retrieval_probe"
+            )
         self.assertIsInstance(result, dict)
 
     def test_all_required_keys_present_on_exception(self):
-        scheduler = self._make_raising_scheduler()
-        result = _run_phase3_continuation(_make_args(), scheduler, MagicMock(), "retrieval_probe")
+        with self._make_raising_scheduler():
+            result = _run_phase3_continuation(
+                _make_args(), MagicMock(), MagicMock(), MagicMock(), MagicMock(), "retrieval_probe"
+            )
         self.assertEqual(set(result.keys()), _REQUIRED_KEYS)
 
     def test_template_used_equals_argument(self):
-        scheduler = self._make_raising_scheduler()
-        result = _run_phase3_continuation(_make_args(), scheduler, MagicMock(), "read_after_retrieval")
+        with self._make_raising_scheduler():
+            result = _run_phase3_continuation(
+                _make_args(), MagicMock(), MagicMock(), MagicMock(), MagicMock(), "read_after_retrieval"
+            )
         self.assertEqual(result["template_used"], "read_after_retrieval")
 
     def test_ran_false_on_exception(self):
-        scheduler = self._make_raising_scheduler()
-        result = _run_phase3_continuation(_make_args(), scheduler, MagicMock(), "retrieval_probe")
+        with self._make_raising_scheduler():
+            result = _run_phase3_continuation(
+                _make_args(), MagicMock(), MagicMock(), MagicMock(), MagicMock(), "retrieval_probe"
+            )
         self.assertFalse(result["ran"])
 
     def test_error_nonempty_on_exception(self):
-        scheduler = self._make_raising_scheduler()
-        result = _run_phase3_continuation(_make_args(), scheduler, MagicMock(), "retrieval_probe")
+        with self._make_raising_scheduler():
+            result = _run_phase3_continuation(
+                _make_args(), MagicMock(), MagicMock(), MagicMock(), MagicMock(), "retrieval_probe"
+            )
         self.assertTrue(result["error"])
 
     def test_no_raise_on_exception(self):
-        scheduler = self._make_raising_scheduler()
-        try:
-            _run_phase3_continuation(_make_args(), scheduler, MagicMock(), "retrieval_probe")
-        except Exception as e:
-            self.fail(f"Raised unexpected exception: {e}")
+        with self._make_raising_scheduler():
+            try:
+                _run_phase3_continuation(
+                    _make_args(), MagicMock(), MagicMock(), MagicMock(), MagicMock(), "retrieval_probe"
+                )
+            except Exception as e:
+                self.fail(f"Raised unexpected exception: {e}")
 
-    def test_all_required_keys_present_on_stop_event_set(self):
-        scheduler = MagicMock()
-        ev = threading.Event()
-        ev.set()
-        scheduler._stop_event = ev
-        result = _run_phase3_continuation(_make_args(), scheduler, MagicMock(), "retrieval_probe")
-        self.assertEqual(set(result.keys()), _REQUIRED_KEYS)
-
-    def test_error_scheduler_restart_not_safe_when_stop_event_set(self):
-        scheduler = MagicMock()
-        ev = threading.Event()
-        ev.set()
-        scheduler._stop_event = ev
-        result = _run_phase3_continuation(_make_args(), scheduler, MagicMock(), "retrieval_probe")
-        self.assertEqual(result["error"], "scheduler_restart_not_safe")
-        self.assertFalse(result["ran"])
+    def test_phase3_continuation_next_action_key_present(self):
+        with self._make_raising_scheduler():
+            result = _run_phase3_continuation(
+                _make_args(), MagicMock(), MagicMock(), MagicMock(), MagicMock(), "retrieval_probe"
+            )
+        self.assertIn("phase3_continuation_next_action", result)
 
 
 class TestParseArgsPhase3AutoContinue(unittest.TestCase):
@@ -143,6 +155,12 @@ class TestSourceTextAssertions(unittest.TestCase):
 
     def test_run_phase3_continuation_in_source(self):
         self.assertIn("_run_phase3_continuation", self._source())
+
+    def test_phase3_continuation_next_action_in_source(self):
+        self.assertIn("phase3_continuation_next_action", self._source())
+
+    def test_scheduler_restart_not_safe_absent_from_source(self):
+        self.assertNotIn("scheduler_restart_not_safe", self._source())
 
 
 if __name__ == "__main__":

@@ -1219,18 +1219,17 @@ def _compute_phase3_exit_code(output: dict[str, Any]) -> int:
 
 def _run_phase3_continuation(
     args: argparse.Namespace,
-    scheduler: Any,
     store: Any,
+    learning: Any,
+    inference: Any,
+    profile: Any,
     followon_template: str,
 ) -> dict[str, Any]:
     """Run a single follow-on job using *followon_template* on a fresh scheduler pass.
 
+    Builds a fresh Scheduler from the provided store/learning/inference/profile components.
     Returns a compact status dict. Does not re-run full Phase 3 analysis helpers.
     All exceptions are caught and surfaced in the returned dict.
-
-    NOTE: Scheduler restart is not safe when stop_event is already set (WorkerPool.stop()
-    sets the shared stop_event and it is never cleared). The pre-flight guard below
-    detects this and returns a dry-run record with error="scheduler_restart_not_safe".
     """
     _CONTINUATION_SAFE: dict[str, Any] = {
         "ran": False,
@@ -1240,11 +1239,17 @@ def _run_phase3_continuation(
         "return_code": -1,
         "typed_tool_count": 0,
         "error": "",
+        "phase3_continuation_next_action": {},
     }
     try:
-        _stop_ev = getattr(scheduler, "_stop_event", None)
-        if _stop_ev is not None and _stop_ev.is_set():
-            return {**_CONTINUATION_SAFE, "error": "scheduler_restart_not_safe"}
+        scheduler = Scheduler(
+            store=store,
+            learning=learning,
+            inference=inference,
+            backend_profile=profile,
+            replay_pending_on_start=bool(getattr(args, "replay_pending", False)),
+            replay_attempt_limit=max(1, int(getattr(args, "scheduler_replay_attempt_limit", 2))),
+        )
         cont_job = _apply_task_policy(build_job(args, template_name=followon_template))
         scheduler.start()
         cont_queued = scheduler.submit(cont_job)
@@ -1265,6 +1270,10 @@ def _run_phase3_continuation(
                 cont_payload = {}
         typed_trace = cont_payload.get("typed_tool_trace")
         typed_count = len(typed_trace) if isinstance(typed_trace, list) else 0
+        cont_next_action = _phase3_derive_next_action(
+            cont_payload.get("phase3_context_bundle", {}),
+            cont_payload.get("phase3_inference_response", {}),
+        )
         return {
             "ran": True,
             "template_used": followon_template,
@@ -1273,6 +1282,7 @@ def _run_phase3_continuation(
             "return_code": int(cont_payload.get("return_code") or -1),
             "typed_tool_count": typed_count,
             "error": "",
+            "phase3_continuation_next_action": cont_next_action,
         }
     except Exception as exc:
         return {**_CONTINUATION_SAFE, "error": str(exc)}
@@ -1454,7 +1464,7 @@ def main() -> int:
     if getattr(args, "phase3_auto_continue", False) and _current_action in _auto_continue_actions:
         _cont_template = str(output.get("phase3_followon_template") or "retrieval_probe")
         output["phase3_continuation_result"] = _run_phase3_continuation(
-            args, scheduler, store, _cont_template
+            args, store, learning, inference, profile, _cont_template
         )
 
     read_targets = output["phase2_retrieval_read_targets"]
