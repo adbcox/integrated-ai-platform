@@ -6,6 +6,7 @@ All helpers are additive. No legacy keys are removed or renamed.
 from __future__ import annotations
 
 import re
+import shlex
 from pathlib import Path
 from typing import Any
 
@@ -967,6 +968,85 @@ def _phase3_validate_edit_plan(
         return dict(_SAFE_EDIT_PLAN_VALIDATION)
 
 
+_SAFE_STAGE3_INVOCATION: dict[str, Any] = {
+    "query": "",
+    "target_file": "",
+    "message": "",
+    "commit_msg": "",
+    "invocation_ready": False,
+    "blocked_reason": "",
+    "shell_command_preview": "",
+}
+
+
+def _phase3_build_stage3_manager_invocation(
+    validation_result: "dict[str, Any]",
+    edit_plan: "dict[str, Any]",
+    recommendation: "dict[str, Any]",
+) -> "dict[str, Any]":
+    """Build a stage3_manager invocation spec from validated edit plan artifacts.
+
+    invocation_ready is True only when validation_status=='valid' AND old_text_found==True.
+    shell_command_preview is a fully-quoted shell command string; empty when not invocation_ready.
+    No exceptions escape.
+    """
+    try:
+        vr = validation_result if isinstance(validation_result, dict) else {}
+        ep = edit_plan if isinstance(edit_plan, dict) else {}
+        rec = recommendation if isinstance(recommendation, dict) else {}
+
+        validation_status = str(vr.get("validation_status") or "")
+        old_text_found = bool(vr.get("old_text_found"))
+        target_file = str(vr.get("target_file") or ep.get("target_file") or "")
+        message = str(vr.get("executor_message") or "")
+        query = str(ep.get("query") or rec.get("query") or "")
+
+        if validation_status == "valid" and old_text_found and target_file and message:
+            invocation_ready = True
+            blocked_reason = ""
+        elif not target_file:
+            invocation_ready = False
+            blocked_reason = "no target_file"
+        elif not message:
+            invocation_ready = False
+            blocked_reason = "no executor_message in validation_result"
+        elif validation_status != "valid":
+            invocation_ready = False
+            blocked_reason = f"validation_status={validation_status!r} (must be 'valid')"
+        elif not old_text_found:
+            invocation_ready = False
+            blocked_reason = "old_text_not_found in target file"
+        else:
+            invocation_ready = False
+            blocked_reason = "unknown"
+
+        safe_query = re.sub(r"[^a-zA-Z0-9 _-]", "", query)[:60].strip()
+        commit_msg = f"phase3-edit: {safe_query}" if safe_query else "phase3-edit: apply edit plan"
+
+        if invocation_ready:
+            shell_command_preview = (
+                f"python3 bin/stage3_manager.py"
+                f" --query {shlex.quote(query)}"
+                f" --target {shlex.quote(target_file)}"
+                f" --message {shlex.quote(message)}"
+                f" --commit-msg {shlex.quote(commit_msg)}"
+            )
+        else:
+            shell_command_preview = ""
+
+        return {
+            "query": query,
+            "target_file": target_file,
+            "message": message,
+            "commit_msg": commit_msg,
+            "invocation_ready": invocation_ready,
+            "blocked_reason": blocked_reason,
+            "shell_command_preview": shell_command_preview,
+        }
+    except Exception:
+        return dict(_SAFE_STAGE3_INVOCATION)
+
+
 __all__ = [
     "_phase2_manager_present",
     "_phase2_manager_tool_summary",
@@ -986,5 +1066,6 @@ __all__ = [
     "_phase3_build_recommendation",
     "_phase3_build_edit_plan",
     "_phase3_validate_edit_plan",
+    "_phase3_build_stage3_manager_invocation",
     "run_managed_job",
 ]

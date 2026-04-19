@@ -48,6 +48,7 @@ from framework.framework_control_plane import (
     _phase3_build_recommendation,
     _phase3_build_edit_plan,
     _phase3_validate_edit_plan,
+    _phase3_build_stage3_manager_invocation,
 )
 
 DEFAULT_STATE_ROOT = REPO_ROOT / "artifacts" / "framework"
@@ -102,6 +103,7 @@ def parse_args() -> argparse.Namespace:
             "phase3_followon",
             "phase3_edit_plan_probe",
             "phase3_validate_edit_plan_probe",
+            "phase3_apply_edit_plan_probe",
         ],
         help="Predefined real repo workflow template routed through framework execution.",
     )
@@ -755,6 +757,7 @@ _DEFAULT_PHASE3_FOLLOWON_PATH = DEFAULT_STATE_ROOT / "phase3_followon_template.j
 _DEFAULT_RECOMMENDATION_PATH = DEFAULT_STATE_ROOT / "phase3_recommendation_latest.json"
 _DEFAULT_EDIT_PLAN_PATH = DEFAULT_STATE_ROOT / "phase3_edit_plan_latest.json"
 _DEFAULT_EDIT_PLAN_VALIDATION_PATH = DEFAULT_STATE_ROOT / "phase3_edit_plan_validation_latest.json"
+_DEFAULT_STAGE3_INVOCATION_PATH = DEFAULT_STATE_ROOT / "phase3_stage3_manager_invocation_latest.json"
 
 
 def _load_retrieval_targets(path: Path) -> list[dict[str, Any]]:
@@ -823,6 +826,22 @@ def _load_phase3_followon(path: Path) -> dict[str, Any]:
 
 def _load_edit_plan(path: Path) -> dict[str, Any]:
     """Return a persisted phase3_edit_plan dict from *path*.
+
+    Returns {} on missing path, malformed JSON, or non-dict payload without raising.
+    """
+    try:
+        if not path.exists():
+            return {}
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        if not isinstance(payload, dict):
+            return {}
+        return payload
+    except Exception:
+        return {}
+
+
+def _load_edit_plan_validation(path: Path) -> dict[str, Any]:
+    """Return a persisted phase3_edit_plan_validation dict from *path*.
 
     Returns {} on missing path, malformed JSON, or non-dict payload without raising.
     """
@@ -1018,6 +1037,49 @@ def _phase3_validate_edit_plan_probe_template(
             ],
         },
         "_phase3_validation_result": validation_result,
+    }
+
+
+def _phase3_apply_edit_plan_probe_template(
+    edit_plan_validation_path: Path = _DEFAULT_EDIT_PLAN_VALIDATION_PATH,
+    edit_plan_path: Path = _DEFAULT_EDIT_PLAN_PATH,
+    recommendation_path: Path = _DEFAULT_RECOMMENDATION_PATH,
+) -> dict[str, Any]:
+    """Build stage3_manager invocation spec from persisted validation + edit plan + recommendation.
+
+    Runs in-process (no inference needed). Persists the invocation spec to
+    _DEFAULT_STAGE3_INVOCATION_PATH and embeds it under '_phase3_invocation_result'.
+    """
+    validation_result = _load_edit_plan_validation(edit_plan_validation_path)
+    edit_plan = _load_edit_plan(edit_plan_path)
+    recommendation = _load_recommendation(recommendation_path)
+    invocation = _phase3_build_stage3_manager_invocation(validation_result, edit_plan, recommendation)
+    try:
+        _DEFAULT_STAGE3_INVOCATION_PATH.parent.mkdir(parents=True, exist_ok=True)
+        _DEFAULT_STAGE3_INVOCATION_PATH.write_text(
+            json.dumps(invocation, ensure_ascii=False, indent=2),
+            encoding="utf-8",
+        )
+    except Exception:
+        pass
+    return {
+        "task_class": JobClass.VALIDATION_CHECK_EXECUTION.value,
+        "shell_command": (
+            "python3 -c \""
+            "from pathlib import Path; "
+            "p = Path('artifacts/framework/phase3_apply_edit_plan_output.txt'); "
+            "p.parent.mkdir(parents=True, exist_ok=True); "
+            "p.write_text('phase3_apply_edit_plan_probe_ok\\n', encoding='utf-8')\""
+        ),
+        "inference_prompt": "Phase 3 apply edit plan: no inference needed.",
+        "artifact_inputs": [str(edit_plan_validation_path)],
+        "requested_outputs": ["artifacts/framework/phase3_apply_edit_plan_output.txt"],
+        "permission_policy": {
+            "allow_edit_path_patterns": [
+                r"artifacts/framework/phase3_apply_edit_plan_output\.txt$"
+            ],
+        },
+        "_phase3_invocation_result": invocation,
     }
 
 
@@ -1242,6 +1304,8 @@ def _template_payload(name: str) -> dict[str, Any]:
         return _phase3_edit_plan_probe_template()
     if name == "phase3_validate_edit_plan_probe":
         return _phase3_validate_edit_plan_probe_template()
+    if name == "phase3_apply_edit_plan_probe":
+        return _phase3_apply_edit_plan_probe_template()
     return {}
 
 
@@ -1716,6 +1780,21 @@ def main() -> int:
     except Exception:
         pass
 
+    try:
+        if args.task_template == "phase3_apply_edit_plan_probe":
+            _inv_result: dict[str, Any] = {}
+            if _DEFAULT_STAGE3_INVOCATION_PATH.exists():
+                try:
+                    _inv_result = json.loads(_DEFAULT_STAGE3_INVOCATION_PATH.read_text(encoding="utf-8"))
+                    if not isinstance(_inv_result, dict):
+                        _inv_result = {}
+                except Exception:
+                    _inv_result = {}
+            output["phase3_stage3_manager_invocation"] = _inv_result
+            output["phase3_stage3_manager_invocation_persisted"] = str(_DEFAULT_STAGE3_INVOCATION_PATH)
+    except Exception:
+        pass
+
     read_targets = output["phase2_retrieval_read_targets"]
     if read_targets:
         _targets_out = _DEFAULT_RETRIEVAL_TARGETS_PATH
@@ -1774,6 +1853,17 @@ def main() -> int:
             if _em:
                 print(f"phase3_executor_message_ready=true")
                 print(f"phase3_executor_message={_em[:120]}")
+        _inv = output.get("phase3_stage3_manager_invocation") or {}
+        if _inv:
+            _inv_ready = bool(_inv.get("invocation_ready"))
+            print(f"phase3_invocation_ready={str(_inv_ready).lower()}")
+            _inv_persisted = output.get("phase3_stage3_manager_invocation_persisted", "")
+            if _inv_persisted:
+                print(f"phase3_stage3_invocation_persisted={_inv_persisted}")
+            if _inv_ready:
+                print(f"phase3_shell_command_preview={str(_inv.get('shell_command_preview') or '')[:200]}")
+            else:
+                print(f"phase3_invocation_blocked_reason={str(_inv.get('blocked_reason') or '')}")
 
     return _exit
 

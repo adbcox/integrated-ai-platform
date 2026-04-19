@@ -655,3 +655,12 @@ phase3-edit-plan:
 phase3-validate-edit-plan:
 	@PYTHONPATH=. python3 bin/framework_control_plane.py \
 		--task-template phase3_validate_edit_plan_probe
+
+.PHONY: phase3-apply-edit-plan phase3-apply-edit-plan-live
+
+phase3-apply-edit-plan:
+	@PYTHONPATH=. python3 bin/framework_control_plane.py \
+		--task-template phase3_apply_edit_plan_probe
+
+phase3-apply-edit-plan-live:
+	@python3 -c "import json,subprocess,sys; d=json.loads(open('artifacts/framework/phase3_stage3_manager_invocation_latest.json').read()); (print('BLOCKED: invocation_ready=false') or sys.exit(1)) if not d.get('invocation_ready') else subprocess.run(d['shell_command_preview'],shell=True,check=True)"
