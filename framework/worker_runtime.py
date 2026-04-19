@@ -76,7 +76,7 @@ _PHASE2_TOOL_NAME_MAP: dict[ToolName, ToolContractName] = {
 _PHASE2_TOOL_NAME_MAP[ToolName.RUN_TESTS] = ToolContractName.RUN_TESTS
 
 _PHASE2_SEARCH_MAX_FILES = 1000
-_PHASE2_SEARCH_MAX_MATCHES = 200
+_PHASE2_SEARCH_MAX_MATCHES = 2000
 _PHASE2_SEARCH_MAX_BYTES_PER_FILE = 128 * 1024
 _PHASE2_REPO_MAP_MAX_ENTRIES = 1000
 _PHASE2_SEARCH_USE_RIPGREP = True
@@ -163,7 +163,6 @@ def _tool_search_ripgrep(
             [
                 "rg", "--json", "-i",
                 "--max-count", "3",
-                "-m", str(max_matches),
                 "--", rg_pattern,
                 str(repo_root),
             ],
