@@ -1217,6 +1217,26 @@ def _compute_phase3_exit_code(output: dict[str, Any]) -> int:
     return 0
 
 
+def _compute_phase3_continuation_exit_code(output: dict[str, Any]) -> int:
+    """Return the continuation-pass exit code derived from phase3_continuation_result.
+
+    Returns:
+      -1 — sentinel: no continuation ran; caller must not override primary exit code
+       0 — continuation ran and action is ready (or unknown)
+       5 — continuation ran and action is refine_retrieval
+       6 — continuation ran and action is insufficient_context
+    """
+    cont_result = output.get("phase3_continuation_result")
+    if not isinstance(cont_result, dict) or not cont_result.get("ran"):
+        return -1
+    action = str((cont_result.get("phase3_continuation_next_action") or {}).get("action") or "")
+    if action == "refine_retrieval":
+        return 5
+    if action == "insufficient_context":
+        return 6
+    return 0
+
+
 def _run_phase3_continuation(
     args: argparse.Namespace,
     store: Any,
@@ -1480,6 +1500,15 @@ def main() -> int:
         except Exception as _e:
             output["phase2_retrieval_targets_persist_error"] = str(_e)
 
+    _exit = _compute_phase2_exit_code(output, result_rows)
+    if _exit == 0:
+        _phase3_exit = _compute_phase3_exit_code(output)
+        if _phase3_exit != 0:
+            _exit = _phase3_exit
+    _cont_exit = _compute_phase3_continuation_exit_code(output)
+    if _cont_exit >= 0:
+        _exit = _cont_exit
+
     if args.json:
         print(json.dumps(output, ensure_ascii=False, indent=2))
     else:
@@ -1490,12 +1519,13 @@ def main() -> int:
         print(f"framework_learning_latest={output['learning_latest']}")
         if len(job_rows) > 1:
             print(f"framework_jobs_submitted={len(job_rows)}")
+        _cont_surf = output.get("phase3_continuation_result") or {}
+        if isinstance(_cont_surf, dict) and _cont_surf.get("ran"):
+            _cont_action_str = str((_cont_surf.get("phase3_continuation_next_action") or {}).get("action") or "")
+            print(f"phase3_continuation_ran=true")
+            print(f"phase3_continuation_action={_cont_action_str}")
+            print(f"phase3_continuation_exit_code={_exit}")
 
-    _exit = _compute_phase2_exit_code(output, result_rows)
-    if _exit == 0:
-        _phase3_exit = _compute_phase3_exit_code(output)
-        if _phase3_exit != 0:
-            _exit = _phase3_exit
     return _exit
 
 
