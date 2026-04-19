@@ -226,15 +226,42 @@ _DERIVE_TARGETS_LOW_VALUE_DIRS: frozenset[str] = frozenset(
 )
 
 
+def _extract_phase3_entities(query: str) -> set[str]:
+    """Extract CamelCase and ALLCAPS entity names from a query string.
+
+    Ported from stage_rag4's _extract_entities logic.
+    Returns a set of token strings that look like class/type identifiers.
+    """
+    try:
+        if not query or not isinstance(query, str):
+            return set()
+        entities: set[str] = set()
+        for token in query.split():
+            clean = token.strip("\"'()[].,;:!?")
+            if len(clean) <= 2:
+                continue
+            has_upper = any(c.isupper() for c in clean)
+            has_lower = any(c.islower() for c in clean)
+            if has_upper and has_lower:
+                entities.add(clean)
+            elif has_upper and not has_lower and len(clean) > 2:
+                entities.add(clean)
+        return entities
+    except Exception:
+        return set()
+
+
 def _phase2_derive_read_targets(
     typed_results: list[dict[str, Any]],
     *,
     max_files: int = 3,
+    query: str = "",
 ) -> list[dict[str, Any]]:
     """Convert SEARCH observation matches into READ_FILE argument specs.
 
     Returns up to *max_files* unique-path dicts ranked by specificity score.
     Score = match_frequency + framework/bin/tests bonus (+3) + compound-name bonus (+2)
+            + entity-stem match bonus (+4) + entity-path substring bonus (+2)
             - low-value-name penalty (-5) - __pycache__ penalty (-10).
     Ties broken by path alphabetical order.
     Returns [] on any malformed or empty input without raising.
@@ -265,6 +292,8 @@ def _phase2_derive_read_targets(
         if not freq:
             return []
 
+        entities = _extract_phase3_entities(query or "")
+
         def _score(path: str) -> int:
             score = freq[path]
             p = Path(path)
@@ -285,6 +314,15 @@ def _phase2_derive_read_targets(
                 score -= 3
             elif suffix == ".json" and not any(part in ("framework", "tests", "bin") for part in parts):
                 score -= 2
+            if entities:
+                path_lower = path.lower().replace("_", "")
+                stem_lower = p.stem.lower().replace("_", "")
+                for entity in entities:
+                    e_norm = entity.lower().replace("_", "")
+                    if e_norm == stem_lower:
+                        score += 4
+                    elif e_norm in path_lower:
+                        score += 2
             return score
 
         ranked = sorted(freq.keys(), key=lambda p: (-_score(p), p))
@@ -352,6 +390,8 @@ def _phase2_retrieval_summary(
     except Exception:
         pass
 
+    rs_entities = _extract_phase3_entities(query)
+
     def _rs_score(path: str) -> int:
         score = freq.get(path, 0)
         p = Path(path)
@@ -372,6 +412,15 @@ def _phase2_retrieval_summary(
             score -= 3
         elif suffix == ".json" and not any(part in ("framework", "tests", "bin") for part in parts):
             score -= 2
+        if rs_entities:
+            path_lower = path.lower().replace("_", "")
+            stem_lower = p.stem.lower().replace("_", "")
+            for entity in rs_entities:
+                e_norm = entity.lower().replace("_", "")
+                if e_norm == stem_lower:
+                    score += 4
+                elif e_norm in path_lower:
+                    score += 2
         return score
 
     limit = max(1, int(max_files))
@@ -379,7 +428,7 @@ def _phase2_retrieval_summary(
     unique_file_paths = ranked_paths[:limit]
     top_match_file = unique_file_paths[0] if unique_file_paths else ""
     top_match_line = first_line.get(top_match_file, 0) if top_match_file else 0
-    read_targets_derived = len(_phase2_derive_read_targets(typed_results, max_files=max_files))
+    read_targets_derived = len(_phase2_derive_read_targets(typed_results, max_files=max_files, query=query))
 
     return {
         "query": query,
@@ -1129,6 +1178,7 @@ __all__ = [
     "_phase2_manager_extract",
     "_phase2_extract_typed_results",
     "_phase2_manager_decision",
+    "_extract_phase3_entities",
     "_phase2_derive_read_targets",
     "_phase2_retrieval_summary",
     "_phase3_extract_read_content",
