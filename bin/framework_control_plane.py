@@ -37,6 +37,8 @@ from framework.framework_control_plane import (
     _phase2_extract_typed_results,
     _phase2_derive_read_targets,
     _phase2_retrieval_summary,
+    _phase3_extract_read_content,
+    _phase3_read_content_summary,
 )
 
 DEFAULT_STATE_ROOT = REPO_ROOT / "artifacts" / "framework"
@@ -1169,6 +1171,12 @@ def main() -> int:
         output["phase2_typed_tool_results"]
     )
     output["phase2_retrieval_summary"] = _phase2_retrieval_summary(
+        output["phase2_typed_tool_results"]
+    )
+    output["phase3_read_content_results"] = _phase3_extract_read_content(
+        output["phase2_typed_tool_results"]
+    )
+    output["phase3_read_content_summary"] = _phase3_read_content_summary(
         output["phase2_typed_tool_results"]
     )
 

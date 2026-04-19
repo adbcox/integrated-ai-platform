@@ -524,3 +524,14 @@ phase3-read-after-retrieval-test:
 
 phase3-read-after-retrieval-validate:
 	@PYTHONPATH=. python3 ./artifacts/phase3_read_after_retrieval_validation_report.py
+
+.PHONY: phase3-read-content-surface-test phase3-read-content-surface-validate
+
+phase3-read-content-surface-test:
+	@python3 -m unittest -v \
+		tests.test_framework_control_plane_phase3_read_content \
+		tests.test_phase3_read_content_surface_validation
+
+phase3-read-content-surface-validate:
+	@PYTHONPATH=. python3 \
+		./artifacts/phase3_read_content_surface_validation_report.py

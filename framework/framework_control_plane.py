@@ -334,6 +334,107 @@ def _phase2_retrieval_summary(
     }
 
 
+def _phase3_extract_read_content(typed_results: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Extract READ_FILE observation content from typed_results.
+
+    Returns one dict per executed read_file entry with path, stdout, size_bytes,
+    structured_payload, duration_ms, error. Returns [] on empty or malformed input.
+    All field access guarded; no exceptions escape.
+    """
+    try:
+        if not isinstance(typed_results, list):
+            return []
+        out: list[dict[str, Any]] = []
+        for entry in typed_results:
+            try:
+                if not isinstance(entry, dict):
+                    continue
+                tool = str(entry.get("tool_name") or entry.get("contract_name") or "")
+                if tool != "read_file":
+                    continue
+                if entry.get("status") != "executed":
+                    continue
+                sp = entry.get("structured_payload")
+                if not isinstance(sp, dict):
+                    sp = {}
+                stdout = str(entry.get("stdout") or "")
+                path = str(sp.get("path") or entry.get("arguments", {}).get("path") or "")
+                size_bytes = sp.get("size_bytes")
+                if size_bytes is None:
+                    size_bytes = len(stdout)
+                else:
+                    try:
+                        size_bytes = int(size_bytes)
+                    except Exception:
+                        size_bytes = len(stdout)
+                out.append({
+                    "path": path,
+                    "stdout": stdout,
+                    "size_bytes": size_bytes,
+                    "structured_payload": sp,
+                    "duration_ms": int(entry.get("duration_ms") or 0),
+                    "error": str(entry.get("error") or ""),
+                })
+            except Exception:
+                continue
+        return out
+    except Exception:
+        return []
+
+
+def _phase3_read_content_summary(
+    typed_results: list[dict[str, Any]],
+    *,
+    max_files: int = 3,
+) -> dict[str, Any]:
+    """Produce a compact summary of READ_FILE results from typed_results.
+
+    All fields have safe zero-defaults; no exceptions escape.
+    """
+    try:
+        entries = _phase3_extract_read_content(typed_results)
+        files_read = len(entries)
+        total_bytes = 0
+        file_paths: list[str] = []
+        seen: set[str] = set()
+        top_file = ""
+        top_file_bytes = 0
+        any_errors = False
+        limit = max(1, int(max_files))
+        for e in entries:
+            try:
+                p = e.get("path") or ""
+                if p and p not in seen:
+                    seen.add(p)
+                    if not top_file:
+                        top_file = p
+                        top_file_bytes = int(e.get("size_bytes") or 0)
+                    if len(file_paths) < limit:
+                        file_paths.append(p)
+                total_bytes += int(e.get("size_bytes") or 0)
+                if e.get("error"):
+                    any_errors = True
+            except Exception:
+                continue
+        return {
+            "files_read": files_read,
+            "file_paths": file_paths,
+            "total_bytes": total_bytes,
+            "top_file": top_file,
+            "top_file_bytes": top_file_bytes,
+            "any_errors": any_errors,
+        }
+    except Exception:
+        return {
+            "files_read": 0,
+            "file_paths": [],
+            "total_bytes": 0,
+            "top_file": "",
+            "top_file_bytes": 0,
+            "any_errors": False,
+        }
+
+
 __all__ = [
     "_phase2_manager_present",
     "_phase2_manager_tool_summary",
@@ -342,5 +443,7 @@ __all__ = [
     "_phase2_manager_decision",
     "_phase2_derive_read_targets",
     "_phase2_retrieval_summary",
+    "_phase3_extract_read_content",
+    "_phase3_read_content_summary",
     "run_managed_job",
 ]
