@@ -129,7 +129,7 @@ class TestToolReadFile(unittest.TestCase):
         self.assertTrue(obs.allowed)
         self.assertIn("read_error", obs.error)
 
-    def test_read_file_too_large(self):
+    def test_read_file_oversized_truncates_not_fails(self):
         from framework.worker_runtime import _PHASE2_READ_FILE_MAX_BYTES
         runtime, job = _make_runtime(self._tmp_path, allowed_tools=["apply_edit"])
         workspace = self._workspace(runtime, job)
@@ -141,8 +141,9 @@ class TestToolReadFile(unittest.TestCase):
         )
 
         self.assertEqual(obs.tool_name, ToolContractName.READ_FILE)
-        self.assertEqual(obs.status, ToolContractStatus.FAILED)
-        self.assertIn("file_too_large", obs.error)
+        self.assertEqual(obs.status, ToolContractStatus.EXECUTED)
+        self.assertTrue(obs.structured_payload.get("content_truncated"))
+        self.assertEqual(obs.structured_payload.get("original_size_bytes"), _PHASE2_READ_FILE_MAX_BYTES + 1)
 
     def test_read_file_tool_name_is_read_file_not_apply_patch(self):
         runtime, job = _make_runtime(self._tmp_path, allowed_tools=["apply_edit"])

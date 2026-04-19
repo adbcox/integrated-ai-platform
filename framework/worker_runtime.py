@@ -1379,20 +1379,24 @@ class WorkerRuntime:
                 job=job, typed_action=typed_action,
                 error="binary_file_not_supported", duration_ms=duration_ms,
             )
+        content_truncated = False
+        original_size_bytes = len(raw_bytes)
         if len(raw_bytes) > _PHASE2_READ_FILE_MAX_BYTES:
-            duration_ms = int((time.monotonic() - t0) * 1000)
-            return self._phase2_emit_typed_failure(
-                job=job, typed_action=typed_action,
-                error=f"file_too_large:{len(raw_bytes)}_bytes", duration_ms=duration_ms,
-            )
-        content = raw_bytes.decode("utf-8")
+            raw_bytes = raw_bytes[:_PHASE2_READ_FILE_MAX_BYTES]
+            content_truncated = True
+        content = raw_bytes.decode("utf-8", errors="replace")
         duration_ms = int((time.monotonic() - t0) * 1000)
         return self._phase2_emit_typed_success(
             job=job,
             typed_action=typed_action,
             duration_ms=duration_ms,
             stdout=content,
-            structured_payload={"path": str(resolved), "size_bytes": len(raw_bytes)},
+            structured_payload={
+                "path": str(resolved),
+                "size_bytes": len(raw_bytes),
+                "content_truncated": content_truncated,
+                "original_size_bytes": original_size_bytes,
+            },
             return_code=0,
         )
 
