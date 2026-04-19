@@ -46,6 +46,7 @@ from framework.framework_control_plane import (
     _phase3_derive_next_action,
     _phase3_select_followon_template,
     _phase3_build_recommendation,
+    _phase3_build_edit_plan,
 )
 
 DEFAULT_STATE_ROOT = REPO_ROOT / "artifacts" / "framework"
@@ -98,6 +99,7 @@ def parse_args() -> argparse.Namespace:
             "context_bundle_probe",
             "context_bundle_inference_probe",
             "phase3_followon",
+            "phase3_edit_plan_probe",
         ],
         help="Predefined real repo workflow template routed through framework execution.",
     )
@@ -749,6 +751,7 @@ _DEFAULT_RETRIEVAL_TARGETS_PATH = DEFAULT_STATE_ROOT / "retrieval_read_targets.j
 _DEFAULT_CONTEXT_BUNDLE_PATH = DEFAULT_STATE_ROOT / "context_bundle_latest.json"
 _DEFAULT_PHASE3_FOLLOWON_PATH = DEFAULT_STATE_ROOT / "phase3_followon_template.json"
 _DEFAULT_RECOMMENDATION_PATH = DEFAULT_STATE_ROOT / "phase3_recommendation_latest.json"
+_DEFAULT_EDIT_PLAN_PATH = DEFAULT_STATE_ROOT / "phase3_edit_plan_latest.json"
 
 
 def _load_retrieval_targets(path: Path) -> list[dict[str, Any]]:
@@ -769,6 +772,22 @@ def _load_retrieval_targets(path: Path) -> list[dict[str, Any]]:
 
 def _load_context_bundle(path: Path) -> dict[str, Any]:
     """Return a persisted context_bundle dict from *path*.
+
+    Returns {} on any missing/malformed file without raising.
+    """
+    try:
+        if not path.exists():
+            return {}
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        if not isinstance(payload, dict):
+            return {}
+        return payload
+    except Exception:
+        return {}
+
+
+def _load_recommendation(path: Path) -> dict[str, Any]:
+    """Return a persisted phase3_recommendation dict from *path*.
 
     Returns {} on any missing/malformed file without raising.
     """
@@ -896,6 +915,48 @@ def _context_bundle_inference_probe_template() -> dict[str, Any]:
             "allow_edit_path_patterns": [
                 r"artifacts/framework/context_bundle_inference_probe_output\.txt$"
             ],
+        },
+    }
+
+
+def _phase3_edit_plan_probe_template(
+    recommendation_path: Path = _DEFAULT_RECOMMENDATION_PATH,
+) -> dict[str, Any]:
+    """Build a template that instructs Ollama to generate a stage3_manager edit instruction.
+
+    Reads the persisted recommendation artifact to build a context-rich inference prompt.
+    Falls back to a placeholder prompt when no recommendation is available.
+    """
+    rec = _load_recommendation(recommendation_path)
+    if not rec or not rec.get("recommendation_ready"):
+        inference_prompt = "No prior recommendation available. Run make phase3-query first."
+    else:
+        query = str(rec.get("query") or "")
+        inference_text = str(rec.get("inference_text") or "")[:1200]
+        top_file = str(rec.get("top_file") or "")
+        inference_prompt = (
+            f"Query: {query}\n\n"
+            f"Code analysis:\n{inference_text}\n\n"
+            f"Primary file: {top_file}\n\n"
+            "Based on the analysis above, generate ONE specific, minimal code modification "
+            "to address the query. Your response must be exactly one line in this format:\n"
+            f"{top_file}:: replace exact text 'EXACT_OLD_TEXT' with 'EXACT_NEW_TEXT'\n"
+            "The old text must appear verbatim in the file. The replacement must be minimal."
+        )
+    return {
+        "task_class": JobClass.VALIDATION_CHECK_EXECUTION.value,
+        "shell_command": (
+            "python3 -c \""
+            "from pathlib import Path; "
+            "p = Path('artifacts/framework/phase3_edit_plan_output.txt'); "
+            "p.parent.mkdir(parents=True, exist_ok=True); "
+            "p.write_text('phase3_edit_plan_probe_ok\\n', encoding='utf-8')\""
+        ),
+        "inference_prompt": inference_prompt,
+        "artifact_inputs": [str(recommendation_path)],
+        "requested_outputs": ["artifacts/framework/phase3_edit_plan_output.txt"],
+        "permission_policy": {
+            "allow_edit_path_patterns": [r"artifacts/framework/phase3_edit_plan_output\.txt$"],
         },
     }
 
@@ -1117,6 +1178,8 @@ def _template_payload(name: str) -> dict[str, Any]:
         return _context_bundle_inference_probe_template()
     if name == "phase3_followon":
         return _phase3_followon_template()
+    if name == "phase3_edit_plan_probe":
+        return _phase3_edit_plan_probe_template()
     return {}
 
 
@@ -1556,6 +1619,26 @@ def main() -> int:
             args, store, learning, inference, profile, _cont_template
         )
 
+    try:
+        if args.task_template == "phase3_edit_plan_probe" and output.get("phase3_inference_response", {}).get("has_content"):
+            _edit_plan = _phase3_build_edit_plan(
+                output["phase3_inference_response"],
+                _load_recommendation(_DEFAULT_RECOMMENDATION_PATH),
+            )
+            try:
+                _DEFAULT_EDIT_PLAN_PATH.parent.mkdir(parents=True, exist_ok=True)
+                _DEFAULT_EDIT_PLAN_PATH.write_text(
+                    json.dumps(_edit_plan, ensure_ascii=False, indent=2),
+                    encoding="utf-8",
+                )
+                output["phase3_edit_plan"] = _edit_plan
+                output["phase3_edit_plan_persisted"] = str(_DEFAULT_EDIT_PLAN_PATH)
+            except Exception as _ep_e:
+                output["phase3_edit_plan"] = _edit_plan
+                output["phase3_edit_plan_persist_error"] = str(_ep_e)
+    except Exception:
+        pass
+
     read_targets = output["phase2_retrieval_read_targets"]
     if read_targets:
         _targets_out = _DEFAULT_RETRIEVAL_TARGETS_PATH
@@ -1599,6 +1682,13 @@ def main() -> int:
             print(f"phase3_recommendation_persisted={_rec_out}")
             _rec_query = str((output.get("phase3_recommendation") or {}).get("query") or "")
             print(f"phase3_recommendation_query={_rec_query}")
+        _ep_out = output.get("phase3_edit_plan_persisted")
+        if _ep_out:
+            _ep_target = str((output.get("phase3_edit_plan") or {}).get("target_file") or "")
+            _ep_ready = bool((output.get("phase3_edit_plan") or {}).get("plan_ready"))
+            print(f"phase3_edit_plan_persisted={_ep_out}")
+            print(f"phase3_edit_plan_target={_ep_target}")
+            print(f"phase3_edit_plan_ready={str(_ep_ready).lower()}")
 
     return _exit
 

@@ -828,6 +828,48 @@ def _phase3_build_recommendation(
         return dict(_SAFE_RECOMMENDATION)
 
 
+_SAFE_EDIT_PLAN: dict[str, Any] = {
+    "query": "",
+    "target_file": "",
+    "plan_text": "",
+    "has_replacement_format": False,
+    "plan_ready": False,
+    "chars": 0,
+}
+
+
+def _phase3_build_edit_plan(
+    inference_response: "dict[str, Any]",
+    recommendation: "dict[str, Any]",
+) -> "dict[str, Any]":
+    """Parse stage3_manager-format replacement instruction from edit-plan inference output.
+
+    Returns safe defaults dict on any exception or non-dict input. No exceptions escape.
+    """
+    try:
+        if not isinstance(inference_response, dict):
+            return dict(_SAFE_EDIT_PLAN)
+        if not isinstance(recommendation, dict):
+            return dict(_SAFE_EDIT_PLAN)
+        plan_text = str(inference_response.get("output_text") or "")
+        target_file = str(recommendation.get("top_file") or "")
+        query = str(recommendation.get("query") or "")
+        has_replacement_format = bool(
+            re.search(r"\S+::\s*replace exact text '.+' with '.+'", plan_text, re.DOTALL)
+        )
+        plan_ready = bool(plan_text.strip() and target_file)
+        return {
+            "query": query,
+            "target_file": target_file,
+            "plan_text": plan_text,
+            "has_replacement_format": has_replacement_format,
+            "plan_ready": plan_ready,
+            "chars": len(plan_text),
+        }
+    except Exception:
+        return dict(_SAFE_EDIT_PLAN)
+
+
 __all__ = [
     "_phase2_manager_present",
     "_phase2_manager_tool_summary",
@@ -845,5 +887,6 @@ __all__ = [
     "_phase3_derive_next_action",
     "_phase3_select_followon_template",
     "_phase3_build_recommendation",
+    "_phase3_build_edit_plan",
     "run_managed_job",
 ]

@@ -633,5 +633,19 @@ phase3-query:
 	@PYTHONPATH=. python3 bin/framework_control_plane.py \
 		--task-template retrieval_probe \
 		--phase3-query $(PHASE3_QUERY) \
-		--inference-mode $(PHASE3_INFERENCE_MODE) \
-		--phase3-auto-continue
+		--inference-mode $(PHASE3_INFERENCE_MODE)
+	@PYTHONPATH=. python3 bin/framework_control_plane.py \
+		--task-template read_after_retrieval \
+		--inference-mode $(PHASE3_INFERENCE_MODE)
+	@PYTHONPATH=. python3 bin/framework_control_plane.py \
+		--task-template context_bundle_inference_probe \
+		--inference-mode $(PHASE3_INFERENCE_MODE)
+
+PHASE3_EDIT_PLAN_INFERENCE_MODE ?= ollama
+
+.PHONY: phase3-edit-plan
+
+phase3-edit-plan:
+	@PYTHONPATH=. python3 bin/framework_control_plane.py \
+		--task-template phase3_edit_plan_probe \
+		--inference-mode $(PHASE3_EDIT_PLAN_INFERENCE_MODE)
