@@ -1681,11 +1681,12 @@ def main() -> int:
     output["phase2_manager_view"] = _phase2_manager_extract(primary_result_payload)
     output["phase2_operational_signal"] = _phase2_manager_decision(output["phase2_manager_view"])
     output["phase2_typed_tool_results"] = _phase2_extract_typed_results(primary_result_payload)
-    output["phase2_retrieval_read_targets"] = _phase2_derive_read_targets(
-        output["phase2_typed_tool_results"]
-    )
     output["phase2_retrieval_summary"] = _phase2_retrieval_summary(
         output["phase2_typed_tool_results"]
+    )
+    output["phase2_retrieval_read_targets"] = _phase2_derive_read_targets(
+        output["phase2_typed_tool_results"],
+        query=str((output.get("phase2_retrieval_summary") or {}).get("query") or ""),
     )
     output["phase3_read_content_results"] = _phase3_extract_read_content(
         output["phase2_typed_tool_results"]
