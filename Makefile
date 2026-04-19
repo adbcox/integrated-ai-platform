@@ -612,3 +612,14 @@ phase3-followon-select-test:
 phase3-followon-select-validate:
 	@PYTHONPATH=. python3 \
 		./artifacts/phase3_followon_select_validation_report.py
+
+.PHONY: phase3-auto-continue-test phase3-auto-continue-validate
+
+phase3-auto-continue-test:
+	@python3 -m unittest -v \
+		tests.test_bin_framework_control_plane_phase3_auto_continue \
+		tests.test_phase3_auto_continue_validation
+
+phase3-auto-continue-validate:
+	@PYTHONPATH=. python3 \
+		./artifacts/phase3_auto_continue_validation_report.py

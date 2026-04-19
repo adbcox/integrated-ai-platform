@@ -101,6 +101,14 @@ def parse_args() -> argparse.Namespace:
         help="Predefined real repo workflow template routed through framework execution.",
     )
     parser.add_argument(
+        "--phase3-auto-continue",
+        action="store_true",
+        help=(
+            "When set and phase3_next_action signals refine_retrieval or insufficient_context, "
+            "perform a second scheduler pass with the selected follow-on template."
+        ),
+    )
+    parser.add_argument(
         "--task-portfolio",
         default="none",
         choices=["none", "next5_high_value"],
@@ -1209,6 +1217,67 @@ def _compute_phase3_exit_code(output: dict[str, Any]) -> int:
     return 0
 
 
+def _run_phase3_continuation(
+    args: argparse.Namespace,
+    scheduler: Any,
+    store: Any,
+    followon_template: str,
+) -> dict[str, Any]:
+    """Run a single follow-on job using *followon_template* on a fresh scheduler pass.
+
+    Returns a compact status dict. Does not re-run full Phase 3 analysis helpers.
+    All exceptions are caught and surfaced in the returned dict.
+
+    NOTE: Scheduler restart is not safe when stop_event is already set (WorkerPool.stop()
+    sets the shared stop_event and it is never cleared). The pre-flight guard below
+    detects this and returns a dry-run record with error="scheduler_restart_not_safe".
+    """
+    _CONTINUATION_SAFE: dict[str, Any] = {
+        "ran": False,
+        "template_used": followon_template,
+        "idle_reached": False,
+        "job_status": "",
+        "return_code": -1,
+        "typed_tool_count": 0,
+        "error": "",
+    }
+    try:
+        _stop_ev = getattr(scheduler, "_stop_event", None)
+        if _stop_ev is not None and _stop_ev.is_set():
+            return {**_CONTINUATION_SAFE, "error": "scheduler_restart_not_safe"}
+        cont_job = _apply_task_policy(build_job(args, template_name=followon_template))
+        scheduler.start()
+        cont_queued = scheduler.submit(cont_job)
+        cont_idle = scheduler.wait_for_idle(
+            timeout_seconds=max(1.0, float(args.wait_timeout_seconds))
+        )
+        scheduler.stop()
+        cont_result_path = (
+            Path(args.state_root).resolve() / "results" / f"{cont_queued.job_id}.json"
+        )
+        cont_payload: dict[str, Any] = {}
+        if cont_result_path.exists():
+            try:
+                cont_payload = json.loads(
+                    cont_result_path.read_text(encoding="utf-8")
+                )
+            except json.JSONDecodeError:
+                cont_payload = {}
+        typed_trace = cont_payload.get("typed_tool_trace")
+        typed_count = len(typed_trace) if isinstance(typed_trace, list) else 0
+        return {
+            "ran": True,
+            "template_used": followon_template,
+            "idle_reached": cont_idle,
+            "job_status": str(cont_payload.get("status") or ""),
+            "return_code": int(cont_payload.get("return_code") or -1),
+            "typed_tool_count": typed_count,
+            "error": "",
+        }
+    except Exception as exc:
+        return {**_CONTINUATION_SAFE, "error": str(exc)}
+
+
 def main() -> int:
     args = parse_args()
 
@@ -1379,6 +1448,14 @@ def main() -> int:
         output["phase3_followon_persisted"] = str(_followon_out)
     except Exception as _e:
         output["phase3_followon_persist_error"] = str(_e)
+
+    _auto_continue_actions = {"refine_retrieval", "insufficient_context"}
+    _current_action = str((output.get("phase3_next_action") or {}).get("action") or "")
+    if getattr(args, "phase3_auto_continue", False) and _current_action in _auto_continue_actions:
+        _cont_template = str(output.get("phase3_followon_template") or "retrieval_probe")
+        output["phase3_continuation_result"] = _run_phase3_continuation(
+            args, scheduler, store, _cont_template
+        )
 
     read_targets = output["phase2_retrieval_read_targets"]
     if read_targets:
