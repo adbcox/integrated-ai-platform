@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import os
+import subprocess
 import threading
 import urllib.error
 import urllib.request
@@ -121,6 +122,50 @@ class OllamaInferenceAdapter:
                 return self._fallback.run(request)
 
 
+class ClaudeCodeCLIInferenceAdapter:
+    """Adapter that calls the local `claude` CLI in --print mode.
+
+    Falls back to LocalHeuristicInferenceAdapter on any subprocess or parse failure.
+    Uses --dangerously-skip-permissions so no interactive confirmation is needed.
+    """
+
+    def __init__(self, profile: BackendProfile, *, timeout_seconds: float = 120.0) -> None:
+        self.profile = profile
+        self._timeout = float(timeout_seconds)
+        self._fallback = LocalHeuristicInferenceAdapter(profile)
+        self._semaphore = threading.BoundedSemaphore(value=max(1, profile.max_inference_concurrency))
+
+    def run(self, request: InferenceRequest) -> InferenceResponse:
+        with self._semaphore:
+            prompt = request.prompt.strip()
+            if not prompt:
+                return self._fallback.run(request)
+            try:
+                proc = subprocess.run(
+                    [
+                        "claude",
+                        "-p", prompt,
+                        "--output-format", "text",
+                        "--dangerously-skip-permissions",
+                    ],
+                    capture_output=True,
+                    text=True,
+                    timeout=self._timeout,
+                    encoding="utf-8",
+                    errors="replace",
+                )
+                output_text = proc.stdout.strip()
+                if proc.returncode != 0 or not output_text:
+                    return self._fallback.run(request)
+                return InferenceResponse(
+                    backend="claude_code_cli",
+                    output_text=output_text,
+                    metadata={"job_id": request.job_id, "returncode": proc.returncode},
+                )
+            except Exception:
+                return self._fallback.run(request)
+
+
 class ArtifactReplayInferenceAdapter:
     """Adapter that replays a previously captured response artifact when present."""
 
@@ -153,6 +198,8 @@ def build_inference_adapter(
     profile = get_backend_profile(backend_profile)
     if mode == "ollama":
         return OllamaInferenceAdapter(profile=profile)
+    if mode == "claude_code_cli":
+        return ClaudeCodeCLIInferenceAdapter(profile=profile)
     if mode == "artifact_replay" and replay_path:
         return ArtifactReplayInferenceAdapter(profile=profile, replay_path=Path(replay_path).resolve())
     return LocalHeuristicInferenceAdapter(profile=profile)

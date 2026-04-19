@@ -625,7 +625,7 @@ phase3-auto-continue-validate:
 		./artifacts/phase3_auto_continue_validation_report.py
 
 PHASE3_QUERY ?= _execute_job
-PHASE3_INFERENCE_MODE ?= ollama
+PHASE3_INFERENCE_MODE ?= claude_code_cli
 
 .PHONY: phase3-query
 
@@ -641,7 +641,7 @@ phase3-query:
 		--task-template context_bundle_inference_probe \
 		--inference-mode $(PHASE3_INFERENCE_MODE)
 
-PHASE3_EDIT_PLAN_INFERENCE_MODE ?= ollama
+PHASE3_EDIT_PLAN_INFERENCE_MODE ?= claude_code_cli
 
 .PHONY: phase3-edit-plan
 

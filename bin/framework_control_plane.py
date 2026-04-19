@@ -76,7 +76,7 @@ def parse_args() -> argparse.Namespace:
         default="auto",
         choices=["auto", "mac_local", "threadripper_local", "multi_host_future"],
     )
-    parser.add_argument("--inference-mode", default="heuristic", choices=["heuristic", "artifact_replay", "ollama"])
+    parser.add_argument("--inference-mode", default="heuristic", choices=["heuristic", "artifact_replay", "ollama", "claude_code_cli"])
     parser.add_argument("--inference-replay", default="", help="Artifact replay payload for inference adapter")
     parser.add_argument("--task-class", default=JobClass.FRAMEWORK_BOOTSTRAP.value, choices=[item.value for item in JobClass])
     parser.add_argument(
