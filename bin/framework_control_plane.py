@@ -85,6 +85,7 @@ def parse_args() -> argparse.Namespace:
             "campaign_profile_matrix",
             "typed_tool_probe",
             "retrieval_probe",
+            "read_after_retrieval",
         ],
         help="Predefined real repo workflow template routed through framework execution.",
     )
@@ -718,6 +719,62 @@ def _retrieval_probe_template() -> dict[str, Any]:
     }
 
 
+_DEFAULT_RETRIEVAL_TARGETS_PATH = DEFAULT_STATE_ROOT / "retrieval_read_targets.json"
+
+
+def _load_retrieval_targets(path: Path) -> list[dict[str, Any]]:
+    """Return typed-tool READ_FILE specs from a persisted retrieval_read_targets artifact.
+
+    Returns [] on any missing/malformed file without raising.
+    """
+    try:
+        if not path.exists():
+            return []
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        if not isinstance(payload, list):
+            return []
+        return [entry for entry in payload if isinstance(entry, dict)]
+    except Exception:
+        return []
+
+
+def _read_after_retrieval_template(
+    targets_path: Path = _DEFAULT_RETRIEVAL_TARGETS_PATH,
+) -> dict[str, Any]:
+    """Build a typed-tool template that reads files derived from a prior retrieval run.
+
+    Loads persisted phase2_retrieval_read_targets from *targets_path*.
+    Appends an APPLY_PATCH write_text sentinel artifact so the job validates.
+    Returns an empty phase2_typed_tools list if no targets are available.
+    """
+    read_specs = _load_retrieval_targets(targets_path)
+    phase2_typed_tools: list[dict[str, Any]] = list(read_specs)
+    phase2_typed_tools.append(
+        {
+            "contract_name": "apply_patch",
+            "arguments": {
+                "path": "artifacts/framework/read_after_retrieval_output.txt",
+                "mode": "write_text",
+                "content": f"phase3_read_after_retrieval_ok targets={len(read_specs)}\n",
+            },
+        }
+    )
+    return {
+        "task_class": JobClass.VALIDATION_CHECK_EXECUTION.value,
+        "shell_command": "true",
+        "inference_prompt": (
+            "Phase 3 read-after-retrieval: read files derived from the prior retrieval probe, "
+            "then write a read-after-retrieval summary artifact."
+        ),
+        "artifact_inputs": [str(targets_path)],
+        "requested_outputs": ["artifacts/framework/read_after_retrieval_output.txt"],
+        "phase2_typed_tools": phase2_typed_tools,
+        "permission_policy": {
+            "allow_edit_path_patterns": [r"artifacts/framework/read_after_retrieval_output\.txt$"],
+        },
+    }
+
+
 def _coerce_job_class(value: str) -> JobClass:
     try:
         return JobClass(str(value))
@@ -907,6 +964,8 @@ def _template_payload(name: str) -> dict[str, Any]:
         return _typed_tool_probe_template()
     if name == "retrieval_probe":
         return _retrieval_probe_template()
+    if name == "read_after_retrieval":
+        return _read_after_retrieval_template()
     return {}
 
 
@@ -1112,6 +1171,19 @@ def main() -> int:
     output["phase2_retrieval_summary"] = _phase2_retrieval_summary(
         output["phase2_typed_tool_results"]
     )
+
+    read_targets = output["phase2_retrieval_read_targets"]
+    if read_targets:
+        _targets_out = _DEFAULT_RETRIEVAL_TARGETS_PATH
+        try:
+            _targets_out.parent.mkdir(parents=True, exist_ok=True)
+            _targets_out.write_text(
+                json.dumps(read_targets, ensure_ascii=False, indent=2),
+                encoding="utf-8",
+            )
+            output["phase2_retrieval_targets_persisted"] = str(_targets_out)
+        except Exception as _e:
+            output["phase2_retrieval_targets_persist_error"] = str(_e)
 
     if args.json:
         print(json.dumps(output, ensure_ascii=False, indent=2))

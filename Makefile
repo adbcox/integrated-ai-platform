@@ -514,3 +514,13 @@ phase3-retrieval-consume-test:
 
 phase3-retrieval-consume-validate:
 	@PYTHONPATH=. python3 ./artifacts/phase3_retrieval_consume_validation_report.py
+
+.PHONY: phase3-read-after-retrieval-test phase3-read-after-retrieval-validate
+
+phase3-read-after-retrieval-test:
+	@python3 -m unittest -v \
+		tests.test_bin_framework_control_plane_read_after_retrieval \
+		tests.test_phase3_read_after_retrieval_validation
+
+phase3-read-after-retrieval-validate:
+	@PYTHONPATH=. python3 ./artifacts/phase3_read_after_retrieval_validation_report.py
