@@ -753,6 +753,7 @@ def _retrieval_probe_template(query: str = "_execute_job") -> dict[str, Any]:
 
 
 _DEFAULT_RETRIEVAL_TARGETS_PATH = DEFAULT_STATE_ROOT / "retrieval_read_targets.json"
+_DEFAULT_RETRIEVAL_QUERY_PATH = DEFAULT_STATE_ROOT / "retrieval_query_latest.json"
 _DEFAULT_CONTEXT_BUNDLE_PATH = DEFAULT_STATE_ROOT / "context_bundle_latest.json"
 _DEFAULT_PHASE3_FOLLOWON_PATH = DEFAULT_STATE_ROOT / "phase3_followon_template.json"
 _DEFAULT_RECOMMENDATION_PATH = DEFAULT_STATE_ROOT / "phase3_recommendation_latest.json"
@@ -775,6 +776,22 @@ def _load_retrieval_targets(path: Path) -> list[dict[str, Any]]:
         return [entry for entry in payload if isinstance(entry, dict)]
     except Exception:
         return []
+
+
+def _load_retrieval_query(path: Path) -> str:
+    """Return the persisted search query from a retrieval_query_latest.json artifact.
+
+    Returns '' on any missing/malformed file without raising.
+    """
+    try:
+        if not path.exists():
+            return ""
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        if not isinstance(payload, dict):
+            return ""
+        return str(payload.get("query") or "")
+    except Exception:
+        return ""
 
 
 def _load_context_bundle(path: Path) -> dict[str, Any]:
@@ -1679,6 +1696,20 @@ def main() -> int:
     output["phase3_symbol_index"] = _phase3_extract_symbol_index(
         output["phase3_read_content_results"]
     )
+
+    if args.task_template == "read_after_retrieval":
+        try:
+            _injected_query = str((output.get("phase2_retrieval_summary") or {}).get("query") or "")
+            if not _injected_query:
+                _injected_query = _load_retrieval_query(_DEFAULT_RETRIEVAL_QUERY_PATH)
+            if _injected_query:
+                _patched_summary = dict(output.get("phase2_retrieval_summary") or {})
+                _patched_summary["query"] = _injected_query
+                output["phase2_retrieval_summary"] = _patched_summary
+                output["phase3_retrieval_query_injected"] = _injected_query
+        except Exception:
+            pass
+
     output["phase3_context_bundle"] = _phase3_assemble_context_bundle(
         output["phase2_retrieval_summary"],
         output["phase3_read_content_results"],
@@ -1816,6 +1847,18 @@ def main() -> int:
         except Exception as _e:
             output["phase2_retrieval_targets_persist_error"] = str(_e)
 
+    if args.task_template == "retrieval_probe":
+        _ret_query_str = str((output.get("phase2_retrieval_summary") or {}).get("query") or "")
+        try:
+            _DEFAULT_RETRIEVAL_QUERY_PATH.parent.mkdir(parents=True, exist_ok=True)
+            _DEFAULT_RETRIEVAL_QUERY_PATH.write_text(
+                json.dumps({"query": _ret_query_str}, ensure_ascii=False, indent=2),
+                encoding="utf-8",
+            )
+            output["phase3_retrieval_query_persisted"] = str(_DEFAULT_RETRIEVAL_QUERY_PATH)
+        except Exception as _rqe:
+            output["phase3_retrieval_query_persist_error"] = str(_rqe)
+
     _exit = _compute_phase2_exit_code(output, result_rows)
     if _exit == 0:
         _phase3_exit = _compute_phase3_exit_code(output)
@@ -1853,6 +1896,12 @@ def main() -> int:
             print(f"phase3_edit_plan_persisted={_ep_out}")
             print(f"phase3_edit_plan_target={_ep_target}")
             print(f"phase3_edit_plan_ready={str(_ep_ready).lower()}")
+        _rq_persisted = output.get("phase3_retrieval_query_persisted")
+        if _rq_persisted:
+            print(f"phase3_retrieval_query_persisted={_rq_persisted}")
+        _rq_injected = output.get("phase3_retrieval_query_injected") or ""
+        if _rq_injected:
+            print(f"phase3_retrieval_query_injected={_rq_injected[:80]}")
         _val = output.get("phase3_edit_plan_validation") or {}
         if _val:
             print(f"phase3_edit_plan_validation_status={_val.get('validation_status', '')}")
