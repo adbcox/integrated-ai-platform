@@ -1272,6 +1272,7 @@ def _run_phase3_continuation(
         "typed_tool_count": 0,
         "error": "",
         "phase3_continuation_next_action": {},
+        "phase3_continuation_recommendation_ready": False,
     }
     try:
         scheduler = Scheduler(
@@ -1302,10 +1303,43 @@ def _run_phase3_continuation(
                 cont_payload = {}
         typed_trace = cont_payload.get("typed_tool_trace")
         typed_count = len(typed_trace) if isinstance(typed_trace, list) else 0
-        cont_next_action = _phase3_derive_next_action(
-            cont_payload.get("phase3_context_bundle", {}),
-            cont_payload.get("phase3_inference_response", {}),
-        )
+
+        # Re-run Phase 3 analysis pipeline on the continuation's raw result.
+        cont_typed_results = _phase2_extract_typed_results(cont_payload)
+        cont_inference_response = _phase3_extract_inference_response(cont_payload)
+        cont_context_bundle = _load_context_bundle(_DEFAULT_CONTEXT_BUNDLE_PATH)
+        if cont_typed_results:
+            cont_retrieval_summary = _phase2_retrieval_summary(cont_typed_results)
+            cont_read_content = _phase3_extract_read_content(cont_typed_results)
+            cont_symbol_index = _phase3_extract_symbol_index(cont_read_content)
+            new_bundle = _phase3_assemble_context_bundle(
+                cont_retrieval_summary, cont_read_content, cont_symbol_index
+            )
+            if new_bundle.get("prompt_ready"):
+                cont_context_bundle = new_bundle
+                try:
+                    _DEFAULT_CONTEXT_BUNDLE_PATH.parent.mkdir(parents=True, exist_ok=True)
+                    _DEFAULT_CONTEXT_BUNDLE_PATH.write_text(
+                        json.dumps(new_bundle, ensure_ascii=False, indent=2),
+                        encoding="utf-8",
+                    )
+                except Exception:
+                    pass
+        cont_next_action = _phase3_derive_next_action(cont_context_bundle, cont_inference_response)
+
+        cont_recommendation_ready = False
+        if str((cont_next_action or {}).get("action") or "") == "ready" and cont_inference_response.get("has_content"):
+            _cont_rec = _phase3_build_recommendation(cont_context_bundle, cont_inference_response)
+            try:
+                _DEFAULT_RECOMMENDATION_PATH.parent.mkdir(parents=True, exist_ok=True)
+                _DEFAULT_RECOMMENDATION_PATH.write_text(
+                    json.dumps(_cont_rec, ensure_ascii=False, indent=2),
+                    encoding="utf-8",
+                )
+                cont_recommendation_ready = True
+            except Exception:
+                pass
+
         return {
             "ran": True,
             "template_used": followon_template,
@@ -1315,6 +1349,7 @@ def _run_phase3_continuation(
             "typed_tool_count": typed_count,
             "error": "",
             "phase3_continuation_next_action": cont_next_action,
+            "phase3_continuation_recommendation_ready": cont_recommendation_ready,
         }
     except Exception as exc:
         return {**_CONTINUATION_SAFE, "error": str(exc)}

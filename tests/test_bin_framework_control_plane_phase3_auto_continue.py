@@ -22,6 +22,7 @@ _REQUIRED_KEYS = {
     "typed_tool_count",
     "error",
     "phase3_continuation_next_action",
+    "phase3_continuation_recommendation_ready",
 }
 _AUTO_CONTINUE_ACTIONS = {"refine_retrieval", "insufficient_context"}
 _NOT_TRIGGER_ACTIONS = {"ready", "no_context"}
@@ -161,6 +162,12 @@ class TestSourceTextAssertions(unittest.TestCase):
 
     def test_scheduler_restart_not_safe_absent_from_source(self):
         self.assertNotIn("scheduler_restart_not_safe", self._source())
+
+    def test_phase3_continuation_recommendation_ready_in_source(self):
+        self.assertIn("phase3_continuation_recommendation_ready", self._source())
+
+    def test_phase2_retrieval_summary_in_source(self):
+        self.assertIn("_phase2_retrieval_summary", self._source())
 
 
 if __name__ == "__main__":
