@@ -649,3 +649,9 @@ phase3-edit-plan:
 	@PYTHONPATH=. python3 bin/framework_control_plane.py \
 		--task-template phase3_edit_plan_probe \
 		--inference-mode $(PHASE3_EDIT_PLAN_INFERENCE_MODE)
+
+.PHONY: phase3-validate-edit-plan
+
+phase3-validate-edit-plan:
+	@PYTHONPATH=. python3 bin/framework_control_plane.py \
+		--task-template phase3_validate_edit_plan_probe

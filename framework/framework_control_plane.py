@@ -6,6 +6,7 @@ All helpers are additive. No legacy keys are removed or renamed.
 from __future__ import annotations
 
 import re
+from pathlib import Path
 from typing import Any
 
 # ------------------------------------------------------------------ #
@@ -870,6 +871,102 @@ def _phase3_build_edit_plan(
         return dict(_SAFE_EDIT_PLAN)
 
 
+_SAFE_EDIT_PLAN_VALIDATION: dict[str, Any] = {
+    "old_text": "",
+    "new_text": "",
+    "target_file": "",
+    "old_text_found": False,
+    "validation_status": "not_validated",
+    "preview_snippet": "",
+    "executor_message": "",
+}
+
+
+def _phase3_validate_edit_plan(
+    edit_plan: "dict[str, Any]",
+    repo_root: "Any",
+) -> "dict[str, Any]":
+    """Validate the OLD text from an edit plan exists verbatim in its target file.
+
+    Returns a dict with validation_status, old_text_found, preview_snippet, and
+    executor_message (non-empty only when old_text_found is True). Read-only; never
+    modifies the target file. No exceptions escape.
+    """
+    try:
+        if not isinstance(edit_plan, dict):
+            return dict(_SAFE_EDIT_PLAN_VALIDATION) | {"validation_status": "missing_inputs"}
+        plan_text = str(edit_plan.get("plan_text") or "")
+        target_file = str(edit_plan.get("target_file") or "")
+        if not plan_text or not target_file:
+            return dict(_SAFE_EDIT_PLAN_VALIDATION) | {"validation_status": "missing_inputs"}
+        m = re.search(
+            r"\S+::\s*replace exact text '(.+?)' with '(.+?)'",
+            plan_text,
+            re.DOTALL,
+        )
+        if not m:
+            return dict(_SAFE_EDIT_PLAN_VALIDATION) | {
+                "target_file": target_file,
+                "validation_status": "no_replacement_format",
+            }
+        old_text = m.group(1)
+        new_text = m.group(2)
+        try:
+            target_path = Path(str(repo_root)) / target_file
+        except Exception:
+            return dict(_SAFE_EDIT_PLAN_VALIDATION) | {
+                "old_text": old_text,
+                "new_text": new_text,
+                "target_file": target_file,
+                "validation_status": "target_file_missing",
+            }
+        if not target_path.exists():
+            return {
+                "old_text": old_text,
+                "new_text": new_text,
+                "target_file": target_file,
+                "old_text_found": False,
+                "validation_status": "target_file_missing",
+                "preview_snippet": "",
+                "executor_message": "",
+            }
+        try:
+            file_content = target_path.read_text(encoding="utf-8")
+        except Exception as _read_err:
+            return {
+                "old_text": old_text,
+                "new_text": new_text,
+                "target_file": target_file,
+                "old_text_found": False,
+                "validation_status": "read_error",
+                "preview_snippet": "",
+                "executor_message": "",
+            }
+        old_text_found = old_text in file_content
+        if old_text_found:
+            start_idx = file_content.index(old_text)
+            preview_snippet = file_content[
+                max(0, start_idx - 60): start_idx + len(old_text) + 60
+            ].strip()
+            executor_message = f"{target_file}:: replace exact text '{old_text}' with '{new_text}'"
+            validation_status = "valid"
+        else:
+            preview_snippet = ""
+            executor_message = ""
+            validation_status = "old_text_not_found"
+        return {
+            "old_text": old_text,
+            "new_text": new_text,
+            "target_file": target_file,
+            "old_text_found": old_text_found,
+            "validation_status": validation_status,
+            "preview_snippet": preview_snippet,
+            "executor_message": executor_message,
+        }
+    except Exception:
+        return dict(_SAFE_EDIT_PLAN_VALIDATION)
+
+
 __all__ = [
     "_phase2_manager_present",
     "_phase2_manager_tool_summary",
@@ -888,5 +985,6 @@ __all__ = [
     "_phase3_select_followon_template",
     "_phase3_build_recommendation",
     "_phase3_build_edit_plan",
+    "_phase3_validate_edit_plan",
     "run_managed_job",
 ]

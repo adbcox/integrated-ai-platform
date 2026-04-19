@@ -47,6 +47,7 @@ from framework.framework_control_plane import (
     _phase3_select_followon_template,
     _phase3_build_recommendation,
     _phase3_build_edit_plan,
+    _phase3_validate_edit_plan,
 )
 
 DEFAULT_STATE_ROOT = REPO_ROOT / "artifacts" / "framework"
@@ -100,6 +101,7 @@ def parse_args() -> argparse.Namespace:
             "context_bundle_inference_probe",
             "phase3_followon",
             "phase3_edit_plan_probe",
+            "phase3_validate_edit_plan_probe",
         ],
         help="Predefined real repo workflow template routed through framework execution.",
     )
@@ -752,6 +754,7 @@ _DEFAULT_CONTEXT_BUNDLE_PATH = DEFAULT_STATE_ROOT / "context_bundle_latest.json"
 _DEFAULT_PHASE3_FOLLOWON_PATH = DEFAULT_STATE_ROOT / "phase3_followon_template.json"
 _DEFAULT_RECOMMENDATION_PATH = DEFAULT_STATE_ROOT / "phase3_recommendation_latest.json"
 _DEFAULT_EDIT_PLAN_PATH = DEFAULT_STATE_ROOT / "phase3_edit_plan_latest.json"
+_DEFAULT_EDIT_PLAN_VALIDATION_PATH = DEFAULT_STATE_ROOT / "phase3_edit_plan_validation_latest.json"
 
 
 def _load_retrieval_targets(path: Path) -> list[dict[str, Any]]:
@@ -804,6 +807,22 @@ def _load_recommendation(path: Path) -> dict[str, Any]:
 
 def _load_phase3_followon(path: Path) -> dict[str, Any]:
     """Return a persisted phase3_followon record from *path*.
+
+    Returns {} on missing path, malformed JSON, or non-dict payload without raising.
+    """
+    try:
+        if not path.exists():
+            return {}
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        if not isinstance(payload, dict):
+            return {}
+        return payload
+    except Exception:
+        return {}
+
+
+def _load_edit_plan(path: Path) -> dict[str, Any]:
+    """Return a persisted phase3_edit_plan dict from *path*.
 
     Returns {} on missing path, malformed JSON, or non-dict payload without raising.
     """
@@ -958,6 +977,47 @@ def _phase3_edit_plan_probe_template(
         "permission_policy": {
             "allow_edit_path_patterns": [r"artifacts/framework/phase3_edit_plan_output\.txt$"],
         },
+    }
+
+
+def _phase3_validate_edit_plan_probe_template(
+    edit_plan_path: Path = _DEFAULT_EDIT_PLAN_PATH,
+) -> dict[str, Any]:
+    """Validate the OLD text from the persisted edit plan against the real target file.
+
+    Performs validation in-process (no inference needed). Persists the validation
+    result to _DEFAULT_EDIT_PLAN_VALIDATION_PATH and embeds it under
+    '_phase3_validation_result' in the returned template dict so main() can surface
+    it without re-loading.
+    """
+    edit_plan = _load_edit_plan(edit_plan_path)
+    validation_result = _phase3_validate_edit_plan(edit_plan, REPO_ROOT)
+    try:
+        _DEFAULT_EDIT_PLAN_VALIDATION_PATH.parent.mkdir(parents=True, exist_ok=True)
+        _DEFAULT_EDIT_PLAN_VALIDATION_PATH.write_text(
+            json.dumps(validation_result, ensure_ascii=False, indent=2),
+            encoding="utf-8",
+        )
+    except Exception:
+        pass
+    return {
+        "task_class": JobClass.VALIDATION_CHECK_EXECUTION.value,
+        "shell_command": (
+            "python3 -c \""
+            "from pathlib import Path; "
+            "p = Path('artifacts/framework/phase3_edit_plan_validate_output.txt'); "
+            "p.parent.mkdir(parents=True, exist_ok=True); "
+            "p.write_text('phase3_edit_plan_validate_ok\\n', encoding='utf-8')\""
+        ),
+        "inference_prompt": "Phase 3 edit plan validation: no inference needed.",
+        "artifact_inputs": [str(edit_plan_path)],
+        "requested_outputs": ["artifacts/framework/phase3_edit_plan_validate_output.txt"],
+        "permission_policy": {
+            "allow_edit_path_patterns": [
+                r"artifacts/framework/phase3_edit_plan_validate_output\.txt$"
+            ],
+        },
+        "_phase3_validation_result": validation_result,
     }
 
 
@@ -1180,6 +1240,8 @@ def _template_payload(name: str) -> dict[str, Any]:
         return _phase3_followon_template()
     if name == "phase3_edit_plan_probe":
         return _phase3_edit_plan_probe_template()
+    if name == "phase3_validate_edit_plan_probe":
+        return _phase3_validate_edit_plan_probe_template()
     return {}
 
 
@@ -1639,6 +1701,21 @@ def main() -> int:
     except Exception:
         pass
 
+    try:
+        if args.task_template == "phase3_validate_edit_plan_probe":
+            _val_result: dict[str, Any] = {}
+            if _DEFAULT_EDIT_PLAN_VALIDATION_PATH.exists():
+                try:
+                    _val_result = json.loads(_DEFAULT_EDIT_PLAN_VALIDATION_PATH.read_text(encoding="utf-8"))
+                    if not isinstance(_val_result, dict):
+                        _val_result = {}
+                except Exception:
+                    _val_result = {}
+            output["phase3_edit_plan_validation"] = _val_result
+            output["phase3_edit_plan_validation_persisted"] = str(_DEFAULT_EDIT_PLAN_VALIDATION_PATH)
+    except Exception:
+        pass
+
     read_targets = output["phase2_retrieval_read_targets"]
     if read_targets:
         _targets_out = _DEFAULT_RETRIEVAL_TARGETS_PATH
@@ -1689,6 +1766,14 @@ def main() -> int:
             print(f"phase3_edit_plan_persisted={_ep_out}")
             print(f"phase3_edit_plan_target={_ep_target}")
             print(f"phase3_edit_plan_ready={str(_ep_ready).lower()}")
+        _val = output.get("phase3_edit_plan_validation") or {}
+        if _val:
+            print(f"phase3_edit_plan_validation_status={_val.get('validation_status', '')}")
+            print(f"phase3_edit_plan_old_text_found={str(_val.get('old_text_found', False)).lower()}")
+            _em = str(_val.get("executor_message") or "")
+            if _em:
+                print(f"phase3_executor_message_ready=true")
+                print(f"phase3_executor_message={_em[:120]}")
 
     return _exit
 
