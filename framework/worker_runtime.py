@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import os
 import queue
 import shlex
@@ -77,6 +78,82 @@ _PHASE2_SEARCH_MAX_FILES = 1000
 _PHASE2_SEARCH_MAX_MATCHES = 200
 _PHASE2_SEARCH_MAX_BYTES_PER_FILE = 128 * 1024
 _PHASE2_REPO_MAP_MAX_ENTRIES = 1000
+_PHASE2_SEARCH_USE_RIPGREP = True
+
+
+def _rg_available() -> bool:
+    """Return True if ripgrep (rg) is available on PATH; False on any error."""
+    try:
+        result = subprocess.run(
+            ["rg", "--version"],
+            capture_output=True,
+            timeout=3,
+        )
+        return result.returncode == 0
+    except Exception:
+        return False
+
+
+def _tool_search_ripgrep(
+    query: str,
+    repo_root: Path,
+    *,
+    max_matches: int,
+) -> "list[dict[str, Any]]":
+    """Run ripgrep (rg --json) and return structured match dicts.
+
+    Each dict has keys: path (str, relative to repo_root), line_number (int),
+    line_text (str). Returns [] on any subprocess or parse error so the caller
+    can fall back to the Python os.walk path.
+    """
+    try:
+        proc = subprocess.run(
+            [
+                "rg", "--json",
+                "--max-count", "3",
+                "-m", str(max_matches),
+                "--", query,
+                str(repo_root),
+            ],
+            capture_output=True,
+            text=True,
+            timeout=30,
+            encoding="utf-8",
+            errors="replace",
+        )
+        matches: list[dict[str, Any]] = []
+        for line in proc.stdout.splitlines():
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                obj = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            try:
+                if obj.get("type") != "match":
+                    continue
+                data = obj["data"]
+                raw_path = data["path"]["text"]
+                try:
+                    rel = str(Path(raw_path).relative_to(repo_root))
+                except ValueError:
+                    rel = raw_path
+                line_number = int(data["line_number"])
+                line_text = data["lines"]["text"].rstrip("\n")
+                matches.append({
+                    "path": rel,
+                    "line_number": line_number,
+                    "line_text": line_text[:200],
+                })
+                if len(matches) >= max_matches:
+                    break
+            except (KeyError, TypeError, ValueError):
+                continue
+        return matches
+    except Exception:
+        return []
+
 
 _PHASE2_REPO_MAP_EXCLUDED_NAMES = {
     ".git",
@@ -1592,52 +1669,60 @@ class WorkerRuntime:
                 reason=decision.reason or "permission_denied",
             )
         repo_root = workspace.repo_root.resolve()
-        all_file_paths: list[Path] = []
-        for dirpath, dirnames, filenames in os.walk(str(repo_root)):
-            dirnames[:] = sorted(
-                d for d in dirnames if d not in _PHASE2_REPO_MAP_EXCLUDED_NAMES
-            )
-            dirpath_obj = Path(dirpath)
-            for fname in sorted(filenames):
-                all_file_paths.append(dirpath_obj / fname)
-        all_file_paths.sort()
         matches: list[dict[str, Any]] = []
         files_scanned = 0
         files_truncated = False
         matches_truncated = False
-        for fpath in all_file_paths:
-            if files_scanned >= _PHASE2_SEARCH_MAX_FILES:
-                files_truncated = True
-                break
-            files_scanned += 1
-            try:
-                raw = fpath.read_bytes()
-            except OSError:
-                continue
-            if len(raw) > _PHASE2_SEARCH_MAX_BYTES_PER_FILE:
-                continue
-            try:
-                content = raw.decode("utf-8")
-            except UnicodeDecodeError:
-                continue
-            if query not in content:
-                continue
-            try:
-                rel_path = str(fpath.relative_to(repo_root))
-            except ValueError:
-                rel_path = str(fpath)
-            for line_num, line_text in enumerate(content.splitlines(), start=1):
-                if query in line_text:
-                    matches.append({
-                        "path": rel_path,
-                        "line_number": line_num,
-                        "line_text": line_text,
-                    })
-                    if len(matches) >= _PHASE2_SEARCH_MAX_MATCHES:
-                        matches_truncated = True
-                        break
-            if matches_truncated:
-                break
+        if _PHASE2_SEARCH_USE_RIPGREP and _rg_available():
+            matches = _tool_search_ripgrep(
+                query, repo_root, max_matches=_PHASE2_SEARCH_MAX_MATCHES
+            )
+            files_scanned = len({m["path"] for m in matches})
+            files_truncated = False
+            matches_truncated = len(matches) >= _PHASE2_SEARCH_MAX_MATCHES
+        else:
+            all_file_paths: list[Path] = []
+            for dirpath, dirnames, filenames in os.walk(str(repo_root)):
+                dirnames[:] = sorted(
+                    d for d in dirnames if d not in _PHASE2_REPO_MAP_EXCLUDED_NAMES
+                )
+                dirpath_obj = Path(dirpath)
+                for fname in sorted(filenames):
+                    all_file_paths.append(dirpath_obj / fname)
+            all_file_paths.sort()
+            for fpath in all_file_paths:
+                if files_scanned >= _PHASE2_SEARCH_MAX_FILES:
+                    files_truncated = True
+                    break
+                files_scanned += 1
+                try:
+                    raw = fpath.read_bytes()
+                except OSError:
+                    continue
+                if len(raw) > _PHASE2_SEARCH_MAX_BYTES_PER_FILE:
+                    continue
+                try:
+                    content = raw.decode("utf-8")
+                except UnicodeDecodeError:
+                    continue
+                if query not in content:
+                    continue
+                try:
+                    rel_path = str(fpath.relative_to(repo_root))
+                except ValueError:
+                    rel_path = str(fpath)
+                for line_num, line_text in enumerate(content.splitlines(), start=1):
+                    if query in line_text:
+                        matches.append({
+                            "path": rel_path,
+                            "line_number": line_num,
+                            "line_text": line_text,
+                        })
+                        if len(matches) >= _PHASE2_SEARCH_MAX_MATCHES:
+                            matches_truncated = True
+                            break
+                if matches_truncated:
+                    break
         stdout = "\n".join(
             f"{m['path']}:{m['line_number']}:{m['line_text']}" for m in matches
         )
