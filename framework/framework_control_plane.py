@@ -485,6 +485,104 @@ def _phase3_extract_symbol_index(
         return []
 
 
+_SAFE_BUNDLE_DEFAULTS: dict[str, Any] = {
+    "query": "",
+    "total_files": 0,
+    "total_symbols": 0,
+    "files_with_symbols": 0,
+    "files": [],
+    "top_file": "",
+    "top_file_symbol_count": 0,
+    "prompt_ready": False,
+}
+
+
+def _phase3_assemble_context_bundle(
+    retrieval_summary: dict[str, Any],
+    read_content_results: list[dict[str, Any]],
+    symbol_index: list[dict[str, Any]],
+) -> dict[str, Any]:
+    """Join retrieval summary, read content, and symbol index into a context bundle.
+
+    Returns a single structured dict suitable for injection into an inference prompt.
+    All field access guarded; returns safe defaults on malformed input; no exceptions escape.
+    """
+    try:
+        if not isinstance(retrieval_summary, dict):
+            return dict(_SAFE_BUNDLE_DEFAULTS)
+        if not isinstance(read_content_results, list):
+            return dict(_SAFE_BUNDLE_DEFAULTS)
+        if not isinstance(symbol_index, list):
+            return dict(_SAFE_BUNDLE_DEFAULTS)
+
+        query = str(retrieval_summary.get("query") or "")
+
+        rc_lookup: dict[str, dict[str, Any]] = {}
+        for rc in read_content_results:
+            try:
+                if not isinstance(rc, dict):
+                    continue
+                p = str(rc.get("path") or "")
+                if p and p not in rc_lookup:
+                    rc_lookup[p] = rc
+            except Exception:
+                continue
+
+        files: list[dict[str, Any]] = []
+        total_symbols = 0
+        files_with_symbols = 0
+        top_file = ""
+        top_file_symbol_count = 0
+
+        for entry in symbol_index:
+            try:
+                if not isinstance(entry, dict):
+                    continue
+                path = str(entry.get("path") or "")
+                classes = list(entry.get("classes") or [])
+                functions = list(entry.get("functions") or [])
+                symbol_count = int(entry.get("symbol_count") or 0)
+
+                rc_entry = rc_lookup.get(path) or {}
+                size_bytes = int(rc_entry.get("size_bytes") or 0)
+                raw_stdout = str(rc_entry.get("stdout") or "")
+                stdout_excerpt = raw_stdout[:300].strip()
+
+                files.append({
+                    "path": path,
+                    "classes": classes,
+                    "functions": functions,
+                    "symbol_count": symbol_count,
+                    "size_bytes": size_bytes,
+                    "stdout_excerpt": stdout_excerpt,
+                })
+
+                total_symbols += symbol_count
+                if symbol_count > 0:
+                    files_with_symbols += 1
+                if symbol_count > top_file_symbol_count:
+                    top_file_symbol_count = symbol_count
+                    top_file = path
+            except Exception:
+                continue
+
+        total_files = len(files)
+        prompt_ready = bool(query and total_files > 0 and total_symbols > 0)
+
+        return {
+            "query": query,
+            "total_files": total_files,
+            "total_symbols": total_symbols,
+            "files_with_symbols": files_with_symbols,
+            "files": files,
+            "top_file": top_file,
+            "top_file_symbol_count": top_file_symbol_count,
+            "prompt_ready": prompt_ready,
+        }
+    except Exception:
+        return dict(_SAFE_BUNDLE_DEFAULTS)
+
+
 __all__ = [
     "_phase2_manager_present",
     "_phase2_manager_tool_summary",
@@ -496,5 +594,6 @@ __all__ = [
     "_phase3_extract_read_content",
     "_phase3_read_content_summary",
     "_phase3_extract_symbol_index",
+    "_phase3_assemble_context_bundle",
     "run_managed_job",
 ]

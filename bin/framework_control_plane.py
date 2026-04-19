@@ -40,6 +40,7 @@ from framework.framework_control_plane import (
     _phase3_extract_read_content,
     _phase3_read_content_summary,
     _phase3_extract_symbol_index,
+    _phase3_assemble_context_bundle,
 )
 
 DEFAULT_STATE_ROOT = REPO_ROOT / "artifacts" / "framework"
@@ -1182,6 +1183,11 @@ def main() -> int:
     )
     output["phase3_symbol_index"] = _phase3_extract_symbol_index(
         output["phase3_read_content_results"]
+    )
+    output["phase3_context_bundle"] = _phase3_assemble_context_bundle(
+        output["phase2_retrieval_summary"],
+        output["phase3_read_content_results"],
+        output["phase3_symbol_index"],
     )
 
     read_targets = output["phase2_retrieval_read_targets"]

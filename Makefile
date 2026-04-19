@@ -546,3 +546,14 @@ phase3-symbol-index-test:
 phase3-symbol-index-validate:
 	@PYTHONPATH=. python3 \
 		./artifacts/phase3_symbol_index_validation_report.py
+
+.PHONY: phase3-context-bundle-test phase3-context-bundle-validate
+
+phase3-context-bundle-test:
+	@python3 -m unittest -v \
+		tests.test_framework_control_plane_phase3_context_bundle \
+		tests.test_phase3_context_bundle_validation
+
+phase3-context-bundle-validate:
+	@PYTHONPATH=. python3 \
+		./artifacts/phase3_context_bundle_validation_report.py
