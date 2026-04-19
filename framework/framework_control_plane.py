@@ -686,6 +686,67 @@ def _phase3_extract_inference_response(
         return dict(_SAFE_INFERENCE_RESPONSE)
 
 
+_SAFE_NEXT_ACTION: dict[str, Any] = {
+    "action": "no_context",
+    "reason": "derive_next_action_error",
+    "context_adequate": False,
+    "total_files": 0,
+    "total_symbols": 0,
+    "inference_has_content": False,
+}
+
+
+def _phase3_derive_next_action(
+    context_bundle: dict[str, Any],
+    inference_response: dict[str, Any],
+) -> dict[str, Any]:
+    """Derive a named action signal from phase3_context_bundle and phase3_inference_response.
+
+    Returns one of four action tokens: no_context | insufficient_context | refine_retrieval | ready.
+    All field access guarded; no exceptions escape.
+    """
+    try:
+        try:
+            total_files = int(context_bundle.get("total_files") or 0) if isinstance(context_bundle, dict) else 0
+        except Exception:
+            total_files = 0
+        try:
+            total_symbols = int(context_bundle.get("total_symbols") or 0) if isinstance(context_bundle, dict) else 0
+        except Exception:
+            total_symbols = 0
+        try:
+            inference_has_content = bool(inference_response.get("has_content")) if isinstance(inference_response, dict) else False
+        except Exception:
+            inference_has_content = False
+
+        if not isinstance(context_bundle, dict) or not context_bundle.get("prompt_ready"):
+            action = "no_context"
+            reason = "context bundle not prompt-ready"
+        elif not isinstance(inference_response, dict) or not inference_response.get("has_content"):
+            action = "insufficient_context"
+            reason = "inference produced no usable content"
+        elif total_symbols == 0:
+            action = "refine_retrieval"
+            reason = "no symbols extracted from retrieved files; retrieval needs refinement"
+        elif total_files == 0:
+            action = "refine_retrieval"
+            reason = "no files retrieved; retrieval needs refinement"
+        else:
+            action = "ready"
+            reason = "context assembled with symbols; inference produced content"
+
+        return {
+            "action": action,
+            "reason": reason,
+            "context_adequate": action == "ready",
+            "total_files": total_files,
+            "total_symbols": total_symbols,
+            "inference_has_content": inference_has_content,
+        }
+    except Exception:
+        return dict(_SAFE_NEXT_ACTION)
+
+
 __all__ = [
     "_phase2_manager_present",
     "_phase2_manager_tool_summary",
@@ -700,5 +761,6 @@ __all__ = [
     "_phase3_assemble_context_bundle",
     "_phase3_build_context_prompt",
     "_phase3_extract_inference_response",
+    "_phase3_derive_next_action",
     "run_managed_job",
 ]

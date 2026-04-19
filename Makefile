@@ -579,3 +579,14 @@ phase3-inference-response-test:
 phase3-inference-response-validate:
 	@PYTHONPATH=. python3 \
 		./artifacts/phase3_inference_response_validation_report.py
+
+.PHONY: phase3-next-action-test phase3-next-action-validate
+
+phase3-next-action-test:
+	@python3 -m unittest -v \
+		tests.test_framework_control_plane_phase3_next_action \
+		tests.test_phase3_next_action_validation
+
+phase3-next-action-validate:
+	@PYTHONPATH=. python3 \
+		./artifacts/phase3_next_action_validation_report.py

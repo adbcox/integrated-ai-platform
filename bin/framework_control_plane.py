@@ -43,6 +43,7 @@ from framework.framework_control_plane import (
     _phase3_assemble_context_bundle,
     _phase3_build_context_prompt,
     _phase3_extract_inference_response,
+    _phase3_derive_next_action,
 )
 
 DEFAULT_STATE_ROOT = REPO_ROOT / "artifacts" / "framework"
@@ -1294,6 +1295,10 @@ def main() -> int:
 
     output["phase3_inference_response"] = _phase3_extract_inference_response(
         primary_result_payload
+    )
+    output["phase3_next_action"] = _phase3_derive_next_action(
+        output["phase3_context_bundle"],
+        output["phase3_inference_response"],
     )
 
     read_targets = output["phase2_retrieval_read_targets"]
