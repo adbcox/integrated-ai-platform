@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import os
 import queue
+import re
 import shlex
 import subprocess
 import threading
@@ -80,6 +81,48 @@ _PHASE2_SEARCH_MAX_BYTES_PER_FILE = 128 * 1024
 _PHASE2_REPO_MAP_MAX_ENTRIES = 1000
 _PHASE2_SEARCH_USE_RIPGREP = True
 
+_PHASE3_SEARCH_STOP_WORDS: frozenset = frozenset({
+    "improve", "the", "a", "an", "is", "are", "add", "make", "fix", "get",
+    "set", "use", "how", "what", "where", "update", "change", "with", "for",
+    "in", "of", "to", "and", "or", "that", "this", "from", "our", "its",
+    "it", "be", "do", "on", "at", "by", "we", "so", "if", "new", "all",
+    "any", "but", "not", "can", "has", "have", "was", "into", "over",
+    "such", "than", "each", "more", "also", "should", "would", "could",
+    "will", "then", "when", "which", "they", "their", "there", "about",
+    "after", "where",
+})
+
+
+def _phase3_tokenize_search_query(query: str) -> list[str]:
+    """Split a natural-language query into searchable code tokens.
+
+    Strips punctuation, drops stop words and short tokens.
+    Falls back safely on any input, never raises.
+    """
+    try:
+        if not query or not query.strip():
+            return ["_execute_job"]
+        if " " not in query:
+            return [query]
+        words = query.split()
+        tokens: list[str] = []
+        for word in words:
+            cleaned = word.strip(".,;:!?\"'()[]{}")
+            lowered = cleaned.lower()
+            if len(lowered) >= 3 and lowered not in _PHASE3_SEARCH_STOP_WORDS:
+                tokens.append(cleaned)
+        if tokens:
+            return tokens
+        # fallback: first word with len >= 2
+        for word in words:
+            stripped = word.strip(".,;:!?\"'()[]{}")
+            if len(stripped) >= 2:
+                return [stripped]
+        return [words[0]]
+    except Exception:
+        parts = query.split() if query else []
+        return [parts[0]] if parts else [query]
+
 
 def _rg_available() -> bool:
     """Return True if ripgrep (rg) is available on PATH; False on any error."""
@@ -100,19 +143,28 @@ def _tool_search_ripgrep(
     *,
     max_matches: int,
 ) -> "list[dict[str, Any]]":
-    """Run ripgrep (rg --json) and return structured match dicts.
+    """Run ripgrep (rg --json -i) and return structured match dicts.
 
+    For multi-word queries, tokenizes and builds an alternation pattern
+    (token1|token2) for case-insensitive OR matching.
     Each dict has keys: path (str, relative to repo_root), line_number (int),
     line_text (str). Returns [] on any subprocess or parse error so the caller
     can fall back to the Python os.walk path.
     """
     try:
+        if " " in query:
+            tokens = _phase3_tokenize_search_query(query)
+            rg_pattern = "|".join(re.escape(t) for t in tokens)
+        else:
+            rg_pattern = query
+        if not rg_pattern:
+            rg_pattern = query
         proc = subprocess.run(
             [
-                "rg", "--json",
+                "rg", "--json", "-i",
                 "--max-count", "3",
                 "-m", str(max_matches),
-                "--", query,
+                "--", rg_pattern,
                 str(repo_root),
             ],
             capture_output=True,
@@ -1681,6 +1733,9 @@ class WorkerRuntime:
             files_truncated = False
             matches_truncated = len(matches) >= _PHASE2_SEARCH_MAX_MATCHES
         else:
+            _fb_tokens: "list[str] | None" = (
+                _phase3_tokenize_search_query(query) if " " in query else None
+            )
             all_file_paths: list[Path] = []
             for dirpath, dirnames, filenames in os.walk(str(repo_root)):
                 dirnames[:] = sorted(
@@ -1705,14 +1760,23 @@ class WorkerRuntime:
                     content = raw.decode("utf-8")
                 except UnicodeDecodeError:
                     continue
-                if query not in content:
+                if _fb_tokens is not None:
+                    content_lower = content.lower()
+                    if not any(t in content_lower for t in _fb_tokens):
+                        continue
+                elif query not in content:
                     continue
                 try:
                     rel_path = str(fpath.relative_to(repo_root))
                 except ValueError:
                     rel_path = str(fpath)
                 for line_num, line_text in enumerate(content.splitlines(), start=1):
-                    if query in line_text:
+                    if _fb_tokens is not None:
+                        line_lower = line_text.lower()
+                        match_found = any(t in line_lower for t in _fb_tokens)
+                    else:
+                        match_found = query in line_text
+                    if match_found:
                         matches.append({
                             "path": rel_path,
                             "line_number": line_num,

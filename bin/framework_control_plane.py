@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import re
 import shlex
 import sys
 from pathlib import Path
@@ -877,6 +878,13 @@ def _read_after_retrieval_template(
             },
         }
     )
+    allow_patterns: list[str] = [r"artifacts/framework/read_after_retrieval_output\.txt$"]
+    for spec in read_specs:
+        path = str((spec.get("arguments") or {}).get("path") or "").strip()
+        if path:
+            allow_patterns.append(re.escape(path) + "$")
+    if len(allow_patterns) == 1:
+        allow_patterns.extend([r"^framework/", r"^bin/", r"^tests/", r"^promotion/", r"^shell/"])
     return {
         "task_class": JobClass.VALIDATION_CHECK_EXECUTION.value,
         "shell_command": "true",
@@ -888,7 +896,7 @@ def _read_after_retrieval_template(
         "requested_outputs": ["artifacts/framework/read_after_retrieval_output.txt"],
         "phase2_typed_tools": phase2_typed_tools,
         "permission_policy": {
-            "allow_edit_path_patterns": [r"artifacts/framework/read_after_retrieval_output\.txt$"],
+            "allow_edit_path_patterns": allow_patterns,
         },
     }
 
