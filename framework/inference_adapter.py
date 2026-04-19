@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 import json
+import os
 import threading
+import urllib.error
+import urllib.request
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
@@ -65,6 +68,59 @@ class LocalHeuristicInferenceAdapter:
             return InferenceResponse(backend=self.profile.name, output_text=text, metadata=guidance)
 
 
+class OllamaInferenceAdapter:
+    """Adapter that calls a local Ollama instance via /api/chat.
+
+    Falls back to LocalHeuristicInferenceAdapter on any network or parse failure.
+    Reads OLLAMA_API_BASE and OLLAMA_MODEL env vars (same pattern as bin/aider_local.sh).
+    """
+
+    def __init__(
+        self,
+        profile: BackendProfile,
+        *,
+        base_url: str = "",
+        model: str = "",
+        timeout_seconds: float = 120.0,
+    ) -> None:
+        self.profile = profile
+        self._base_url = (base_url.rstrip("/") or os.environ.get("OLLAMA_API_BASE", "http://localhost:11434")).rstrip("/")
+        self._model = model or os.environ.get("OLLAMA_MODEL", "qwen2.5-coder:14b")
+        self._timeout = float(timeout_seconds)
+        self._fallback = LocalHeuristicInferenceAdapter(profile)
+        self._semaphore = threading.BoundedSemaphore(value=max(1, profile.max_inference_concurrency))
+
+    def run(self, request: InferenceRequest) -> InferenceResponse:
+        with self._semaphore:
+            try:
+                body = json.dumps({
+                    "model": self._model,
+                    "messages": [{"role": "user", "content": request.prompt}],
+                    "stream": False,
+                }).encode("utf-8")
+                req = urllib.request.Request(
+                    f"{self._base_url}/api/chat",
+                    data=body,
+                    headers={"Content-Type": "application/json"},
+                    method="POST",
+                )
+                with urllib.request.urlopen(req, timeout=self._timeout) as resp:
+                    raw = resp.read()
+                payload = json.loads(raw)
+                output_text = str(payload.get("message", {}).get("content") or "")
+                return InferenceResponse(
+                    backend=f"ollama:{self._model}",
+                    output_text=output_text,
+                    metadata={
+                        "model": self._model,
+                        "base_url": self._base_url,
+                        "job_id": request.job_id,
+                    },
+                )
+            except Exception:
+                return self._fallback.run(request)
+
+
 class ArtifactReplayInferenceAdapter:
     """Adapter that replays a previously captured response artifact when present."""
 
@@ -95,6 +151,8 @@ def build_inference_adapter(
     replay_path: str = "",
 ) -> InferenceAdapter:
     profile = get_backend_profile(backend_profile)
+    if mode == "ollama":
+        return OllamaInferenceAdapter(profile=profile)
     if mode == "artifact_replay" and replay_path:
         return ArtifactReplayInferenceAdapter(profile=profile, replay_path=Path(replay_path).resolve())
     return LocalHeuristicInferenceAdapter(profile=profile)
