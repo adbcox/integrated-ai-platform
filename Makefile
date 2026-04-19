@@ -568,3 +568,14 @@ phase3-context-inject-test:
 phase3-context-inject-validate:
 	@PYTHONPATH=. python3 \
 		./artifacts/phase3_context_inject_validation_report.py
+
+.PHONY: phase3-inference-response-test phase3-inference-response-validate
+
+phase3-inference-response-test:
+	@python3 -m unittest -v \
+		tests.test_framework_control_plane_phase3_inference_response \
+		tests.test_phase3_inference_response_validation
+
+phase3-inference-response-validate:
+	@PYTHONPATH=. python3 \
+		./artifacts/phase3_inference_response_validation_report.py

@@ -42,6 +42,7 @@ from framework.framework_control_plane import (
     _phase3_extract_symbol_index,
     _phase3_assemble_context_bundle,
     _phase3_build_context_prompt,
+    _phase3_extract_inference_response,
 )
 
 DEFAULT_STATE_ROOT = REPO_ROOT / "artifacts" / "framework"
@@ -92,6 +93,7 @@ def parse_args() -> argparse.Namespace:
             "retrieval_probe",
             "read_after_retrieval",
             "context_bundle_probe",
+            "context_bundle_inference_probe",
         ],
         help="Predefined real repo workflow template routed through framework execution.",
     )
@@ -827,6 +829,41 @@ def _context_bundle_probe_template() -> dict[str, Any]:
     }
 
 
+def _context_bundle_inference_probe_template() -> dict[str, Any]:
+    """Build a template that routes through the inference path with the context-bundle-derived prompt.
+
+    Deliberately omits phase2_typed_tools so worker_runtime fires inference.run()
+    instead of taking the typed-tool early-return path.
+    """
+    bundle = _load_context_bundle(_DEFAULT_CONTEXT_BUNDLE_PATH)
+    formatted_prompt = _phase3_build_context_prompt(bundle)
+    inference_prompt = formatted_prompt or (
+        "Phase 3 context bundle inference probe: no context bundle available; "
+        "executing default inference path."
+    )
+    prompt_len = len(formatted_prompt)
+    return {
+        "task_class": JobClass.VALIDATION_CHECK_EXECUTION.value,
+        "shell_command": (
+            "python3 -c \""
+            "from pathlib import Path; "
+            "p = Path('artifacts/framework/context_bundle_inference_probe_output.txt'); "
+            "p.parent.mkdir(parents=True, exist_ok=True); "
+            f"p.write_text('phase3_context_bundle_inference_probe_ok prompt_chars={prompt_len}\\n', encoding='utf-8')\""
+        ),
+        "inference_prompt": inference_prompt,
+        "artifact_inputs": [str(_DEFAULT_CONTEXT_BUNDLE_PATH)],
+        "requested_outputs": [
+            "artifacts/framework/context_bundle_inference_probe_output.txt"
+        ],
+        "permission_policy": {
+            "allow_edit_path_patterns": [
+                r"artifacts/framework/context_bundle_inference_probe_output\.txt$"
+            ],
+        },
+    }
+
+
 def _coerce_job_class(value: str) -> JobClass:
     try:
         return JobClass(str(value))
@@ -1020,6 +1057,8 @@ def _template_payload(name: str) -> dict[str, Any]:
         return _read_after_retrieval_template()
     if name == "context_bundle_probe":
         return _context_bundle_probe_template()
+    if name == "context_bundle_inference_probe":
+        return _context_bundle_inference_probe_template()
     return {}
 
 
@@ -1252,6 +1291,10 @@ def main() -> int:
             output["phase3_context_bundle_persisted"] = str(_bundle_out)
         except Exception as _e:
             output["phase3_context_bundle_persist_error"] = str(_e)
+
+    output["phase3_inference_response"] = _phase3_extract_inference_response(
+        primary_result_payload
+    )
 
     read_targets = output["phase2_retrieval_read_targets"]
     if read_targets:

@@ -649,6 +649,43 @@ def _phase3_build_context_prompt(bundle: dict[str, Any]) -> str:
         return ""
 
 
+_SAFE_INFERENCE_RESPONSE: dict[str, Any] = {
+    "output_text": "",
+    "backend": "",
+    "inference_metadata": {},
+    "output_chars": 0,
+    "has_content": False,
+}
+
+
+def _phase3_extract_inference_response(
+    result_payload: dict[str, Any],
+) -> dict[str, Any]:
+    """Extract inference output fields from a result payload dict.
+
+    Returns a dict with output_text, backend, inference_metadata, output_chars, has_content.
+    Returns safe defaults on any malformed input; no exceptions escape.
+    """
+    try:
+        if not isinstance(result_payload, dict):
+            return dict(_SAFE_INFERENCE_RESPONSE)
+        output_text = str(result_payload.get("output") or "")
+        backend = str(result_payload.get("backend") or "")
+        im = result_payload.get("inference_metadata")
+        inference_metadata = im if isinstance(im, dict) else {}
+        output_chars = len(output_text)
+        has_content = bool(output_text.strip())
+        return {
+            "output_text": output_text,
+            "backend": backend,
+            "inference_metadata": inference_metadata,
+            "output_chars": output_chars,
+            "has_content": has_content,
+        }
+    except Exception:
+        return dict(_SAFE_INFERENCE_RESPONSE)
+
+
 __all__ = [
     "_phase2_manager_present",
     "_phase2_manager_tool_summary",
@@ -662,5 +699,6 @@ __all__ = [
     "_phase3_extract_symbol_index",
     "_phase3_assemble_context_bundle",
     "_phase3_build_context_prompt",
+    "_phase3_extract_inference_response",
     "run_managed_job",
 ]
