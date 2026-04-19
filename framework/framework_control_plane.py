@@ -583,6 +583,72 @@ def _phase3_assemble_context_bundle(
         return dict(_SAFE_BUNDLE_DEFAULTS)
 
 
+def _phase3_build_context_prompt(bundle: dict[str, Any]) -> str:
+    """Convert a phase3_context_bundle into a formatted inference prompt string.
+
+    Returns "" if bundle is not a dict, query is empty, or total_files is 0.
+    All field access guarded; no exceptions escape.
+    """
+    try:
+        if not isinstance(bundle, dict):
+            return ""
+        query = str(bundle.get("query") or "")
+        total_files = int(bundle.get("total_files") or 0)
+        if not query or total_files == 0:
+            return ""
+        top_file = str(bundle.get("top_file") or "")
+        top_file_symbol_count = int(bundle.get("top_file_symbol_count") or 0)
+        files = bundle.get("files") or []
+
+        file_lines: list[str] = []
+        all_classes: list[str] = []
+        seen_classes: set[str] = set()
+        all_functions: list[str] = []
+        seen_functions: set[str] = set()
+
+        for entry in files:
+            try:
+                if not isinstance(entry, dict):
+                    continue
+                p = str(entry.get("path") or "")
+                sc = int(entry.get("symbol_count") or 0)
+                file_lines.append(f"  {p} — {sc} symbol(s)")
+                for c in (entry.get("classes") or []):
+                    name = str(c)
+                    if name and name not in seen_classes and len(all_classes) < 10:
+                        seen_classes.add(name)
+                        all_classes.append(name)
+                for f in (entry.get("functions") or []):
+                    name = str(f)
+                    if name and name not in seen_functions and len(all_functions) < 10:
+                        seen_functions.add(name)
+                        all_functions.append(name)
+            except Exception:
+                continue
+
+        classes_str = ", ".join(all_classes) if all_classes else "(none)"
+        functions_str = ", ".join(all_functions) if all_functions else "(none)"
+        files_block = "\n".join(file_lines) if file_lines else "  (none)"
+
+        return (
+            f'Retrieved {total_files} file(s) for query: "{query}"\n'
+            f"\n"
+            f"Files retrieved:\n"
+            f"{files_block}\n"
+            f"\n"
+            f"Top file: {top_file} ({top_file_symbol_count} symbol(s))\n"
+            f"\n"
+            f"Key symbols across retrieved files:\n"
+            f"  Classes: {classes_str}\n"
+            f"  Functions: {functions_str}\n"
+            f"\n"
+            f"Task: Analyze the retrieved code context above. Identify the primary implementation "
+            f"pattern, the entry point, and any non-obvious dependencies."
+        )
+    except Exception:
+        return ""
+
+
 __all__ = [
     "_phase2_manager_present",
     "_phase2_manager_tool_summary",
@@ -595,5 +661,6 @@ __all__ = [
     "_phase3_read_content_summary",
     "_phase3_extract_symbol_index",
     "_phase3_assemble_context_bundle",
+    "_phase3_build_context_prompt",
     "run_managed_job",
 ]

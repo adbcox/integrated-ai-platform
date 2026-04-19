@@ -41,6 +41,7 @@ from framework.framework_control_plane import (
     _phase3_read_content_summary,
     _phase3_extract_symbol_index,
     _phase3_assemble_context_bundle,
+    _phase3_build_context_prompt,
 )
 
 DEFAULT_STATE_ROOT = REPO_ROOT / "artifacts" / "framework"
@@ -90,6 +91,7 @@ def parse_args() -> argparse.Namespace:
             "typed_tool_probe",
             "retrieval_probe",
             "read_after_retrieval",
+            "context_bundle_probe",
         ],
         help="Predefined real repo workflow template routed through framework execution.",
     )
@@ -724,6 +726,7 @@ def _retrieval_probe_template() -> dict[str, Any]:
 
 
 _DEFAULT_RETRIEVAL_TARGETS_PATH = DEFAULT_STATE_ROOT / "retrieval_read_targets.json"
+_DEFAULT_CONTEXT_BUNDLE_PATH = DEFAULT_STATE_ROOT / "context_bundle_latest.json"
 
 
 def _load_retrieval_targets(path: Path) -> list[dict[str, Any]]:
@@ -740,6 +743,22 @@ def _load_retrieval_targets(path: Path) -> list[dict[str, Any]]:
         return [entry for entry in payload if isinstance(entry, dict)]
     except Exception:
         return []
+
+
+def _load_context_bundle(path: Path) -> dict[str, Any]:
+    """Return a persisted context_bundle dict from *path*.
+
+    Returns {} on any missing/malformed file without raising.
+    """
+    try:
+        if not path.exists():
+            return {}
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        if not isinstance(payload, dict):
+            return {}
+        return payload
+    except Exception:
+        return {}
 
 
 def _read_after_retrieval_template(
@@ -775,6 +794,35 @@ def _read_after_retrieval_template(
         "phase2_typed_tools": phase2_typed_tools,
         "permission_policy": {
             "allow_edit_path_patterns": [r"artifacts/framework/read_after_retrieval_output\.txt$"],
+        },
+    }
+
+
+def _context_bundle_probe_template() -> dict[str, Any]:
+    """Build a typed-tool template that injects the persisted context bundle as an inference prompt."""
+    bundle = _load_context_bundle(_DEFAULT_CONTEXT_BUNDLE_PATH)
+    formatted_prompt = _phase3_build_context_prompt(bundle)
+    inference_prompt = formatted_prompt or (
+        "Phase 3 context bundle probe: no context bundle available; executing with default prompt."
+    )
+    return {
+        "task_class": JobClass.VALIDATION_CHECK_EXECUTION.value,
+        "shell_command": "true",
+        "inference_prompt": inference_prompt,
+        "artifact_inputs": [str(_DEFAULT_CONTEXT_BUNDLE_PATH)],
+        "requested_outputs": ["artifacts/framework/context_bundle_probe_output.txt"],
+        "phase2_typed_tools": [
+            {
+                "contract_name": "apply_patch",
+                "arguments": {
+                    "path": "artifacts/framework/context_bundle_probe_output.txt",
+                    "mode": "write_text",
+                    "content": f"phase3_context_bundle_probe_ok prompt_chars={len(formatted_prompt)}\n",
+                },
+            }
+        ],
+        "permission_policy": {
+            "allow_edit_path_patterns": [r"artifacts/framework/context_bundle_probe_output\.txt$"],
         },
     }
 
@@ -970,6 +1018,8 @@ def _template_payload(name: str) -> dict[str, Any]:
         return _retrieval_probe_template()
     if name == "read_after_retrieval":
         return _read_after_retrieval_template()
+    if name == "context_bundle_probe":
+        return _context_bundle_probe_template()
     return {}
 
 
@@ -1189,6 +1239,19 @@ def main() -> int:
         output["phase3_read_content_results"],
         output["phase3_symbol_index"],
     )
+
+    _bundle = output["phase3_context_bundle"]
+    if _bundle.get("prompt_ready"):
+        _bundle_out = _DEFAULT_CONTEXT_BUNDLE_PATH
+        try:
+            _bundle_out.parent.mkdir(parents=True, exist_ok=True)
+            _bundle_out.write_text(
+                json.dumps(_bundle, ensure_ascii=False, indent=2),
+                encoding="utf-8",
+            )
+            output["phase3_context_bundle_persisted"] = str(_bundle_out)
+        except Exception as _e:
+            output["phase3_context_bundle_persist_error"] = str(_e)
 
     read_targets = output["phase2_retrieval_read_targets"]
     if read_targets:

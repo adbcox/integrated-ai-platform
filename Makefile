@@ -557,3 +557,14 @@ phase3-context-bundle-test:
 phase3-context-bundle-validate:
 	@PYTHONPATH=. python3 \
 		./artifacts/phase3_context_bundle_validation_report.py
+
+.PHONY: phase3-context-inject-test phase3-context-inject-validate
+
+phase3-context-inject-test:
+	@python3 -m unittest -v \
+		tests.test_framework_control_plane_phase3_context_inject \
+		tests.test_phase3_context_inject_validation
+
+phase3-context-inject-validate:
+	@PYTHONPATH=. python3 \
+		./artifacts/phase3_context_inject_validation_report.py
