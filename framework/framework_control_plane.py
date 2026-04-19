@@ -770,6 +770,50 @@ def _phase3_select_followon_template(next_action: "dict[str, Any]") -> str:
         return _FOLLOWON_DEFAULT
 
 
+_SAFE_RECOMMENDATION: dict[str, Any] = {
+    "query": "",
+    "inference_text": "",
+    "files_analyzed": 0,
+    "symbol_count": 0,
+    "top_file": "",
+    "chars": 0,
+    "recommendation_ready": False,
+}
+
+
+def _phase3_build_recommendation(
+    context_bundle: "dict[str, Any]",
+    inference_response: "dict[str, Any]",
+) -> "dict[str, Any]":
+    """Structure inference output into a named recommendation dict when action is 'ready'.
+
+    Returns safe defaults dict on any exception or non-dict input. No exceptions escape.
+    """
+    try:
+        if not isinstance(context_bundle, dict):
+            return dict(_SAFE_RECOMMENDATION)
+        if not isinstance(inference_response, dict):
+            return dict(_SAFE_RECOMMENDATION)
+        query = str(context_bundle.get("query") or "")
+        inference_text = str(inference_response.get("output_text") or "")
+        files_analyzed = int(context_bundle.get("total_files") or 0)
+        symbol_count = int(context_bundle.get("total_symbols") or 0)
+        top_file = str(context_bundle.get("top_file") or "")
+        has_content = bool(inference_text.strip())
+        recommendation_ready = bool(query and has_content)
+        return {
+            "query": query,
+            "inference_text": inference_text,
+            "files_analyzed": files_analyzed,
+            "symbol_count": symbol_count,
+            "top_file": top_file,
+            "chars": len(inference_text),
+            "recommendation_ready": recommendation_ready,
+        }
+    except Exception:
+        return dict(_SAFE_RECOMMENDATION)
+
+
 __all__ = [
     "_phase2_manager_present",
     "_phase2_manager_tool_summary",
@@ -786,5 +830,6 @@ __all__ = [
     "_phase3_extract_inference_response",
     "_phase3_derive_next_action",
     "_phase3_select_followon_template",
+    "_phase3_build_recommendation",
     "run_managed_job",
 ]

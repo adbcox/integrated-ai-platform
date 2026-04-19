@@ -45,6 +45,7 @@ from framework.framework_control_plane import (
     _phase3_extract_inference_response,
     _phase3_derive_next_action,
     _phase3_select_followon_template,
+    _phase3_build_recommendation,
 )
 
 DEFAULT_STATE_ROOT = REPO_ROOT / "artifacts" / "framework"
@@ -145,6 +146,12 @@ def parse_args() -> argparse.Namespace:
         "--replay-pending",
         action="store_true",
         help="Replay pending/inflight persisted framework jobs before accepting new work.",
+    )
+    parser.add_argument(
+        "--phase3-query",
+        nargs="+",
+        default=["_execute_job"],
+        help="Query terms for the Phase 3 retrieval probe. Multiple words joined with spaces.",
     )
     parser.add_argument("--json", action="store_true", help="Emit JSON result")
     return parser.parse_args()
@@ -704,12 +711,12 @@ def _typed_tool_probe_template() -> dict[str, Any]:
     }
 
 
-def _retrieval_probe_template() -> dict[str, Any]:
+def _retrieval_probe_template(query: str = "_execute_job") -> dict[str, Any]:
     return {
         "task_class": JobClass.VALIDATION_CHECK_EXECUTION.value,
         "shell_command": "true",
         "inference_prompt": (
-            "Phase 3 retrieval probe: search for '_execute_job' across the repo, "
+            f"Phase 3 retrieval probe: search for {query!r} across the repo, "
             "map the framework/ directory, then write a retrieval summary artifact."
         ),
         "artifact_inputs": ["framework/worker_runtime.py"],
@@ -717,7 +724,7 @@ def _retrieval_probe_template() -> dict[str, Any]:
         "phase2_typed_tools": [
             {
                 "contract_name": "search",
-                "arguments": {"query": "_execute_job"},
+                "arguments": {"query": query},
             },
             {
                 "contract_name": "repo_map",
@@ -741,6 +748,7 @@ def _retrieval_probe_template() -> dict[str, Any]:
 _DEFAULT_RETRIEVAL_TARGETS_PATH = DEFAULT_STATE_ROOT / "retrieval_read_targets.json"
 _DEFAULT_CONTEXT_BUNDLE_PATH = DEFAULT_STATE_ROOT / "context_bundle_latest.json"
 _DEFAULT_PHASE3_FOLLOWON_PATH = DEFAULT_STATE_ROOT / "phase3_followon_template.json"
+_DEFAULT_RECOMMENDATION_PATH = DEFAULT_STATE_ROOT / "phase3_recommendation_latest.json"
 
 
 def _load_retrieval_targets(path: Path) -> list[dict[str, Any]]:
@@ -1114,7 +1122,11 @@ def _template_payload(name: str) -> dict[str, Any]:
 
 def build_job(args: argparse.Namespace, *, template_name: str | None = None) -> Job:
     resolved_template = str(template_name or args.task_template)
-    template_payload = _template_payload(resolved_template)
+    if resolved_template == "retrieval_probe":
+        _query = " ".join(getattr(args, "phase3_query", None) or ["_execute_job"])
+        template_payload = _retrieval_probe_template(query=_query)
+    else:
+        template_payload = _template_payload(resolved_template)
 
     command = args.shell_command.strip() or str(template_payload.get("shell_command") or _default_command())
     requested_outputs = args.requested_output or list(
@@ -1462,6 +1474,24 @@ def main() -> int:
         output["phase3_inference_response"],
     )
 
+    _ready_action = str((output.get("phase3_next_action") or {}).get("action") or "")
+    if _ready_action == "ready" and output.get("phase3_inference_response", {}).get("has_content"):
+        _rec = _phase3_build_recommendation(
+            output["phase3_context_bundle"],
+            output["phase3_inference_response"],
+        )
+        try:
+            _DEFAULT_RECOMMENDATION_PATH.parent.mkdir(parents=True, exist_ok=True)
+            _DEFAULT_RECOMMENDATION_PATH.write_text(
+                json.dumps(_rec, ensure_ascii=False, indent=2),
+                encoding="utf-8",
+            )
+            output["phase3_recommendation"] = _rec
+            output["phase3_recommendation_persisted"] = str(_DEFAULT_RECOMMENDATION_PATH)
+        except Exception as _rec_e:
+            output["phase3_recommendation"] = _rec
+            output["phase3_recommendation_persist_error"] = str(_rec_e)
+
     _followon_template = _phase3_select_followon_template(output["phase3_next_action"])
     _followon_record = {
         "template": _followon_template,
@@ -1525,6 +1555,11 @@ def main() -> int:
             print(f"phase3_continuation_ran=true")
             print(f"phase3_continuation_action={_cont_action_str}")
             print(f"phase3_continuation_exit_code={_exit}")
+        _rec_out = output.get("phase3_recommendation_persisted")
+        if _rec_out:
+            print(f"phase3_recommendation_persisted={_rec_out}")
+            _rec_query = str((output.get("phase3_recommendation") or {}).get("query") or "")
+            print(f"phase3_recommendation_query={_rec_query}")
 
     return _exit
 
