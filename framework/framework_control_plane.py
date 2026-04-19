@@ -215,11 +215,132 @@ def _phase2_manager_decision(manager_view: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _phase2_derive_read_targets(
+    typed_results: list[dict[str, Any]],
+    *,
+    max_files: int = 3,
+) -> list[dict[str, Any]]:
+    """Convert SEARCH observation matches into READ_FILE argument specs.
+
+    Returns up to *max_files* unique-path dicts in first-occurrence order.
+    Returns [] on any malformed or empty input without raising.
+    """
+    try:
+        if not isinstance(typed_results, list):
+            return []
+        limit = max(1, int(max_files))
+        seen: set[str] = set()
+        targets: list[dict[str, Any]] = []
+        for entry in typed_results:
+            try:
+                if not isinstance(entry, dict):
+                    continue
+                if entry.get("tool_name") != "search":
+                    continue
+                if entry.get("status") != "executed":
+                    continue
+                matches = (entry.get("structured_payload") or {}).get("matches") or []
+                for m in matches:
+                    try:
+                        path = str(m.get("path") or "").strip()
+                        if not path or path in seen:
+                            continue
+                        seen.add(path)
+                        targets.append({"contract_name": "read_file", "arguments": {"path": path}})
+                        if len(targets) >= limit:
+                            return targets
+                    except Exception:
+                        continue
+            except Exception:
+                continue
+        return targets
+    except Exception:
+        return []
+
+
+def _phase2_retrieval_summary(
+    typed_results: list[dict[str, Any]],
+    *,
+    max_files: int = 3,
+) -> dict[str, Any]:
+    """Produce a compact deterministic summary of a retrieval run's typed results.
+
+    All fields have safe defaults. No exceptions escape.
+    """
+    query = ""
+    search_match_count = 0
+    unique_file_paths: list[str] = []
+    top_match_file = ""
+    top_match_line = 0
+    search_truncated = False
+    repo_map_entry_count = 0
+    repo_map_truncated = False
+
+    try:
+        if not isinstance(typed_results, list):
+            pass
+        else:
+            for entry in typed_results:
+                try:
+                    if not isinstance(entry, dict):
+                        continue
+                    tool = entry.get("tool_name")
+                    status = entry.get("status")
+                    sp = entry.get("structured_payload") or {}
+                    if not isinstance(sp, dict):
+                        sp = {}
+                    if tool == "search" and status == "executed" and not query:
+                        query = str(sp.get("query") or "")
+                        search_match_count = int(sp.get("match_count") or 0)
+                        search_truncated = bool(sp.get("matches_truncated_by_limit") or False)
+                        matches = sp.get("matches") or []
+                        seen: set[str] = set()
+                        for m in matches:
+                            try:
+                                p = str(m.get("path") or "").strip()
+                                if p and p not in seen:
+                                    seen.add(p)
+                                    if not top_match_file:
+                                        top_match_file = p
+                                        try:
+                                            top_match_line = int(m.get("line_number") or 0)
+                                        except Exception:
+                                            top_match_line = 0
+                                    unique_file_paths.append(p)
+                            except Exception:
+                                continue
+                    elif tool == "repo_map" and status == "executed" and repo_map_entry_count == 0:
+                        repo_map_entry_count = int(sp.get("entry_count") or 0)
+                        repo_map_truncated = bool(sp.get("truncated") or False)
+                except Exception:
+                    continue
+    except Exception:
+        pass
+
+    limit = max(1, int(max_files))
+    unique_file_paths = unique_file_paths[:limit]
+    read_targets_derived = len(_phase2_derive_read_targets(typed_results, max_files=max_files))
+
+    return {
+        "query": query,
+        "search_match_count": search_match_count,
+        "unique_file_paths": unique_file_paths,
+        "top_match_file": top_match_file,
+        "top_match_line": top_match_line,
+        "search_truncated": search_truncated,
+        "repo_map_entry_count": repo_map_entry_count,
+        "repo_map_truncated": repo_map_truncated,
+        "read_targets_derived": read_targets_derived,
+    }
+
+
 __all__ = [
     "_phase2_manager_present",
     "_phase2_manager_tool_summary",
     "_phase2_manager_extract",
     "_phase2_extract_typed_results",
     "_phase2_manager_decision",
+    "_phase2_derive_read_targets",
+    "_phase2_retrieval_summary",
     "run_managed_job",
 ]

@@ -35,6 +35,8 @@ from framework.framework_control_plane import (
     _phase2_manager_extract,
     _phase2_manager_decision,
     _phase2_extract_typed_results,
+    _phase2_derive_read_targets,
+    _phase2_retrieval_summary,
 )
 
 DEFAULT_STATE_ROOT = REPO_ROOT / "artifacts" / "framework"
@@ -1104,6 +1106,12 @@ def main() -> int:
     output["phase2_manager_view"] = _phase2_manager_extract(primary_result_payload)
     output["phase2_operational_signal"] = _phase2_manager_decision(output["phase2_manager_view"])
     output["phase2_typed_tool_results"] = _phase2_extract_typed_results(primary_result_payload)
+    output["phase2_retrieval_read_targets"] = _phase2_derive_read_targets(
+        output["phase2_typed_tool_results"]
+    )
+    output["phase2_retrieval_summary"] = _phase2_retrieval_summary(
+        output["phase2_typed_tool_results"]
+    )
 
     if args.json:
         print(json.dumps(output, ensure_ascii=False, indent=2))

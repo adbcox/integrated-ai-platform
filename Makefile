@@ -504,3 +504,13 @@ phase3-retrieval-probe-test:
 
 phase3-retrieval-probe-validate:
 	@PYTHONPATH=. python3 ./artifacts/phase3_retrieval_probe_validation_report.py
+
+.PHONY: phase3-retrieval-consume-test phase3-retrieval-consume-validate
+
+phase3-retrieval-consume-test:
+	@python3 -m unittest -v \
+		tests.test_framework_control_plane_phase3_retrieval_consume \
+		tests.test_phase3_retrieval_consume_validation
+
+phase3-retrieval-consume-validate:
+	@PYTHONPATH=. python3 ./artifacts/phase3_retrieval_consume_validation_report.py
