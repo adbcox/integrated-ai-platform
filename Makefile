@@ -484,3 +484,13 @@ phase2-probe-wire-test:
 
 phase2-probe-wire-validate:
 	@PYTHONPATH=. python3 ./artifacts/phase2_probe_wire_validation_report.py
+
+.PHONY: phase2-results-wire-test phase2-results-wire-validate
+
+phase2-results-wire-test:
+	@python3 -m unittest -v \
+		tests.test_framework_control_plane_phase2_results_wire \
+		tests.test_phase2_results_wire_validation
+
+phase2-results-wire-validate:
+	@PYTHONPATH=. python3 ./artifacts/phase2_results_wire_validation_report.py

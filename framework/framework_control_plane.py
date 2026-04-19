@@ -137,6 +137,44 @@ def run_managed_job(job: Any, *, runtime: Any) -> dict[str, Any]:
     return payload
 
 
+def _phase2_extract_typed_results(payload: dict[str, Any]) -> list[dict[str, Any]]:
+    """Extract per-observation results from typed_tool_trace in *payload*.
+
+    Returns one dict per tool_observation entry. tool_action entries are
+    excluded. Returns [] if typed_tool_trace is absent, not a list, or empty.
+    All field access is guarded; no exceptions escape.
+    """
+    try:
+        trace = payload.get("typed_tool_trace")
+    except Exception:
+        return []
+    if not isinstance(trace, list):
+        return []
+    results: list[dict[str, Any]] = []
+    for entry in trace:
+        try:
+            if not isinstance(entry, dict):
+                continue
+            kind = str(entry.get("kind") or "")
+            if kind == "tool_action":
+                continue
+            structured = entry.get("structured_payload")
+            results.append(
+                {
+                    "tool_name": str(entry.get("tool_name") or entry.get("contract_name") or ""),
+                    "status": str(entry.get("status") or ""),
+                    "return_code": int(entry.get("return_code") or 0),
+                    "stdout": str(entry.get("stdout") or ""),
+                    "structured_payload": structured if isinstance(structured, dict) else {},
+                    "duration_ms": int(entry.get("duration_ms") or 0),
+                    "error": str(entry.get("error") or ""),
+                }
+            )
+        except Exception:
+            continue
+    return results
+
+
 def _phase2_manager_decision(manager_view: dict[str, Any]) -> dict[str, Any]:
     """Derive a deterministic operational signal from a phase2_manager_view dict.
 
@@ -181,6 +219,7 @@ __all__ = [
     "_phase2_manager_present",
     "_phase2_manager_tool_summary",
     "_phase2_manager_extract",
+    "_phase2_extract_typed_results",
     "_phase2_manager_decision",
     "run_managed_job",
 ]
