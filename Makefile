@@ -623,3 +623,15 @@ phase3-auto-continue-test:
 phase3-auto-continue-validate:
 	@PYTHONPATH=. python3 \
 		./artifacts/phase3_auto_continue_validation_report.py
+
+PHASE3_QUERY ?= _execute_job
+PHASE3_INFERENCE_MODE ?= ollama
+
+.PHONY: phase3-query
+
+phase3-query:
+	@PYTHONPATH=. python3 bin/framework_control_plane.py \
+		--task-template retrieval_probe \
+		--phase3-query $(PHASE3_QUERY) \
+		--inference-mode $(PHASE3_INFERENCE_MODE) \
+		--phase3-auto-continue

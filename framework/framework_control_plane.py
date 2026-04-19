@@ -756,8 +756,17 @@ _FOLLOWON_MAP: dict[str, str] = {
 _FOLLOWON_DEFAULT = "retrieval_probe"
 
 
-def _phase3_select_followon_template(next_action: "dict[str, Any]") -> str:
+def _phase3_select_followon_template(
+    next_action: "dict[str, Any]",
+    *,
+    context_bundle: "dict[str, Any] | None" = None,
+    retrieval_targets_exist: bool = False,
+) -> str:
     """Map a phase3_next_action dict to a concrete follow-on template name.
+
+    context_bundle and retrieval_targets_exist enable context-aware routing:
+    - no_context + retrieval_targets_exist -> read_after_retrieval (targets ready to read)
+    - insufficient_context + prompt_ready bundle -> context_bundle_inference_probe
 
     Safe default 'retrieval_probe' on any non-dict input, missing key, or unrecognized action.
     """
@@ -765,6 +774,11 @@ def _phase3_select_followon_template(next_action: "dict[str, Any]") -> str:
         if not isinstance(next_action, dict):
             return _FOLLOWON_DEFAULT
         action = str(next_action.get("action") or "")
+        if action == "no_context":
+            return "read_after_retrieval" if retrieval_targets_exist else _FOLLOWON_DEFAULT
+        if action == "insufficient_context":
+            bundle_prompt_ready = isinstance(context_bundle, dict) and bool(context_bundle.get("prompt_ready"))
+            return "context_bundle_inference_probe" if bundle_prompt_ready else "read_after_retrieval"
         return _FOLLOWON_MAP.get(action, _FOLLOWON_DEFAULT)
     except Exception:
         return _FOLLOWON_DEFAULT

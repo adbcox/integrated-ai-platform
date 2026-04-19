@@ -1527,7 +1527,11 @@ def main() -> int:
             output["phase3_recommendation"] = _rec
             output["phase3_recommendation_persist_error"] = str(_rec_e)
 
-    _followon_template = _phase3_select_followon_template(output["phase3_next_action"])
+    _followon_template = _phase3_select_followon_template(
+        output["phase3_next_action"],
+        context_bundle=output.get("phase3_context_bundle"),
+        retrieval_targets_exist=bool(output.get("phase2_retrieval_read_targets")),
+    )
     _followon_record = {
         "template": _followon_template,
         "action": str((output["phase3_next_action"] or {}).get("action") or ""),

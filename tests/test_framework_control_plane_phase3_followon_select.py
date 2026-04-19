@@ -137,5 +137,59 @@ class TestPhase3FollowonTemplateDispatch(unittest.TestCase):
         self.assertIn(result["_phase3_followon_resolved_template"], _KNOWN_TEMPLATES)
 
 
+class TestPhase3SelectFollowonTemplateContextAware(unittest.TestCase):
+    def test_no_context_with_retrieval_targets_returns_read_after_retrieval(self):
+        result = _phase3_select_followon_template({"action": "no_context"}, retrieval_targets_exist=True)
+        self.assertEqual(result, "read_after_retrieval")
+
+    def test_no_context_without_retrieval_targets_returns_retrieval_probe(self):
+        result = _phase3_select_followon_template({"action": "no_context"}, retrieval_targets_exist=False)
+        self.assertEqual(result, "retrieval_probe")
+
+    def test_insufficient_context_with_prompt_ready_bundle_returns_inference_probe(self):
+        bundle = {"prompt_ready": True, "total_files": 2, "total_symbols": 10}
+        result = _phase3_select_followon_template({"action": "insufficient_context"}, context_bundle=bundle)
+        self.assertEqual(result, "context_bundle_inference_probe")
+
+    def test_insufficient_context_with_not_prompt_ready_bundle_returns_read_after_retrieval(self):
+        result = _phase3_select_followon_template(
+            {"action": "insufficient_context"}, context_bundle={"prompt_ready": False}
+        )
+        self.assertEqual(result, "read_after_retrieval")
+
+    def test_insufficient_context_with_none_bundle_returns_read_after_retrieval(self):
+        result = _phase3_select_followon_template({"action": "insufficient_context"}, context_bundle=None)
+        self.assertEqual(result, "read_after_retrieval")
+
+    def test_insufficient_context_with_empty_bundle_returns_read_after_retrieval(self):
+        result = _phase3_select_followon_template({"action": "insufficient_context"}, context_bundle={})
+        self.assertEqual(result, "read_after_retrieval")
+
+    def test_ready_with_prompt_ready_bundle_returns_context_bundle_inference_probe(self):
+        bundle = {"prompt_ready": True}
+        result = _phase3_select_followon_template({"action": "ready"}, context_bundle=bundle)
+        self.assertEqual(result, "context_bundle_inference_probe")
+
+    def test_refine_retrieval_with_targets_still_returns_retrieval_probe(self):
+        result = _phase3_select_followon_template({"action": "refine_retrieval"}, retrieval_targets_exist=True)
+        self.assertEqual(result, "retrieval_probe")
+
+    def test_backward_compat_insufficient_context_no_kwargs_returns_read_after_retrieval(self):
+        self.assertEqual(_phase3_select_followon_template({"action": "insufficient_context"}), "read_after_retrieval")
+
+    def test_backward_compat_no_context_no_kwargs_returns_retrieval_probe(self):
+        self.assertEqual(_phase3_select_followon_template({"action": "no_context"}), "retrieval_probe")
+
+    def test_no_context_with_targets_result_is_known_template(self):
+        result = _phase3_select_followon_template({"action": "no_context"}, retrieval_targets_exist=True)
+        self.assertIn(result, _KNOWN_TEMPLATES)
+
+    def test_insufficient_context_with_prompt_ready_result_is_known_template(self):
+        result = _phase3_select_followon_template(
+            {"action": "insufficient_context"}, context_bundle={"prompt_ready": True}
+        )
+        self.assertIn(result, _KNOWN_TEMPLATES)
+
+
 if __name__ == "__main__":
     unittest.main()
