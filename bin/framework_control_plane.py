@@ -44,6 +44,7 @@ from framework.framework_control_plane import (
     _phase3_build_context_prompt,
     _phase3_extract_inference_response,
     _phase3_derive_next_action,
+    _phase3_select_followon_template,
 )
 
 DEFAULT_STATE_ROOT = REPO_ROOT / "artifacts" / "framework"
@@ -95,6 +96,7 @@ def parse_args() -> argparse.Namespace:
             "read_after_retrieval",
             "context_bundle_probe",
             "context_bundle_inference_probe",
+            "phase3_followon",
         ],
         help="Predefined real repo workflow template routed through framework execution.",
     )
@@ -730,6 +732,7 @@ def _retrieval_probe_template() -> dict[str, Any]:
 
 _DEFAULT_RETRIEVAL_TARGETS_PATH = DEFAULT_STATE_ROOT / "retrieval_read_targets.json"
 _DEFAULT_CONTEXT_BUNDLE_PATH = DEFAULT_STATE_ROOT / "context_bundle_latest.json"
+_DEFAULT_PHASE3_FOLLOWON_PATH = DEFAULT_STATE_ROOT / "phase3_followon_template.json"
 
 
 def _load_retrieval_targets(path: Path) -> list[dict[str, Any]]:
@@ -752,6 +755,22 @@ def _load_context_bundle(path: Path) -> dict[str, Any]:
     """Return a persisted context_bundle dict from *path*.
 
     Returns {} on any missing/malformed file without raising.
+    """
+    try:
+        if not path.exists():
+            return {}
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        if not isinstance(payload, dict):
+            return {}
+        return payload
+    except Exception:
+        return {}
+
+
+def _load_phase3_followon(path: Path) -> dict[str, Any]:
+    """Return a persisted phase3_followon record from *path*.
+
+    Returns {} on missing path, malformed JSON, or non-dict payload without raising.
     """
     try:
         if not path.exists():
@@ -863,6 +882,26 @@ def _context_bundle_inference_probe_template() -> dict[str, Any]:
             ],
         },
     }
+
+
+def _phase3_followon_template() -> dict[str, Any]:
+    """Delegate to the template selected by the persisted phase3_followon_template artifact.
+
+    Reads _DEFAULT_PHASE3_FOLLOWON_PATH; falls back to retrieval_probe if absent or malformed.
+    """
+    record = _load_phase3_followon(_DEFAULT_PHASE3_FOLLOWON_PATH)
+    selected = str(record.get("template") or "retrieval_probe").strip() or "retrieval_probe"
+    _PHASE3_ALLOWED = frozenset({
+        "retrieval_probe",
+        "read_after_retrieval",
+        "context_bundle_probe",
+        "context_bundle_inference_probe",
+    })
+    if selected not in _PHASE3_ALLOWED:
+        selected = "retrieval_probe"
+    payload = _template_payload(selected)
+    payload["_phase3_followon_resolved_template"] = selected
+    return payload
 
 
 def _coerce_job_class(value: str) -> JobClass:
@@ -1060,6 +1099,8 @@ def _template_payload(name: str) -> dict[str, Any]:
         return _context_bundle_probe_template()
     if name == "context_bundle_inference_probe":
         return _context_bundle_inference_probe_template()
+    if name == "phase3_followon":
+        return _phase3_followon_template()
     return {}
 
 
@@ -1321,6 +1362,23 @@ def main() -> int:
         output["phase3_context_bundle"],
         output["phase3_inference_response"],
     )
+
+    _followon_template = _phase3_select_followon_template(output["phase3_next_action"])
+    _followon_record = {
+        "template": _followon_template,
+        "action": str((output["phase3_next_action"] or {}).get("action") or ""),
+    }
+    _followon_out = _DEFAULT_PHASE3_FOLLOWON_PATH
+    try:
+        _followon_out.parent.mkdir(parents=True, exist_ok=True)
+        _followon_out.write_text(
+            json.dumps(_followon_record, ensure_ascii=False, indent=2),
+            encoding="utf-8",
+        )
+        output["phase3_followon_template"] = _followon_template
+        output["phase3_followon_persisted"] = str(_followon_out)
+    except Exception as _e:
+        output["phase3_followon_persist_error"] = str(_e)
 
     read_targets = output["phase2_retrieval_read_targets"]
     if read_targets:

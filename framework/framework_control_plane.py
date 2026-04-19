@@ -747,6 +747,29 @@ def _phase3_derive_next_action(
         return dict(_SAFE_NEXT_ACTION)
 
 
+_FOLLOWON_MAP: dict[str, str] = {
+    "ready": "context_bundle_inference_probe",
+    "insufficient_context": "read_after_retrieval",
+    "refine_retrieval": "retrieval_probe",
+    "no_context": "retrieval_probe",
+}
+_FOLLOWON_DEFAULT = "retrieval_probe"
+
+
+def _phase3_select_followon_template(next_action: "dict[str, Any]") -> str:
+    """Map a phase3_next_action dict to a concrete follow-on template name.
+
+    Safe default 'retrieval_probe' on any non-dict input, missing key, or unrecognized action.
+    """
+    try:
+        if not isinstance(next_action, dict):
+            return _FOLLOWON_DEFAULT
+        action = str(next_action.get("action") or "")
+        return _FOLLOWON_MAP.get(action, _FOLLOWON_DEFAULT)
+    except Exception:
+        return _FOLLOWON_DEFAULT
+
+
 __all__ = [
     "_phase2_manager_present",
     "_phase2_manager_tool_summary",
@@ -762,5 +785,6 @@ __all__ = [
     "_phase3_build_context_prompt",
     "_phase3_extract_inference_response",
     "_phase3_derive_next_action",
+    "_phase3_select_followon_template",
     "run_managed_job",
 ]

@@ -601,3 +601,14 @@ phase3-exit-wire-test:
 phase3-exit-wire-validate:
 	@PYTHONPATH=. python3 \
 		./artifacts/phase3_exit_wire_validation_report.py
+
+.PHONY: phase3-followon-select-test phase3-followon-select-validate
+
+phase3-followon-select-test:
+	@python3 -m unittest -v \
+		tests.test_framework_control_plane_phase3_followon_select \
+		tests.test_phase3_followon_select_validation
+
+phase3-followon-select-validate:
+	@PYTHONPATH=. python3 \
+		./artifacts/phase3_followon_select_validation_report.py
