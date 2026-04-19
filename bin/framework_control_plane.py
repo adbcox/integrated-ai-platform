@@ -1135,6 +1135,8 @@ def _compute_phase2_exit_code(output: dict[str, Any], result_rows: list[dict[str
       2 — scheduler did not reach idle
       3 — idle but jobs not yet in a terminal state
       4 — idle, terminal, but all tool attempts were blocked by the permission engine
+      5 — Phase 3 action is refine_retrieval (applied by _compute_phase3_exit_code)
+      6 — Phase 3 action is insufficient_context (applied by _compute_phase3_exit_code)
     """
     if not output.get("idle_reached"):
         return 2
@@ -1144,6 +1146,25 @@ def _compute_phase2_exit_code(output: dict[str, Any], result_rows: list[dict[str
     signal = str((output.get("phase2_operational_signal") or {}).get("signal") or "")
     if signal == "all_tools_blocked":
         return 4
+    return 0
+
+
+def _compute_phase3_exit_code(output: dict[str, Any]) -> int:
+    """Return a supplemental Phase 3 exit code derived from phase3_next_action.
+
+    Called only when _compute_phase2_exit_code returns 0.
+
+    Exit codes:
+      0 — no Phase 3 override (action is ready, no_context, or signal absent)
+      5 — Phase 3 action is refine_retrieval (context inadequate; more retrieval needed)
+      6 — Phase 3 action is insufficient_context (inference produced no usable content)
+    """
+    _nxt = output.get("phase3_next_action")
+    action = str((_nxt if isinstance(_nxt, dict) else {}).get("action") or "")
+    if action == "refine_retrieval":
+        return 5
+    if action == "insufficient_context":
+        return 6
     return 0
 
 
@@ -1325,7 +1346,12 @@ def main() -> int:
         if len(job_rows) > 1:
             print(f"framework_jobs_submitted={len(job_rows)}")
 
-    return _compute_phase2_exit_code(output, result_rows)
+    _exit = _compute_phase2_exit_code(output, result_rows)
+    if _exit == 0:
+        _phase3_exit = _compute_phase3_exit_code(output)
+        if _phase3_exit != 0:
+            _exit = _phase3_exit
+    return _exit
 
 
 if __name__ == "__main__":

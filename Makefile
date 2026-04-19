@@ -590,3 +590,14 @@ phase3-next-action-test:
 phase3-next-action-validate:
 	@PYTHONPATH=. python3 \
 		./artifacts/phase3_next_action_validation_report.py
+
+.PHONY: phase3-exit-wire-test phase3-exit-wire-validate
+
+phase3-exit-wire-test:
+	@python3 -m unittest -v \
+		tests.test_bin_framework_control_plane_phase3_exit_wire \
+		tests.test_phase3_exit_wire_validation
+
+phase3-exit-wire-validate:
+	@PYTHONPATH=. python3 \
+		./artifacts/phase3_exit_wire_validation_report.py
