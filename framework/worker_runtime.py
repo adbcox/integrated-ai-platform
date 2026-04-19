@@ -676,7 +676,7 @@ class WorkerRuntime:
                     failure_class="",
                     retry_recommended=False,
                 )
-        prompt = str(job.metadata.get("inference_prompt") or "")
+        prompt = str((job.metadata if isinstance(job.metadata, dict) else {}).get("inference_prompt") or "")
         output_snapshot_before = self._snapshot_requested_outputs(job.requested_outputs)
         context = {
             "task_class": job.task_class.value,
