@@ -535,3 +535,14 @@ phase3-read-content-surface-test:
 phase3-read-content-surface-validate:
 	@PYTHONPATH=. python3 \
 		./artifacts/phase3_read_content_surface_validation_report.py
+
+.PHONY: phase3-symbol-index-test phase3-symbol-index-validate
+
+phase3-symbol-index-test:
+	@python3 -m unittest -v \
+		tests.test_framework_control_plane_phase3_symbol_index \
+		tests.test_phase3_symbol_index_validation
+
+phase3-symbol-index-validate:
+	@PYTHONPATH=. python3 \
+		./artifacts/phase3_symbol_index_validation_report.py

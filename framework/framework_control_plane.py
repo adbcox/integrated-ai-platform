@@ -5,6 +5,7 @@ All helpers are additive. No legacy keys are removed or renamed.
 
 from __future__ import annotations
 
+import re
 from typing import Any
 
 # ------------------------------------------------------------------ #
@@ -435,6 +436,55 @@ def _phase3_read_content_summary(
         }
 
 
+_RE_CLASS = re.compile(r"^class\s+(\w+)", re.MULTILINE)
+_RE_DEF = re.compile(r"^def\s+(\w+)", re.MULTILINE)
+
+
+def _phase3_extract_symbol_index(
+    read_content_results: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    """Extract top-level class and function names from READ_FILE stdout.
+
+    Input: list of read-content dicts (output of _phase3_extract_read_content).
+    Returns one dict per valid input entry with path, classes, functions, symbol_count.
+    Returns [] on non-list input. All field access guarded; no exceptions escape.
+    """
+    try:
+        if not isinstance(read_content_results, list):
+            return []
+        out: list[dict[str, Any]] = []
+        for entry in read_content_results:
+            try:
+                if not isinstance(entry, dict):
+                    continue
+                path = str(entry.get("path") or "")
+                raw = entry.get("stdout")
+                stdout = str(raw) if not isinstance(raw, str) else raw
+                class_names: list[str] = []
+                seen_classes: set[str] = set()
+                for name in _RE_CLASS.findall(stdout):
+                    if name not in seen_classes:
+                        seen_classes.add(name)
+                        class_names.append(name)
+                func_names: list[str] = []
+                seen_funcs: set[str] = set()
+                for name in _RE_DEF.findall(stdout):
+                    if name not in seen_funcs:
+                        seen_funcs.add(name)
+                        func_names.append(name)
+                out.append({
+                    "path": path,
+                    "classes": class_names,
+                    "functions": func_names,
+                    "symbol_count": len(class_names) + len(func_names),
+                })
+            except Exception:
+                continue
+        return out
+    except Exception:
+        return []
+
+
 __all__ = [
     "_phase2_manager_present",
     "_phase2_manager_tool_summary",
@@ -445,5 +495,6 @@ __all__ = [
     "_phase2_retrieval_summary",
     "_phase3_extract_read_content",
     "_phase3_read_content_summary",
+    "_phase3_extract_symbol_index",
     "run_managed_job",
 ]
