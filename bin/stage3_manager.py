@@ -256,6 +256,38 @@ def _run_post_apply_validation(target: str) -> tuple[bool, str]:
         return (False, f"validation_exception:{exc}")
 
 
+def _discover_target_tests(target: str, tests_dir: Path | None = None) -> list[str]:
+    try:
+        td = tests_dir if tests_dir is not None else REPO_ROOT / "tests"
+        stem = Path(target).stem
+        if not stem or not td.is_dir():
+            return []
+        return sorted(str(p) for p in td.glob(f"test_*{stem}*.py"))
+    except Exception:
+        return []
+
+
+def _run_target_tests(test_files: list[str], *, timeout: int = 60) -> tuple[bool, str]:
+    if not test_files:
+        return (True, "no_tests_discovered")
+    try:
+        result = subprocess.run(
+            [sys.executable, "-m", "pytest"] + test_files + ["-q", "--tb=no", "-x", "--no-header"],
+            capture_output=True,
+            text=True,
+            timeout=timeout,
+        )
+        lines = [ln for ln in result.stdout.splitlines() if ln.strip()]
+        summary = lines[-1] if lines else ""
+        if result.returncode == 0:
+            return (True, f"tests_passed:{summary}")
+        return (False, f"tests_failed:{summary[:200]}")
+    except subprocess.TimeoutExpired:
+        return (False, f"tests_timeout:{timeout}s")
+    except Exception as exc:
+        return (False, f"test_run_exception:{exc}")
+
+
 def append_trace(entry: dict) -> None:
     TRACE_DIR.mkdir(parents=True, exist_ok=True)
     with TRACE_FILE.open("a", encoding="utf-8") as fh:
@@ -494,6 +526,26 @@ def main() -> int:
             else:
                 post_valid_note = f"revert_failed:{(revert.stderr or revert.stdout)[:200]}"
 
+    target_test_ok = True
+    target_test_note = "skipped_validation_failed"
+    if post_valid and commit_hash is not None:
+        discovered = _discover_target_tests(args.target)
+        target_test_ok, target_test_note = _run_target_tests(discovered)
+        if not target_test_ok:
+            revert = subprocess.run(
+                ["git", "reset", "--hard", "HEAD~1"],
+                capture_output=True,
+                text=True,
+            )
+            if revert.returncode == 0:
+                accepted = False
+                classification = "reverted_test_failure"
+                final_status = "reverted"
+                commit_hash = None
+                post_valid = False
+            else:
+                target_test_note = f"revert_failed:{(revert.stderr or revert.stdout)[:200]}"
+
     entry = {
         "timestamp": datetime.now(UTC).isoformat(timespec="seconds"),
         "job_id": job_id,
@@ -514,6 +566,8 @@ def main() -> int:
         "worker_exit_code": exit_code,
         "post_apply_validation_status": "pass" if post_valid else "fail",
         "post_apply_validation_note": post_valid_note,
+        "target_test_status": "pass" if target_test_ok else "fail",
+        "target_test_note": target_test_note,
     }
     append_trace(entry)
     print(f"[manager] trace appended -> {TRACE_FILE}")
