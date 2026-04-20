@@ -256,16 +256,16 @@ def _run_post_apply_validation(target: str) -> tuple[bool, str]:
         return (False, f"validation_exception:{exc}")
 
 
-def _discover_target_tests(target: str, tests_dir: Path | None = None) -> list[str]:
+def _discover_target_tests(target: str, tests_dir: Path | None = None) -> tuple[list[str], str]:
     try:
         td = tests_dir if tests_dir is not None else REPO_ROOT / "tests"
         stem = Path(target).stem
         if not stem or not td.is_dir():
-            return []
+            return ([], "none")
         # Primary: naming-convention glob
         primary = sorted(str(p) for p in td.glob(f"test_*{stem}*.py"))
         if primary:
-            return primary
+            return (primary, "naming_convention")
         # Fallback: reference scan — test files that mention stem as a whole word
         pattern = re.compile(r"\b" + re.escape(stem) + r"\b")
         found = []
@@ -275,9 +275,11 @@ def _discover_target_tests(target: str, tests_dir: Path | None = None) -> list[s
                     found.append(str(test_file))
             except OSError:
                 pass
-        return found
+        if found:
+            return (found, "reference_scan")
+        return ([], "none")
     except Exception:
-        return []
+        return ([], "none")
 
 
 def _run_target_tests(test_files: list[str], *, timeout: int = 60) -> tuple[bool, str]:
@@ -585,8 +587,10 @@ def main() -> int:
 
     target_test_ok = True
     target_test_note = "skipped_validation_failed"
+    discovered: list[str] = []
+    discovery_mode = "skipped"
     if post_valid and commit_hash is not None:
-        discovered = _discover_target_tests(args.target)
+        discovered, discovery_mode = _discover_target_tests(args.target)
         target_test_ok, target_test_note = _run_target_tests(discovered)
         if not target_test_ok:
             revert = subprocess.run(
@@ -641,6 +645,16 @@ def main() -> int:
             else:
                 repo_quick_note = f"revert_failed:{(revert.stderr or revert.stdout)[:200]}"
 
+    gates_ran: list[str] = []
+    if post_valid_note != "not_committed":
+        gates_ran.append("g1_syntax")
+    if discovery_mode != "skipped":
+        gates_ran.append("g2_tests")
+    if repo_check_note != "skipped_prior_gate_failed":
+        gates_ran.append("g3_repo_check")
+    if repo_quick_note != "skipped_prior_gate_failed":
+        gates_ran.append("g4_repo_quick")
+
     entry = {
         "timestamp": datetime.now(UTC).isoformat(timespec="seconds"),
         "job_id": job_id,
@@ -667,6 +681,9 @@ def main() -> int:
         "repo_fast_check_note": repo_check_note,
         "repo_quick_check_status": "pass" if repo_quick_ok else "fail",
         "repo_quick_check_note": repo_quick_note,
+        "target_test_discovery_mode": discovery_mode,
+        "target_test_files_count": len(discovered),
+        "gates_run": gates_ran,
     }
     append_trace(entry)
     print(f"[manager] trace appended -> {TRACE_FILE}")
