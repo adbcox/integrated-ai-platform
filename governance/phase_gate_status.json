@@ -25,7 +25,9 @@
       ],
       "notes": "Phase 0 stays open until a subsequent reconciliation package ratifies these artifacts and mints a closure record.",
       "phase_id": 0,
-      "phase_name": "governance_source_of_truth_reconciliation"
+      "phase_name": "governance_source_of_truth_reconciliation",
+      "classification": "closed_ratified",
+      "closed_at_commit": "53ae4d4f177b176a7bffaa63988f63fa0efa622c"
     },
     {
       "blocking_reason_if_open": "runtime primitives exist in framework/ but no governance artifact has yet ratified the contract version",

@@ -26,7 +26,8 @@
       "notes": "Phase 0 stays open until a subsequent reconciliation package ratifies these artifacts and mints a closure record.",
       "phase_id": 0,
       "phase_name": "governance_source_of_truth_reconciliation",
-      "status": "open"
+      "status": "closed_ratified",
+      "closure_evidence_ref": "governance/phase0_closure_decision.json"
     },
     {
       "blocking_reasons": [
