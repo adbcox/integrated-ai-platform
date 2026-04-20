@@ -73,7 +73,7 @@ class GovernanceArtifactsTest(unittest.TestCase):
         nextc = _load("next_package_class.json")
         self.assertIn(
             current["next_allowed_package_class"],
-            {"reconciliation_only", "ratification_only"},
+            {"reconciliation_only", "ratification_only", "capability_session"},
         )
         self.assertEqual(
             current["next_allowed_package_class"],

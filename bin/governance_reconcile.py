@@ -371,6 +371,33 @@ def _phase2_closure() -> Dict[str, Any] | None:
     }
 
 
+def _phase3_closure() -> Dict[str, Any] | None:
+    evidence_path = GOV_DIR / "phase3_closure_evidence.json"
+    decision_path = GOV_DIR / "phase3_closure_decision.json"
+    if not (evidence_path.exists() and decision_path.exists()):
+        return None
+    try:
+        evidence = json.loads(evidence_path.read_text(encoding="utf-8"))
+        decision = json.loads(decision_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        return None
+    if not isinstance(evidence, dict) or not isinstance(decision, dict):
+        return None
+    if decision.get("decision") != "closed":
+        return None
+    pkg = evidence.get("package_id")
+    adr = evidence.get("adr_ref")
+    closed_at = decision.get("closed_at_commit")
+    if not (pkg and adr and closed_at):
+        return None
+    return {
+        "package_id": pkg,
+        "adr_ref": adr,
+        "evidence_ref": "governance/phase3_closure_evidence.json",
+        "closed_at_commit": closed_at,
+    }
+
+
 def _next_allowed_package_class() -> str:
     path = GOV_DIR / "next_package_class.json"
     if path.exists():
@@ -380,7 +407,11 @@ def _next_allowed_package_class() -> str:
             data = None
         if isinstance(data, dict):
             value = data.get("current_allowed_class")
-            if isinstance(value, str) and value in {"reconciliation_only", "ratification_only"}:
+            if isinstance(value, str) and value in {
+                "reconciliation_only",
+                "ratification_only",
+                "capability_session",
+            }:
                 return value
     return "reconciliation_only"
 
@@ -515,12 +546,14 @@ def _tactical_family_adoption(
 def build_canonical_roadmap(as_of_commit: str) -> Dict[str, Any]:
     header = _common_header(as_of_commit)
     closure = _phase2_closure()
+    p3 = _phase3_closure()
     phases = []
     for phase in CANONICAL_PHASES:
         status = phase["status"]
         blocking_reasons = list(phase["blocking_reasons"])
         governance_evidence = list(phase["governance_evidence"])
         notes = phase["notes"]
+        code_anchors = list(phase["code_anchors"])
         if phase["phase_id"] == 2 and closure is not None:
             status = "closed_ratified"
             blocking_reasons = []
@@ -532,13 +565,37 @@ def build_canonical_roadmap(as_of_commit: str) -> Dict[str, Any]:
             for extra in (closure["evidence_ref"], closure["adr_ref"]):
                 if extra not in governance_evidence:
                     governance_evidence.append(extra)
+        if phase["phase_id"] == 3 and p3 is not None:
+            status = "closed_ratified"
+            blocking_reasons = []
+            notes = (
+                "Phase 3 closed by CAP-P3-CLOSE-1 via bounded developer-assistant "
+                "loop evidence (retrieval → read → context-bundle → edit-plan → "
+                "validate → live-apply). No tactical family unlocked."
+            )
+            for extra in (p3["evidence_ref"], p3["adr_ref"]):
+                if extra not in governance_evidence:
+                    governance_evidence.append(extra)
+            for anchor in (
+                "framework/framework_control_plane.py",
+                "bin/framework_control_plane.py",
+                "framework/worker_runtime.py",
+            ):
+                if anchor not in code_anchors:
+                    code_anchors.append(anchor)
+        if phase["phase_id"] == 4 and p3 is not None:
+            blocking_reasons = []
+            notes = (
+                "Phase 3 closure (CAP-P3-CLOSE-1) authorizes Phase 4 "
+                "capability work. No tactical family is unlocked."
+            )
         phases.append(
             {
                 "phase_id": phase["phase_id"],
                 "phase_name": phase["phase_name"],
                 "status": status,
                 "milestone_ref": phase["milestone_ref"],
-                "code_anchors": list(phase["code_anchors"]),
+                "code_anchors": code_anchors,
                 "governance_evidence": governance_evidence,
                 "blocking_reasons": blocking_reasons,
                 "notes": notes,
@@ -550,6 +607,7 @@ def build_canonical_roadmap(as_of_commit: str) -> Dict[str, Any]:
 def build_current_phase(as_of_commit: str) -> Dict[str, Any]:
     header = _common_header(as_of_commit)
     closure = _phase2_closure()
+    p3 = _phase3_closure()
     payload: Dict[str, Any] = {
         **header,
         "as_of_commit": as_of_commit,
@@ -577,6 +635,12 @@ def build_current_phase(as_of_commit: str) -> Dict[str, Any]:
         payload["phase2_closure_adr_ref"] = closure["adr_ref"]
         payload["phase2_closure_package_id"] = closure["package_id"]
         payload["phase2_closed_at_commit"] = closure["closed_at_commit"]
+    if p3 is not None:
+        payload["phase3_status"] = "closed_ratified"
+        payload["phase3_closure_evidence_ref"] = p3["evidence_ref"]
+        payload["phase3_closure_adr_ref"] = p3["adr_ref"]
+        payload["phase3_closure_package_id"] = p3["package_id"]
+        payload["phase3_closed_at_commit"] = p3["closed_at_commit"]
     return payload
 
 
@@ -601,6 +665,7 @@ def build_runtime_contract_version(
 def build_phase_gate_status(as_of_commit: str) -> Dict[str, Any]:
     header = _common_header(as_of_commit)
     closure = _phase2_closure()
+    p3 = _phase3_closure()
     gates: List[Dict[str, Any]] = []
     for phase in CANONICAL_PHASES:
         classification = phase["status"]
@@ -632,6 +697,25 @@ def build_phase_gate_status(as_of_commit: str) -> Dict[str, Any]:
             entry["closure_evidence_ref"] = closure["evidence_ref"]
             entry["closure_package_id"] = closure["package_id"]
             entry["ratified_by_adr"] = closure["adr_ref"]
+        if phase["phase_id"] == 3 and p3 is not None:
+            entry["classification"] = "closed_ratified"
+            entry["blocking_reason_if_open"] = None
+            entry["notes"] = (
+                "Phase 3 closed by CAP-P3-CLOSE-1 via bounded developer-assistant "
+                "loop evidence. No tactical family unlocked."
+            )
+            for extra in (p3["evidence_ref"], p3["adr_ref"]):
+                if extra not in entry["governance_evidence"]:
+                    entry["governance_evidence"].append(extra)
+            entry["closure_evidence_ref"] = p3["evidence_ref"]
+            entry["closure_package_id"] = p3["package_id"]
+            entry["ratified_by_adr"] = p3["adr_ref"]
+        if phase["phase_id"] == 4 and p3 is not None:
+            entry["blocking_reason_if_open"] = None
+            entry["notes"] = (
+                "Phase 3 closure (CAP-P3-CLOSE-1) authorizes Phase 4 "
+                "capability work. No tactical family is unlocked."
+            )
         gates.append(entry)
     return {
         **header,
@@ -746,11 +830,11 @@ def _validate_schema(payload: Dict[str, Any], name: str) -> List[str]:
                 f"canonical_roadmap.json: phases must be exactly 0..6, got {ids}"
             )
     if name == "current_phase.json":
-        allowed = {"reconciliation_only", "ratification_only"}
+        allowed = {"reconciliation_only", "ratification_only", "capability_session"}
         if payload.get("next_allowed_package_class") not in allowed:
             errors.append(
                 "current_phase.json: next_allowed_package_class must be one "
-                "of 'reconciliation_only' or 'ratification_only'"
+                "of 'reconciliation_only', 'ratification_only', or 'capability_session'"
             )
         if "as_of_commit" not in payload:
             errors.append("current_phase.json: missing 'as_of_commit'")
