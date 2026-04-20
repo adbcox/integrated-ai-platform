@@ -33,18 +33,45 @@ class PostApplyValidationTest(unittest.TestCase):
         self.assertFalse(ok)
         self.assertTrue(note.startswith("syntax_error:"), note)
 
-    def test_sh_file_returns_no_validation_for_filetype(self) -> None:
+    def test_sh_file_returns_shell_syntax_ok(self) -> None:
         with tempfile.NamedTemporaryFile(suffix=".sh", mode="w", delete=False) as f:
-            f.write("#!/bin/bash\necho hi\n")
+            f.write("#!/bin/sh\necho hi\n")
             path = f.name
         ok, note = _run_post_apply_validation(path)
         Path(path).unlink(missing_ok=True)
         self.assertTrue(ok)
-        self.assertEqual(note, "no_validation_for_filetype")
+        self.assertEqual(note, "shell_syntax_ok")
 
-    def test_json_file_returns_no_validation_for_filetype(self) -> None:
+    def test_json_file_returns_json_valid(self) -> None:
         with tempfile.NamedTemporaryFile(suffix=".json", mode="w", delete=False) as f:
             f.write('{"key": "value"}\n')
+            path = f.name
+        ok, note = _run_post_apply_validation(path)
+        Path(path).unlink(missing_ok=True)
+        self.assertTrue(ok)
+        self.assertEqual(note, "json_valid")
+
+    def test_invalid_sh_file_returns_shell_syntax_error(self) -> None:
+        with tempfile.NamedTemporaryFile(suffix=".sh", mode="w", delete=False) as f:
+            f.write("#!/bin/sh\nif then fi\n")
+            path = f.name
+        ok, note = _run_post_apply_validation(path)
+        Path(path).unlink(missing_ok=True)
+        self.assertFalse(ok)
+        self.assertTrue(note.startswith("shell_syntax_error:"), note)
+
+    def test_invalid_json_file_returns_json_error(self) -> None:
+        with tempfile.NamedTemporaryFile(suffix=".json", mode="w", delete=False) as f:
+            f.write("{invalid json\n")
+            path = f.name
+        ok, note = _run_post_apply_validation(path)
+        Path(path).unlink(missing_ok=True)
+        self.assertFalse(ok)
+        self.assertTrue(note.startswith("json_error:"), note)
+
+    def test_txt_file_still_returns_no_validation_for_filetype(self) -> None:
+        with tempfile.NamedTemporaryFile(suffix=".txt", mode="w", delete=False) as f:
+            f.write("hello world\n")
             path = f.name
         ok, note = _run_post_apply_validation(path)
         Path(path).unlink(missing_ok=True)
@@ -92,6 +119,11 @@ class PostApplyValidationTest(unittest.TestCase):
         source = (REPO_ROOT / "bin" / "stage3_manager.py").read_text(encoding="utf-8")
         self.assertIn("post_apply_validation_status", source)
         self.assertIn("post_apply_validation_note", source)
+
+    def test_json_valid_and_shell_syntax_ok_in_source(self) -> None:
+        source = (REPO_ROOT / "bin" / "stage3_manager.py").read_text(encoding="utf-8")
+        self.assertIn("json_valid", source)
+        self.assertIn("shell_syntax_ok", source)
 
 
 if __name__ == "__main__":

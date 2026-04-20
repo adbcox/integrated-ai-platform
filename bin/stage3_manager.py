@@ -241,17 +241,33 @@ def commit_changes(target: str, commit_msg: str) -> str | None:
 def _run_post_apply_validation(target: str) -> tuple[bool, str]:
     try:
         p = Path(target)
-        if p.suffix != ".py":
-            return (True, "no_validation_for_filetype")
-        result = subprocess.run(
-            [sys.executable, "-m", "py_compile", str(p)],
-            capture_output=True,
-            text=True,
-        )
-        if result.returncode == 0:
-            return (True, "syntax_ok")
-        msg = result.stderr or result.stdout or "compile_failed"
-        return (False, f"syntax_error:{msg[:200]}")
+        if p.suffix == ".py":
+            result = subprocess.run(
+                [sys.executable, "-m", "py_compile", str(p)],
+                capture_output=True,
+                text=True,
+            )
+            if result.returncode == 0:
+                return (True, "syntax_ok")
+            msg = result.stderr or result.stdout or "compile_failed"
+            return (False, f"syntax_error:{msg[:200]}")
+        elif p.suffix == ".json":
+            try:
+                json.loads(p.read_text(encoding="utf-8"))
+                return (True, "json_valid")
+            except (json.JSONDecodeError, OSError) as exc:
+                return (False, f"json_error:{str(exc)[:200]}")
+        elif p.suffix == ".sh":
+            result = subprocess.run(
+                ["sh", "-n", str(p)],
+                capture_output=True,
+                text=True,
+            )
+            if result.returncode == 0:
+                return (True, "shell_syntax_ok")
+            msg = result.stderr or result.stdout or "shell_check_failed"
+            return (False, f"shell_syntax_error:{msg[:200]}")
+        return (True, "no_validation_for_filetype")
     except Exception as exc:
         return (False, f"validation_exception:{exc}")
 
@@ -614,7 +630,12 @@ def main() -> int:
                 final_status = "reverted"
                 commit_hash = None
             else:
-                post_valid_note = f"revert_failed:{(revert.stderr or revert.stdout)[:200]}"
+                err = (revert.stderr or revert.stdout or "")[:200]
+                post_valid_note = f"revert_failed:{err}"
+                accepted = False
+                classification = "revert_failure_dirty_state"
+                final_status = "dirty"
+                commit_hash = None
 
     target_test_ok = True
     target_test_note = "skipped_validation_failed"
@@ -641,7 +662,12 @@ def main() -> int:
                 commit_hash = None
                 post_valid = False
             else:
-                target_test_note = f"revert_failed:{(revert.stderr or revert.stdout)[:200]}"
+                err = (revert.stderr or revert.stdout or "")[:200]
+                target_test_note = f"revert_failed:{err}"
+                accepted = False
+                classification = "revert_failure_dirty_state"
+                final_status = "dirty"
+                commit_hash = None
 
     repo_check_ok = True
     repo_check_note = "skipped_prior_gate_failed"
@@ -660,7 +686,12 @@ def main() -> int:
                 commit_hash = None
                 target_test_ok = False
             else:
-                repo_check_note = f"revert_failed:{(revert.stderr or revert.stdout)[:200]}"
+                err = (revert.stderr or revert.stdout or "")[:200]
+                repo_check_note = f"revert_failed:{err}"
+                accepted = False
+                classification = "revert_failure_dirty_state"
+                final_status = "dirty"
+                commit_hash = None
 
     repo_quick_ok = True
     repo_quick_note = "skipped_prior_gate_failed"
@@ -679,7 +710,12 @@ def main() -> int:
                 commit_hash = None
                 repo_check_ok = False
             else:
-                repo_quick_note = f"revert_failed:{(revert.stderr or revert.stdout)[:200]}"
+                err = (revert.stderr or revert.stdout or "")[:200]
+                repo_quick_note = f"revert_failed:{err}"
+                accepted = False
+                classification = "revert_failure_dirty_state"
+                final_status = "dirty"
+                commit_hash = None
 
     gates_ran: list[str] = []
     if post_valid_note != "not_committed":
@@ -724,6 +760,8 @@ def main() -> int:
     append_trace(entry)
     print(f"[manager] trace appended -> {TRACE_FILE}")
 
+    if classification == "revert_failure_dirty_state":
+        raise SystemExit("[manager] FATAL: post-gate revert failed — repo state is dirty. Manual intervention required before resuming the loop.")
     git_clean()
     return 0
 
