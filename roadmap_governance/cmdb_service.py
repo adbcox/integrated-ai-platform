@@ -157,7 +157,16 @@ def import_cmdb_entities(
     """Validate and upsert entities, persisting integrity findings where needed.
 
     Idempotent: re-importing the same data produces no new findings or duplicates.
-    Duplicate canonical_name detection is scoped to the current import batch.
+
+    Persist-with-finding behavior: entities with a non-empty but invalid canonical_name
+    are still upserted after normalization (lowercase).  An invalid_canonical_name finding
+    is recorded so operators can identify and fix them.  Downstream linking logic must not
+    assume all persisted canonical_names are valid — query integrity_finding or call
+    validate_canonical_name() before treating a stored name as authoritative.
+
+    Duplicate scope: duplicate_canonical_name detection is scoped to the current import
+    batch only.  If the same canonical_name appears in a later separate import, it is
+    treated as an idempotent update (entities_updated += 1), not a duplicate violation.
     """
     result = CmdbImportResult()
 
@@ -198,6 +207,8 @@ def import_cmdb_entities(
             )
             if not parsed.canonical_name:
                 continue
+            # Non-empty but invalid name: finding recorded above; upsert proceeds below
+            # so data is not silently lost.  The finding marks it for operator attention.
 
         if parsed.entity_type not in VALID_ENTITY_TYPES:
             _emit(
