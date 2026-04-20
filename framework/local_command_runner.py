@@ -1,99 +1,115 @@
-"""Phase 1 wrapped local command runner.
+"""Normalized local execution wrapper for framework make targets.
 
-Thin, testable wrapper for build/test/lint/general command execution.
-Validation pack code must not shell out directly; all local command
-execution in Phase 1 flows through this runner so telemetry is
-normalized and the workspace contract stays intact.
+Routes check, quick, and test_offline through a typed subprocess interface,
+captures structured output, and emits CommandTelemetry.
 """
 
 from __future__ import annotations
 
-import shlex
 import subprocess
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from time import perf_counter
-from typing import Mapping
+from typing import Any
 
 from .runtime_telemetry_schema import CommandTelemetry
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
+
+KNOWN_FRAMEWORK_COMMANDS: dict[str, str] = {
+    "check": "make check",
+    "quick": "make quick",
+    "test_offline": "make test-offline",
+}
 
 
 def _iso_now() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="seconds")
 
 
-def _truncate(text: str, limit: int) -> str:
-    if len(text) <= limit:
-        return text
-    return text[:limit] + "...<truncated>"
+@dataclass(frozen=True)
+class LocalCommandResult:
+    command_name: str
+    argv: str
+    cwd: str
+    return_code: int
+    stdout: str
+    stderr: str
+    started_at: str
+    completed_at: str
+    duration_ms: int
+    success: bool
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "command_name": self.command_name,
+            "argv": self.argv,
+            "cwd": self.cwd,
+            "return_code": self.return_code,
+            "stdout": self.stdout,
+            "stderr": self.stderr,
+            "started_at": self.started_at,
+            "completed_at": self.completed_at,
+            "duration_ms": self.duration_ms,
+            "success": self.success,
+        }
+
+    def to_telemetry(self) -> CommandTelemetry:
+        return CommandTelemetry(
+            command=self.argv,
+            cwd=self.cwd,
+            return_code=self.return_code,
+            stdout=self.stdout,
+            stderr=self.stderr,
+            started_at=self.started_at,
+            completed_at=self.completed_at,
+            duration_ms=self.duration_ms,
+            success=self.success,
+        )
 
 
 class LocalCommandRunner:
-    """Bounded local command runner that produces normalized telemetry."""
+    """Run framework make targets through a normalized typed interface."""
 
-    def __init__(
-        self,
-        *,
-        default_timeout_seconds: int = 120,
-        stdout_byte_limit: int = 8192,
-        stderr_byte_limit: int = 8192,
-    ) -> None:
-        self._default_timeout = max(1, int(default_timeout_seconds))
-        self._stdout_limit = max(0, int(stdout_byte_limit))
-        self._stderr_limit = max(0, int(stderr_byte_limit))
+    def __init__(self, *, cwd: Path | None = None, timeout_seconds: int = 300) -> None:
+        self._cwd = (cwd or REPO_ROOT).resolve()
+        self._timeout_seconds = timeout_seconds
 
-    def run(
-        self,
-        command: str | list[str],
-        *,
-        cwd: Path,
-        env: Mapping[str, str] | None = None,
-        timeout_seconds: int | None = None,
-    ) -> CommandTelemetry:
-        if isinstance(command, list):
-            argv = list(command)
-            command_str = " ".join(shlex.quote(a) for a in argv)
-            shell = False
-        else:
-            argv = command
-            command_str = command
-            shell = True
-
+    def run(self, command_name: str) -> LocalCommandResult:
+        if command_name not in KNOWN_FRAMEWORK_COMMANDS:
+            raise ValueError(
+                f"unknown command {command_name!r}; "
+                f"known commands: {sorted(KNOWN_FRAMEWORK_COMMANDS)}"
+            )
+        argv = KNOWN_FRAMEWORK_COMMANDS[command_name]
         started_at = _iso_now()
         t0 = perf_counter()
-        timeout = int(timeout_seconds) if timeout_seconds else self._default_timeout
-        run_env = dict(env) if env else None
         try:
             proc = subprocess.run(
-                argv,
-                cwd=str(cwd),
+                ["bash", "-lc", argv],
                 capture_output=True,
                 text=True,
-                shell=shell,
-                timeout=timeout,
-                env=run_env,
-                check=False,
+                cwd=str(self._cwd),
+                timeout=self._timeout_seconds,
             )
-            return_code = int(proc.returncode)
-            stdout = _truncate(proc.stdout or "", self._stdout_limit)
-            stderr = _truncate(proc.stderr or "", self._stderr_limit)
+            return_code = proc.returncode
+            stdout = proc.stdout or ""
+            stderr = proc.stderr or ""
         except subprocess.TimeoutExpired as exc:
-            return_code = 124
-            stdout = _truncate(exc.stdout.decode() if isinstance(exc.stdout, bytes) else (exc.stdout or ""), self._stdout_limit)
-            stderr = _truncate(
-                (exc.stderr.decode() if isinstance(exc.stderr, bytes) else (exc.stderr or ""))
-                + f"\n[timeout after {timeout}s]",
-                self._stderr_limit,
-            )
-        except FileNotFoundError as exc:
-            return_code = 127
+            return_code = -1
             stdout = ""
-            stderr = f"command not found: {exc}"
+            stderr = f"TimeoutExpired after {self._timeout_seconds}s: {exc}"
+        except Exception as exc:  # noqa: BLE001
+            return_code = -1
+            stdout = ""
+            stderr = f"{type(exc).__name__}: {exc}"
         completed_at = _iso_now()
         duration_ms = int((perf_counter() - t0) * 1000)
-        return CommandTelemetry(
-            command=command_str,
-            cwd=str(cwd),
+        return LocalCommandResult(
+            command_name=command_name,
+            argv=argv,
+            cwd=str(self._cwd),
             return_code=return_code,
             stdout=stdout,
             stderr=stderr,
@@ -104,4 +120,4 @@ class LocalCommandRunner:
         )
 
 
-__all__ = ["LocalCommandRunner"]
+__all__ = ["KNOWN_FRAMEWORK_COMMANDS", "LocalCommandResult", "LocalCommandRunner"]

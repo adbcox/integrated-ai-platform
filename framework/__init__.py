@@ -25,6 +25,7 @@ from .sandbox import LocalSandboxRunner, SandboxResult
 from .scheduler import Scheduler
 from .state_store import StateStore
 from .tool_system import ToolAction, ToolName, ToolObservation, ToolStatus
+from .local_command_runner import KNOWN_FRAMEWORK_COMMANDS, LocalCommandResult, LocalCommandRunner
 from .runtime_artifact_service import RuntimeArtifactService
 from .runtime_workspace_contract import RuntimeWorkspace, assert_read_only_source, build_workspace
 from .workspace import WorkspaceContext, WorkspaceController
@@ -62,6 +63,9 @@ __all__ = [
     "WorkspaceController",
     "WorkerPool",
     "WorkerRuntime",
+    "KNOWN_FRAMEWORK_COMMANDS",
+    "LocalCommandResult",
+    "LocalCommandRunner",
     "RuntimeArtifactService",
     "RuntimeWorkspace",
     "assert_read_only_source",
