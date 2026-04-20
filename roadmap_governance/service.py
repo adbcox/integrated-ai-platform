@@ -5,6 +5,7 @@ record_finding and finding_exists are public so integrity.py can reuse them.
 
 from __future__ import annotations
 
+import json
 import uuid
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -29,9 +30,12 @@ class SyncResult:
     items_updated: int = 0
     items_unchanged: int = 0
     findings_created: int = 0
+    artifact_path: Optional[str] = None
 
 
 _INDEX_PATH_RELATIVE = Path("docs") / "roadmap" / "ROADMAP_INDEX.md"
+_REPO_ROOT = Path(__file__).resolve().parent.parent
+_ARTIFACT_DIR_DEFAULT = _REPO_ROOT / "artifacts" / "governance" / "sync"
 
 
 def _now() -> datetime:
@@ -146,11 +150,35 @@ def _upsert_item(
     return "unchanged"
 
 
+def _write_sync_artifact(
+    result: SyncResult,
+    repo_root: Path,
+    artifact_dir: Optional[Path],
+) -> Optional[str]:
+    base = artifact_dir if artifact_dir else _ARTIFACT_DIR_DEFAULT
+    base.mkdir(parents=True, exist_ok=True)
+    ts = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    payload = {
+        "generated_at": ts,
+        "source": str(_INDEX_PATH_RELATIVE),
+        "items_created": result.items_created,
+        "items_updated": result.items_updated,
+        "items_unchanged": result.items_unchanged,
+        "findings_created": result.findings_created,
+    }
+    timestamped = base / f"sync_{ts}.json"
+    latest = base / "latest.json"
+    timestamped.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+    latest.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+    return str(timestamped)
+
+
 def sync_roadmap(
     db: Session,
     repo_root: Path,
     *,
     dry_run: bool = False,
+    artifact_dir: Optional[Path] = None,
 ) -> SyncResult:
     """Full sync: read ROADMAP_INDEX.md + YAML files, upsert items, persist findings.
 
@@ -233,5 +261,6 @@ def sync_roadmap(
 
     if not dry_run:
         db.commit()
+        result.artifact_path = _write_sync_artifact(result, repo_root, artifact_dir)
 
     return result

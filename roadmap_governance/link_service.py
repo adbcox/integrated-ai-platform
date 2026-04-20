@@ -28,9 +28,11 @@ Safe to rerun: both upserts and findings are idempotent.
 
 from __future__ import annotations
 
+import json
 import re
 from dataclasses import dataclass
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Optional
 
 from sqlalchemy.orm import Session
@@ -49,6 +51,11 @@ class LinkRefreshResult:
     links_updated: int = 0
     links_unchanged: int = 0
     findings_created: int = 0
+    artifact_path: Optional[str] = None
+
+
+_REPO_ROOT = Path(__file__).resolve().parent.parent
+_ARTIFACT_DIR_DEFAULT = _REPO_ROOT / "artifacts" / "governance" / "links"
 
 
 def _now() -> datetime:
@@ -149,10 +156,30 @@ def _upsert_link(
     return "unchanged"
 
 
+def _write_links_artifact(result: LinkRefreshResult, artifact_dir: Optional[Path]) -> str:
+    base = artifact_dir if artifact_dir else _ARTIFACT_DIR_DEFAULT
+    base.mkdir(parents=True, exist_ok=True)
+    ts = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    payload = {
+        "generated_at": ts,
+        "items_processed": result.items_processed,
+        "links_created": result.links_created,
+        "links_updated": result.links_updated,
+        "links_unchanged": result.links_unchanged,
+        "findings_created": result.findings_created,
+    }
+    timestamped = base / f"links_refresh_{ts}.json"
+    latest = base / "latest.json"
+    timestamped.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+    latest.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+    return str(timestamped)
+
+
 def run_link_refresh(
     db: Session,
     *,
     dry_run: bool = False,
+    artifact_dir: Optional[Path] = None,
 ) -> LinkRefreshResult:
     """Evaluate all roadmap items against all CMDB entities and persist safe links.
 
@@ -221,6 +248,7 @@ def run_link_refresh(
 
     if not dry_run:
         db.commit()
+        result.artifact_path = _write_links_artifact(result, artifact_dir)
 
     return result
 

@@ -55,6 +55,7 @@ def trigger_sync(
         "items_updated": result.items_updated,
         "items_unchanged": result.items_unchanged,
         "findings_created": result.findings_created,
+        "artifact_path": result.artifact_path,
     }
 
 

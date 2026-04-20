@@ -75,6 +75,8 @@ def sync_cmd(db_url: str | None, dry_run: bool) -> None:
     click.echo(f"  items updated:   {result.items_updated}")
     click.echo(f"  items unchanged: {result.items_unchanged}")
     click.echo(f"  findings created: {result.findings_created}")
+    if result.artifact_path:
+        click.echo(f"  artifact:         {result.artifact_path}")
 
 
 @cli.group()
@@ -198,7 +200,7 @@ def cmdb_import_cmd(path: str, db_url: str | None, dry_run: bool) -> None:
 
     entities_data = load_seed_file(_Path(path))
     try:
-        result = import_cmdb_entities(db, entities_data, dry_run=dry_run)
+        result = import_cmdb_entities(db, entities_data, dry_run=dry_run, source_path=path)
     finally:
         db.close()
 
@@ -208,6 +210,8 @@ def cmdb_import_cmd(path: str, db_url: str | None, dry_run: bool) -> None:
     click.echo(f"  entities updated:   {result.entities_updated}")
     click.echo(f"  entities unchanged: {result.entities_unchanged}")
     click.echo(f"  findings created:   {result.findings_created}")
+    if result.artifact_path:
+        click.echo(f"  artifact:           {result.artifact_path}")
 
 
 @cli.group()

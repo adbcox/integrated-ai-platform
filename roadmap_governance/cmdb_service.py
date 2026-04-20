@@ -10,6 +10,7 @@ re-created (idempotence via finding_exists in service.py).
 
 from __future__ import annotations
 
+import json
 import re
 import uuid
 from dataclasses import dataclass, field
@@ -57,6 +58,11 @@ class CmdbImportResult:
     entities_updated: int = 0
     entities_unchanged: int = 0
     findings_created: int = 0
+    artifact_path: Optional[str] = None
+
+
+_REPO_ROOT = Path(__file__).resolve().parent.parent
+_ARTIFACT_DIR_DEFAULT = _REPO_ROOT / "artifacts" / "governance" / "cmdb"
 
 
 def _now() -> datetime:
@@ -148,11 +154,36 @@ def _upsert_entity(db: Session, parsed: ParsedEntity, *, dry_run: bool) -> str:
     return "unchanged"
 
 
+def _write_cmdb_artifact(
+    result: CmdbImportResult,
+    source_path: Optional[str],
+    artifact_dir: Optional[Path],
+) -> str:
+    base = artifact_dir if artifact_dir else _ARTIFACT_DIR_DEFAULT
+    base.mkdir(parents=True, exist_ok=True)
+    ts = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    payload = {
+        "generated_at": ts,
+        "source": source_path or "inline",
+        "entities_created": result.entities_created,
+        "entities_updated": result.entities_updated,
+        "entities_unchanged": result.entities_unchanged,
+        "findings_created": result.findings_created,
+    }
+    timestamped = base / f"cmdb_import_{ts}.json"
+    latest = base / "latest.json"
+    timestamped.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+    latest.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+    return str(timestamped)
+
+
 def import_cmdb_entities(
     db: Session,
     entities_data: list[dict],
     *,
     dry_run: bool = False,
+    artifact_dir: Optional[Path] = None,
+    source_path: Optional[str] = None,
 ) -> CmdbImportResult:
     """Validate and upsert entities, persisting integrity findings where needed.
 
@@ -250,6 +281,7 @@ def import_cmdb_entities(
 
     if not dry_run:
         db.commit()
+        result.artifact_path = _write_cmdb_artifact(result, source_path, artifact_dir)
 
     return result
 

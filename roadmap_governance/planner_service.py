@@ -39,7 +39,8 @@ from roadmap_governance.models import (
 )
 
 _PRIORITY_WEIGHTS: dict[str, int] = {"P0": 4, "P1": 3, "P2": 2, "P3": 1}
-_DEFAULT_ARTIFACT_DIR = Path("artifacts") / "governance" / "packages"
+_REPO_ROOT = Path(__file__).resolve().parent.parent
+_DEFAULT_ARTIFACT_DIR = _REPO_ROOT / "artifacts" / "governance" / "packages"
 
 
 @dataclass

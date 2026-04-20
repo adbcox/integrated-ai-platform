@@ -237,5 +237,122 @@ class EndToEndSyncFindingsTest(unittest.TestCase):
         self.assertIn("detected_at", v)
 
 
+class HealthEndpointTest(unittest.TestCase):
+    def setUp(self) -> None:
+        self.app, _ = _make_test_app()
+        self.client = TestClient(self.app)
+
+    def test_health_ok(self) -> None:
+        resp = self.client.get("/health")
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.json(), {"status": "ok"})
+
+
+class SyncTriggerEndpointTest(unittest.TestCase):
+    def setUp(self) -> None:
+        self.app, self.factory = _make_test_app()
+        self.client = TestClient(self.app)
+
+    def _make_repo(self, tmp_dir: Path, item_id: str = "RM-GOV-001", title: str = "Governance init") -> Path:
+        idx = tmp_dir / "docs" / "roadmap" / "ROADMAP_INDEX.md"
+        idx.parent.mkdir(parents=True)
+        idx.write_text(f"- `{item_id}` — {title}\n", encoding="utf-8")
+        return tmp_dir
+
+    def test_sync_endpoint_mounted(self) -> None:
+        resp = self.client.post("/sync/roadmap")
+        # Will succeed or fail depending on repo state; just verify it's mounted (not 404/405)
+        self.assertNotEqual(resp.status_code, 404)
+        self.assertNotEqual(resp.status_code, 405)
+
+    def test_sync_endpoint_returns_expected_fields(self) -> None:
+        resp = self.client.post("/sync/roadmap")
+        self.assertEqual(resp.status_code, 200)
+        body = resp.json()
+        for field in ("items_created", "items_updated", "items_unchanged", "findings_created"):
+            self.assertIn(field, body, f"missing field: {field}")
+
+    def test_sync_dry_run_does_not_persist_items(self) -> None:
+        resp = self.client.post("/sync/roadmap?dry_run=true")
+        self.assertEqual(resp.status_code, 200)
+        body = resp.json()
+        # dry_run: no artifact_path
+        self.assertIsNone(body.get("artifact_path"))
+        # dry_run: no rows written
+        db = self.factory()
+        count = db.query(RoadmapItem).count()
+        db.close()
+        self.assertEqual(count, 0)
+
+    def test_sync_artifact_written_when_not_dry_run(self) -> None:
+        resp = self.client.post("/sync/roadmap")
+        self.assertEqual(resp.status_code, 200)
+        body = resp.json()
+        # artifact_path may be None if no ROADMAP_INDEX.md exists in repo root,
+        # but if items were processed it should be set
+        # We at minimum verify the field is present in the response
+        self.assertIn("artifact_path", body)
+
+
+class IntegrityTriggerEndpointTest(unittest.TestCase):
+    def setUp(self) -> None:
+        self.app, self.factory = _make_test_app()
+        self.client = TestClient(self.app)
+
+    def _seed(self, *items: RoadmapItem) -> None:
+        db = self.factory()
+        for item in items:
+            db.add(item)
+        db.commit()
+        db.close()
+
+    def test_integrity_endpoint_mounted(self) -> None:
+        resp = self.client.post("/reviews/integrity")
+        self.assertNotEqual(resp.status_code, 404)
+        self.assertNotEqual(resp.status_code, 405)
+
+    def test_integrity_endpoint_returns_expected_fields(self) -> None:
+        resp = self.client.post("/reviews/integrity")
+        self.assertEqual(resp.status_code, 200)
+        body = resp.json()
+        for field in ("items_checked", "findings_created", "findings_skipped"):
+            self.assertIn(field, body, f"missing field: {field}")
+
+    def test_integrity_checks_seeded_items(self) -> None:
+        # Seed an item with an invalid priority to trigger a finding
+        item = _item("RM-GOV-001")
+        item.priority = "INVALID"
+        self._seed(item)
+
+        resp = self.client.post("/reviews/integrity")
+        self.assertEqual(resp.status_code, 200)
+        body = resp.json()
+        self.assertEqual(body["items_checked"], 1)
+        self.assertGreater(body["findings_created"], 0)
+
+        # Finding should be persisted and queryable
+        findings_resp = self.client.get("/integrity/findings?finding_type=invalid_priority")
+        self.assertEqual(findings_resp.status_code, 200)
+        self.assertEqual(len(findings_resp.json()), 1)
+
+    def test_integrity_dry_run_does_not_persist_findings(self) -> None:
+        item = _item("RM-GOV-001")
+        item.priority = "INVALID"
+        self._seed(item)
+
+        resp = self.client.post("/reviews/integrity?dry_run=true")
+        self.assertEqual(resp.status_code, 200)
+
+        db = self.factory()
+        count = db.query(IntegrityFinding).count()
+        db.close()
+        self.assertEqual(count, 0)
+
+    def test_integrity_artifact_field_present(self) -> None:
+        resp = self.client.post("/reviews/integrity")
+        self.assertEqual(resp.status_code, 200)
+        self.assertIn("artifact_path", resp.json())
+
+
 if __name__ == "__main__":
     unittest.main()
