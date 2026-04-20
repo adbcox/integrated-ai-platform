@@ -67,25 +67,30 @@
       "ratified_by_adr": "governance/authority_adr_0008_phase2_closure.md"
     },
     {
-      "blocking_reason_if_open": "retrieval/repomap evidence exists in code but has not been ratified as phase advancement",
-      "classification": "provisionally_evidenced_unratified",
+      "blocking_reason_if_open": null,
+      "classification": "closed_ratified",
+      "closure_evidence_ref": "governance/phase3_closure_evidence.json",
+      "closure_package_id": "CAP-P3-CLOSE-1",
       "code_evidence": [
         "framework/codebase_repomap.py",
         "bin/stage_rag4_plan_probe.py"
       ],
       "governance_evidence": [
-        "governance/phase_gate_status.json"
+        "governance/phase_gate_status.json",
+        "governance/phase3_closure_evidence.json",
+        "governance/authority_adr_0019_phase3_closure.md"
       ],
-      "notes": "Provisional evidence in stage_rag4 and codebase_repomap; no authority artifact currently ratifies Phase 3 advancement.",
+      "notes": "Phase 3 closed by CAP-P3-CLOSE-1 via bounded developer-assistant loop evidence. No tactical family unlocked.",
       "phase_id": 3,
-      "phase_name": "codebase_understanding_retrieval_backed_runtime"
+      "phase_name": "codebase_understanding_retrieval_backed_runtime",
+      "ratified_by_adr": "governance/authority_adr_0019_phase3_closure.md"
     },
     {
-      "blocking_reason_if_open": "not canonically authorized until Phase 2/3 governance closure",
+      "blocking_reason_if_open": null,
       "classification": "open",
       "code_evidence": [],
       "governance_evidence": [],
-      "notes": "No canonical work is authorized for Phase 4 at as_of_commit.",
+      "notes": "Phase 3 closure (CAP-P3-CLOSE-1) authorizes Phase 4 capability work. No tactical family is unlocked.",
       "phase_id": 4,
       "phase_name": "autonomy_hardening_safety_policy_uplift"
     },

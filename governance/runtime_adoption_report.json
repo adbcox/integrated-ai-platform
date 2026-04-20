@@ -1,6 +1,6 @@
 {
   "adoption_summary": {
-    "direct_runtime_paths_count": 6,
+    "direct_runtime_paths_count": 22,
     "primitives_measured": [
       "worker_runtime",
       "tool_system",
@@ -57,10 +57,148 @@
       ]
     },
     {
+      "path": "tests/test_bin_framework_control_plane_retrieval_probe.py",
+      "primitives_used": [
+        "permission_engine",
+        "sandbox",
+        "worker_runtime",
+        "workspace"
+      ]
+    },
+    {
+      "path": "tests/test_bin_framework_control_plane_typed_tool_probe.py",
+      "primitives_used": [
+        "permission_engine",
+        "sandbox",
+        "worker_runtime",
+        "workspace"
+      ]
+    },
+    {
+      "path": "tests/test_framework_worker_runtime_large_file_read.py",
+      "primitives_used": [
+        "permission_engine",
+        "sandbox",
+        "worker_runtime",
+        "workspace"
+      ]
+    },
+    {
+      "path": "tests/test_framework_worker_runtime_search_retrieval.py",
+      "primitives_used": [
+        "worker_runtime"
+      ]
+    },
+    {
       "path": "tests/test_multi_phase_permission_gate.py",
       "primitives_used": [
         "permission_engine",
         "tool_system"
+      ]
+    },
+    {
+      "path": "tests/test_worker_runtime_search_cap_fix.py",
+      "primitives_used": [
+        "worker_runtime"
+      ]
+    },
+    {
+      "path": "tests/test_worker_runtime_typed_tool_apply_patch.py",
+      "primitives_used": [
+        "permission_engine",
+        "sandbox",
+        "worker_runtime",
+        "workspace"
+      ]
+    },
+    {
+      "path": "tests/test_worker_runtime_typed_tool_dispatcher.py",
+      "primitives_used": [
+        "permission_engine",
+        "sandbox",
+        "worker_runtime",
+        "workspace"
+      ]
+    },
+    {
+      "path": "tests/test_worker_runtime_typed_tool_dispatcher_phase2_tool_impl_2.py",
+      "primitives_used": [
+        "permission_engine",
+        "sandbox",
+        "worker_runtime",
+        "workspace"
+      ]
+    },
+    {
+      "path": "tests/test_worker_runtime_typed_tool_dispatcher_phase2_tool_impl_3.py",
+      "primitives_used": [
+        "permission_engine",
+        "sandbox",
+        "worker_runtime",
+        "workspace"
+      ]
+    },
+    {
+      "path": "tests/test_worker_runtime_typed_tool_git_diff.py",
+      "primitives_used": [
+        "permission_engine",
+        "sandbox",
+        "worker_runtime",
+        "workspace"
+      ]
+    },
+    {
+      "path": "tests/test_worker_runtime_typed_tool_list_dir.py",
+      "primitives_used": [
+        "permission_engine",
+        "sandbox",
+        "worker_runtime",
+        "workspace"
+      ]
+    },
+    {
+      "path": "tests/test_worker_runtime_typed_tool_publish_artifact.py",
+      "primitives_used": [
+        "permission_engine",
+        "sandbox",
+        "worker_runtime",
+        "workspace"
+      ]
+    },
+    {
+      "path": "tests/test_worker_runtime_typed_tool_read_file.py",
+      "primitives_used": [
+        "permission_engine",
+        "sandbox",
+        "worker_runtime",
+        "workspace"
+      ]
+    },
+    {
+      "path": "tests/test_worker_runtime_typed_tool_repo_map.py",
+      "primitives_used": [
+        "permission_engine",
+        "sandbox",
+        "worker_runtime",
+        "workspace"
+      ]
+    },
+    {
+      "path": "tests/test_worker_runtime_typed_tool_run_tests.py",
+      "primitives_used": [
+        "permission_engine",
+        "sandbox",
+        "worker_runtime",
+        "workspace"
+      ]
+    },
+    {
+      "path": "tests/test_worker_runtime_typed_tool_search.py",
+      "primitives_used": [
+        "permission_engine",
+        "sandbox",
+        "worker_runtime",
+        "workspace"
       ]
     }
   ],
