@@ -283,6 +283,22 @@ CANONICAL_PHASES: Sequence[Dict[str, Any]] = (
             "Only permitted after canonical authorization of prior phases."
         ),
     },
+    {
+        "phase_id": 7,
+        "phase_name": "v8_gate_closure_and_codex51_benchmark",
+        "status": "open",
+        "milestone_ref": None,
+        "governance_evidence": [],
+        "code_anchors": [],
+        "blocking_reasons": [
+            "not canonically authorized until Phase 6 closure and "
+            "phase7_definition.json ratification",
+        ],
+        "notes": (
+            "No canonical work authorized until Phase 6 closure and "
+            "CAP-P7-DEF-1 ratification."
+        ),
+    },
 )
 
 SUPERSEDES: Sequence[str] = (
@@ -479,6 +495,31 @@ def _phase6_closure() -> Dict[str, Any] | None:
     }
 
 
+def _phase7_authorized() -> Dict[str, Any] | None:
+    defn_path = GOV_DIR / "phase7_definition.json"
+    if not defn_path.exists():
+        return None
+    try:
+        defn = json.loads(defn_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        return None
+    if not isinstance(defn, dict):
+        return None
+    if defn.get("authorization_status") != "authorized":
+        return None
+    adr = defn.get("adr_ref")
+    pkg = defn.get("package_id")
+    entry_commit = defn.get("entry_commit")
+    if not (adr and pkg and entry_commit):
+        return None
+    return {
+        "package_id": pkg,
+        "adr_ref": adr,
+        "definition_ref": "governance/phase7_definition.json",
+        "entry_commit": entry_commit,
+    }
+
+
 def _next_allowed_package_class() -> str:
     path = GOV_DIR / "next_package_class.json"
     if path.exists():
@@ -631,6 +672,7 @@ def build_canonical_roadmap(as_of_commit: str) -> Dict[str, Any]:
     p4 = _phase4_closure()
     p5 = _phase5_closure()
     p6 = _phase6_closure()
+    p7 = _phase7_authorized()
     phases = []
     for phase in CANONICAL_PHASES:
         status = phase["status"]
@@ -736,6 +778,15 @@ def build_canonical_roadmap(as_of_commit: str) -> Dict[str, Any]:
             ):
                 if anchor not in code_anchors:
                     code_anchors.append(anchor)
+        if phase["phase_id"] == 7 and p6 is not None and p7 is not None:
+            blocking_reasons = []
+            notes = (
+                "Phase 6 closure (CAP-P6-CLOSE-1) and CAP-P7-DEF-1 authorize "
+                "Phase 7 capability work. No tactical family is unlocked."
+            )
+            for extra in (p7["definition_ref"], p7["adr_ref"]):
+                if extra not in governance_evidence:
+                    governance_evidence.append(extra)
         phases.append(
             {
                 "phase_id": phase["phase_id"],
@@ -758,6 +809,7 @@ def build_current_phase(as_of_commit: str) -> Dict[str, Any]:
     p4 = _phase4_closure()
     p5 = _phase5_closure()
     p6 = _phase6_closure()
+    p7 = _phase7_authorized()
     payload: Dict[str, Any] = {
         **header,
         "as_of_commit": as_of_commit,
@@ -809,6 +861,11 @@ def build_current_phase(as_of_commit: str) -> Dict[str, Any]:
         payload["phase6_closure_adr_ref"] = p6["adr_ref"]
         payload["phase6_closure_package_id"] = p6["package_id"]
         payload["phase6_closed_at_commit"] = p6["closed_at_commit"]
+    if p7 is not None:
+        payload["phase7_status"] = "authorized_open"
+        payload["phase7_definition_ref"] = p7["definition_ref"]
+        payload["phase7_definition_adr_ref"] = p7["adr_ref"]
+        payload["phase7_authorized_at_commit"] = p7["entry_commit"]
     return payload
 
 
@@ -837,6 +894,7 @@ def build_phase_gate_status(as_of_commit: str) -> Dict[str, Any]:
     p4 = _phase4_closure()
     p5 = _phase5_closure()
     p6 = _phase6_closure()
+    p7 = _phase7_authorized()
     gates: List[Dict[str, Any]] = []
     for phase in CANONICAL_PHASES:
         classification = phase["status"]
@@ -939,6 +997,15 @@ def build_phase_gate_status(as_of_commit: str) -> Dict[str, Any]:
             entry["closure_evidence_ref"] = p6["evidence_ref"]
             entry["closure_package_id"] = p6["package_id"]
             entry["ratified_by_adr"] = p6["adr_ref"]
+        if phase["phase_id"] == 7 and p6 is not None and p7 is not None:
+            entry["blocking_reason_if_open"] = None
+            entry["notes"] = (
+                "Phase 6 closure (CAP-P6-CLOSE-1) and CAP-P7-DEF-1 authorize "
+                "Phase 7 capability work. No tactical family is unlocked."
+            )
+            for extra in (p7["definition_ref"], p7["adr_ref"]):
+                if extra not in entry["governance_evidence"]:
+                    entry["governance_evidence"].append(extra)
         gates.append(entry)
     return {
         **header,
@@ -1048,9 +1115,9 @@ def _validate_schema(payload: Dict[str, Any], name: str) -> List[str]:
     if name == "canonical_roadmap.json":
         phases = payload.get("phases", [])
         ids = sorted(p.get("phase_id") for p in phases)
-        if ids != list(range(0, 7)):
+        if ids != list(range(0, 8)):
             errors.append(
-                f"canonical_roadmap.json: phases must be exactly 0..6, got {ids}"
+                f"canonical_roadmap.json: phases must be exactly 0..7, got {ids}"
             )
     if name == "current_phase.json":
         allowed = {"reconciliation_only", "ratification_only", "capability_session"}

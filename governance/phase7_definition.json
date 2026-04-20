@@ -1,0 +1,28 @@
+{
+  "schema_version": "1.0.0",
+  "authority_owner": "governance",
+  "package_id": "CAP-P7-DEF-1",
+  "adr_ref": "governance/authority_adr_0024_phase7_definition.md",
+  "phase_id": 7,
+  "phase_name": "v8_gate_closure_and_codex51_benchmark",
+  "authorization_status": "authorized",
+  "entry_precondition": "Phase 6 closed_ratified (CAP-P6-CLOSE-1) at 0649d79",
+  "entry_commit": "0649d79",
+  "goal": "Close all v8 upgrade gates through real stage8 plan execution and produce the first complete codex51 replacement benchmark run with actual campaign data.",
+  "exit_criteria": [
+    "all_ready_true_in_level10_qualify_json_output",
+    "codex51_replacement_benchmark_run_with_real_campaign_data",
+    "qualify_v4_status_complete_in_promotion_manifest"
+  ],
+  "capability_session_targets": [
+    "stage8_ready gate: real stage8 plan execution trace data in artifacts/manager6/traces.jsonl",
+    "manager8_ready gate: manager_strategy_decision_rows > 0 from stage8 runs",
+    "rag8_ready gate: RAG6 plans with clusters_with_risk and clusters_with_yield",
+    "worker8_ready gate: worker_budget_decisions > 0 from stage8 runs",
+    "codex51_replacement_benchmark --write-report consuming real artifacts/codex51/campaign/runs.jsonl",
+    "qualify_v4_artifact_builder consuming codex51 benchmark output when available"
+  ],
+  "narrative_roadmap_correspondence": "docs/version15-master-roadmap.md Phase A: Stabilize v8 completions",
+  "tactical_families_unlocked": [],
+  "generated_at": "2026-04-20T00:00:00-04:00"
+}

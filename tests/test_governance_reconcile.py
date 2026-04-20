@@ -50,15 +50,15 @@ class GovernanceArtifactsTest(unittest.TestCase):
             for key in REQUIRED_METADATA_KEYS:
                 self.assertIn(key, payload, f"{name} missing metadata key {key!r}")
 
-    def test_canonical_roadmap_covers_only_phases_0_through_6(self) -> None:
+    def test_canonical_roadmap_covers_phases_0_through_7(self) -> None:
         payload = _load("canonical_roadmap.json")
         ids = sorted(entry["phase_id"] for entry in payload["phases"])
-        self.assertEqual(ids, list(range(0, 7)))
+        self.assertEqual(ids, list(range(0, 8)))
 
-    def test_no_canonical_phase_7_or_8(self) -> None:
+    def test_no_canonical_phase_8_or_9(self) -> None:
         payload = _load("canonical_roadmap.json")
         present = {entry["phase_id"] for entry in payload["phases"]}
-        self.assertFalse(present & {7, 8})
+        self.assertFalse(present & {8, 9})
 
     def test_tactical_family_classification_covers_required_families(self) -> None:
         payload = _load("tactical_family_classification.json")

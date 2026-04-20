@@ -135,6 +135,19 @@
       "phase_id": 6,
       "phase_name": "controlled_expansion",
       "status": "closed_ratified"
+    },
+    {
+      "blocking_reasons": [],
+      "code_anchors": [],
+      "governance_evidence": [
+        "governance/phase7_definition.json",
+        "governance/authority_adr_0024_phase7_definition.md"
+      ],
+      "milestone_ref": null,
+      "notes": "Phase 6 closure (CAP-P6-CLOSE-1) and CAP-P7-DEF-1 authorize Phase 7 capability work. No tactical family is unlocked.",
+      "phase_id": 7,
+      "phase_name": "v8_gate_closure_and_codex51_benchmark",
+      "status": "open"
     }
   ],
   "schema_version": "1.0.0",
