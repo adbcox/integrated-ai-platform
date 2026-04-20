@@ -1,0 +1,158 @@
+schema_version: "1.0"
+kind: "roadmap_item"
+id: "RM-GOV-001"
+slug: "canonical-roadmap-machine-readable-registry"
+title: "Create canonical machine-readable roadmap registry"
+category: "GOV"
+type: "platform_foundation"
+status: "proposed"
+priority: "P1"
+scoring:
+  loe: 3
+  strategic_value: 5
+  architecture_fit: 5
+  execution_risk: 2
+  dependency_burden: 2
+  readiness: 4
+description: >
+  Create the canonical machine-readable roadmap registry that becomes the AI-readable
+  and control-window-readable source of truth for roadmap items.
+why_it_matters: >
+  Without a canonical machine-readable roadmap registry, the system cannot reliably
+  maintain roadmap authority, grouped execution planning, AI continuity, and
+  repo-authoritative sync into secondary operational systems.
+scope:
+  objective: >
+    Establish one repo-native authority surface for roadmap items and their links
+    to planning, execution, validation, file families, and systems.
+  in_scope:
+    - "roadmap item schema"
+    - "item registry"
+    - "sync metadata"
+    - "grouping metadata"
+    - "AI-operability fields"
+  out_of_scope:
+    - "full CMDB rollout"
+    - "bidirectional operational writeback"
+    - "tool-driven canonical authority replacement"
+    - "runtime or inference implementation work"
+dependencies:
+  blocked_by: []
+  enables:
+    - "RM-GOV-002"
+    - "RM-GOV-003"
+  related_items: []
+impact:
+  affected_systems:
+    - "roadmap_ops"
+    - "control_window"
+    - "cmdb_lite"
+    - "developer_assistant"
+  expected_file_families:
+    - "docs/roadmap/**"
+    - "docs/execution/packages/**"
+    - "docs/execution/validations/**"
+    - "docs/architecture/cmdb-lite/**"
+  impact_summary: >
+    Introduces the canonical data surface that planning, execution, validation,
+    and AI continuation workflows will consume.
+cmdb:
+  refs:
+    - "subsystem:roadmap_ops"
+    - "subsystem:control_plane"
+    - "subsystem:agent_runtime"
+  asset_links: []
+  service_links: []
+grouping:
+  feature_block_candidates:
+    - "FB-GOV-ROADMAP-AUTHORITY"
+    - "FB-DEV-AI-CONTINUITY"
+  package_group: "PKG-GOV-AUTHORITY"
+  shared_touch_surfaces:
+    - "roadmap registry"
+    - "execution package schema"
+    - "validation artifact linkage"
+milestones:
+  recommended_first_milestone: "define-schema-and-registry-layout"
+  downstream_milestones:
+    - "sync-to-plane"
+    - "link-execution-packages"
+    - "validation-artifact-linkage"
+planning:
+  planning_packet_ref: null
+  planning_status: "not_started"
+  planning_notes: ""
+execution:
+  execution_package_refs: []
+  execution_status: "not_started"
+  last_execution_commit: null
+validation:
+  validation_artifact_refs: []
+  validation_status: "not_started"
+  definition_of_done_ref: "docs/roadmap/STANDARDS.md"
+governance:
+  phase_target: "Phase 0.7"
+  architectural_lane: "governance_freeze"
+  risk_tier: "low"
+  allowed_change_scope: "narrow"
+  requires_explicit_escalation: false
+ai_operability:
+  canonical_summary: >
+    Canonical roadmap authority item for creating the machine-readable registry used
+    by planning, execution, validation, and sync tooling.
+  developer_intent: >
+    Keep roadmap authority in repo. Do not move canonical truth into Plane.
+  non_goals:
+    - "Do not make Plane canonical"
+    - "Do not create bidirectional authority drift"
+    - "Do not attach CMDB writes to execution runtime yet"
+  allowed_files:
+    - "docs/roadmap/**"
+    - "docs/architecture/cmdb-lite/**"
+  forbidden_files:
+    - "src/runtime/**"
+    - "src/inference/**"
+    - ".github/workflows/**"
+  validation_order:
+    - "schema validation"
+    - "registry link integrity validation"
+    - "index update validation"
+    - "manual review"
+  rollback_rule: >
+    Revert only files created or modified by this item. Preserve unrelated
+    modified and untracked files.
+  artifact_outputs:
+    - "docs/roadmap/data/enums.yaml"
+    - "docs/roadmap/data/roadmap_registry.yaml"
+    - "docs/roadmap/data/sync_state.yaml"
+    - "docs/roadmap/items/RM-GOV-001.yaml"
+    - "docs/roadmap/ROADMAP_INDEX.md"
+    - "docs/roadmap/README.md"
+  promotion_linkage:
+    required: false
+    manifest_refs: []
+sync:
+  plane:
+    sync_enabled: true
+    sync_mode: "repo_to_plane_authoritative"
+    workspace: "Integrated AI Platform"
+    project: "Roadmap Ops"
+    plane_item_id: null
+    last_synced_at: null
+    writeback_fields_allowed:
+      - "operational_state"
+      - "assignee"
+      - "cycle"
+      - "module"
+      - "labels"
+  github:
+    issue_ref: null
+    pr_refs: []
+metadata:
+  owner: "adrian"
+  created_at: "2026-04-20"
+  updated_at: "2026-04-20"
+  tags:
+    - "canonical"
+    - "roadmap"
+    - "ai-readable"

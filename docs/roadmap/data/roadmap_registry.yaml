@@ -1,0 +1,21 @@
+schema_version: "1.0"
+kind: "roadmap_registry"
+generated_at: "2026-04-20T12:00:00Z"
+source_of_truth: "repo"
+items:
+  - id: "RM-GOV-001"
+    path: "docs/roadmap/items/RM-GOV-001.yaml"
+    title: "Create canonical machine-readable roadmap registry"
+    category: "GOV"
+    status: "proposed"
+    priority: "P1"
+    package_group: "PKG-GOV-AUTHORITY"
+    affected_systems:
+      - "roadmap_ops"
+      - "control_window"
+      - "cmdb_lite"
+    expected_file_families:
+      - "docs/roadmap/**"
+      - "docs/architecture/cmdb-lite/**"
+    plane_sync_enabled: true
+    plane_item_id: null

@@ -1,0 +1,75 @@
+schema_version: "1.0"
+categories:
+  - GOV
+  - CORE
+  - DEV
+  - UI
+  - AUTO
+  - OPS
+  - INV
+  - MEDIA
+  - HOME
+  - LANG
+  - HW
+  - SHOP
+  - AUTO-MECH
+  - DOCAPP
+  - INTEL
+statuses:
+  - proposed
+  - planned
+  - ready
+  - in_planning
+  - planned_for_execution
+  - in_execution
+  - in_validation
+  - blocked
+  - completed
+  - parked
+  - superseded
+priorities:
+  - P0
+  - P1
+  - P2
+  - P3
+  - P4
+types:
+  - platform_foundation
+  - capability
+  - workflow
+  - integration
+  - interface
+  - infrastructure
+  - research
+  - governance
+  - automation
+  - hardware
+  - domain_app
+planning_statuses:
+  - not_started
+  - in_progress
+  - complete
+execution_statuses:
+  - not_started
+  - queued
+  - in_progress
+  - blocked
+  - complete
+validation_statuses:
+  - not_started
+  - pending
+  - passed
+  - failed
+  - waived
+risk_tiers:
+  - low
+  - medium
+  - high
+change_scopes:
+  - narrow
+  - bounded
+  - broad
+sync_modes:
+  - repo_to_plane_authoritative
+  - repo_authoritative_with_operational_writeback
+  - sync_disabled
