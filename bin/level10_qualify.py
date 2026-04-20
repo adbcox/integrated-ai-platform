@@ -23,6 +23,7 @@ DEFAULT_MANAGER6_TRACE = REPO_ROOT / "artifacts" / "manager6" / "traces.jsonl"
 DEFAULT_STAGE5_TRACE = REPO_ROOT / "artifacts" / "stage5_manager" / "traces.jsonl"
 DEFAULT_RAG4_USAGE = REPO_ROOT / "artifacts" / "stage_rag4" / "usage.jsonl"
 DEFAULT_RAG6_USAGE = REPO_ROOT / "artifacts" / "stage_rag6" / "usage.jsonl"
+DEFAULT_STAGE3_TRACE = REPO_ROOT / "artifacts" / "stage3_manager" / "traces.jsonl"
 DEFAULT_MANAGER5_PLANS = REPO_ROOT / "artifacts" / "manager5" / "plans"
 QUAL_HISTORY = REPO_ROOT / "artifacts" / "promotion" / "qualification_history.jsonl"
 
@@ -290,6 +291,64 @@ def summarize_rag6(rag6_rows: list[dict[str, Any]]) -> dict[str, Any]:
     }
 
 
+def summarize_gate_chain(entries: list[dict[str, Any]]) -> dict[str, Any]:
+    total = len(entries)
+    if total == 0:
+        return {
+            "total": 0,
+            "accepted": 0,
+            "rejected": 0,
+            "fully_qualified": 0,
+            "qualified_smoke_fallback": 0,
+            "qualified_partial_gates": 0,
+            "qualification_rate": 0.0,
+            "full_qualification_rate": 0.0,
+            "gate_coverage": {
+                "g1_syntax": 0,
+                "g2_tests": 0,
+                "g3_repo_check": 0,
+                "g4_repo_quick": 0,
+            },
+            "discovery_mode_distribution": {},
+            "classification_distribution": {},
+        }
+    accepted = [e for e in entries if e.get("accepted")]
+    rejected = [e for e in entries if not e.get("accepted")]
+    fully_qualified = [
+        e for e in accepted
+        if len(e.get("gates_run", [])) == 4
+        and e.get("target_test_discovery_mode") not in ("none", "skipped", None)
+    ]
+    qualified_smoke = [
+        e for e in accepted
+        if len(e.get("gates_run", [])) == 4
+        and e.get("target_test_discovery_mode") == "none"
+    ]
+    qualified_partial = [e for e in accepted if len(e.get("gates_run", [])) < 4]
+    return {
+        "total": total,
+        "accepted": len(accepted),
+        "rejected": len(rejected),
+        "fully_qualified": len(fully_qualified),
+        "qualified_smoke_fallback": len(qualified_smoke),
+        "qualified_partial_gates": len(qualified_partial),
+        "qualification_rate": round(len(accepted) / total, 3),
+        "full_qualification_rate": round(len(fully_qualified) / total, 3),
+        "gate_coverage": {
+            "g1_syntax": sum(1 for e in entries if "g1_syntax" in e.get("gates_run", [])),
+            "g2_tests": sum(1 for e in entries if "g2_tests" in e.get("gates_run", [])),
+            "g3_repo_check": sum(1 for e in entries if "g3_repo_check" in e.get("gates_run", [])),
+            "g4_repo_quick": sum(1 for e in entries if "g4_repo_quick" in e.get("gates_run", [])),
+        },
+        "discovery_mode_distribution": dict(Counter(
+            e.get("target_test_discovery_mode", "skipped") for e in accepted
+        )),
+        "classification_distribution": dict(Counter(
+            e.get("classification", "unknown") for e in entries
+        )),
+    }
+
+
 def manager5_plan_lifecycle_health(plan_dir: Path) -> dict[str, Any]:
     if not plan_dir.exists():
         return {"plans": 0, "with_state": 0, "with_attempts": 0}
@@ -479,6 +538,7 @@ def main() -> int:
     parser.add_argument("--rag4-usage", default=str(DEFAULT_RAG4_USAGE))
     parser.add_argument("--rag6-usage", default=str(DEFAULT_RAG6_USAGE))
     parser.add_argument("--manager5-plans", default=str(DEFAULT_MANAGER5_PLANS))
+    parser.add_argument("--stage3-trace", default=str(DEFAULT_STAGE3_TRACE))
     parser.add_argument(
         "--strict-manifest-version",
         action="store_true",
@@ -499,6 +559,7 @@ def main() -> int:
     stage5_rows = list(read_jsonl(Path(args.stage5_trace).resolve(), cutoff=cutoff))
     rag4_rows = list(read_jsonl(Path(args.rag4_usage).resolve(), cutoff=cutoff))
     rag6_rows = list(read_jsonl(Path(args.rag6_usage).resolve(), cutoff=cutoff))
+    stage3_rows = list(read_jsonl(Path(args.stage3_trace).resolve()))
     manager4_rows, manager4_dropped = filter_by_manifest_version(
         manager4_all,
         manifest_version=manifest_version,
@@ -518,6 +579,7 @@ def main() -> int:
     stage8_stats = summarize_stage8(manager6_rows)
     rag6_stats = summarize_rag6(rag6_rows)
     lifecycle_stats = manager5_plan_lifecycle_health(Path(args.manager5_plans).resolve())
+    gate_chain_stats = summarize_gate_chain(stage3_rows)
 
     assessments = evaluate_subsystems(
         subsystem_levels=manifest.subsystem_levels,
@@ -564,6 +626,7 @@ def main() -> int:
             "stage8": stage8_stats,
             "rag6": rag6_stats,
             "manager5_lifecycle": lifecycle_stats,
+            "gate_chain": gate_chain_stats,
         },
         "subsystem_assessments": assessments,
         "v8_gate_assertions": v8_assertions,
@@ -620,6 +683,12 @@ def main() -> int:
             f"{name}: current={item['current_level']} next={item['next_target_level']} "
             f"status={status}"
         )
+    print("--- Gate chain ---")
+    print(
+        f"Stage3 gate chain: {gate_chain_stats['accepted']}/{gate_chain_stats['total']} accepted "
+        f"| fully_qualified={gate_chain_stats['fully_qualified']} "
+        f"| full_qualification_rate={gate_chain_stats['full_qualification_rate']}"
+    )
     return 0
 
 
