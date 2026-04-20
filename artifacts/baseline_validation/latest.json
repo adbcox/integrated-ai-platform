@@ -1,0 +1,33 @@
+{
+  "all_passed": true,
+  "baseline_commit": "365c6b9ce3888751555c2ef5679bf867954ea901",
+  "commands": {
+    "check": {
+      "argv": "make check",
+      "command_name": "check",
+      "completed_at": "2026-04-20T21:04:24+00:00",
+      "duration_ms": 245,
+      "return_code": 0,
+      "started_at": "2026-04-20T21:04:24+00:00",
+      "stderr_head": "",
+      "stdout_head": "[1/3] Syntax-checking active shell scripts...\nOK: bootstrap.sh\nOK: bop.sh\nOK: browser_operator_batch_tasks.sh\nOK: browser_operator_disks_check.sh\nOK: browser_operator_login_flow.sh\nOK: browser_operator_open_and_click.sh\nOK: browser_operator_open_app.sh\nOK: browser_operator_open_container_target.sh\nOK: browser_operator_storage_check.sh\nOK: control-plane-setup.sh\nOK: operator_task.sh\nOK: run_local_api.sh\nOK: setup_homelab_project.sh\nOK: start_api.sh\nOK: start_codex.sh\nOK: test_local_api.sh\nOK: update_homelab_project.sh\nOK: validate_shell.sh\n\n[2/3] Syntax-checking shared shell helpers...\nOK: shell/common.sh\n\n[3/3] Running helper smoke tests...\nPASS: shell validation complete.\n[python] Syntax-checking top-level Python files...\nOK: api_server.py\nOK: app.py\nOK: browser_operator.py\nOK: browser_operator_api.py\nOK: config_guard.py\nOK: opnsense_runner.py\nOK: qnap_runner.py\nPASS: make check complete.\n",
+      "success": true
+    },
+    "quick": {
+      "argv": "make quick",
+      "command_name": "quick",
+      "completed_at": "2026-04-20T21:04:25+00:00",
+      "duration_ms": 84,
+      "return_code": 0,
+      "started_at": "2026-04-20T21:04:24+00:00",
+      "stderr_head": "",
+      "stdout_head": "[quick] Reviewing files selected for the default Stage-3 quick checks...\nOK: python syntax bin/run_baseline_validation.py\nOK: python syntax tests/test_run_baseline_validation.py\n[quick] PASS: Stage-3 quick checks complete (shell/python syntax review done).\nPASS: make quick complete.\n",
+      "success": true
+    }
+  },
+  "definition_of_done_met": true,
+  "definition_of_done_ref": "docs/execution/definition_of_done.md",
+  "dry_run": false,
+  "generated_at": "2026-04-20T21:04:25+00:00",
+  "schema_version": 1
+}
