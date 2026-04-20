@@ -1,0 +1,11 @@
+{
+  "classes": {
+    "framework_code": {
+      "passed": true,
+      "acceptance_rate": 1.0,
+      "run_count": 1
+    }
+  },
+  "source": "stage3_traces",
+  "run_count": 1
+}

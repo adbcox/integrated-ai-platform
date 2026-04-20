@@ -170,7 +170,7 @@ aider-micro-safe:
 		fi; \
 		bash bin/aider_micro.sh "$$MICRO_MSG" "$$@"
 
-.PHONY: micro-lane-regression micro-lane-stage6 level10-promote
+.PHONY: micro-lane-regression micro-lane-stage6 level10-promote qualify-v4-run-artifacts qualify-v4-strict
 micro-lane-regression:
 	@./bin/micro_lane_regression.sh
 
@@ -179,6 +179,12 @@ micro-lane-stage6:
 
 level10-promote:
 	@python3 ./bin/level10_promote.py --manifest ./config/promotion_manifest.json
+
+qualify-v4-run-artifacts: ## Generate qualify-v4 benchmark and attribution artifacts from stage3 traces
+	python3 bin/qualify_v4_artifact_builder.py
+
+qualify-v4-strict: ## Run qualification with --fail-on-incomplete-v8-gates after building artifacts
+	python3 bin/qualify_v4_artifact_builder.py && python3 bin/level10_qualify.py --fail-on-incomplete-v8-gates
 
 preflight-normalization-guard:
 	@./bin/preflight_normalization_guard.sh
