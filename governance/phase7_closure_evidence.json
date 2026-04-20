@@ -1,6 +1,9 @@
 {
   "schema_version": 1,
+  "authority_owner": "governance",
+  "closure_type": "full_closure",
   "collected_at": "2026-04-20T21:49:03Z",
+  "all_ready": true,
   "v8_gates": {
     "stage8_ready": true,
     "manager8_ready": true,
@@ -12,8 +15,6 @@
     "benchmark8_ready": true,
     "attribution8_ready": true
   },
-  "all_ready": true,
-  "missing_gates": [],
   "metrics_snapshot": {
     "candidate": {
       "success": 4
@@ -96,5 +97,6 @@
       "has_attribution": true
     }
   },
-  "qualify_exit_code": 0
+  "evidence_artifact": "artifacts/phase7_evidence/latest.json",
+  "ratified_by": "collect_phase7_evidence.py"
 }
