@@ -288,6 +288,26 @@ def _run_target_tests(test_files: list[str], *, timeout: int = 60) -> tuple[bool
         return (False, f"test_run_exception:{exc}")
 
 
+def _run_repo_fast_check(repo_root: Path | None = None) -> tuple[bool, str]:
+    try:
+        root = repo_root if repo_root is not None else REPO_ROOT
+        result = subprocess.run(
+            ["make", "check"],
+            capture_output=True,
+            text=True,
+            cwd=str(root),
+            timeout=60,
+        )
+        if result.returncode == 0:
+            return (True, "repo_check_passed")
+        out = (result.stderr or result.stdout or "")[:300]
+        return (False, f"repo_check_failed:{out}")
+    except subprocess.TimeoutExpired:
+        return (False, "repo_check_timeout")
+    except Exception as exc:
+        return (False, f"repo_check_exception:{exc}")
+
+
 def append_trace(entry: dict) -> None:
     TRACE_DIR.mkdir(parents=True, exist_ok=True)
     with TRACE_FILE.open("a", encoding="utf-8") as fh:
@@ -546,6 +566,25 @@ def main() -> int:
             else:
                 target_test_note = f"revert_failed:{(revert.stderr or revert.stdout)[:200]}"
 
+    repo_check_ok = True
+    repo_check_note = "skipped_prior_gate_failed"
+    if target_test_ok and commit_hash is not None:
+        repo_check_ok, repo_check_note = _run_repo_fast_check()
+        if not repo_check_ok:
+            revert = subprocess.run(
+                ["git", "reset", "--hard", "HEAD~1"],
+                capture_output=True,
+                text=True,
+            )
+            if revert.returncode == 0:
+                accepted = False
+                classification = "reverted_repo_check_failure"
+                final_status = "reverted"
+                commit_hash = None
+                target_test_ok = False
+            else:
+                repo_check_note = f"revert_failed:{(revert.stderr or revert.stdout)[:200]}"
+
     entry = {
         "timestamp": datetime.now(UTC).isoformat(timespec="seconds"),
         "job_id": job_id,
@@ -568,6 +607,8 @@ def main() -> int:
         "post_apply_validation_note": post_valid_note,
         "target_test_status": "pass" if target_test_ok else "fail",
         "target_test_note": target_test_note,
+        "repo_fast_check_status": "pass" if repo_check_ok else "fail",
+        "repo_fast_check_note": repo_check_note,
     }
     append_trace(entry)
     print(f"[manager] trace appended -> {TRACE_FILE}")
