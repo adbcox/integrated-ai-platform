@@ -323,6 +323,37 @@ def _run_repo_fast_check(repo_root: Path | None = None) -> tuple[bool, str]:
         return (False, f"repo_check_exception:{exc}")
 
 
+def _run_smoke_tests(repo_root: Path | None = None) -> tuple[bool, str]:
+    root = repo_root if repo_root is not None else REPO_ROOT
+    tests_dir = root / "tests"
+    if not tests_dir.is_dir():
+        return (True, "smoke_no_dir")
+
+    smoke_files = [
+        str(tests_dir / "test_stage3_manager_post_apply_validation.py"),
+    ]
+    smoke_files = [p for p in smoke_files if Path(p).is_file()]
+    if not smoke_files:
+        return (True, "smoke_no_files")
+
+    try:
+        result = subprocess.run(
+            [sys.executable, "-m", "pytest"] + smoke_files + ["-q", "--tb=no", "-x", "--no-header"],
+            capture_output=True,
+            text=True,
+            timeout=20,
+        )
+        lines = [ln for ln in result.stdout.splitlines() if ln.strip()]
+        summary = lines[-1] if lines else ""
+        if result.returncode == 0:
+            return (True, f"smoke_passed:{summary}")
+        return (False, f"smoke_failed:{summary[:200]}")
+    except subprocess.TimeoutExpired:
+        return (False, "smoke_timeout:20s")
+    except Exception as exc:
+        return (False, f"smoke_exception:{exc}")
+
+
 def _run_repo_quick_check(target: str, repo_root: Path | None = None) -> tuple[bool, str]:
     root = repo_root if repo_root is not None else REPO_ROOT
     quick_script = root / "bin" / "quick_check.sh"
@@ -591,7 +622,10 @@ def main() -> int:
     discovery_mode = "skipped"
     if post_valid and commit_hash is not None:
         discovered, discovery_mode = _discover_target_tests(args.target)
-        target_test_ok, target_test_note = _run_target_tests(discovered)
+        if discovered:
+            target_test_ok, target_test_note = _run_target_tests(discovered)
+        else:
+            target_test_ok, target_test_note = _run_smoke_tests()
         if not target_test_ok:
             revert = subprocess.run(
                 ["git", "reset", "--hard", "HEAD~1"],
@@ -600,7 +634,9 @@ def main() -> int:
             )
             if revert.returncode == 0:
                 accepted = False
-                classification = "reverted_test_failure"
+                classification = (
+                    "reverted_smoke_failure" if not discovered else "reverted_test_failure"
+                )
                 final_status = "reverted"
                 commit_hash = None
                 post_valid = False
