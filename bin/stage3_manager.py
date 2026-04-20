@@ -308,6 +308,28 @@ def _run_repo_fast_check(repo_root: Path | None = None) -> tuple[bool, str]:
         return (False, f"repo_check_exception:{exc}")
 
 
+def _run_repo_quick_check(target: str, repo_root: Path | None = None) -> tuple[bool, str]:
+    root = repo_root if repo_root is not None else REPO_ROOT
+    env = {**os.environ, "CHANGED_FILES": target}
+    try:
+        result = subprocess.run(
+            ["make", "quick"],
+            capture_output=True,
+            text=True,
+            cwd=str(root),
+            timeout=30,
+            env=env,
+        )
+        if result.returncode == 0:
+            return (True, "repo_quick_passed")
+        out = (result.stderr or result.stdout or "")[:300]
+        return (False, f"repo_quick_failed:{out}")
+    except subprocess.TimeoutExpired:
+        return (False, "repo_quick_timeout")
+    except Exception as exc:
+        return (False, f"repo_quick_exception:{exc}")
+
+
 def append_trace(entry: dict) -> None:
     TRACE_DIR.mkdir(parents=True, exist_ok=True)
     with TRACE_FILE.open("a", encoding="utf-8") as fh:
@@ -585,6 +607,25 @@ def main() -> int:
             else:
                 repo_check_note = f"revert_failed:{(revert.stderr or revert.stdout)[:200]}"
 
+    repo_quick_ok = True
+    repo_quick_note = "skipped_prior_gate_failed"
+    if repo_check_ok and commit_hash is not None:
+        repo_quick_ok, repo_quick_note = _run_repo_quick_check(args.target)
+        if not repo_quick_ok:
+            revert = subprocess.run(
+                ["git", "reset", "--hard", "HEAD~1"],
+                capture_output=True,
+                text=True,
+            )
+            if revert.returncode == 0:
+                accepted = False
+                classification = "reverted_repo_quick_failure"
+                final_status = "reverted"
+                commit_hash = None
+                repo_check_ok = False
+            else:
+                repo_quick_note = f"revert_failed:{(revert.stderr or revert.stdout)[:200]}"
+
     entry = {
         "timestamp": datetime.now(UTC).isoformat(timespec="seconds"),
         "job_id": job_id,
@@ -609,6 +650,8 @@ def main() -> int:
         "target_test_note": target_test_note,
         "repo_fast_check_status": "pass" if repo_check_ok else "fail",
         "repo_fast_check_note": repo_check_note,
+        "repo_quick_check_status": "pass" if repo_quick_ok else "fail",
+        "repo_quick_check_note": repo_quick_note,
     }
     append_trace(entry)
     print(f"[manager] trace appended -> {TRACE_FILE}")
