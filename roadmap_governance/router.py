@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from roadmap_governance.database import get_db_dep
+from roadmap_governance.integrity import run_integrity_review
 from roadmap_governance.link_service import get_impact_view
 from roadmap_governance.metrics_service import capture_metrics, get_scope_metrics
 from roadmap_governance.models import (
@@ -19,6 +21,7 @@ from roadmap_governance.models import (
     RoadmapLink,
 )
 from roadmap_governance.planner_service import run_planner_refresh
+from roadmap_governance.service import sync_roadmap
 from roadmap_governance.schemas import (
     CmdbEntityResponse,
     FeatureBlockMemberResponse,
@@ -32,6 +35,41 @@ from roadmap_governance.schemas import (
 )
 
 router = APIRouter()
+
+_REPO_ROOT = Path(__file__).resolve().parent.parent
+
+
+@router.get("/health")
+def health() -> dict:
+    return {"status": "ok"}
+
+
+@router.post("/sync/roadmap", response_model=dict)
+def trigger_sync(
+    dry_run: bool = Query(default=False),
+    db: Session = Depends(get_db_dep),
+) -> dict:
+    result = sync_roadmap(db, _REPO_ROOT, dry_run=dry_run)
+    return {
+        "items_created": result.items_created,
+        "items_updated": result.items_updated,
+        "items_unchanged": result.items_unchanged,
+        "findings_created": result.findings_created,
+    }
+
+
+@router.post("/reviews/integrity", response_model=dict)
+def trigger_integrity_review(
+    dry_run: bool = Query(default=False),
+    db: Session = Depends(get_db_dep),
+) -> dict:
+    result = run_integrity_review(db, _REPO_ROOT, dry_run=dry_run)
+    return {
+        "items_checked": result.items_checked,
+        "findings_created": result.findings_created,
+        "findings_skipped": result.findings_skipped,
+        "artifact_path": str(result.artifact_path) if result.artifact_path else None,
+    }
 
 
 @router.get("/roadmap/items", response_model=List[RoadmapItemResponse])
@@ -116,6 +154,17 @@ def get_cmdb_entity(
     if row is None:
         raise HTTPException(status_code=404, detail="CMDB entity not found")
     return CmdbEntityResponse.model_validate(row)
+
+
+@router.get("/roadmap/items/{item_id}", response_model=RoadmapItemResponse)
+def get_roadmap_item(
+    item_id: str,
+    db: Session = Depends(get_db_dep),
+) -> RoadmapItemResponse:
+    row = db.get(RoadmapItem, item_id)
+    if row is None:
+        raise HTTPException(status_code=404, detail="Roadmap item not found")
+    return RoadmapItemResponse.model_validate(row)
 
 
 @router.get("/roadmap/items/{item_id}/impact", response_model=RoadmapImpactResponse)

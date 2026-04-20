@@ -6,6 +6,42 @@ All responses are JSON. Timestamps are ISO 8601 UTC.
 
 ---
 
+## Health
+
+### `GET /health`
+
+Returns `{"status": "ok"}`. Used by load balancers and health checks.
+
+---
+
+## Pipeline triggers
+
+### `POST /sync/roadmap`
+
+Trigger a roadmap sync from source files.
+
+Query parameters:
+- `dry_run` (bool, default `false`)
+
+Response:
+```json
+{"items_created": 2, "items_updated": 0, "items_unchanged": 5, "findings_created": 1}
+```
+
+### `POST /reviews/integrity`
+
+Trigger an on-demand integrity review.
+
+Query parameters:
+- `dry_run` (bool, default `false`)
+
+Response:
+```json
+{"items_checked": 7, "findings_created": 2, "findings_skipped": 0, "artifact_path": "artifacts/governance/integrity/integrity_review_20260420T120000Z.json"}
+```
+
+---
+
 ## Roadmap items
 
 ### `GET /roadmap/items`
@@ -36,6 +72,10 @@ Response: array of `RoadmapItemResponse`
   }
 ]
 ```
+
+### `GET /roadmap/items/{item_id}`
+
+Get a single roadmap item by ID. Returns `404` if not found.
 
 ### `GET /roadmap/items/{item_id}/impact`
 
