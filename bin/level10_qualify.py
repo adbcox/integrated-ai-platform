@@ -25,6 +25,8 @@ DEFAULT_RAG4_USAGE = REPO_ROOT / "artifacts" / "stage_rag4" / "usage.jsonl"
 DEFAULT_RAG6_USAGE = REPO_ROOT / "artifacts" / "stage_rag6" / "usage.jsonl"
 DEFAULT_STAGE3_TRACE = REPO_ROOT / "artifacts" / "stage3_manager" / "traces.jsonl"
 DEFAULT_MANAGER5_PLANS = REPO_ROOT / "artifacts" / "manager5" / "plans"
+DEFAULT_CODEX51_BENCHMARK_LATEST = REPO_ROOT / "artifacts" / "codex51" / "benchmark" / "latest.json"
+DEFAULT_CODEX51_ATTRIBUTION_LATEST = REPO_ROOT / "artifacts" / "codex51" / "attribution" / "latest.json"
 QUAL_HISTORY = REPO_ROOT / "artifacts" / "promotion" / "qualification_history.jsonl"
 
 
@@ -349,6 +351,53 @@ def summarize_gate_chain(entries: list[dict[str, Any]]) -> dict[str, Any]:
     }
 
 
+def load_json_if_exists(path: Path) -> dict[str, Any]:
+    if not path.exists():
+        return {}
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+        return data if isinstance(data, dict) else {}
+    except (OSError, json.JSONDecodeError):
+        return {}
+
+
+def summarize_benchmark(payload: dict[str, Any]) -> dict[str, Any]:
+    classes_raw = payload.get("classes") if payload else None
+    if not classes_raw or not isinstance(classes_raw, dict):
+        return {
+            "class_count": 0,
+            "classes": {},
+            "passed_classes": [],
+            "failed_classes": [],
+            "all_classes_passed": False,
+        }
+    classes: dict[str, bool] = {}
+    for name, entry in classes_raw.items():
+        if isinstance(entry, dict):
+            classes[name] = bool(entry.get("passed"))
+        else:
+            classes[name] = bool(entry)
+    passed = [n for n, ok in classes.items() if ok]
+    failed = [n for n, ok in classes.items() if not ok]
+    class_count = len(classes)
+    return {
+        "class_count": class_count,
+        "classes": classes,
+        "passed_classes": passed,
+        "failed_classes": failed,
+        "all_classes_passed": class_count > 0 and len(failed) == 0,
+    }
+
+
+def summarize_attribution(payload: dict[str, Any]) -> dict[str, Any]:
+    has_attribution = bool(payload)
+    return {
+        "orchestration_delta": float(payload.get("orchestration_delta", 0.0)) if payload else 0.0,
+        "model_delta": float(payload.get("model_delta", 0.0)) if payload else 0.0,
+        "has_attribution": has_attribution,
+    }
+
+
 def manager5_plan_lifecycle_health(plan_dir: Path) -> dict[str, Any]:
     if not plan_dir.exists():
         return {"plans": 0, "with_state": 0, "with_attempts": 0}
@@ -503,6 +552,8 @@ def evaluate_v8_gates(
     rag6_stats: dict[str, Any],
     assessments: dict[str, Any],
     gate_chain_stats: dict[str, Any],
+    benchmark_stats: dict[str, Any] | None = None,
+    attribution_stats: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     v8 = manifest_data.get("version8_upgrade_list", {})
     stage_gate = (
@@ -536,6 +587,22 @@ def evaluate_v8_gates(
         and gate_chain_stats.get("full_qualification_rate", 0.0) >= gate_chain_threshold
         and gate_chain_stats.get("gate_coverage", {}).get("g4_repo_quick", 0) > 0
     )
+    _benchmark = benchmark_stats or {}
+    _attribution = attribution_stats or {}
+    benchmark_min_class_count = int(
+        manifest_data.get("promotion_policy", {})
+        .get("criteria", {})
+        .get("benchmark_min_class_count", 1)
+    )
+    benchmark8_ready = bool(
+        _benchmark
+        and int(_benchmark.get("class_count", 0)) >= benchmark_min_class_count
+        and _benchmark.get("all_classes_passed", False)
+    )
+    attribution8_ready = bool(
+        _attribution
+        and _attribution.get("has_attribution", False)
+    )
     gates = {
         "stage8_ready": stage_gate,
         "manager8_ready": manager_gate,
@@ -544,6 +611,8 @@ def evaluate_v8_gates(
         "promotion8_ready": promotion_gate,
         "qualification8_ready": regression_gate,
         "gate_chain_ready": gate_chain_ready,
+        "benchmark8_ready": benchmark8_ready,
+        "attribution8_ready": attribution8_ready,
     }
     return {
         "gates": gates,
@@ -569,6 +638,8 @@ def main() -> int:
     parser.add_argument("--rag6-usage", default=str(DEFAULT_RAG6_USAGE))
     parser.add_argument("--manager5-plans", default=str(DEFAULT_MANAGER5_PLANS))
     parser.add_argument("--stage3-trace", default=str(DEFAULT_STAGE3_TRACE))
+    parser.add_argument("--codex51-benchmark", default=str(DEFAULT_CODEX51_BENCHMARK_LATEST))
+    parser.add_argument("--codex51-attribution", default=str(DEFAULT_CODEX51_ATTRIBUTION_LATEST))
     parser.add_argument(
         "--strict-manifest-version",
         action="store_true",
@@ -595,6 +666,8 @@ def main() -> int:
     rag4_rows = list(read_jsonl(Path(args.rag4_usage).resolve(), cutoff=cutoff))
     rag6_rows = list(read_jsonl(Path(args.rag6_usage).resolve(), cutoff=cutoff))
     stage3_rows = list(read_jsonl(Path(args.stage3_trace).resolve()))
+    benchmark_raw = load_json_if_exists(Path(args.codex51_benchmark).resolve())
+    attribution_raw = load_json_if_exists(Path(args.codex51_attribution).resolve())
     manager4_rows, manager4_dropped = filter_by_manifest_version(
         manager4_all,
         manifest_version=manifest_version,
@@ -615,6 +688,8 @@ def main() -> int:
     rag6_stats = summarize_rag6(rag6_rows)
     lifecycle_stats = manager5_plan_lifecycle_health(Path(args.manager5_plans).resolve())
     gate_chain_stats = summarize_gate_chain(stage3_rows)
+    benchmark_stats = summarize_benchmark(benchmark_raw)
+    attribution_stats = summarize_attribution(attribution_raw)
 
     assessments = evaluate_subsystems(
         subsystem_levels=manifest.subsystem_levels,
@@ -634,6 +709,8 @@ def main() -> int:
         rag6_stats=rag6_stats,
         assessments=assessments,
         gate_chain_stats=gate_chain_stats,
+        benchmark_stats=benchmark_stats,
+        attribution_stats=attribution_stats,
     )
 
     lane_snapshot = {
@@ -664,6 +741,8 @@ def main() -> int:
             "rag6": rag6_stats,
             "manager5_lifecycle": lifecycle_stats,
             "gate_chain": gate_chain_stats,
+            "benchmark": benchmark_stats,
+            "attribution": attribution_stats,
         },
         "subsystem_assessments": assessments,
         "v8_gate_assertions": v8_assertions,

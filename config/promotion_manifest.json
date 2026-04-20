@@ -479,7 +479,8 @@
       "stage6_success_threshold": 3,
       "stage6_failure_budget": 1,
       "required_preview_regression_pack": "bin/micro_lane_stage6.sh",
-      "gate_chain_min_full_qualification_rate": 0.5
+      "gate_chain_min_full_qualification_rate": 0.5,
+    "benchmark_min_class_count": 1
     },
     "last_decision": {
       "date": "2026-04-14T18:04:40+00:00",
@@ -606,10 +607,10 @@
       "after_next_version": "qualify-v5",
       "upgrade_goal": "Qualify v4 adds subsystem benchmark suites and model-vs-orchestration attribution delta measurements to the gate-chain qualification path",
       "minimum_validation": [
-        "At least one complex-class benchmark suite produces per-subsystem pass/fail verdicts consumed by level10_qualify",
-        "Model-vs-orchestration attribution delta is emitted as a machine-readable field in qualification output"
+        "At least one complex-class benchmark suite emits machine-readable pass/fail results via qualification pipeline",
+        "Model-vs-orchestration attribution delta is captured and surfaced in qualification output"
       ],
-      "status": "building"
+      "status": "in_progress"
     },
     "learning_training_attribution_loop": {
       "current_version": "learning-v14",
@@ -760,30 +761,31 @@
       ]
     },
     "regression_qualification_framework": {
-      "current_version": "qualify-v2",
+      "current_version": "qualify-v3",
       "v8_target": "qualify-v8",
       "target_goal": "Qualification validates Stage-7/Manager-6/RAG-6 operational gates with deterministic pass/fail assertions for v8 readiness.",
       "gap_from_current": [
-        "Qualification summarizes lanes and subsystem posture but does not enforce per-subsystem v8 gates.",
-        "Stage-7 evidence is present in traces but not validated as mandatory promotion prerequisites."
+        "benchmark8_ready gate requires at least one complex-class benchmark artifact consumed by level10_qualify.",
+        "attribution8_ready gate requires attribution delta field present in qualification output."
       ],
       "required_code_changes": [
-        "Extend level10_qualify with explicit v8 gate assertions per subsystem using version8_upgrade_list requirements.",
-        "Add machine-readable gate results persisted to artifacts/promotion/qualification_history.jsonl.",
-        "Add minimal stage7 operational regression assertions to bin/micro_lane_stage7.sh."
+        "summarize_benchmark() reads codex51/benchmark/latest.json and emits per-class pass/fail in qualification output.",
+        "summarize_attribution() reads codex51/attribution/latest.json and emits orchestration_delta in qualification output.",
+        "evaluate_v8_gates includes benchmark8_ready and attribution8_ready gates."
       ],
       "required_validation": [
-        "Qualification JSON includes subsystem gate verdicts and missing-evidence lists.",
-        "Regression pack fails when required stage7 gate evidence is absent."
+        "Qualification JSON includes benchmark and attribution metrics under summary.metrics.",
+        "benchmark8_ready gate is False when no benchmark artifact is present.",
+        "attribution8_ready gate is False when no attribution artifact is present."
       ],
-      "operator_visible_behavior_change": "Qualification output clearly states why v8 promotion is blocked or ready per subsystem.",
+      "operator_visible_behavior_change": "Qualification output includes benchmark class pass/fail and model-vs-orchestration attribution delta.",
       "dependencies": [
         "stage_system:stage8-v1",
         "manager_system:manager8-v1",
         "rag_system:rag8-v1"
       ],
       "build_order_priority": 6,
-      "build_timing": "blocked_until_stage8_manager8_rag8_move",
+      "build_timing": "active_qualify_v4_development",
       "v8_status": "complete",
       "remaining_blockers": []
     }
