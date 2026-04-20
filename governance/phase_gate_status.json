@@ -117,12 +117,18 @@
     },
     {
       "blocking_reason_if_open": null,
-      "classification": "open",
+      "classification": "closed_ratified",
+      "closure_evidence_ref": "governance/phase6_closure_evidence.json",
+      "closure_package_id": "CAP-P6-CLOSE-1",
       "code_evidence": [],
-      "governance_evidence": [],
-      "notes": "Phase 5 closure (CAP-P5-CLOSE-1) authorizes Phase 6 capability work. No tactical family is unlocked.",
+      "governance_evidence": [
+        "governance/phase6_closure_evidence.json",
+        "governance/authority_adr_0023_phase6_closure.md"
+      ],
+      "notes": "Phase 6 closed by CAP-P6-CLOSE-1 via bounded controlled-expansion evidence. No tactical family unlocked.",
       "phase_id": 6,
-      "phase_name": "controlled_expansion"
+      "phase_name": "controlled_expansion",
+      "ratified_by_adr": "governance/authority_adr_0023_phase6_closure.md"
     }
   ],
   "generated_at": "2026-04-18T02:35:18-04:00",

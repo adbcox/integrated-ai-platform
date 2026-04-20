@@ -1,0 +1,29 @@
+{
+  "package_id": "CAP-P6-CLOSE-1",
+  "adr_ref": "governance/authority_adr_0023_phase6_closure.md",
+  "session_type": "capability_session",
+  "phase_id": 6,
+  "phase_name": "Phase 6: Controlled Expansion",
+  "convergence_deliverables_proven": [
+    "qualify_v3_fail_on_incomplete_v8_gates_in_level10_qualify",
+    "strict_v8_gates_mode_wired_into_level10_promote",
+    "benchmark8_ready_gate_in_evaluate_v8_gates",
+    "attribution8_ready_gate_in_evaluate_v8_gates",
+    "benchmark_min_class_count_manifest_driven_threshold",
+    "summarize_benchmark_class_pass_fail_from_trace_data",
+    "summarize_attribution_orchestration_delta_model_delta",
+    "qualify_v4_artifact_builder_reads_stage3_traces",
+    "benchmark8_ready_true_on_committed_repo_state",
+    "attribution8_ready_true_on_committed_repo_state"
+  ],
+  "first_gate_commit": "9fc41af",
+  "final_convergence_commit": "95bb7db",
+  "phase6_commits": [
+    "9fc41af",
+    "44639dc",
+    "95bb7db"
+  ],
+  "test_count_at_closure": 57,
+  "evidence_summary": "Phase 6 controlled expansion achieved across three bounded commits (9fc41af through 95bb7db). qualify-v3: --fail-on-incomplete-v8-gates in level10_qualify.py exits 1 when v8_gate_assertions.all_ready is False; --strict-v8-gates in level10_promote.py passes the flag through to qualification on every promote invocation. qualify-v4: benchmark8_ready and attribution8_ready gates in evaluate_v8_gates; summarize_benchmark reads {\"classes\":{\"name\":{\"passed\":bool}}} format; summarize_attribution reads {\"orchestration_delta\",\"model_delta\"} format; qualify_v4_artifact_builder.py classifies stage3_manager traces by target directory, computes acceptance-rate per class and attribution deltas, writes committed artifacts. benchmark8_ready=True and attribution8_ready=True confirmed at 95bb7db. 57 tests passing in packet validation.",
+  "generated_at": "2026-04-20T00:00:00-04:00"
+}

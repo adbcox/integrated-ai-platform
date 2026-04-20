@@ -122,13 +122,19 @@
     },
     {
       "blocking_reasons": [],
-      "code_anchors": [],
-      "governance_evidence": [],
+      "code_anchors": [
+        "bin/level10_qualify.py",
+        "bin/qualify_v4_artifact_builder.py"
+      ],
+      "governance_evidence": [
+        "governance/phase6_closure_evidence.json",
+        "governance/authority_adr_0023_phase6_closure.md"
+      ],
       "milestone_ref": null,
-      "notes": "Phase 5 closure (CAP-P5-CLOSE-1) authorizes Phase 6 capability work. No tactical family is unlocked.",
+      "notes": "Phase 6 closed by CAP-P6-CLOSE-1 via bounded controlled-expansion evidence (qualify-v4 benchmark/attribution gates with committed artifacts). No tactical family unlocked.",
       "phase_id": 6,
       "phase_name": "controlled_expansion",
-      "status": "open"
+      "status": "closed_ratified"
     }
   ],
   "schema_version": "1.0.0",

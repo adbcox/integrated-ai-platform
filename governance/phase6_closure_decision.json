@@ -1,0 +1,12 @@
+{
+  "phase_id": 6,
+  "phase_name": "Phase 6: Controlled Expansion",
+  "decision": "closed",
+  "decision_class": "closed_ratified",
+  "closure_adr_ref": "governance/authority_adr_0023_phase6_closure.md",
+  "closed_at_commit": "95bb7db",
+  "ratified_by_package": "CAP-P6-CLOSE-1",
+  "evidence_ref": "governance/phase6_closure_evidence.json",
+  "justification": "CAP-P6-CLOSE-1 ratifies Phase 6 closed_ratified on bounded controlled-expansion evidence. qualify-v3 strict enforcement and qualify-v4 benchmark/attribution evidence production are both complete with committed artifacts. benchmark8_ready=True and attribution8_ready=True at 95bb7db. Phase 7 definition is the next required governance step before new capability sessions are authorized.",
+  "generated_at": "2026-04-20T00:00:00-04:00"
+}
