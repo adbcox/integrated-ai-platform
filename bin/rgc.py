@@ -3,6 +3,7 @@
 
 Usage:
     python3 bin/rgc.py roadmap sync [--dry-run] [--db-url URL]
+    python3 bin/rgc.py integrity run [--dry-run] [--db-url URL] [--artifact-dir DIR]
 """
 
 from __future__ import annotations

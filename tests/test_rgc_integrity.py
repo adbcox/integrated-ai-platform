@@ -458,5 +458,54 @@ class FindingLifecyclePatchTest(unittest.TestCase):
         self.assertEqual(resp.json()["status"], "accepted")
 
 
+class EndToEndIntegrityRunToApiTest(unittest.TestCase):
+    """Proves: run_integrity_review() persists findings → GET /integrity/findings returns them."""
+
+    def setUp(self):
+        self.app, self.factory = _make_test_app()
+        self.client = TestClient(self.app)
+
+    def test_integrity_findings_visible_via_api(self):
+        _seed(
+            self.factory,
+            _item("RM-GOV-001", priority="BADPRI"),
+            _item("RM-GOV-002", category="FAKECAT"),
+        )
+        db = self.factory()
+        run_integrity_review(db, REPO_ROOT)
+        db.close()
+
+        resp = self.client.get("/integrity/findings")
+        self.assertEqual(resp.status_code, 200)
+        findings = resp.json()
+        types = {f["finding_type"] for f in findings}
+        self.assertIn("invalid_priority", types)
+        self.assertIn("invalid_category", types)
+        for f in findings:
+            self.assertEqual(f["status"], "open")
+            self.assertIn("finding_id", f)
+            self.assertIn("detected_at", f)
+
+    def test_lifecycle_patch_after_integrity_run(self):
+        _seed(self.factory, _item("RM-GOV-001", priority="BADPRI"))
+        db = self.factory()
+        run_integrity_review(db, REPO_ROOT)
+        db.close()
+
+        resp = self.client.get("/integrity/findings?finding_type=invalid_priority")
+        self.assertEqual(resp.status_code, 200)
+        findings = resp.json()
+        self.assertEqual(len(findings), 1)
+        fid = findings[0]["finding_id"]
+
+        patch = self.client.patch(f"/integrity/findings/{fid}", json={"status": "accepted", "resolution_note": "P9 intentional"})
+        self.assertEqual(patch.status_code, 200)
+        self.assertEqual(patch.json()["status"], "accepted")
+
+        get = self.client.get(f"/integrity/findings/{fid}")
+        self.assertEqual(get.json()["status"], "accepted")
+        self.assertEqual(get.json()["resolution_note"], "P9 intentional")
+
+
 if __name__ == "__main__":
     unittest.main()
