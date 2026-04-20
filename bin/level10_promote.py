@@ -161,6 +161,7 @@ def build_subsystem_gate_matrix(summary: dict[str, Any]) -> dict[str, Any]:
         "candidate_promote_requires": {
             "promotion8_ready": bool(gates.get("promotion8_ready")),
             "qualification8_ready": bool(gates.get("qualification8_ready")),
+            "gate_chain_ready": bool(gates.get("gate_chain_ready")),
         },
         "stage6_promote_requires": {
             "stage8_ready": bool(gates.get("stage8_ready")),
@@ -168,6 +169,7 @@ def build_subsystem_gate_matrix(summary: dict[str, Any]) -> dict[str, Any]:
             "rag8_ready": bool(gates.get("rag8_ready")),
             "worker8_ready": bool(gates.get("worker8_ready")),
             "qualification8_ready": bool(gates.get("qualification8_ready")),
+            "gate_chain_ready": bool(gates.get("gate_chain_ready")),
         },
     }
     matrix["candidate_promote_blocked"] = [k for k, ok in matrix["candidate_promote_requires"].items() if not ok]
@@ -263,6 +265,7 @@ def main() -> int:
         "dry_run": bool(args.dry_run),
         "decisions": [decision.__dict__ for decision in decisions],
         "metrics": summary.get("metrics", {}),
+        "gate_chain_stats": summary.get("metrics", {}).get("gate_chain", {}),
         "subsystem_assessments": summary.get("subsystem_assessments", {}),
         "subsystem_gate_matrix": gate_matrix,
     }
