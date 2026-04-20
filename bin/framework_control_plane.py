@@ -9,6 +9,7 @@ import json
 import re
 import shlex
 import sys
+import uuid as _uuid
 from pathlib import Path
 from typing import Any
 
@@ -32,6 +33,8 @@ from framework import (
     select_backend_profile_auto,
 )
 from framework.gateway_inference_adapter import build_gateway_adapter
+from framework.runtime_artifact_service import RuntimeArtifactService
+from framework.runtime_workspace_contract import build_workspace
 from framework.job_schema import LearningHooksConfig
 from framework.framework_control_plane import (
     _phase2_manager_extract,
@@ -1570,12 +1573,36 @@ def _run_phase3_continuation(
         return {**_CONTINUATION_SAFE, "error": str(exc)}
 
 
+def _build_run_workspace(
+    *,
+    state_root: Path,
+    task_template: str,
+    inference_mode: str,
+) -> tuple["RuntimeWorkspace", "RuntimeArtifactService"]:
+    run_id = _uuid.uuid4().hex[:12]
+    tmpl = (task_template or "none").strip() or "none"
+    mode = (inference_mode or "heuristic").strip() or "heuristic"
+    session_id = f"cp-{tmpl}-{mode}"
+    workspace = build_workspace(
+        source_root=REPO_ROOT,
+        base_root=state_root,
+        run_id=run_id,
+        session_id=session_id,
+    ).ensure_materialized()
+    return workspace, RuntimeArtifactService(workspace)
+
+
 def main() -> int:
     args = parse_args()
 
     state_root = Path(args.state_root).resolve()
     profile = select_backend_profile_auto() if args.backend_profile == "auto" else get_backend_profile(args.backend_profile)
     store = StateStore(root=state_root)
+    _cp_workspace, _cp_artifact_service = _build_run_workspace(
+        state_root=state_root,
+        task_template=args.task_template,
+        inference_mode=args.inference_mode,
+    )
     learning_latest = (
         Path(str(args.learning_latest)).resolve()
         if str(args.learning_latest).strip()
@@ -1926,6 +1953,17 @@ def main() -> int:
                 print(f"phase3_shell_command_preview={str(_inv.get('shell_command_preview') or '')[:200]}")
             else:
                 print(f"phase3_invocation_blocked_reason={str(_inv.get('blocked_reason') or '')}")
+
+    try:
+        _cp_artifact_service.write_manifest(
+            _cp_artifact_service.build_manifest(
+                profile_name=profile.name,
+                final_outcome="completed",
+                artifact_bundle_ref="",
+            )
+        )
+    except Exception:  # noqa: BLE001 - manifest write must not affect exit code
+        pass
 
     return _exit
 
