@@ -210,5 +210,61 @@ def cmdb_import_cmd(path: str, db_url: str | None, dry_run: bool) -> None:
     click.echo(f"  findings created:   {result.findings_created}")
 
 
+@cli.group()
+def links() -> None:
+    """Roadmap-to-CMDB link commands."""
+
+
+@links.command("refresh")
+@click.option(
+    "--db-url",
+    envvar="RGC_DATABASE_URL",
+    default=None,
+    help="Database URL (default: sqlite:///rgc.db or $RGC_DATABASE_URL).",
+)
+@click.option(
+    "--dry-run",
+    is_flag=True,
+    default=False,
+    help="Evaluate links without writing to the database.",
+)
+def links_refresh_cmd(db_url: str | None, dry_run: bool) -> None:
+    """Evaluate all roadmap items against CMDB entities and persist exact-match links."""
+    import os
+
+    if db_url:
+        os.environ["RGC_DATABASE_URL"] = db_url
+
+    from sqlalchemy import create_engine
+    from sqlalchemy.orm import sessionmaker
+
+    from roadmap_governance.database import get_db_url
+    from roadmap_governance.link_service import run_link_refresh
+    from roadmap_governance.models import Base
+
+    url = get_db_url()
+    kwargs: dict = {}
+    if url.startswith("sqlite"):
+        kwargs["connect_args"] = {"check_same_thread": False}
+
+    engine = create_engine(url, **kwargs)
+    Base.metadata.create_all(engine)
+    factory = sessionmaker(bind=engine, expire_on_commit=False)
+    db = factory()
+
+    try:
+        result = run_link_refresh(db, dry_run=dry_run)
+    finally:
+        db.close()
+
+    mode = "DRY RUN — " if dry_run else ""
+    click.echo(f"{mode}Link refresh complete.")
+    click.echo(f"  items processed:  {result.items_processed}")
+    click.echo(f"  links created:    {result.links_created}")
+    click.echo(f"  links updated:    {result.links_updated}")
+    click.echo(f"  links unchanged:  {result.links_unchanged}")
+    click.echo(f"  findings created: {result.findings_created}")
+
+
 if __name__ == "__main__":
     cli()

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any, Literal, Optional
+from typing import Any, List, Literal, Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -62,5 +62,37 @@ class CmdbEntityResponse(BaseModel):
     external_ref: Optional[str]
     # ORM attribute is entity_metadata (avoids shadowing Base.metadata); JSON key is metadata.
     metadata: Any = Field(default={}, validation_alias="entity_metadata")
+    created_at: datetime
+    updated_at: datetime
+
+
+class RoadmapLinkItem(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    entity_id: str
+    link_type: str
+    confidence: float
+    evidence_ref: Optional[str]
+    canonical_name: str
+    display_name: str
+    entity_type: str
+    created_at: datetime
+    updated_at: datetime
+
+
+class RoadmapImpactResponse(BaseModel):
+    roadmap_id: str
+    title: str
+    links: List[RoadmapLinkItem]
+
+
+class RoadmapLinkResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    roadmap_id: str
+    entity_id: str
+    link_type: str
+    confidence: float
+    evidence_ref: Optional[str]
     created_at: datetime
     updated_at: datetime

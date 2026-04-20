@@ -8,12 +8,15 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from roadmap_governance.database import get_db_dep
-from roadmap_governance.models import CmdbEntity, IntegrityFinding, RoadmapItem
+from roadmap_governance.link_service import get_impact_view
+from roadmap_governance.models import CmdbEntity, IntegrityFinding, RoadmapItem, RoadmapLink
 from roadmap_governance.schemas import (
     CmdbEntityResponse,
     FindingLifecycleUpdate,
     IntegrityFindingResponse,
+    RoadmapImpactResponse,
     RoadmapItemResponse,
+    RoadmapLinkResponse,
 )
 
 router = APIRouter()
@@ -101,3 +104,26 @@ def get_cmdb_entity(
     if row is None:
         raise HTTPException(status_code=404, detail="CMDB entity not found")
     return CmdbEntityResponse.model_validate(row)
+
+
+@router.get("/roadmap/items/{item_id}/impact", response_model=RoadmapImpactResponse)
+def get_roadmap_item_impact(
+    item_id: str,
+    db: Session = Depends(get_db_dep),
+) -> RoadmapImpactResponse:
+    result = get_impact_view(db, item_id)
+    if result is None:
+        raise HTTPException(status_code=404, detail="Roadmap item not found")
+    return result
+
+
+@router.get("/roadmap/links", response_model=List[RoadmapLinkResponse])
+def list_roadmap_links(
+    roadmap_id: Optional[str] = Query(default=None, description="Filter by roadmap_id"),
+    db: Session = Depends(get_db_dep),
+) -> List[RoadmapLinkResponse]:
+    q = db.query(RoadmapLink)
+    if roadmap_id is not None:
+        q = q.filter(RoadmapLink.roadmap_id == roadmap_id)
+    rows = q.order_by(RoadmapLink.roadmap_id, RoadmapLink.entity_id).all()
+    return [RoadmapLinkResponse.model_validate(r) for r in rows]

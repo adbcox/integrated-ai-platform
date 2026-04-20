@@ -5,7 +5,7 @@ import uuid
 from datetime import datetime
 from typing import Any, Optional
 
-from sqlalchemy import DateTime, JSON, String, Text, UniqueConstraint
+from sqlalchemy import DateTime, Float, ForeignKey, JSON, String, Text, UniqueConstraint
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
@@ -81,3 +81,33 @@ class CmdbEntity(Base):
 
     def __repr__(self) -> str:
         return f"<CmdbEntity id={self.entity_id!r} name={self.canonical_name!r}>"
+
+
+class RoadmapLink(Base):
+    """Persisted link between a roadmap item and a CMDB entity.
+
+    Composite PK (roadmap_id, entity_id, link_type) makes upserts idempotent.
+    confidence is in [0.0, 1.0]; only exact matches (1.0) are auto-linked.
+    """
+
+    __tablename__ = "roadmap_link"
+
+    roadmap_id: Mapped[str] = mapped_column(
+        String(64), ForeignKey("roadmap_item.id"), primary_key=True
+    )
+    entity_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("cmdb_entity.entity_id"), primary_key=True
+    )
+    link_type: Mapped[str] = mapped_column(String(64), primary_key=True)
+    confidence: Mapped[float] = mapped_column(Float, nullable=False)
+    evidence_ref: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+    def __repr__(self) -> str:
+        return (
+            f"<RoadmapLink roadmap={self.roadmap_id!r}"
+            f" entity={self.entity_id!r}"
+            f" type={self.link_type!r}"
+            f" confidence={self.confidence}>"
+        )
