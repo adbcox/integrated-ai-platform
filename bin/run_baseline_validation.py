@@ -5,7 +5,7 @@ Runs check and quick via LocalCommandRunner and writes the canonical
 baseline artifact at artifacts/baseline_validation/latest.json.
 """
 
-from __future__ import annotations
+from __future__ import annotations  # PEP-563
 
 import argparse
 import json
