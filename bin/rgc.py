@@ -151,5 +151,64 @@ def integrity_run_cmd(db_url: str | None, dry_run: bool, artifact_dir: str | Non
             click.echo(f"    {check}: {count}")
 
 
+@cli.group()
+def cmdb() -> None:
+    """CMDB entity commands."""
+
+
+@cmdb.command("import")
+@click.argument("path", type=click.Path(exists=True, dir_okay=False, readable=True))
+@click.option(
+    "--db-url",
+    envvar="RGC_DATABASE_URL",
+    default=None,
+    help="Database URL (default: sqlite:///rgc.db or $RGC_DATABASE_URL).",
+)
+@click.option(
+    "--dry-run",
+    is_flag=True,
+    default=False,
+    help="Validate without writing to the database.",
+)
+def cmdb_import_cmd(path: str, db_url: str | None, dry_run: bool) -> None:
+    """Import CMDB entities from a YAML or JSON seed file at PATH."""
+    import os
+
+    if db_url:
+        os.environ["RGC_DATABASE_URL"] = db_url
+
+    from pathlib import Path as _Path
+
+    from sqlalchemy import create_engine
+    from sqlalchemy.orm import sessionmaker
+
+    from roadmap_governance.cmdb_service import import_cmdb_entities, load_seed_file
+    from roadmap_governance.database import get_db_url
+    from roadmap_governance.models import Base
+
+    url = get_db_url()
+    kwargs: dict = {}
+    if url.startswith("sqlite"):
+        kwargs["connect_args"] = {"check_same_thread": False}
+
+    engine = create_engine(url, **kwargs)
+    Base.metadata.create_all(engine)
+    factory = sessionmaker(bind=engine, expire_on_commit=False)
+    db = factory()
+
+    entities_data = load_seed_file(_Path(path))
+    try:
+        result = import_cmdb_entities(db, entities_data, dry_run=dry_run)
+    finally:
+        db.close()
+
+    mode = "DRY RUN — " if dry_run else ""
+    click.echo(f"{mode}CMDB import complete.")
+    click.echo(f"  entities created:   {result.entities_created}")
+    click.echo(f"  entities updated:   {result.entities_updated}")
+    click.echo(f"  entities unchanged: {result.entities_unchanged}")
+    click.echo(f"  findings created:   {result.findings_created}")
+
+
 if __name__ == "__main__":
     cli()

@@ -8,8 +8,9 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from roadmap_governance.database import get_db_dep
-from roadmap_governance.models import IntegrityFinding, RoadmapItem
+from roadmap_governance.models import CmdbEntity, IntegrityFinding, RoadmapItem
 from roadmap_governance.schemas import (
+    CmdbEntityResponse,
     FindingLifecycleUpdate,
     IntegrityFindingResponse,
     RoadmapItemResponse,
@@ -74,3 +75,29 @@ def update_finding_lifecycle(
     db.commit()
     db.refresh(row)
     return IntegrityFindingResponse.model_validate(row)
+
+
+@router.get("/cmdb/entities", response_model=List[CmdbEntityResponse])
+def list_cmdb_entities(
+    entity_type: Optional[str] = Query(default=None, description="Filter by entity_type"),
+    environment: Optional[str] = Query(default=None, description="Filter by environment"),
+    db: Session = Depends(get_db_dep),
+) -> List[CmdbEntityResponse]:
+    q = db.query(CmdbEntity)
+    if entity_type is not None:
+        q = q.filter(CmdbEntity.entity_type == entity_type)
+    if environment is not None:
+        q = q.filter(CmdbEntity.environment == environment)
+    rows = q.order_by(CmdbEntity.canonical_name).all()
+    return [CmdbEntityResponse.model_validate(r) for r in rows]
+
+
+@router.get("/cmdb/entities/{entity_id}", response_model=CmdbEntityResponse)
+def get_cmdb_entity(
+    entity_id: str,
+    db: Session = Depends(get_db_dep),
+) -> CmdbEntityResponse:
+    row = db.get(CmdbEntity, entity_id)
+    if row is None:
+        raise HTTPException(status_code=404, detail="CMDB entity not found")
+    return CmdbEntityResponse.model_validate(row)

@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any, Literal, Optional
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class RoadmapItemResponse(BaseModel):
@@ -43,3 +43,24 @@ class IntegrityFindingResponse(BaseModel):
 class FindingLifecycleUpdate(BaseModel):
     status: Literal["resolved", "accepted", "suppressed"]
     resolution_note: Optional[str] = None
+
+
+class CmdbEntityResponse(BaseModel):
+    # populate_by_name=True lets tests construct the model using the Python field name.
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
+
+    entity_id: str
+    entity_type: str
+    canonical_name: str
+    display_name: str
+    platform: Optional[str]
+    environment: Optional[str]
+    criticality: Optional[str]
+    owner: Optional[str]
+    lifecycle_state: Optional[str]
+    source_system: Optional[str]
+    external_ref: Optional[str]
+    # ORM attribute is entity_metadata (avoids shadowing Base.metadata); JSON key is metadata.
+    metadata: Any = Field(default={}, validation_alias="entity_metadata")
+    created_at: datetime
+    updated_at: datetime

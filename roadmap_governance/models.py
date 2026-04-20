@@ -5,7 +5,7 @@ import uuid
 from datetime import datetime
 from typing import Any, Optional
 
-from sqlalchemy import DateTime, JSON, String, Text
+from sqlalchemy import DateTime, JSON, String, Text, UniqueConstraint
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
@@ -57,3 +57,27 @@ class IntegrityFinding(Base):
             f" type={self.finding_type!r}"
             f" ref={self.object_ref!r}>"
         )
+
+
+class CmdbEntity(Base):
+    __tablename__ = "cmdb_entity"
+    __table_args__ = (UniqueConstraint("canonical_name", name="uq_cmdb_entity_canonical_name"),)
+
+    entity_id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    entity_type: Mapped[str] = mapped_column(String(64), nullable=False)
+    canonical_name: Mapped[str] = mapped_column(Text, nullable=False)
+    display_name: Mapped[str] = mapped_column(Text, nullable=False)
+    platform: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    environment: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    criticality: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    owner: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    lifecycle_state: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    source_system: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    external_ref: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    # Python attr is entity_metadata to avoid shadowing DeclarativeBase.metadata.
+    entity_metadata: Mapped[Any] = mapped_column("metadata", JSON, nullable=False, default=dict)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+    def __repr__(self) -> str:
+        return f"<CmdbEntity id={self.entity_id!r} name={self.canonical_name!r}>"
