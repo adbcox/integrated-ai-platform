@@ -44,7 +44,10 @@ def upgrade() -> None:
         sa.Column("object_type", sa.String(64), nullable=False),
         sa.Column("object_ref", sa.String(256), nullable=False),
         sa.Column("summary", sa.Text, nullable=False),
-        sa.Column("details", sa.JSON, nullable=False, server_default="{}"),
+        # No server_default: ORM always supplies details=dict() (Python-side default).
+        # A server_default of '{}' is not valid PostgreSQL syntax and would fail
+        # on pg; removing it keeps the migration portable without any behaviour change.
+        sa.Column("details", sa.JSON, nullable=False),
         sa.Column("detected_at", sa.DateTime(timezone=True), nullable=False),
         sa.Column("status", sa.String(16), nullable=False),
         sa.Column("resolution_note", sa.Text, nullable=True),

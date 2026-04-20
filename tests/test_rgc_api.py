@@ -6,6 +6,7 @@ Uses FastAPI TestClient with an in-memory SQLite override.
 from __future__ import annotations
 
 import sys
+import tempfile
 import unittest
 import uuid
 from datetime import datetime, timezone
@@ -23,6 +24,7 @@ from sqlalchemy.pool import StaticPool
 from roadmap_governance.database import get_db_dep
 from roadmap_governance.models import Base, IntegrityFinding, RoadmapItem
 from roadmap_governance.router import router as rgc_router
+from roadmap_governance.service import sync_roadmap
 
 
 def _make_test_app():
@@ -200,6 +202,39 @@ class IntegrityFindingsEndpointTest(unittest.TestCase):
             "object_ref", "summary", "details", "detected_at", "status",
         ):
             self.assertIn(field, row, f"missing field: {field}")
+
+
+class EndToEndSyncFindingsTest(unittest.TestCase):
+    """Proves the full path: sync produces a finding → GET /integrity/findings returns it."""
+
+    def setUp(self) -> None:
+        self.app, self.factory = _make_test_app()
+        self.client = TestClient(self.app)
+
+    def test_naming_violation_persisted_and_returned_by_endpoint(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            idx = root / "docs" / "roadmap" / "ROADMAP_INDEX.md"
+            idx.parent.mkdir(parents=True)
+            # INVALID-NO-PREFIX does not match RM-<DOMAIN>-<NNN>
+            idx.write_text("- `INVALID-NO-PREFIX` — Bad naming\n", encoding="utf-8")
+
+            db = self.factory()
+            sync_roadmap(db, root)
+            db.close()
+
+        resp = self.client.get("/integrity/findings")
+        self.assertEqual(resp.status_code, 200)
+
+        findings = resp.json()
+        violations = [f for f in findings if f["finding_type"] == "naming_violation"]
+        self.assertEqual(len(violations), 1)
+        v = violations[0]
+        self.assertEqual(v["object_ref"], "INVALID-NO-PREFIX")
+        self.assertEqual(v["severity"], "error")
+        self.assertEqual(v["status"], "open")
+        self.assertIn("finding_id", v)
+        self.assertIn("detected_at", v)
 
 
 if __name__ == "__main__":
