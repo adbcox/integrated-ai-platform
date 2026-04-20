@@ -10,7 +10,7 @@ Orchestrates:
      or governance/phase7_partial_evidence.json (if gates remain open)
 """
 
-from __future__ import annotations
+from __future__ import annotations  # PEP-563
 
 import argparse
 import json
