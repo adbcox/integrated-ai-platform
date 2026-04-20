@@ -31,6 +31,7 @@ from framework import (
     get_backend_profile,
     select_backend_profile_auto,
 )
+from framework.gateway_inference_adapter import build_gateway_adapter
 from framework.job_schema import LearningHooksConfig
 from framework.framework_control_plane import (
     _phase2_manager_extract,
@@ -76,7 +77,7 @@ def parse_args() -> argparse.Namespace:
         default="auto",
         choices=["auto", "mac_local", "threadripper_local", "multi_host_future"],
     )
-    parser.add_argument("--inference-mode", default="heuristic", choices=["heuristic", "artifact_replay", "ollama", "claude_code_cli"])
+    parser.add_argument("--inference-mode", default="heuristic", choices=["heuristic", "artifact_replay", "ollama", "claude_code_cli", "gateway"])
     parser.add_argument("--inference-replay", default="", help="Artifact replay payload for inference adapter")
     parser.add_argument("--task-class", default=JobClass.FRAMEWORK_BOOTSTRAP.value, choices=[item.value for item in JobClass])
     parser.add_argument(
@@ -1588,11 +1589,14 @@ def main() -> int:
         trusted_patterns_path=DEFAULT_TRUSTED_PATTERNS_LATEST,
         manager_bridge_path=manager_bridge_latest,
     )
-    inference = build_inference_adapter(
-        backend_profile=profile.name,
-        mode=args.inference_mode,
-        replay_path=args.inference_replay,
-    )
+    if args.inference_mode == "gateway":
+        inference = build_gateway_adapter(profile)
+    else:
+        inference = build_inference_adapter(
+            backend_profile=profile.name,
+            mode=args.inference_mode,
+            replay_path=args.inference_replay,
+        )
     scheduler = Scheduler(
         store=store,
         learning=learning,
