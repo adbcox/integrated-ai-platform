@@ -2,6 +2,11 @@
 
 run_integrity_review is the public entry point; it is safe to rerun (idempotent via
 finding_exists) and writes timestamped artifacts under artifacts/governance/integrity/.
+
+Scope boundary: this service operates on normalized DB state (roadmap_item rows).
+duplicate_id findings are NOT produced here; they are emitted by sync_roadmap() during
+source ingestion, because the DB primary key collapses duplicate IDs before they reach
+this layer.  Run `rgc roadmap sync` first to ensure duplicate_id findings are recorded.
 """
 
 from __future__ import annotations

@@ -101,7 +101,13 @@ def integrity() -> None:
     help="Override artifact output directory.",
 )
 def integrity_run_cmd(db_url: str | None, dry_run: bool, artifact_dir: str | None) -> None:
-    """Run integrity review against current roadmap items in the database."""
+    """Run integrity review against current roadmap items in the database.
+
+    Checks naming convention, priority, item_type, category tokens, and
+    near-duplicate titles.  Note: duplicate_id findings are detected during
+    `rgc roadmap sync` (source ingestion), not here, because the DB primary
+    key collapses duplicates before this review runs.
+    """
     import os
 
     if db_url:
