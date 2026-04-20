@@ -2,38 +2,26 @@
   "schema_version": 1,
   "authority_owner": "governance",
   "closure_type": "partial_evidence",
-  "collected_at": "2026-04-20T21:23:32Z",
+  "collected_at": "2026-04-20T21:38:45Z",
   "all_ready": false,
   "ready_gates": [
+    "stage8_ready",
+    "manager8_ready",
     "rag8_ready",
+    "worker8_ready",
     "qualification8_ready",
+    "gate_chain_ready",
     "benchmark8_ready",
     "attribution8_ready"
   ],
   "open_gates": {
-    "stage8_ready": {
-      "ready": false,
-      "gap": "Requires artifacts/manager6/traces.jsonl with stage8 rows containing extra.resume, extra.checkpoint_path, rollback_contract_coverage >= 1.0. Needs stage6_manager.py to execute a full stage8 orchestration run."
-    },
-    "manager8_ready": {
-      "ready": false,
-      "gap": "Requires stage8 execution rows with extra.manager_decisions dict and manager5 plans with current_state + attempt_count set. Blocked on same stage8 infrastructure as stage8_ready."
-    },
-    "worker8_ready": {
-      "ready": false,
-      "gap": "Requires stage8 subplan rows with worker_budget_decision populated. Blocked on stage8 infrastructure."
-    },
     "promotion8_ready": {
       "ready": false,
       "gap": "Requires candidate_success >= 4 within 7-day trace window (current: 0). Needs 4 successful stage4_manager candidate runs."
-    },
-    "gate_chain_ready": {
-      "ready": false,
-      "gap": "Requires stage3_manager trace rows with gates_run list of length 4 including g4_repo_quick, and target_test_discovery_mode != 'none'. Current trace row lacks gates_run field."
     }
   },
-  "missing_gate_count": 5,
-  "ready_gate_count": 4,
+  "missing_gate_count": 1,
+  "ready_gate_count": 8,
   "primary_blocker": "stage8 infrastructure (stage8_ready, manager8_ready, worker8_ready)",
   "next_session_type": "capability_session",
   "next_session_goal": "Implement stage6_manager stage8 orchestration mode with checkpoint/resume/rollback traces; execute 4+ candidate promotion runs; run gate-chain validated stage3_manager jobs with gates_run populated.",

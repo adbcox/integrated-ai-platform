@@ -2,7 +2,7 @@
   "orchestration_delta": 1.0,
   "model_delta": 1.0,
   "source": "stage3_traces",
-  "run_count": 1,
+  "run_count": 2,
   "accepted_rate": 1.0,
   "fallback_rate": 0.0
 }

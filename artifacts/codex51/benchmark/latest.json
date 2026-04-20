@@ -3,9 +3,9 @@
     "framework_code": {
       "passed": true,
       "acceptance_rate": 1.0,
-      "run_count": 1
+      "run_count": 2
     }
   },
   "source": "stage3_traces",
-  "run_count": 1
+  "run_count": 2
 }

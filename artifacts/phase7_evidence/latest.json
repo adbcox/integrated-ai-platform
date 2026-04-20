@@ -1,24 +1,20 @@
 {
   "schema_version": 1,
-  "collected_at": "2026-04-20T21:23:32Z",
+  "collected_at": "2026-04-20T21:38:45Z",
   "v8_gates": {
-    "stage8_ready": false,
-    "manager8_ready": false,
+    "stage8_ready": true,
+    "manager8_ready": true,
     "rag8_ready": true,
-    "worker8_ready": false,
+    "worker8_ready": true,
     "promotion8_ready": false,
     "qualification8_ready": true,
-    "gate_chain_ready": false,
+    "gate_chain_ready": true,
     "benchmark8_ready": true,
     "attribution8_ready": true
   },
   "all_ready": false,
   "missing_gates": [
-    "stage8_ready",
-    "manager8_ready",
-    "worker8_ready",
-    "promotion8_ready",
-    "gate_chain_ready"
+    "promotion8_ready"
   ],
   "metrics_snapshot": {
     "candidate": {},
@@ -26,56 +22,59 @@
       "latest_success_streak": 0,
       "latest_run_count": 0
     },
-    "stage6_preview": {},
+    "stage6_preview": {
+      "failure": 3
+    },
     "worker": {},
     "rag4": {
-      "plans": 9,
-      "targets": 81,
-      "avg_confidence": 7.074
+      "plans": 10,
+      "targets": 90,
+      "avg_confidence": 7.1
     },
     "stage8": {
-      "resumed_runs": 0,
-      "paused_runs": 0,
-      "checkpointed_runs": 0,
-      "executed_subplans": 0,
-      "rollback_contract_coverage": 0.0,
-      "worker_budget_decisions": 0,
+      "resumed_runs": 1,
+      "paused_runs": 1,
+      "checkpointed_runs": 1,
+      "executed_subplans": 3,
+      "rollback_contract_coverage": 1.0,
+      "worker_budget_decisions": 3,
       "worker_budget_adaptive_decisions": 0,
       "worker_budget_deferred_subplans": 0,
       "worker_budget_manual_hints": 0,
-      "manager_strategy_decision_rows": 0
+      "manager_strategy_decision_rows": 1
     },
     "rag6": {
-      "plans": 9,
-      "clusters": 27,
-      "clusters_with_risk": 27,
-      "clusters_with_yield": 27
+      "plans": 10,
+      "clusters": 30,
+      "clusters_with_risk": 30,
+      "clusters_with_yield": 30
     },
     "manager5_lifecycle": {
-      "plans": 0,
-      "with_state": 0,
-      "with_attempts": 0
+      "plans": 3,
+      "with_state": 3,
+      "with_attempts": 3
     },
     "gate_chain": {
-      "total": 1,
-      "accepted": 1,
+      "total": 2,
+      "accepted": 2,
       "rejected": 0,
-      "fully_qualified": 0,
+      "fully_qualified": 1,
       "qualified_smoke_fallback": 0,
       "qualified_partial_gates": 1,
       "qualification_rate": 1.0,
-      "full_qualification_rate": 0.0,
+      "full_qualification_rate": 0.5,
       "gate_coverage": {
-        "g1_syntax": 0,
-        "g2_tests": 0,
-        "g3_repo_check": 0,
-        "g4_repo_quick": 0
+        "g1_syntax": 1,
+        "g2_tests": 1,
+        "g3_repo_check": 1,
+        "g4_repo_quick": 1
       },
       "discovery_mode_distribution": {
-        "skipped": 1
+        "skipped": 1,
+        "naming_convention": 1
       },
       "classification_distribution": {
-        "accepted_change": 1
+        "accepted_change": 2
       }
     },
     "benchmark": {
