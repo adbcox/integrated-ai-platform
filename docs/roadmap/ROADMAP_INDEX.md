@@ -15,3 +15,23 @@ Operating rule:
 - Plane is secondary operational state only
 - sync is repo-authoritative by default
 - roadmap items must remain AI-operable through explicit scope, allowed files, forbidden files, validation order, rollback rule, and artifact outputs
+
+## Initial ingested canonical items
+
+### Phase 0 governance items
+
+- `RM-GOV-002` — Reconcile source-of-truth surfaces
+- `RM-GOV-003` — Create core ADR set
+- `RM-GOV-004` — Create machine-readable execution-control package
+- `RM-GOV-005` — Create CMDB-lite registry
+- `RM-GOV-006` — Lock definition of done for coding runs
+- `RM-GOV-007` — Lock autonomy scorecard
+
+### Phase 1 core runtime items
+
+- `RM-CORE-001` — Introduce internal inference gateway
+- `RM-CORE-002` — Standardize model profiles
+- `RM-CORE-003` — Standardize workspace layout
+- `RM-CORE-004` — Stabilize artifact persistence
+- `RM-CORE-005` — Wrap local execution commands
+- `RM-CORE-006` — Establish baseline local-run validation

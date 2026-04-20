@@ -1,0 +1,153 @@
+schema_version: "1.0"
+kind: "roadmap_item"
+id: "RM-CORE-001"
+slug: "introduce-internal-inference-gateway"
+title: "Introduce internal inference gateway"
+category: "CORE"
+type: "platform_foundation"
+status: "proposed"
+priority: "P1"
+scoring:
+  loe: 4
+  strategic_value: 5
+  architecture_fit: 5
+  execution_risk: 2
+  dependency_burden: 3
+  readiness: 3
+description: >
+  Route all model invocation through one internal inference gateway API instead of
+  Ollama-specific shell details, providing a stable abstraction layer for model
+  access across all execution contexts.
+why_it_matters: >
+  Direct Ollama-specific invocation scattered across execution paths makes it impossible
+  to swap models, add routing logic, or measure invocation uniformly. A single internal
+  gateway enables model profile standardization, routing, and observability without
+  changing callers.
+scope:
+  objective: >
+    Introduce an internal inference gateway that accepts a normalized request and
+    routes to the appropriate backend (local Ollama, remote API) based on profile.
+  in_scope:
+    - "inference gateway API definition"
+    - "local Ollama backend adapter"
+    - "gateway invocation from execution paths"
+    - "basic request/response telemetry"
+  out_of_scope:
+    - "remote API backends beyond basic stub"
+    - "model profile auto-selection logic"
+    - "Plane sync changes"
+dependencies:
+  blocked_by:
+    - "RM-GOV-003"
+    - "RM-GOV-005"
+  enables:
+    - "RM-CORE-002"
+    - "RM-CORE-005"
+  related_items:
+    - "RM-CORE-003"
+impact:
+  affected_systems:
+    - "inference_gateway"
+    - "agent_runtime"
+    - "control_plane"
+  expected_file_families:
+    - "framework/**"
+    - "bin/**"
+  impact_summary: >
+    Provides the single internal model invocation surface that all execution paths
+    will use, enabling model profile standardization and invocation observability.
+cmdb:
+  refs:
+    - "subsystem:inference_gateway"
+    - "subsystem:agent_runtime"
+  asset_links: []
+  service_links: []
+grouping:
+  feature_block_candidates:
+    - "FB-CORE-RUNTIME-FOUNDATION"
+  package_group: "PKG-CORE-PHASE1"
+  shared_touch_surfaces:
+    - "inference gateway"
+    - "model invocation"
+    - "execution adapter"
+milestones:
+  recommended_first_milestone: "define-gateway-api"
+  downstream_milestones:
+    - "implement-ollama-adapter"
+    - "route-execution-paths-through-gateway"
+    - "add-telemetry"
+planning:
+  planning_packet_ref: null
+  planning_status: "not_started"
+  planning_notes: ""
+execution:
+  execution_package_refs: []
+  execution_status: "not_started"
+  last_execution_commit: null
+validation:
+  validation_artifact_refs: []
+  validation_status: "not_started"
+  definition_of_done_ref: "docs/roadmap/STANDARDS.md"
+governance:
+  phase_target: "Phase 1"
+  architectural_lane: "runtime_foundation"
+  risk_tier: "medium"
+  allowed_change_scope: "bounded"
+  requires_explicit_escalation: false
+ai_operability:
+  canonical_summary: >
+    Core runtime item to introduce the internal inference gateway as the single
+    normalized model invocation layer over Ollama and other backends.
+  developer_intent: >
+    After this item, all model calls go through one internal gateway. No execution
+    path invokes Ollama directly. Routing, profiling, and telemetry are possible.
+  non_goals:
+    - "Do not implement remote API backends beyond a stub"
+    - "Do not implement model auto-selection"
+    - "Do not change governance or promotion code"
+  allowed_files:
+    - "framework/**"
+    - "bin/**"
+  forbidden_files:
+    - "governance/**"
+    - "config/**"
+    - "tests/**"
+    - ".github/**"
+  validation_order:
+    - "unit tests for gateway API"
+    - "integration test with local Ollama adapter"
+    - "verify all execution paths route through gateway"
+    - "make check / make quick"
+  rollback_rule: >
+    Revert gateway files and adapter. Restore previous direct invocation paths.
+    Preserve unrelated changes.
+  artifact_outputs:
+    - "framework/inference_gateway.py"
+  promotion_linkage:
+    required: false
+    manifest_refs: []
+sync:
+  plane:
+    sync_enabled: true
+    sync_mode: "repo_to_plane_authoritative"
+    workspace: "Integrated AI Platform"
+    project: "Roadmap Ops"
+    plane_item_id: null
+    last_synced_at: null
+    writeback_fields_allowed:
+      - "operational_state"
+      - "assignee"
+      - "cycle"
+      - "module"
+      - "labels"
+  github:
+    issue_ref: null
+    pr_refs: []
+metadata:
+  owner: "adrian"
+  created_at: "2026-04-20"
+  updated_at: "2026-04-20"
+  tags:
+    - "core"
+    - "inference-gateway"
+    - "phase-1"

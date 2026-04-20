@@ -1,0 +1,152 @@
+schema_version: "1.0"
+kind: "roadmap_item"
+id: "RM-CORE-002"
+slug: "standardize-model-profiles"
+title: "Standardize model profiles"
+category: "CORE"
+type: "platform_foundation"
+status: "proposed"
+priority: "P1"
+scoring:
+  loe: 2
+  strategic_value: 4
+  architecture_fit: 5
+  execution_risk: 1
+  dependency_burden: 2
+  readiness: 4
+description: >
+  Define and canonically record the fast, balanced, hard, and long-context local
+  coding model profiles so all execution paths select models by profile name rather
+  than by direct model identifier.
+why_it_matters: >
+  Without standardized profiles, model selection is scattered and inconsistent.
+  Profiles decouple execution paths from specific model identifiers, making model
+  upgrades and routing changes transparent to callers.
+scope:
+  objective: >
+    Define four named profiles (fast, balanced, hard, long-context), record them
+    in a canonical config, and update the inference gateway to resolve profile names
+    to model identifiers.
+  in_scope:
+    - "fast profile definition"
+    - "balanced profile definition"
+    - "hard profile definition"
+    - "long-context profile definition"
+    - "canonical profile config record"
+    - "gateway profile resolution"
+  out_of_scope:
+    - "dynamic profile selection"
+    - "remote model profiles"
+    - "Plane sync changes"
+dependencies:
+  blocked_by:
+    - "RM-CORE-001"
+  enables:
+    - "RM-CORE-005"
+  related_items:
+    - "RM-CORE-001"
+impact:
+  affected_systems:
+    - "inference_gateway"
+    - "agent_runtime"
+  expected_file_families:
+    - "policies/**"
+    - "framework/**"
+    - "config/**"
+  impact_summary: >
+    Decouples execution paths from specific model identifiers. Model upgrades require
+    only profile config changes, not execution path changes.
+cmdb:
+  refs:
+    - "subsystem:inference_gateway"
+    - "subsystem:agent_runtime"
+  asset_links: []
+  service_links: []
+grouping:
+  feature_block_candidates:
+    - "FB-CORE-RUNTIME-FOUNDATION"
+  package_group: "PKG-CORE-PHASE1"
+  shared_touch_surfaces:
+    - "model profiles"
+    - "inference gateway"
+    - "local model routing rules"
+milestones:
+  recommended_first_milestone: "define-four-named-profiles"
+  downstream_milestones:
+    - "record-canonical-profile-config"
+    - "update-gateway-resolution"
+planning:
+  planning_packet_ref: null
+  planning_status: "not_started"
+  planning_notes: ""
+execution:
+  execution_package_refs: []
+  execution_status: "not_started"
+  last_execution_commit: null
+validation:
+  validation_artifact_refs: []
+  validation_status: "not_started"
+  definition_of_done_ref: "docs/roadmap/STANDARDS.md"
+governance:
+  phase_target: "Phase 1"
+  architectural_lane: "runtime_foundation"
+  risk_tier: "low"
+  allowed_change_scope: "bounded"
+  requires_explicit_escalation: false
+ai_operability:
+  canonical_summary: >
+    Core runtime item to define the four standard local coding model profiles and
+    update the inference gateway to resolve profiles to model identifiers.
+  developer_intent: >
+    After this item, execution paths use profile names (fast, hard, etc.) not model
+    identifiers. Swapping a local model requires only a config change.
+  non_goals:
+    - "Do not implement dynamic profile selection"
+    - "Do not add remote model profiles"
+    - "Do not change governance or tests"
+  allowed_files:
+    - "policies/**"
+    - "framework/**"
+    - "config/**"
+  forbidden_files:
+    - "governance/**"
+    - "tests/**"
+    - ".github/**"
+  validation_order:
+    - "confirm four profiles are defined"
+    - "confirm gateway resolves profile names to identifiers"
+    - "verify existing aider-fast / aider-hard targets still work"
+    - "make check / make quick"
+  rollback_rule: >
+    Revert profile config and gateway resolution changes. Restore direct model
+    identifier usage. Preserve unrelated changes.
+  artifact_outputs:
+    - "policies/model_profiles.yaml"
+  promotion_linkage:
+    required: false
+    manifest_refs: []
+sync:
+  plane:
+    sync_enabled: true
+    sync_mode: "repo_to_plane_authoritative"
+    workspace: "Integrated AI Platform"
+    project: "Roadmap Ops"
+    plane_item_id: null
+    last_synced_at: null
+    writeback_fields_allowed:
+      - "operational_state"
+      - "assignee"
+      - "cycle"
+      - "module"
+      - "labels"
+  github:
+    issue_ref: null
+    pr_refs: []
+metadata:
+  owner: "adrian"
+  created_at: "2026-04-20"
+  updated_at: "2026-04-20"
+  tags:
+    - "core"
+    - "model-profiles"
+    - "phase-1"

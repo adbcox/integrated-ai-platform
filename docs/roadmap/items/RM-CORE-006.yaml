@@ -1,0 +1,159 @@
+schema_version: "1.0"
+kind: "roadmap_item"
+id: "RM-CORE-006"
+slug: "establish-baseline-local-run-validation"
+title: "Establish baseline local-run validation"
+category: "CORE"
+type: "workflow"
+status: "proposed"
+priority: "P1"
+scoring:
+  loe: 3
+  strategic_value: 5
+  architecture_fit: 5
+  execution_risk: 2
+  dependency_burden: 3
+  readiness: 3
+description: >
+  Prove the local Ollama-first execution route works end to end before higher-autonomy
+  changes merge, by running a complete validation cycle and recording the baseline
+  pass/fail evidence in the artifact root.
+why_it_matters: >
+  Without a recorded baseline validation run on the local Ollama-first route, there is
+  no ground truth to compare against when higher-autonomy changes are proposed. This
+  baseline is the prerequisite for reliable regression detection.
+scope:
+  objective: >
+    Run a complete end-to-end local validation cycle (build, test, lint, inference)
+    using the local Ollama-first route and record the baseline evidence in the
+    artifact root.
+  in_scope:
+    - "end-to-end local validation run"
+    - "baseline evidence artifact recording"
+    - "pass/fail determination against definition of done"
+    - "baseline result linked to promotion manifest"
+  out_of_scope:
+    - "CI/CD pipeline integration"
+    - "remote execution validation"
+    - "Plane sync changes"
+dependencies:
+  blocked_by:
+    - "RM-CORE-004"
+    - "RM-CORE-005"
+    - "RM-GOV-006"
+  enables: []
+  related_items:
+    - "RM-GOV-007"
+    - "RM-CORE-001"
+impact:
+  affected_systems:
+    - "validation_pipeline"
+    - "agent_runtime"
+    - "artifact_contract"
+    - "control_plane"
+  expected_file_families:
+    - "artifacts/**"
+    - "docs/execution/**"
+  impact_summary: >
+    Produces the baseline validation evidence that regression detection for all
+    higher-autonomy changes will be measured against.
+cmdb:
+  refs:
+    - "subsystem:validation_pipeline"
+    - "subsystem:agent_runtime"
+    - "subsystem:artifact_contract"
+  asset_links: []
+  service_links: []
+grouping:
+  feature_block_candidates:
+    - "FB-CORE-RUNTIME-FOUNDATION"
+  package_group: "PKG-CORE-PHASE1"
+  shared_touch_surfaces:
+    - "local validation run"
+    - "baseline evidence"
+    - "definition of done"
+    - "promotion readiness"
+milestones:
+  recommended_first_milestone: "run-complete-local-validation-cycle"
+  downstream_milestones:
+    - "record-baseline-evidence"
+    - "link-to-promotion-manifest"
+planning:
+  planning_packet_ref: null
+  planning_status: "not_started"
+  planning_notes: ""
+execution:
+  execution_package_refs: []
+  execution_status: "not_started"
+  last_execution_commit: null
+validation:
+  validation_artifact_refs: []
+  validation_status: "not_started"
+  definition_of_done_ref: "docs/execution/definition_of_done.md"
+governance:
+  phase_target: "Phase 1"
+  architectural_lane: "runtime_foundation"
+  risk_tier: "low"
+  allowed_change_scope: "narrow"
+  requires_explicit_escalation: false
+ai_operability:
+  canonical_summary: >
+    Core workflow item to run a complete end-to-end local Ollama-first validation
+    cycle and record the baseline pass/fail evidence in the artifact root.
+  developer_intent: >
+    After this item, there is a recorded baseline validation run. Regression
+    detection is possible for all subsequent higher-autonomy changes.
+  non_goals:
+    - "Do not integrate with CI/CD pipeline"
+    - "Do not run remote execution validation"
+    - "Do not change governance, tests, or config"
+  allowed_files:
+    - "artifacts/**"
+    - "docs/execution/**"
+  forbidden_files:
+    - "bin/**"
+    - "framework/**"
+    - "governance/**"
+    - "config/**"
+    - "tests/**"
+    - ".github/**"
+  validation_order:
+    - "confirm end-to-end run completes without error"
+    - "confirm baseline artifact is written to canonical root"
+    - "confirm pass/fail matches definition of done criteria"
+    - "manual review"
+  rollback_rule: >
+    Remove the baseline artifact files. The run itself is non-destructive.
+    Preserve all other changes.
+  artifact_outputs:
+    - "artifacts/baseline_validation/latest.json"
+  promotion_linkage:
+    required: true
+    manifest_refs:
+      - "config/promotion_manifest.json"
+sync:
+  plane:
+    sync_enabled: true
+    sync_mode: "repo_to_plane_authoritative"
+    workspace: "Integrated AI Platform"
+    project: "Roadmap Ops"
+    plane_item_id: null
+    last_synced_at: null
+    writeback_fields_allowed:
+      - "operational_state"
+      - "assignee"
+      - "cycle"
+      - "module"
+      - "labels"
+  github:
+    issue_ref: null
+    pr_refs: []
+metadata:
+  owner: "adrian"
+  created_at: "2026-04-20"
+  updated_at: "2026-04-20"
+  tags:
+    - "core"
+    - "baseline-validation"
+    - "local-run"
+    - "phase-1"

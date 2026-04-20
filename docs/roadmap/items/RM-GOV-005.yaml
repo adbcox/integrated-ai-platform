@@ -1,0 +1,156 @@
+schema_version: "1.0"
+kind: "roadmap_item"
+id: "RM-GOV-005"
+slug: "create-cmdb-lite-registry"
+title: "Create CMDB-lite registry"
+category: "GOV"
+type: "platform_foundation"
+status: "proposed"
+priority: "P1"
+scoring:
+  loe: 4
+  strategic_value: 5
+  architecture_fit: 5
+  execution_risk: 2
+  dependency_burden: 2
+  readiness: 3
+description: >
+  Establish the CMDB-lite registry as the architecture and runtime authority layer,
+  separate from the promotion manifest release authority, with machine-readable
+  subsystem records.
+why_it_matters: >
+  Without a CMDB-lite registry, architecture authority is conflated with release
+  authority. A separate CMDB-lite provides stable subsystem refs, asset links, and
+  service links that roadmap items, ADRs, and execution packages can cite without
+  coupling to the promotion manifest.
+scope:
+  objective: >
+    Create the CMDB-lite schema and initial registry with records for the core
+    subsystems: roadmap_ops, control_plane, agent_runtime, inference_gateway,
+    artifact_contract, validation_pipeline.
+  in_scope:
+    - "CMDB-lite schema definition"
+    - "initial subsystem records"
+    - "asset and service link stubs"
+    - "architecture authority boundary documentation"
+  out_of_scope:
+    - "runtime CMDB writeback"
+    - "automated CMDB sync"
+    - "Plane CMDB integration"
+dependencies:
+  blocked_by:
+    - "RM-GOV-004"
+  enables:
+    - "RM-GOV-006"
+    - "RM-CORE-001"
+  related_items:
+    - "RM-GOV-001"
+impact:
+  affected_systems:
+    - "cmdb_lite"
+    - "roadmap_ops"
+    - "control_plane"
+    - "agent_runtime"
+  expected_file_families:
+    - "docs/architecture/cmdb-lite/**"
+    - "docs/roadmap/**"
+  impact_summary: >
+    Provides a stable architecture authority surface that all roadmap items, ADRs,
+    and execution packages can reference without coupling to release tooling.
+cmdb:
+  refs:
+    - "subsystem:cmdb_lite"
+    - "subsystem:roadmap_ops"
+    - "subsystem:control_plane"
+  asset_links: []
+  service_links: []
+grouping:
+  feature_block_candidates:
+    - "FB-GOV-ROADMAP-AUTHORITY"
+  package_group: "PKG-GOV-PHASE0"
+  shared_touch_surfaces:
+    - "CMDB-lite schema"
+    - "subsystem refs"
+    - "architecture authority"
+milestones:
+  recommended_first_milestone: "define-cmdb-lite-schema"
+  downstream_milestones:
+    - "populate-initial-subsystem-records"
+    - "link-roadmap-items-to-cmdb"
+planning:
+  planning_packet_ref: null
+  planning_status: "not_started"
+  planning_notes: ""
+execution:
+  execution_package_refs: []
+  execution_status: "not_started"
+  last_execution_commit: null
+validation:
+  validation_artifact_refs: []
+  validation_status: "not_started"
+  definition_of_done_ref: "docs/roadmap/STANDARDS.md"
+governance:
+  phase_target: "Phase 0"
+  architectural_lane: "governance_freeze"
+  risk_tier: "low"
+  allowed_change_scope: "bounded"
+  requires_explicit_escalation: false
+ai_operability:
+  canonical_summary: >
+    Governance item to create the CMDB-lite registry as the architecture authority
+    layer separate from the promotion manifest release authority.
+  developer_intent: >
+    After this item, subsystem refs like "subsystem:agent_runtime" resolve to stable
+    CMDB-lite records that are independent of the promotion release cycle.
+  non_goals:
+    - "Do not implement runtime CMDB writeback"
+    - "Do not automate CMDB sync"
+    - "Do not integrate CMDB with Plane"
+  allowed_files:
+    - "docs/architecture/cmdb-lite/**"
+    - "docs/roadmap/**"
+  forbidden_files:
+    - "bin/**"
+    - "framework/**"
+    - "tests/**"
+    - "governance/**"
+    - "config/**"
+  validation_order:
+    - "confirm schema has required fields"
+    - "confirm all six core subsystems have records"
+    - "confirm roadmap items can resolve CMDB refs"
+    - "manual review"
+  rollback_rule: >
+    Revert only files under docs/architecture/cmdb-lite/ created by this item.
+  artifact_outputs:
+    - "docs/architecture/cmdb-lite/schema.yaml"
+    - "docs/architecture/cmdb-lite/registry.yaml"
+  promotion_linkage:
+    required: false
+    manifest_refs: []
+sync:
+  plane:
+    sync_enabled: true
+    sync_mode: "repo_to_plane_authoritative"
+    workspace: "Integrated AI Platform"
+    project: "Roadmap Ops"
+    plane_item_id: null
+    last_synced_at: null
+    writeback_fields_allowed:
+      - "operational_state"
+      - "assignee"
+      - "cycle"
+      - "module"
+      - "labels"
+  github:
+    issue_ref: null
+    pr_refs: []
+metadata:
+  owner: "adrian"
+  created_at: "2026-04-20"
+  updated_at: "2026-04-20"
+  tags:
+    - "governance"
+    - "cmdb-lite"
+    - "architecture-authority"
+    - "phase-0"

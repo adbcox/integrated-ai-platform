@@ -1,0 +1,152 @@
+schema_version: "1.0"
+kind: "roadmap_item"
+id: "RM-GOV-006"
+slug: "lock-definition-of-done-for-coding-runs"
+title: "Lock definition of done for coding runs"
+category: "GOV"
+type: "governance"
+status: "proposed"
+priority: "P1"
+scoring:
+  loe: 2
+  strategic_value: 5
+  architecture_fit: 5
+  execution_risk: 1
+  dependency_burden: 2
+  readiness: 4
+description: >
+  Codify and ratify the definition of done for coding runs, covering artifact completeness,
+  validation semantics, rollback semantics, telemetry completeness, and escalation handling.
+why_it_matters: >
+  Without a locked definition of done, coding run success is ambiguous. Automated
+  promotion, AI session closure, and validation pipeline acceptance all require a
+  binding contract for what constitutes a complete run.
+scope:
+  objective: >
+    Define, document, and ratify the definition of done contract that covers the
+    five required dimensions: artifact completeness, validation, rollback, telemetry,
+    and escalation.
+  in_scope:
+    - "artifact completeness criteria"
+    - "validation pass/fail semantics"
+    - "rollback rule requirements"
+    - "telemetry completeness requirements"
+    - "escalation handling requirements"
+  out_of_scope:
+    - "runtime enforcement tooling"
+    - "automated validation scoring"
+    - "Plane sync changes"
+dependencies:
+  blocked_by:
+    - "RM-GOV-005"
+  enables:
+    - "RM-GOV-007"
+    - "RM-CORE-006"
+  related_items:
+    - "RM-GOV-004"
+impact:
+  affected_systems:
+    - "control_plane"
+    - "validation_pipeline"
+    - "roadmap_ops"
+  expected_file_families:
+    - "docs/roadmap/**"
+    - "docs/execution/**"
+  impact_summary: >
+    Provides the canonical definition of done that controls promotion acceptance,
+    session closure, and validation pipeline pass/fail decisions.
+cmdb:
+  refs:
+    - "subsystem:control_plane"
+    - "subsystem:validation_pipeline"
+  asset_links: []
+  service_links: []
+grouping:
+  feature_block_candidates:
+    - "FB-GOV-ROADMAP-AUTHORITY"
+  package_group: "PKG-GOV-PHASE0"
+  shared_touch_surfaces:
+    - "definition of done"
+    - "validation pipeline"
+    - "rollback semantics"
+    - "escalation handling"
+milestones:
+  recommended_first_milestone: "draft-definition-of-done"
+  downstream_milestones:
+    - "ratify-definition-of-done"
+    - "link-to-autonomy-scorecard"
+planning:
+  planning_packet_ref: null
+  planning_status: "not_started"
+  planning_notes: ""
+execution:
+  execution_package_refs: []
+  execution_status: "not_started"
+  last_execution_commit: null
+validation:
+  validation_artifact_refs: []
+  validation_status: "not_started"
+  definition_of_done_ref: "docs/roadmap/STANDARDS.md"
+governance:
+  phase_target: "Phase 0"
+  architectural_lane: "governance_freeze"
+  risk_tier: "low"
+  allowed_change_scope: "narrow"
+  requires_explicit_escalation: false
+ai_operability:
+  canonical_summary: >
+    Governance item to codify and ratify the definition of done for coding runs
+    across artifact completeness, validation, rollback, telemetry, and escalation.
+  developer_intent: >
+    After this item, every coding run has a binding definition of done that can be
+    checked automatically and used to gate promotion.
+  non_goals:
+    - "Do not implement runtime enforcement tooling"
+    - "Do not automate validation scoring"
+    - "Do not alter governance schema or config"
+  allowed_files:
+    - "docs/roadmap/**"
+    - "docs/execution/**"
+  forbidden_files:
+    - "bin/**"
+    - "framework/**"
+    - "tests/**"
+    - "governance/**"
+    - "config/**"
+  validation_order:
+    - "confirm all five dimensions are covered"
+    - "confirm definition is machine-readable or formally documented"
+    - "confirm cross-reference to autonomy scorecard exists"
+    - "manual review"
+  rollback_rule: >
+    Revert only the docs/execution and docs/roadmap files created by this item.
+  artifact_outputs:
+    - "docs/execution/definition_of_done.md"
+  promotion_linkage:
+    required: false
+    manifest_refs: []
+sync:
+  plane:
+    sync_enabled: true
+    sync_mode: "repo_to_plane_authoritative"
+    workspace: "Integrated AI Platform"
+    project: "Roadmap Ops"
+    plane_item_id: null
+    last_synced_at: null
+    writeback_fields_allowed:
+      - "operational_state"
+      - "assignee"
+      - "cycle"
+      - "module"
+      - "labels"
+  github:
+    issue_ref: null
+    pr_refs: []
+metadata:
+  owner: "adrian"
+  created_at: "2026-04-20"
+  updated_at: "2026-04-20"
+  tags:
+    - "governance"
+    - "definition-of-done"
+    - "phase-0"

@@ -19,3 +19,203 @@ items:
       - "docs/architecture/cmdb-lite/**"
     plane_sync_enabled: true
     plane_item_id: null
+  - id: "RM-GOV-002"
+    path: "docs/roadmap/items/RM-GOV-002.yaml"
+    title: "Reconcile source-of-truth surfaces"
+    category: "GOV"
+    status: "proposed"
+    priority: "P1"
+    package_group: "PKG-GOV-PHASE0"
+    affected_systems:
+      - "roadmap_ops"
+      - "control_window"
+      - "cmdb_lite"
+    expected_file_families:
+      - "docs/roadmap/**"
+      - "governance/**"
+    plane_sync_enabled: true
+    plane_item_id: null
+  - id: "RM-GOV-003"
+    path: "docs/roadmap/items/RM-GOV-003.yaml"
+    title: "Create core ADR set"
+    category: "GOV"
+    status: "proposed"
+    priority: "P1"
+    package_group: "PKG-GOV-PHASE0"
+    affected_systems:
+      - "roadmap_ops"
+      - "control_plane"
+      - "agent_runtime"
+      - "inference_gateway"
+    expected_file_families:
+      - "governance/authority_adr_*.md"
+      - "docs/roadmap/**"
+    plane_sync_enabled: true
+    plane_item_id: null
+  - id: "RM-GOV-004"
+    path: "docs/roadmap/items/RM-GOV-004.yaml"
+    title: "Create machine-readable execution-control package"
+    category: "GOV"
+    status: "proposed"
+    priority: "P1"
+    package_group: "PKG-GOV-PHASE0"
+    affected_systems:
+      - "roadmap_ops"
+      - "control_window"
+      - "control_plane"
+    expected_file_families:
+      - "docs/roadmap/**"
+      - "docs/execution/**"
+    plane_sync_enabled: true
+    plane_item_id: null
+  - id: "RM-GOV-005"
+    path: "docs/roadmap/items/RM-GOV-005.yaml"
+    title: "Create CMDB-lite registry"
+    category: "GOV"
+    status: "proposed"
+    priority: "P1"
+    package_group: "PKG-GOV-PHASE0"
+    affected_systems:
+      - "cmdb_lite"
+      - "roadmap_ops"
+      - "control_plane"
+      - "agent_runtime"
+    expected_file_families:
+      - "docs/architecture/cmdb-lite/**"
+      - "docs/roadmap/**"
+    plane_sync_enabled: true
+    plane_item_id: null
+  - id: "RM-GOV-006"
+    path: "docs/roadmap/items/RM-GOV-006.yaml"
+    title: "Lock definition of done for coding runs"
+    category: "GOV"
+    status: "proposed"
+    priority: "P1"
+    package_group: "PKG-GOV-PHASE0"
+    affected_systems:
+      - "control_plane"
+      - "validation_pipeline"
+      - "roadmap_ops"
+    expected_file_families:
+      - "docs/roadmap/**"
+      - "docs/execution/**"
+    plane_sync_enabled: true
+    plane_item_id: null
+  - id: "RM-GOV-007"
+    path: "docs/roadmap/items/RM-GOV-007.yaml"
+    title: "Lock autonomy scorecard"
+    category: "GOV"
+    status: "proposed"
+    priority: "P1"
+    package_group: "PKG-GOV-PHASE0"
+    affected_systems:
+      - "control_plane"
+      - "agent_runtime"
+      - "validation_pipeline"
+      - "roadmap_ops"
+    expected_file_families:
+      - "docs/roadmap/**"
+      - "docs/execution/**"
+    plane_sync_enabled: true
+    plane_item_id: null
+  - id: "RM-CORE-001"
+    path: "docs/roadmap/items/RM-CORE-001.yaml"
+    title: "Introduce internal inference gateway"
+    category: "CORE"
+    status: "proposed"
+    priority: "P1"
+    package_group: "PKG-CORE-PHASE1"
+    affected_systems:
+      - "inference_gateway"
+      - "agent_runtime"
+      - "control_plane"
+    expected_file_families:
+      - "framework/**"
+      - "bin/**"
+    plane_sync_enabled: true
+    plane_item_id: null
+  - id: "RM-CORE-002"
+    path: "docs/roadmap/items/RM-CORE-002.yaml"
+    title: "Standardize model profiles"
+    category: "CORE"
+    status: "proposed"
+    priority: "P1"
+    package_group: "PKG-CORE-PHASE1"
+    affected_systems:
+      - "inference_gateway"
+      - "agent_runtime"
+    expected_file_families:
+      - "policies/**"
+      - "framework/**"
+      - "config/**"
+    plane_sync_enabled: true
+    plane_item_id: null
+  - id: "RM-CORE-003"
+    path: "docs/roadmap/items/RM-CORE-003.yaml"
+    title: "Standardize workspace layout"
+    category: "CORE"
+    status: "proposed"
+    priority: "P1"
+    package_group: "PKG-CORE-PHASE1"
+    affected_systems:
+      - "agent_runtime"
+      - "artifact_contract"
+      - "control_plane"
+    expected_file_families:
+      - "framework/**"
+      - "bin/**"
+      - "artifacts/**"
+    plane_sync_enabled: true
+    plane_item_id: null
+  - id: "RM-CORE-004"
+    path: "docs/roadmap/items/RM-CORE-004.yaml"
+    title: "Stabilize artifact persistence"
+    category: "CORE"
+    status: "proposed"
+    priority: "P1"
+    package_group: "PKG-CORE-PHASE1"
+    affected_systems:
+      - "artifact_contract"
+      - "agent_runtime"
+      - "validation_pipeline"
+      - "control_plane"
+    expected_file_families:
+      - "framework/**"
+      - "bin/**"
+      - "artifacts/**"
+    plane_sync_enabled: true
+    plane_item_id: null
+  - id: "RM-CORE-005"
+    path: "docs/roadmap/items/RM-CORE-005.yaml"
+    title: "Wrap local execution commands"
+    category: "CORE"
+    status: "proposed"
+    priority: "P1"
+    package_group: "PKG-CORE-PHASE1"
+    affected_systems:
+      - "agent_runtime"
+      - "validation_pipeline"
+      - "control_plane"
+    expected_file_families:
+      - "framework/**"
+      - "bin/**"
+      - "shell/**"
+    plane_sync_enabled: true
+    plane_item_id: null
+  - id: "RM-CORE-006"
+    path: "docs/roadmap/items/RM-CORE-006.yaml"
+    title: "Establish baseline local-run validation"
+    category: "CORE"
+    status: "proposed"
+    priority: "P1"
+    package_group: "PKG-CORE-PHASE1"
+    affected_systems:
+      - "validation_pipeline"
+      - "agent_runtime"
+      - "artifact_contract"
+      - "control_plane"
+    expected_file_families:
+      - "artifacts/**"
+      - "docs/execution/**"
+    plane_sync_enabled: true
+    plane_item_id: null
