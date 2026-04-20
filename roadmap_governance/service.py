@@ -1,4 +1,7 @@
-"""RGC sync service: parse → validate → upsert → persist findings."""
+"""RGC sync service: parse → validate → upsert → persist findings.
+
+record_finding and finding_exists are public so integrity.py can reuse them.
+"""
 
 from __future__ import annotations
 
@@ -35,17 +38,26 @@ def _now() -> datetime:
     return datetime.now(timezone.utc)
 
 
-def _finding_exists(db: Session, finding_type: str, object_ref: str) -> bool:
-    """Return True if an open finding of this type already exists for this ref."""
+def finding_exists(db: Session, finding_type: str, object_ref: str) -> bool:
+    """Return True if an active (open, accepted, or suppressed) finding exists.
+
+    'resolved' findings may be re-raised if the underlying issue persists.
+    'open', 'accepted', and 'suppressed' findings are not re-created so that
+    explicit lifecycle decisions are respected across reruns.
+    """
     return (
         db.query(IntegrityFinding)
-        .filter_by(finding_type=finding_type, object_ref=object_ref, status="open")
+        .filter(
+            IntegrityFinding.finding_type == finding_type,
+            IntegrityFinding.object_ref == object_ref,
+            IntegrityFinding.status.in_(["open", "accepted", "suppressed"]),
+        )
         .first()
         is not None
     )
 
 
-def _record_finding(
+def record_finding(
     db: Session,
     *,
     finding_type: str,
@@ -56,8 +68,11 @@ def _record_finding(
     details: Optional[dict] = None,
     dry_run: bool = False,
 ) -> bool:
-    """Persist an integrity finding if one is not already open. Returns True if created."""
-    if _finding_exists(db, finding_type, object_ref):
+    """Persist an integrity finding if no active one already exists.
+
+    Returns True if a new finding was (or would be, in dry-run) created.
+    """
+    if finding_exists(db, finding_type, object_ref):
         return False
     if dry_run:
         return True
@@ -139,38 +154,30 @@ def sync_roadmap(
 ) -> SyncResult:
     """Full sync: read ROADMAP_INDEX.md + YAML files, upsert items, persist findings.
 
-    Safe to rerun: duplicate findings are not re-created, upserts are idempotent.
+    Safe to rerun: existing active findings are not re-created, upserts are idempotent.
     """
     result = SyncResult()
     index_path = repo_root / _INDEX_PATH_RELATIVE
 
-    # --- 1. Parse primary source (ROADMAP_INDEX.md) ---
     md_items = parse_index_md(index_path, repo_root)
 
-    # --- 2. Scan YAML items to catch items not listed in the index ---
     yaml_items = scan_item_yamls(repo_root)
-    yaml_ids_by_id = {item.id: item for item in yaml_items}
     md_ids = {item.id for item in md_items}
 
-    # Build the authoritative item map: prefer YAML-enriched items from md_items,
-    # then add any YAML-only items as secondary.
     all_items: list[ParsedItem] = list(md_items)
     for yaml_item in yaml_items:
         if yaml_item.id not in md_ids:
             all_items.append(yaml_item)
 
-    # --- 3. Detect duplicates across the combined set ---
     seen_ids: dict[str, int] = {}
     for parsed in all_items:
         seen_ids[parsed.id] = seen_ids.get(parsed.id, 0) + 1
 
-    # --- 4. Validate, upsert, and persist findings ---
     processed_ids: set[str] = set()
 
     for parsed in all_items:
-        # Skip second+ occurrence of a duplicate ID (record finding once)
         if parsed.id in processed_ids:
-            created = _record_finding(
+            ok = record_finding(
                 db,
                 finding_type="duplicate_id",
                 severity="warning",
@@ -180,14 +187,13 @@ def sync_roadmap(
                 details={"count": seen_ids[parsed.id]},
                 dry_run=dry_run,
             )
-            if created:
+            if ok:
                 result.findings_created += 1
             continue
         processed_ids.add(parsed.id)
 
-        # Duplicate finding for first occurrence when count > 1
         if seen_ids[parsed.id] > 1:
-            created = _record_finding(
+            ok = record_finding(
                 db,
                 finding_type="duplicate_id",
                 severity="warning",
@@ -197,12 +203,11 @@ def sync_roadmap(
                 details={"count": seen_ids[parsed.id]},
                 dry_run=dry_run,
             )
-            if created:
+            if ok:
                 result.findings_created += 1
 
-        # Naming validation
         if not validate_naming(parsed.id):
-            created = _record_finding(
+            ok = record_finding(
                 db,
                 finding_type="naming_violation",
                 severity="error",
@@ -215,10 +220,9 @@ def sync_roadmap(
                 details={"id": parsed.id, "naming_version": NAMING_VERSION},
                 dry_run=dry_run,
             )
-            if created:
+            if ok:
                 result.findings_created += 1
 
-        # Upsert
         outcome = _upsert_item(db, parsed, dry_run=dry_run)
         if outcome == "created":
             result.items_created += 1

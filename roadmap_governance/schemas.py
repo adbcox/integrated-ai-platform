@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any, Literal, Optional
 
 from pydantic import BaseModel, ConfigDict
 
@@ -38,3 +38,8 @@ class IntegrityFindingResponse(BaseModel):
     detected_at: datetime
     status: str
     resolution_note: Optional[str]
+
+
+class FindingLifecycleUpdate(BaseModel):
+    status: Literal["resolved", "accepted", "suppressed"]
+    resolution_note: Optional[str] = None
