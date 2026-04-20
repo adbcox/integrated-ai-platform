@@ -238,6 +238,24 @@ def commit_changes(target: str, commit_msg: str) -> str | None:
     return head.stdout.strip()
 
 
+def _run_post_apply_validation(target: str) -> tuple[bool, str]:
+    try:
+        p = Path(target)
+        if p.suffix != ".py":
+            return (True, "no_validation_for_filetype")
+        result = subprocess.run(
+            [sys.executable, "-m", "py_compile", str(p)],
+            capture_output=True,
+            text=True,
+        )
+        if result.returncode == 0:
+            return (True, "syntax_ok")
+        msg = result.stderr or result.stdout or "compile_failed"
+        return (False, f"syntax_error:{msg[:200]}")
+    except Exception as exc:
+        return (False, f"validation_exception:{exc}")
+
+
 def append_trace(entry: dict) -> None:
     TRACE_DIR.mkdir(parents=True, exist_ok=True)
     with TRACE_FILE.open("a", encoding="utf-8") as fh:
@@ -453,10 +471,28 @@ def main() -> int:
     )
 
     commit_hash = None
+    post_valid = True
+    post_valid_note = "not_committed"
     if accepted:
         commit_hash = commit_changes(args.target, args.commit_msg)
     else:
         git_clean()
+
+    if accepted and commit_hash is not None:
+        post_valid, post_valid_note = _run_post_apply_validation(args.target)
+        if not post_valid:
+            revert = subprocess.run(
+                ["git", "reset", "--hard", "HEAD~1"],
+                capture_output=True,
+                text=True,
+            )
+            if revert.returncode == 0:
+                accepted = False
+                classification = "reverted_validation_failure"
+                final_status = "reverted"
+                commit_hash = None
+            else:
+                post_valid_note = f"revert_failed:{(revert.stderr or revert.stdout)[:200]}"
 
     entry = {
         "timestamp": datetime.now(UTC).isoformat(timespec="seconds"),
@@ -476,6 +512,8 @@ def main() -> int:
         "stage_rag_lines": args.lines,
         "notes": args.notes or None,
         "worker_exit_code": exit_code,
+        "post_apply_validation_status": "pass" if post_valid else "fail",
+        "post_apply_validation_note": post_valid_note,
     }
     append_trace(entry)
     print(f"[manager] trace appended -> {TRACE_FILE}")
