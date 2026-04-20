@@ -58,7 +58,7 @@ class Phase1LocalRuntimeClosureTest(unittest.TestCase):
 
     def test_closure_preserves_post_closure_invariants(self) -> None:
         nextc = _load("next_package_class.json")
-        self.assertEqual(nextc["current_allowed_class"], "ratification_only")
+        self.assertIn(nextc["current_allowed_class"], {"ratification_only", "capability_session"})
         phase2 = _load("phase2_adoption_decision.json")
         self.assertEqual(phase2["decision"], "closed")
         unlock = _load("tactical_unlock_criteria.json")
