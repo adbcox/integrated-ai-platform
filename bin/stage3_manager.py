@@ -262,7 +262,20 @@ def _discover_target_tests(target: str, tests_dir: Path | None = None) -> list[s
         stem = Path(target).stem
         if not stem or not td.is_dir():
             return []
-        return sorted(str(p) for p in td.glob(f"test_*{stem}*.py"))
+        # Primary: naming-convention glob
+        primary = sorted(str(p) for p in td.glob(f"test_*{stem}*.py"))
+        if primary:
+            return primary
+        # Fallback: reference scan — test files that mention stem as a whole word
+        pattern = re.compile(r"\b" + re.escape(stem) + r"\b")
+        found = []
+        for test_file in sorted(td.glob("test_*.py")):
+            try:
+                if pattern.search(test_file.read_text(encoding="utf-8", errors="replace")):
+                    found.append(str(test_file))
+            except OSError:
+                pass
+        return found
     except Exception:
         return []
 

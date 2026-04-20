@@ -17,7 +17,9 @@ TESTS_DIR = REPO_ROOT / "tests"
 
 class DiscoverTargetTestsTest(unittest.TestCase):
     def test_no_match_stem_returns_empty(self) -> None:
-        result = _discover_target_tests("framework/xyzzy_nonexistent_module.py")
+        import tempfile
+        with tempfile.TemporaryDirectory() as td:
+            result = _discover_target_tests("framework/xyzzy_nonexistent_module.py", tests_dir=Path(td))
         self.assertEqual(result, [])
 
     def test_worker_runtime_returns_nonempty(self) -> None:
@@ -94,6 +96,81 @@ class SourceAssertionsTest(unittest.TestCase):
 
     def test_reverted_test_failure_in_source(self) -> None:
         self.assertIn("reverted_test_failure", self._source)
+
+
+class ReferenceBasedDiscoveryTest(unittest.TestCase):
+    def test_reference_scan_fires_when_convention_finds_nothing(self) -> None:
+        import tempfile
+        stem = "xyzzy_synthetic_stem_abc123"
+        with tempfile.TemporaryDirectory() as td:
+            td_path = Path(td)
+            ref_file = td_path / "test_other_module.py"
+            ref_file.write_text(f"# references {stem} somewhere\nx = '{stem}'\n", encoding="utf-8")
+            result = _discover_target_tests(f"framework/{stem}.py", tests_dir=td_path)
+        self.assertIn(str(ref_file), result)
+
+    def test_reference_scan_skipped_when_convention_succeeds(self) -> None:
+        import tempfile
+        stem = "mymodule_abc"
+        with tempfile.TemporaryDirectory() as td:
+            td_path = Path(td)
+            conv_file = td_path / f"test_{stem}_something.py"
+            conv_file.write_text("# convention match\n", encoding="utf-8")
+            ref_file = td_path / "test_other_unrelated.py"
+            ref_file.write_text(f"# references {stem}\n", encoding="utf-8")
+            result = _discover_target_tests(f"framework/{stem}.py", tests_dir=td_path)
+        self.assertIn(str(conv_file), result)
+        self.assertNotIn(str(ref_file), result)
+
+    def test_reference_scan_returns_empty_when_no_match(self) -> None:
+        import tempfile
+        with tempfile.TemporaryDirectory() as td:
+            td_path = Path(td)
+            unrelated = td_path / "test_unrelated.py"
+            unrelated.write_text("# nothing relevant here\n", encoding="utf-8")
+            result = _discover_target_tests("framework/completely_unique_xyzzy_zz99.py", tests_dir=td_path)
+        self.assertEqual(result, [])
+
+    def test_reference_scan_respects_word_boundary(self) -> None:
+        import tempfile
+        stem = "my_stem"
+        with tempfile.TemporaryDirectory() as td:
+            td_path = Path(td)
+            extended = td_path / "test_extended.py"
+            extended.write_text("# only mentions my_stem_extended\nx = 'my_stem_extended'\n", encoding="utf-8")
+            exact = td_path / "test_exact.py"
+            exact.write_text(f"# mentions {stem} exactly\nx = '{stem}'\n", encoding="utf-8")
+            result = _discover_target_tests(f"framework/{stem}.py", tests_dir=td_path)
+        self.assertIn(str(exact), result)
+        self.assertNotIn(str(extended), result)
+
+    def test_reference_scan_result_is_sorted(self) -> None:
+        import tempfile
+        stem = "sortable_stem_xyz"
+        with tempfile.TemporaryDirectory() as td:
+            td_path = Path(td)
+            for name in ["test_zzz.py", "test_aaa.py", "test_mmm.py"]:
+                (td_path / name).write_text(f"# ref {stem}\n", encoding="utf-8")
+            result = _discover_target_tests(f"framework/{stem}.py", tests_dir=td_path)
+        self.assertEqual(result, sorted(result))
+
+    def test_reference_scan_result_all_strings(self) -> None:
+        import tempfile
+        stem = "allstring_stem_xyz"
+        with tempfile.TemporaryDirectory() as td:
+            td_path = Path(td)
+            (td_path / "test_one.py").write_text(f"# {stem}\n", encoding="utf-8")
+            result = _discover_target_tests(f"framework/{stem}.py", tests_dir=td_path)
+        for item in result:
+            self.assertIsInstance(item, str)
+
+    def test_live_permission_engine_finds_coverage(self) -> None:
+        result = _discover_target_tests("framework/permission_engine.py")
+        self.assertGreater(len(result), 0, f"expected coverage for permission_engine, got {result}")
+
+    def test_live_learning_hooks_finds_coverage(self) -> None:
+        result = _discover_target_tests("framework/learning_hooks.py")
+        self.assertGreater(len(result), 0, f"expected coverage for learning_hooks, got {result}")
 
 
 if __name__ == "__main__":
