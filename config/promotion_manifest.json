@@ -435,6 +435,22 @@
         "Manager and stage traces are correlated with policy thresholds"
       ]
     },
+    "gate_chain": {
+      "current_level": 5,
+      "production_level": 4,
+      "candidate_level": 5,
+      "preview_level": 5,
+      "next_target_level": 6,
+      "level10_definition": "Retained-edit validation chain that gates every committed file change through four quality gates: syntax, target tests, repo-wide check, and scoped quick check.",
+      "key_blockers": [
+        "Full four-gate qualification rate not yet measured across the complete retained-edit workload",
+        "Gate chain threshold was hardcoded rather than manifest-driven"
+      ],
+      "evidence_to_advance": [
+        "full_qualification_rate >= gate_chain_min_full_qualification_rate across stage3_manager trace",
+        "gate_coverage.g4_repo_quick > 0 confirming Gate 4 is active"
+      ]
+    },
     "learning_training_attribution_loop": {
       "current_level": 10,
       "production_level": 0,
@@ -462,7 +478,8 @@
       "trace_window_days": 7,
       "stage6_success_threshold": 3,
       "stage6_failure_budget": 1,
-      "required_preview_regression_pack": "bin/micro_lane_stage6.sh"
+      "required_preview_regression_pack": "bin/micro_lane_stage6.sh",
+      "gate_chain_min_full_qualification_rate": 0.5
     },
     "last_decision": {
       "date": "2026-04-14T18:04:40+00:00",

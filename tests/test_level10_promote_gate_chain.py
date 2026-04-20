@@ -149,5 +149,80 @@ class SourceAssertionsTest(unittest.TestCase):
         self.assertIn("gate_chain_ready", stage6_slice)
 
 
+class PreviewDecisionGateChainTest(unittest.TestCase):
+    """Verify gate_chain participates in _preview_decision core_ready check."""
+
+    def _assessments(self, gate_chain_met: bool) -> dict:
+        base = {
+            name: {"evidence_met": True}
+            for name in ("stage_system", "manager_system", "rag_system", "regression_framework")
+        }
+        base["gate_chain"] = {"evidence_met": gate_chain_met}
+        return base
+
+    def _preview_summary(self, gate_chain_met: bool, successes: int = 5) -> dict:
+        return {
+            "metrics": {
+                "stage6_preview": {"success": successes, "failure": 0},
+            },
+            "subsystem_assessments": self._assessments(gate_chain_met),
+        }
+
+    def _criteria(self) -> dict:
+        return {"stage6_success_threshold": 3, "stage6_failure_budget": 1}
+
+    def test_preview_promote_blocked_when_gate_chain_false(self) -> None:
+        from bin.level10_promote import _preview_decision
+        decision = _preview_decision(
+            self._preview_summary(gate_chain_met=False),
+            self._criteria(),
+            "building",
+        )
+        self.assertNotEqual(decision.action, "promote")
+
+    def test_preview_promote_passes_when_gate_chain_true(self) -> None:
+        from bin.level10_promote import _preview_decision
+        decision = _preview_decision(
+            self._preview_summary(gate_chain_met=True),
+            self._criteria(),
+            "building",
+        )
+        self.assertEqual(decision.action, "promote")
+
+    def test_preview_hold_reason_when_gate_chain_false(self) -> None:
+        from bin.level10_promote import _preview_decision
+        decision = _preview_decision(
+            self._preview_summary(gate_chain_met=False),
+            self._criteria(),
+            "building",
+        )
+        self.assertIn("core_ready=False", decision.reason)
+
+    def test_gate_chain_missing_from_assessments_blocks_promote(self) -> None:
+        from bin.level10_promote import _preview_decision
+        summary = {
+            "metrics": {"stage6_preview": {"success": 5, "failure": 0}},
+            "subsystem_assessments": {
+                name: {"evidence_met": True}
+                for name in ("stage_system", "manager_system", "rag_system", "regression_framework")
+            },
+        }
+        decision = _preview_decision(summary, self._criteria(), "building")
+        self.assertNotEqual(decision.action, "promote")
+
+
+class PromoteSourceGateChainAssertionsTest(unittest.TestCase):
+    def setUp(self) -> None:
+        self._src = (REPO_ROOT / "bin" / "level10_promote.py").read_text(encoding="utf-8")
+
+    def test_gate_chain_in_core_ready_tuple(self) -> None:
+        import re
+        preview_fn = re.search(
+            r"def _preview_decision.*?(?=\ndef |\Z)", self._src, re.DOTALL
+        )
+        self.assertIsNotNone(preview_fn)
+        self.assertIn("gate_chain", preview_fn.group(0))
+
+
 if __name__ == "__main__":
     unittest.main()

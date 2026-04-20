@@ -311,5 +311,88 @@ class UpdatedSourceAssertionsTest(unittest.TestCase):
         self.assertIn("g4_repo_quick", self._src)
 
 
+class EvaluateSubsystemsGateChainTest(unittest.TestCase):
+    """Verify gate_chain assessment is produced by evaluate_subsystems."""
+
+    def _run(self, gate_chain_stats: dict, threshold: float = 0.5) -> dict:
+        from collections import Counter as _Counter
+        from bin.level10_qualify import evaluate_subsystems
+        return evaluate_subsystems(
+            subsystem_levels={},
+            candidate_stats=_Counter(),
+            stage6_stats=_Counter(),
+            worker_stats=_Counter(),
+            rag4_stats={"plans": 0, "targets": 0, "avg_confidence": 0.0},
+            candidate_recovery={"latest_success_streak": 0, "latest_run_count": 0},
+            lifecycle_stats={"plans": 0, "with_state": 0, "with_attempts": 0},
+            gate_chain_stats=gate_chain_stats,
+            criteria={"gate_chain_min_full_qualification_rate": threshold},
+            manifest_data={},
+        )
+
+    def test_gate_chain_key_present_in_assessments(self) -> None:
+        result = self._run({})
+        self.assertIn("gate_chain", result)
+
+    def test_empty_gate_chain_evidence_not_met(self) -> None:
+        result = self._run({})
+        self.assertFalse(result["gate_chain"]["evidence_met"])
+
+    def test_passing_gate_chain_evidence_met(self) -> None:
+        stats = {"total": 10, "accepted": 8, "full_qualification_rate": 0.7,
+                 "gate_coverage": {"g4_repo_quick": 5}}
+        result = self._run(stats)
+        self.assertTrue(result["gate_chain"]["evidence_met"])
+
+    def test_low_fqr_evidence_not_met(self) -> None:
+        stats = {"total": 10, "accepted": 8, "full_qualification_rate": 0.3,
+                 "gate_coverage": {"g4_repo_quick": 5}}
+        result = self._run(stats)
+        self.assertFalse(result["gate_chain"]["evidence_met"])
+
+    def test_zero_g4_evidence_not_met(self) -> None:
+        stats = {"total": 10, "accepted": 8, "full_qualification_rate": 0.7,
+                 "gate_coverage": {"g4_repo_quick": 0}}
+        result = self._run(stats)
+        self.assertFalse(result["gate_chain"]["evidence_met"])
+
+    def test_threshold_read_from_criteria(self) -> None:
+        stats = {"total": 10, "accepted": 8, "full_qualification_rate": 0.65,
+                 "gate_coverage": {"g4_repo_quick": 5}}
+        self.assertFalse(self._run(stats, threshold=0.8)["gate_chain"]["evidence_met"])
+        self.assertTrue(self._run(stats, threshold=0.6)["gate_chain"]["evidence_met"])
+
+    def test_evidence_snapshot_contains_threshold(self) -> None:
+        result = self._run({}, threshold=0.75)
+        snapshot = result["gate_chain"]["evidence_snapshot"]
+        self.assertEqual(snapshot["threshold"], 0.75)
+
+    def test_evidence_snapshot_contains_fqr(self) -> None:
+        stats = {"total": 5, "accepted": 3, "full_qualification_rate": 0.6,
+                 "gate_coverage": {"g4_repo_quick": 3}}
+        snapshot = self._run(stats)["gate_chain"]["evidence_snapshot"]
+        self.assertEqual(snapshot["full_qualification_rate"], 0.6)
+
+
+class ManifestThresholdSourceAssertionsTest(unittest.TestCase):
+    def setUp(self) -> None:
+        self._src = (REPO_ROOT / "bin" / "level10_qualify.py").read_text(encoding="utf-8")
+
+    def test_gate_chain_min_full_qualification_rate_in_source(self) -> None:
+        self.assertIn("gate_chain_min_full_qualification_rate", self._src)
+
+    def test_gate_chain_threshold_not_hardcoded_in_evaluate_v8_gates(self) -> None:
+        import re
+        v8_fn_match = re.search(
+            r"def evaluate_v8_gates.*?(?=\ndef |\Z)", self._src, re.DOTALL
+        )
+        self.assertIsNotNone(v8_fn_match)
+        v8_body = v8_fn_match.group(0)
+        self.assertIn("gate_chain_min_full_qualification_rate", v8_body)
+
+    def test_gate_chain_in_evaluate_subsystems_source(self) -> None:
+        self.assertIn("gate_chain_stats", self._src)
+
+
 if __name__ == "__main__":
     unittest.main()

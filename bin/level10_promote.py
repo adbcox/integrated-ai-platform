@@ -108,7 +108,7 @@ def _preview_decision(summary: dict[str, Any], criteria: dict[str, Any], current
     assessments = summary.get("subsystem_assessments", {})
     core_ready = all(
         bool(assessments.get(name, {}).get("evidence_met"))
-        for name in ("stage_system", "manager_system", "rag_system", "regression_framework")
+        for name in ("stage_system", "manager_system", "rag_system", "regression_framework", "gate_chain")
     )
 
     if core_ready and stage6_success >= stage6_success_threshold and stage6_failure <= stage6_failure_budget:

@@ -377,6 +377,7 @@ def evaluate_subsystems(
     rag4_stats: dict[str, Any],
     candidate_recovery: dict[str, int],
     lifecycle_stats: dict[str, Any],
+    gate_chain_stats: dict[str, Any],
     criteria: dict[str, Any],
     manifest_data: dict[str, Any],
 ) -> dict[str, Any]:
@@ -475,6 +476,23 @@ def evaluate_subsystems(
             "stage6_rules_present": bool(lane_rules.get("stage6")),
         },
     }
+    gate_chain_threshold = float(criteria.get("gate_chain_min_full_qualification_rate", 0.5))
+    gate_chain_ok = (
+        gate_chain_stats.get("total", 0) > 0
+        and gate_chain_stats.get("full_qualification_rate", 0.0) >= gate_chain_threshold
+        and gate_chain_stats.get("gate_coverage", {}).get("g4_repo_quick", 0) > 0
+    )
+    assessments["gate_chain"] = {
+        **base_info("gate_chain"),
+        "evidence_met": gate_chain_ok,
+        "evidence_snapshot": {
+            "total": gate_chain_stats.get("total", 0),
+            "accepted": gate_chain_stats.get("accepted", 0),
+            "full_qualification_rate": gate_chain_stats.get("full_qualification_rate", 0.0),
+            "gate_coverage_g4_repo_quick": gate_chain_stats.get("gate_coverage", {}).get("g4_repo_quick", 0),
+            "threshold": gate_chain_threshold,
+        },
+    }
     return assessments
 
 
@@ -508,9 +526,14 @@ def evaluate_v8_gates(
         bool(assessments.get("regression_framework", {}).get("evidence_met"))
         and bool(v8)
     )
+    gate_chain_threshold = float(
+        manifest_data.get("promotion_policy", {})
+        .get("criteria", {})
+        .get("gate_chain_min_full_qualification_rate", 0.5)
+    )
     gate_chain_ready = (
         gate_chain_stats.get("total", 0) > 0
-        and gate_chain_stats.get("full_qualification_rate", 0.0) >= 0.5
+        and gate_chain_stats.get("full_qualification_rate", 0.0) >= gate_chain_threshold
         and gate_chain_stats.get("gate_coverage", {}).get("g4_repo_quick", 0) > 0
     )
     gates = {
@@ -596,6 +619,7 @@ def main() -> int:
         rag4_stats=rag4_stats,
         candidate_recovery=candidate_recovery,
         lifecycle_stats=lifecycle_stats,
+        gate_chain_stats=gate_chain_stats,
         criteria=criteria,
         manifest_data=manifest.data,
     )
