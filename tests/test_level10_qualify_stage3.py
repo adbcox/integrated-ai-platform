@@ -223,5 +223,93 @@ class SummarizeGateChainSourceAssertionsTest(unittest.TestCase):
         self.assertIn("stage3_rows", self._source)
 
 
+class EvaluateV8GatesGateChainTest(unittest.TestCase):
+    """Verify gate_chain_ready participates in evaluate_v8_gates."""
+
+    def _run(self, gate_chain_stats: dict) -> dict:
+        from bin.level10_qualify import evaluate_v8_gates
+        return evaluate_v8_gates(
+            manifest_data={},
+            stage8_stats={},
+            rag6_stats={},
+            assessments={},
+            gate_chain_stats=gate_chain_stats,
+        )
+
+    def test_empty_gate_chain_gate_chain_ready_false(self) -> None:
+        result = self._run({})
+        self.assertFalse(result["gates"]["gate_chain_ready"])
+
+    def test_zero_total_gate_chain_ready_false(self) -> None:
+        result = self._run({"total": 0, "full_qualification_rate": 1.0,
+                            "gate_coverage": {"g4_repo_quick": 1}})
+        self.assertFalse(result["gates"]["gate_chain_ready"])
+
+    def test_low_fqr_gate_chain_ready_false(self) -> None:
+        result = self._run({"total": 10, "full_qualification_rate": 0.3,
+                            "gate_coverage": {"g4_repo_quick": 5}})
+        self.assertFalse(result["gates"]["gate_chain_ready"])
+
+    def test_zero_g4_coverage_gate_chain_ready_false(self) -> None:
+        result = self._run({"total": 10, "full_qualification_rate": 0.8,
+                            "gate_coverage": {"g4_repo_quick": 0}})
+        self.assertFalse(result["gates"]["gate_chain_ready"])
+
+    def test_missing_g4_key_gate_chain_ready_false(self) -> None:
+        result = self._run({"total": 10, "full_qualification_rate": 0.8,
+                            "gate_coverage": {}})
+        self.assertFalse(result["gates"]["gate_chain_ready"])
+
+    def test_exactly_threshold_gate_chain_ready_true(self) -> None:
+        result = self._run({"total": 10, "full_qualification_rate": 0.5,
+                            "gate_coverage": {"g4_repo_quick": 1}})
+        self.assertTrue(result["gates"]["gate_chain_ready"])
+
+    def test_above_threshold_gate_chain_ready_true(self) -> None:
+        result = self._run({"total": 20, "full_qualification_rate": 0.9,
+                            "gate_coverage": {"g4_repo_quick": 18}})
+        self.assertTrue(result["gates"]["gate_chain_ready"])
+
+    def test_gate_chain_ready_key_present_in_gates(self) -> None:
+        result = self._run({})
+        self.assertIn("gate_chain_ready", result["gates"])
+
+    def test_gate_chain_ready_false_appears_in_missing(self) -> None:
+        result = self._run({})
+        self.assertIn("gate_chain_ready", result["missing"])
+
+    def test_gate_chain_ready_true_absent_from_missing(self) -> None:
+        result = self._run({"total": 10, "full_qualification_rate": 0.5,
+                            "gate_coverage": {"g4_repo_quick": 1}})
+        self.assertNotIn("gate_chain_ready", result["missing"])
+
+    def test_all_ready_false_when_gate_chain_empty(self) -> None:
+        result = self._run({})
+        self.assertFalse(result["all_ready"])
+
+    def test_return_has_gates_all_ready_missing(self) -> None:
+        result = self._run({})
+        self.assertIn("gates", result)
+        self.assertIn("all_ready", result)
+        self.assertIn("missing", result)
+
+
+class UpdatedSourceAssertionsTest(unittest.TestCase):
+    def setUp(self) -> None:
+        self._src = (REPO_ROOT / "bin" / "level10_qualify.py").read_text(encoding="utf-8")
+
+    def test_gate_chain_ready_in_source(self) -> None:
+        self.assertIn("gate_chain_ready", self._src)
+
+    def test_gate_chain_stats_param_in_evaluate_v8_gates(self) -> None:
+        self.assertIn("gate_chain_stats", self._src)
+
+    def test_full_qualification_rate_threshold_in_source(self) -> None:
+        self.assertIn("0.5", self._src)
+
+    def test_g4_repo_quick_guard_in_source(self) -> None:
+        self.assertIn("g4_repo_quick", self._src)
+
+
 if __name__ == "__main__":
     unittest.main()

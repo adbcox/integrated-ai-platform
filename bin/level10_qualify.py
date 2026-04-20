@@ -484,6 +484,7 @@ def evaluate_v8_gates(
     stage8_stats: dict[str, Any],
     rag6_stats: dict[str, Any],
     assessments: dict[str, Any],
+    gate_chain_stats: dict[str, Any],
 ) -> dict[str, Any]:
     v8 = manifest_data.get("version8_upgrade_list", {})
     stage_gate = (
@@ -507,6 +508,11 @@ def evaluate_v8_gates(
         bool(assessments.get("regression_framework", {}).get("evidence_met"))
         and bool(v8)
     )
+    gate_chain_ready = (
+        gate_chain_stats.get("total", 0) > 0
+        and gate_chain_stats.get("full_qualification_rate", 0.0) >= 0.5
+        and gate_chain_stats.get("gate_coverage", {}).get("g4_repo_quick", 0) > 0
+    )
     gates = {
         "stage8_ready": stage_gate,
         "manager8_ready": manager_gate,
@@ -514,6 +520,7 @@ def evaluate_v8_gates(
         "worker8_ready": worker_gate,
         "promotion8_ready": promotion_gate,
         "qualification8_ready": regression_gate,
+        "gate_chain_ready": gate_chain_ready,
     }
     return {
         "gates": gates,
@@ -597,6 +604,7 @@ def main() -> int:
         stage8_stats=stage8_stats,
         rag6_stats=rag6_stats,
         assessments=assessments,
+        gate_chain_stats=gate_chain_stats,
     )
 
     lane_snapshot = {
@@ -689,6 +697,14 @@ def main() -> int:
         f"| fully_qualified={gate_chain_stats['fully_qualified']} "
         f"| full_qualification_rate={gate_chain_stats['full_qualification_rate']}"
     )
+    print("--- V8 gate assertions ---")
+    gca = v8_assertions["gates"]
+    print(
+        f"gate_chain_ready={gca.get('gate_chain_ready')} | "
+        f"all_ready={v8_assertions['all_ready']}"
+    )
+    if v8_assertions["missing"]:
+        print(f"missing gates: {', '.join(v8_assertions['missing'])}")
     return 0
 
 
