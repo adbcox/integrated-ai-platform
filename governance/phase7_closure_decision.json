@@ -1,0 +1,12 @@
+{
+  "phase_id": 7,
+  "phase_name": "Phase 7: V8 Gate Closure and Codex 5.1 Benchmark",
+  "decision": "closed",
+  "decision_class": "closed_ratified",
+  "closure_adr_ref": "governance/authority_adr_0025_phase7_closure.md",
+  "closed_at_commit": "f5013c3",
+  "ratified_by_package": "CAP-P7-CLOSE-1",
+  "evidence_ref": "governance/phase7_closure_evidence.json",
+  "justification": "CAP-P7-CLOSE-1 ratifies Phase 7 closed_ratified on real stage8 execution evidence (all 9 v8 gates READY at f5013c3). stage8_ready, manager8_ready, worker8_ready closed via checkpoint+resume traces; gate_chain_ready via naming-convention-discovered test run; promotion8_ready via 4 candidate-lane runs. No tactical family unlocked.",
+  "generated_at": "2026-04-20T21:49:03Z"
+}

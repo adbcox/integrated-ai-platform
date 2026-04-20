@@ -134,15 +134,26 @@
     },
     {
       "blocking_reason_if_open": null,
-      "classification": "open",
-      "code_evidence": [],
+      "classification": "closed_ratified",
+      "closed_at_commit": "f5013c3",
+      "closure_evidence_ref": "governance/phase7_closure_evidence.json",
+      "closure_package_id": "CAP-P7-CLOSE-1",
+      "code_evidence": [
+        "bin/stage7_manager.py",
+        "bin/collect_phase7_evidence.py",
+        "bin/run_stage8_evidence.py",
+        "bin/run_candidate_promote.py"
+      ],
       "governance_evidence": [
         "governance/phase7_definition.json",
-        "governance/authority_adr_0024_phase7_definition.md"
+        "governance/authority_adr_0024_phase7_definition.md",
+        "governance/phase7_closure_evidence.json",
+        "governance/authority_adr_0025_phase7_closure.md"
       ],
-      "notes": "Phase 6 closure (CAP-P6-CLOSE-1) and CAP-P7-DEF-1 authorize Phase 7 capability work. No tactical family is unlocked.",
+      "notes": "Phase 7 closed by CAP-P7-CLOSE-1 via real stage8 execution evidence (all 9 v8 gates READY at f5013c3). No tactical family unlocked.",
       "phase_id": 7,
-      "phase_name": "v8_gate_closure_and_codex51_benchmark"
+      "phase_name": "v8_gate_closure_and_codex51_benchmark",
+      "ratified_by_adr": "governance/authority_adr_0025_phase7_closure.md"
     }
   ],
   "generated_at": "2026-04-18T02:35:18-04:00",
