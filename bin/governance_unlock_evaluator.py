@@ -193,8 +193,35 @@ def _load_closure_evidence() -> Dict[str, Any] | None:
     }
 
 
+def _phase3_closure() -> Dict[str, Any] | None:
+    decision_path = GOV_DIR / "phase3_closure_decision.json"
+    evidence_path = GOV_DIR / "phase3_closure_evidence.json"
+    if not (decision_path.exists() and evidence_path.exists()):
+        return None
+    try:
+        decision = json.loads(decision_path.read_text(encoding="utf-8"))
+        evidence = json.loads(evidence_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        return None
+    if not isinstance(decision, dict) or not isinstance(evidence, dict):
+        return None
+    if decision.get("decision") != "closed":
+        return None
+    pkg = evidence.get("package_id")
+    closed_at = decision.get("closed_at_commit")
+    if not (pkg and closed_at):
+        return None
+    return {
+        "package_id": str(pkg),
+        "evidence_ref": "governance/phase3_closure_evidence.json",
+        "adr_ref": str(decision.get("closure_adr_ref", "")),
+        "closed_at_commit": str(closed_at),
+    }
+
+
 def _build_next_package_class() -> Dict[str, Any]:
     closure = _load_closure_evidence()
+    p3 = _phase3_closure()
     capability_transition: Dict[str, Any] = {
         "from": "ratification_only",
         "to": "capability_session",
@@ -211,7 +238,26 @@ def _build_next_package_class() -> Dict[str, Any]:
             "0981c22b17a87d3e6548c0b337a40305c068c3d3"
         )
         capability_transition["consumed_evidence_ref"] = closure["evidence_ref"]
-    if closure is not None:
+    if p3 is not None:
+        current_allowed_class = "capability_session"
+        justification = (
+            "CAP-P3-CLOSE-1 ratifies Phase 3 closed_ratified on bounded "
+            "developer-assistant loop evidence; the ratification_only -> "
+            "capability_session transition is consumed. No tactical family "
+            "is unlocked."
+        )
+        ratified_by_adr = "governance/authority_adr_0019_phase3_closure.md"
+        p3_transition: Dict[str, Any] = {
+            "from": "ratification_only",
+            "to": "capability_session",
+            "gate": "Phase 3 closure evidence (CAP-P3-CLOSE-1) ratified by ADR 0019",
+            "consumed": True,
+            "consumed_at_commit": p3["closed_at_commit"],
+            "consumed_by": p3["package_id"],
+            "consumed_evidence_ref": p3["evidence_ref"],
+        }
+    elif closure is not None:
+        current_allowed_class = "ratification_only"
         justification = (
             "RECON-W2B-CAP-P2-RATIFY-1 ratifies Phase 2 closed_ratified on "
             "CAP-P2-CLOSE-1 evidence; Phase 0 and Phase 1 remain "
@@ -219,33 +265,41 @@ def _build_next_package_class() -> Dict[str, Any]:
             "paused under ADR 0003); the next allowed package class is "
             "therefore ratification_only."
         )
+        ratified_by_adr = "governance/authority_adr_0007_next_class_ratification_only.md"
+        p3_transition = None
     else:
+        current_allowed_class = "ratification_only"
         justification = (
             "RECON-W2 closes Phase 0 and Phase 1 and records Phase 2 as "
             "adopted_partial. No tactical family is unlocked; the next "
             "allowed package class is therefore ratification_only."
         )
+        ratified_by_adr = "governance/authority_adr_0007_next_class_ratification_only.md"
+        p3_transition = None
+    transitions: List[Dict[str, Any]] = [capability_transition]
+    if p3_transition is not None:
+        transitions.append(p3_transition)
+    transitions.append(
+        {
+            "from": "ratification_only",
+            "to": "tactical_review",
+            "gate": (
+                "per-family unlock review packet that satisfies the "
+                "preconditions recorded in tactical_unlock_criteria.json"
+            ),
+            "blocked_until": "all tactical families remain locked at baseline_commit",
+        }
+    )
     return {
         "schema_version": SCHEMA_VERSION,
         "authority_owner": AUTHORITY_OWNER,
         "generated_at": _head_iso(),
         "supersedes": list(SUPERSEDES),
         "baseline_commit": BASELINE_COMMIT,
-        "current_allowed_class": "ratification_only",
-        "transitions": [
-            capability_transition,
-            {
-                "from": "ratification_only",
-                "to": "tactical_review",
-                "gate": (
-                    "per-family unlock review packet that satisfies the "
-                    "preconditions recorded in tactical_unlock_criteria.json"
-                ),
-                "blocked_until": "all tactical families remain locked at baseline_commit",
-            },
-        ],
+        "current_allowed_class": current_allowed_class,
+        "transitions": transitions,
         "justification": justification,
-        "ratified_by_adr": "governance/authority_adr_0007_next_class_ratification_only.md",
+        "ratified_by_adr": ratified_by_adr,
     }
 
 
