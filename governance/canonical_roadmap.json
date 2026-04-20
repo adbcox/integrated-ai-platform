@@ -26,8 +26,7 @@
       "notes": "Phase 0 stays open until a subsequent reconciliation package ratifies these artifacts and mints a closure record.",
       "phase_id": 0,
       "phase_name": "governance_source_of_truth_reconciliation",
-      "status": "closed_ratified",
-      "closure_evidence_ref": "governance/phase0_closure_decision.json"
+      "status": "open"
     },
     {
       "blocking_reasons": [
@@ -139,12 +138,7 @@
     },
     {
       "blocking_reasons": [],
-      "code_anchors": [
-        "bin/stage7_manager.py",
-        "bin/collect_phase7_evidence.py",
-        "bin/run_stage8_evidence.py",
-        "bin/run_candidate_promote.py"
-      ],
+      "code_anchors": [],
       "governance_evidence": [
         "governance/phase7_definition.json",
         "governance/authority_adr_0024_phase7_definition.md",
@@ -152,7 +146,7 @@
         "governance/authority_adr_0025_phase7_closure.md"
       ],
       "milestone_ref": null,
-      "notes": "Phase 7 closed by CAP-P7-CLOSE-1 via real stage8 execution evidence. All 9 v8 gates READY (all_ready=true) at f5013c3. No tactical family unlocked.",
+      "notes": "Phase 7 closed by CAP-P7-CLOSE-1 via real stage8 execution evidence (all 9 v8 gates READY). No tactical family unlocked.",
       "phase_id": 7,
       "phase_name": "v8_gate_closure_and_codex51_benchmark",
       "status": "closed_ratified"
