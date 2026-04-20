@@ -1,0 +1,62 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-04-20T00:00:00Z",
+  "subsystem": "developer_assistance",
+  "tool_count": 6,
+  "tools": [
+    {
+      "name": "read_file",
+      "category": "file_read",
+      "description": "Read the contents of a file in the repository.",
+      "risk_level": "low",
+      "access_mode": "always_allowed",
+      "enabled": true,
+      "manifest_field": "tools.read_file"
+    },
+    {
+      "name": "list_directory",
+      "category": "file_read",
+      "description": "List the contents of a directory in the repository.",
+      "risk_level": "low",
+      "access_mode": "always_allowed",
+      "enabled": true,
+      "manifest_field": "tools.list_directory"
+    },
+    {
+      "name": "search_repo",
+      "category": "search",
+      "description": "Search the repository for files or symbols matching a query.",
+      "risk_level": "low",
+      "access_mode": "always_allowed",
+      "enabled": true,
+      "manifest_field": "tools.search_repo"
+    },
+    {
+      "name": "show_diff",
+      "category": "diff_review",
+      "description": "Show the diff for a pending or staged change.",
+      "risk_level": "low",
+      "access_mode": "always_allowed",
+      "enabled": true,
+      "manifest_field": "tools.show_diff"
+    },
+    {
+      "name": "propose_patch",
+      "category": "patch_proposal",
+      "description": "Propose a patch for review; requires review queue entry before application.",
+      "risk_level": "medium",
+      "access_mode": "queue_required",
+      "enabled": true,
+      "manifest_field": "tools.propose_patch"
+    },
+    {
+      "name": "run_validation",
+      "category": "shell_execution",
+      "description": "Run a local validation command (make check, make quick); requires explicit approval.",
+      "risk_level": "high",
+      "access_mode": "approval_required",
+      "enabled": true,
+      "manifest_field": "tools.run_validation"
+    }
+  ]
+}

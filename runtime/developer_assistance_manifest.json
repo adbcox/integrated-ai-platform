@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-04-20T00:00:00Z",
+  "subsystem": "developer_assistance",
+  "phase": 1,
+  "status": "active",
+  "ollama_endpoint": "http://localhost:11434",
+  "model_profile": "fast",
+  "model_id": "qwen2.5-coder:14b",
+  "tool_registry_ref": "runtime/developer_assistance_tool_registry.json",
+  "review_queue_ref": "runtime/developer_assistance_review_queue.json",
+  "review_summary_ref": "runtime/developer_assistance_review_summary.json",
+  "sessions_ref": "runtime/developer_assistance_sessions.json",
+  "gating_rules": {
+    "patch_requires_queue": true,
+    "shell_requires_approval": true,
+    "auto_commit": false
+  },
+  "notes": "Phase 1 seed. Model and endpoint are defaults; override via environment."
+}
