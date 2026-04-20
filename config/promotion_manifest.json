@@ -601,15 +601,15 @@
       "status": "building"
     },
     "regression_qualification_framework": {
-      "current_version": "qualify-v2",
-      "next_version": "qualify-v3",
-      "after_next_version": "qualify-v4",
-      "upgrade_goal": "Qualify v3 adds deterministic Stage-8 regression assertions tied to subsystem gate contracts and reproducible gate history diffs",
+      "current_version": "qualify-v3",
+      "next_version": "qualify-v4",
+      "after_next_version": "qualify-v5",
+      "upgrade_goal": "Qualify v4 adds subsystem benchmark suites and model-vs-orchestration attribution delta measurements to the gate-chain qualification path",
       "minimum_validation": [
-        "Qualification emits machine-readable v8 gate assertions with history rows",
-        "Regression path fails deterministically when required Stage-8 evidence is missing"
+        "At least one complex-class benchmark suite produces per-subsystem pass/fail verdicts consumed by level10_qualify",
+        "Model-vs-orchestration attribution delta is emitted as a machine-readable field in qualification output"
       ],
-      "status": "validated"
+      "status": "building"
     },
     "learning_training_attribution_loop": {
       "current_version": "learning-v14",
@@ -728,10 +728,8 @@
       ],
       "build_order_priority": 5,
       "build_timing": "staged_later",
-      "v8_status": "partial",
-      "remaining_blockers": [
-        "Lane decisions are still lane-metric first; subsystem gating is enforcement-only and not yet full readiness weighting"
-      ]
+      "v8_status": "complete",
+      "remaining_blockers": []
     },
     "worker_utilization": {
       "current_version": "worker-routing-v2",
@@ -786,10 +784,8 @@
       ],
       "build_order_priority": 6,
       "build_timing": "blocked_until_stage8_manager8_rag8_move",
-      "v8_status": "partial",
-      "remaining_blockers": [
-        "Dedicated deterministic Stage-8 regression assertions are not yet integrated into micro_lane_stage7.sh"
-      ]
+      "v8_status": "complete",
+      "remaining_blockers": []
     }
   }
 }

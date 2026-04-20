@@ -575,6 +575,11 @@ def main() -> int:
         help="Only count trace rows that match the current manifest version",
     )
     parser.add_argument("--json", action="store_true", help="Emit machine-readable JSON summary")
+    parser.add_argument(
+        "--fail-on-incomplete-v8-gates",
+        action="store_true",
+        help="Exit 1 if v8_gate_assertions.all_ready is False",
+    )
     args = parser.parse_args()
 
     manifest = load_manifest(Path(args.manifest).resolve())
@@ -729,6 +734,13 @@ def main() -> int:
     )
     if v8_assertions["missing"]:
         print(f"missing gates: {', '.join(v8_assertions['missing'])}")
+    if args.fail_on_incomplete_v8_gates and not v8_assertions.get("all_ready", False):
+        missing = v8_assertions.get("missing", [])
+        print(
+            f"[qualify] FAIL: v8 gates incomplete — missing: {', '.join(missing) or 'unknown'}",
+            file=sys.stderr,
+        )
+        return 1
     return 0
 
 

@@ -224,5 +224,33 @@ class PromoteSourceGateChainAssertionsTest(unittest.TestCase):
         self.assertIn("gate_chain", preview_fn.group(0))
 
 
+class StrictV8GatesSourceAssertionsTest(unittest.TestCase):
+    """Tests for --strict-v8-gates wiring in level10_promote added in qualify-v3."""
+
+    def setUp(self) -> None:
+        self._src = (REPO_ROOT / "bin" / "level10_promote.py").read_text(encoding="utf-8")
+
+    def test_strict_v8_gates_flag_present(self) -> None:
+        self.assertIn("strict-v8-gates", self._src)
+
+    def test_strict_v8_gates_arg_present(self) -> None:
+        self.assertIn("strict_v8_gates", self._src)
+
+    def test_run_level10_qualify_accepts_strict_v8_gates(self) -> None:
+        import re
+        fn = re.search(r"def run_level10_qualify.*?(?=\ndef |\Z)", self._src, re.DOTALL)
+        self.assertIsNotNone(fn)
+        body = fn.group(0)
+        self.assertIn("strict_v8_gates", body)
+        self.assertIn("--fail-on-incomplete-v8-gates", body)
+
+    def test_abort_message_on_strict_gate_failure(self) -> None:
+        self.assertIn("ABORT", self._src)
+        self.assertIn("strict_v8_gates", self._src)
+
+    def test_strict_v8_gates_passed_to_qualify_call(self) -> None:
+        self.assertIn("strict_v8_gates=bool(args.strict_v8_gates)", self._src)
+
+
 if __name__ == "__main__":
     unittest.main()

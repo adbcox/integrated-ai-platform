@@ -394,5 +394,37 @@ class ManifestThresholdSourceAssertionsTest(unittest.TestCase):
         self.assertIn("gate_chain_stats", self._src)
 
 
+class QualifyV3HardGateTest(unittest.TestCase):
+    """Tests for --fail-on-incomplete-v8-gates behavior added in qualify-v3."""
+
+    def setUp(self) -> None:
+        self._src = (REPO_ROOT / "bin" / "level10_qualify.py").read_text(encoding="utf-8")
+
+    def test_fail_on_incomplete_v8_gates_flag_present(self) -> None:
+        self.assertIn("fail-on-incomplete-v8-gates", self._src)
+
+    def test_fail_on_incomplete_v8_gates_arg_added(self) -> None:
+        self.assertIn("fail_on_incomplete_v8_gates", self._src)
+
+    def test_exit_1_when_not_all_ready(self) -> None:
+        import re
+        main_fn = re.search(r"def main\(\).*?(?=\ndef |\Z)", self._src, re.DOTALL)
+        self.assertIsNotNone(main_fn)
+        body = main_fn.group(0)
+        self.assertIn("fail_on_incomplete_v8_gates", body)
+        self.assertIn("all_ready", body)
+        self.assertIn("return 1", body)
+
+    def test_fail_stderr_message_present(self) -> None:
+        self.assertIn("[qualify] FAIL", self._src)
+
+    def test_all_ready_false_triggers_exit(self) -> None:
+        import re
+        self.assertRegex(
+            self._src,
+            r"fail_on_incomplete_v8_gates.*?all_ready|all_ready.*?fail_on_incomplete_v8_gates",
+        )
+
+
 if __name__ == "__main__":
     unittest.main()

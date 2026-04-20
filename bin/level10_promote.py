@@ -35,9 +35,18 @@ def now_utc() -> str:
     return datetime.now(UTC).isoformat(timespec="seconds")
 
 
-def run_level10_qualify(manifest_path: Path) -> dict[str, Any]:
+def run_level10_qualify(manifest_path: Path, *, strict_v8_gates: bool = False) -> dict[str, Any]:
     cmd = [sys.executable, str(LEVEL10_QUALIFY), "--manifest", str(manifest_path), "--json"]
-    proc = subprocess.run(cmd, capture_output=True, text=True, check=True)
+    if strict_v8_gates:
+        cmd.append("--fail-on-incomplete-v8-gates")
+    proc = subprocess.run(cmd, capture_output=True, text=True, check=False)
+    if proc.returncode not in (0, 1):
+        raise RuntimeError(f"level10_qualify exited {proc.returncode}: {proc.stderr[:200]}")
+    if strict_v8_gates and proc.returncode == 1:
+        raise SystemExit(
+            f"[promote] ABORT: strict_v8_gates=True and level10_qualify reports incomplete v8 gates.\n"
+            f"{proc.stderr.strip()}"
+        )
     return json.loads(proc.stdout)
 
 
@@ -245,6 +254,11 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Apply Level-10 promotion/demotion control loop")
     parser.add_argument("--manifest", default=str(MANIFEST_PATH) , help="Promotion manifest path")
     parser.add_argument("--dry-run", action="store_true", help="Compute and log decisions without mutating manifest")
+    parser.add_argument(
+        "--strict-v8-gates",
+        action="store_true",
+        help="Pass --fail-on-incomplete-v8-gates to level10_qualify; abort if v8 gates are not all ready",
+    )
     return parser.parse_args()
 
 
@@ -253,7 +267,7 @@ def main() -> int:
     manifest_path = Path(args.manifest).resolve()
     manifest_cfg = load_manifest(manifest_path)
     manifest_data = manifest_cfg.data
-    summary = run_level10_qualify(manifest_path)
+    summary = run_level10_qualify(manifest_path, strict_v8_gates=bool(args.strict_v8_gates))
     gate_matrix = build_subsystem_gate_matrix(summary)
     decisions = enforce_subsystem_gate_policy(compute_decisions(summary, manifest_data), gate_matrix)
     timestamp = now_utc()
@@ -263,6 +277,7 @@ def main() -> int:
         "manifest_path": str(manifest_path),
         "manifest_version_before": manifest_cfg.version,
         "dry_run": bool(args.dry_run),
+        "strict_v8_gates": bool(args.strict_v8_gates),
         "decisions": [decision.__dict__ for decision in decisions],
         "metrics": summary.get("metrics", {}),
         "gate_chain_stats": summary.get("metrics", {}).get("gate_chain", {}),
