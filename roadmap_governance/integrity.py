@@ -7,6 +7,10 @@ Scope boundary: this service operates on normalized DB state (roadmap_item rows)
 duplicate_id findings are NOT produced here; they are emitted by sync_roadmap() during
 source ingestion, because the DB primary key collapses duplicate IDs before they reach
 this layer.  Run `rgc roadmap sync` first to ensure duplicate_id findings are recorded.
+
+Deferred check — done_without_evidence: the roadmap_item DB schema does not carry an
+evidence reference field.  This check will be added in a later slice once evidence
+linkage is present in the schema.
 """
 
 from __future__ import annotations
