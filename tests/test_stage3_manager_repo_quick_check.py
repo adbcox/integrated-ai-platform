@@ -43,18 +43,20 @@ class RepoQuickCheckTest(unittest.TestCase):
         self.assertFalse(ok)
         self.assertTrue(note.startswith("repo_quick_exception:"), note)
 
-    def test_changed_files_env_set_to_target(self) -> None:
+    def test_target_passed_as_cli_arg(self) -> None:
         captured = {}
 
         def fake_run(cmd, **kwargs):
-            captured["env"] = kwargs.get("env", {})
+            captured["cmd"] = cmd
             m = MagicMock()
             m.returncode = 0
+            m.stdout = ""
+            m.stderr = ""
             return m
 
         with patch("subprocess.run", side_effect=fake_run):
             _run_repo_quick_check("bin/stage3_manager.py")
-        self.assertEqual(captured["env"].get("CHANGED_FILES"), "bin/stage3_manager.py")
+        self.assertIn("bin/stage3_manager.py", captured.get("cmd", []))
 
     def test_custom_repo_root_passed_as_cwd(self) -> None:
         captured = {}
@@ -102,8 +104,8 @@ class RepoQuickCheckSourceAssertionsTest(unittest.TestCase):
     def test_skipped_prior_gate_failed_in_source(self) -> None:
         self.assertIn("skipped_prior_gate_failed", self._source)
 
-    def test_changed_files_in_source(self) -> None:
-        self.assertIn("CHANGED_FILES", self._source)
+    def test_quick_check_sh_invoked_in_source(self) -> None:
+        self.assertIn("quick_check.sh", self._source)
 
 
 if __name__ == "__main__":

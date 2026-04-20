@@ -310,15 +310,17 @@ def _run_repo_fast_check(repo_root: Path | None = None) -> tuple[bool, str]:
 
 def _run_repo_quick_check(target: str, repo_root: Path | None = None) -> tuple[bool, str]:
     root = repo_root if repo_root is not None else REPO_ROOT
-    env = {**os.environ, "CHANGED_FILES": target}
+    quick_script = root / "bin" / "quick_check.sh"
+    cmd = ["sh", str(quick_script), "--all"]
+    if target:
+        cmd.append(target)
     try:
         result = subprocess.run(
-            ["make", "quick"],
+            cmd,
             capture_output=True,
             text=True,
             cwd=str(root),
             timeout=30,
-            env=env,
         )
         if result.returncode == 0:
             return (True, "repo_quick_passed")
