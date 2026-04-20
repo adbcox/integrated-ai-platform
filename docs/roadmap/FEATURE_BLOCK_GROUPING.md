@@ -118,7 +118,7 @@ Likely grouping candidates:
 - `RM-DEV-002` — dual-model inline QC coding loop
 - `RM-DEV-003` — bounded autonomous code generation
 - `RM-DEV-004` — embedded firmware assistant
-n
+
 Reason:
 
 These share execution-loop architecture, model orchestration, validation, and implementation policy surfaces.
