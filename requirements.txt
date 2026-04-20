@@ -3,3 +3,6 @@ fastapi==0.115.12
 uvicorn==0.34.0
 python-dotenv==1.0.1
 pydantic==2.12.5
+sqlalchemy==2.0.41
+alembic==1.14.1
+PyYAML==6.0.2
