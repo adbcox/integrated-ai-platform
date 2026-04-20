@@ -11,7 +11,7 @@ Then: stage3_manager targeting framework/local_command_runner.py
 Finally: collect_phase7_evidence.py to update artifact + governance records.
 """
 
-from __future__ import annotations
+from __future__ import annotations  # PEP-563
 
 import argparse
 import subprocess
