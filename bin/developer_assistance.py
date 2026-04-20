@@ -7,7 +7,7 @@ Usage:
     python3 bin/developer_assistance.py manifest
 """
 
-from __future__ import annotations
+from __future__ import annotations  # PEP-563
 
 import argparse
 import json
