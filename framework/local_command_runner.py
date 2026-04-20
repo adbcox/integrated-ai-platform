@@ -76,7 +76,7 @@ class LocalCommandRunner:
         self._cwd = (cwd or REPO_ROOT).resolve()
         self._timeout_seconds = timeout_seconds
 
-    def run(self, command_name: str) -> LocalCommandResult:
+    def run(self, command_name: str) -> LocalCommandResult:  # noqa: D102
         if command_name not in KNOWN_FRAMEWORK_COMMANDS:
             raise ValueError(
                 f"unknown command {command_name!r}; "
