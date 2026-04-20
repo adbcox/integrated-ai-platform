@@ -1,49 +1,58 @@
 {
+  "schema_version": 2,
   "authority_owner": "governance",
-  "baseline_commit": "53ae4d4f177b176a7bffaa63988f63fa0efa622c",
   "current_allowed_class": "capability_session",
   "generated_at": "2026-04-20T00:00:00-04:00",
-  "justification": "CAP-P4-CLOSE-1 ratifies Phase 4 closed_ratified on bounded autonomy-hardening evidence. Phase 5 capability sessions are authorized. No tactical family is unlocked.",
-  "ratified_by_adr": "governance/authority_adr_0020_phase4_closure.md",
-  "schema_version": 2,
+  "justification": "CAP-P5-CLOSE-1 ratifies Phase 5 closed_ratified on bounded qualification-promotion-learning convergence evidence. Phase 6 capability sessions are authorized. No tactical family is unlocked.",
+  "ratified_by_adr": "governance/authority_adr_0021_phase5_closure.md",
+  "baseline_commit": "53ae4d4f177b176a7bffaa63988f63fa0efa622c",
   "supersedes": [
     "config/promotion_manifest.json (legacy; frozen pending migration)",
     "docs/* narrative roadmaps (advisory only)"
   ],
   "transitions": [
     {
+      "from": "ratification_only",
+      "to": "capability_session",
+      "gate": "Phase 2 closure evidence (real-capability measurement_session) must be ratified by a later reconciliation package",
       "blocked_until": "phase2_adoption_decision.json decision == closed",
       "consumed": true,
-      "consumed_at_commit": "0981c22b17a87d3e6548c0b337a40305c068c3d3",
       "consumed_by": "CAP-P2-CLOSE-1",
-      "consumed_evidence_ref": "governance/phase2_closure_evidence.json",
-      "from": "ratification_only",
-      "gate": "Phase 2 closure evidence (real-capability measurement_session) must be ratified by a later reconciliation package",
-      "to": "capability_session"
+      "consumed_at_commit": "0981c22b17a87d3e6548c0b337a40305c068c3d3",
+      "consumed_evidence_ref": "governance/phase2_closure_evidence.json"
     },
     {
-      "consumed": true,
-      "consumed_at_commit": "5888e4f",
-      "consumed_by": "CAP-P3-CLOSE-1",
-      "consumed_evidence_ref": "governance/phase3_closure_evidence.json",
       "from": "ratification_only",
+      "to": "capability_session",
       "gate": "Phase 3 closure evidence (CAP-P3-CLOSE-1) ratified by ADR 0019",
-      "to": "capability_session"
-    },
-    {
       "consumed": true,
-      "consumed_at_commit": "cb18558",
-      "consumed_by": "CAP-P4-CLOSE-1",
-      "consumed_evidence_ref": "governance/phase4_closure_evidence.json",
-      "from": "capability_session",
-      "gate": "Phase 4 closure evidence (CAP-P4-CLOSE-1) ratified by ADR 0020",
-      "to": "capability_session"
+      "consumed_by": "CAP-P3-CLOSE-1",
+      "consumed_at_commit": "5888e4f",
+      "consumed_evidence_ref": "governance/phase3_closure_evidence.json"
     },
     {
-      "blocked_until": "all tactical families remain locked at baseline_commit",
+      "from": "capability_session",
+      "to": "capability_session",
+      "gate": "Phase 4 closure evidence (CAP-P4-CLOSE-1) ratified by ADR 0020",
+      "consumed": true,
+      "consumed_by": "CAP-P4-CLOSE-1",
+      "consumed_at_commit": "cb18558",
+      "consumed_evidence_ref": "governance/phase4_closure_evidence.json"
+    },
+    {
+      "from": "capability_session",
+      "to": "capability_session",
+      "gate": "Phase 5 closure evidence (CAP-P5-CLOSE-1) ratified by ADR 0021",
+      "consumed": true,
+      "consumed_by": "CAP-P5-CLOSE-1",
+      "consumed_at_commit": "c280cb6",
+      "consumed_evidence_ref": "governance/phase5_closure_evidence.json"
+    },
+    {
       "from": "ratification_only",
+      "to": "tactical_review",
       "gate": "per-family unlock review packet that satisfies the preconditions recorded in tactical_unlock_criteria.json",
-      "to": "tactical_review"
+      "blocked_until": "all tactical families remain locked at baseline_commit"
     }
   ]
 }

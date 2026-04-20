@@ -1,0 +1,26 @@
+{
+  "package_id": "CAP-P5-CLOSE-1",
+  "adr_ref": "governance/authority_adr_0021_phase5_closure.md",
+  "session_type": "capability_session",
+  "phase_id": 5,
+  "phase_name": "Phase 5: Qualification Promotion Learning Convergence",
+  "convergence_deliverables_proven": [
+    "gate_chain_qualification_wired_into_level10_qualify",
+    "gate_chain_ready_hard_gate_in_evaluate_v8_gates",
+    "gate_chain_ready_in_candidate_and_stage6_promote_requires",
+    "gate_chain_named_subsystem_in_evaluate_subsystems",
+    "gate_chain_in_preview_decision_core_ready_check",
+    "manifest_driven_gate_chain_threshold_in_promotion_policy_criteria"
+  ],
+  "first_gate_commit": "a801e51",
+  "final_convergence_commit": "c280cb6",
+  "phase5_commits": [
+    "a801e51",
+    "64c1062",
+    "52b29a6",
+    "c280cb6"
+  ],
+  "test_count_at_closure": 98,
+  "evidence_summary": "Phase 5 qualification-promotion-learning convergence achieved across four bounded commits. Gate-chain retained-edit evidence from stage3_manager traces is summarized (summarize_gate_chain), made a hard qualification gate (gate_chain_ready in evaluate_v8_gates), wired into the promotion gate matrix blocking both candidate and stage6 promote actions when evidence is insufficient, and elevated to a first-class named subsystem (gate_chain in evaluate_subsystems, _preview_decision core_ready, and manifest promotion_policy.criteria). The gate_chain_min_full_qualification_rate threshold is manifest-driven. 98 tests passing at c280cb6. Phase 5 objective achieved.",
+  "generated_at": "2026-04-20T00:00:00-04:00"
+}

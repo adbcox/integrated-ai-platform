@@ -106,22 +106,26 @@
     },
     {
       "blocking_reasons": [],
-      "code_anchors": [],
-      "governance_evidence": [],
+      "code_anchors": [
+        "bin/level10_qualify.py",
+        "bin/level10_promote.py"
+      ],
+      "governance_evidence": [
+        "governance/phase5_closure_evidence.json",
+        "governance/authority_adr_0021_phase5_closure.md"
+      ],
       "milestone_ref": null,
-      "notes": "Phase 4 closure (CAP-P4-CLOSE-1) authorizes Phase 5 capability work. No tactical family is unlocked.",
+      "notes": "Phase 5 closed by CAP-P5-CLOSE-1 via bounded qualification-promotion-learning convergence evidence. No tactical family unlocked.",
       "phase_id": 5,
       "phase_name": "qualification_promotion_learning_convergence",
-      "status": "open"
+      "status": "closed_ratified"
     },
     {
-      "blocking_reasons": [
-        "not canonically authorized until Phase 5 closure"
-      ],
+      "blocking_reasons": [],
       "code_anchors": [],
       "governance_evidence": [],
       "milestone_ref": null,
-      "notes": "Only permitted after canonical authorization of prior phases.",
+      "notes": "Phase 5 closure (CAP-P5-CLOSE-1) authorizes Phase 6 capability work. No tactical family is unlocked.",
       "phase_id": 6,
       "phase_name": "controlled_expansion",
       "status": "open"

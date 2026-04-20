@@ -35,6 +35,11 @@
   "phase4_closure_evidence_ref": "governance/phase4_closure_evidence.json",
   "phase4_closure_package_id": "CAP-P4-CLOSE-1",
   "phase4_status": "closed_ratified",
+  "phase5_closed_at_commit": "c280cb6",
+  "phase5_closure_adr_ref": "governance/authority_adr_0021_phase5_closure.md",
+  "phase5_closure_evidence_ref": "governance/phase5_closure_evidence.json",
+  "phase5_closure_package_id": "CAP-P5-CLOSE-1",
+  "phase5_status": "closed_ratified",
   "schema_version": "1.0.0",
   "supersedes": [
     "docs/claude-code-roadmap.md (narrative only; not machine authority)",

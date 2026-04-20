@@ -1,0 +1,12 @@
+{
+  "phase_id": 5,
+  "phase_name": "Phase 5: Qualification Promotion Learning Convergence",
+  "decision": "closed",
+  "decision_class": "closed_ratified",
+  "closure_adr_ref": "governance/authority_adr_0021_phase5_closure.md",
+  "closed_at_commit": "c280cb6",
+  "ratified_by_package": "CAP-P5-CLOSE-1",
+  "evidence_ref": "governance/phase5_closure_evidence.json",
+  "justification": "CAP-P5-CLOSE-1 ratifies Phase 5 closed_ratified on bounded qualification-promotion-learning convergence evidence. Gate-chain retained-edit evidence is a first-class named subsystem blocking promotion when insufficient. 98 tests passing at c280cb6. Phase 6 capability sessions are now authorized.",
+  "generated_at": "2026-04-20T00:00:00-04:00"
+}
