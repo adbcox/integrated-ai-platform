@@ -1,0 +1,12 @@
+{
+  "phase_id": 4,
+  "phase_name": "Phase 4: Autonomy Hardening Safety Policy Uplift",
+  "decision": "closed",
+  "decision_class": "closed_ratified",
+  "closure_adr_ref": "governance/authority_adr_0020_phase4_closure.md",
+  "closed_at_commit": "cb18558",
+  "ratified_by_package": "CAP-P4-CLOSE-1",
+  "evidence_ref": "governance/phase4_closure_evidence.json",
+  "justification": "CAP-P4-CLOSE-1 ratifies Phase 4 closed_ratified on bounded autonomy-hardening evidence. Four-gate retained-edit chain proven with revert-failure escalation, gate observability, and sparse-coverage fallbacks. 81 gate tests passing at cb18558. Phase 5 capability sessions are now authorized.",
+  "generated_at": "2026-04-20T00:00:00-04:00"
+}

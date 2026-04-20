@@ -87,19 +87,25 @@
     },
     {
       "blocking_reason_if_open": null,
-      "classification": "open",
+      "classification": "closed_ratified",
+      "closure_evidence_ref": "governance/phase4_closure_evidence.json",
+      "closure_package_id": "CAP-P4-CLOSE-1",
       "code_evidence": [],
-      "governance_evidence": [],
-      "notes": "Phase 3 closure (CAP-P3-CLOSE-1) authorizes Phase 4 capability work. No tactical family is unlocked.",
+      "governance_evidence": [
+        "governance/phase4_closure_evidence.json",
+        "governance/authority_adr_0020_phase4_closure.md"
+      ],
+      "notes": "Phase 4 closed by CAP-P4-CLOSE-1 via bounded autonomy-hardening evidence. No tactical family unlocked.",
       "phase_id": 4,
-      "phase_name": "autonomy_hardening_safety_policy_uplift"
+      "phase_name": "autonomy_hardening_safety_policy_uplift",
+      "ratified_by_adr": "governance/authority_adr_0020_phase4_closure.md"
     },
     {
-      "blocking_reason_if_open": "not canonically authorized until Phase 4 closure",
+      "blocking_reason_if_open": null,
       "classification": "open",
       "code_evidence": [],
       "governance_evidence": [],
-      "notes": "No canonical work is authorized for Phase 5 at as_of_commit.",
+      "notes": "Phase 4 closure (CAP-P4-CLOSE-1) authorizes Phase 5 capability work. No tactical family is unlocked.",
       "phase_id": 5,
       "phase_name": "qualification_promotion_learning_convergence"
     },

@@ -1,0 +1,24 @@
+{
+  "package_id": "CAP-P4-CLOSE-1",
+  "adr_ref": "governance/authority_adr_0020_phase4_closure.md",
+  "final_worker_outcome_status": "completed",
+  "session_type": "capability_session",
+  "phase_id": 4,
+  "phase_name": "Phase 4: Autonomy Hardening Safety Policy Uplift",
+  "hardening_gates_proven": [
+    "gate1_syntax_validation_py_json_sh",
+    "gate2_target_tests_naming_convention_reference_scan_smoke_fallback",
+    "gate3_repo_make_check",
+    "gate4_quick_check_sh_on_explicit_target"
+  ],
+  "additional_hardening": [
+    "revert_failure_escalation_all_four_gates",
+    "gate_observability_fields_discovery_mode_files_count_gates_run",
+    "detect_changed_files_sh_three_priority_tiers"
+  ],
+  "first_gate_commit": "be45e74",
+  "final_hardening_commit": "cb18558",
+  "test_count_at_closure": 81,
+  "evidence_summary": "Four-gate retained-edit validation chain implemented and hardened in bin/stage3_manager.py. Gate 1: py_compile/.json/sh -n. Gate 2: naming-convention primary, reference-scan fallback, smoke fallback for zero-coverage targets. Gate 3: make check. Gate 4: quick_check.sh on explicit target via detect_changed_files.sh CLI arg invocation. Revert-failure escalation correct across all four gates: accepted=False, classification=revert_failure_dirty_state, fatal SystemExit. Gate observability trace fields in every entry. 81 gate tests passing at cb18558. Phase 4 objective achieved.",
+  "generated_at": "2026-04-20T00:00:00-04:00"
+}
