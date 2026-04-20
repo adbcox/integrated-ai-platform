@@ -266,5 +266,101 @@ def links_refresh_cmd(db_url: str | None, dry_run: bool) -> None:
     click.echo(f"  findings created: {result.findings_created}")
 
 
+@cli.group()
+def planner() -> None:
+    """Feature-block package planner commands."""
+
+
+@planner.command("refresh")
+@click.option("--db-url", envvar="RGC_DATABASE_URL", default=None)
+@click.option("--dry-run", is_flag=True, default=False)
+@click.option("--artifact-dir", default=None, help="Override artifact output directory.")
+def planner_refresh_cmd(db_url: str | None, dry_run: bool, artifact_dir: str | None) -> None:
+    """Score and upsert feature-block packages from current roadmap items."""
+    import os
+
+    if db_url:
+        os.environ["RGC_DATABASE_URL"] = db_url
+
+    from pathlib import Path as _Path
+
+    from sqlalchemy import create_engine
+    from sqlalchemy.orm import sessionmaker
+
+    from roadmap_governance.database import get_db_url
+    from roadmap_governance.models import Base
+    from roadmap_governance.planner_service import run_planner_refresh
+
+    url = get_db_url()
+    kwargs: dict = {}
+    if url.startswith("sqlite"):
+        kwargs["connect_args"] = {"check_same_thread": False}
+
+    engine = create_engine(url, **kwargs)
+    Base.metadata.create_all(engine)
+    factory = sessionmaker(bind=engine, expire_on_commit=False)
+    db = factory()
+
+    art_dir = _Path(artifact_dir) if artifact_dir else None
+
+    try:
+        result = run_planner_refresh(db, artifact_dir=art_dir, dry_run=dry_run)
+    finally:
+        db.close()
+
+    mode = "DRY RUN — " if dry_run else ""
+    click.echo(f"{mode}Planner refresh complete.")
+    click.echo(f"  packages created:   {result.packages_created}")
+    click.echo(f"  packages updated:   {result.packages_updated}")
+    click.echo(f"  packages unchanged: {result.packages_unchanged}")
+    click.echo(f"  members added:      {result.members_added}")
+    for path in result.artifact_paths:
+        click.echo(f"  artifact: {path}")
+
+
+@cli.group()
+def metrics() -> None:
+    """Metrics capture commands."""
+
+
+@metrics.command("capture")
+@click.option("--db-url", envvar="RGC_DATABASE_URL", default=None)
+@click.option("--dry-run", is_flag=True, default=False)
+def metrics_capture_cmd(db_url: str | None, dry_run: bool) -> None:
+    """Capture a metrics snapshot for all scopes."""
+    import os
+
+    if db_url:
+        os.environ["RGC_DATABASE_URL"] = db_url
+
+    from sqlalchemy import create_engine
+    from sqlalchemy.orm import sessionmaker
+
+    from roadmap_governance.database import get_db_url
+    from roadmap_governance.metrics_service import capture_metrics
+    from roadmap_governance.models import Base
+
+    url = get_db_url()
+    kwargs: dict = {}
+    if url.startswith("sqlite"):
+        kwargs["connect_args"] = {"check_same_thread": False}
+
+    engine = create_engine(url, **kwargs)
+    Base.metadata.create_all(engine)
+    factory = sessionmaker(bind=engine, expire_on_commit=False)
+    db = factory()
+
+    try:
+        result = capture_metrics(db, dry_run=dry_run)
+    finally:
+        db.close()
+
+    mode = "DRY RUN — " if dry_run else ""
+    click.echo(f"{mode}Metrics capture complete.")
+    click.echo(f"  snapshots written: {result.snapshots_written}")
+    for scope in result.scopes_captured:
+        click.echo(f"    {scope}")
+
+
 if __name__ == "__main__":
     cli()

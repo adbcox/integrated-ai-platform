@@ -9,11 +9,23 @@ from sqlalchemy.orm import Session
 
 from roadmap_governance.database import get_db_dep
 from roadmap_governance.link_service import get_impact_view
-from roadmap_governance.models import CmdbEntity, IntegrityFinding, RoadmapItem, RoadmapLink
+from roadmap_governance.metrics_service import capture_metrics, get_scope_metrics
+from roadmap_governance.models import (
+    CmdbEntity,
+    FeatureBlockMember,
+    FeatureBlockPackage,
+    IntegrityFinding,
+    RoadmapItem,
+    RoadmapLink,
+)
+from roadmap_governance.planner_service import run_planner_refresh
 from roadmap_governance.schemas import (
     CmdbEntityResponse,
+    FeatureBlockMemberResponse,
+    FeatureBlockPackageResponse,
     FindingLifecycleUpdate,
     IntegrityFindingResponse,
+    MetricSnapshotResponse,
     RoadmapImpactResponse,
     RoadmapItemResponse,
     RoadmapLinkResponse,
@@ -127,3 +139,90 @@ def list_roadmap_links(
         q = q.filter(RoadmapLink.roadmap_id == roadmap_id)
     rows = q.order_by(RoadmapLink.roadmap_id, RoadmapLink.entity_id).all()
     return [RoadmapLinkResponse.model_validate(r) for r in rows]
+
+
+# ---------------------------------------------------------------------------
+# Package planner
+# ---------------------------------------------------------------------------
+
+@router.post("/planner/packages/refresh", response_model=dict)
+def refresh_packages(
+    dry_run: bool = Query(default=False, description="Evaluate without persisting"),
+    db: Session = Depends(get_db_dep),
+) -> dict:
+    result = run_planner_refresh(db, dry_run=dry_run)
+    return {
+        "packages_created": result.packages_created,
+        "packages_updated": result.packages_updated,
+        "packages_unchanged": result.packages_unchanged,
+        "members_added": result.members_added,
+        "artifact_paths": result.artifact_paths,
+    }
+
+
+@router.get("/packages", response_model=List[FeatureBlockPackageResponse])
+def list_packages(
+    scope: Optional[str] = Query(default=None, description="Filter by scope (category)"),
+    db: Session = Depends(get_db_dep),
+) -> List[FeatureBlockPackageResponse]:
+    q = db.query(FeatureBlockPackage)
+    if scope is not None:
+        q = q.filter(FeatureBlockPackage.scope == scope)
+    packages = q.order_by(FeatureBlockPackage.score.desc()).all()
+    out = []
+    for pkg in packages:
+        members = (
+            db.query(FeatureBlockMember)
+            .filter(FeatureBlockMember.package_id == pkg.package_id)
+            .all()
+        )
+        resp = FeatureBlockPackageResponse.model_validate(pkg)
+        resp.members = [FeatureBlockMemberResponse.model_validate(m) for m in members]
+        out.append(resp)
+    return out
+
+
+@router.get("/packages/{package_id}", response_model=FeatureBlockPackageResponse)
+def get_package(
+    package_id: str,
+    db: Session = Depends(get_db_dep),
+) -> FeatureBlockPackageResponse:
+    pkg = db.get(FeatureBlockPackage, package_id)
+    if pkg is None:
+        raise HTTPException(status_code=404, detail="Package not found")
+    members = (
+        db.query(FeatureBlockMember)
+        .filter(FeatureBlockMember.package_id == package_id)
+        .all()
+    )
+    resp = FeatureBlockPackageResponse.model_validate(pkg)
+    resp.members = [FeatureBlockMemberResponse.model_validate(m) for m in members]
+    return resp
+
+
+# ---------------------------------------------------------------------------
+# Metrics
+# ---------------------------------------------------------------------------
+
+@router.post("/metrics/capture", response_model=dict)
+def capture_metrics_endpoint(
+    dry_run: bool = Query(default=False),
+    db: Session = Depends(get_db_dep),
+) -> dict:
+    result = capture_metrics(db, dry_run=dry_run)
+    return {
+        "snapshots_written": result.snapshots_written,
+        "scopes_captured": result.scopes_captured,
+    }
+
+
+@router.get("/metrics/scopes/{scope_type}/{scope_ref:path}", response_model=MetricSnapshotResponse)
+def get_metrics_for_scope(
+    scope_type: str,
+    scope_ref: str,
+    db: Session = Depends(get_db_dep),
+) -> MetricSnapshotResponse:
+    snap = get_scope_metrics(db, scope_type, scope_ref)
+    if snap is None:
+        raise HTTPException(status_code=404, detail="No metrics found for this scope")
+    return MetricSnapshotResponse.model_validate(snap)

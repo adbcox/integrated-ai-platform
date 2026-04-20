@@ -96,3 +96,36 @@ class RoadmapLinkResponse(BaseModel):
     evidence_ref: Optional[str]
     created_at: datetime
     updated_at: datetime
+
+
+class FeatureBlockMemberResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    roadmap_id: str
+    member_role: str
+    added_at: datetime
+
+
+class FeatureBlockPackageResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    package_id: str
+    title: str
+    scope: str
+    status: str
+    score: float
+    rationale: Optional[str]
+    artifact_path: Optional[str]
+    created_at: datetime
+    updated_at: datetime
+    members: List[FeatureBlockMemberResponse] = Field(default_factory=list)
+
+
+class MetricSnapshotResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    snapshot_id: str
+    scope_type: str
+    scope_ref: str
+    metrics: Any
+    captured_at: datetime

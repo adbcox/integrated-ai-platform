@@ -111,3 +111,57 @@ class RoadmapLink(Base):
             f" type={self.link_type!r}"
             f" confidence={self.confidence}>"
         )
+
+
+class MetricSnapshot(Base):
+    """Point-in-time metric capture for a named scope."""
+
+    __tablename__ = "metric_snapshot"
+
+    snapshot_id: Mapped[str] = mapped_column(
+        String(36), primary_key=True, default=lambda: str(uuid.uuid4())
+    )
+    scope_type: Mapped[str] = mapped_column(String(64), nullable=False)
+    scope_ref: Mapped[str] = mapped_column(String(256), nullable=False)
+    metrics: Mapped[Any] = mapped_column(JSON, nullable=False, default=dict)
+    captured_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+    def __repr__(self) -> str:
+        return f"<MetricSnapshot scope={self.scope_type}:{self.scope_ref!r} at={self.captured_at}>"
+
+
+class FeatureBlockPackage(Base):
+    """A scored, scoped grouping of roadmap items proposed for delivery together."""
+
+    __tablename__ = "feature_block_package"
+
+    package_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    title: Mapped[str] = mapped_column(Text, nullable=False)
+    scope: Mapped[str] = mapped_column(String(64), nullable=False)
+    status: Mapped[str] = mapped_column(String(32), nullable=False, default="draft")
+    score: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
+    rationale: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    artifact_path: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+    def __repr__(self) -> str:
+        return f"<FeatureBlockPackage id={self.package_id!r} scope={self.scope!r} score={self.score:.3f}>"
+
+
+class FeatureBlockMember(Base):
+    """Membership record linking a roadmap item into a feature-block package."""
+
+    __tablename__ = "feature_block_member"
+
+    package_id: Mapped[str] = mapped_column(
+        String(64), ForeignKey("feature_block_package.package_id"), primary_key=True
+    )
+    roadmap_id: Mapped[str] = mapped_column(
+        String(64), ForeignKey("roadmap_item.id"), primary_key=True
+    )
+    member_role: Mapped[str] = mapped_column(String(32), nullable=False, default="primary")
+    added_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+    def __repr__(self) -> str:
+        return f"<FeatureBlockMember pkg={self.package_id!r} item={self.roadmap_id!r}>"
