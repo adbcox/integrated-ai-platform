@@ -234,6 +234,19 @@
       "regression_pack": "bin/micro_lane_stage7.sh",
       "status": "building",
       "notes": "Stage-9 deterministic resume/checkpoint preview lane with rollback-contract verification, reconciliation guarantees, Manager-13 proactive pre-dispatch recurrence shaping, and RAG-10 execution-cohort clustered planning"
+    },
+    "stage8": {
+      "label": "Stage-8 bounded evidence lane",
+      "stage_version": "stage8-v1",
+      "manager_version": "manager14-v1",
+      "rag_version": "rag10-v1",
+      "allowed_targets": [
+        "bin/",
+        "framework/"
+      ],
+      "regression_pack": "bin/micro_lane_stage7.sh",
+      "status": "building",
+      "notes": "Evidence-collection lane for Phase 7 stage8_ready / manager8_ready / worker8_ready gate closure"
     }
   },
   "lane_rules": {

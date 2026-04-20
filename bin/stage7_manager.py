@@ -1825,6 +1825,11 @@ def parse_args() -> argparse.Namespace:
         default=[],
         help="Preferred retrieval prefix for Stage RAG-6 ranking (repeatable).",
     )
+    parser.add_argument(
+        "--lane",
+        default="stage7",
+        help="Promotion lane name to resolve from manifest (default: stage7).",
+    )
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--manager-history-window-days", type=int, default=14)
     parser.add_argument("--manager-memory-window-days", type=int, default=30)
@@ -1877,7 +1882,7 @@ def main() -> int:
     args = parse_args()
     manifest_path = Path(args.manifest).resolve()
     manifest_cfg = load_manifest(manifest_path)
-    lane_name = "stage7"
+    lane_name = args.lane
     versions = resolve_versions_for_lane(manifest_cfg.data, lane_name)
     if not args.preferred_prefix:
         lane_cfg = versions.get("lane", {})
