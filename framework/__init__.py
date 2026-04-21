@@ -97,6 +97,7 @@ from .cmdb_authority_pilot import CmdbAuthorityRecord, CmdbAuthorityPilot, read_
 from .cmdb_authority_boundary import AuthorityDomain, PROMOTION_AUTHORITY, RUNTIME_AUTHORITY, CMDB_AUTHORITY, ALL_AUTHORITIES, validate_boundary_non_overlap, emit_authority_boundary
 from .cmdb_authority_contract import CmdbServiceRecord, CmdbOwnershipBoundary, CmdbAuthorityContract, build_cmdb_authority_contract, emit_cmdb_authority_contract
 from .cmdb_read_model import CmdbReadModelEntry, CmdbReadModelOutput, CmdbReadModel, emit_cmdb_read_model
+from .cmdb_authority_proof_harness import CmdbProofCriterion, CmdbProofResult, CmdbAuthorityProofHarness, emit_cmdb_proof_result
 from .cmdb_integration_gate import CmdbGateDecision, CmdbIntegrationGate, evaluate_cmdb_gate, GATE_PASS, GATE_BLOCK
 from .domain_branch_contract import DOMAIN_BRANCH_RUNNER_VERSION, DomainBranchPolicy, DomainBranchManifest, DomainBranchRunner
 from .expansion_closeout_ratifier import (
@@ -672,6 +673,10 @@ __all__ = [
     "CmdbReadModelOutput",
     "CmdbReadModel",
     "emit_cmdb_read_model",
+    "CmdbProofCriterion",
+    "CmdbProofResult",
+    "CmdbAuthorityProofHarness",
+    "emit_cmdb_proof_result",
     "ExpansionReadinessItem",
     "ExpansionReadinessReport",
     "READINESS_EXPANSION_READY",
