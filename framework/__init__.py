@@ -55,6 +55,7 @@ from .task_prompt_pack import SUPPORTED_TASK_CLASSES, PromptPack, get_prompt_pac
 from .local_memory_store import FailurePattern, SuccessPattern, LocalMemoryStore, record_mvp_loop_outcome
 from .critique_injector import CritiqueResult, build_critique, render_retry_prompt
 from .task_router import RoutingDecision, route_task, route_with_memory_update
+from .autonomy_evidence import TaskClassMetrics, AutonomyEvidenceResult, collect_autonomy_evidence
 from .tool_registry import DEFAULT_REGISTRY, ToolContractEntry, ToolRegistry
 from .tool_schema import (
     ApplyPatchAction,
@@ -199,4 +200,7 @@ __all__ = [
     "RoutingDecision",
     "route_task",
     "route_with_memory_update",
+    "TaskClassMetrics",
+    "AutonomyEvidenceResult",
+    "collect_autonomy_evidence",
 ]
