@@ -17,6 +17,7 @@ The roadmap is the authoritative planning and governance layer for the platform.
 - **Canonical source of truth:** repo docs in `docs/roadmap/`
 - **Single master roadmap document:** `docs/roadmap/ROADMAP_MASTER.md`
 - **Implementation enrichment guide:** `docs/roadmap/HIGH_PRIORITY_IMPLEMENTATION_GUIDE.md`
+- **Execution pack index:** `docs/roadmap/EXECUTION_PACK_INDEX.md`
 - **Execution derivative:** GitHub issues, PRs, and implementation packages
 - **Reference key:** every execution artifact should reference one or more roadmap IDs such as `RM-GOV-001`
 
@@ -33,6 +34,7 @@ This `docs/roadmap/` directory supersedes the older top-level `roadmap/` documen
 - `ROADMAP_MASTER.md` — single first-read master roadmap document and priority authority
 - `ROADMAP_INDEX.md` — master normalized roadmap index
 - `HIGH_PRIORITY_IMPLEMENTATION_GUIDE.md` — implementation-oriented enrichment guide for critical and high-value roadmap items
+- `EXECUTION_PACK_INDEX.md` — canonical index of dedicated execution packs
 - `STANDARDS.md` — IDs, categories, statuses, metrics, naming, and impact rules
 - `FEATURE_BLOCK_GROUPING.md` — grouped-package planning logic for shared-touch work
 - `CMDB_LINKAGE.md` — mapping expectations between roadmap items and systems/assets
@@ -44,11 +46,12 @@ This `docs/roadmap/` directory supersedes the older top-level `roadmap/` documen
 
 1. Read `ROADMAP_MASTER.md` first for strategic priority and canonical interpretation.
 2. Read `HIGH_PRIORITY_IMPLEMENTATION_GUIDE.md` for implementation-oriented enrichment on critical and high-value roadmap items.
-3. Add or amend roadmap items in `ROADMAP_INDEX.md`.
-4. Assign stable ID, category, type, and normalized metrics.
-5. Record affected systems, expected file families, and dependencies.
-6. Evaluate whether the item should be executed alone or as part of a grouped feature block.
-7. Open GitHub issues or execution docs only after the roadmap item is clear enough to drive work.
+3. Read `EXECUTION_PACK_INDEX.md` when a roadmap item has a dedicated execution pack.
+4. Add or amend roadmap items in `ROADMAP_INDEX.md`.
+5. Assign stable ID, category, type, and normalized metrics.
+6. Record affected systems, expected file families, and dependencies.
+7. Evaluate whether the item should be executed alone or as part of a grouped feature block.
+8. Open GitHub issues or execution docs only after the roadmap item is clear enough to drive work.
 
 ## Rule
 
