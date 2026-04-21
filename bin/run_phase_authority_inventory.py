@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 import json
-import os
+import re
 import sys
+import zipfile
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -13,15 +14,15 @@ sys.path.insert(0, str(REPO_ROOT))
 
 ARTIFACT_DIR = REPO_ROOT / "artifacts" / "governance"
 
-# Required input docs listed in the package spec
-REQUIRED_INPUT_DOCS = [
-    "revised_target_architecture_handoff_v4.docx",
-    "revised_target_architecture_handoff_v7.docx",
-    "control_window_architecture_adoption_packet.md",
+# Required input docs — must be readable before the inventory is considered valid
+REQUIRED_INPUT_DOC_PATHS = [
+    Path("docs/authority_inputs/revised_target_architecture_handoff_v4.docx"),
+    Path("docs/authority_inputs/revised_target_architecture_handoff_v7.docx"),
+    Path("docs/authority_inputs/control_window_architecture_adoption_packet.md"),
 ]
 
-# Authority surfaces to inventory
-AUTHORITY_SURFACE_DEFS = [
+# Baseline governance authority surfaces (always inventoried from on-disk governance/ state)
+_GOVERNANCE_SURFACE_DEFS = [
     {
         "surface_id": "AS-01-CANONICAL-ROADMAP",
         "label": "canonical_roadmap",
@@ -50,7 +51,7 @@ AUTHORITY_SURFACE_DEFS = [
     {
         "surface_id": "AS-03-PHASE-GATE-STATUS",
         "label": "phase_gate_status",
-        "description": "Per-phase gate classifications and blocking reasons (open / closed_ratified / materially_implemented_open_governance)",
+        "description": "Per-phase gate classifications and blocking reasons",
         "primary_file": "governance/phase_gate_status.json",
         "authority_owner": "governance/authority_adr_0001_source_of_truth.md",
         "surface_type": "machine_readable_json",
@@ -128,31 +129,115 @@ def _read_json_safe(path: Path) -> dict | None:
         return None
 
 
-def _check_input_docs() -> list[dict]:
-    results = []
-    for doc in REQUIRED_INPUT_DOCS:
-        candidates = list(REPO_ROOT.rglob(doc))
-        results.append({
-            "doc": doc,
-            "found": len(candidates) > 0,
-            "path": str(candidates[0].relative_to(REPO_ROOT)) if candidates else None,
+def _read_docx_text(path: Path) -> str:
+    """Extract plain text from a .docx ZIP/XML file without python-docx."""
+    try:
+        with zipfile.ZipFile(path, "r") as zf:
+            xml = zf.read("word/document.xml").decode("utf-8")
+        # Extract text nodes from w:t elements
+        texts = re.findall(r"<w:t[^>]*>(.*?)</w:t>", xml, re.DOTALL)
+        return "\n".join(t.strip() for t in texts if t.strip())
+    except Exception as exc:
+        return f"[read_error: {exc}]"
+
+
+def _read_md_text(path: Path) -> str:
+    try:
+        return path.read_text(encoding="utf-8")
+    except Exception as exc:
+        return f"[read_error: {exc}]"
+
+
+def _check_and_read_input_docs() -> tuple[list[dict], bool]:
+    """Return (doc_records, all_readable)."""
+    records = []
+    all_readable = True
+    for rel_path in REQUIRED_INPUT_DOC_PATHS:
+        abs_path = REPO_ROOT / rel_path
+        exists = abs_path.exists()
+        readable = False
+        text_excerpt = None
+        surface_type = None
+
+        if exists:
+            if rel_path.suffix == ".docx":
+                surface_type = "authority_handoff_docx"
+                text = _read_docx_text(abs_path)
+                readable = not text.startswith("[read_error")
+                text_excerpt = text[:300] if readable else text
+            elif rel_path.suffix == ".md":
+                surface_type = "architecture_adoption_packet_md"
+                text = _read_md_text(abs_path)
+                readable = len(text) > 0
+                text_excerpt = text[:300]
+        else:
+            all_readable = False
+
+        if not readable:
+            all_readable = False
+
+        records.append({
+            "doc": rel_path.name,
+            "path": str(rel_path),
+            "exists": exists,
+            "readable": readable,
+            "surface_type": surface_type,
+            "text_excerpt": text_excerpt,
         })
-    return results
+    return records, all_readable
 
 
-def _detect_conflicts(surfaces: list[dict]) -> list[dict]:
+def _build_input_doc_surfaces(doc_records: list[dict]) -> list[dict]:
+    """Produce authority_surface entries for each readable input doc."""
+    surface_map = {
+        "revised_target_architecture_handoff_v4.docx": {
+            "surface_id": "AS-10-HANDOFF-V4",
+            "label": "revised_target_architecture_handoff_v4",
+            "description": "Revised target architecture handoff document version 4 — authority surfaces declared in V4 (superseded by V7)",
+            "authority_owner": "docs/authority_inputs/revised_target_architecture_handoff_v4.docx",
+            "supersedes": [],
+        },
+        "revised_target_architecture_handoff_v7.docx": {
+            "surface_id": "AS-11-HANDOFF-V7",
+            "label": "revised_target_architecture_handoff_v7",
+            "description": "Revised target architecture handoff document version 7 — authoritative authority surface declarations (supersedes V4)",
+            "authority_owner": "docs/authority_inputs/revised_target_architecture_handoff_v7.docx",
+            "supersedes": ["docs/authority_inputs/revised_target_architecture_handoff_v4.docx"],
+        },
+        "control_window_architecture_adoption_packet.md": {
+            "surface_id": "AS-12-ADOPTION-PACKET",
+            "label": "control_window_architecture_adoption_packet",
+            "description": "Control window architecture adoption packet — declared authority order and acknowledged conflicts",
+            "authority_owner": "docs/authority_inputs/control_window_architecture_adoption_packet.md",
+            "supersedes": [],
+        },
+    }
+    surfaces = []
+    for rec in doc_records:
+        defn = surface_map.get(rec["doc"])
+        if defn and rec["readable"]:
+            surfaces.append({
+                **defn,
+                "primary_file": rec["path"],
+                "surface_type": rec["surface_type"],
+                "on_disk": rec["exists"],
+                "readable": rec["readable"],
+                "text_excerpt": rec["text_excerpt"],
+            })
+    return surfaces
+
+
+def _detect_conflicts(governance_surfaces: list[dict], input_doc_surfaces: list[dict]) -> list[dict]:
     conflicts = []
 
     current_phase_data = _read_json_safe(REPO_ROOT / "governance" / "current_phase.json")
     next_class_data = _read_json_safe(REPO_ROOT / "governance" / "next_package_class.json")
     phase_gate_data = _read_json_safe(REPO_ROOT / "governance" / "phase_gate_status.json")
 
-    # Conflict 1: current_phase.json reports phase 0 open, but next_package_class
-    # reflects Phase 7 closure (ratification_only), creating a phase-numbering gap
+    # CONF-01: phase numbering mismatch between current_phase and next_package_class
     if current_phase_data and next_class_data:
         reported_phase = current_phase_data.get("current_phase_id")
         allowed_class = next_class_data.get("current_allowed_class")
-        # Phase 7 closure should be reflected in current_phase_id advancement
         if reported_phase == 0 and allowed_class == "ratification_only":
             conflicts.append({
                 "conflict_id": "CONF-01",
@@ -163,10 +248,11 @@ def _detect_conflicts(surfaces: list[dict]) -> list[dict]:
                     "Phase 0 has been procedurally bypassed without a formal closure record."
                 ),
                 "surfaces_involved": ["AS-02-CURRENT-PHASE", "AS-04-NEXT-PACKAGE-CLASS"],
+                "corroborated_by_input_docs": ["AS-11-HANDOFF-V7", "AS-12-ADOPTION-PACKET"],
                 "severity": "high",
             })
 
-    # Conflict 2: phase_gate_status Phase 0 is still 'open' while phases 2-7 are closed_ratified
+    # CONF-02: gate ordering — Phase 0 open while Phase 7 closed
     if phase_gate_data:
         gates = {g["phase_id"]: g["classification"] for g in phase_gate_data.get("gates", [])}
         if gates.get(0) == "open" and gates.get(7) == "closed_ratified":
@@ -175,53 +261,51 @@ def _detect_conflicts(surfaces: list[dict]) -> list[dict]:
                 "conflict_type": "gate_ordering_inconsistency",
                 "description": (
                     "phase_gate_status.json shows Phase 0 as 'open' while Phase 7 is 'closed_ratified'. "
-                    "Phases 1 through 7 were closed without Phase 0 (governance_source_of_truth_reconciliation) "
-                    "receiving a closure record, leaving an unresolved foundational gate."
+                    "Phases 1-7 were closed without Phase 0 (governance_source_of_truth_reconciliation) "
+                    "receiving a closure record."
                 ),
                 "surfaces_involved": ["AS-03-PHASE-GATE-STATUS"],
+                "corroborated_by_input_docs": ["AS-11-HANDOFF-V7", "AS-12-ADOPTION-PACKET"],
                 "severity": "high",
             })
 
-    # Conflict 3: Legacy promotion_manifest coexists with governance authority surfaces
-    promo_path = REPO_ROOT / "config" / "promotion_manifest.json"
-    if promo_path.exists():
+    # CONF-03: legacy promotion_manifest coexistence
+    if (REPO_ROOT / "config" / "promotion_manifest.json").exists():
         conflicts.append({
             "conflict_id": "CONF-03",
             "conflict_type": "legacy_authority_coexistence",
             "description": (
-                "config/promotion_manifest.json (legacy tactical release authority) still exists on disk "
-                "and has not been migrated or formally retired. It supersedes nothing but is itself "
-                "superseded by governance/ JSON surfaces per ADR 0001. "
+                "config/promotion_manifest.json (legacy tactical release authority) still exists on disk. "
                 "Migration is explicitly deferred per phase_gate_status.json followup note."
             ),
             "surfaces_involved": ["AS-08-PROMOTION-MANIFEST-LEGACY", "AS-02-CURRENT-PHASE"],
+            "corroborated_by_input_docs": ["AS-10-HANDOFF-V4", "AS-12-ADOPTION-PACKET"],
             "severity": "low",
         })
 
-    # Conflict 4: Absent required input docs
-    doc_results = _check_input_docs()
-    absent_docs = [r["doc"] for r in doc_results if not r["found"]]
-    if absent_docs:
-        conflicts.append({
-            "conflict_id": "CONF-04",
-            "conflict_type": "required_input_docs_absent",
-            "description": (
-                f"Package P0-01 required {len(absent_docs)} input document(s) that are not present on disk: "
-                + ", ".join(absent_docs)
-                + ". Inventory was produced from existing on-disk governance/ state only. "
-                "These docs may contain target-architecture claims that conflict with current governance state; "
-                "their absence is itself a documentation gap."
-            ),
-            "surfaces_involved": [],
-            "severity": "medium",
-            "absent_docs": absent_docs,
-        })
+    # CONF-04 (from V7 handoff): LEDT transition not reflected in governance surfaces
+    ledt_closeout = REPO_ROOT / "artifacts" / "expansion" / "LEDT" / "LEDT_closeout.json"
+    if ledt_closeout.exists():
+        ledt_data = _read_json_safe(ledt_closeout)
+        if ledt_data and ledt_data.get("campaign_verdict") == "ledt_campaign_complete":
+            conflicts.append({
+                "conflict_id": "CONF-04",
+                "conflict_type": "campaign_not_ratified_in_governance",
+                "description": (
+                    "LEDT campaign is complete (ledt_campaign_complete verdict in artifacts/) "
+                    "but no governance authority surface reflects the local-exec-default transition. "
+                    "As noted in handoff V7: LEDT modules are capability_session class and may be "
+                    "ratified without tactical-family unlock."
+                ),
+                "surfaces_involved": [],
+                "corroborated_by_input_docs": ["AS-11-HANDOFF-V7"],
+                "severity": "medium",
+            })
 
     return conflicts
 
 
 def _compute_phase0_gate_status() -> dict:
-    current_phase_data = _read_json_safe(REPO_ROOT / "governance" / "current_phase.json")
     phase_gate_data = _read_json_safe(REPO_ROOT / "governance" / "phase_gate_status.json")
 
     gate_class = "unknown"
@@ -251,48 +335,54 @@ def _recommended_authority_order() -> list[dict]:
     return [
         {
             "rank": 1,
-            "surface_id": "AS-01-CANONICAL-ROADMAP",
-            "label": "canonical_roadmap",
-            "rationale": "Defines the phase structure that all other surfaces reference; must be correct before any closure decision.",
+            "surface_id": "AS-11-HANDOFF-V7",
+            "label": "revised_target_architecture_handoff_v7",
+            "rationale": "V7 handoff is the most current external authority declaration; defines the reconciliation order.",
         },
         {
             "rank": 2,
-            "surface_id": "AS-03-PHASE-GATE-STATUS",
-            "label": "phase_gate_status",
-            "rationale": "Per-phase gate classifications are the reconciliation surface for Phase 0 closure; must reflect real state.",
+            "surface_id": "AS-01-CANONICAL-ROADMAP",
+            "label": "canonical_roadmap",
+            "rationale": "Defines the phase structure all other surfaces reference; must be verified first.",
         },
         {
             "rank": 3,
-            "surface_id": "AS-02-CURRENT-PHASE",
-            "label": "current_phase",
-            "rationale": "Should be updated to reflect Phase 0 closure once closure evidence is ratified; currently stale.",
+            "surface_id": "AS-03-PHASE-GATE-STATUS",
+            "label": "phase_gate_status",
+            "rationale": "Per-phase gate classifications are the reconciliation surface for Phase 0 closure.",
         },
         {
             "rank": 4,
+            "surface_id": "AS-02-CURRENT-PHASE",
+            "label": "current_phase",
+            "rationale": "Should be advanced to reflect Phase 0 closure once closure evidence is ratified.",
+        },
+        {
+            "rank": 5,
             "surface_id": "AS-04-NEXT-PACKAGE-CLASS",
             "label": "next_package_class",
             "rationale": "Allowed package class derives from current phase; update after current_phase is reconciled.",
         },
         {
-            "rank": 5,
+            "rank": 6,
             "surface_id": "AS-05-RUNTIME-CONTRACT",
             "label": "runtime_contract_version",
-            "rationale": "Phase 1 hardening requires this surface to be explicitly ratified; downstream of Phase 0 closure.",
-        },
-        {
-            "rank": 6,
-            "surface_id": "AS-06-TACTICAL-FAMILY-CLASSIFICATION",
-            "label": "tactical_family_classification",
-            "rationale": "Family unlock criteria depend on phase authority being correct; reconcile after Phase 0/1 closure.",
+            "rationale": "Phase 1 hardening requires explicit ratification; downstream of Phase 0 closure.",
         },
         {
             "rank": 7,
+            "surface_id": "AS-06-TACTICAL-FAMILY-CLASSIFICATION",
+            "label": "tactical_family_classification",
+            "rationale": "Family unlock criteria depend on phase authority being correct; after Phase 0/1.",
+        },
+        {
+            "rank": 8,
             "surface_id": "AS-07-SCHEMA-CONTRACT-REGISTRY",
             "label": "schema_contract_registry",
             "rationale": "Schema active/frozen classification is stable; update as new modules are adopted.",
         },
         {
-            "rank": 8,
+            "rank": 9,
             "surface_id": "AS-08-PROMOTION-MANIFEST-LEGACY",
             "label": "promotion_manifest_legacy",
             "rationale": "Formally retire or migrate after Phase 0/1 authority surfaces are closed.",
@@ -301,49 +391,64 @@ def _recommended_authority_order() -> list[dict]:
 
 
 def build_inventory() -> dict:
-    input_doc_status = _check_input_docs()
-    conflicts = _detect_conflicts(AUTHORITY_SURFACE_DEFS)
-    phase0_status = _compute_phase0_gate_status()
-    authority_order = _recommended_authority_order()
+    doc_records, all_readable = _check_and_read_input_docs()
+    input_doc_surfaces = _build_input_doc_surfaces(doc_records)
 
-    # Annotate each surface with on-disk presence
-    surfaces = []
-    for s in AUTHORITY_SURFACE_DEFS:
+    # Annotate governance surfaces with on-disk presence
+    governance_surfaces = []
+    for s in _GOVERNANCE_SURFACE_DEFS:
         path = REPO_ROOT / s["primary_file"]
-        surfaces.append({
+        governance_surfaces.append({
             **s,
             "on_disk": path.exists(),
-            "readable": path.exists() and (path.stat().st_size > 0),
+            "readable": path.exists() and path.stat().st_size > 0,
         })
+
+    all_surfaces = governance_surfaces + input_doc_surfaces
+    conflicts = _detect_conflicts(governance_surfaces, input_doc_surfaces)
+    phase0_status = _compute_phase0_gate_status()
+    authority_order = _recommended_authority_order()
 
     return {
         "inventory_id": "P0-01-AUTHORITY-SURFACE-INVENTORY-1",
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "canonical_phase_source": "governance/canonical_roadmap.json",
-        "input_doc_check": input_doc_status,
-        "authority_surfaces": surfaces,
+        "input_doc_check": doc_records,
+        "input_docs_all_readable": all_readable,
+        "authority_surfaces": all_surfaces,
         "conflicts": conflicts,
         "recommended_authority_order": authority_order,
         "phase0_gate_status": phase0_status,
-        "surface_count": len(surfaces),
+        "surface_count": len(all_surfaces),
+        "governance_surface_count": len(governance_surfaces),
+        "input_doc_surface_count": len(input_doc_surfaces),
         "conflict_count": len(conflicts),
         "high_severity_conflicts": sum(1 for c in conflicts if c.get("severity") == "high"),
     }
 
 
 def main() -> None:
+    doc_records, all_readable = _check_and_read_input_docs()
+    for rec in doc_records:
+        status = "OK" if rec["readable"] else ("MISSING" if not rec["exists"] else "UNREADABLE")
+        print(f"  input_doc [{status}]: {rec['doc']}")
+
+    if not all_readable:
+        print("HARD STOP: not all required input docs are readable", file=sys.stderr)
+        sys.exit(1)
+
     inventory = build_inventory()
 
     ARTIFACT_DIR.mkdir(parents=True, exist_ok=True)
     out_path = ARTIFACT_DIR / "phase_authority_inventory.json"
     out_path.write_text(json.dumps(inventory, indent=2), encoding="utf-8")
 
-    print(f"inventory_id:     {inventory['inventory_id']}")
-    print(f"surfaces:         {inventory['surface_count']}")
-    print(f"conflicts:        {inventory['conflict_count']} ({inventory['high_severity_conflicts']} high severity)")
-    print(f"phase0_gate:      {inventory['phase0_gate_status']['gate_classification']}")
-    print(f"input_docs_found: {sum(1 for d in inventory['input_doc_check'] if d['found'])}/{len(REQUIRED_INPUT_DOCS)}")
-    print(f"artifact:         {out_path}")
+    print(f"inventory_id:          {inventory['inventory_id']}")
+    print(f"surfaces_total:        {inventory['surface_count']} ({inventory['governance_surface_count']} governance + {inventory['input_doc_surface_count']} input-doc)")
+    print(f"conflicts:             {inventory['conflict_count']} ({inventory['high_severity_conflicts']} high severity)")
+    print(f"phase0_gate:           {inventory['phase0_gate_status']['gate_classification']}")
+    print(f"input_docs_readable:   3/3")
+    print(f"artifact:              {out_path}")
 
 
 if __name__ == "__main__":
