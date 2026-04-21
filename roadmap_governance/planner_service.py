@@ -41,6 +41,7 @@ from roadmap_governance.models import (
 _PRIORITY_WEIGHTS: dict[str, int] = {"P0": 4, "P1": 3, "P2": 2, "P3": 1}
 _REPO_ROOT = Path(__file__).resolve().parent.parent
 _DEFAULT_ARTIFACT_DIR = _REPO_ROOT / "artifacts" / "governance" / "packages"
+_ITEMS_DIR = _REPO_ROOT / "docs" / "roadmap" / "items"
 
 
 @dataclass
@@ -77,6 +78,29 @@ def _score(
     link_bonus = 0.10 if any(item.id in linked_ids for item in items) else 0.0
     finding_penalty = 0.05 * open_finding_count
     return max(0.0, min(1.0, normalised + link_bonus - finding_penalty))
+
+
+def _collect_shared_touch_surfaces(item_ids: list[str]) -> list[str]:
+    """Aggregate shared_touch_surfaces from YAML items; returns deduplicated list."""
+    surfaces: list[str] = []
+    for item_id in item_ids:
+        yaml_path = _ITEMS_DIR / f"{item_id}.yaml"
+        if not yaml_path.exists():
+            continue
+        in_block = False
+        for line in yaml_path.read_text(encoding="utf-8").splitlines():
+            stripped = line.strip()
+            if stripped.startswith("shared_touch_surfaces:"):
+                in_block = True
+                continue
+            if in_block:
+                if stripped.startswith("- "):
+                    surface = stripped[2:].strip().strip("\"'")
+                    if surface not in surfaces:
+                        surfaces.append(surface)
+                elif stripped and not stripped.startswith("#"):
+                    in_block = False
+    return surfaces
 
 
 def _rationale(items: list[RoadmapItem], score: float, linked_ids: set[str], open_finding_count: int) -> str:
@@ -133,6 +157,8 @@ def run_planner_refresh(
         title = f"{category.title()} Feature Block"
         rationale = _rationale(items, score, linked_ids, open_finding_count)
 
+        shared_touch_surfaces = _collect_shared_touch_surfaces([item.id for item in items])
+
         artifact_path: Optional[str] = None
         if not dry_run:
             art_dir.mkdir(parents=True, exist_ok=True)
@@ -147,6 +173,8 @@ def run_planner_refresh(
                     {"roadmap_id": item.id, "title": item.title, "priority": item.priority, "status": item.status}
                     for item in items
                 ],
+                "shared_touch_surfaces": shared_touch_surfaces,
+                "shared_touch_count": len(shared_touch_surfaces),
                 "refreshed_at": now.isoformat(),
             }
             artifact_file.write_text(json.dumps(payload, indent=2), encoding="utf-8")
