@@ -80,6 +80,7 @@ from .bounded_retry_controller import RetryDecisionRecord, BoundedRetryControlle
 from .unified_local_metrics import UnifiedLocalMetrics, compute_unified_metrics, emit_unified_metrics
 from .task_class_benchmark import TaskClassBenchmarkEntry, TaskClassBenchmarkReport, TaskClassBenchmarkRunner
 from .local_quality_score import LocalQualityScore, compute_quality_score, emit_quality_score
+from .threshold_suggester import ThresholdSuggestion, ThresholdSuggestions, derive_threshold_suggestions, emit_threshold_suggestions
 from .retry_telemetry_integration import (
     LoopRetryIntegrationRecord,
     LoopRetryStore,
@@ -421,4 +422,8 @@ __all__ = [
     "LocalQualityScore",
     "compute_quality_score",
     "emit_quality_score",
+    "ThresholdSuggestion",
+    "ThresholdSuggestions",
+    "derive_threshold_suggestions",
+    "emit_threshold_suggestions",
 ]
