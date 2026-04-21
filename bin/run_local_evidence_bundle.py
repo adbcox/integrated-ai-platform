@@ -2,6 +2,8 @@
 
 import os
 from datetime import datetime, timezone
+from dataclasses import asdict
+import json  # Added this import
 
 from framework.local_evidence_bundle import LocalEvidenceBundleBuilder
 
