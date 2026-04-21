@@ -1,0 +1,136 @@
+{
+  "schema_version": "1.0.0",
+  "generated_at": "2026-04-20T00:00:00Z",
+  "authority": "framework/tool_schema.py",
+  "description": "Canonical manifest of the 9 minimum runtime tools with typed Action and Observation contract surface. Declares typed contract surface only — dispatch, permission checks, sandboxing, workspace lifecycle, and wire-format serialization are out of scope for this seam.",
+  "tools": [
+    {
+      "name": "read_file",
+      "action_type": "ReadFileAction",
+      "action_fields": {
+        "path": {"type": "string", "required": true, "description": "Repo-relative or absolute path to the file to read."}
+      },
+      "observation_type": "ReadFileObservation",
+      "observation_fields": {
+        "path": {"type": "string", "description": "Path that was read."},
+        "content": {"type": "string", "description": "File content."},
+        "error": {"type": ["string", "null"], "description": "Error message if read failed."}
+      }
+    },
+    {
+      "name": "search",
+      "action_type": "SearchAction",
+      "action_fields": {
+        "query": {"type": "string", "required": true, "description": "Search query string or regex."},
+        "path": {"type": "string", "required": false, "default": ".", "description": "Directory to search within."},
+        "pattern": {"type": ["string", "null"], "required": false, "description": "Optional file glob filter."}
+      },
+      "observation_type": "SearchObservation",
+      "observation_fields": {
+        "query": {"type": "string", "description": "Query that was searched."},
+        "matches": {"type": "array", "description": "Matched file paths or lines."},
+        "error": {"type": ["string", "null"], "description": "Error message if search failed."}
+      }
+    },
+    {
+      "name": "list_dir",
+      "action_type": "ListDirAction",
+      "action_fields": {
+        "path": {"type": "string", "required": true, "description": "Directory path to list."}
+      },
+      "observation_type": "ListDirObservation",
+      "observation_fields": {
+        "path": {"type": "string", "description": "Directory that was listed."},
+        "entries": {"type": "array", "description": "Directory entry names."},
+        "error": {"type": ["string", "null"], "description": "Error message if listing failed."}
+      }
+    },
+    {
+      "name": "repo_map",
+      "action_type": "RepoMapAction",
+      "action_fields": {
+        "root": {"type": "string", "required": false, "default": ".", "description": "Repository root to map."}
+      },
+      "observation_type": "RepoMapObservation",
+      "observation_fields": {
+        "root": {"type": "string", "description": "Root that was mapped."},
+        "symbols": {"type": "array", "description": "Extracted symbol entries (class/function names and paths)."},
+        "error": {"type": ["string", "null"], "description": "Error message if mapping failed."}
+      }
+    },
+    {
+      "name": "apply_patch",
+      "action_type": "ApplyPatchAction",
+      "action_fields": {
+        "path": {"type": "string", "required": true, "description": "File path to patch."},
+        "patch": {"type": "string", "required": true, "description": "Unified diff patch content to apply."}
+      },
+      "observation_type": "ApplyPatchObservation",
+      "observation_fields": {
+        "path": {"type": "string", "description": "File that was patched."},
+        "applied": {"type": "boolean", "description": "Whether the patch was applied successfully."},
+        "error": {"type": ["string", "null"], "description": "Error message if patch failed."}
+      }
+    },
+    {
+      "name": "git_diff",
+      "action_type": "GitDiffAction",
+      "action_fields": {
+        "path": {"type": "string", "required": false, "default": ".", "description": "Path to scope the diff to."},
+        "ref": {"type": ["string", "null"], "required": false, "description": "Git ref to diff against (e.g. HEAD, main)."}
+      },
+      "observation_type": "GitDiffObservation",
+      "observation_fields": {
+        "diff": {"type": "string", "description": "Unified diff output."},
+        "error": {"type": ["string", "null"], "description": "Error message if diff failed."}
+      }
+    },
+    {
+      "name": "run_command",
+      "action_type": "RunCommandAction",
+      "action_fields": {
+        "argv": {"type": "array", "required": true, "description": "Command argument vector (list of strings)."},
+        "cwd": {"type": "string", "required": false, "default": ".", "description": "Working directory for the command."},
+        "timeout_s": {"type": "integer", "required": false, "default": 30, "description": "Timeout in seconds."}
+      },
+      "observation_type": "RunCommandObservation",
+      "observation_fields": {
+        "return_code": {"type": "integer", "description": "Process exit code."},
+        "stdout": {"type": "string", "description": "Standard output."},
+        "stderr": {"type": "string", "description": "Standard error."},
+        "error": {"type": ["string", "null"], "description": "Error message if execution failed before completion."}
+      }
+    },
+    {
+      "name": "run_tests",
+      "action_type": "RunTestsAction",
+      "action_fields": {
+        "test_path": {"type": "string", "required": false, "default": ".", "description": "Path to test file or directory."},
+        "pattern": {"type": ["string", "null"], "required": false, "description": "Optional test name filter pattern."}
+      },
+      "observation_type": "RunTestsObservation",
+      "observation_fields": {
+        "passed": {"type": "integer", "description": "Number of passing tests."},
+        "failed": {"type": "integer", "description": "Number of failing tests."},
+        "errors": {"type": "integer", "description": "Number of test errors."},
+        "output": {"type": "string", "description": "Full test runner output."},
+        "error": {"type": ["string", "null"], "description": "Error message if the test runner itself failed."}
+      }
+    },
+    {
+      "name": "publish_artifact",
+      "action_type": "PublishArtifactAction",
+      "action_fields": {
+        "artifact_path": {"type": "string", "required": true, "description": "Local path of the artifact to publish."},
+        "destination": {"type": "string", "required": true, "description": "Destination path or key in the artifact store."}
+      },
+      "observation_type": "PublishArtifactObservation",
+      "observation_fields": {
+        "artifact_path": {"type": "string", "description": "Source artifact path."},
+        "destination": {"type": "string", "description": "Destination where artifact was published."},
+        "published": {"type": "boolean", "description": "Whether publish succeeded."},
+        "error": {"type": ["string", "null"], "description": "Error message if publish failed."}
+      }
+    }
+  ]
+}
