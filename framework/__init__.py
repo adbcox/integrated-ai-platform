@@ -46,6 +46,7 @@ from .devloop_benchmark import DevloopTask, DevloopBenchmarkResult, DevloopBench
 from .session_job_adapters import make_session_adapter, make_job_adapter, session_to_context_dict
 from .read_file_dispatch import dispatch_read_file
 from .runtime_adoption_proof import make_bounded_context
+from .context_retrieval import RetrievalQuery, RetrievedFile, RetrievalResult, retrieve_context, retrieve_file_content
 from .tool_registry import DEFAULT_REGISTRY, ToolContractEntry, ToolRegistry
 from .tool_schema import (
     ApplyPatchAction,
@@ -158,4 +159,9 @@ __all__ = [
     "session_to_context_dict",
     "dispatch_read_file",
     "make_bounded_context",
+    "RetrievalQuery",
+    "RetrievedFile",
+    "RetrievalResult",
+    "retrieve_context",
+    "retrieve_file_content",
 ]
