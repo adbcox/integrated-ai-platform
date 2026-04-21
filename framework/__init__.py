@@ -91,6 +91,7 @@ from .adapter_readiness_stress import StressCheck, StressHarnessResult, AdapterR
 from .controlled_adapter_scaffold import ScaffoldGate, AdapterScaffoldPlan, ControlledAdapterScaffold, emit_scaffold_plan
 from .terminal_autonomy_ratifier import RatificationCriterion, TerminalRatificationRecord, TerminalAutonomyRatifier, emit_terminal_ratification
 from .aider_promotion_reratifier import AiderPromotionDecision, AiderPromotionReratifier, emit_aider_promotion_decision
+from .terminal_promotion_reratifier import TerminalPromotionDecision, TerminalPromotionReratifier, emit_terminal_promotion_decision
 from .aider_runtime_adapter import AiderRuntimeAdapter, _EXPERIMENTAL_FLAG
 from .cmdb_authority_pilot import CmdbAuthorityRecord, CmdbAuthorityPilot, read_cmdb_authority
 from .cmdb_integration_gate import CmdbGateDecision, CmdbIntegrationGate, evaluate_cmdb_gate, GATE_PASS, GATE_BLOCK
@@ -649,6 +650,9 @@ __all__ = [
     "AiderPromotionDecision",
     "AiderPromotionReratifier",
     "emit_aider_promotion_decision",
+    "TerminalPromotionDecision",
+    "TerminalPromotionReratifier",
+    "emit_terminal_promotion_decision",
     "ExpansionReadinessItem",
     "ExpansionReadinessReport",
     "READINESS_EXPANSION_READY",
