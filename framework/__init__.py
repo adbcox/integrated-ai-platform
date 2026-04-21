@@ -42,6 +42,7 @@ from .runtime_execution_adapter import (
 )
 from .apply_patch_dispatch import dispatch_apply_patch
 from .search_loop_adapter import SearchLoopResult, SearchLoopAdapter
+from .listdir_loop_adapter import DirEntry, DirListing, ListDirLoopAdapter
 from .file_local_devloop import FileLocalTask, FileLocalResult, FileLocalDevloopRunner
 from .devloop_benchmark import DevloopTask, DevloopBenchmarkResult, DevloopBenchmarkRunner, SYNTHETIC_TASK_FAMILY
 from .session_job_adapters import make_session_adapter, make_job_adapter, session_to_context_dict
@@ -302,4 +303,7 @@ __all__ = [
     "emit_dashboard",
     "SearchLoopResult",
     "SearchLoopAdapter",
+    "DirEntry",
+    "DirListing",
+    "ListDirLoopAdapter",
 ]
