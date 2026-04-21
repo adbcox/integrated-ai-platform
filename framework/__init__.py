@@ -821,3 +821,5 @@ __all__ = [
     "RmGovTerminalCloseoutEmitter",
     "emit_rm_gov_terminal_closeout",
 ]
+
+from .repo_understanding_substrate import RepoUnderstandingSubstrate, RepoUnderstandingSummary
