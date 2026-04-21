@@ -1,4 +1,28 @@
-"""Phase 2 entry: canonical session object for a run."""
+"""Phase 2 entry: canonical session object for a run.
+
+Identity contract
+-----------------
+``session_id`` groups one or more jobs that share a single intent boundary
+(e.g. one user request, one planning cycle, one bounded campaign). It must not
+be used as, confused with, or substituted for any of the following sibling
+identity types:
+
+* ``job_id``             — identifies a single discrete execution unit
+* ``telemetry_run_id``   — identifies a Phase 1 runtime telemetry bundle
+* ``plan_id``            — identifies an execution route or orchestration plan
+
+Observed formats:
+
+* Descriptive slug (control-plane canonical): ``{context-prefix}-{descriptor}``
+  Example: ``cp-default-local``
+* Full UUID (browser-operator and direct callers): ``{uuid4}``
+  Example: ``3f2504e0-4f89-11d3-9a0c-0305e82c3301``
+* Legacy fallback derivation: some call sites derive a sub-session id as
+  ``{parent_session_id}-{suffix}`` when scoping to a parent session
+  (observed in framework/runtime_validation_pack.py).
+
+Authoritative format contract: governance/canonical_id_spec.json
+"""
 
 from __future__ import annotations
 

@@ -1,0 +1,62 @@
+{
+  "schema_version": "1.0",
+  "authority_owner": "framework/canonical_id_spec",
+  "generated_at": "2026-04-20T00:00:00Z",
+  "description": "Authoritative format contract for the four execution identity types used across the local-first AI platform. All format strings reflect actual observed repo behavior. Types are mutually exclusive by definition and must never be used interchangeably.",
+  "identities": {
+    "job_id": {
+      "description": "Identifies a single discrete execution unit — one scheduled or dispatched job lifecycle. Scoped to framework/job_schema.py Job and framework/canonical_job_schema.py CanonicalJob. Must not be used as session_id, telemetry_run_id, or plan_id.",
+      "format": "job-{12-char-lowercase-hex}",
+      "regex": "^job-[0-9a-f]{12}$",
+      "example": "job-5c5d1529af6c",
+      "source_of_truth": "framework/job_schema.py",
+      "generation_snippet": "f\"job-{uuid4().hex[:12]}\"",
+      "authority": "framework/job_schema.py::Job.job_id default_factory",
+      "observed_artifacts": [
+        "artifacts/framework/results/job-5c5d1529af6c.json",
+        "artifacts/framework/results/job-7cd2999a7f08.json",
+        "artifacts/framework/results/job-ae5ca73eca50.json"
+      ]
+    },
+    "session_id": {
+      "description": "Groups one or more jobs sharing an intent boundary. Carried by CanonicalSession and propagated into CanonicalJob. Must not be used as job_id, telemetry_run_id, or plan_id. Observed patterns include descriptive slug form and full UUID form depending on call site; the control-plane canonical form is a descriptive slug.",
+      "format": "{context-prefix}-{descriptor}  OR  {uuid4}",
+      "regex_slug": "^[a-z0-9][a-z0-9_-]+$",
+      "regex_uuid": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+      "example": "cp-default-local",
+      "fallback_derivation": "Some call sites derive session_id as '{parent_session_id}-{suffix}' when a sub-session is scoped to a parent (observed in framework/runtime_validation_pack.py).",
+      "source_of_truth": "framework/canonical_session_schema.py",
+      "authority": "framework/canonical_session_schema.py::CanonicalSession.session_id"
+    },
+    "telemetry_run_id": {
+      "description": "Identifies one contiguous telemetry bundle produced by a Phase 1 runtime invocation. Carried by RunBundleManifest.run_id in framework/runtime_telemetry_schema.py. Distinct from job_id (no 'job-' prefix) and from session_id (no intent grouping semantics). Must not be used as job_id, session_id, or plan_id.",
+      "format": "run-{12-char-lowercase-hex}",
+      "regex": "^run-[0-9a-f]{12}$",
+      "example": "run-3a1b9c2f0e47",
+      "source_of_truth": "framework/runtime_telemetry_schema.py",
+      "generation_snippet": "f\"run-{uuid4().hex[:12]}\"",
+      "authority": "framework/runtime_telemetry_schema.py::RunBundleManifest.run_id",
+      "field_name_in_schema": "run_id"
+    },
+    "plan_id": {
+      "description": "Identifies one execution route plan or orchestration plan produced by a manager or planner surface. Carried by framework/execution_route_plan_schema.py::ExecutionRoutePlan.plan_id and used in manager trace records. Must not be used as job_id, session_id, or telemetry_run_id. Format is context-derived: typically '{context-prefix}-{timestamp-or-slug}' or '{parent_id}-{op-index}'.",
+      "format": "{context-prefix}-{YYYYMMDD-HHMMSS}  OR  {parent_id}-op{N}  OR  {context-prefix}-{descriptor}",
+      "regex": "^[a-z0-9][a-z0-9_-]+-[a-z0-9_-]+$",
+      "example": "stage8-evidence-20260420-120000",
+      "source_of_truth": "framework/execution_route_plan_schema.py",
+      "authority": "framework/execution_route_plan_schema.py::ExecutionRoutePlan.plan_id",
+      "observed_patterns": [
+        "stage8-evidence-{YYYYMMDD-HHMMSS}  (bin/run_stage8_evidence.py)",
+        "{job_id}-op{N}                     (bin/stage5_manager.py)",
+        "claude-executor-{task_id}          (bin/execute_bounded_task_via_claude_executor.py)"
+      ]
+    }
+  },
+  "invariants": [
+    "job_id, session_id, telemetry_run_id, and plan_id are mutually exclusive identity scopes.",
+    "A single execution context may carry all four simultaneously; each refers to a different scope.",
+    "job_id prefix 'job-' is reserved exclusively for job_id values.",
+    "telemetry_run_id prefix 'run-' is reserved exclusively for telemetry_run_id values.",
+    "No two identity types may share the same value in a well-formed execution context."
+  ]
+}

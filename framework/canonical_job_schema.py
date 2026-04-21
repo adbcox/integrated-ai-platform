@@ -1,4 +1,21 @@
-"""Phase 2 entry: canonical job object derived from a session."""
+"""Phase 2 entry: canonical job object derived from a session.
+
+Identity contract
+-----------------
+``job_id`` is the authoritative identity of a single discrete execution unit
+(one scheduled or dispatched job lifecycle). It must not be used as, confused
+with, or substituted for any of the following sibling identity types:
+
+* ``session_id``         — groups one or more jobs sharing an intent boundary
+* ``telemetry_run_id``   — identifies a Phase 1 runtime telemetry bundle
+* ``plan_id``            — identifies an execution route or orchestration plan
+
+Observed canonical format: ``job-{12-char-lowercase-hex}``
+Example:                    ``job-5c5d1529af6c``
+Generation:                 ``f"job-{uuid4().hex[:12]}"``  (see framework/job_schema.py)
+
+Authoritative format contract: governance/canonical_id_spec.json
+"""
 
 from __future__ import annotations
 
