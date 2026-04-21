@@ -2,6 +2,8 @@
 
 This index contains the normalized roadmap items currently captured for the integrated AI platform.
 
+> Read `docs/roadmap/ROADMAP_MASTER.md` first for strategic priority, pull order, and canonical roadmap interpretation.
+
 ## Governance / roadmap / integrity
 
 | ID | Type | Priority | Title |
