@@ -192,6 +192,12 @@ from .codex_availability_gate import (
     CodexAvailabilityReport,
     evaluate_codex_availability,
 )
+from .codex_promotion_ratifier import (
+    CODEX_PROMOTION_DONE,
+    CODEX_LONG_TERM_DEFERRED,
+    CodexPromotionArtifact,
+    ratify_codex_promotion,
+)
 from .retry_telemetry_integration import (
     LoopRetryIntegrationRecord,
     LoopRetryStore,
@@ -646,4 +652,8 @@ __all__ = [
     "CodexAvailabilityCheck",
     "CodexAvailabilityReport",
     "evaluate_codex_availability",
+    "CODEX_PROMOTION_DONE",
+    "CODEX_LONG_TERM_DEFERRED",
+    "CodexPromotionArtifact",
+    "ratify_codex_promotion",
 ]
