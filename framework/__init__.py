@@ -82,6 +82,10 @@ from .task_class_benchmark import TaskClassBenchmarkEntry, TaskClassBenchmarkRep
 from .local_quality_score import LocalQualityScore, compute_quality_score, emit_quality_score
 from .threshold_suggester import ThresholdSuggestion, ThresholdSuggestions, derive_threshold_suggestions, emit_threshold_suggestions
 from .routing_policy_artifact import RoutingPolicyArtifact, build_routing_policy_artifact, emit_routing_policy
+from .evidence_backed_task_expander import (
+    EXPANSION_CANDIDATES, TaskExpansionDecision, TaskExpansionRecord,
+    EvidenceBackedTaskExpander, emit_expansion_record,
+)
 from .retry_telemetry_integration import (
     LoopRetryIntegrationRecord,
     LoopRetryStore,
@@ -430,4 +434,9 @@ __all__ = [
     "RoutingPolicyArtifact",
     "build_routing_policy_artifact",
     "emit_routing_policy",
+    "EXPANSION_CANDIDATES",
+    "TaskExpansionDecision",
+    "TaskExpansionRecord",
+    "EvidenceBackedTaskExpander",
+    "emit_expansion_record",
 ]
