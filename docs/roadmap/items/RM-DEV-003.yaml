@@ -70,7 +70,7 @@ execution:
   execution_package_refs:
     - "RM-DEV-003-RM-INTEL-001-INTEGRATED-BASELINE"
   execution_status: "complete"
-  last_execution_commit: null
+  last_execution_commit: "fcb4093ebc490fa172c362b3909888258dbb0036"
 validation:
   validation_artifact_refs:
     - "artifacts/governance/rm_dev_003_rm_intel_001_baseline_validation.json"
