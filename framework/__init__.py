@@ -57,6 +57,7 @@ from .critique_injector import CritiqueResult, build_critique, render_retry_prom
 from .task_router import RoutingDecision, route_task, route_with_memory_update
 from .autonomy_evidence import TaskClassMetrics, AutonomyEvidenceResult, collect_autonomy_evidence
 from .memory_compactor import MemoryCompactionResult, compact_memory
+from .repo_pattern_store import PatternEntry, RepoPatternLibrary, build_repo_pattern_library, save_repo_pattern_library
 from .tool_registry import DEFAULT_REGISTRY, ToolContractEntry, ToolRegistry
 from .tool_schema import (
     ApplyPatchAction,
@@ -206,4 +207,8 @@ __all__ = [
     "collect_autonomy_evidence",
     "MemoryCompactionResult",
     "compact_memory",
+    "PatternEntry",
+    "RepoPatternLibrary",
+    "build_repo_pattern_library",
+    "save_repo_pattern_library",
 ]
