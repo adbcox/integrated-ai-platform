@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "package_id": "RM-DEV-003-RM-INTEL-001-INTEGRATED-BASELINE",
-  "generated_at": "2026-04-21T22:58:43+00:00",
+  "generated_at": "2026-04-21T23:11:10+00:00",
   "validated_files": {
     "roadmap_master": "docs/roadmap/ROADMAP_MASTER.md",
     "high_priority_guide": "docs/roadmap/HIGH_PRIORITY_IMPLEMENTATION_GUIDE.md",
