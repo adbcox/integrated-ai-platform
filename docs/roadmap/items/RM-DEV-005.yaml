@@ -1,0 +1,173 @@
+schema_version: "1.0"
+kind: "roadmap_item"
+id: "RM-DEV-005"
+slug: "local-autonomy-uplift-oss-intake-and-aider-hardening"
+title: "Local autonomy uplift, OSS intake, and Aider reliability hardening"
+category: "DEV"
+type: "local_autonomy_uplift"
+status: "completed"
+priority: "P1"
+scoring:
+  loe: 4
+  strategic_value: 5
+  architecture_fit: 5
+  execution_risk: 3
+  dependency_burden: 3
+  readiness: 5
+description: >
+  Complete the local autonomy uplift needed to make the integrated AI platform a
+  stronger home developer assistant, formalize OSS intake as repo-visible authority,
+  and harden Aider as a controlled adapter target rather than a system backbone.
+why_it_matters: >
+  This item is the force-multiplier roadmap closure for improving local-first coding,
+  reducing external-agent dependence, preserving architectural discipline, and making
+  key operating decisions durable in repo rather than chat-only.
+scope:
+  objective: >
+    Close the combined RM-DEV-005 scope across local autonomy uplift, OSS intake
+    formalization, Aider adapter hardening, repo-visible authority closure, and
+    machine-readable validation evidence.
+  in_scope:
+    - "phase 4 self-sufficiency uplift closure"
+    - "phase 5 qualification and local-autonomy gate closure"
+    - "Aider adapter-boundary ratification"
+    - "OSS intake shortlist and boundary registry"
+    - "repo-visible authority linkage for formerly chat-held decisions"
+  out_of_scope:
+    - "making Aider the architecture backbone"
+    - "permanent direct Aider-to-Ollama coupling"
+    - "broad unrelated runtime replatforming"
+    - "new domain-branch expansion unrelated to local autonomy"
+dependencies:
+  blocked_by: []
+  enables:
+    - "adapter-safe future execution work"
+    - "repo-authoritative local autonomy operation"
+  related_items:
+    - "RM-DEV-005A"
+impact:
+  affected_systems:
+    - "control_plane"
+    - "agent_runtime"
+    - "inference_gateway"
+    - "validation_pipeline"
+    - "roadmap_ops"
+  expected_file_families:
+    - "framework/**"
+    - "bin/**"
+    - "artifacts/substrate/**"
+    - "artifacts/governance/**"
+    - "governance/**"
+    - "docs/roadmap/**"
+  impact_summary: >
+    Establishes a repo-visible and validated local-autonomy closure: local uplift is
+    evidenced, Aider is constrained to adapter status, and OSS intake decisions are
+    codified in authority surfaces.
+cmdb:
+  refs:
+    - "subsystem:control_plane"
+    - "subsystem:agent_runtime"
+    - "subsystem:inference_gateway"
+    - "subsystem:validation_pipeline"
+  asset_links: []
+  service_links: []
+grouping:
+  feature_block_candidates:
+    - "FB-DEV-LOCAL-AUTONOMY"
+    - "FB-GOV-ADAPTER-AUTHORITY"
+  package_group: "PKG-DEV-LOCAL-AUTONOMY"
+  shared_touch_surfaces:
+    - "local autonomy validation"
+    - "Aider adapter boundary"
+    - "OSS intake authority registry"
+    - "repo-visible governance closure"
+milestones:
+  recommended_first_milestone: "completed"
+  downstream_milestones:
+    - "use repo-visible authority surfaces for future adapter work"
+planning:
+  planning_packet_ref: null
+  planning_status: "complete"
+  planning_notes: "Closed using repo-visible validation and authority artifacts."
+execution:
+  execution_package_refs:
+    - "governance/authority_adr_0023_rm_dev_005a_adapter_boundary.md"
+    - "governance/rm_dev_005a_authority_state.v1.yaml"
+    - "governance/oss_intake_registry.v1.yaml"
+  execution_status: "complete"
+  last_execution_commit: null
+validation:
+  validation_artifact_refs:
+    - "artifacts/substrate/phase4_uplift_pack_check.json"
+    - "artifacts/substrate/phase5_closeout_pack_check.json"
+    - "artifacts/governance/rm_dev_005a_authority_validation.json"
+  validation_status: "complete"
+  definition_of_done_ref: "docs/roadmap/STANDARDS.md"
+governance:
+  phase_target: "Phase 4-5 closure plus RM-DEV-005A authority closure"
+  architectural_lane: "local_first_runtime"
+  risk_tier: "medium"
+  allowed_change_scope: "narrow"
+  requires_explicit_escalation: false
+ai_operability:
+  canonical_summary: >
+    RM-DEV-005 is complete. Local autonomy uplift passed its phase-4 and phase-5
+    machine-readable checks, OSS intake is repo-visible, and Aider is ratified as a
+    controlled adapter / transport target only.
+  developer_intent: >
+    Preserve Ollama-first local autonomy while preventing Aider from becoming policy,
+    artifact, state, or architecture authority.
+  non_goals:
+    - "Do not let Aider become the backbone"
+    - "Do not permit permanent direct Aider-to-Ollama coupling"
+    - "Do not claim autonomy progress without artifacts"
+  allowed_files:
+    - "docs/roadmap/**"
+    - "governance/**"
+    - "artifacts/governance/**"
+    - "artifacts/substrate/**"
+  forbidden_files:
+    - ".github/workflows/**"
+    - "unrelated domain branches"
+  validation_order:
+    - "phase4_uplift_pack_check"
+    - "phase5_closeout_pack_check"
+    - "rm_dev_005a_authority_validation"
+    - "roadmap surface update"
+  rollback_rule: >
+    Revert only files created or modified by the RM-DEV-005 closure recording step.
+    Preserve unrelated modified and untracked files.
+  artifact_outputs:
+    - "docs/roadmap/items/RM-DEV-005.yaml"
+    - "docs/roadmap/data/roadmap_registry.yaml"
+    - "docs/roadmap/ROADMAP_INDEX.md"
+    - "docs/authority_inputs/control_window_architecture_adoption_packet.md"
+  promotion_linkage:
+    required: false
+    manifest_refs: []
+sync:
+  plane:
+    sync_enabled: true
+    sync_mode: "repo_to_plane_authoritative"
+    workspace: "Integrated AI Platform"
+    project: "Roadmap Ops"
+    plane_item_id: null
+    last_synced_at: null
+    writeback_fields_allowed:
+      - "operational_state"
+      - "assignee"
+      - "cycle"
+      - "module"
+      - "labels"
+  github:
+    issue_ref: null
+    pr_refs: []
+metadata:
+  owner: "adrian"
+  created_at: "2026-04-21"
+  updated_at: "2026-04-21"
+  tags:
+    - "local-autonomy"
+    - "oss-intake"
+    - "aider-adapter"
+    - "completed"
