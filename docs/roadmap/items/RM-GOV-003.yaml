@@ -86,7 +86,7 @@ planning:
 execution:
   execution_package_refs: []
   execution_status: "not_started"
-  last_execution_commit: null
+  last_execution_commit: "53ae4d4f177b176a7bffaa63988f63fa0efa622c"
 validation:
   validation_artifact_refs: []
   validation_status: "not_started"
