@@ -855,3 +855,5 @@ from .live_retrieval_proof import LiveRetrievalProofRecord, LiveRetrievalProofRu
 from .decomp_handoff_proof import DecompHandoffProofRecord, DecompHandoffProofRunner
 
 from .repair_policy_proof import DecisionProofRow, RepairPolicyProofRecord, RepairPolicyProofRunner
+
+from .trace_enrichment_proof import TraceEnrichmentProofRecord, TraceEnrichmentProofRunner
