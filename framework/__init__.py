@@ -84,6 +84,12 @@ from .publish_artifact_dispatch import dispatch_publish_artifact
 from .retry_telemetry import RetryTelemetryRecord, record_retry_telemetry
 from .retrieval_cache_warmer import CacheWarmingResult, warm_retrieval_cache
 from .pattern_aging import PatternEvictionResult, evict_stale_patterns, persist_eviction
+from .aider_preflight import (
+    AiderPreflightCheck,
+    AiderPreflightResult,
+    AiderPreflightChecker,
+    emit_preflight_artifact,
+)
 from .task_class_readiness import (
     TaskClassVerdict,
     TaskClassReadinessReport,
@@ -285,4 +291,8 @@ __all__ = [
     "TaskClassReadinessReport",
     "derive_task_class_readiness",
     "emit_readiness_report",
+    "AiderPreflightCheck",
+    "AiderPreflightResult",
+    "AiderPreflightChecker",
+    "emit_preflight_artifact",
 ]
