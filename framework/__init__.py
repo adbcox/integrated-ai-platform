@@ -54,6 +54,7 @@ from .matrix_closure_evidence import MatrixItemState, MatrixItemRecord, derive_c
 from .task_prompt_pack import SUPPORTED_TASK_CLASSES, PromptPack, get_prompt_pack, render_prompt
 from .local_memory_store import FailurePattern, SuccessPattern, LocalMemoryStore, record_mvp_loop_outcome
 from .critique_injector import CritiqueResult, build_critique, render_retry_prompt
+from .task_router import RoutingDecision, route_task, route_with_memory_update
 from .tool_registry import DEFAULT_REGISTRY, ToolContractEntry, ToolRegistry
 from .tool_schema import (
     ApplyPatchAction,
@@ -195,4 +196,7 @@ __all__ = [
     "CritiqueResult",
     "build_critique",
     "render_retry_prompt",
+    "RoutingDecision",
+    "route_task",
+    "route_with_memory_update",
 ]
