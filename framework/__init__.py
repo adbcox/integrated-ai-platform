@@ -90,6 +90,13 @@ from .failure_cluster_analysis import FailureCluster, FailureClusterReport, Fail
 from .adapter_readiness_stress import StressCheck, StressHarnessResult, AdapterReadinessStressHarness, emit_stress_result
 from .controlled_adapter_scaffold import ScaffoldGate, AdapterScaffoldPlan, ControlledAdapterScaffold, emit_scaffold_plan
 from .terminal_autonomy_ratifier import RatificationCriterion, TerminalRatificationRecord, TerminalAutonomyRatifier, emit_terminal_ratification
+from .aider_adapter_contract import (
+    AiderAdapterPolicy,
+    AiderAdapterConfig,
+    AiderAdapterRequest,
+    AiderAdapterArtifact,
+    DEFAULT_AIDER_POLICY,
+)
 from .expansion_readiness_inspector import (
     ExpansionReadinessItem,
     ExpansionReadinessReport,
@@ -473,4 +480,9 @@ __all__ = [
     "READINESS_EXPANSION_PARTIAL",
     "READINESS_EXPANSION_BLOCKED",
     "inspect_expansion_readiness",
+    "AiderAdapterPolicy",
+    "AiderAdapterConfig",
+    "AiderAdapterRequest",
+    "AiderAdapterArtifact",
+    "DEFAULT_AIDER_POLICY",
 ]
