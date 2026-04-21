@@ -1,0 +1,129 @@
+---
+# Phase 7 Final Ratification Baseline v1
+# Authority surface: P7-03-FINAL-PROMOTION-RATIFIER-1
+# Governed by: governance/phase7_terminal_closeout.v1.yaml,
+#   governance/phase7_promotion_baseline.v1.yaml,
+#   governance/definition_of_done.v1.yaml
+# Scope: Final Phase 7 promotion gate ratification from live evidence chain
+
+version: "1.0.0"
+baseline_id: "PHASE7-FINAL-RATIFICATION-BASELINE-V1"
+generated_at: "2026-04-21"
+authority_owner: "governance/authority_adr_0001_source_of_truth.md"
+phase_linkage: "Phase 7 (full_autonomy_and_promotion)"
+
+# ─────────────────────────────────────────────
+# PHASE IDENTITY
+# ─────────────────────────────────────────────
+phase_id: "phase_7"
+phase_label: "Phase 7 — Final Promotion Ratification"
+phase_status: "final_ratification_in_progress"
+description: >
+  Final ratification consumes the full Phase 7 evidence chain
+  (promotion pack, live evidence pack, and optional local live proof chain)
+  and emits a truthful binary promotion gate decision.
+  If live dispatch evidence is absent or dry-run-only, the gate is
+  explicitly blocked with all remaining blockers listed.
+  Gate clears only when all blockers are resolved.
+
+# ─────────────────────────────────────────────
+# EVIDENCE INPUTS
+# ─────────────────────────────────────────────
+evidence_inputs:
+  promotion_pack:
+    path: "artifacts/substrate/phase7_promotion_pack_check.json"
+    required_fields:
+      - all_checks_passed
+      - promotion_ready
+      - promotion_blockers
+    required: true
+
+  live_evidence_pack:
+    path: "artifacts/substrate/phase7_live_evidence_pack_check.json"
+    required_fields:
+      - all_checks_passed
+      - live_dispatch_succeeded
+      - dispatch_mode
+      - telemetry_complete
+      - local_autonomy_progress_preserved
+    required: true
+
+  live_proof_chain:
+    path: "artifacts/local_runs/local_live_proof_chain.json"
+    description: >
+      Optional: produced by first live Aider execution session.
+      If present and live_dispatch_succeeded = true, clears the
+      live dispatch blocker. Absent = blocker remains explicit.
+    required: false
+
+# ─────────────────────────────────────────────
+# RATIFICATION REQUIREMENTS
+# ─────────────────────────────────────────────
+ratification_requirements:
+  promotion_pack_all_checks_passed:
+    description: "phase7_promotion_pack_check.json all_checks_passed = true"
+    blocking: true
+
+  promotion_ready_true:
+    description: "phase7_promotion_pack_check.json promotion_ready = true"
+    blocking: true
+
+  live_evidence_all_checks_passed:
+    description: "phase7_live_evidence_pack_check.json all_checks_passed = true"
+    blocking: true
+
+  live_evidence_telemetry_complete:
+    description: "phase7_live_evidence_pack_check.json telemetry_complete = true"
+    blocking: true
+
+  live_dispatch_succeeded:
+    description: >
+      live_dispatch_succeeded = true in either phase7_live_evidence_pack_check.json
+      OR local_live_proof_chain.json. dry_run_only accepted as partial only;
+      blocks final gate.
+    blocking: true
+
+  local_autonomy_progress_preserved:
+    description: "No Claude/remote executor event marked as local autonomy progress"
+    blocking: true
+
+# ─────────────────────────────────────────────
+# REMAINING BLOCKERS
+# ─────────────────────────────────────────────
+remaining_blockers:
+  - id: "P7-FINAL-BLOCKER-01"
+    description: >
+      live_dispatch_succeeded = False in P7-02 live evidence.
+      Aider not installed in current environment.
+      Gate clears when artifacts/local_runs/local_live_proof_chain.json
+      is produced by a live Aider execution session with
+      live_dispatch_succeeded = true.
+    status: "open"
+    resolution: >
+      Install Aider and run a bounded live task.
+      The local live proof chain artifact will be produced and consumed
+      by FinalPromotionRatifierV1 on next run.
+
+# ─────────────────────────────────────────────
+# TERMINAL DECISION
+# ─────────────────────────────────────────────
+terminal_decision:
+  description: >
+    Phase 7 is fully ratified and the promotion gate is cleared when:
+      1. promotion_pack all_checks_passed = true
+      2. promotion_pack promotion_ready = true
+      3. live_evidence all_checks_passed = true
+      4. live_evidence telemetry_complete = true
+      5. live_dispatch_succeeded = true (from live_evidence or live_proof_chain)
+      6. local_autonomy_progress_preserved = true
+      7. FinalPromotionRatifierV1 returns phase7_final_ratified = true
+      8. make check passes
+      9. seam tests pass
+
+  decision_status: "pending"
+  gate_cleared_by: null
+  current_blocker: "P7-FINAL-BLOCKER-01"
+  note: >
+    Current state (P7-03): promotion_gate_cleared = false due to
+    live_dispatch_succeeded = false. All other requirements met.
+    One live Aider execution session clears the final blocker.
