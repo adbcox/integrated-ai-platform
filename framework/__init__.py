@@ -53,6 +53,13 @@ from .critique_specializer import CritiqueSpecialization, CritiqueSpecializer
 from .first_pass_metric import FirstPassStat, FirstPassReport, compute_first_pass_metrics, save_first_pass_report
 from .evidence_accumulation_batch import BatchRunConfig, BatchKindResult, BatchRunResult, EvidenceAccumulationBatch
 from .threshold_tuner import ThresholdRecommendation, ThresholdTuningResult, tune_thresholds, save_tuning_result
+from .phase_closeout_ratifier import (
+    CloseoutComponent,
+    PhaseCloseoutArtifact,
+    PHASE_COMPLETE,
+    PHASE_PARTIAL,
+    ratify_phase_closeout,
+)
 from .adapter_campaign_pre_authorizer import (
     PreAuthGate,
     PreAuthorizationArtifact,
@@ -365,4 +372,9 @@ __all__ = [
     "PRE_AUTH_DECISION_AUTHORIZED",
     "PRE_AUTH_DECISION_DEFERRED",
     "pre_authorize_adapter_campaign",
+    "CloseoutComponent",
+    "PhaseCloseoutArtifact",
+    "PHASE_COMPLETE",
+    "PHASE_PARTIAL",
+    "ratify_phase_closeout",
 ]
