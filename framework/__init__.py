@@ -226,6 +226,11 @@ from .domain_branch_first_wave_ratifier import (
     FirstWavePromotionArtifact,
     ratify_first_wave_promotion,
 )
+from .domain_branch_second_wave_ratifier import (
+    SecondWavePromotionRecord,
+    SecondWavePromotionArtifact,
+    ratify_second_wave_promotion,
+)
 from .retry_telemetry_integration import (
     LoopRetryIntegrationRecord,
     LoopRetryStore,
@@ -704,4 +709,7 @@ __all__ = [
     "FirstWavePromotionRecord",
     "FirstWavePromotionArtifact",
     "ratify_first_wave_promotion",
+    "SecondWavePromotionRecord",
+    "SecondWavePromotionArtifact",
+    "ratify_second_wave_promotion",
 ]
