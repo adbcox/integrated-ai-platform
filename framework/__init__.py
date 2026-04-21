@@ -87,6 +87,7 @@ from .evidence_backed_task_expander import (
     EvidenceBackedTaskExpander, emit_expansion_record,
 )
 from .failure_cluster_analysis import FailureCluster, FailureClusterReport, FailureClusterAnalyzer, emit_failure_clusters
+from .adapter_readiness_stress import StressCheck, StressHarnessResult, AdapterReadinessStressHarness, emit_stress_result
 from .retry_telemetry_integration import (
     LoopRetryIntegrationRecord,
     LoopRetryStore,
@@ -444,4 +445,8 @@ __all__ = [
     "FailureClusterReport",
     "FailureClusterAnalyzer",
     "emit_failure_clusters",
+    "StressCheck",
+    "StressHarnessResult",
+    "AdapterReadinessStressHarness",
+    "emit_stress_result",
 ]
