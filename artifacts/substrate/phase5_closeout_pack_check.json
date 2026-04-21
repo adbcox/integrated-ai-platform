@@ -1,0 +1,234 @@
+{
+  "phase5_pack": "qualification_and_readiness_closeout_v1",
+  "generated_at": "2026-04-21T16:57:38.435265+00:00",
+  "required_modules_loaded": true,
+  "qualification_evaluated": true,
+  "local_autonomy_gate_evaluated": true,
+  "regression_cases_run": 4,
+  "regression_pass_rate": 1.0,
+  "promotion_readiness_ready": true,
+  "all_checks_passed": true,
+  "escalation_status": "NOT_ESCALATED",
+  "component_summary": [
+    {
+      "module": "framework/unified_validation_artifact_v1.py",
+      "classes": [
+        "UnifiedValidationArtifactV1"
+      ]
+    },
+    {
+      "module": "framework/qualification_readiness_v1.py",
+      "classes": [
+        "QualificationReadinessEvaluatorV1",
+        "QualificationReadinessResultV1"
+      ]
+    },
+    {
+      "module": "framework/local_autonomy_gate_v1.py",
+      "classes": [
+        "LocalAutonomyGateEvaluatorV1",
+        "LocalAutonomyGateResultV1"
+      ]
+    },
+    {
+      "module": "framework/regression_summary_v1.py",
+      "classes": [
+        "RegressionSummaryV1",
+        "RegressionCaseV1"
+      ]
+    },
+    {
+      "module": "framework/phase5_closeout_v1.py",
+      "classes": [
+        "Phase5CloseoutV1",
+        "Phase5CloseoutRecordV1"
+      ]
+    },
+    {
+      "module": "governance/phase5_closeout_baseline.v1.yaml",
+      "type": "baseline"
+    }
+  ],
+  "check_details": {
+    "modules_loaded": {
+      "ok": true,
+      "errors": []
+    },
+    "regression": {
+      "regression_cases_run": 4,
+      "regression_cases_passed": 4,
+      "pass_rate": 1.0,
+      "failure_modes": [],
+      "cases": [
+        {
+          "case_id": "reg-bug-fix-001",
+          "task_class": "bug_fix",
+          "passed": true,
+          "failure_mode": null,
+          "notes": ""
+        },
+        {
+          "case_id": "reg-narrow-001",
+          "task_class": "narrow_feature",
+          "passed": true,
+          "failure_mode": null,
+          "notes": ""
+        },
+        {
+          "case_id": "reg-reporting-001",
+          "task_class": "reporting_helper",
+          "passed": true,
+          "failure_mode": null,
+          "notes": ""
+        },
+        {
+          "case_id": "reg-test-add-001",
+          "task_class": "test_addition",
+          "passed": true,
+          "failure_mode": null,
+          "notes": ""
+        }
+      ]
+    },
+    "qualification": {
+      "artifact_completeness": true,
+      "validation_pass_rate": 1.0,
+      "escalation_accounting": true,
+      "readiness_ready": true,
+      "blocking_gaps": [],
+      "evidence_summary": {
+        "artifact_complete": true,
+        "validation_pass_rate": 1.0,
+        "escalation_status_present": true,
+        "pass_rate_threshold": 0.75
+      }
+    },
+    "autonomy_gate": {
+      "gate_passed": true,
+      "gate_reasons": [
+        "first_pass_success_signal: 1.00 >= 0.5",
+        "retry_discipline_signal: all retries within declared budget",
+        "escalation_rate_signal: 0.00 <= 0.25",
+        "artifact_completeness_signal: required artifact fields present"
+      ],
+      "gate_blockers": [],
+      "signal_summary": {
+        "first_pass_success_rate": 1.0,
+        "retries_within_budget": true,
+        "escalation_rate": 0.0,
+        "artifact_completeness_signal": true
+      }
+    },
+    "closeout_baseline": {
+      "ok": true,
+      "errors": []
+    },
+    "closeout_record": {
+      "phase_id": "phase_5",
+      "package_id": "P5-01-QUALIFICATION-AND-READINESS-CLOSEOUT-PACK-1",
+      "generated_at": "2026-04-21T16:57:38.435253+00:00",
+      "unified_artifact": {
+        "package_id": "P5-01-QUALIFICATION-AND-READINESS-CLOSEOUT-PACK-1",
+        "package_label": "SUBSTRATE",
+        "validations_run": [
+          "modules_loaded",
+          "regression_cases",
+          "qualification_readiness",
+          "local_autonomy_gate",
+          "closeout_baseline"
+        ],
+        "validation_results": {
+          "modules_loaded": true,
+          "regression_cases": true,
+          "qualification_readiness": true,
+          "local_autonomy_gate": true,
+          "closeout_baseline": true,
+          "closeout_assembled": true
+        },
+        "artifacts_produced": [
+          "artifacts/substrate/phase5_closeout_pack_check.json"
+        ],
+        "escalation_status": "NOT_ESCALATED",
+        "final_outcome": "PASS",
+        "generated_at": "2026-04-21T16:57:38.435245+00:00",
+        "all_passed": true,
+        "pass_rate": 1.0,
+        "notes": []
+      },
+      "qualification_result": {
+        "artifact_completeness": true,
+        "validation_pass_rate": 1.0,
+        "escalation_accounting": true,
+        "readiness_ready": true,
+        "blocking_gaps": [],
+        "evidence_summary": {
+          "artifact_complete": true,
+          "validation_pass_rate": 1.0,
+          "escalation_status_present": true,
+          "pass_rate_threshold": 0.75
+        }
+      },
+      "autonomy_gate_result": {
+        "gate_passed": true,
+        "gate_reasons": [
+          "first_pass_success_signal: 1.00 >= 0.5",
+          "retry_discipline_signal: all retries within declared budget",
+          "escalation_rate_signal: 0.00 <= 0.25",
+          "artifact_completeness_signal: required artifact fields present"
+        ],
+        "gate_blockers": [],
+        "signal_summary": {
+          "first_pass_success_rate": 1.0,
+          "retries_within_budget": true,
+          "escalation_rate": 0.0,
+          "artifact_completeness_signal": true
+        }
+      },
+      "regression_summary": {
+        "regression_cases_run": 4,
+        "regression_cases_passed": 4,
+        "pass_rate": 1.0,
+        "failure_modes": [],
+        "cases": [
+          {
+            "case_id": "reg-bug-fix-001",
+            "task_class": "bug_fix",
+            "passed": true,
+            "failure_mode": null,
+            "notes": ""
+          },
+          {
+            "case_id": "reg-narrow-001",
+            "task_class": "narrow_feature",
+            "passed": true,
+            "failure_mode": null,
+            "notes": ""
+          },
+          {
+            "case_id": "reg-reporting-001",
+            "task_class": "reporting_helper",
+            "passed": true,
+            "failure_mode": null,
+            "notes": ""
+          },
+          {
+            "case_id": "reg-test-add-001",
+            "task_class": "test_addition",
+            "passed": true,
+            "failure_mode": null,
+            "notes": ""
+          }
+        ]
+      },
+      "escalation_status": "NOT_ESCALATED",
+      "promotion_readiness_ready": true,
+      "closing_notes": []
+    }
+  },
+  "phase_linkage": "Phase 5 (live_local_model_integration)",
+  "authority_sources": [
+    "governance/phase5_closeout_baseline.v1.yaml",
+    "governance/phase5_readiness_baseline.v1.yaml",
+    "governance/phase4_uplift_baseline.v1.yaml"
+  ]
+}
