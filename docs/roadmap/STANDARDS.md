@@ -71,14 +71,36 @@ Use only the normalized status set:
 - `Frozen`
 - `Rejected`
 
-## 5. Standard priority scale
+## 5. Standard priority band
 
-Use:
+Use one of:
 
 - `Critical`
 - `High`
 - `Medium`
 - `Low`
+
+## 5A. Mandatory sequencing fields
+
+To avoid an unrealistic backlog where too many items are simply marked `High`, every actively maintained item should also carry:
+
+- `Priority class` — `P0`, `P1`, `P2`, `P3`, or `P4`
+- `Queue rank` — integer rank within the priority class
+- `Target horizon` — `now`, `next`, `soon`, `later`, or `parking-lot`
+
+Interpretation:
+
+- `P0` — program-critical, blocks major system progress or safety/operability
+- `P1` — highest execution priority after P0 items
+- `P2` — important, but not a top blocker
+- `P3` — worthwhile but deferrable
+- `P4` — speculative, optional, or parking-lot material
+
+Rules:
+
+- `Priority band` alone is insufficient for practical pull planning.
+- `Queue rank` should be used to order work inside each priority class.
+- If many items share the same class, reorder them instead of inflating urgency.
 
 ## 6. Standard LOE scale
 
@@ -101,6 +123,13 @@ Each item should carry at least:
 - `Dependency burden` — 1 to 5
 - `Readiness` — `now`, `near`, `later`, or `blocked`
 
+Strongly recommended additional fields:
+
+- `Time criticality` — 1 to 5
+- `Risk reduction / opportunity enablement` — 1 to 5
+- `Confidence` — 1 to 5
+- `Architecture leverage` — 1 to 5
+
 Optional but recommended:
 
 - `Operational value`
@@ -111,7 +140,18 @@ Optional but recommended:
 - `Maintenance burden`
 - `Security/privacy sensitivity`
 
-## 8. Naming enforcement rules
+## 8. Prioritization model
+
+Use a hybrid prioritization model:
+
+1. strategic ranking from the master roadmap,
+2. backlog ordering through `Priority class` + `Queue rank`,
+3. weighted decision support using the scoring fields above,
+4. cycle placement through `Target horizon`.
+
+This is intended to keep roadmap ranking realistic without pretending everything is equally urgent.
+
+## 9. Naming enforcement rules
 
 All roadmap and execution artifacts should use canonical names.
 
@@ -130,7 +170,7 @@ Naming expectations:
 - preserve consistent subsystem names across roadmap, code, docs, CMDB, and dashboards
 - when a canonical subsystem name exists, use it exactly
 
-## 9. Impact transparency requirements
+## 10. Impact transparency requirements
 
 Before work moves into execution, each item should identify:
 
@@ -145,7 +185,7 @@ Before work moves into execution, each item should identify:
 
 This is mandatory for reducing unintended issues.
 
-## 10. Grouping rule
+## 11. Grouping rule
 
 Roadmap items should not only be evaluated individually.
 They should also be evaluated for grouped execution when they share:
@@ -159,7 +199,7 @@ They should also be evaluated for grouped execution when they share:
 
 Grouped execution should be preferred when it reduces repeated touches and lowers total LOE without creating unacceptable risk.
 
-## 11. Canonical item schema
+## 12. Canonical item schema
 
 Each roadmap item should contain:
 
@@ -169,6 +209,9 @@ Each roadmap item should contain:
 - `Type`
 - `Status`
 - `Priority`
+- `Priority class`
+- `Queue rank`
+- `Target horizon`
 - `LOE`
 - `Strategic value`
 - `Architecture fit`
@@ -184,12 +227,12 @@ Each roadmap item should contain:
 - `Feature-block grouping candidates`
 - `Recommended first milestone`
 
-## 12. Canonical execution rule
+## 13. Canonical execution rule
 
 Roadmap docs are the canonical source.
 GitHub issues, execution prompts, package docs, and PRs are downstream execution artifacts and must reference the roadmap IDs they implement.
 
-## 13. Mandatory intake synchronization rule
+## 14. Mandatory intake synchronization rule
 
 Every future roadmap intake must update the canonical roadmap docs in the same intake cycle.
 
