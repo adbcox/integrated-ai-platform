@@ -100,6 +100,7 @@ from .cmdb_read_model import CmdbReadModelEntry, CmdbReadModelOutput, CmdbReadMo
 from .cmdb_authority_proof_harness import CmdbProofCriterion, CmdbProofResult, CmdbAuthorityProofHarness, emit_cmdb_proof_result
 from .cmdb_operating_context import SubsystemEntry, HostSlot, CmdbOperatingContext, build_local_operating_context, emit_cmdb_operating_context
 from .cmdb_authoritative_promotion_ratifier import CmdbRatificationCriterion, CmdbAuthoritativePromotionDecision, CmdbAuthoritativePromotionRatifier, emit_cmdb_authoritative_promotion_decision
+from .cmdb_terminal_authoritative_reratifier import CmdbTerminalDecision, CmdbTerminalAuthoritativeReratifier, emit_cmdb_terminal_decision
 from .cmdb_integration_gate import CmdbGateDecision, CmdbIntegrationGate, evaluate_cmdb_gate, GATE_PASS, GATE_BLOCK
 from .domain_branch_contract import DOMAIN_BRANCH_RUNNER_VERSION, DomainBranchPolicy, DomainBranchManifest, DomainBranchRunner
 from .expansion_closeout_ratifier import (
@@ -688,6 +689,9 @@ __all__ = [
     "CmdbAuthoritativePromotionDecision",
     "CmdbAuthoritativePromotionRatifier",
     "emit_cmdb_authoritative_promotion_decision",
+    "CmdbTerminalDecision",
+    "CmdbTerminalAuthoritativeReratifier",
+    "emit_cmdb_terminal_decision",
     "ExpansionReadinessItem",
     "ExpansionReadinessReport",
     "READINESS_EXPANSION_READY",
