@@ -1,0 +1,61 @@
+{
+  "sample_count": 4,
+  "eligible_count": 2,
+  "disqualified_count": 2,
+  "sample_records": [
+    {
+      "eligibility_id": "ELIG-20260421133756-LEDT-P2-seam-tes",
+      "packet_id": "LEDT-P2-seam-test",
+      "file_scope_bounded": true,
+      "validation_scope_bounded": true,
+      "no_external_deps": true,
+      "no_broad_redesign": true,
+      "no_live_infra_touch": true,
+      "disqualifiers": [],
+      "eligible": true,
+      "evaluated_at": "2026-04-21T13:37:56+00:00"
+    },
+    {
+      "eligibility_id": "ELIG-20260421133756-LEDT-P4-route-de",
+      "packet_id": "LEDT-P4-route-decision",
+      "file_scope_bounded": true,
+      "validation_scope_bounded": true,
+      "no_external_deps": true,
+      "no_broad_redesign": true,
+      "no_live_infra_touch": true,
+      "disqualifiers": [],
+      "eligible": true,
+      "evaluated_at": "2026-04-21T13:37:56+00:00"
+    },
+    {
+      "eligibility_id": "ELIG-20260421133756-hypothetical-clo",
+      "packet_id": "hypothetical-cloud-integration",
+      "file_scope_bounded": false,
+      "validation_scope_bounded": true,
+      "no_external_deps": false,
+      "no_broad_redesign": true,
+      "no_live_infra_touch": true,
+      "disqualifiers": [
+        "file_scope_count=12 exceeds limit of 5",
+        "has_external_api_calls=True disqualifies local execution"
+      ],
+      "eligible": false,
+      "evaluated_at": "2026-04-21T13:37:56+00:00"
+    },
+    {
+      "eligibility_id": "ELIG-20260421133756-hypothetical-sch",
+      "packet_id": "hypothetical-scheduler-redesign",
+      "file_scope_bounded": true,
+      "validation_scope_bounded": true,
+      "no_external_deps": true,
+      "no_broad_redesign": false,
+      "no_live_infra_touch": true,
+      "disqualifiers": [
+        "requires_broad_redesign=True disqualifies local execution"
+      ],
+      "eligible": false,
+      "evaluated_at": "2026-04-21T13:37:56+00:00"
+    }
+  ],
+  "evaluated_at": "2026-04-21T13:37:56+00:00"
+}
