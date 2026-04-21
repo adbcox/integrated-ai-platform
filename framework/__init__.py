@@ -77,6 +77,7 @@ from .task_repetition_harness import (
     TaskRepetitionHarness,
     make_synthetic_repetition_tasks,
 )
+from .search_action_dispatch import dispatch_search
 from .tool_registry import DEFAULT_REGISTRY, ToolContractEntry, ToolRegistry
 from .tool_schema import (
     ApplyPatchAction,
@@ -257,4 +258,5 @@ __all__ = [
     "RatificationDecision",
     "RatificationArtifact",
     "ratify",
+    "dispatch_search",
 ]
