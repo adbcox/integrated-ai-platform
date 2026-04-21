@@ -59,6 +59,7 @@ from .autonomy_evidence import TaskClassMetrics, AutonomyEvidenceResult, collect
 from .memory_compactor import MemoryCompactionResult, compact_memory
 from .repo_pattern_store import PatternEntry, RepoPatternLibrary, build_repo_pattern_library, save_repo_pattern_library
 from .retrieval_cache import CachedRetrievalResult, RetrievalCache
+from .loop_retrieval_bridge import LoopContextBundle, LoopRetrievalBridge
 from .tool_registry import DEFAULT_REGISTRY, ToolContractEntry, ToolRegistry
 from .tool_schema import (
     ApplyPatchAction,
@@ -214,4 +215,6 @@ __all__ = [
     "save_repo_pattern_library",
     "CachedRetrievalResult",
     "RetrievalCache",
+    "LoopContextBundle",
+    "LoopRetrievalBridge",
 ]
