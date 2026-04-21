@@ -95,6 +95,7 @@ from .terminal_promotion_reratifier import TerminalPromotionDecision, TerminalPr
 from .aider_runtime_adapter import AiderRuntimeAdapter, _EXPERIMENTAL_FLAG
 from .cmdb_authority_pilot import CmdbAuthorityRecord, CmdbAuthorityPilot, read_cmdb_authority
 from .cmdb_authority_boundary import AuthorityDomain, PROMOTION_AUTHORITY, RUNTIME_AUTHORITY, CMDB_AUTHORITY, ALL_AUTHORITIES, validate_boundary_non_overlap, emit_authority_boundary
+from .cmdb_authority_contract import CmdbServiceRecord, CmdbOwnershipBoundary, CmdbAuthorityContract, build_cmdb_authority_contract, emit_cmdb_authority_contract
 from .cmdb_integration_gate import CmdbGateDecision, CmdbIntegrationGate, evaluate_cmdb_gate, GATE_PASS, GATE_BLOCK
 from .domain_branch_contract import DOMAIN_BRANCH_RUNNER_VERSION, DomainBranchPolicy, DomainBranchManifest, DomainBranchRunner
 from .expansion_closeout_ratifier import (
@@ -661,6 +662,11 @@ __all__ = [
     "ALL_AUTHORITIES",
     "validate_boundary_non_overlap",
     "emit_authority_boundary",
+    "CmdbServiceRecord",
+    "CmdbOwnershipBoundary",
+    "CmdbAuthorityContract",
+    "build_cmdb_authority_contract",
+    "emit_cmdb_authority_contract",
     "ExpansionReadinessItem",
     "ExpansionReadinessReport",
     "READINESS_EXPANSION_READY",
