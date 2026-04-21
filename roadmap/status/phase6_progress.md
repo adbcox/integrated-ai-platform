@@ -1,5 +1,12 @@
 # Phase 6 Progress
 
+> **Legacy status view:** This file is historical execution-status context from the legacy `roadmap/` tree.
+> **Canonical normalized roadmap location:** `docs/roadmap/`
+> **Canonical legacy-sync reference for this status:** `docs/roadmap/EXECUTION_CONTEXT_SYNC_2026-04-21.md`
+>
+> Use `docs/roadmap/` for durable roadmap maintenance and normalized backlog state.
+> Treat this file as legacy execution context unless and until it is fully migrated.
+
 ## Current state
 
 - Active phase: Phase 6 — Live-Operating Bridge and External Environment Entry
