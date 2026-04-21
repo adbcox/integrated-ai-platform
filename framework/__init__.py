@@ -92,6 +92,7 @@ from .controlled_adapter_scaffold import ScaffoldGate, AdapterScaffoldPlan, Cont
 from .terminal_autonomy_ratifier import RatificationCriterion, TerminalRatificationRecord, TerminalAutonomyRatifier, emit_terminal_ratification
 from .aider_runtime_adapter import AiderRuntimeAdapter, _EXPERIMENTAL_FLAG
 from .cmdb_authority_pilot import CmdbAuthorityRecord, CmdbAuthorityPilot, read_cmdb_authority
+from .cmdb_integration_gate import CmdbGateDecision, CmdbIntegrationGate, evaluate_cmdb_gate, GATE_PASS, GATE_BLOCK
 from .codex_defer_adapter import (
     CODEX_AVAILABLE,
     CODEX_DECISION_AVAILABLE,
@@ -531,4 +532,9 @@ __all__ = [
     "CmdbAuthorityRecord",
     "CmdbAuthorityPilot",
     "read_cmdb_authority",
+    "CmdbGateDecision",
+    "CmdbIntegrationGate",
+    "evaluate_cmdb_gate",
+    "GATE_PASS",
+    "GATE_BLOCK",
 ]
