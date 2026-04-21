@@ -45,6 +45,12 @@ from .search_loop_adapter import SearchLoopResult, SearchLoopAdapter
 from .listdir_loop_adapter import DirEntry, DirListing, ListDirLoopAdapter
 from .gitdiff_review_packager import DiffReviewRecord, GitDiffReviewPackager
 from .loop_artifact_publisher import LoopArtifactRecord, LoopArtifactPublisher
+from .retry_telemetry_integration import (
+    LoopRetryIntegrationRecord,
+    LoopRetryStore,
+    record_loop_attempt,
+    record_loop_attempt_batch,
+)
 from .file_local_devloop import FileLocalTask, FileLocalResult, FileLocalDevloopRunner
 from .devloop_benchmark import DevloopTask, DevloopBenchmarkResult, DevloopBenchmarkRunner, SYNTHETIC_TASK_FAMILY
 from .session_job_adapters import make_session_adapter, make_job_adapter, session_to_context_dict
@@ -312,4 +318,8 @@ __all__ = [
     "GitDiffReviewPackager",
     "LoopArtifactRecord",
     "LoopArtifactPublisher",
+    "LoopRetryIntegrationRecord",
+    "LoopRetryStore",
+    "record_loop_attempt",
+    "record_loop_attempt_batch",
 ]
