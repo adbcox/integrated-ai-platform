@@ -1,0 +1,35 @@
+{
+  "artifact_id": "P0-04-CMDB-LITE-REGISTRY-VALIDATION-1",
+  "generated_at": "2026-04-21T14:47:43.781209+00:00",
+  "registry_path": "governance/cmdb_lite_registry.v1.yaml",
+  "registry_version": "1.0.0",
+  "yaml_loaded": true,
+  "required_sections_checked": [
+    "registry_version",
+    "phase",
+    "subsystems",
+    "migration_map",
+    "model_profiles",
+    "runtime_contract",
+    "artifact_policy",
+    "adapter_status",
+    "waivers",
+    "autonomy_scorecard",
+    "environments"
+  ],
+  "required_sections_present": true,
+  "content_errors": [],
+  "phase_linkage": "Phase 0 (governance_source_of_truth_reconciliation), Phase 1 (runtime_contract_foundation)",
+  "authority_sources": [
+    "P0-01-AUTHORITY-SURFACE-INVENTORY-1",
+    "ADR-0001",
+    "ADR-0002",
+    "ADR-0003",
+    "ADR-0004",
+    "ADR-0005",
+    "ADR-0006",
+    "ADR-0007",
+    "governance/canonical_roadmap.json",
+    "governance/runtime_contract_version.json"
+  ]
+}

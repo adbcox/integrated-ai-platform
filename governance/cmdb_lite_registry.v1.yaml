@@ -1,0 +1,423 @@
+---
+# CMDB-Lite Registry v1
+# Authority surface: architecture/runtime registry for Phase 0 closeout
+# Governed by: P0-04-CMDB-LITE-REGISTRY-1
+# Authority sources: P0-01-AUTHORITY-SURFACE-INVENTORY-1, ADR-0001 through ADR-0007,
+#   governance/canonical_roadmap.json, governance/runtime_contract_version.json,
+#   governance/next_package_class.json
+
+registry_version: "1.0.0"
+registry_id: "CMDB-LITE-V1"
+generated_at: "2026-04-21"
+authority_owner: "governance/authority_adr_0001_source_of_truth.md"
+
+# ─────────────────────────────────────────────
+# PHASE
+# Source: governance/canonical_roadmap.json + governance/current_phase.json
+# ─────────────────────────────────────────────
+phase:
+  current: 0
+  current_name: "governance_source_of_truth_reconciliation"
+  status: "open"
+  current_allowed_class: "ratification_only"
+  blocked_classes:
+    - "canonical_phase_advancement"
+    - "feature_expansion"
+    - "tactical_family_extension"
+  blocked_tactical_families:
+    - eo
+    - ed
+    - mc
+    - live_bridge
+    - ort
+    - pgs
+  phase_history:
+    - phase_id: 0
+      name: "governance_source_of_truth_reconciliation"
+      status: "open"
+    - phase_id: 1
+      name: "runtime_contract_foundation"
+      status: "materially_implemented_open_governance"
+    - phase_id: 2
+      name: "inner_loop_autonomous_repair_and_shared_runtime_adoption"
+      status: "closed_ratified"
+    - phase_id: 3
+      name: "codebase_understanding_retrieval_backed_runtime"
+      status: "closed_ratified"
+    - phase_id: 4
+      name: "autonomy_hardening_safety_policy_uplift"
+      status: "closed_ratified"
+    - phase_id: 5
+      name: "qualification_promotion_learning_convergence"
+      status: "closed_ratified"
+    - phase_id: 6
+      name: "controlled_expansion"
+      status: "closed_ratified"
+    - phase_id: 7
+      name: "v8_gate_closure_and_codex51_benchmark"
+      status: "closed_ratified"
+
+# ─────────────────────────────────────────────
+# SUBSYSTEMS
+# ─────────────────────────────────────────────
+subsystems:
+  control_plane:
+    description: "Governance authority surfaces, ADR chain, phase gate enforcement"
+    status: "active"
+    primary_paths:
+      - "governance/"
+      - "docs/adr/"
+      - "docs/specs/"
+    key_files:
+      - "governance/canonical_roadmap.json"
+      - "governance/phase_gate_status.json"
+      - "governance/current_phase.json"
+      - "governance/next_package_class.json"
+      - "governance/schema_contract_registry.json"
+    adr_refs:
+      - "ADR-0001"
+      - "ADR-0003"
+      - "ADR-0006"
+    phase_introduced: 0
+    notes: "Machine-readable authority under governance/ supersedes all narrative docs per ADR-0001 / AS-CW-01"
+
+  inference_fabric:
+    description: "Inference backend routing: local Ollama and remote API (SUBSTRATE/LOCAL-FIRST)"
+    status: "active"
+    primary_paths:
+      - "framework/inference_adapter.py"
+      - "bin/stage_rag*.py"
+    key_files:
+      - "framework/inference_adapter.py"
+      - "policies/"
+    adr_refs:
+      - "ADR-0004"
+    phase_introduced: 1
+    notes: "All inference calls route through framework/inference_adapter.py per ADR-0004"
+
+  agent_runtime:
+    description: "Job scheduling, worker pool, session execution, executor abstraction"
+    status: "active"
+    primary_paths:
+      - "framework/worker_runtime.py"
+      - "framework/scheduler.py"
+      - "framework/code_executor.py"
+      - "bin/stage*_manager.py"
+    key_files:
+      - "framework/worker_runtime.py"
+      - "framework/scheduler.py"
+      - "framework/job_schema.py"
+      - "framework/code_executor.py"
+    adr_refs:
+      - "ADR-0001"
+      - "ADR-0002"
+    phase_introduced: 1
+    notes: "Primary executor is ClaudeCodeExecutor; AiderExecutor is fallback per CLAUDE.md"
+
+  retrieval_memory:
+    description: "Stage RAG pipeline: BM25 retrieval, entity-aware reranking, context aggregation"
+    status: "active"
+    primary_paths:
+      - "bin/stage_rag1_*.py"
+      - "bin/stage_rag2_*.py"
+      - "bin/stage_rag3_*.py"
+      - "bin/stage_rag4_plan_probe.py"
+      - "bin/stage_rag6_plan_probe.py"
+      - "framework/codebase_repomap.py"
+    key_files:
+      - "bin/stage_rag4_plan_probe.py"
+      - "framework/codebase_repomap.py"
+    adr_refs: []
+    phase_introduced: 3
+    notes: "Entity-aware reranking (stage_rag4) improved retrieval by 28.5pp over BM25 baseline"
+
+  evaluation_governance:
+    description: "Benchmarking, validation, autonomy scoring, learning hooks"
+    status: "active"
+    primary_paths:
+      - "tests/"
+      - "artifacts/"
+      - "framework/learning_hooks.py"
+      - "framework/state_store.py"
+    key_files:
+      - "artifacts/baseline_validation/latest.json"
+      - "framework/learning_hooks.py"
+      - "framework/state_store.py"
+    adr_refs:
+      - "ADR-0006"
+      - "ADR-0007"
+    phase_introduced: 2
+    notes: "Autonomy scorecard (ADR-0007) governs regression detection across phase transitions"
+
+# ─────────────────────────────────────────────
+# MIGRATION MAP
+# Records disposition of legacy/frozen surfaces
+# ─────────────────────────────────────────────
+migration_map:
+  - surface: "config/promotion_manifest.json"
+    disposition: "frozen_pending_migration"
+    authority: "governance/authority_adr_0001_source_of_truth.md"
+    notes: "Frozen; tactical release authority only; migration requires explicit ADR"
+
+  - surface: "docs/* narrative roadmaps"
+    disposition: "advisory_only"
+    authority: "governance/authority_adr_0001_source_of_truth.md"
+    notes: "All docs/ narrative superseded by governance/ machine-readable artifacts"
+
+  - surface: "governance/current_phase.json (current_phase_id=0)"
+    disposition: "stale_pending_closure"
+    authority: "P0-01-AUTHORITY-SURFACE-INVENTORY-1 CONF-01"
+    notes: "Reports phase 0 open despite phases 2–7 being closed_ratified; requires Phase 0 closure package"
+
+  - surface: "governance/phase_gate_status.json Phase 0 gate"
+    disposition: "open_pending_ratification"
+    authority: "P0-01-AUTHORITY-SURFACE-INVENTORY-1 CONF-02"
+    notes: "Phase 0 gate remains open; must transition to closed_ratified via formal closure decision"
+
+  - surface: "framework/tool_schema (unanchored)"
+    disposition: "anchored_by_adr"
+    authority: "ADR-0002-typed-tool-system"
+    notes: "framework.tool_schema in schema_contract_registry now has ADR-0002 as governance anchor"
+
+  - surface: "docs/authority_inputs/revised_target_architecture_handoff_v4.docx"
+    disposition: "superseded_by_v7"
+    authority: "AS-V4-01 status field"
+    notes: "V4 handoff declared superseded; V7 is the active handoff surface"
+
+  - surface: "governance/inner_loop_contract.json"
+    disposition: "active_referenced"
+    authority: "governance/authority_adr_0018_phase1_local_runtime_closure.md"
+    notes: "Active inner-loop contract; referenced by Phase 1/2 closure evidence"
+
+# ─────────────────────────────────────────────
+# MODEL PROFILES
+# LOCAL-FIRST routing profiles per CLAUDE.md
+# ─────────────────────────────────────────────
+model_profiles:
+  fast:
+    model_id: "qwen2.5-coder:14b"
+    backend: "local_ollama"
+    make_target: "aider-fast"
+    use_case: "default local iteration; guard clause, assertion, replacement tasks"
+    max_file_scope: 5
+    adr_ref: "ADR-0004"
+
+  balanced:
+    model_id: "qwen2.5-coder:14b"
+    backend: "local_ollama"
+    make_target: "aider-fast"
+    use_case: "bounded multi-file modifications with validation"
+    max_file_scope: 5
+    notes: "Alias for fast profile at current model tier; distinct profile reserved for mid-size model"
+    adr_ref: "ADR-0004"
+
+  hard:
+    model_id: "deepseek-coder-v2"
+    backend: "local_ollama"
+    make_target: "aider-hard"
+    use_case: "complex refactors, architectural changes, hard semantic generation"
+    max_file_scope: 5
+    adr_ref: "ADR-0004"
+
+  large:
+    model_id: "32b-model"
+    backend: "local_ollama"
+    make_target: "aider-smart"
+    env_var: "OLLAMA_API_BASE_32B"
+    use_case: "large context tasks requiring 32B parameter model"
+    max_file_scope: 5
+    adr_ref: "ADR-0004"
+
+  substrate:
+    model_id: "claude-sonnet-4-6"
+    backend: "remote_api"
+    routing_label: "SUBSTRATE"
+    use_case: "governance, schema, ADR, contract, and architecture work"
+    adr_ref: "ADR-0004"
+
+# ─────────────────────────────────────────────
+# RUNTIME CONTRACT
+# Source: governance/runtime_contract_version.json
+# ─────────────────────────────────────────────
+runtime_contract:
+  contract_version: "rt-1.0.0+d9f4b3f7b1eb"
+  authority: "governance/runtime_contract_version.json"
+  ratification_status: "materially_implemented_open_governance"
+  ratification_adr: "governance/authority_adr_0004_phase1_closure.md"
+
+  session_job_schema:
+    adr_ref: "ADR-0001"
+    python_impl: "framework/job_schema.py"
+    registry_key: "canonical_session_schema"
+    status: "active"
+
+  tool_contract:
+    adr_ref: "ADR-0002"
+    python_impl: "framework/code_executor.py"
+    registry_key: "framework.tool_schema"
+    status: "active"
+    spec: "governance/tool_contract_spec.json"
+
+  workspace_contract:
+    adr_ref: "ADR-0003"
+    python_impl: "framework/worker_runtime.py"
+    status: "active"
+
+  artifact_contract:
+    adr_ref: "ADR-0006"
+    python_impl: "framework/state_store.py"
+    status: "active"
+    spec: "governance/validation_artifact_spec.json"
+
+  inference_gateway:
+    adr_ref: "ADR-0004"
+    python_impl: "framework/inference_adapter.py"
+    status: "active"
+
+  permission_model:
+    adr_ref: "ADR-0005"
+    python_impl: "framework/permission_engine.py"
+    status: "partial"
+    notes: "Layers 1–3 partially implemented; Layer 4 (tactical family lock) pending Phase 2 verification"
+
+# ─────────────────────────────────────────────
+# ARTIFACT POLICY
+# ─────────────────────────────────────────────
+artifact_policy:
+  artifact_root: "artifacts/"
+  governance_root: "artifacts/governance/"
+  retention_policy: "retain_all"
+  gitignore_note: "artifacts/ is in .gitignore; governance artifacts are force-added per package commit discipline"
+  canonical_paths:
+    governance: "artifacts/governance/"
+    baseline_validation: "artifacts/baseline_validation/"
+    expansion: "artifacts/expansion/"
+    escalations: "artifacts/escalations/"
+    stage_rag: "artifacts/stage_rag4/"
+  bundle_policy:
+    governance_session: "retain_on_failure"
+    capability_session: "retain_on_failure"
+    measurement_session: "retain"
+    planning_session: "retain"
+  adr_ref: "ADR-0006"
+
+# ─────────────────────────────────────────────
+# ADAPTER STATUS
+# ─────────────────────────────────────────────
+adapter_status:
+  aider:
+    status: "active"
+    routing_label: "LOCAL-FIRST"
+    integration: "Makefile targets (aider-fast, aider-hard, aider-smart, aider-micro-safe)"
+    notes: "Primary local executor for LOCAL-FIRST packages; must be installed for non-SUBSTRATE sessions"
+
+  claude:
+    status: "active"
+    routing_label: "SUBSTRATE"
+    integration: "Claude Code CLI / framework/inference_adapter.py remote_api backend"
+    model_id: "claude-sonnet-4-6"
+    notes: "Primary executor for SUBSTRATE packages; governance, ADR, schema, and contract work"
+
+  codex:
+    status: "available"
+    routing_label: "ESCALATION"
+    integration: "bin/codex51_*.py, make codex51-* targets"
+    notes: "Used for architecture/blocker removal/governance per CLAUDE.md; not primary for LOCAL-FIRST work"
+
+  ollama:
+    status: "active"
+    routing_label: "LOCAL-FIRST"
+    integration: "framework/inference_adapter.py local_ollama backend"
+    models:
+      - "qwen2.5-coder:14b"
+      - "deepseek-coder-v2"
+    notes: "Local inference backend; requires OLLAMA running on host"
+
+# ─────────────────────────────────────────────
+# WAIVERS
+# Active governance exceptions and deferrals
+# ─────────────────────────────────────────────
+waivers:
+  - waiver_id: "WAIVER-001"
+    surface: "config/promotion_manifest.json"
+    type: "migration_deferral"
+    rationale: "Migration requires explicit authority beyond current package scope; frozen pending dedicated migration package"
+    authority: "governance/authority_adr_0001_source_of_truth.md"
+    status: "active"
+
+  - waiver_id: "WAIVER-002"
+    surface: "governance/current_phase.json (stale phase_id=0)"
+    type: "stale_state_deferral"
+    rationale: "Phase 0 closure requires formal closure_decision.json + ADR; deferred to dedicated Phase 0 closure package"
+    authority: "P0-01-AUTHORITY-SURFACE-INVENTORY-1 CONF-01 (HIGH)"
+    status: "active"
+
+  - waiver_id: "WAIVER-003"
+    surface: "framework/permission_engine.py Layer 4"
+    type: "partial_implementation"
+    rationale: "Tactical family lock enforcement (Layer 4 per ADR-0005) deferred to Phase 2 capability verification; all tactical families currently locked at baseline"
+    authority: "governance/tactical_unlock_criteria.json"
+    status: "active"
+
+# ─────────────────────────────────────────────
+# AUTONOMY SCORECARD
+# Source: Phase 7 closure evidence + ADR-0007
+# ─────────────────────────────────────────────
+autonomy_scorecard:
+  baseline_phase: 7
+  baseline_commit: "f5013c3"
+  authority: "governance/phase7_closure_evidence.json"
+  overall_grade: "A"
+
+  first_pass_success:
+    value: 0.889
+    description: "Semantic-primary generation rate on 18-task benchmark (ADR-0007 dim: semantic_generation_rate)"
+    gate_status: "READY"
+
+  retry_count:
+    value: 0
+    description: "Average retries before validation pass on bounded task set"
+    gate_status: "READY"
+
+  escalation_rate:
+    value: 0.0
+    description: "Fraction of Phase 7 session steps requiring escalation; all 9 v8 gates passed without escalation"
+    gate_status: "READY"
+
+  artifact_completeness:
+    value: 1.0
+    description: "Fraction of required governance artifacts produced with bundle_valid=true"
+    gate_status: "READY"
+
+  validation_pass_rate:
+    value: 0.90
+    description: "Fraction of generated modifications passing make check / make quick on first attempt"
+    gate_status: "READY"
+
+  real_path_coverage:
+    value: 1.0
+    description: "All 9 v8 capability gates READY at Phase 7 closure"
+    gate_status: "READY"
+
+  governance_conformance:
+    value: 1.0
+    description: "All Phase 7 governance artifacts schema-conformant"
+    gate_status: "READY"
+
+  regression_detected: false
+  adr_ref: "ADR-0007"
+
+# ─────────────────────────────────────────────
+# ENVIRONMENTS
+# Placeholder for host/environment inventory
+# ─────────────────────────────────────────────
+environments:
+  _placeholder: true
+  _note: "Host/environment inventory is deferred to a dedicated CMDB expansion package. This section exists as a required structural placeholder per P0-04 spec."
+  known_environments:
+    - env_id: "local-dev"
+      type: "developer_workstation"
+      platform: "darwin"
+      shell: "zsh"
+      ollama_available: true
+      notes: "Primary execution environment for LOCAL-FIRST packages"
