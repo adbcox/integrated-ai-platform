@@ -3,6 +3,7 @@
 import os
 from datetime import datetime, timezone
 from dataclasses import asdict
+import json  # Added this import
 
 from framework.local_run_receipt_summary import LocalRunReceiptSummaryBuilder
 
