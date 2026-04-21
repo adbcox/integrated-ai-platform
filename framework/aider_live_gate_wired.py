@@ -155,8 +155,7 @@ def run_wired_aider_proof(
                 policy=DEFAULT_AIDER_POLICY,
                 dry_run=False,
             ),
-            task_id=f"wired_proof_{i}",
-            session_id="apcc1_p4",
+            session_id=f"apcc1_p4_{i}",
         )
         try:
             artifact = adapter.run(req)
