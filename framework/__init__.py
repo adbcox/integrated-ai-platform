@@ -60,6 +60,13 @@ from .memory_compactor import MemoryCompactionResult, compact_memory
 from .repo_pattern_store import PatternEntry, RepoPatternLibrary, build_repo_pattern_library, save_repo_pattern_library
 from .retrieval_cache import CachedRetrievalResult, RetrievalCache
 from .loop_retrieval_bridge import LoopContextBundle, LoopRetrievalBridge
+from .task_repetition_harness import (
+    RepetitionRunConfig,
+    RepetitionRunRecord,
+    RepetitionRunResult,
+    TaskRepetitionHarness,
+    make_synthetic_repetition_tasks,
+)
 from .tool_registry import DEFAULT_REGISTRY, ToolContractEntry, ToolRegistry
 from .tool_schema import (
     ApplyPatchAction,
@@ -217,4 +224,9 @@ __all__ = [
     "RetrievalCache",
     "LoopContextBundle",
     "LoopRetrievalBridge",
+    "RepetitionRunConfig",
+    "RepetitionRunRecord",
+    "RepetitionRunResult",
+    "TaskRepetitionHarness",
+    "make_synthetic_repetition_tasks",
 ]
