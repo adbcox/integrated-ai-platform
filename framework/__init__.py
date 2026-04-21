@@ -76,6 +76,7 @@ from .result_artifact_manifest import ResultArtifactManifest, build_manifest, em
 from .hybrid_inspect_context import HybridInspectContext, build_hybrid_inspect_context
 from .fused_prompt_context import FusedPromptContext, build_fused_prompt
 from .bounded_critique_adopter import CritiqueAdoptionRecord, BoundedCritiqueAdopter
+from .bounded_retry_controller import RetryDecisionRecord, BoundedRetryController
 from .retry_telemetry_integration import (
     LoopRetryIntegrationRecord,
     LoopRetryStore,
@@ -406,4 +407,6 @@ __all__ = [
     "build_fused_prompt",
     "CritiqueAdoptionRecord",
     "BoundedCritiqueAdopter",
+    "RetryDecisionRecord",
+    "BoundedRetryController",
 ]
