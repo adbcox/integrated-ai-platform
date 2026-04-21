@@ -1,0 +1,58 @@
+schema_version: "1.0"
+kind: "rm_dev003_rm_intel001_linkage"
+linkage_id: "RM-DEV-003-RM-INTEL-001-LINKAGE-V1"
+updated_at: "2026-04-21T00:00:00Z"
+rm_dev_003_needs:
+  - need_id: "bounded_edit_transport"
+    description: "Bounded code edit transport with explicit scope and rollback."
+    directly_supported_candidates: ["Aider"]
+    recommendation_view:
+      adopt_now: []
+      evaluate: ["Aider"]
+      watch: []
+      reject: []
+  - need_id: "tool_protocol_boundary"
+    description: "Stable tool interoperability boundary for bounded autonomous runs."
+    directly_supported_candidates: ["MCP"]
+    recommendation_view:
+      adopt_now: ["MCP"]
+      evaluate: []
+      watch: []
+      reject: []
+  - need_id: "local_inference_baseline"
+    description: "Local-first default inference substrate for bounded autonomy."
+    directly_supported_candidates: ["Ollama"]
+    recommendation_view:
+      adopt_now: ["Ollama"]
+      evaluate: []
+      watch: []
+      reject: []
+  - need_id: "retrieval_memory_support"
+    description: "Candidate vector-memory substrate for improving bounded planning quality."
+    directly_supported_candidates: ["Qdrant"]
+    recommendation_view:
+      adopt_now: []
+      evaluate: ["Qdrant"]
+      watch: []
+      reject: []
+  - need_id: "sandbox_isolation_baseline"
+    description: "Sandbox isolation option for bounded autonomous code execution."
+    directly_supported_candidates: ["gVisor"]
+    recommendation_view:
+      adopt_now: []
+      evaluate: ["gVisor"]
+      watch: []
+      reject: []
+  - need_id: "benchmark_feedback_loop"
+    description: "Benchmark harness for validating bounded autonomy quality gains."
+    directly_supported_candidates: ["SWE-bench"]
+    recommendation_view:
+      adopt_now: ["SWE-bench"]
+      evaluate: []
+      watch: []
+      reject: []
+authority_surfaces:
+  - "governance/bounded_autonomous_codegen_contract.v1.yaml"
+  - "governance/oss_watchtower_candidates.v1.yaml"
+  - "docs/roadmap/RM-DEV-003_EXECUTION_PACK.md"
+  - "docs/roadmap/RM-INTEL-001_EXECUTION_PACK.md"

@@ -1,0 +1,70 @@
+{
+  "schema_version": 1,
+  "run_metadata": {
+    "run_id": "rm_dev_003_baseline_example",
+    "package_id": "RM-DEV-003",
+    "status": "completed",
+    "started_at": "2026-04-21T00:00:00Z",
+    "finished_at": "2026-04-21T00:05:00Z"
+  },
+  "bounded_task_contract": {
+    "objective": "Implement and validate integrated RM-DEV-003 and RM-INTEL-001 machine-readable baseline surfaces.",
+    "allowed_files": [
+      "governance/**",
+      "docs/roadmap/**",
+      "bin/**",
+      "artifacts/**",
+      "tests/**"
+    ],
+    "forbidden_files": [
+      ".github/**",
+      "framework/**"
+    ],
+    "expected_file_posture": "bounded_edit",
+    "validation_sequence": [
+      "python3 -m py_compile bin/run_rm_dev_003_rm_intel_001_check.py",
+      "python3 bin/run_rm_dev_003_rm_intel_001_check.py",
+      "python3 -m pytest -q tests/test_rm_dev_003_rm_intel_001_check_seam.py"
+    ],
+    "rollback_rule": "Revert all RM-DEV-003/RM-INTEL-001 integrated baseline files and remove emitted governance artifacts if validation fails.",
+    "artifact_outputs": [
+      "artifacts/governance/rm_dev_003_rm_intel_001_baseline_validation.json",
+      "artifacts/bounded_autonomy/runs/rm_dev_003_baseline_example.json"
+    ],
+    "promotion_decision": "hold"
+  },
+  "planned_changes": {
+    "files_touched": [
+      "governance/bounded_autonomous_codegen_contract.v1.yaml",
+      "governance/oss_watchtower_candidates.v1.yaml",
+      "governance/rm_dev_003_rm_intel_001_linkage.v1.yaml",
+      "bin/run_rm_dev_003_rm_intel_001_check.py"
+    ],
+    "change_scope": "bounded integrated closure for RM-DEV-003 + RM-INTEL-001 baseline"
+  },
+  "validation_results": {
+    "checks": [
+      {
+        "command": "python3 -m py_compile bin/run_rm_dev_003_rm_intel_001_check.py",
+        "result": "pass"
+      },
+      {
+        "command": "python3 bin/run_rm_dev_003_rm_intel_001_check.py",
+        "result": "pass"
+      },
+      {
+        "command": "python3 -m pytest -q tests/test_rm_dev_003_rm_intel_001_check_seam.py",
+        "result": "pass"
+      }
+    ],
+    "overall_result": "pass"
+  },
+  "decision": {
+    "promotion_decision": "hold",
+    "reason": "Baseline implemented and validated; promotion pending broader roadmap review."
+  },
+  "emitted_artifacts": [
+    "artifacts/governance/rm_dev_003_rm_intel_001_baseline_validation.json",
+    "artifacts/bounded_autonomy/runs/rm_dev_003_baseline_example.json"
+  ]
+}

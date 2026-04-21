@@ -1,0 +1,66 @@
+schema_version: "1.0"
+kind: "bounded_autonomous_codegen_contract"
+contract_id: "RM-DEV-003-BASELINE-V1"
+package_id: "RM-DEV-003"
+status: "active_baseline"
+updated_at: "2026-04-21T00:00:00Z"
+task_contract:
+  required_fields:
+    - objective
+    - allowed_files
+    - forbidden_files
+    - expected_file_posture
+    - validation_sequence
+    - rollback_rule
+    - artifact_outputs
+    - promotion_decision
+  field_specs:
+    objective:
+      type: "string"
+      min_length: 10
+    allowed_files:
+      type: "list[path_glob]"
+      min_items: 1
+    forbidden_files:
+      type: "list[path_glob]"
+      min_items: 1
+    expected_file_posture:
+      type: "enum"
+      values: ["append_only", "bounded_edit", "new_file_only"]
+    validation_sequence:
+      type: "list[command]"
+      min_items: 1
+    rollback_rule:
+      type: "string"
+      min_length: 10
+    artifact_outputs:
+      type: "list[path]"
+      min_items: 1
+    promotion_decision:
+      type: "enum"
+      values: ["promote", "hold", "escalate"]
+run_artifact_structure:
+  artifact_path: "artifacts/bounded_autonomy/runs/<run_id>.json"
+  required_sections:
+    - run_metadata
+    - bounded_task_contract
+    - planned_changes
+    - validation_results
+    - decision
+    - emitted_artifacts
+example_bounded_task:
+  objective: "Implement bounded schema validator for watchtower linkage."
+  allowed_files:
+    - "governance/**"
+    - "bin/**"
+  forbidden_files:
+    - ".github/**"
+    - "framework/**"
+  expected_file_posture: "bounded_edit"
+  validation_sequence:
+    - "python3 -m py_compile bin/run_rm_dev_003_rm_intel_001_check.py"
+    - "python3 bin/run_rm_dev_003_rm_intel_001_check.py"
+  rollback_rule: "Revert touched RM-DEV-003 packet files and remove emitted baseline artifact."
+  artifact_outputs:
+    - "artifacts/governance/rm_dev_003_rm_intel_001_baseline_validation.json"
+  promotion_decision: "hold"

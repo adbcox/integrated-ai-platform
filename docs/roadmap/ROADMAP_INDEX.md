@@ -36,6 +36,16 @@ Operating rule:
 - `RM-CORE-005` — Wrap local execution commands
 - `RM-CORE-006` — Establish baseline local-run validation
 
+<<<<<<< HEAD
+### Development capability items
+
+- `RM-DEV-003` — Bounded autonomous code generation
+- `RM-DEV-005` — Local autonomy uplift, OSS intake, and Aider reliability hardening
+
+### Intelligence capability items
+
+- `RM-INTEL-001` — Open-source watchtower with update alerts and adoption recommendations
+
 ### High-priority development items (completed)
 
 - `RM-DEV-005` — Local autonomy uplift, OSS intake, and Aider reliability hardening **(COMPLETED)**

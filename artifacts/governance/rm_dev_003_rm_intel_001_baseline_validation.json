@@ -1,0 +1,170 @@
+{
+  "schema_version": 1,
+  "package_id": "RM-DEV-003-RM-INTEL-001-INTEGRATED-BASELINE",
+  "generated_at": "2026-04-21T22:58:43+00:00",
+  "validated_files": {
+    "roadmap_master": "docs/roadmap/ROADMAP_MASTER.md",
+    "high_priority_guide": "docs/roadmap/HIGH_PRIORITY_IMPLEMENTATION_GUIDE.md",
+    "execution_pack_index": "docs/roadmap/EXECUTION_PACK_INDEX.md",
+    "rm_dev_003_pack": "docs/roadmap/RM-DEV-003_EXECUTION_PACK.md",
+    "rm_intel_001_pack": "docs/roadmap/RM-INTEL-001_EXECUTION_PACK.md",
+    "rm_dev_003_item": "docs/roadmap/items/RM-DEV-003.yaml",
+    "rm_intel_001_item": "docs/roadmap/items/RM-INTEL-001.yaml",
+    "contract": "governance/bounded_autonomous_codegen_contract.v1.yaml",
+    "watchtower": "governance/oss_watchtower_candidates.v1.yaml",
+    "linkage": "governance/rm_dev_003_rm_intel_001_linkage.v1.yaml",
+    "bounded_run_example": "artifacts/bounded_autonomy/runs/rm_dev_003_baseline_example.json"
+  },
+  "checks": {
+    "file_presence": [
+      {
+        "check": "roadmap_master_exists",
+        "passed": true,
+        "detail": "docs/roadmap/ROADMAP_MASTER.md"
+      },
+      {
+        "check": "high_priority_guide_exists",
+        "passed": true,
+        "detail": "docs/roadmap/HIGH_PRIORITY_IMPLEMENTATION_GUIDE.md"
+      },
+      {
+        "check": "execution_pack_index_exists",
+        "passed": true,
+        "detail": "docs/roadmap/EXECUTION_PACK_INDEX.md"
+      },
+      {
+        "check": "rm_dev_003_pack_exists",
+        "passed": true,
+        "detail": "docs/roadmap/RM-DEV-003_EXECUTION_PACK.md"
+      },
+      {
+        "check": "rm_intel_001_pack_exists",
+        "passed": true,
+        "detail": "docs/roadmap/RM-INTEL-001_EXECUTION_PACK.md"
+      },
+      {
+        "check": "rm_dev_003_item_exists",
+        "passed": true,
+        "detail": "docs/roadmap/items/RM-DEV-003.yaml"
+      },
+      {
+        "check": "rm_intel_001_item_exists",
+        "passed": true,
+        "detail": "docs/roadmap/items/RM-INTEL-001.yaml"
+      },
+      {
+        "check": "contract_exists",
+        "passed": true,
+        "detail": "governance/bounded_autonomous_codegen_contract.v1.yaml"
+      },
+      {
+        "check": "watchtower_exists",
+        "passed": true,
+        "detail": "governance/oss_watchtower_candidates.v1.yaml"
+      },
+      {
+        "check": "linkage_exists",
+        "passed": true,
+        "detail": "governance/rm_dev_003_rm_intel_001_linkage.v1.yaml"
+      },
+      {
+        "check": "bounded_run_example_exists",
+        "passed": true,
+        "detail": "artifacts/bounded_autonomy/runs/rm_dev_003_baseline_example.json"
+      }
+    ],
+    "rm_dev_003_contract": [
+      {
+        "check": "task_contract_required_fields_complete",
+        "passed": true,
+        "detail": "required_fields=['objective', 'allowed_files', 'forbidden_files', 'expected_file_posture', 'validation_sequence', 'rollback_rule', 'artifact_outputs', 'promotion_decision']"
+      },
+      {
+        "check": "run_artifact_structure_present",
+        "passed": true,
+        "detail": "required_sections=['run_metadata', 'bounded_task_contract', 'planned_changes', 'validation_results', 'decision', 'emitted_artifacts']"
+      }
+    ],
+    "rm_dev_003_run_artifact": [
+      {
+        "check": "run_example_has_required_sections",
+        "passed": true,
+        "detail": "run_example_sections=['bounded_task_contract', 'decision', 'emitted_artifacts', 'planned_changes', 'run_metadata', 'schema_version', 'validation_results']"
+      },
+      {
+        "check": "run_example_has_required_task_fields",
+        "passed": true,
+        "detail": "run_contract_fields=['allowed_files', 'artifact_outputs', 'expected_file_posture', 'forbidden_files', 'objective', 'promotion_decision', 'rollback_rule', 'validation_sequence']"
+      },
+      {
+        "check": "run_example_promotion_decision_valid",
+        "passed": true,
+        "detail": "bounded_task_contract.promotion_decision=hold, decision.promotion_decision=hold"
+      }
+    ],
+    "rm_intel_001_watchtower": [
+      {
+        "check": "candidate_shortlist_complete",
+        "passed": true,
+        "detail": "candidate_names=['Ollama', 'Aider', 'MCP', 'OpenHands SDK', 'Qdrant', 'gVisor', 'SWE-bench', 'Continue']"
+      },
+      {
+        "check": "recommendation_classes_complete",
+        "passed": true,
+        "detail": "recommendation_classes=['adopt-now', 'evaluate', 'reject', 'watch']"
+      },
+      {
+        "check": "candidate_required_fields_complete",
+        "passed": true,
+        "detail": "missing_fields={}"
+      }
+    ],
+    "integrated_linkage": [
+      {
+        "check": "linkage_has_needs",
+        "passed": true,
+        "detail": "need_count=6"
+      },
+      {
+        "check": "linkage_references_known_candidates",
+        "passed": true,
+        "detail": "unknown_candidates={}"
+      },
+      {
+        "check": "linkage_maps_rm_dev_003_to_rm_intel_001",
+        "passed": true,
+        "detail": "needs must map core RM-DEV-003 requirements to tracked OSS candidates"
+      },
+      {
+        "check": "linkage_candidates_include_rm_dev_003_roadmap_linkage",
+        "passed": true,
+        "detail": "missing_rm_dev003_linkage={}"
+      }
+    ],
+    "roadmap_docs": [
+      {
+        "check": "rm_dev_003_pack_has_required_field_list",
+        "passed": true,
+        "detail": "rm_dev_003_pack_has_required_field_list"
+      },
+      {
+        "check": "rm_intel_001_pack_has_required_field_list",
+        "passed": true,
+        "detail": "rm_intel_001_pack_has_required_field_list"
+      },
+      {
+        "check": "execution_pack_index_links_both",
+        "passed": true,
+        "detail": "execution_pack_index_links_both"
+      }
+    ]
+  },
+  "gate_results": {
+    "rm_dev_003_gate": true,
+    "rm_intel_001_gate": true,
+    "integrated_linkage_gate": true,
+    "validation_gate": true
+  },
+  "overall_result": "pass",
+  "failure_reasons": []
+}

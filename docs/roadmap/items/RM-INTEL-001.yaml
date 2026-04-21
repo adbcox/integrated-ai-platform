@@ -1,0 +1,128 @@
+schema_version: "1.0"
+kind: "roadmap_item"
+id: "RM-INTEL-001"
+slug: "oss-watchtower-update-alerts-and-adoption-recommendations"
+title: "Open-source watchtower with update alerts and adoption recommendations"
+category: "INTEL"
+type: "capability"
+status: "completed"
+priority: "P1"
+scoring:
+  loe: 3
+  strategic_value: 5
+  architecture_fit: 5
+  execution_risk: 2
+  dependency_burden: 2
+  readiness: 5
+description: >
+  Establish an OSS watchtower baseline with candidate registry fields,
+  recommendation classes, roadmap linkage, and fallback posture for adoption decisions.
+why_it_matters: >
+  Bounded autonomy decisions require explicit OSS intake intelligence, not chat-only
+  recommendations.
+scope:
+  objective: >
+    Deliver machine-readable OSS watchtower candidate registry with recommendation
+    classes and linkage to RM-DEV-003 capability needs.
+  in_scope:
+    - "candidate registry schema fields"
+    - "starter shortlist for local assistant stack"
+    - "recommendation classes and fallback posture"
+    - "direct linkage to RM-DEV-003 needs"
+  out_of_scope:
+    - "automated internet polling service implementation"
+dependencies:
+  blocked_by: []
+  enables:
+    - "RM-DEV-003"
+  related_items:
+    - "RM-DEV-005"
+impact:
+  affected_systems:
+    - "governance"
+    - "roadmap_ops"
+  expected_file_families:
+    - "governance/**"
+    - "docs/roadmap/**"
+    - "bin/**"
+    - "artifacts/**"
+  impact_summary: >
+    Introduces machine-readable OSS recommendation baseline with roadmap-linked evidence.
+grouping:
+  feature_block_candidates:
+    - "FB-INTEL-OSS-WATCHTOWER"
+  package_group: "PKG-DEV-INTEGRATED-AUTONOMY-INTEL"
+  shared_touch_surfaces:
+    - "oss candidate registry"
+    - "recommendation classes"
+    - "rm-dev-003 linkage"
+milestones:
+  recommended_first_milestone: "publish-watchtower-registry-v1"
+  downstream_milestones:
+    - "wire-update-alert-ingestion"
+planning:
+  planning_packet_ref: null
+  planning_status: "complete"
+  planning_notes: "Integrated one-pass slice with RM-DEV-003."
+execution:
+  execution_package_refs:
+    - "RM-DEV-003-RM-INTEL-001-INTEGRATED-BASELINE"
+  execution_status: "complete"
+  last_execution_commit: null
+validation:
+  validation_artifact_refs:
+    - "artifacts/governance/rm_dev_003_rm_intel_001_baseline_validation.json"
+  validation_status: "passed"
+  definition_of_done_ref: "docs/progress-contract.md"
+governance:
+  phase_target: "Phase 3"
+  architectural_lane: "governance_and_capability_support"
+  risk_tier: "low"
+  allowed_change_scope: "bounded"
+  requires_explicit_escalation: false
+ai_operability:
+  canonical_summary: >
+    Machine-readable OSS watchtower baseline with recommendation classes and RM-DEV-003 linkage.
+  developer_intent: >
+    Keep OSS intake decisions explicit, testable, and tied to capability requirements.
+  non_goals:
+    - "Do not replace canonical roadmap authority with a parallel system"
+  allowed_files:
+    - "governance/**"
+    - "docs/roadmap/**"
+    - "bin/**"
+    - "artifacts/**"
+  forbidden_files:
+    - ".github/**"
+  validation_order:
+    - "run rm-dev-003/rm-intel-001 baseline validator"
+    - "run targeted pytest if validator seams change"
+    - "run make check"
+  rollback_rule: >
+    Revert RM-INTEL-001 integrated baseline files and remove emitted validation artifact.
+  artifact_outputs:
+    - "artifacts/governance/rm_dev_003_rm_intel_001_baseline_validation.json"
+sync:
+  plane:
+    sync_enabled: true
+    sync_mode: "repo_to_plane_authoritative"
+    workspace: "Integrated AI Platform"
+    project: "Roadmap Ops"
+    plane_item_id: null
+    last_synced_at: null
+    writeback_fields_allowed:
+      - "operational_state"
+      - "assignee"
+      - "cycle"
+      - "module"
+      - "labels"
+  github:
+    issue_ref: null
+    pr_refs: []
+metadata:
+  owner: "adrian"
+  created_at: "2026-04-21"
+  updated_at: "2026-04-21"
+  tags:
+    - "intel"
+    - "oss-watchtower"

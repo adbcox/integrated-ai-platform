@@ -219,3 +219,56 @@ items:
       - "docs/execution/**"
     plane_sync_enabled: true
     plane_item_id: null
+  - id: "RM-DEV-005"
+    path: "docs/roadmap/items/RM-DEV-005.yaml"
+    title: "Local autonomy uplift, OSS intake, and Aider reliability hardening"
+    category: "DEV"
+    status: "completed"
+    priority: "P1"
+    package_group: "PKG-DEV-PHASE3"
+    affected_systems:
+      - "agent_runtime"
+      - "validation_pipeline"
+      - "governance"
+    expected_file_families:
+      - "framework/**"
+      - "bin/**"
+      - "governance/**"
+      - "artifacts/**"
+    plane_sync_enabled: true
+    plane_item_id: null
+  - id: "RM-DEV-003"
+    path: "docs/roadmap/items/RM-DEV-003.yaml"
+    title: "Bounded autonomous code generation"
+    category: "DEV"
+    status: "completed"
+    priority: "P1"
+    package_group: "PKG-DEV-INTEGRATED-AUTONOMY-INTEL"
+    affected_systems:
+      - "agent_runtime"
+      - "governance"
+      - "validation_pipeline"
+    expected_file_families:
+      - "governance/**"
+      - "docs/roadmap/**"
+      - "bin/**"
+      - "artifacts/**"
+    plane_sync_enabled: true
+    plane_item_id: null
+  - id: "RM-INTEL-001"
+    path: "docs/roadmap/items/RM-INTEL-001.yaml"
+    title: "Open-source watchtower with update alerts and adoption recommendations"
+    category: "INTEL"
+    status: "completed"
+    priority: "P1"
+    package_group: "PKG-DEV-INTEGRATED-AUTONOMY-INTEL"
+    affected_systems:
+      - "governance"
+      - "roadmap_ops"
+    expected_file_families:
+      - "governance/**"
+      - "docs/roadmap/**"
+      - "bin/**"
+      - "artifacts/**"
+    plane_sync_enabled: true
+    plane_item_id: null

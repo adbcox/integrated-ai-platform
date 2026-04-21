@@ -196,3 +196,48 @@ items:
       - "assignee"
       - "cycle"
       - "module"
+  - id: "RM-DEV-005"
+    sync_enabled: true
+    sync_mode: "repo_to_plane_authoritative"
+    plane_workspace: "Integrated AI Platform"
+    plane_project: "Roadmap Ops"
+    plane_item_id: null
+    plane_url: null
+    last_push_at: null
+    last_pull_at: null
+    last_sync_result: "not_synced"
+    writeback_fields_allowed:
+      - "operational_state"
+      - "assignee"
+      - "cycle"
+      - "module"
+  - id: "RM-DEV-003"
+    sync_enabled: true
+    sync_mode: "repo_to_plane_authoritative"
+    plane_workspace: "Integrated AI Platform"
+    plane_project: "Roadmap Ops"
+    plane_item_id: null
+    plane_url: null
+    last_push_at: null
+    last_pull_at: null
+    last_sync_result: "not_synced"
+    writeback_fields_allowed:
+      - "operational_state"
+      - "assignee"
+      - "cycle"
+      - "module"
+  - id: "RM-INTEL-001"
+    sync_enabled: true
+    sync_mode: "repo_to_plane_authoritative"
+    plane_workspace: "Integrated AI Platform"
+    plane_project: "Roadmap Ops"
+    plane_item_id: null
+    plane_url: null
+    last_push_at: null
+    last_pull_at: null
+    last_sync_result: "not_synced"
+    writeback_fields_allowed:
+      - "operational_state"
+      - "assignee"
+      - "cycle"
+      - "module"
