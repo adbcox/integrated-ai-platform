@@ -1,0 +1,42 @@
+{
+  "artifact_id": "P1-03-WORKSPACE-CONTRACT-VALIDATION-1",
+  "generated_at": "2026-04-21T15:31:02.114502+00:00",
+  "contract_path": "governance/workspace_contract.v1.yaml",
+  "yaml_loaded": true,
+  "required_sections_checked": [
+    "version",
+    "source_mount",
+    "scratch_mount",
+    "artifact_root",
+    "cleanup_policy",
+    "path_scope_rules",
+    "exceptions"
+  ],
+  "required_sections_present": true,
+  "mount_fields_checked": [
+    "mode",
+    "mutability",
+    "allowed_operations",
+    "mode",
+    "mutability",
+    "lifecycle",
+    "path_policy",
+    "write_rule",
+    "retention_reference"
+  ],
+  "mount_fields_present": true,
+  "cleanup_fields_checked": [
+    "cleanup_required",
+    "cleanup_scope",
+    "preserve_unrelated_changes"
+  ],
+  "cleanup_fields_present": true,
+  "content_errors": [],
+  "phase_linkage": "Phase 1 (runtime_contract_foundation)",
+  "authority_sources": [
+    "ADR-0003",
+    "ADR-0006",
+    "governance/definition_of_done.v1.yaml",
+    "governance/execution_control_package.schema.json"
+  ]
+}

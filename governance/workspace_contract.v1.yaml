@@ -1,0 +1,261 @@
+---
+# Workspace Contract v1
+# Authority surface: P1-03-WORKSPACE-CONTRACT-1
+# Governed by: ADR-0003 (workspace contract), governance/definition_of_done.v1.yaml,
+#   governance/execution_control_package.schema.json
+# Scope: all SUBSTRATE, LOCAL-FIRST, and ESCALATION coding run workspaces
+
+version: "1.0.0"
+contract_id: "WORKSPACE-CONTRACT-V1"
+generated_at: "2026-04-21"
+authority_owner: "governance/authority_adr_0001_source_of_truth.md"
+adr_ref: "ADR-0003"
+phase_linkage: "Phase 1 (runtime_contract_foundation)"
+
+# ─────────────────────────────────────────────
+# SOURCE MOUNT
+# The repository working tree as seen by a session.
+# Read-only by default; writes require explicit
+# allowed_files declaration in the package.
+# ─────────────────────────────────────────────
+source_mount:
+  mode: "read_only"
+  mutability: "immutable_by_default"
+  description: >
+    The source mount is the repository working tree (repo root and all subdirectories).
+    Sessions may read any file in the source mount. Writes to the source mount are
+    forbidden by default and require explicit declaration in the package's allowed_files
+    list. The source mount is never wiped or reset by workspace cleanup.
+
+  allowed_operations:
+    - "read any file"
+    - "list directory contents"
+    - "compute file hashes for telemetry"
+    - "import Python modules for validation scripts"
+
+  forbidden_operations:
+    - "write to any file not in package allowed_files"
+    - "delete any file not in package rollback_rule.remove_on_failure"
+    - "move or rename files outside package scope"
+    - "modify git history (amend, rebase, reset --hard) without explicit user instruction"
+
+  write_authorization:
+    rule: >
+      A write to the source mount is only authorized when the target file
+      appears in the executing package's allowed_files list AND does not
+      appear in the package's forbidden_files list. Any write to a file not
+      in allowed_files is a hard stop regardless of content.
+    hard_stop_on_unauthorized_write: true
+
+# ─────────────────────────────────────────────
+# SCRATCH MOUNT
+# Temporary writable space for intermediate work.
+# Isolated per session; cleaned up on session end.
+# ─────────────────────────────────────────────
+scratch_mount:
+  mode: "writable"
+  mutability: "session_scoped_writable"
+  description: >
+    The scratch mount is a temporary writable area for intermediate artifacts,
+    validation outputs, and working files that do not need to persist beyond
+    the session. It is distinct from both the source mount and the artifact root.
+    Scratch contents are not committed to the repository.
+
+  lifecycle:
+    created: "at session initialization"
+    scope: "per session; not shared across concurrent sessions"
+    cleaned_up: "at session end (success or failure), unless cleanup_policy.retain_on_failure=true"
+    persistence: "none — scratch contents are ephemeral"
+
+  allowed_operations:
+    - "write any file"
+    - "read any file previously written to scratch"
+    - "delete any file in scratch"
+    - "use as tmp_path for seam test fixtures"
+
+  forbidden_operations:
+    - "commit scratch contents directly to git"
+    - "use scratch path as an artifact_output path"
+    - "share scratch mount across sessions"
+
+  path_convention:
+    typical_root: "/tmp or system temp directory"
+    pytest_fixture: "pytest tmp_path fixture for test isolation"
+    note: "Scratch paths must never be declared as artifact_output paths in a package"
+
+# ─────────────────────────────────────────────
+# ARTIFACT ROOT
+# Where session artifacts are written and persisted.
+# Distinct from scratch; committed to git.
+# ─────────────────────────────────────────────
+artifact_root:
+  path_policy:
+    governance_artifacts: "artifacts/governance/"
+    baseline_validation: "artifacts/baseline_validation/"
+    expansion: "artifacts/expansion/"
+    escalations: "artifacts/escalations/"
+    stage_outputs: "artifacts/stage_rag4/, artifacts/expansion/LEDT/, etc."
+    adr_documents: "docs/adr/"
+    spec_documents: "docs/specs/"
+    governance_state: "governance/"
+    rule: >
+      All session outputs that must persist beyond the session must be written
+      to an artifact root path. The artifact root is declared in the package's
+      artifact_outputs field. Writing to paths outside the artifact root convention
+      is permitted only when explicitly listed in the package's allowed_files.
+
+  write_rule:
+    rule: >
+      Artifact writes are permitted only to paths declared in the package's
+      artifact_outputs list (for JSON/YAML artifacts) or allowed_files list
+      (for source files, specs, and governance documents). Writing a JSON
+      artifact to a path not declared in artifact_outputs is a contract violation.
+    hard_stop_on_undeclared_artifact_write: true
+
+  retention_reference:
+    authority: "governance/definition_of_done.v1.yaml::required_artifacts"
+    adr_ref: "ADR-0006"
+    rule: >
+      Artifacts in artifacts/governance/ are retained indefinitely.
+      Artifacts in artifacts/baseline_validation/ and artifacts/expansion/
+      follow the retention_policy declared in governance/cmdb_lite_registry.v1.yaml::artifact_policy.
+    gitignore_note: >
+      artifacts/ is in .gitignore; governance artifacts are force-added per package
+      commit discipline (git add -f artifacts/governance/<file>).
+
+# ─────────────────────────────────────────────
+# CLEANUP POLICY
+# What happens to workspace state at session end
+# ─────────────────────────────────────────────
+cleanup_policy:
+  cleanup_required:
+    value: true
+    rule: >
+      Every session must clean up its workspace on exit. Cleanup means:
+      (1) scratch mount contents are discarded,
+      (2) files in rollback_rule.remove_on_failure are removed on gate failure,
+      (3) no partial or uncommitted changes are left in the source mount.
+    hard_stop_if_skipped: false
+    note: "Cleanup is a best-effort contract at session level; CI/CD enforcement is deferred to Phase 2"
+
+  cleanup_scope:
+    on_success:
+      scratch: "discard all scratch contents"
+      source_mount: "commit all allowed_files changes; no uncommitted changes remain"
+      artifact_root: "all declared artifacts are present and committed"
+    on_failure:
+      scratch: "discard scratch contents unless retain_on_failure=true"
+      source_mount: "execute rollback_rule.remove_on_failure; restore any unauthorized writes"
+      artifact_root: "partial artifacts may remain; must be listed in hard_stops_hit"
+    on_escalation:
+      scratch: "retain for diagnostic purposes"
+      source_mount: "do not commit; leave in current state for control window review"
+      artifact_root: "retain any artifacts produced before escalation trigger"
+
+  preserve_unrelated_changes:
+    value: true
+    rule: >
+      Workspace cleanup must never remove, overwrite, or revert files that were
+      not created or modified by the current session. Pre-existing file state
+      outside the package's allowed_files is inviolable.
+    hard_stop_on_violation: true
+    cross_reference: "governance/definition_of_done.v1.yaml::rollback_semantics.preserve_unrelated_changes"
+
+# ─────────────────────────────────────────────
+# PATH SCOPE RULES
+# What a session may and may not write to
+# ─────────────────────────────────────────────
+path_scope_rules:
+  repo_write_forbidden_by_default:
+    value: true
+    rule: >
+      Sessions may not write to arbitrary repository-relative paths during execution.
+      The repository working tree is read-only by default. Only paths explicitly
+      listed in the executing package's allowed_files are writable.
+    hard_stop_on_violation: true
+    rationale: >
+      Unrestricted repo writes would allow sessions to silently modify governance
+      artifacts, framework code, or roadmap state — bypassing the authority chain
+      established in ADR-0001. The package's allowed_files is the sole authorization
+      mechanism for source-mount writes.
+
+  artifact_write_location:
+    rule: >
+      All persistent artifacts produced by a session must be written to paths
+      under the artifact root convention (artifacts/, governance/, docs/adr/,
+      docs/specs/). Writing persistent outputs to arbitrary locations (e.g.,
+      /tmp, project root, undeclared subdirectories) is forbidden.
+    hard_stop_on_violation: false
+    action_on_violation: "Flag as scope violation in residual_notes; do not block commit if artifact is otherwise valid"
+
+  allowed_workspace_targets:
+    description: "Paths that sessions may write to, subject to package allowed_files declaration"
+    categories:
+      governance_new_files: "governance/*.yaml, governance/*.json (new files only; existing files require explicit allowed_files entry)"
+      docs_new_files: "docs/adr/*.md, docs/specs/*.md (new files only)"
+      artifacts: "artifacts/governance/*.json, artifacts/baseline_validation/*.json, artifacts/expansion/**"
+      bin_new_files: "bin/run_*.py (new runner scripts only; existing scripts require explicit allowed_files entry)"
+      tests_new_files: "tests/test_*_seam.py (new seam test files only)"
+    forbidden_always:
+      - "governance/canonical_roadmap.json"
+      - "governance/authority_adr_* (existing files; new authority ADRs require ESCALATION)"
+      - "governance/current_phase.json"
+      - "governance/phase_gate_status.json"
+      - "governance/next_package_class.json"
+      - "governance/schema_contract_registry.json"
+      - "config/promotion_manifest.json"
+      - "framework/** (all files)"
+      - ".gitignore"
+      - "Makefile (unless explicitly in allowed_files)"
+
+# ─────────────────────────────────────────────
+# EXCEPTIONS
+# Narrowly approved write paths and override rules
+# ─────────────────────────────────────────────
+exceptions:
+  narrowly_approved_write_paths_only:
+    rule: >
+      The only approved exceptions to repo_write_forbidden_by_default are the
+      paths explicitly listed in the executing package's allowed_files field.
+      There are no blanket write exceptions. No "write anywhere" mode exists.
+      Every session write must be traceable to a specific allowed_files entry.
+    hard_stop_on_unapproved_write: true
+
+  artifacts_gitignore_override:
+    rule: >
+      The artifacts/ directory is in .gitignore. Governance artifacts under
+      artifacts/governance/ must be committed with `git add -f` to override
+      the ignore rule. This is the approved exception to normal git add behavior
+      for governance artifact persistence.
+    approved: true
+    scope: "artifacts/governance/ only"
+
+  scratch_tmp_path_exception:
+    rule: >
+      Seam test files may use pytest's tmp_path fixture to write temporary files
+      during test execution. These writes are to the scratch mount (system temp)
+      and do not require allowed_files authorization. Scratch tmp_path writes
+      must not be used as artifact_output paths.
+    approved: true
+    scope: "pytest tmp_path fixture only"
+
+  rollback_removes_only_package_files:
+    rule: >
+      The rollback exception allows removal of files listed in the package's
+      rollback_rule.remove_on_failure. This is the only approved exception to
+      preserve_unrelated_changes — and it applies only to files the current
+      package itself created, never to pre-existing files.
+    approved: true
+    scope: "rollback_rule.remove_on_failure list only"
+
+  runtime_artifacts_not_arbitrary_repo_writes:
+    rule: >
+      Runtime work (stage probes, manager scripts, framework execution) must not
+      write arbitrary repo-relative artifacts during execution. All outputs must
+      go to declared artifact root paths. This prevents sessions from silently
+      polluting the working tree with undeclared files that then appear in git
+      status as untracked changes.
+    hard_stop_on_violation: true
+    detection: >
+      Any untracked or modified file in git status at session end that is not in
+      allowed_files and not in the gitignore is a contract violation.
