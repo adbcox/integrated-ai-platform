@@ -61,6 +61,7 @@ from .repo_pattern_store import PatternEntry, RepoPatternLibrary, build_repo_pat
 from .retrieval_cache import CachedRetrievalResult, RetrievalCache
 from .loop_retrieval_bridge import LoopContextBundle, LoopRetrievalBridge
 from .routing_config import TaskRoutingOverride, RoutingConfig, DEFAULT_ROUTING_CONFIG, load_routing_config, save_routing_config
+from .memory_critique_enricher import CritiqueEnrichment, enrich_critique, render_enriched_retry_prompt
 from .autonomy_metrics_extended import (
     TaskClassMetricsExtended,
     ExtendedAutonomyMetrics,
@@ -245,4 +246,7 @@ __all__ = [
     "DEFAULT_ROUTING_CONFIG",
     "load_routing_config",
     "save_routing_config",
+    "CritiqueEnrichment",
+    "enrich_critique",
+    "render_enriched_retry_prompt",
 ]
