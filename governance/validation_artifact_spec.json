@@ -1,0 +1,77 @@
+{
+  "schema_version": "1.0.0",
+  "authority_owner": "framework/validation_artifact_writer",
+  "generated_at": "2026-04-20T00:00:00Z",
+  "supersedes": null,
+  "description": "Authoritative format spec for machine-readable validation records emitted by platform validation entrypoints. Records are appended to a JSONL file and mirrored to a latest.json file for easy inspection.",
+  "record_format": {
+    "record_id": {
+      "type": "string",
+      "format": "val-{8-char-lowercase-hex}",
+      "regex": "^val-[0-9a-f]{8}$",
+      "example": "val-3a1b9c2f",
+      "description": "Unique identifier for this validation record. Generated as 'val-' + first 8 hex chars of uuid4."
+    },
+    "schema_version": {
+      "type": "string",
+      "value": "1.0.0",
+      "description": "Schema version of this record. Must be '1.0.0' for records emitted by this spec."
+    },
+    "emitted_at": {
+      "type": "string",
+      "format": "ISO 8601 UTC",
+      "example": "2026-04-20T12:00:00+00:00",
+      "description": "Timestamp when this record was emitted."
+    },
+    "emitter": {
+      "type": "string",
+      "description": "Repo-relative path to the script or module that emitted this record. Example: 'bin/run_baseline_validation.py'."
+    },
+    "validation_type": {
+      "type": "string",
+      "description": "Category of validation performed. Examples: 'baseline_check', 'integrity_review', 'other'."
+    },
+    "outcome": {
+      "type": "string",
+      "enum": ["pass", "fail", "skip", "error"],
+      "description": "Overall outcome of this validation run."
+    },
+    "session_id": {
+      "type": ["string", "null"],
+      "description": "Optional. Session identifier grouping this validation with a broader execution context. See governance/canonical_id_spec.json."
+    },
+    "job_id": {
+      "type": ["string", "null"],
+      "description": "Optional. Job identifier for this validation unit. See governance/canonical_id_spec.json."
+    },
+    "checks": {
+      "type": "array",
+      "description": "List of individual check results within this validation run.",
+      "items": {
+        "check_name": {"type": "string", "description": "Name of the individual check."},
+        "outcome": {"type": "string", "enum": ["pass", "fail", "skip", "error"]},
+        "detail": {"type": ["string", "null"], "description": "Optional detail or error message."}
+      }
+    },
+    "artifact_refs": {
+      "type": "array",
+      "items": {"type": "string"},
+      "description": "List of artifact paths written or referenced by this validation run."
+    },
+    "notes": {
+      "type": ["string", "null"],
+      "description": "Optional freeform notes about this validation run."
+    }
+  },
+  "output_location": {
+    "records_jsonl": "artifacts/framework/validation/records.jsonl",
+    "latest_json": "artifacts/framework/validation/latest.json",
+    "description": "records.jsonl is append-only; one JSON line per record. latest.json is a normal single JSON object overwritten on each emit to reflect the most recent record."
+  },
+  "output_policy": {
+    "records_jsonl": "append-only — one JSON line appended per emit call; never overwritten",
+    "latest_json": "overwrite — always reflects the single most recent emitted record",
+    "dry_run": "dry_run=True writes nothing and returns None",
+    "error_handling": "OSError is re-raised with added context; callers should catch and degrade gracefully"
+  }
+}

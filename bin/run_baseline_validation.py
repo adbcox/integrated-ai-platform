@@ -113,4 +113,34 @@ if __name__ == "__main__":
     args = _parse_args()
     result = run_baseline_validation(dry_run=args.dry_run, write_artifact=True)
     print(json.dumps(result, indent=2, ensure_ascii=False))
+
+    # Emit canonical validation artifact. Failure must not alter exit code.
+    try:
+        from framework.validation_artifact_writer import (
+            ValidationCheck,
+            ValidationRecord,
+            emit_validation_record,
+        )
+        _checks = tuple(
+            ValidationCheck(
+                check_name=cmd,
+                outcome="pass" if entry["success"] else "fail",
+                detail=f"return_code={entry['return_code']}",
+            )
+            for cmd, entry in result["commands"].items()
+        )
+        emit_validation_record(
+            ValidationRecord(
+                emitter="bin/run_baseline_validation.py",
+                validation_type="baseline_check",
+                outcome="pass" if result["all_passed"] else "fail",
+                checks=_checks,
+                artifact_refs=(str(BASELINE_LATEST),),
+                notes=f"baseline_commit={result.get('baseline_commit', 'unknown')}",
+            ),
+            repo_root=REPO_ROOT,
+        )
+    except Exception as _emit_exc:  # noqa: BLE001
+        print(f"[warn] validation artifact emit failed: {_emit_exc}", file=sys.stderr)
+
     sys.exit(0 if result["all_passed"] else 1)
