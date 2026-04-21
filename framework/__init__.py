@@ -52,6 +52,7 @@ from .mvp_coding_loop import MVPTask, MVPLoopResult, MVPCodingLoopRunner, SAFE_T
 from .mvp_benchmark import MVPBenchmarkTaskSpec, MVPBenchmarkResult, MVPBenchmarkRunner, MVP_SYNTHETIC_TASKS
 from .matrix_closure_evidence import MatrixItemState, MatrixItemRecord, derive_campaign_closure, emit_closeout_record
 from .task_prompt_pack import SUPPORTED_TASK_CLASSES, PromptPack, get_prompt_pack, render_prompt
+from .local_memory_store import FailurePattern, SuccessPattern, LocalMemoryStore, record_mvp_loop_outcome
 from .tool_registry import DEFAULT_REGISTRY, ToolContractEntry, ToolRegistry
 from .tool_schema import (
     ApplyPatchAction,
@@ -186,4 +187,8 @@ __all__ = [
     "PromptPack",
     "get_prompt_pack",
     "render_prompt",
+    "FailurePattern",
+    "SuccessPattern",
+    "LocalMemoryStore",
+    "record_mvp_loop_outcome",
 ]
