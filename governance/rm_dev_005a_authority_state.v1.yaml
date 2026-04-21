@@ -1,0 +1,39 @@
+schema_version: "1.0"
+kind: "rm_dev_005a_authority_state"
+package_id: "RM-DEV-005A"
+updated_at: "2026-04-21T22:45:00Z"
+authority_decision_state: "closed_ratified"
+repo_visible_authority_closure_state: "complete"
+adapter_status:
+  aider:
+    status: "controlled_adapter_transport_target"
+    backbone_allowed: false
+    policy_authority_allowed: false
+    artifact_authority_allowed: false
+    state_authority_allowed: false
+    permanent_direct_aider_to_core_runtime_coupling_allowed: false
+    permanent_direct_aider_to_ollama_coupling_allowed: false
+    decision_state: "final_for_rm_dev_005a"
+blocked_pattern_policy_state:
+  state: "active_enforced"
+  blocked_patterns:
+    - "aider_as_architecture_backbone"
+    - "aider_as_policy_authority"
+    - "aider_as_artifact_authority"
+    - "aider_as_state_authority"
+    - "permanent_direct_aider_to_core_runtime_coupling"
+    - "permanent_direct_aider_to_ollama_coupling"
+oss_intake_status:
+  status: "ratified"
+  registry_path: "governance/oss_intake_registry.v1.yaml"
+  required_entry_fields:
+    - "name"
+    - "source"
+    - "license"
+    - "version_pin_or_placeholder"
+    - "wrapper_boundary"
+    - "removal_or_rollback_strategy"
+authority_linkage:
+  adr_0023: "governance/authority_adr_0023_rm_dev_005a_adapter_boundary.md"
+  adr_0022: "governance/authority_adr_0022_component_adoption_decisions.md"
+  oss_registry: "governance/oss_intake_registry.v1.yaml"
