@@ -21,6 +21,7 @@ KNOWN_FRAMEWORK_COMMANDS: dict[str, str] = {
     "check": "make check",
     "quick": "make quick",
     "test_offline": "make test-offline",
+    "aider": "python3 -m aider",
 }
 
 
