@@ -84,6 +84,7 @@ from .publish_artifact_dispatch import dispatch_publish_artifact
 from .retry_telemetry import RetryTelemetryRecord, record_retry_telemetry
 from .retrieval_cache_warmer import CacheWarmingResult, warm_retrieval_cache
 from .pattern_aging import PatternEvictionResult, evict_stale_patterns, persist_eviction
+from .local_autonomy_dashboard import LocalAutonomyDashboard, build_local_autonomy_dashboard, emit_dashboard
 from .aider_preflight import (
     AiderPreflightCheck,
     AiderPreflightResult,
@@ -295,4 +296,7 @@ __all__ = [
     "AiderPreflightResult",
     "AiderPreflightChecker",
     "emit_preflight_artifact",
+    "LocalAutonomyDashboard",
+    "build_local_autonomy_dashboard",
+    "emit_dashboard",
 ]
