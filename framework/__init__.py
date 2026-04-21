@@ -843,3 +843,5 @@ from .lace1_benchmark_runner import TaskRunResult, BenchmarkRunReport, Lace1Benc
 from .failure_pattern_miner import FailurePattern, FailurePatternReport, FailurePatternMiner
 
 from .autonomy_uplift_ratifier import UpliftCriterion, UpliftRatificationRecord, AutonomyUpliftRatifier, VERDICT_SUBSTRATE_UPLIFT_CONFIRMED, VERDICT_PARTIAL_SUBSTRATE_UPLIFT, VERDICT_SUBSTRATE_UPLIFT_NOT_CONFIRMED
+
+from .grouped_package_expansion_selector import PackageCandidate, GroupedPackageSelectionRecord, GroupedPackageExpansionSelector
