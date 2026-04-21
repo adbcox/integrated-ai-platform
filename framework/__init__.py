@@ -231,6 +231,13 @@ from .domain_branch_second_wave_ratifier import (
     SecondWavePromotionArtifact,
     ratify_second_wave_promotion,
 )
+from .terminal_promotion_ratifier import (
+    TERMINAL_PROMOTION_COMPLETE,
+    TERMINAL_PROMOTION_PARTIAL,
+    TerminalPromotionRecord,
+    TerminalPromotionArtifact,
+    ratify_terminal_promotion,
+)
 from .retry_telemetry_integration import (
     LoopRetryIntegrationRecord,
     LoopRetryStore,
@@ -712,4 +719,9 @@ __all__ = [
     "SecondWavePromotionRecord",
     "SecondWavePromotionArtifact",
     "ratify_second_wave_promotion",
+    "TERMINAL_PROMOTION_COMPLETE",
+    "TERMINAL_PROMOTION_PARTIAL",
+    "TerminalPromotionRecord",
+    "TerminalPromotionArtifact",
+    "ratify_terminal_promotion",
 ]
