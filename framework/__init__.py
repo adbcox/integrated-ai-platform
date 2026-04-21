@@ -51,6 +51,7 @@ from .validation_emit_adapter import emit_loop_validation
 from .mvp_coding_loop import MVPTask, MVPLoopResult, MVPCodingLoopRunner, SAFE_TASK_KINDS
 from .mvp_benchmark import MVPBenchmarkTaskSpec, MVPBenchmarkResult, MVPBenchmarkRunner, MVP_SYNTHETIC_TASKS
 from .matrix_closure_evidence import MatrixItemState, MatrixItemRecord, derive_campaign_closure, emit_closeout_record
+from .task_prompt_pack import SUPPORTED_TASK_CLASSES, PromptPack, get_prompt_pack, render_prompt
 from .tool_registry import DEFAULT_REGISTRY, ToolContractEntry, ToolRegistry
 from .tool_schema import (
     ApplyPatchAction,
@@ -181,4 +182,8 @@ __all__ = [
     "MatrixItemRecord",
     "derive_campaign_closure",
     "emit_closeout_record",
+    "SUPPORTED_TASK_CLASSES",
+    "PromptPack",
+    "get_prompt_pack",
+    "render_prompt",
 ]
