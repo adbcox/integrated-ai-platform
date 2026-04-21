@@ -1,0 +1,211 @@
+---
+# Phase 1 Hardening Baseline v1
+# Authority surface: P1-06-PHASE1-HARDENING-CLOSEOUT-PACK-1
+# Governed by: governance/canonical_roadmap.json (Phase 1 definition),
+#   governance/definition_of_done.v1.yaml, governance/cmdb_lite_registry.v1.yaml
+# Scope: Phase 1 completion criteria and substrate authority lock declaration
+
+version: "1.0.0"
+baseline_id: "PHASE1-HARDENING-BASELINE-V1"
+generated_at: "2026-04-21"
+authority_owner: "governance/authority_adr_0001_source_of_truth.md"
+phase_linkage: "Phase 1 (runtime_contract_foundation)"
+
+# ─────────────────────────────────────────────
+# PHASE IDENTITY
+# ─────────────────────────────────────────────
+phase_id: "phase_1"
+phase_label: "Phase 1 — Runtime Contract Foundation"
+phase_status: "substrate_authority_locked"
+description: >
+  Phase 1 establishes the machine-readable authority surface for all coding run
+  execution contracts. Its objective is a locked, reproducible substrate from which
+  Phase 2 (local runtime implementation) can build without needing to redesign or
+  re-govern the foundational contracts.
+
+# ─────────────────────────────────────────────
+# OBJECTIVE
+# What Phase 1 must accomplish
+# ─────────────────────────────────────────────
+objective:
+  primary: >
+    Create and ratify the complete set of governance contracts governing how coding
+    runs execute, what they may write, how results are normalized, and how validation
+    is sequenced. These contracts are the authority surface for Phase 2 runtime
+    implementation.
+
+  scope_boundary: >
+    Phase 1 is governance and substrate contract work only. Runtime implementation
+    (a live wrapped command runner, inference adapter integration, telemetry pipeline)
+    is Phase 2 work. Phase 1 ends when the contracts are in place and validated —
+    not when the runtime implements them.
+
+  success_criterion: >
+    Phase 1 is complete when all required_contracts exist as machine-readable YAML,
+    have passing seam tests, have emitted governance artifacts, and are cross-referenced
+    in this baseline document.
+
+# ─────────────────────────────────────────────
+# REQUIRED CONTRACTS
+# All governance contracts that must exist for Phase 1 closure
+# ─────────────────────────────────────────────
+required_contracts:
+  description: >
+    These contracts must exist as machine-readable YAML files in governance/ and
+    have corresponding spec documents in docs/specs/ before Phase 1 can be declared
+    materially locked.
+
+  model_profiles:
+    contract_path: "governance/model_profiles.v1.yaml"
+    spec_path: "docs/specs/model_profiles.md"
+    artifact_id: "P1-01-MODEL-PROFILES-VALIDATION-1"
+    artifact_path: "artifacts/governance/model_profiles_validation.json"
+    package_id: "P1-01-MODEL-PROFILES-1"
+    status: "present"
+
+  inference_gateway_contract:
+    contract_path: "governance/inference_gateway_contract.v1.yaml"
+    spec_path: "docs/specs/inference_gateway_contract.md"
+    artifact_id: "P1-02-INFERENCE-GATEWAY-CONTRACT-VALIDATION-1"
+    artifact_path: "artifacts/governance/inference_gateway_contract_validation.json"
+    package_id: "P1-02-INFERENCE-GATEWAY-CONTRACT-1"
+    status: "present"
+
+  workspace_contract:
+    contract_path: "governance/workspace_contract.v1.yaml"
+    spec_path: "docs/specs/workspace_contract.md"
+    artifact_id: "P1-03-WORKSPACE-CONTRACT-VALIDATION-1"
+    artifact_path: "artifacts/governance/workspace_contract_validation.json"
+    package_id: "P1-03-WORKSPACE-CONTRACT-1"
+    status: "present"
+
+  wrapped_command_contract:
+    contract_path: "governance/wrapped_command_contract.v1.yaml"
+    spec_path: "docs/specs/wrapped_command_contract.md"
+    artifact_id: "P1-05-WRAPPED-COMMAND-CONTRACT-VALIDATION-1"
+    artifact_path: "artifacts/governance/wrapped_command_contract_validation.json"
+    package_id: "P1-05-WRAPPED-COMMAND-CONTRACT-1"
+    status: "present"
+
+  artifact_root_contract:
+    contract_path: "governance/artifact_root_contract.v1.yaml"
+    spec_path: "docs/specs/artifact_root_contract.md"
+    artifact_id: "P1-06-ARTIFACT-ROOT-CONTRACT-VALIDATION-1"
+    artifact_path: "artifacts/governance/phase1_hardening_pack_validation.json"
+    package_id: "P1-06-PHASE1-HARDENING-CLOSEOUT-PACK-1"
+    status: "present"
+
+  telemetry_normalization_contract:
+    contract_path: "governance/telemetry_normalization_contract.v1.yaml"
+    spec_path: "docs/specs/telemetry_normalization_contract.md"
+    artifact_id: "P1-06-TELEMETRY-NORMALIZATION-VALIDATION-1"
+    artifact_path: "artifacts/governance/phase1_hardening_pack_validation.json"
+    package_id: "P1-06-PHASE1-HARDENING-CLOSEOUT-PACK-1"
+    status: "present"
+
+  local_run_validation_pack:
+    contract_path: "governance/local_run_validation_pack.v1.yaml"
+    spec_path: "docs/specs/local_run_validation_pack.md"
+    artifact_id: "P1-06-LOCAL-RUN-VALIDATION-PACK-VALIDATION-1"
+    artifact_path: "artifacts/governance/phase1_hardening_pack_validation.json"
+    package_id: "P1-06-PHASE1-HARDENING-CLOSEOUT-PACK-1"
+    status: "present"
+
+# ─────────────────────────────────────────────
+# COMPLETION REQUIREMENTS
+# What must be true for Phase 1 to be declared complete
+# ─────────────────────────────────────────────
+completion_requirements:
+  description: >
+    Phase 1 is complete when all of these conditions are simultaneously true.
+    Any unresolved condition is a Phase 1 blocker.
+
+  reproducible_local_runs:
+    requirement: >
+      A coding run can be executed locally — grounding inputs verified, runner
+      script executed, artifact emitted, seam tests passing — without any
+      manual environment repair (missing files, missing dependencies,
+      path fixups not declared in the package).
+    evidence_required: "passing seam tests for all Phase 1 contract packages"
+    status: "met"
+
+  complete_artifacts:
+    requirement: >
+      All governance artifacts declared in required_contracts[*].artifact_path
+      exist at their declared paths, parse as valid JSON, and contain all required
+      fields including artifact_id, generated_at, phase_linkage, authority_sources.
+    evidence_required: "artifact files present and passing seam test assertions"
+    status: "met"
+
+  no_manual_environment_repair:
+    requirement: >
+      No Phase 1 package required manual intervention to fix a missing dependency,
+      missing file, or environment state not captured in the package's grounding
+      inputs or validation order. Any exception must be documented in residual_notes.
+    evidence_required: "clean seam test run with no skips due to missing env state"
+    status: "met"
+
+  explicit_escalation_accounting:
+    requirement: >
+      Every Phase 1 package explicitly reports escalation_status. No package
+      left escalation_status unspecified. The escalation record is complete for
+      all packages in this phase.
+    evidence_required: "escalation_status in all artifact outputs; all report NOT ESCALATED"
+    status: "met"
+    phase1_escalation_summary: "0 escalations across all Phase 1 packages"
+
+# ─────────────────────────────────────────────
+# BLOCKERS
+# Outstanding items that would prevent Phase 1 closure
+# ─────────────────────────────────────────────
+blockers:
+  description: >
+    Blockers are conditions that prevent Phase 1 from being declared materially
+    locked. This list must exist even if empty. An empty blockers list means
+    Phase 1 completion requirements are all met.
+
+  unresolved: []
+
+  resolved:
+    - blocker_id: "P1-BLOCKER-01"
+      description: "Phase 1 contracts did not exist at session start"
+      resolution: "Created in packages P1-01 through P1-06 in this execution lane"
+      resolved_by: "P1-06-PHASE1-HARDENING-CLOSEOUT-PACK-1"
+
+# ─────────────────────────────────────────────
+# NOTES
+# Non-blocking observations and forward references
+# ─────────────────────────────────────────────
+notes:
+  phase2_scope: >
+    Phase 2 (local runtime implementation) picks up where Phase 1 leaves off.
+    Phase 2 scope includes: implementing framework/wrapped_command_runner.py,
+    wiring the telemetry emission pipeline, integrating the inference gateway
+    contract into framework/inference_adapter.py, and executing the local_run_
+    validation_pack sequence automatically at package end.
+
+  p1_04_note: >
+    Package P1-04 was not issued in this execution lane. The sequence jumped
+    from P1-03 (workspace contract) to P1-05 (wrapped command contract) and
+    then P1-06 (closeout pack). The P1-04 slot is reserved for a future
+    permission model contract if the control window issues it.
+
+  authority_lock_meaning: >
+    'substrate_authority_locked' means the contracts in required_contracts are
+    the authoritative definitions for Phase 1 execution semantics. They may be
+    amended by subsequent packages with explicit allowed_files declarations, but
+    they may not be silently replaced or overwritten.
+
+  exec_lane_commits:
+    branch: "exec-lane"
+    packages_executed:
+      - "P0-02-CORE-ADR-SET-1"
+      - "P0-03-EXECUTION-CONTROL-PACKAGE-1"
+      - "P0-04-CMDB-LITE-REGISTRY-1"
+      - "P0-05-DEFINITION-OF-DONE-1"
+      - "P0-06-AUTONOMY-SCORECARD-1"
+      - "P1-01-MODEL-PROFILES-1"
+      - "P1-02-INFERENCE-GATEWAY-CONTRACT-1"
+      - "P1-03-WORKSPACE-CONTRACT-1"
+      - "P1-05-WRAPPED-COMMAND-CONTRACT-1"
+      - "P1-06-PHASE1-HARDENING-CLOSEOUT-PACK-1"

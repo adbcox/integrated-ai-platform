@@ -1,0 +1,118 @@
+{
+  "artifact_id": "P1-06-PHASE1-HARDENING-PACK-VALIDATION-1",
+  "generated_at": "2026-04-21T15:53:16.499958+00:00",
+  "contracts_checked": [
+    "artifact_root_contract",
+    "telemetry_normalization_contract",
+    "local_run_validation_pack",
+    "phase1_hardening_baseline"
+  ],
+  "contracts_loaded": true,
+  "contract_section_summary": [
+    {
+      "name": "artifact_root_contract",
+      "path": "governance/artifact_root_contract.v1.yaml",
+      "loaded": true,
+      "sections_present": true,
+      "sections_checked": [
+        "version",
+        "artifact_root",
+        "separation_rules",
+        "write_policy",
+        "retention_policy",
+        "artifact_bundle_rules",
+        "exceptions"
+      ]
+    },
+    {
+      "name": "telemetry_normalization_contract",
+      "path": "governance/telemetry_normalization_contract.v1.yaml",
+      "loaded": true,
+      "sections_present": true,
+      "sections_checked": [
+        "version",
+        "telemetry_identity",
+        "required_fields",
+        "normalized_units",
+        "event_shapes",
+        "scoring_linkage",
+        "exceptions"
+      ]
+    },
+    {
+      "name": "local_run_validation_pack",
+      "path": "governance/local_run_validation_pack.v1.yaml",
+      "loaded": true,
+      "sections_present": true,
+      "sections_checked": [
+        "version",
+        "validation_sequence",
+        "required_checks",
+        "artifact_requirements",
+        "failure_handling",
+        "package_class_rules",
+        "exceptions"
+      ]
+    },
+    {
+      "name": "phase1_hardening_baseline",
+      "path": "governance/phase1_hardening_baseline.v1.yaml",
+      "loaded": true,
+      "sections_present": true,
+      "sections_checked": [
+        "version",
+        "phase_id",
+        "objective",
+        "required_contracts",
+        "completion_requirements",
+        "blockers",
+        "notes"
+      ]
+    }
+  ],
+  "baseline_links_checked": [
+    "model_profiles",
+    "inference_gateway_contract",
+    "workspace_contract",
+    "wrapped_command_contract",
+    "artifact_root_contract",
+    "telemetry_normalization_contract",
+    "local_run_validation_pack"
+  ],
+  "baseline_links_present": true,
+  "telemetry_required_fields_checked": [
+    "session_id",
+    "package_id",
+    "package_label",
+    "selected_profile",
+    "selected_backend",
+    "prompt_hash",
+    "response_hash",
+    "latency_ms",
+    "retry_count",
+    "escalation_status",
+    "validations_run",
+    "validation_results",
+    "artifacts_produced"
+  ],
+  "telemetry_required_fields_present": true,
+  "validation_steps_checked": [
+    "grounding_check",
+    "import_check",
+    "package_runner",
+    "emitted_artifact_parse",
+    "package_seam_tests",
+    "make_check"
+  ],
+  "validation_steps_present": true,
+  "content_errors": [],
+  "phase_linkage": "Phase 1 (runtime_contract_foundation)",
+  "authority_sources": [
+    "ADR-0003",
+    "ADR-0006",
+    "ADR-0007",
+    "governance/definition_of_done.v1.yaml",
+    "governance/autonomy_scorecard.v1.yaml",
+    "governance/execution_control_package.schema.json"
+  ]
+}

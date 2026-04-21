@@ -1,0 +1,288 @@
+---
+# Local Run Validation Pack v1
+# Authority surface: P1-06-PHASE1-HARDENING-CLOSEOUT-PACK-1
+# Governed by: governance/definition_of_done.v1.yaml,
+#   governance/execution_control_package.schema.json
+# Scope: validation sequence for all SUBSTRATE, LOCAL-FIRST, and ESCALATION packages
+
+version: "1.0.0"
+contract_id: "LOCAL-RUN-VALIDATION-PACK-V1"
+generated_at: "2026-04-21"
+authority_owner: "governance/authority_adr_0001_source_of_truth.md"
+adr_ref: "ADR-0003"
+phase_linkage: "Phase 1 (runtime_contract_foundation)"
+
+# ─────────────────────────────────────────────
+# VALIDATION SEQUENCE
+# Ordered steps every package must pass before acceptance
+# ─────────────────────────────────────────────
+validation_sequence:
+  description: >
+    The validation sequence is the ordered set of checks that every package
+    execution must pass before its outputs are accepted and committed. Steps
+    must be executed in order. A failing step triggers stop_on_failed_gate
+    unless the step is explicitly marked as non_blocking.
+
+  steps:
+    - step: 1
+      name: "grounding_check"
+      description: "Verify all declared grounding inputs exist and are non-empty"
+      command: "embedded in runner script (no separate command)"
+      blocking: true
+      on_failure: "HARD STOP — grounding inputs are a prerequisite for all subsequent validation"
+
+    - step: 2
+      name: "import_check"
+      description: "Verify the runner module imports without error"
+      command: "python3 -c 'import <runner_module>'"
+      blocking: true
+      on_failure: "HARD STOP — module import failure indicates broken runner"
+
+    - step: 3
+      name: "package_runner"
+      description: "Execute the package runner script; verify exit code 0"
+      command: "python3 bin/run_<package_slug>.py"
+      blocking: true
+      on_failure: "HARD STOP — runner failure; check runner output for specific gate"
+
+    - step: 4
+      name: "emitted_artifact_parse"
+      description: "Verify the emitted artifact exists, parses as JSON, and contains required fields"
+      command: "python3 -m json.tool artifacts/governance/<artifact>.json"
+      blocking: true
+      on_failure: "HARD STOP — artifact not produced or malformed"
+
+    - step: 5
+      name: "package_seam_tests"
+      description: "Run the package seam test suite; all tests must pass"
+      command: "python3 -m pytest tests/test_<package_slug>_seam.py -v"
+      blocking: true
+      on_failure: "HARD STOP — seam test failure; do not accept without full seam pass"
+
+    - step: 6
+      name: "make_check"
+      description: "Run make check; full repo syntax and shell validation"
+      command: "make check"
+      blocking: true
+      on_failure: "HARD STOP — repo-wide syntax failure; do not commit until passing"
+
+  sequence_is_ordered:
+    value: true
+    rule: >
+      Steps must be executed in order. Skipping a step is not permitted unless
+      the step is explicitly listed in the package's validation_order with
+      skip_condition documented. Reordering steps is a validation discipline
+      violation.
+
+# ─────────────────────────────────────────────
+# REQUIRED CHECKS
+# What each step must verify
+# ─────────────────────────────────────────────
+required_checks:
+  grounding_check:
+    must_verify:
+      - "All grounding input files exist"
+      - "All grounding input files have st_size > 50 bytes"
+    failure_action: "sys.exit(1) with HARD STOP message"
+
+  import_check:
+    must_verify:
+      - "Runner module imports without ImportError"
+      - "All required callables present (e.g., _load_yaml, _check_content)"
+    failure_action: "sys.exit(1) with HARD STOP message"
+
+  package_runner:
+    must_verify:
+      - "Runner exits with code 0"
+      - "Runner prints confirmation of required sections and fields"
+      - "Artifact path printed to stdout"
+    failure_action: "sys.exit(1); do not proceed to artifact parse"
+
+  emitted_artifact_parse:
+    must_verify:
+      - "Artifact file exists at declared path"
+      - "Artifact parses as valid JSON"
+      - "artifact_id field matches expected value"
+      - "yaml_loaded (or equivalent) is true"
+      - "All required artifact fields present"
+    failure_action: "sys.exit(1); artifact is malformed"
+
+  package_seam_tests:
+    must_verify:
+      - "All collected tests pass (0 failures, 0 errors)"
+      - "test_runner_script_executes passes"
+      - "test_content_check_passes passes"
+      - "test_emit_artifact passes"
+    failure_action: "sys.exit(1); do not accept partial seam pass"
+
+  make_check:
+    must_verify:
+      - "Shell script syntax check passes for all shell/ and bin/*.sh files"
+      - "Python syntax check passes for all Python files"
+    failure_action: "sys.exit(1); commit blocked until passing"
+
+# ─────────────────────────────────────────────
+# ARTIFACT REQUIREMENTS
+# What the emitted artifact must contain
+# ─────────────────────────────────────────────
+artifact_requirements:
+  description: >
+    Every package that passes the validation sequence must emit a governance
+    artifact. The artifact is the machine-readable record that the package
+    executed successfully and produced valid outputs.
+
+  required_fields_minimum:
+    - "artifact_id"
+    - "generated_at"
+    - "phase_linkage"
+    - "authority_sources"
+
+  required_fields_for_contract_packages:
+    - "artifact_id"
+    - "generated_at"
+    - "contract_path"
+    - "yaml_loaded"
+    - "required_sections_checked"
+    - "required_sections_present"
+    - "phase_linkage"
+    - "authority_sources"
+
+  artifact_id_must_match_package:
+    value: true
+    rule: >
+      The artifact_id must follow the naming convention derived from the
+      package_id: replace the package phase/number prefix with the artifact
+      semantic name. Example: package P1-06-... → artifact P1-06-...-VALIDATION-1.
+
+  generated_at_must_be_iso8601:
+    value: true
+    rule: >
+      The generated_at field must be an ISO 8601 timestamp with timezone.
+      Plain date strings (e.g., '2026-04-21' without time) are not permitted.
+
+# ─────────────────────────────────────────────
+# FAILURE HANDLING
+# What to do when a validation step fails
+# ─────────────────────────────────────────────
+failure_handling:
+  stop_on_failed_gate:
+    value: true
+    rule: >
+      A failed validation gate stops execution immediately. The package does
+      not proceed past a failed gate. No partial acceptance is possible — a
+      package either passes all gates or it does not pass.
+    hard_stop: true
+
+  no_accept_without_validation:
+    value: true
+    rule: >
+      A package cannot be accepted (committed, promoted, or cited as complete)
+      without passing the full validation sequence. Claiming completion without
+      validation evidence is a DoD violation.
+    hard_stop: false
+    action: "Flag in residual_notes; escalation candidate if persistent"
+
+  slice_only_rollback:
+    value: true
+    rule: >
+      On gate failure, rollback is scoped to files created by the current
+      package only (rollback_rule.remove_on_failure). Rollback must never
+      remove, overwrite, or revert pre-existing files. The workspace contract's
+      preserve_unrelated_changes rule applies to rollback.
+    hard_stop_on_overreach: true
+
+  partial_artifact_handling:
+    rule: >
+      If a package produces some but not all declared artifact_outputs before
+      a gate failure, the produced artifacts remain. They must be listed in
+      hard_stops_hit and residual_notes. They are not treated as accepted
+      artifacts unless the gate failure is resolved and the full validation
+      sequence is rerun.
+
+# ─────────────────────────────────────────────
+# PACKAGE CLASS RULES
+# How validation requirements differ by package class
+# ─────────────────────────────────────────────
+package_class_rules:
+  description: >
+    Validation requirements are the same for all package classes. The difference
+    is in how the package runner is executed and what counts as local autonomy.
+
+  substrate:
+    label: "SUBSTRATE"
+    runner_executor: "Claude Code (SUBSTRATE)"
+    inference_required: false
+    escalation_status_required: true
+    seam_tests_required: true
+    make_check_required: true
+    notes: >
+      SUBSTRATE packages are executed directly by Claude Code. No local model
+      inference is required. selected_profile and selected_backend may be null
+      in telemetry. All other validation gates are identical.
+
+  local_first:
+    label: "LOCAL-FIRST"
+    runner_executor: "Aider or local Ollama model"
+    inference_required: true
+    local_model_attempt_required: true
+    escalation_status_required: true
+    seam_tests_required: true
+    make_check_required: true
+    notes: >
+      LOCAL-FIRST packages must be attempted by a local model (Aider/Ollama)
+      first. If Claude Code performs the execution instead (claude rescue), the
+      package must be reported as escalation_status=ESCALATED in telemetry.
+      Passing all gates via claude rescue does not count as local autonomy progress.
+
+  escalation:
+    label: "ESCALATION"
+    runner_executor: "Manual or ESCALATION-routed"
+    escalation_status_required: true
+    escalation_must_be_explicit: true
+    seam_tests_required: true
+    make_check_required: true
+    notes: >
+      ESCALATION packages must explicitly report escalation_status=ESCALATED.
+      Validation gates still apply. The escalation does not waive seam tests
+      or make check requirements — it only routes execution differently.
+
+# ─────────────────────────────────────────────
+# EXCEPTIONS
+# Approved deviations from the standard validation sequence
+# ─────────────────────────────────────────────
+exceptions:
+  governance_only_packages_skip_import_check:
+    rule: >
+      Packages that produce only documentation files (ADRs, specs) without
+      a runner script may skip the import_check and package_runner steps if
+      the package explicitly declares no_runner=true. All other steps apply.
+    approved: true
+    scope: "Documentation-only packages with no_runner=true declaration"
+
+  seam_test_reuse_across_related_packages:
+    rule: >
+      A package that updates an existing contract file rather than creating a
+      new one may reuse the existing seam test suite with additional test
+      functions added. It does not need to create an entirely new seam test
+      file, provided the existing file is listed in allowed_files.
+    approved: true
+    scope: "Contract update packages with explicit seam test extension"
+
+  make_check_known_external_failure:
+    rule: >
+      If make check fails due to a pre-existing known failure in an unrelated
+      module (documented in residual_notes with specific file and error), the
+      package may proceed with that failure flagged. The package-specific
+      files must still pass make check. This exception requires explicit
+      documentation of the known failure in residual_notes.
+    approved: true
+    scope: "Pre-existing known failures in unrelated modules only"
+
+  phase2_defers_full_telemetry_emission:
+    rule: >
+      Phase 1 packages are not required to emit structured telemetry event
+      streams. The validation_sequence and artifact fields constitute the
+      Phase 1 telemetry record. Full structured event stream emission is
+      deferred to Phase 2 runtime implementation.
+    approved: true
+    scope: "All Phase 1 packages"

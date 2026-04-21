@@ -1,0 +1,242 @@
+---
+# Artifact Root Contract v1
+# Authority surface: P1-06-PHASE1-HARDENING-CLOSEOUT-PACK-1
+# Governed by: ADR-0006 (artifact bundle), governance/definition_of_done.v1.yaml,
+#   governance/execution_control_package.schema.json
+# Scope: all SUBSTRATE, LOCAL-FIRST, and ESCALATION coding run artifact persistence
+
+version: "1.0.0"
+contract_id: "ARTIFACT-ROOT-CONTRACT-V1"
+generated_at: "2026-04-21"
+authority_owner: "governance/authority_adr_0001_source_of_truth.md"
+adr_ref: "ADR-0006"
+phase_linkage: "Phase 1 (runtime_contract_foundation)"
+
+# ─────────────────────────────────────────────
+# ARTIFACT ROOT
+# Canonical paths where session artifacts must land
+# ─────────────────────────────────────────────
+artifact_root:
+  description: >
+    The artifact root is the collection of declared repository paths where session
+    outputs that must persist are written. The artifact root is distinct from both
+    the source mount (read-only by default) and the scratch mount (ephemeral).
+    Every persistent output must land at an artifact root path.
+
+  canonical_paths:
+    governance_artifacts: "artifacts/governance/"
+    baseline_validation: "artifacts/baseline_validation/"
+    capability_expansion: "artifacts/expansion/"
+    escalation_records: "artifacts/escalations/"
+    stage_outputs: "artifacts/stage_rag4/, artifacts/expansion/LEDT/, etc."
+    adr_documents: "docs/adr/"
+    spec_documents: "docs/specs/"
+    governance_state: "governance/"
+
+  root_is_distinct_from_source:
+    value: true
+    rule: >
+      The artifact root is not the same as the source mount. Writing a file to
+      the source mount is not an artifact write — it is a source modification.
+      Source modifications require explicit allowed_files authorization.
+      Artifact writes require explicit artifact_outputs declaration.
+    hard_stop_on_conflation: false
+
+  root_is_distinct_from_scratch:
+    value: true
+    rule: >
+      The artifact root is not the scratch mount. Files written to /tmp or
+      pytest tmp_path are scratch writes, not artifact writes. An artifact
+      declared at a /tmp path would be absent after scratch cleanup.
+      Artifact root paths must be repository-relative, not temp-directory paths.
+    hard_stop_on_scratch_artifact: true
+
+  gitignore_note: >
+    The artifacts/ directory is listed in .gitignore. Governance artifacts under
+    artifacts/governance/ must be committed with `git add -f` to override the
+    ignore rule. This is the only approved exception to normal git add behavior
+    for artifact persistence.
+
+# ─────────────────────────────────────────────
+# SEPARATION RULES
+# What cannot be an artifact root path
+# ─────────────────────────────────────────────
+separation_rules:
+  repo_relative_writes_forbidden:
+    value: true
+    rule: >
+      Arbitrary repository-relative writes during execution are forbidden.
+      A file written to any repo path that is not in the canonical artifact_root
+      paths AND not in the package's allowed_files is a contract violation.
+    hard_stop_on_violation: true
+    detection: >
+      Any untracked or modified file appearing in git status at session end that
+      is neither in allowed_files nor gitignored is an artifact_root separation
+      violation.
+
+  arbitrary_repo_writes_forbidden:
+    value: true
+    rule: >
+      Session execution must not write arbitrary repo-relative artifacts. All
+      persistent outputs must land in declared artifact root paths as specified
+      in the package's artifact_outputs field. Writing JSON, YAML, or other
+      persistent files to ad-hoc repository paths (project root, bin/, config/,
+      undeclared governance/ subpaths) is forbidden.
+    hard_stop_on_violation: false
+    action_on_violation: "Flag in residual_notes; surface to governance review"
+
+  scratch_cannot_be_artifact:
+    value: true
+    rule: >
+      Scratch paths (/tmp, pytest tmp_path) are never valid artifact root paths.
+      An artifact_outputs entry pointing to a /tmp path or a pytest tmp_path is
+      a contract violation — the artifact will not persist after session cleanup.
+    hard_stop_on_violation: true
+
+  framework_is_not_artifact_root:
+    value: true
+    rule: >
+      framework/ paths are never valid artifact root paths. Writing to framework/
+      during a coding run requires explicit allowed_files declaration and is
+      subject to the workspace contract's forbidden_always rules.
+
+# ─────────────────────────────────────────────
+# WRITE POLICY
+# What a session may write to the artifact root
+# ─────────────────────────────────────────────
+write_policy:
+  description: >
+    Writes to the artifact root are permitted only for paths declared in the
+    package's artifact_outputs field or allowed_files field. The write policy
+    narrows which artifact root paths are accessible in a given session.
+
+  declaration_required:
+    value: true
+    rule: >
+      Every artifact root write must be traceable to a specific declaration:
+      - JSON/YAML artifacts: must appear in artifact_outputs with artifact_id and required_fields
+      - Source files (specs, ADRs, governance YAML): must appear in allowed_files
+      An undeclared artifact root write is a violation even if the path is canonical.
+
+  allowed_write_targets:
+    description: "Canonical artifact root write targets, subject to package declaration"
+    new_governance_artifacts: "artifacts/governance/*.json (new files only)"
+    new_baseline_validation: "artifacts/baseline_validation/*.json (new files only)"
+    new_expansion_artifacts: "artifacts/expansion/**/*.json (new files only)"
+    new_escalation_records: "artifacts/escalations/*.json (new files only)"
+    new_adr_files: "docs/adr/*.md (new ADR documents only)"
+    new_spec_files: "docs/specs/*.md (new specification documents only)"
+    new_governance_yaml: "governance/*.yaml, governance/*.json (new files only)"
+
+  overwrite_existing_requires_explicit_entry:
+    value: true
+    rule: >
+      Overwriting an existing artifact requires an explicit allowed_files or
+      artifact_outputs entry naming that exact file. The 'new files only'
+      convention for allowed_write_targets applies. Overwriting without an
+      explicit entry is a contract violation.
+
+# ─────────────────────────────────────────────
+# RETENTION POLICY
+# How long artifacts persist and who decides
+# ─────────────────────────────────────────────
+retention_policy:
+  authority: "governance/definition_of_done.v1.yaml::required_artifacts"
+  adr_ref: "ADR-0006"
+
+  governance_artifacts:
+    path: "artifacts/governance/"
+    retention: "indefinite"
+    commit_required: true
+    force_add_required: true
+    reason: "Governance artifacts are authority-chain evidence; must never be auto-purged"
+
+  baseline_validation:
+    path: "artifacts/baseline_validation/"
+    retention: "per cmdb_lite_registry.v1.yaml::artifact_policy"
+    commit_required: true
+    force_add_required: true
+
+  expansion_artifacts:
+    path: "artifacts/expansion/"
+    retention: "per cmdb_lite_registry.v1.yaml::artifact_policy"
+    commit_required: false
+    note: "Expansion artifacts are gitignored; persistence via explicit commit if needed"
+
+  escalation_records:
+    path: "artifacts/escalations/"
+    retention: "indefinite"
+    commit_required: true
+    reason: "Escalation records are audit evidence"
+
+  spec_and_adr:
+    path: "docs/adr/, docs/specs/"
+    retention: "indefinite"
+    commit_required: true
+
+# ─────────────────────────────────────────────
+# ARTIFACT BUNDLE RULES
+# Shape of the artifact bundle produced per session
+# ─────────────────────────────────────────────
+artifact_bundle_rules:
+  adr_ref: "ADR-0006"
+  description: >
+    Each session that produces a governance artifact must produce an artifact_bundle
+    record. The bundle is the complete accounting of artifacts produced, their paths,
+    artifact_ids, and content hashes.
+
+  required_fields:
+    artifact_id: "Unique identifier following package_id naming convention"
+    generated_at: "ISO 8601 timestamp with timezone"
+    artifact_outputs: "List of declared artifact paths produced"
+    content_hash: "SHA-256 of the artifact content (for governance artifacts)"
+    phase_linkage: "Phase and package this artifact belongs to"
+    authority_sources: "ADRs and governance files grounding this artifact"
+
+  content_hash_algorithm: "SHA-256"
+  content_hash_encoding: "hex"
+
+  artifact_id_pattern: "^[A-Z][A-Z0-9]*-[A-Z0-9]+-[A-Z0-9-]+-[0-9]+$"
+  artifact_id_examples:
+    - "P1-06-ARTIFACT-ROOT-CONTRACT-VALIDATION-1"
+    - "P0-02-CORE-ADR-INDEX-1"
+    - "LACE2-P9-REAL-FILE-RUNNER-VALIDATION-1"
+
+# ─────────────────────────────────────────────
+# EXCEPTIONS
+# Approved deviations from the artifact root contract
+# ─────────────────────────────────────────────
+exceptions:
+  artifacts_gitignore_override:
+    rule: >
+      artifacts/ is gitignored. Governance artifacts under artifacts/governance/
+      must be committed with `git add -f` to override the ignore rule. This is
+      the approved exception to normal git add behavior for artifact persistence.
+    approved: true
+    scope: "artifacts/governance/ only"
+
+  seam_test_tmp_path:
+    rule: >
+      Seam tests may write artifacts to pytest tmp_path during test execution.
+      These are scratch-mount writes used to verify artifact shape without
+      persisting to the repository. tmp_path artifacts are not artifact root
+      outputs and must not be declared in artifact_outputs.
+    approved: true
+    scope: "tests/test_*_seam.py files using pytest tmp_path fixture"
+
+  baseline_latest_overwrite:
+    rule: >
+      The file artifacts/baseline_validation/latest.json may be overwritten
+      without a new artifact_id if the package's allowed_files explicitly names it.
+      This is the approved exception for rolling baseline snapshots.
+    approved: true
+    scope: "artifacts/baseline_validation/latest.json only, with explicit allowed_files entry"
+
+  partial_artifacts_on_failure:
+    rule: >
+      On gate failure or hard stop, partial artifacts may remain in artifact root
+      paths. These are not violations — they must be listed in hard_stops_hit and
+      residual_notes. The session is not required to clean up partial artifacts
+      from the artifact root (unlike the scratch mount).
+    approved: true
+    scope: "On gate failure or hard stop only"

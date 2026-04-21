@@ -1,0 +1,296 @@
+---
+# Telemetry Normalization Contract v1
+# Authority surface: P1-06-PHASE1-HARDENING-CLOSEOUT-PACK-1
+# Governed by: ADR-0004 (inference gateway), ADR-0007 (autonomy scorecard),
+#   governance/definition_of_done.v1.yaml
+# Scope: all SUBSTRATE, LOCAL-FIRST, and ESCALATION coding run telemetry emission
+
+version: "1.0.0"
+contract_id: "TELEMETRY-NORMALIZATION-CONTRACT-V1"
+generated_at: "2026-04-21"
+authority_owner: "governance/authority_adr_0001_source_of_truth.md"
+adr_ref: "ADR-0004"
+phase_linkage: "Phase 1 (runtime_contract_foundation)"
+
+# ─────────────────────────────────────────────
+# TELEMETRY IDENTITY
+# What a telemetry record is and who owns it
+# ─────────────────────────────────────────────
+telemetry_identity:
+  description: >
+    A telemetry record is the normalized output capture for a single package
+    execution. It is the governance record of what ran, on what model, with what
+    result, at what latency, and whether any escalation or validation failure
+    occurred. Telemetry records are the input surface for the autonomy scorecard.
+
+  record_type: "package_execution_telemetry"
+  one_record_per_package: true
+  authority: "governance/definition_of_done.v1.yaml::telemetry_completeness"
+  scoring_input: "governance/autonomy_scorecard.v1.yaml"
+
+  telemetry_is_not_optional:
+    value: true
+    rule: >
+      Every package execution that produces a governance artifact must also emit
+      a complete telemetry record. Incomplete telemetry is a DoD violation.
+      Telemetry fields that cannot be measured must be reported as null with an
+      explicit reason — omitting the field entirely is not permitted.
+    hard_stop_on_incomplete_telemetry: false
+    action: "Flag as telemetry_incomplete in residual_notes; do not block commit"
+
+# ─────────────────────────────────────────────
+# REQUIRED FIELDS
+# All fields that must appear in a normalized telemetry record
+# ─────────────────────────────────────────────
+required_fields:
+  session_id:
+    type: "string"
+    description: "Unique identifier for the session that executed the package"
+    nullable: false
+
+  package_id:
+    type: "string"
+    description: "Package identifier (matches execution_control_package.schema.json package_id)"
+    pattern: "^[A-Z][A-Z0-9]*-[A-Z0-9]+-[A-Z0-9-]+-[0-9]+$"
+    nullable: false
+
+  package_label:
+    type: "string"
+    allowed_values: ["SUBSTRATE", "LOCAL-FIRST", "ESCALATION"]
+    description: "Label of the package as declared in the execution control package"
+    nullable: false
+
+  selected_profile:
+    type: "string"
+    description: "Model profile used for this package execution (fast/balanced/hard/long_context/substrate)"
+    nullable: true
+    null_reason: "null if no inference was performed in this package"
+
+  selected_backend:
+    type: "string"
+    allowed_values: ["ollama", "remote_api", "substrate", "none"]
+    description: "Backend used for inference; 'none' if no inference performed"
+    nullable: false
+
+  prompt_hash:
+    type: "string"
+    description: "SHA-256 hash of the primary prompt submitted to the model"
+    nullable: true
+    null_reason: "null if no inference was performed"
+
+  response_hash:
+    type: "string"
+    description: "SHA-256 hash of the primary model response"
+    nullable: true
+    null_reason: "null if no inference was performed"
+
+  latency_ms:
+    type: "integer"
+    description: "Wall-clock latency from prompt submission to response receipt in milliseconds"
+    nullable: true
+    null_reason: "null if no inference was performed or measurement failed"
+
+  retry_count:
+    type: "integer"
+    description: "Number of inference retries performed in this execution (0 = no retries)"
+    nullable: false
+    default: 0
+
+  escalation_status:
+    type: "string"
+    allowed_values: ["NOT_ESCALATED", "ESCALATED", "ESCALATION_CANDIDATE"]
+    description: >
+      Explicit escalation status for this package execution. Must be reported
+      even when not escalated — 'NOT_ESCALATED' is a valid value and must be
+      present. Omitting this field is not permitted.
+    nullable: false
+
+  validations_run:
+    type: "list of strings"
+    description: >
+      Ordered list of validation steps executed (e.g., grounding_check,
+      yaml_load, required_sections, content_check, seam_tests, make_check)
+    nullable: false
+    min_length: 1
+
+  validation_results:
+    type: "object"
+    description: >
+      Key-value map of validation step name to result (pass/fail/skip).
+      Must include one entry per step in validations_run.
+    nullable: false
+
+  artifacts_produced:
+    type: "list of strings"
+    description: >
+      List of artifact root paths written by this package execution.
+      Empty list if no artifacts were produced.
+    nullable: false
+
+# ─────────────────────────────────────────────
+# NORMALIZED UNITS
+# Standard units for numeric telemetry fields
+# ─────────────────────────────────────────────
+normalized_units:
+  latency_ms:
+    unit: "milliseconds"
+    type: "integer"
+    precision: "wall-clock, not CPU time"
+
+  duration_ms:
+    unit: "milliseconds"
+    type: "integer"
+    precision: "wall-clock from command start to completion"
+
+  retry_count:
+    unit: "count"
+    type: "integer"
+    minimum: 0
+
+  token_counts:
+    unit: "tokens"
+    type: "object"
+    fields: ["prompt_tokens", "completion_tokens", "total_tokens"]
+
+  timestamp:
+    format: "ISO 8601 with timezone (e.g., 2026-04-21T00:00:00+00:00)"
+    timezone: "UTC preferred; local timezone acceptable with explicit offset"
+
+# ─────────────────────────────────────────────
+# EVENT SHAPES
+# Standard shapes for telemetry events emitted during execution
+# ─────────────────────────────────────────────
+event_shapes:
+  description: >
+    Telemetry events are emitted at key points during package execution.
+    Each event has a standard shape so downstream scoring can aggregate
+    across packages consistently.
+
+  package_start_event:
+    event_type: "package_start"
+    required_fields: ["event_type", "package_id", "package_label", "session_id", "timestamp"]
+
+  validation_gate_event:
+    event_type: "validation_gate"
+    required_fields: ["event_type", "package_id", "gate_name", "gate_result", "timestamp"]
+    gate_result_values: ["pass", "fail", "skip"]
+
+  inference_call_event:
+    event_type: "inference_call"
+    required_fields:
+      - "event_type"
+      - "package_id"
+      - "profile_id"
+      - "backend"
+      - "prompt_hash"
+      - "response_hash"
+      - "latency_ms"
+      - "retry_count"
+      - "finish_reason"
+      - "timestamp"
+
+  artifact_emit_event:
+    event_type: "artifact_emit"
+    required_fields: ["event_type", "package_id", "artifact_id", "artifact_path", "timestamp"]
+
+  package_end_event:
+    event_type: "package_end"
+    required_fields:
+      - "event_type"
+      - "package_id"
+      - "escalation_status"
+      - "validations_run"
+      - "validation_results"
+      - "artifacts_produced"
+      - "timestamp"
+
+# ─────────────────────────────────────────────
+# SCORING LINKAGE
+# How telemetry fields map to autonomy scorecard metrics
+# ─────────────────────────────────────────────
+scoring_linkage:
+  description: >
+    The autonomy scorecard (governance/autonomy_scorecard.v1.yaml) is computed
+    from normalized telemetry records. This section defines the mapping from
+    telemetry fields to scorecard metrics.
+
+  authority: "governance/autonomy_scorecard.v1.yaml"
+
+  first_pass_success:
+    derived_from: "validation_results — pass on first attempt (retry_count == 0)"
+    formula: "count(packages where all gates pass AND retry_count == 0) / count(all packages)"
+
+  validation_pass_rate:
+    derived_from: "validation_results — fraction of gates that pass"
+    formula: "count(pass gates) / count(total gates) across all packages"
+
+  escalation_rate:
+    derived_from: "escalation_status — fraction of packages with ESCALATED status"
+    formula: "count(ESCALATED) / count(all packages)"
+    note: >
+      ESCALATION_CANDIDATE does not count as escalated for scoring purposes.
+      Only explicit ESCALATED status contributes to escalation_rate.
+
+  artifact_completeness:
+    derived_from: "artifacts_produced — all declared artifact_outputs present"
+    formula: "count(packages where len(artifacts_produced) == len(declared_artifact_outputs)) / count(all packages)"
+
+  retry_count_aggregation:
+    derived_from: "retry_count — sum and per-package distribution"
+    formula: "sum(retry_count) across all packages; average = sum / count"
+
+  claude_rescue_not_local_autonomy:
+    rule: >
+      If a package is labeled LOCAL-FIRST but selected_backend is 'substrate'
+      (meaning Claude Code executed the work instead of a local model), that
+      package must be counted as an escalation for scoring purposes, not as
+      local autonomy progress.
+    hard_stop: false
+    action: "Set escalation_status = ESCALATED in the telemetry record; do not claim local autonomy credit"
+    authority: "governance/definition_of_done.v1.yaml::acceptance_rules.local_first.claude_rescue_not_local_autonomy"
+
+# ─────────────────────────────────────────────
+# EXCEPTIONS
+# Approved deviations from full telemetry normalization
+# ─────────────────────────────────────────────
+exceptions:
+  substrate_packages_no_inference:
+    rule: >
+      SUBSTRATE packages executed directly by Claude Code do not perform
+      local model inference. Fields prompt_hash, response_hash, latency_ms,
+      and selected_profile may be null for SUBSTRATE packages. The fields
+      must still appear in the telemetry record with null value — they must
+      not be omitted.
+    approved: true
+    scope: "SUBSTRATE-labeled packages only"
+
+  seam_tests_not_telemetry_emitters:
+    rule: >
+      Seam tests (tests/test_*_seam.py) do not emit telemetry records. Test
+      execution is a validation step within a package — the package itself
+      emits one telemetry record that includes the seam test result in
+      validation_results. Tests do not emit their own records.
+    approved: true
+    scope: "All seam tests"
+
+  escalation_packages_reduced_telemetry:
+    rule: >
+      ESCALATION packages that terminate with a hard stop before inference
+      may emit partial telemetry. Required fields that cannot be captured
+      before the hard stop may be null with null_reason='hard_stop_before_capture'.
+      escalation_status must still be ESCALATED and validations_run must still
+      record the gates attempted before the hard stop.
+    approved: true
+    scope: "ESCALATION packages with pre-inference hard stops"
+
+  claude_rescue_counts_as_escalation:
+    rule: >
+      A LOCAL-FIRST package where Claude Code performs the execution (not a
+      local Ollama model) must be recorded as escalation_status=ESCALATED
+      even if the package otherwise passes all gates. This is a scoring rule,
+      not a hard stop — the package may still commit its outputs. But the
+      telemetry record must accurately reflect that local autonomy was not
+      demonstrated.
+    approved: true
+    scope: "LOCAL-FIRST packages where selected_backend is 'substrate'"
+    authority: "governance/definition_of_done.v1.yaml::acceptance_rules.local_first.claude_rescue_not_local_autonomy"
