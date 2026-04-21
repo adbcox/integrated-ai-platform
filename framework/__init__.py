@@ -833,3 +833,5 @@ from .artifact_packaging_gate import ArtifactPackagingGate, BundledArtifact
 from .execution_trace_enricher import ExecutionTraceEnricher, EnrichedTrace
 
 from .replay_gate import ReplayGate, ReplaySpec
+
+from .planner_executor_handoff import PlannerExecutorHandoff, HandoffSpec, ExecutionOrder
