@@ -68,3 +68,13 @@ Define the smallest useful and coherent first implementation slice.
 ## Notes
 
 Optional implementation, risk, or sequencing notes.
+
+## Mandatory intake synchronization checklist
+
+Before considering the roadmap intake complete:
+
+- [ ] Add or update the normalized item entry in `docs/roadmap/ROADMAP_INDEX.md`
+- [ ] Check whether this intake changes strategic priority, pull order, or roadmap ranking
+- [ ] If yes, update `docs/roadmap/ROADMAP_MASTER.md` in the same intake cycle
+- [ ] If detailed normalization is needed, add a dated sync/supporting file under `docs/roadmap/`
+- [ ] Do not leave the item only in chat, issues, or legacy `roadmap/` files
