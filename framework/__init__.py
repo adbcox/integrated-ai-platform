@@ -32,6 +32,7 @@ from .workspace import WorkspaceContext, WorkspaceController
 from .worker_runtime import WorkerPool, WorkerRuntime
 from .tool_bridge import SCHEMA_TOOL_NAMES, is_schema_action, tool_name_for
 from .typed_permission_gate import PermissionRule, ToolPermission, TypedPermissionGate
+from .gated_tool_dispatch import GatedDispatchError, gated_run_command, gated_run_tests
 from .tool_registry import DEFAULT_REGISTRY, ToolContractEntry, ToolRegistry
 from .tool_schema import (
     ApplyPatchAction,
@@ -123,4 +124,7 @@ __all__ = [
     "PermissionRule",
     "ToolPermission",
     "TypedPermissionGate",
+    "GatedDispatchError",
+    "gated_run_command",
+    "gated_run_tests",
 ]
