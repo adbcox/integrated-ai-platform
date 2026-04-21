@@ -1,5 +1,12 @@
 # Integrated AI Platform Roadmap
 
+> **Legacy roadmap view:** This file is a historical planning and package-progression artifact.
+> **Canonical normalized roadmap location:** `docs/roadmap/`
+> **Canonical backlog index:** `docs/roadmap/ROADMAP_INDEX.md`
+>
+> Use `docs/roadmap/` for all new roadmap items, normalized backlog maintenance, and roadmap-to-execution linkage.
+> Treat this file as a legacy execution/planning summary unless and until it is migrated into the canonical roadmap system.
+
 ## Program status
 
 - Current working stream: Phase 6 — Live-Operating Bridge
@@ -23,6 +30,7 @@
 3. Store long execution-ready handoffs and large artifacts in repo-backed text files.
 4. Re-baseline each next package against the most recent accepted HEAD.
 5. Maintain additive-first package discipline.
+6. Add or amend normalized roadmap items in `docs/roadmap/` first, then derive execution artifacts from there.
 
 ## Next actions
 
