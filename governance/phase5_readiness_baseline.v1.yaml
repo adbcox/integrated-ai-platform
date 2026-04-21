@@ -1,0 +1,160 @@
+---
+# Phase 5 Readiness Baseline v1
+# Authority surface: P4-01-SELF-SUFFICIENCY-UPLIFT-AND-PHASE5-READINESS-PACK-1
+# Governed by: governance/phase4_uplift_baseline.v1.yaml,
+#   governance/local_run_validation_pack.v1.yaml,
+#   governance/definition_of_done.v1.yaml
+# Scope: Phase 5 entry readiness criteria and promotion gate
+
+version: "1.0.0"
+baseline_id: "PHASE5-READINESS-BASELINE-V1"
+generated_at: "2026-04-21"
+authority_owner: "governance/authority_adr_0001_source_of_truth.md"
+phase_linkage: "Phase 5 (live_local_model_integration)"
+
+# ─────────────────────────────────────────────
+# PHASE IDENTITY
+# ─────────────────────────────────────────────
+phase_id: "phase_5"
+phase_label: "Phase 5 — Live Local Model Integration"
+phase_status: "not_started"
+description: >
+  Phase 5 is the first phase where real model backend execution (Ollama / Aider)
+  is wired into the developer assistant loop. Tasks in Phase 5 will perform
+  real file modifications, real patch generation, and real validation runs —
+  not synthetic inspect/validate steps. Entry to Phase 5 requires evidence
+  from Phase 4 uplift surfaces demonstrating self-sufficiency readiness.
+
+# ─────────────────────────────────────────────
+# READINESS DIMENSIONS
+# ─────────────────────────────────────────────
+readiness_dimensions:
+  description: >
+    Five dimensions must be evaluated and reported before Phase 5 may begin.
+    Each dimension maps to a Phase5ReadinessEvaluatorV1 check.
+
+  artifact_completeness:
+    description: >
+      All Phase 4 uplift artifact fields must be present and non-null.
+      The artifact must parse correctly and report all_checks_passed = true.
+    evaluator_field: "artifact_complete"
+    threshold: true
+    blocking: true
+
+  validation_pass_rate:
+    description: >
+      The uplift runner must achieve pass_rate >= 0.75 on synthetic
+      task-class cases. This validates that the uplift surfaces function
+      correctly across at least 3/4 of the default task classes.
+    evaluator_field: "validation_pass_rate"
+    threshold: 0.75
+    blocking: true
+
+  escalation_accounting:
+    description: >
+      All outputs from Phase 4 uplift surfaces must carry an explicit
+      escalation_status field. Absence of this field in any output is
+      a blocking gap.
+    evaluator_field: "escalation_status_present"
+    threshold: true
+    blocking: true
+
+  first_pass_success:
+    description: >
+      At least 50% of uplift cases must succeed on the first attempt
+      (no retry required). This signals that the task-class routing
+      and prompt guidance are directionally correct.
+    evaluator_field: "first_pass_success_signal"
+    threshold: 0.50
+    blocking: true
+
+  retry_discipline:
+    description: >
+      All retried cases must stay within the declared retry_budget
+      from RoutingPolicyUpliftV1. Budget overruns indicate the
+      routing policy is miscalibrated.
+    evaluator_field: "retries_within_budget"
+    threshold: true
+    blocking: true
+
+# ─────────────────────────────────────────────
+# EVIDENCE REQUIREMENTS
+# ─────────────────────────────────────────────
+evidence_requirements:
+  description: >
+    Phase 5 entry requires the following evidence artifacts to be
+    present and passing before the first Phase 5 package is issued.
+
+  required_artifacts:
+    - artifact_path: "artifacts/substrate/phase4_uplift_pack_check.json"
+      required_fields:
+        - phase4_pack
+        - all_checks_passed
+        - uplift_cases_run
+        - uplift_pass_rate
+        - readiness_evaluated
+        - readiness_ready
+        - blocking_gaps
+      minimum_values:
+        uplift_cases_run: 4
+        uplift_pass_rate: 0.75
+
+  required_baselines:
+    - governance/phase4_uplift_baseline.v1.yaml
+    - governance/phase3_mvp_baseline.v1.yaml
+    - governance/phase2_substrate_baseline.v1.yaml
+
+  required_seam_tests:
+    - tests/test_phase4_uplift_pack_seam.py
+
+# ─────────────────────────────────────────────
+# BLOCKING CONDITIONS
+# ─────────────────────────────────────────────
+blocking_conditions:
+  description: >
+    Any of the following conditions blocks Phase 5 entry until resolved.
+
+  conditions:
+    - id: "BC-P5-01"
+      description: "phase4_uplift_pack_check.json does not exist or does not parse"
+      resolution: "Re-run bin/run_phase4_uplift_pack_check.py and verify artifact"
+
+    - id: "BC-P5-02"
+      description: "all_checks_passed is false in the Phase 4 uplift artifact"
+      resolution: "Identify which gate failed in check_details and resolve"
+
+    - id: "BC-P5-03"
+      description: "uplift_pass_rate < 0.75 in the Phase 4 uplift artifact"
+      resolution: "Fix failing uplift cases; re-run runner"
+
+    - id: "BC-P5-04"
+      description: "readiness_ready is false with blocking_gaps non-empty"
+      resolution: "Address each blocking gap listed; re-evaluate readiness"
+
+    - id: "BC-P5-05"
+      description: "escalation_status absent from Phase 4 uplift outputs"
+      resolution: "Add explicit escalation_status to all uplift surface outputs"
+
+    - id: "BC-P5-06"
+      description: "seam tests for Phase 4 fail"
+      resolution: "Fix seam test failures before Phase 5 entry"
+
+# ─────────────────────────────────────────────
+# PROMOTION READINESS GATE
+# ─────────────────────────────────────────────
+promotion_readiness_gate:
+  description: >
+    Phase 5 entry is authorized when ALL of the following are true:
+      1. All five readiness dimensions are met (Phase5ReadinessEvaluatorV1.ready = true)
+      2. No blocking conditions are active
+      3. All required evidence artifacts are present and valid
+      4. make check passes
+      5. Seam tests for Phase 4 pass
+
+  gate_status: "pending"
+  gate_cleared_by: null
+  note: >
+    This gate is evaluated by running Phase5ReadinessEvaluatorV1 against
+    the Phase 4 uplift artifact evidence. Gate is NOT cleared at Phase 4
+    package creation time; it requires Phase 5 candidate evidence to be
+    scored against this baseline.

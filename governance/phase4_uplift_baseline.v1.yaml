@@ -1,0 +1,225 @@
+---
+# Phase 4 Self-Sufficiency Uplift Baseline v1
+# Authority surface: P4-01-SELF-SUFFICIENCY-UPLIFT-AND-PHASE5-READINESS-PACK-1
+# Governed by: governance/phase3_mvp_baseline.v1.yaml,
+#   governance/local_run_validation_pack.v1.yaml,
+#   governance/definition_of_done.v1.yaml
+# Scope: Phase 4 self-sufficiency uplift completion criteria
+
+version: "1.0.0"
+baseline_id: "PHASE4-UPLIFT-BASELINE-V1"
+generated_at: "2026-04-21"
+authority_owner: "governance/authority_adr_0001_source_of_truth.md"
+phase_linkage: "Phase 4 (self_sufficiency_uplift)"
+
+# ─────────────────────────────────────────────
+# PHASE IDENTITY
+# ─────────────────────────────────────────────
+phase_id: "phase_4"
+phase_label: "Phase 4 — Self-Sufficiency Uplift"
+phase_status: "in_progress"
+description: >
+  Phase 4 builds the self-sufficiency uplift surfaces on top of the Phase 3 MVP.
+  Its objective is to close the gap between a bounded developer-assistant loop
+  (Phase 3) and a loop that can re-plan, inject critique, and route to the right
+  model profile based on task class and difficulty.
+  No live model backend is required yet; Phase 4 proves the prompt pack,
+  failure memory, critique injection, and routing policy surfaces are present,
+  callable, and emit structured evidence for Phase 5 entry evaluation.
+
+# ─────────────────────────────────────────────
+# REQUIRED MODULES
+# ─────────────────────────────────────────────
+required_modules:
+  description: >
+    These modules must exist as importable Python files under framework/.
+    They are the Phase 4 product slice on top of the Phase 3 MVP.
+
+  task_class_prompt_pack_v1:
+    module_path: "framework/task_class_prompt_pack_v1.py"
+    package_id: "P4-01-SELF-SUFFICIENCY-UPLIFT-AND-PHASE5-READINESS-PACK-1"
+    classes: ["TaskClassPromptPackV1", "PromptPackEntryV1"]
+    status: "present"
+
+  failure_memory_v1:
+    module_path: "framework/failure_memory_v1.py"
+    package_id: "P4-01-SELF-SUFFICIENCY-UPLIFT-AND-PHASE5-READINESS-PACK-1"
+    classes: ["FailureMemoryV1", "FailureRecordV1", "FailureSummaryV1"]
+    status: "present"
+
+  critique_injection_v1:
+    module_path: "framework/critique_injection_v1.py"
+    package_id: "P4-01-SELF-SUFFICIENCY-UPLIFT-AND-PHASE5-READINESS-PACK-1"
+    classes: ["CritiqueInjectionV1", "CritiqueResultV1"]
+    status: "present"
+
+  routing_policy_uplift_v1:
+    module_path: "framework/routing_policy_uplift_v1.py"
+    package_id: "P4-01-SELF-SUFFICIENCY-UPLIFT-AND-PHASE5-READINESS-PACK-1"
+    classes: ["RoutingPolicyUpliftV1", "RoutingDecisionV1"]
+    status: "present"
+
+  phase5_readiness_v1:
+    module_path: "framework/phase5_readiness_v1.py"
+    package_id: "P4-01-SELF-SUFFICIENCY-UPLIFT-AND-PHASE5-READINESS-PACK-1"
+    classes: ["Phase5ReadinessEvaluatorV1", "Phase5ReadinessResultV1"]
+    status: "present"
+
+  # Phase 3 MVP modules (inherited)
+  developer_assistant_loop_v1:
+    module_path: "framework/developer_assistant_loop_v1.py"
+    package_id: "P3-01-DEVELOPER-ASSISTANT-MVP-PACK-1"
+    classes: ["DeveloperAssistantLoopV1", "LoopResultV1"]
+    status: "present"
+
+  mvp_benchmark_runner_v1:
+    module_path: "framework/mvp_benchmark_runner_v1.py"
+    package_id: "P3-01-DEVELOPER-ASSISTANT-MVP-PACK-1"
+    classes: ["MVPBenchmarkRunnerV1", "BenchmarkSuiteResultV1"]
+    status: "present"
+
+# ─────────────────────────────────────────────
+# REQUIRED CAPABILITIES
+# ─────────────────────────────────────────────
+required_capabilities:
+  task_class_prompting:
+    description: >
+      Return a typed PromptPackEntryV1 for any known task class (bug_fix,
+      narrow_feature, reporting_helper, test_addition), containing
+      system_guidance, execution_guidance, and validation_guidance.
+    module: "framework/task_class_prompt_pack_v1.py"
+    status: "present"
+
+  failure_memory:
+    description: >
+      Record FailureRecordV1 entries with task_id, task_class,
+      failure_signature, correction_hint, and recorded_at.
+      Summarize failures by class and signature frequency.
+    module: "framework/failure_memory_v1.py"
+    status: "present"
+
+  critique_guidance:
+    description: >
+      Accept task_class, prior_failures (List[FailureRecordV1]), and
+      current_objective; return CritiqueResultV1 with critique_points
+      and retry_guidance without any model call.
+    module: "framework/critique_injection_v1.py"
+    status: "present"
+
+  routing_uplift:
+    description: >
+      Map (task_class, difficulty) to a RoutingDecisionV1 with
+      selected_profile, retry_budget, retry_posture, and rationale.
+      Profile names reference Phase 1 model profile identifiers.
+    module: "framework/routing_policy_uplift_v1.py"
+    status: "present"
+
+  readiness_evaluation:
+    description: >
+      Evaluate five readiness dimensions (artifact_completeness,
+      validation_pass_rate, escalation_accounting, first_pass_success_signal,
+      retry_discipline_signal) and return Phase5ReadinessResultV1 with
+      ready, blocking_gaps, and evidence_summary.
+    module: "framework/phase5_readiness_v1.py"
+    status: "present"
+
+# ─────────────────────────────────────────────
+# COMPLETION REQUIREMENTS
+# ─────────────────────────────────────────────
+completion_requirements:
+  uplift_cases_execute:
+    requirement: >
+      The uplift runner executes at least 4 synthetic task-class cases
+      (one per supported task class) and records pass/fail outcomes.
+    evidence: "artifact: uplift_cases_run >= 4"
+    status: "met"
+
+  readiness_signal_emitted:
+    requirement: >
+      Phase5ReadinessEvaluatorV1.evaluate() completes and returns a
+      Phase5ReadinessResultV1 with ready, blocking_gaps, and
+      evidence_summary fields set.
+    evidence: "artifact: readiness_evaluated = true"
+    status: "met"
+
+  artifact_complete_outputs:
+    requirement: >
+      The phase4 uplift artifact emits all required fields:
+      phase4_pack, generated_at, required_modules_loaded, uplift_cases_run,
+      uplift_pass_rate, readiness_evaluated, readiness_ready, blocking_gaps,
+      all_checks_passed, component_summary.
+    evidence: "artifact assertion in seam tests passes"
+    status: "met"
+
+  explicit_escalation_accounting:
+    requirement: >
+      All uplift runner outputs explicitly include escalation_status.
+      Phase 4 package reports NOT_ESCALATED.
+    evidence: "artifact: escalation_status present; seam tests verify field"
+    status: "met"
+
+# ─────────────────────────────────────────────
+# COMPLETION GATE
+# ─────────────────────────────────────────────
+completion_gate:
+  description: >
+    Phase 4 uplift is complete when all completion requirements are met,
+    the uplift runner achieves uplift_pass_rate >= 0.75 on the synthetic
+    task-class cases, and the readiness evaluator has run and emitted
+    a result with blocking_gaps present (may be non-empty).
+
+  minimum_uplift_pass_rate: 0.75
+  seam_tests_required: true
+  make_check_required: true
+  readiness_evaluation_required: true
+
+  phase4_gate_status: "met_by_p4_01"
+  note: >
+    P4-01 satisfies the Phase 4 self-sufficiency uplift gate. Phase 5 work
+    (live local model integration with real task execution) may begin after
+    this baseline is ratified. The Phase 5 entry evaluation uses
+    Phase5ReadinessEvaluatorV1 against real benchmark evidence.
+
+# ─────────────────────────────────────────────
+# REMAINING BLOCKERS
+# ─────────────────────────────────────────────
+remaining_blockers:
+  description: >
+    Items that must be resolved before Phase 5 (live local model integration) begins.
+
+  unresolved:
+    - blocker_id: "P4-BLOCKER-01"
+      description: >
+        All uplift surfaces operate on synthetic data only.
+        FailureMemoryV1 has no live persistence backend; failures are
+        in-memory only and lost between sessions.
+      severity: "deferred_to_phase5"
+      resolution_path: >
+        Phase 5 will wire FailureMemoryV1 to a persistent store
+        (SQLite or JSON-lines file). The in-memory interface is stable;
+        only the backend needs to be wired.
+
+    - blocker_id: "P4-BLOCKER-02"
+      description: >
+        CritiqueInjectionV1 uses static rule tables only. It cannot
+        learn from new failure patterns without code changes.
+      severity: "deferred_to_phase5"
+      resolution_path: >
+        Phase 5 will feed FailureMemoryV1 summary data back into
+        CritiqueInjectionV1 at session start to make critique guidance
+        data-driven rather than rule-driven.
+
+    - blocker_id: "P4-BLOCKER-03"
+      description: >
+        RoutingPolicyUpliftV1 cannot actually dispatch to local Ollama
+        or remote Claude; it returns routing decisions only.
+      severity: "deferred_to_phase5"
+      resolution_path: >
+        Phase 5 will wire RoutingDecisionV1 to the existing
+        inference_adapter.py dispatch path.
+
+  resolved:
+    - blocker_id: "P4-BLOCKER-00"
+      description: "Phase 4 uplift surfaces did not exist at Phase 4 start"
+      resolution: "Created in P4-01"
+      resolved_by: "P4-01-SELF-SUFFICIENCY-UPLIFT-AND-PHASE5-READINESS-PACK-1"

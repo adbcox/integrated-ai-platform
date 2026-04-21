@@ -1,0 +1,222 @@
+{
+  "phase4_pack": "self_sufficiency_uplift_v1",
+  "generated_at": "2026-04-21T16:50:02.311058+00:00",
+  "required_modules_loaded": true,
+  "uplift_cases_run": 4,
+  "uplift_pass_rate": 1.0,
+  "readiness_evaluated": true,
+  "readiness_ready": true,
+  "blocking_gaps": [],
+  "all_checks_passed": true,
+  "escalation_status": "NOT_ESCALATED",
+  "component_summary": [
+    {
+      "module": "framework/task_class_prompt_pack_v1.py",
+      "classes": [
+        "TaskClassPromptPackV1",
+        "PromptPackEntryV1"
+      ]
+    },
+    {
+      "module": "framework/failure_memory_v1.py",
+      "classes": [
+        "FailureMemoryV1",
+        "FailureRecordV1",
+        "FailureSummaryV1"
+      ]
+    },
+    {
+      "module": "framework/critique_injection_v1.py",
+      "classes": [
+        "CritiqueInjectionV1",
+        "CritiqueResultV1"
+      ]
+    },
+    {
+      "module": "framework/routing_policy_uplift_v1.py",
+      "classes": [
+        "RoutingPolicyUpliftV1",
+        "RoutingDecisionV1"
+      ]
+    },
+    {
+      "module": "framework/phase5_readiness_v1.py",
+      "classes": [
+        "Phase5ReadinessEvaluatorV1",
+        "Phase5ReadinessResultV1"
+      ]
+    },
+    {
+      "module": "governance/phase4_uplift_baseline.v1.yaml",
+      "type": "baseline"
+    },
+    {
+      "module": "governance/phase5_readiness_baseline.v1.yaml",
+      "type": "baseline"
+    }
+  ],
+  "check_details": {
+    "modules_loaded": {
+      "ok": true,
+      "errors": []
+    },
+    "uplift_cases": {
+      "ok": true,
+      "cases": [
+        {
+          "task_class": "bug_fix",
+          "passed": true,
+          "errors": [],
+          "prompt_entry": {
+            "task_class": "bug_fix",
+            "system_guidance": "You are fixing a specific, scoped bug. Read the failing test or error trace first. Make the minimum change required. Do not refactor surrounding code.",
+            "execution_guidance": "1. Read the target file(s). 2. Identify the exact faulty line or logic path. 3. Apply the minimal correction. 4. Verify the fix does not break adjacent logic.",
+            "validation_guidance": "Run the affected test suite. Confirm the previously failing assertion now passes. Confirm no pre-existing passing tests regress."
+          },
+          "routing": {
+            "task_class": "bug_fix",
+            "difficulty": "medium",
+            "selected_profile": "local_hard",
+            "retry_budget": 2,
+            "retry_posture": "standard",
+            "rationale": "Routed bug_fix/medium \u2192 local_hard (retry_budget=2, posture=standard)"
+          },
+          "critique_points": [
+            "Verify the fix targets the exact fault line, not a workaround.",
+            "Confirm no adjacent logic is silently affected.",
+            "Prior failure: synthetic_bug_fix_failure"
+          ]
+        },
+        {
+          "task_class": "narrow_feature",
+          "passed": true,
+          "errors": [],
+          "prompt_entry": {
+            "task_class": "narrow_feature",
+            "system_guidance": "You are adding a narrow, bounded feature to an existing module. Do not restructure existing interfaces. Add only what the task specifies.",
+            "execution_guidance": "1. Read the target module to understand its interface. 2. Identify the insertion point. 3. Implement only the requested feature. 4. Leave all existing behavior unchanged.",
+            "validation_guidance": "Run the full test suite for the target module. Add at minimum one test covering the new feature path."
+          },
+          "routing": {
+            "task_class": "narrow_feature",
+            "difficulty": "medium",
+            "selected_profile": "local_hard",
+            "retry_budget": 2,
+            "retry_posture": "standard",
+            "rationale": "Routed narrow_feature/medium \u2192 local_hard (retry_budget=2, posture=standard)"
+          },
+          "critique_points": [
+            "Confirm the feature scope is exactly as specified \u2014 no extras.",
+            "Verify existing interfaces are unchanged.",
+            "Prior failure: synthetic_narrow_feature_failure"
+          ]
+        },
+        {
+          "task_class": "reporting_helper",
+          "passed": true,
+          "errors": [],
+          "prompt_entry": {
+            "task_class": "reporting_helper",
+            "system_guidance": "You are producing a structured reporting helper. Output must be serializable (JSON/dict). Do not call external services.",
+            "execution_guidance": "1. Define the required output fields. 2. Implement a to_dict() method. 3. Do not print or log inside library code; return structured data.",
+            "validation_guidance": "Verify to_dict() produces all required keys. Verify the output is JSON-serializable."
+          },
+          "routing": {
+            "task_class": "reporting_helper",
+            "difficulty": "medium",
+            "selected_profile": "local_fast",
+            "retry_budget": 2,
+            "retry_posture": "standard",
+            "rationale": "Routed reporting_helper/medium \u2192 local_fast (retry_budget=2, posture=standard)"
+          },
+          "critique_points": [
+            "All output fields must be serializable.",
+            "No side effects inside the reporting logic.",
+            "Prior failure: synthetic_reporting_helper_failure"
+          ]
+        },
+        {
+          "task_class": "test_addition",
+          "passed": true,
+          "errors": [],
+          "prompt_entry": {
+            "task_class": "test_addition",
+            "system_guidance": "You are adding tests to an existing test file or creating a new seam test. Tests must be deterministic and offline-safe.",
+            "execution_guidance": "1. Read the module under test. 2. Identify untested or under-tested paths. 3. Write focused, isolated test functions. 4. Use only stdlib or existing project dependencies.",
+            "validation_guidance": "Run pytest on the new test file. All new tests must pass. No existing tests may regress."
+          },
+          "routing": {
+            "task_class": "test_addition",
+            "difficulty": "medium",
+            "selected_profile": "local_hard",
+            "retry_budget": 2,
+            "retry_posture": "standard",
+            "rationale": "Routed test_addition/medium \u2192 local_hard (retry_budget=2, posture=standard)"
+          },
+          "critique_points": [
+            "Each test must be deterministic and offline-safe.",
+            "Tests must not depend on execution order.",
+            "Prior failure: synthetic_test_addition_failure"
+          ]
+        }
+      ]
+    },
+    "readiness": {
+      "ready": true,
+      "blocking_gaps": [],
+      "evidence_summary": {
+        "artifact_completeness": true,
+        "validation_pass_rate": true,
+        "escalation_accounting": true,
+        "first_pass_success_signal": true,
+        "retry_discipline_signal": true
+      },
+      "dimension_results": [
+        {
+          "dimension": "artifact_completeness",
+          "met": true,
+          "evidence": "artifact emitted and all required fields present",
+          "gap": null
+        },
+        {
+          "dimension": "validation_pass_rate",
+          "met": true,
+          "evidence": "pass_rate=1.00",
+          "gap": null
+        },
+        {
+          "dimension": "escalation_accounting",
+          "met": true,
+          "evidence": "escalation_status field present in all outputs",
+          "gap": null
+        },
+        {
+          "dimension": "first_pass_success_signal",
+          "met": true,
+          "evidence": "4/4 first-pass successes (rate=1.00)",
+          "gap": null
+        },
+        {
+          "dimension": "retry_discipline_signal",
+          "met": true,
+          "evidence": "all retries within declared retry_budget",
+          "gap": null
+        }
+      ]
+    },
+    "phase4_baseline": {
+      "ok": true,
+      "errors": []
+    },
+    "phase5_baseline": {
+      "ok": true,
+      "errors": []
+    }
+  },
+  "phase_linkage": "Phase 4 (self_sufficiency_uplift)",
+  "authority_sources": [
+    "governance/phase4_uplift_baseline.v1.yaml",
+    "governance/phase5_readiness_baseline.v1.yaml",
+    "governance/phase3_mvp_baseline.v1.yaml"
+  ]
+}
