@@ -307,6 +307,12 @@ from .aider_permission_gate_provider import (
     make_wired_preflight_checker,
     check_permission_gate_active,
 )
+from .aider_config_provider import (
+    BOUNDED_AIDER_CONFIG,
+    make_fully_wired_preflight_checker,
+    check_config_keys_present,
+    check_all_blocking_checks_pass,
+)
 from .task_class_readiness import (
     TaskClassVerdict,
     TaskClassReadinessReport,
@@ -521,6 +527,10 @@ __all__ = [
     "BOUNDED_AIDER_GATE",
     "make_wired_preflight_checker",
     "check_permission_gate_active",
+    "BOUNDED_AIDER_CONFIG",
+    "make_fully_wired_preflight_checker",
+    "check_config_keys_present",
+    "check_all_blocking_checks_pass",
     "LocalAutonomyDashboard",
     "build_local_autonomy_dashboard",
     "emit_dashboard",
