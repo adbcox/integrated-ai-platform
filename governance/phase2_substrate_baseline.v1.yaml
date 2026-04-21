@@ -1,0 +1,239 @@
+---
+# Phase 2 Substrate Baseline v1
+# Authority surface: P2-02-SUBSTRATE-CONFORMANCE-AND-TOOLS-PACK-1
+# Governed by: governance/phase1_hardening_baseline.v1.yaml,
+#   governance/local_run_validation_pack.v1.yaml,
+#   governance/definition_of_done.v1.yaml
+# Scope: Phase 2 minimum substrate implementation completion criteria
+
+version: "1.0.0"
+baseline_id: "PHASE2-SUBSTRATE-BASELINE-V1"
+generated_at: "2026-04-21"
+authority_owner: "governance/authority_adr_0001_source_of_truth.md"
+phase_linkage: "Phase 2 (minimum_substrate_implementation)"
+
+# ─────────────────────────────────────────────
+# PHASE IDENTITY
+# ─────────────────────────────────────────────
+phase_id: "phase_2"
+phase_label: "Phase 2 — Minimum Substrate Implementation"
+phase_status: "in_progress"
+description: >
+  Phase 2 implements the minimum shared runtime substrate from the Phase 1
+  governance contracts. Its objective is a small, coherent, standalone
+  substrate surface that proves the contracts can be instantiated and tested
+  without touching existing dense framework modules.
+
+# ─────────────────────────────────────────────
+# REQUIRED MODULES
+# All Python modules that must exist for Phase 2 substrate closure
+# ─────────────────────────────────────────────
+required_modules:
+  description: >
+    These modules must exist as importable Python files under framework/.
+    They are the minimum substrate implementation surface.
+
+  # From P2-01
+  session_job_schema_v1:
+    module_path: "framework/session_job_schema_v1.py"
+    package_id: "P2-01-MINIMUM-SUBSTRATE-IMPLEMENTATION-PACK-1"
+    classes: ["SessionRecord", "JobRecord"]
+    status: "present"
+
+  tool_contracts_v1:
+    module_path: "framework/tool_contracts_v1.py"
+    package_id: "P2-01-MINIMUM-SUBSTRATE-IMPLEMENTATION-PACK-1"
+    classes: ["ToolContractV1"]
+    status: "present"
+
+  tool_registry_v1:
+    module_path: "framework/tool_registry_v1.py"
+    package_id: "P2-01-MINIMUM-SUBSTRATE-IMPLEMENTATION-PACK-1"
+    classes: ["ToolRegistryV1"]
+    status: "present"
+
+  workspace_controller_v1:
+    module_path: "framework/workspace_controller_v1.py"
+    package_id: "P2-01-MINIMUM-SUBSTRATE-IMPLEMENTATION-PACK-1"
+    classes: ["WorkspaceDescriptorV1", "WorkspaceControllerV1"]
+    status: "present"
+
+  permission_decision_v1:
+    module_path: "framework/permission_decision_v1.py"
+    package_id: "P2-01-MINIMUM-SUBSTRATE-IMPLEMENTATION-PACK-1"
+    classes: ["PermissionDecisionV1", "Decision"]
+    status: "present"
+
+  artifact_bundle_v1:
+    module_path: "framework/artifact_bundle_v1.py"
+    package_id: "P2-01-MINIMUM-SUBSTRATE-IMPLEMENTATION-PACK-1"
+    classes: ["ArtifactBundleV1"]
+    status: "present"
+
+  # From P2-02
+  read_file_tool_v1:
+    module_path: "framework/read_file_tool_v1.py"
+    package_id: "P2-02-SUBSTRATE-CONFORMANCE-AND-TOOLS-PACK-1"
+    classes: ["ReadFileToolV1", "ReadFileResultV1"]
+    status: "present"
+
+  publish_artifact_tool_v1:
+    module_path: "framework/publish_artifact_tool_v1.py"
+    package_id: "P2-02-SUBSTRATE-CONFORMANCE-AND-TOOLS-PACK-1"
+    classes: ["PublishArtifactToolV1", "PublishArtifactResultV1"]
+    status: "present"
+
+  run_command_tool_v1:
+    module_path: "framework/run_command_tool_v1.py"
+    package_id: "P2-02-SUBSTRATE-CONFORMANCE-AND-TOOLS-PACK-1"
+    classes: ["RunCommandToolV1", "RunCommandResultV1"]
+    status: "present"
+
+  run_tests_tool_v1:
+    module_path: "framework/run_tests_tool_v1.py"
+    package_id: "P2-02-SUBSTRATE-CONFORMANCE-AND-TOOLS-PACK-1"
+    classes: ["RunTestsToolV1", "RunTestsResultV1"]
+    status: "present"
+
+  substrate_runtime_v1:
+    module_path: "framework/substrate_runtime_v1.py"
+    package_id: "P2-02-SUBSTRATE-CONFORMANCE-AND-TOOLS-PACK-1"
+    classes: ["SubstrateRuntimeV1"]
+    status: "present"
+
+  substrate_conformance_v1:
+    module_path: "framework/substrate_conformance_v1.py"
+    package_id: "P2-02-SUBSTRATE-CONFORMANCE-AND-TOOLS-PACK-1"
+    classes: ["SubstrateConformanceCheckerV1", "ConformanceResultV1"]
+    status: "present"
+
+# ─────────────────────────────────────────────
+# REQUIRED TOOLS
+# Tool implementations that must be present in the substrate runtime
+# ─────────────────────────────────────────────
+required_tools:
+  read_file:
+    tool_class: "ReadFileToolV1"
+    module: "framework/read_file_tool_v1.py"
+    side_effecting: false
+    status: "present"
+
+  publish_artifact:
+    tool_class: "PublishArtifactToolV1"
+    module: "framework/publish_artifact_tool_v1.py"
+    side_effecting: true
+    status: "present"
+
+  run_command:
+    tool_class: "RunCommandToolV1"
+    module: "framework/run_command_tool_v1.py"
+    side_effecting: true
+    status: "present"
+
+  run_tests:
+    tool_class: "RunTestsToolV1"
+    module: "framework/run_tests_tool_v1.py"
+    side_effecting: false
+    status: "present"
+
+# ─────────────────────────────────────────────
+# CONFORMANCE REQUIREMENTS
+# What must be true for Phase 2 substrate to be conformant
+# ─────────────────────────────────────────────
+conformance_requirements:
+  tool_registry_complete:
+    requirement: >
+      ToolRegistryV1() must contain all 4 required tools by name.
+    evidence: "SubstrateConformanceCheckerV1.run() passes tool_registry_complete"
+    status: "met"
+
+  workspace_validates:
+    requirement: >
+      WorkspaceControllerV1 with a valid descriptor (source≠scratch, artifact_root
+      not /tmp) must return validate_layout() = True.
+    evidence: "SubstrateConformanceCheckerV1.run() passes workspace_validates"
+    status: "met"
+
+  artifact_bundle_assembles:
+    requirement: >
+      ArtifactBundleV1 can be instantiated from a SessionRecord + JobRecord and
+      serialized via to_dict() without error.
+    evidence: "SubstrateConformanceCheckerV1.run() passes artifact_bundle_assembles"
+    status: "met"
+
+  substrate_artifact_emitted:
+    requirement: >
+      PublishArtifactToolV1 is instantiable and its run() method is callable.
+      The conformance check and runner script both emit artifacts/substrate/*.json.
+    evidence: "phase2_substrate_pack_check.json exists and all_checks_passed=true"
+    status: "met"
+
+  read_file_reads_real_file:
+    requirement: >
+      ReadFileToolV1.run() on a real file path returns status='success' with content.
+    evidence: "seam tests: test_read_file_real_file passes"
+    status: "met"
+
+  publish_artifact_writes_file:
+    requirement: >
+      PublishArtifactToolV1.run() writes a file at the destination path and returns
+      bytes_written > 0.
+    evidence: "seam tests: test_publish_artifact_writes_file passes"
+    status: "met"
+
+# ─────────────────────────────────────────────
+# COMPLETION GATE
+# What must be true to declare Phase 2 substrate complete
+# ─────────────────────────────────────────────
+completion_gate:
+  description: >
+    Phase 2 substrate is complete when all conformance requirements are met AND
+    the substrate can execute a complete end-to-end flow:
+    read a file → make a permission decision → run a command → publish an artifact.
+
+  end_to_end_flow_required: true
+  conformance_check_required: true
+  seam_tests_required: true
+  make_check_required: true
+
+  phase2_gate_status: "met_by_p2_02"
+  note: >
+    P2-01 and P2-02 together satisfy the Phase 2 substrate completion gate.
+    Phase 3 work (integration into live runtime modules) may begin after
+    this baseline is ratified.
+
+# ─────────────────────────────────────────────
+# REMAINING BLOCKERS
+# Outstanding items before Phase 3 integration can begin
+# ─────────────────────────────────────────────
+remaining_blockers:
+  description: >
+    Items that must be resolved before Phase 3 integration.
+    This list may be non-empty at Phase 2 substrate closure.
+
+  unresolved:
+    - blocker_id: "P2-BLOCKER-01"
+      description: >
+        SubstrateRuntimeV1 is not yet wired into existing live runtime modules.
+        framework/inference_adapter.py, framework/code_executor.py, and related
+        production modules do not yet use the v1 substrate surfaces.
+      severity: "deferred_to_phase3"
+      resolution_path: >
+        Phase 3 integration packages will wire the v1 substrate into production
+        modules incrementally, one surface at a time.
+
+    - blocker_id: "P2-BLOCKER-02"
+      description: >
+        Telemetry emission pipeline (telemetry_normalization_contract.v1.yaml)
+        is defined in Phase 1 governance but not yet implemented in the substrate.
+        run_command_tool_v1 and run_tests_tool_v1 do not yet emit structured events.
+      severity: "deferred_to_phase3"
+      resolution_path: >
+        A future Phase 3 package will add structured event emission to the tool
+        implementations following the telemetry_normalization_contract.
+
+  resolved:
+    - blocker_id: "P2-BLOCKER-00"
+      description: "Phase 2 substrate modules did not exist at Phase 2 start"
+      resolution: "Created in P2-01 and P2-02"
+      resolved_by: "P2-02-SUBSTRATE-CONFORMANCE-AND-TOOLS-PACK-1"

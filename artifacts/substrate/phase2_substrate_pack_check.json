@@ -1,0 +1,118 @@
+{
+  "substrate_pack": "phase2_substrate_pack_v1",
+  "generated_at": "2026-04-21T16:32:59.085175+00:00",
+  "required_modules_loaded": true,
+  "required_tools_loaded": [
+    "publish_artifact",
+    "read_file",
+    "run_command",
+    "run_tests"
+  ],
+  "runtime_assembled": true,
+  "conformance_passed": true,
+  "baseline_loaded": true,
+  "all_checks_passed": true,
+  "component_summary": [
+    {
+      "module": "framework/read_file_tool_v1.py",
+      "classes": [
+        "ReadFileToolV1"
+      ]
+    },
+    {
+      "module": "framework/publish_artifact_tool_v1.py",
+      "classes": [
+        "PublishArtifactToolV1"
+      ]
+    },
+    {
+      "module": "framework/run_command_tool_v1.py",
+      "classes": [
+        "RunCommandToolV1"
+      ]
+    },
+    {
+      "module": "framework/run_tests_tool_v1.py",
+      "classes": [
+        "RunTestsToolV1"
+      ]
+    },
+    {
+      "module": "framework/substrate_runtime_v1.py",
+      "classes": [
+        "SubstrateRuntimeV1"
+      ]
+    },
+    {
+      "module": "framework/substrate_conformance_v1.py",
+      "classes": [
+        "SubstrateConformanceCheckerV1"
+      ]
+    },
+    {
+      "module": "governance/phase2_substrate_baseline.v1.yaml",
+      "type": "baseline"
+    }
+  ],
+  "check_details": {
+    "modules_loadable": {
+      "ok": true,
+      "errors": []
+    },
+    "tool_registry": {
+      "ok": true,
+      "errors": []
+    },
+    "runtime_assembled": {
+      "ok": true,
+      "errors": []
+    },
+    "conformance": {
+      "ok": true,
+      "errors": [],
+      "detail": {
+        "tool_registry_complete": true,
+        "workspace_validates": true,
+        "artifact_bundle_assembles": true,
+        "substrate_artifact_emitted": true,
+        "modules_loadable": true,
+        "all_passed": true,
+        "errors": [],
+        "details": {
+          "registered_tools": [
+            "publish_artifact",
+            "read_file",
+            "run_command",
+            "run_tests"
+          ],
+          "modules_checked": [
+            "framework.session_job_schema_v1",
+            "framework.tool_contracts_v1",
+            "framework.tool_registry_v1",
+            "framework.workspace_controller_v1",
+            "framework.permission_decision_v1",
+            "framework.artifact_bundle_v1",
+            "framework.read_file_tool_v1",
+            "framework.publish_artifact_tool_v1",
+            "framework.run_command_tool_v1",
+            "framework.run_tests_tool_v1",
+            "framework.substrate_runtime_v1"
+          ],
+          "failed_modules": []
+        }
+      }
+    },
+    "baseline": {
+      "ok": true,
+      "errors": []
+    }
+  },
+  "phase_linkage": "Phase 2 (minimum_substrate_implementation)",
+  "authority_sources": [
+    "governance/phase2_substrate_baseline.v1.yaml",
+    "governance/phase1_hardening_baseline.v1.yaml",
+    "governance/local_run_validation_pack.v1.yaml",
+    "ADR-0003",
+    "ADR-0006"
+  ]
+}
