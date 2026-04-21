@@ -94,6 +94,12 @@ from .aider_runtime_adapter import AiderRuntimeAdapter, _EXPERIMENTAL_FLAG
 from .cmdb_authority_pilot import CmdbAuthorityRecord, CmdbAuthorityPilot, read_cmdb_authority
 from .cmdb_integration_gate import CmdbGateDecision, CmdbIntegrationGate, evaluate_cmdb_gate, GATE_PASS, GATE_BLOCK
 from .domain_branch_contract import DOMAIN_BRANCH_RUNNER_VERSION, DomainBranchPolicy, DomainBranchManifest, DomainBranchRunner
+from .domain_branch_second_wave import (
+    ATHLETE_ANALYTICS_POLICY,
+    OFFICE_AUTOMATION_POLICY,
+    SECOND_WAVE_MANIFEST,
+    SecondWaveDomainRunner,
+)
 from .domain_branch_first_wave import (
     MEDIA_CONTROL_POLICY,
     MEDIA_LAB_POLICY,
@@ -554,4 +560,8 @@ __all__ = [
     "MEETING_INTELLIGENCE_POLICY",
     "FIRST_WAVE_MANIFEST",
     "FirstWaveDomainRunner",
+    "ATHLETE_ANALYTICS_POLICY",
+    "OFFICE_AUTOMATION_POLICY",
+    "SECOND_WAVE_MANIFEST",
+    "SecondWaveDomainRunner",
 ]
