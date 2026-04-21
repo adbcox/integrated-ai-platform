@@ -33,6 +33,7 @@ This index contains the normalized roadmap items currently captured for the inte
 |---|---|---:|---|
 | RM-INV-001 | Feature | High | AI-generated full hardware inventory for all project systems and equipment |
 | RM-INV-002 | System | Critical | Photo-driven inventory capture and capability mapping system for assets, components, consumables, and tools |
+| RM-INV-003 | System | High | Live product search, pricing history, and inventory-aware procurement workflow |
 
 ## Developer / coding / execution automation
 
@@ -42,6 +43,7 @@ This index contains the normalized roadmap items currently captured for the inte
 | RM-DEV-002 | Feature | High | Dual-model inline QC coding loop for the developer assistant |
 | RM-DEV-003 | Program | Critical | Bounded autonomous code generation |
 | RM-DEV-004 | Feature | High | Embedded firmware assistant for Nordic and ESP platforms |
+| RM-DEV-005 | Program | Critical | Local autonomy uplift, OSS intake, and Aider reliability hardening |
 
 ## Agents / autonomy / workflow orchestration
 
@@ -61,6 +63,7 @@ This index contains the normalized roadmap items currently captured for the inte
 | ID | Type | Priority | Title |
 |---|---|---:|---|
 | RM-DOCAPP-001 | Program | Medium | Excel-to-web-app migration system |
+| RM-DOCAPP-002 | Program | High | AI-assisted website generation, SEO, and analytics delivery stack |
 
 ## Language / communication
 
@@ -80,6 +83,8 @@ This index contains the normalized roadmap items currently captured for the inte
 |---|---|---:|---|
 | RM-MEDIA-001 | Feature | High | Media endpoint health and Plex/app compliance system for network players |
 | RM-MEDIA-002 | Feature | High | Unified media acquisition and watchlist automation system for Sonarr and Radarr |
+| RM-MEDIA-003 | Enhancement | Medium | Media inventory hygiene, duplicate detection, and cleanup advisory |
+| RM-MEDIA-004 | Enhancement | High | Media stack configuration optimization and sports-event acquisition |
 
 ## External ecosystem intelligence
 
@@ -99,6 +104,9 @@ This index contains the normalized roadmap items currently captured for the inte
 | ID | Type | Priority | Title |
 |---|---|---:|---|
 | RM-SHOP-001 | Feature | Medium | Woodworking design and project-planning app |
+| RM-SHOP-002 | Program | High | 3D capture, guided measurement, and reconstruction stack |
+| RM-SHOP-003 | System | High | 3D model inventory, reuse, and external sourcing library |
+| RM-SHOP-004 | Enhancement | High | Outdoor structure concept design and architect handoff |
 
 ## Automotive / maintenance / restoration
 
@@ -111,3 +119,5 @@ This index contains the normalized roadmap items currently captured for the inte
 - This index is the normalized backlog reference.
 - Item details can be split into individual per-item files later using the roadmap template.
 - GitHub issues and execution packages should reference these roadmap IDs.
+- `RM-DEV-005` is the current pull-first roadmap priority for the local home developer assistant and should be preferred over new domain-expansion pulls unless lower-phase prerequisites block it.
+- Detailed normalization for the roadmap items captured in chat on 2026-04-21 is stored in `docs/roadmap/ROADMAP_CHAT_SYNC_2026-04-21.md`.
