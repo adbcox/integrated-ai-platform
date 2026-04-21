@@ -849,3 +849,5 @@ from .grouped_package_expansion_selector import PackageCandidate, GroupedPackage
 from .retrieval_enrichment_substrate import EntitySignal, EnrichedCandidate, RetrievalEnrichmentRecord, RetrievalEnrichmentSubstrate
 
 from .lace1_expansion_closeout_ratifier import Lace1CloseoutRecord, Lace1ExpansionCloseoutRatifier, CAMPAIGN_VERDICT_COMPLETE, CAMPAIGN_VERDICT_PARTIAL
+
+from .live_retrieval_proof import LiveRetrievalProofRecord, LiveRetrievalProofRunner
