@@ -91,6 +91,14 @@ from .adapter_readiness_stress import StressCheck, StressHarnessResult, AdapterR
 from .controlled_adapter_scaffold import ScaffoldGate, AdapterScaffoldPlan, ControlledAdapterScaffold, emit_scaffold_plan
 from .terminal_autonomy_ratifier import RatificationCriterion, TerminalRatificationRecord, TerminalAutonomyRatifier, emit_terminal_ratification
 from .aider_runtime_adapter import AiderRuntimeAdapter, _EXPERIMENTAL_FLAG
+from .codex_adapter_contract import (
+    CodexAdapterPolicy,
+    CodexAdapterConfig,
+    CodexAdapterRequest,
+    CodexAdapterArtifact,
+    CODEX_DEFER_REASON,
+    DEFAULT_CODEX_POLICY,
+)
 from .aider_adapter_evidence import (
     AIDER_STATUS_DONE,
     AIDER_STATUS_PARTIAL,
@@ -501,4 +509,10 @@ __all__ = [
     "AiderAdapterEvidenceRecord",
     "AiderAdapterEvidenceReport",
     "gather_aider_evidence",
+    "CodexAdapterPolicy",
+    "CodexAdapterConfig",
+    "CodexAdapterRequest",
+    "CodexAdapterArtifact",
+    "CODEX_DEFER_REASON",
+    "DEFAULT_CODEX_POLICY",
 ]
