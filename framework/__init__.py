@@ -171,6 +171,14 @@ from .aider_live_execution_gate import (
     AiderLiveGateReport,
     evaluate_aider_live_gate,
 )
+from .aider_live_proof import (
+    PROOF_STATUS_LIVE_PROVEN,
+    PROOF_STATUS_DRY_RUN_ONLY,
+    PROOF_STATUS_BLOCKED,
+    AiderLiveProofRecord,
+    AiderLiveProofReport,
+    run_aider_live_proof,
+)
 from .retry_telemetry_integration import (
     LoopRetryIntegrationRecord,
     LoopRetryStore,
@@ -610,4 +618,10 @@ __all__ = [
     "AiderLiveGateCheck",
     "AiderLiveGateReport",
     "evaluate_aider_live_gate",
+    "PROOF_STATUS_LIVE_PROVEN",
+    "PROOF_STATUS_DRY_RUN_ONLY",
+    "PROOF_STATUS_BLOCKED",
+    "AiderLiveProofRecord",
+    "AiderLiveProofReport",
+    "run_aider_live_proof",
 ]
