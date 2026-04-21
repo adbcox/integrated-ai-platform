@@ -1,0 +1,74 @@
+#!/usr/bin/env python3
+"""Reratify terminal promotion matrix from Aider postfix evidence for APCC1-P6.
+
+Usage: python3 bin/ratify_terminal_postfix.py [--artifact-dir PATH] [--dry-run]
+"""
+from __future__ import annotations
+
+import argparse
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from framework.aider_live_gate_wired import evaluate_wired_aider_gate, run_wired_aider_proof
+from framework.aider_promotion_ratifier import ratify_aider_promotion
+from framework.codex_availability_gate import evaluate_codex_availability
+from framework.codex_promotion_ratifier import ratify_codex_promotion
+from framework.cmdb_promotion_evidence import evaluate_cmdb_promotion_evidence
+from framework.cmdb_promotion_ratifier import ratify_cmdb_promotion
+from framework.domain_branch_first_wave_ratifier import ratify_first_wave_promotion
+from framework.domain_branch_second_wave_ratifier import ratify_second_wave_promotion
+from framework.terminal_promotion_ratifier import ratify_terminal_promotion
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description="Reratify terminal matrix from Aider postfix evidence.")
+    parser.add_argument("--artifact-dir", default="artifacts/terminal_promotion")
+    parser.add_argument("--dry-run", action="store_true")
+    args = parser.parse_args()
+
+    gate = evaluate_wired_aider_gate(dry_run=args.dry_run)
+    proof = run_wired_aider_proof(gate, num_runs=3, dry_run=args.dry_run)
+    aider_a = ratify_aider_promotion(gate, proof, dry_run=args.dry_run)
+
+    avail = evaluate_codex_availability(dry_run=args.dry_run)
+    codex_a = ratify_codex_promotion(avail, dry_run=args.dry_run)
+
+    evidence = evaluate_cmdb_promotion_evidence(dry_run=args.dry_run)
+    cmdb_a = ratify_cmdb_promotion(evidence, dry_run=args.dry_run)
+
+    first_a = ratify_first_wave_promotion(dry_run=args.dry_run)
+    second_a = ratify_second_wave_promotion(dry_run=args.dry_run)
+
+    artifact = ratify_terminal_promotion(
+        aider_artifact=aider_a,
+        codex_artifact=codex_a,
+        cmdb_artifact=cmdb_a,
+        first_wave_artifact=first_a,
+        second_wave_artifact=second_a,
+        artifact_dir=Path(args.artifact_dir),
+        dry_run=args.dry_run,
+    )
+
+    print("\n=== Terminal Matrix Reratification (Post-Fix) ===")
+    print(f"  campaign_id:    {artifact.campaign_id}")
+    print(f"  decision:       {artifact.decision}")
+    print(f"  resolved:       {artifact.resolved_count}/{artifact.total_count}")
+    if artifact.unresolved_items:
+        print(f"  unresolved:     {artifact.unresolved_items}")
+    print()
+    print(f"{'Item':<28} {'Expected':<40} {'Actual':<40} {'OK'}")
+    print("-" * 115)
+    for r in artifact.records:
+        ok = "Y" if r.resolved else "N"
+        print(f"  {r.item_key:<26} {r.expected_resolution:<40} {r.actual_resolution:<40} {ok}")
+
+    if not args.dry_run and artifact.artifact_path:
+        print(f"\nArtifact: {artifact.artifact_path}")
+
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
