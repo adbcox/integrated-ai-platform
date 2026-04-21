@@ -1,0 +1,51 @@
+{
+  "pipeline_id": "LACE2-PIPE-20260421120311",
+  "selected_tranche": "MT2-TRACE-REPLAY-PIPELINE",
+  "total_traces": 5,
+  "enriched_count": 5,
+  "replayable_count": 2,
+  "not_replayable_count": 3,
+  "pipeline_stages": [
+    {
+      "trace_id": "PIPE-DECOMP",
+      "outcome_class": "first_pass_success",
+      "retry_count": 0,
+      "replayable": false,
+      "replay_priority": "high",
+      "not_replayable_reason": "outcome_class='first_pass_success' is not replayable"
+    },
+    {
+      "trace_id": "PIPE-RETRIEVAL",
+      "outcome_class": "first_pass_success",
+      "retry_count": 0,
+      "replayable": false,
+      "replay_priority": "high",
+      "not_replayable_reason": "outcome_class='first_pass_success' is not replayable"
+    },
+    {
+      "trace_id": "PIPE-REPAIR-RETRY",
+      "outcome_class": "retry_success",
+      "retry_count": 1,
+      "replayable": false,
+      "replay_priority": "medium",
+      "not_replayable_reason": "outcome_class='retry_success' is not replayable"
+    },
+    {
+      "trace_id": "PIPE-REPAIR-FAIL",
+      "outcome_class": "failure",
+      "retry_count": 0,
+      "replayable": true,
+      "replay_priority": "high",
+      "not_replayable_reason": null
+    },
+    {
+      "trace_id": "PIPE-PARTIAL",
+      "outcome_class": "partial",
+      "retry_count": 0,
+      "replayable": true,
+      "replay_priority": "high",
+      "not_replayable_reason": null
+    }
+  ],
+  "proved_at": "2026-04-21T12:03:11+00:00"
+}
