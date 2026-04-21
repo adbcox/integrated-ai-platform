@@ -22,6 +22,13 @@ The most important enriched roadmap cluster is the local development assistant a
 
 These items should be treated as the highest-value implementation cluster in the roadmap.
 
+## Dedicated execution packs
+
+The following items now have dedicated execution packs and should use those first for deep execution handoffs:
+
+- `RM-DEV-003` → `docs/roadmap/RM-DEV-003_EXECUTION_PACK.md`
+- `RM-INTEL-001` → `docs/roadmap/RM-INTEL-001_EXECUTION_PACK.md`
+
 ---
 
 ## 1. RM-DEV-005 — Local autonomy uplift, OSS intake, and Aider reliability hardening
@@ -161,6 +168,7 @@ Allow the system to autonomously execute safe, bounded coding work with explicit
 - `RM-DEV-005`
 - governed runtime contracts
 - artifact-complete execution and validation paths
+- dedicated execution pack: `docs/roadmap/RM-DEV-003_EXECUTION_PACK.md`
 
 ---
 
@@ -210,6 +218,9 @@ Continuously discover, triage, and score OSS candidates that can strengthen the 
 - gVisor
 - SWE-bench ecosystem
 - Continue
+
+### Dedicated execution pack
+- `docs/roadmap/RM-INTEL-001_EXECUTION_PACK.md`
 
 ---
 
