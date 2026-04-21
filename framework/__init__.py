@@ -823,3 +823,5 @@ __all__ = [
 ]
 
 from .repo_understanding_substrate import RepoUnderstandingSubstrate, RepoUnderstandingSummary
+
+from .task_decomposition_substrate import TaskDecompositionSubstrate, DecomposedTaskBundle, SubTask
