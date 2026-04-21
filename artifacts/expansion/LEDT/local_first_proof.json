@@ -1,0 +1,56 @@
+{
+  "proof_id": "PROOF-20260421134430",
+  "samples_total": 5,
+  "local_route_count": 4,
+  "claude_fallback_count": 1,
+  "hard_stop_count": 0,
+  "local_first_rate": 0.8,
+  "sample_results": [
+    {
+      "sample_id": "add-seam-test-repair-policy",
+      "packet_description": "Add seam test for repair policy proof",
+      "eligibility_passed": true,
+      "preflight_passed": true,
+      "route_chosen": "local_execute",
+      "receipt_result": "success",
+      "is_local": true
+    },
+    {
+      "sample_id": "wire-retrieval-enrichment-proof",
+      "packet_description": "Wire retrieval enrichment into live proof path",
+      "eligibility_passed": true,
+      "preflight_passed": true,
+      "route_chosen": "local_execute",
+      "receipt_result": "success",
+      "is_local": true
+    },
+    {
+      "sample_id": "emit-typed-run-receipt",
+      "packet_description": "Emit typed local run receipt per execution attempt",
+      "eligibility_passed": true,
+      "preflight_passed": true,
+      "route_chosen": "local_execute",
+      "receipt_result": "success",
+      "is_local": true
+    },
+    {
+      "sample_id": "add-fallback-justification-model",
+      "packet_description": "Add typed fallback justification model",
+      "eligibility_passed": true,
+      "preflight_passed": true,
+      "route_chosen": "local_execute",
+      "receipt_result": "success",
+      "is_local": true
+    },
+    {
+      "sample_id": "broad-cloud-integration-disqualified",
+      "packet_description": "Hypothetical cloud integration (disqualified by external API calls)",
+      "eligibility_passed": false,
+      "preflight_passed": true,
+      "route_chosen": "claude_fallback",
+      "receipt_result": "success",
+      "is_local": false
+    }
+  ],
+  "proved_at": "2026-04-21T13:44:30+00:00"
+}
