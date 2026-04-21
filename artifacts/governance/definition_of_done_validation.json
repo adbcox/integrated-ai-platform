@@ -1,0 +1,34 @@
+{
+  "artifact_id": "P0-05-DOD-VALIDATION-1",
+  "generated_at": "2026-04-21T14:56:13.042775+00:00",
+  "definition_path": "governance/definition_of_done.v1.yaml",
+  "yaml_loaded": true,
+  "required_sections_checked": [
+    "version",
+    "required_artifacts",
+    "required_validation",
+    "rollback_semantics",
+    "telemetry_completeness",
+    "escalation_handling",
+    "acceptance_rules"
+  ],
+  "required_sections_present": true,
+  "package_classes_checked": [
+    "substrate",
+    "local_first",
+    "escalation"
+  ],
+  "package_classes_present": true,
+  "content_errors": [],
+  "phase_linkage": "Phase 0 (governance_source_of_truth_reconciliation), Phase 1 (runtime_contract_foundation)",
+  "authority_sources": [
+    "ADR-0001",
+    "ADR-0003",
+    "ADR-0004",
+    "ADR-0005",
+    "ADR-0006",
+    "ADR-0007",
+    "governance/execution_control_package.schema.json",
+    "governance/cmdb_lite_registry.v1.yaml"
+  ]
+}

@@ -1,0 +1,221 @@
+---
+# Definition of Done v1 — Canonical coding-run acceptance policy
+# Authority surface: P0-05-DEFINITION-OF-DONE-1
+# Governed by: ADR-0001 through ADR-0007, governance/execution_control_package.schema.json,
+#   governance/cmdb_lite_registry.v1.yaml
+# Scope: all SUBSTRATE, LOCAL-FIRST, and ESCALATION coding runs
+
+version: "1.0.0"
+definition_id: "DOD-V1"
+generated_at: "2026-04-21"
+authority_owner: "governance/authority_adr_0001_source_of_truth.md"
+
+# ─────────────────────────────────────────────
+# REQUIRED ARTIFACTS
+# What a completed coding run must produce
+# ─────────────────────────────────────────────
+required_artifacts:
+  expected_on_disk_changes:
+    rule: "Every file created or modified must appear in the package's allowed_files list. No file outside allowed_files may be touched."
+    verification: "git diff --name-only vs. package allowed_files; any unlisted file is a hard stop"
+    hard_stop_on_violation: true
+
+  required_runtime_artifacts:
+    rule: "Every package must produce all artifacts declared in its artifact_outputs list. Each artifact must exist at the declared path at commit time."
+    verification: "Check each artifact_outputs[].path exists and is non-empty before committing"
+    hard_stop_on_violation: true
+    adr_ref: "ADR-0006"
+
+  artifact_parse_requirement:
+    rule: "All JSON artifacts must parse without error. All YAML artifacts must load without error. An artifact that exists but does not parse is treated as absent."
+    verification: "json.loads() or yaml.safe_load() must succeed; any parse failure is a hard stop"
+    hard_stop_on_violation: true
+
+  artifact_id_requirement:
+    rule: "Every produced artifact must contain an artifact_id field matching the declared artifact_id in the package's artifact_outputs specification."
+    hard_stop_on_violation: true
+
+  governance_artifact_path:
+    rule: "Governance-type artifacts must land under artifacts/governance/. Capability artifacts under artifacts/expansion/. Benchmark artifacts under artifacts/baseline_validation/."
+    adr_ref: "ADR-0006"
+    hard_stop_on_violation: false
+    note: "Path convention violation is flagged as residual note, not hard stop, unless the artifact is governance-type"
+
+# ─────────────────────────────────────────────
+# REQUIRED VALIDATION
+# Gates that must pass before a run is done
+# ─────────────────────────────────────────────
+required_validation:
+  validation_order_required:
+    rule: "Validation steps must be executed in the order declared in the package's validation_order field. Skipping or reordering steps is not permitted."
+    hard_stop_on_violation: true
+
+  make_check_required:
+    rule: "make check must be the final validation step for every package, regardless of label. A run is not done if make check has not been executed and passed."
+    command: "make check"
+    hard_stop_on_violation: true
+
+  package_specific_tests_required:
+    rule: "If a package declares a seam test file in allowed_files, that test suite must be run and all tests must pass before the run is considered done."
+    command: "python3 -m pytest {test_file} -v"
+    hard_stop_on_violation: true
+
+  real_path_required:
+    rule: "Validation must run against real file paths in the repository. Fixture-only or dry-run-only validation does not satisfy the done condition."
+    hard_stop_on_violation: true
+    note: "A test that only validates against a tmp_path or mock is not sufficient; at least one test must exercise the actual artifact path"
+
+  no_partial_done:
+    rule: "A run is done only when ALL gates in the validation_order are satisfied. Partial completion (e.g., tests pass but make check not run) is not done."
+    hard_stop_on_violation: true
+
+# ─────────────────────────────────────────────
+# ROLLBACK SEMANTICS
+# What happens when any gate fails
+# ─────────────────────────────────────────────
+rollback_semantics:
+  slice_only_rollback:
+    rule: "On any hard stop or gate failure, remove only the files declared in the package's rollback_rule.remove_on_failure list. Do not remove or alter any pre-existing file."
+    procedure:
+      - "Identify the failed gate"
+      - "Report the hard stop in the exec output (hard_stops_hit field)"
+      - "Remove only files in rollback_rule.remove_on_failure"
+      - "Verify no pre-existing file was modified"
+      - "Report rollback complete in residual_notes"
+    hard_stop_on_violation: true
+
+  preserve_unrelated_changes:
+    rule: "Pre-existing files that were not in the package's allowed_files must be left untouched by rollback. rollback_rule.preserve_always is the authoritative list of files that must never be modified."
+    hard_stop_on_violation: true
+
+  no_force_push_on_rollback:
+    rule: "Rollback is accomplished by removing new files and reverting allowed_files changes via git restore. Force push to main/master is never permitted."
+    hard_stop_on_violation: true
+
+  recovery_protocol:
+    rule: "After rollback, a recovery attempt uses the same package_id with a recovery note appended to the commit message: '{package_id} (recovered): {one-line fix description}'."
+    adr_ref: "docs/specs/execution_control_package.md Recovery Protocol"
+
+# ─────────────────────────────────────────────
+# TELEMETRY COMPLETENESS
+# Required exec output fields
+# ─────────────────────────────────────────────
+telemetry_completeness:
+  validations_run:
+    rule: "The exec output must list every validation step that was executed, in order."
+    required: true
+    format: "list of step descriptions matching the package's validation_order"
+
+  validation_results:
+    rule: "The exec output must report PASS/FAIL for each validation step. A step that was not executed must be reported as NOT_RUN, not omitted."
+    required: true
+    hard_stop_on_omission: true
+
+  escalation_status:
+    rule: "The exec output must explicitly state escalation_status. Permitted values: NOT ESCALATED, ESCALATED (with reason). Omitting this field is a hard stop."
+    required: true
+    permitted_values:
+      - "NOT ESCALATED"
+      - "ESCALATED"
+    hard_stop_on_omission: true
+
+  artifacts_produced:
+    rule: "The exec output must list every artifact produced, including path and artifact_id. An artifact that was expected but not produced must be listed as MISSING."
+    required: true
+    hard_stop_on_omission: false
+
+  hard_stops_hit:
+    rule: "The exec output must list every hard stop encountered, including which gate triggered it and what action was taken (rollback / recovery). An empty list is acceptable if no hard stop was hit."
+    required: true
+
+  commit_id:
+    rule: "The exec output must include the git commit SHA of the completed run. If the run was rolled back and not committed, report commit_id as NONE (rollback)."
+    required: true
+
+  files_touched:
+    rule: "The exec output must list every file created or modified, matching the package's allowed_files. Files outside allowed_files appearing in this list are a scope violation."
+    required: true
+
+# ─────────────────────────────────────────────
+# ESCALATION HANDLING
+# When and how escalation is triggered
+# ─────────────────────────────────────────────
+escalation_handling:
+  explicit_escalation_required:
+    rule: "Escalation must be declared explicitly in the exec output escalation_status field. Silent escalation (proceeding without reporting) is not permitted."
+    hard_stop_on_violation: true
+
+  claude_rescue_not_local_autonomy:
+    rule: "SUBSTRATE (Claude) may only be used for work declared in the package's label field. If a LOCAL-FIRST package hits a blocker that requires SUBSTRATE capability, the exec terminal must escalate to the control window — it must NOT silently upgrade to SUBSTRATE execution without approval."
+    hard_stop_on_violation: true
+    note: "This rule prevents LOCAL-FIRST sessions from silently routing to Claude when Aider/Ollama fails"
+
+  escalation_triggers:
+    rule: "A run must escalate if any of the following is evidenced:"
+    triggers:
+      - "Any file in forbidden_files would need to be modified to satisfy the objective"
+      - "The package scope cannot be satisfied without redesigning adjacent systems"
+      - "An existing conflicting artifact occupies the allowed path and cannot be treated as bounded append-only work"
+      - "A required grounding input is missing or unreadable (after one recovery attempt)"
+      - "The exec terminal detects a scope violation mid-run that cannot be corrected within allowed_files"
+
+  escalation_route:
+    substrate: "control_window — report exact blocker, evidence, and why bounded recovery is insufficient"
+    local_first: "control_window — report failed local attempt, fallback outcome, and escalation trigger"
+    escalation_label: "human_review — report all prior attempts, blockers, and recommended resolution path"
+
+  post_escalation_rule:
+    rule: "After escalation, the exec terminal must not take further autonomous action on the package until the control window issues an explicit recovery instruction or a new package."
+
+# ─────────────────────────────────────────────
+# ACCEPTANCE RULES
+# Per-label acceptance semantics
+# ─────────────────────────────────────────────
+acceptance_rules:
+  substrate:
+    claude_allowed_for_authorized_substrate_work:
+      rule: "SUBSTRATE work is explicitly authorized for Claude Code when the package label is SUBSTRATE. Claude may implement directly without a LOCAL-FIRST attempt."
+      scope: "governance, schema, ADR, contract, registry, spec, and template work"
+
+    substrate_scope_constraint:
+      rule: "SUBSTRATE packages must not implement runtime execution logic. If the package objective requires runtime implementation, it must be re-labeled LOCAL-FIRST or split."
+      hard_stop_on_violation: true
+
+    substrate_forbidden_paths:
+      rule: "Even on SUBSTRATE packages, the default forbidden paths apply: framework/**, governance/canonical_roadmap.json, governance/authority_adr_*, config/promotion_manifest.json."
+      hard_stop_on_violation: true
+
+    substrate_done_condition:
+      rule: "A SUBSTRATE run is done when: all allowed_files are created/updated, all artifact_outputs exist and parse, all validation_order steps pass, make check passes, escalation_status is explicitly reported, and a commit is produced."
+
+  local_first:
+    aider_or_local_first_attempt_required_when_substrate_exists:
+      rule: "When a LOCAL-FIRST package is issued and a SUBSTRATE session is available, the exec terminal must attempt the LOCAL-FIRST route first. Bypassing LOCAL-FIRST for SUBSTRATE convenience is not permitted without explicit escalation approval."
+      hard_stop_on_violation: true
+      rationale: "Local-first execution is the primary learning path; bypassing it undermines the autonomy development goal per CLAUDE.md"
+
+    local_first_model_routing:
+      rule: "LOCAL-FIRST packages must use the model_profiles defined in governance/cmdb_lite_registry.v1.yaml. The fast profile is the default; hard is permitted for complex tasks."
+      adr_ref: "ADR-0004"
+
+    local_first_file_scope:
+      rule: "LOCAL-FIRST packages must respect max_file_scope from the model profile (default: 5 files). Packages touching more files must be split or escalated."
+      hard_stop_on_violation: true
+
+    local_first_done_condition:
+      rule: "A LOCAL-FIRST run is done when: the Aider/Ollama execution completes successfully, all artifact_outputs exist and parse, make check passes, escalation_status is reported, and a commit is produced."
+
+    local_first_fallback:
+      rule: "If the primary LOCAL-FIRST model fails, one fallback attempt to the hard profile is permitted. If both fail, the run must escalate — not silently route to SUBSTRATE."
+
+  escalation:
+    explicit_marking_required:
+      rule: "A run labeled ESCALATION must include explicit control-window approval evidence in its exec output. An ESCALATION run without approval evidence is a scope violation."
+      hard_stop_on_violation: true
+
+    escalation_scope:
+      rule: "ESCALATION packages may touch files outside the normal SUBSTRATE/LOCAL-FIRST forbidden lists, but only the specific files approved by the control window. The control window approval must list the exact files permitted."
+      hard_stop_on_violation: true
+
+    escalation_done_condition:
+      rule: "An ESCALATION run is done when: control-window approval is documented, all approved files are touched (and only those), all artifact_outputs exist and parse, make check passes, and a commit is produced with the escalation approval reference in the commit message."
