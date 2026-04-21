@@ -1,0 +1,103 @@
+{
+  "phase3_pack": "developer_assistant_mvp_v1",
+  "generated_at": "2026-04-21T16:38:46.855353+00:00",
+  "required_modules_loaded": true,
+  "loop_runs": true,
+  "benchmark_runs": 4,
+  "benchmark_pass_rate": 1.0,
+  "baseline_loaded": true,
+  "all_checks_passed": true,
+  "component_summary": [
+    {
+      "module": "framework/repo_intake_v1.py",
+      "classes": [
+        "RepoIntakeV1"
+      ]
+    },
+    {
+      "module": "framework/developer_task_v1.py",
+      "classes": [
+        "DeveloperTaskV1"
+      ]
+    },
+    {
+      "module": "framework/developer_assistant_loop_v1.py",
+      "classes": [
+        "DeveloperAssistantLoopV1"
+      ]
+    },
+    {
+      "module": "framework/result_package_v1.py",
+      "classes": [
+        "ResultPackageV1"
+      ]
+    },
+    {
+      "module": "framework/mvp_benchmark_runner_v1.py",
+      "classes": [
+        "MVPBenchmarkRunnerV1"
+      ]
+    },
+    {
+      "module": "governance/phase3_mvp_baseline.v1.yaml",
+      "type": "baseline"
+    }
+  ],
+  "check_details": {
+    "modules_loaded": {
+      "ok": true,
+      "errors": []
+    },
+    "loop_runs": {
+      "ok": true,
+      "errors": []
+    },
+    "benchmark": {
+      "ok": true,
+      "tasks_run": 4,
+      "tasks_passed": 4,
+      "pass_rate": 1.0,
+      "failure_modes": [],
+      "case_results": [
+        {
+          "task_id": "bench-001",
+          "task_kind": "inspect",
+          "passed": true,
+          "final_outcome": "success",
+          "failure_mode": null
+        },
+        {
+          "task_id": "bench-002",
+          "task_kind": "inspect",
+          "passed": true,
+          "final_outcome": "success",
+          "failure_mode": null
+        },
+        {
+          "task_id": "bench-003",
+          "task_kind": "validate",
+          "passed": true,
+          "final_outcome": "success",
+          "failure_mode": null
+        },
+        {
+          "task_id": "bench-004",
+          "task_kind": "inspect",
+          "passed": true,
+          "final_outcome": "success",
+          "failure_mode": null
+        }
+      ]
+    },
+    "baseline": {
+      "ok": true,
+      "errors": []
+    }
+  },
+  "phase_linkage": "Phase 3 (developer_assistant_mvp)",
+  "authority_sources": [
+    "governance/phase3_mvp_baseline.v1.yaml",
+    "governance/phase2_substrate_baseline.v1.yaml",
+    "governance/local_run_validation_pack.v1.yaml"
+  ]
+}

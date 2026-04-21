@@ -1,0 +1,200 @@
+---
+# Phase 3 MVP Baseline v1
+# Authority surface: P3-01-DEVELOPER-ASSISTANT-MVP-PACK-1
+# Governed by: governance/phase2_substrate_baseline.v1.yaml,
+#   governance/local_run_validation_pack.v1.yaml,
+#   governance/definition_of_done.v1.yaml
+# Scope: Phase 3 developer-assistant MVP completion criteria
+
+version: "1.0.0"
+baseline_id: "PHASE3-MVP-BASELINE-V1"
+generated_at: "2026-04-21"
+authority_owner: "governance/authority_adr_0001_source_of_truth.md"
+phase_linkage: "Phase 3 (developer_assistant_mvp)"
+
+# ─────────────────────────────────────────────
+# PHASE IDENTITY
+# ─────────────────────────────────────────────
+phase_id: "phase_3"
+phase_label: "Phase 3 — Developer Assistant MVP"
+phase_status: "in_progress"
+description: >
+  Phase 3 builds the first real product slice on top of the Phase 2 substrate.
+  Its objective is a bounded developer-assistant loop that can intake a repo,
+  accept a task, inspect relevant paths, run validations, and produce a
+  structured result package — all using substrate types from P2-01 and P2-02.
+  No live multi-step coding autonomy yet; Phase 3 closes when the loop
+  structure and benchmark scaffold are proven.
+
+# ─────────────────────────────────────────────
+# REQUIRED MODULES
+# ─────────────────────────────────────────────
+required_modules:
+  description: >
+    These modules must exist as importable Python files under framework/.
+    They are the Phase 3 product slice on top of the Phase 2 substrate.
+
+  # Phase 3 modules (P3-01)
+  repo_intake_v1:
+    module_path: "framework/repo_intake_v1.py"
+    package_id: "P3-01-DEVELOPER-ASSISTANT-MVP-PACK-1"
+    classes: ["RepoIntakeV1"]
+    status: "present"
+
+  developer_task_v1:
+    module_path: "framework/developer_task_v1.py"
+    package_id: "P3-01-DEVELOPER-ASSISTANT-MVP-PACK-1"
+    classes: ["DeveloperTaskV1"]
+    status: "present"
+
+  developer_assistant_loop_v1:
+    module_path: "framework/developer_assistant_loop_v1.py"
+    package_id: "P3-01-DEVELOPER-ASSISTANT-MVP-PACK-1"
+    classes: ["DeveloperAssistantLoopV1", "LoopResultV1"]
+    status: "present"
+
+  result_package_v1:
+    module_path: "framework/result_package_v1.py"
+    package_id: "P3-01-DEVELOPER-ASSISTANT-MVP-PACK-1"
+    classes: ["ResultPackageV1"]
+    status: "present"
+
+  mvp_benchmark_runner_v1:
+    module_path: "framework/mvp_benchmark_runner_v1.py"
+    package_id: "P3-01-DEVELOPER-ASSISTANT-MVP-PACK-1"
+    classes: ["MVPBenchmarkRunnerV1", "BenchmarkSuiteResultV1"]
+    status: "present"
+
+  # Phase 2 substrate modules (inherited)
+  substrate_runtime_v1:
+    module_path: "framework/substrate_runtime_v1.py"
+    package_id: "P2-02-SUBSTRATE-CONFORMANCE-AND-TOOLS-PACK-1"
+    classes: ["SubstrateRuntimeV1"]
+    status: "present"
+
+  substrate_conformance_v1:
+    module_path: "framework/substrate_conformance_v1.py"
+    package_id: "P2-02-SUBSTRATE-CONFORMANCE-AND-TOOLS-PACK-1"
+    classes: ["SubstrateConformanceCheckerV1"]
+    status: "present"
+
+# ─────────────────────────────────────────────
+# REQUIRED CAPABILITIES
+# ─────────────────────────────────────────────
+required_capabilities:
+  repo_intake:
+    description: "Accept a repo root and task metadata as a typed RepoIntakeV1 record"
+    module: "framework/repo_intake_v1.py"
+    status: "present"
+
+  bounded_task_shape:
+    description: "Express a developer task with target_paths, validation_sequence, and retry_budget"
+    module: "framework/developer_task_v1.py"
+    status: "present"
+
+  substrate_backed_loop:
+    description: >
+      Execute an inspect/validate loop using substrate tools (read_file, publish_artifact)
+      and return a LoopResultV1 with inspected_paths, validations_run, final_outcome,
+      escalation_status
+    module: "framework/developer_assistant_loop_v1.py"
+    status: "present"
+
+  result_packaging:
+    description: "Bundle intake + task + tools_used + validations + artifacts into ResultPackageV1"
+    module: "framework/result_package_v1.py"
+    status: "present"
+
+  benchmark_execution:
+    description: "Run at least 3 bounded synthetic tasks and report tasks_run, tasks_passed, pass_rate"
+    module: "framework/mvp_benchmark_runner_v1.py"
+    benchmark_cases_minimum: 3
+    status: "present"
+
+# ─────────────────────────────────────────────
+# COMPLETION REQUIREMENTS
+# ─────────────────────────────────────────────
+completion_requirements:
+  bounded_loop_runs:
+    requirement: >
+      DeveloperAssistantLoopV1.run() completes without exception for valid intake+task
+      input and returns a LoopResultV1 with final_outcome and escalation_status set.
+    evidence: "seam tests: test_loop_runs_and_returns_structured_output passes"
+    status: "met"
+
+  artifact_complete_outputs:
+    requirement: >
+      ResultPackageV1 can be assembled from a completed loop result and serialized via
+      to_dict() with all required fields present.
+    evidence: "seam tests: test_result_package_assembles passes"
+    status: "met"
+
+  benchmark_pack_executes:
+    requirement: >
+      MVPBenchmarkRunnerV1.run() executes at least 3 cases and returns a
+      BenchmarkSuiteResultV1 with tasks_run >= 3, pass_rate in [0.0, 1.0].
+    evidence: "runner: benchmark_runs >= 3 in artifact; seam tests pass"
+    status: "met"
+
+  explicit_escalation_accounting:
+    requirement: >
+      Every loop result and result package explicitly includes escalation_status.
+      All Phase 3 package outputs report NOT_ESCALATED.
+    evidence: "LoopResultV1.escalation_status present; ResultPackageV1.escalation_status present"
+    status: "met"
+
+# ─────────────────────────────────────────────
+# COMPLETION GATE
+# ─────────────────────────────────────────────
+completion_gate:
+  description: >
+    Phase 3 MVP is complete when all completion requirements are met AND the
+    benchmark runner achieves pass_rate > 0.0 on the default benchmark suite.
+
+  minimum_pass_rate: 0.75
+  conformance_check_required: true
+  seam_tests_required: true
+  make_check_required: true
+
+  phase3_gate_status: "met_by_p3_01"
+  note: >
+    P3-01 satisfies the Phase 3 MVP completion gate. Phase 4 work (live local model
+    integration) may begin after this baseline is ratified. The developer assistant
+    loop will require a real local model backend (Ollama/Aider) for Phase 4 to
+    demonstrate multi-step autonomous coding progress.
+
+# ─────────────────────────────────────────────
+# REMAINING BLOCKERS
+# ─────────────────────────────────────────────
+remaining_blockers:
+  description: >
+    Items that must be resolved before Phase 4 (live local model integration) begins.
+
+  unresolved:
+    - blocker_id: "P3-BLOCKER-01"
+      description: >
+        DeveloperAssistantLoopV1 executes synthetic (structure-only) validation steps.
+        Real patch/apply/commit steps are not yet implemented. Transitioning from
+        synthetic to real file-modification steps requires a local model (Aider/Ollama)
+        to generate the actual code changes.
+      severity: "deferred_to_phase4"
+      resolution_path: >
+        Phase 4 will wire a local model backend into the loop. The loop structure
+        is already substrate-backed; Phase 4 replaces the synthetic validation
+        steps with real model-driven patch + validate cycles.
+
+    - blocker_id: "P3-BLOCKER-02"
+      description: >
+        MVPBenchmarkRunnerV1 uses synthetic tasks (inspect/validate only). Real
+        benchmark tasks that require patch generation cannot be scored until the
+        local model backend is available.
+      severity: "deferred_to_phase4"
+      resolution_path: >
+        Phase 4 benchmark tasks will include patch_generation and apply cases,
+        scored against real diffs.
+
+  resolved:
+    - blocker_id: "P3-BLOCKER-00"
+      description: "Phase 3 MVP modules did not exist at Phase 3 start"
+      resolution: "Created in P3-01"
+      resolved_by: "P3-01-DEVELOPER-ASSISTANT-MVP-PACK-1"
