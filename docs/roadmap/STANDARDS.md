@@ -188,3 +188,28 @@ Each roadmap item should contain:
 
 Roadmap docs are the canonical source.
 GitHub issues, execution prompts, package docs, and PRs are downstream execution artifacts and must reference the roadmap IDs they implement.
+
+## 13. Mandatory intake synchronization rule
+
+Every future roadmap intake must update the canonical roadmap docs in the same intake cycle.
+
+### Required file updates
+
+- **Always update:** `docs/roadmap/ROADMAP_INDEX.md`
+- **Also update when priority, pull order, or strategic ranking changes:** `docs/roadmap/ROADMAP_MASTER.md`
+
+### Intake completion rule
+
+A roadmap intake is not complete unless:
+
+1. the new or changed item is reflected in `ROADMAP_INDEX.md`, and
+2. `ROADMAP_MASTER.md` is updated whenever the intake changes strategic priority interpretation, pull-first ordering, or the most important roadmap cluster.
+
+### Prohibited intake pattern
+
+Do not leave roadmap items only in:
+
+- chat history
+- legacy files under `roadmap/`
+- issues without normalized roadmap entry
+- ad hoc docs that are not linked back to the canonical roadmap system
