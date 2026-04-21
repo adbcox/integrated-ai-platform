@@ -1,0 +1,89 @@
+{
+  "sample_count": 5,
+  "local_execute_count": 4,
+  "claude_fallback_count": 1,
+  "fallback_used_count": 1,
+  "validation_passed_count": 4,
+  "receipts": [
+    {
+      "receipt_id": "RCPT-20260421134156-LEDT-P2-eligibil",
+      "packet_id": "LEDT-P2-eligibility",
+      "route_chosen": "local_execute",
+      "executor_used": "aider",
+      "validations_run": [
+        "make check",
+        "pytest tests/test_ledt_eligibility_contract_seam.py -v"
+      ],
+      "validation_passed": true,
+      "fallback_used": false,
+      "fallback_justification_id": null,
+      "result": "success",
+      "elapsed_seconds": 4.1,
+      "recorded_at": "2026-04-21T13:41:56+00:00"
+    },
+    {
+      "receipt_id": "RCPT-20260421134156-LEDT-P3-prefligh",
+      "packet_id": "LEDT-P3-preflight",
+      "route_chosen": "local_execute",
+      "executor_used": "aider",
+      "validations_run": [
+        "make check",
+        "pytest tests/test_ledt_preflight_seam.py -v"
+      ],
+      "validation_passed": true,
+      "fallback_used": false,
+      "fallback_justification_id": null,
+      "result": "success",
+      "elapsed_seconds": 3.8,
+      "recorded_at": "2026-04-21T13:41:56+00:00"
+    },
+    {
+      "receipt_id": "RCPT-20260421134156-LEDT-P4-route",
+      "packet_id": "LEDT-P4-route",
+      "route_chosen": "local_execute",
+      "executor_used": "aider",
+      "validations_run": [
+        "make check",
+        "pytest tests/test_ledt_exec_route_decision_seam.py -v"
+      ],
+      "validation_passed": true,
+      "fallback_used": false,
+      "fallback_justification_id": null,
+      "result": "success",
+      "elapsed_seconds": 5.2,
+      "recorded_at": "2026-04-21T13:41:56+00:00"
+    },
+    {
+      "receipt_id": "RCPT-20260421134156-LEDT-P5-fallback",
+      "packet_id": "LEDT-P5-fallback",
+      "route_chosen": "claude_fallback",
+      "executor_used": "claude",
+      "validations_run": [
+        "make check"
+      ],
+      "validation_passed": false,
+      "fallback_used": true,
+      "fallback_justification_id": "JUST-TEST-scope_exceeded",
+      "result": "success",
+      "elapsed_seconds": 22.0,
+      "recorded_at": "2026-04-21T13:41:56+00:00"
+    },
+    {
+      "receipt_id": "RCPT-20260421134156-LEDT-P6-routing",
+      "packet_id": "LEDT-P6-routing",
+      "route_chosen": "local_execute",
+      "executor_used": "aider",
+      "validations_run": [
+        "make check",
+        "pytest tests/test_ledt_packet_routing_metadata_seam.py -v"
+      ],
+      "validation_passed": true,
+      "fallback_used": false,
+      "fallback_justification_id": null,
+      "result": "success",
+      "elapsed_seconds": 3.5,
+      "recorded_at": "2026-04-21T13:41:56+00:00"
+    }
+  ],
+  "proved_at": "2026-04-21T13:41:56+00:00"
+}
