@@ -857,3 +857,5 @@ from .decomp_handoff_proof import DecompHandoffProofRecord, DecompHandoffProofRu
 from .repair_policy_proof import DecisionProofRow, RepairPolicyProofRecord, RepairPolicyProofRunner
 
 from .trace_enrichment_proof import TraceEnrichmentProofRecord, TraceEnrichmentProofRunner
+
+from .replay_proof import ReplayProofRow, ReplayProofRecord, ReplayProofRunner
