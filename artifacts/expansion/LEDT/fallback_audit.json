@@ -1,0 +1,53 @@
+{
+  "audit_id": "AUDIT-20260421134334",
+  "total_receipts": 6,
+  "fallback_used_count": 3,
+  "justified_count": 2,
+  "avoidable_count": 1,
+  "invalid_count": 0,
+  "entries": [
+    {
+      "receipt_id": "RCPT-TEST-p1",
+      "packet_id": "p1",
+      "fallback_used": false,
+      "audit_class": null,
+      "audit_rationale": "no fallback used"
+    },
+    {
+      "receipt_id": "RCPT-TEST-p2",
+      "packet_id": "p2",
+      "fallback_used": false,
+      "audit_class": null,
+      "audit_rationale": "no fallback used"
+    },
+    {
+      "receipt_id": "RCPT-TEST-p3",
+      "packet_id": "p3",
+      "fallback_used": false,
+      "audit_class": null,
+      "audit_rationale": "no fallback used"
+    },
+    {
+      "receipt_id": "RCPT-TEST-p4-avoidable",
+      "packet_id": "p4-avoidable",
+      "fallback_used": true,
+      "audit_class": "avoidable",
+      "audit_rationale": "class=scope_exceeded avoidable=True evidence_len=29"
+    },
+    {
+      "receipt_id": "RCPT-TEST-p5-justified",
+      "packet_id": "p5-justified",
+      "fallback_used": true,
+      "audit_class": "justified",
+      "audit_rationale": "class=tool_unavailable avoidable=False evidence_len=37"
+    },
+    {
+      "receipt_id": "RCPT-TEST-p6-justified2",
+      "packet_id": "p6-justified2",
+      "fallback_used": true,
+      "audit_class": "justified",
+      "audit_rationale": "class=preflight_failed avoidable=False evidence_len=49"
+    }
+  ],
+  "audited_at": "2026-04-21T13:43:34+00:00"
+}
