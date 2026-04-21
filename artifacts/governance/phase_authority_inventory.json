@@ -1,0 +1,240 @@
+{
+  "inventory_id": "P0-01-AUTHORITY-SURFACE-INVENTORY-1",
+  "generated_at": "2026-04-21T14:01:29.882527+00:00",
+  "canonical_phase_source": "governance/canonical_roadmap.json",
+  "input_doc_check": [
+    {
+      "doc": "revised_target_architecture_handoff_v4.docx",
+      "found": false,
+      "path": null
+    },
+    {
+      "doc": "revised_target_architecture_handoff_v7.docx",
+      "found": false,
+      "path": null
+    },
+    {
+      "doc": "control_window_architecture_adoption_packet.md",
+      "found": false,
+      "path": null
+    }
+  ],
+  "authority_surfaces": [
+    {
+      "surface_id": "AS-01-CANONICAL-ROADMAP",
+      "label": "canonical_roadmap",
+      "description": "Machine-readable canonical phase definitions (Phases 0-7)",
+      "primary_file": "governance/canonical_roadmap.json",
+      "authority_owner": "governance/authority_adr_0001_source_of_truth.md",
+      "surface_type": "machine_readable_json",
+      "supersedes": [
+        "docs/claude-code-roadmap.md",
+        "docs/version15-master-roadmap.md",
+        "docs/system_milestone_roadmap.md"
+      ],
+      "on_disk": true,
+      "readable": true
+    },
+    {
+      "surface_id": "AS-02-CURRENT-PHASE",
+      "label": "current_phase",
+      "description": "Current canonical phase pointer, allowed package class, and tactical family lock state",
+      "primary_file": "governance/current_phase.json",
+      "authority_owner": "governance/authority_adr_0001_source_of_truth.md",
+      "surface_type": "machine_readable_json",
+      "supersedes": [
+        "config/promotion_manifest.json",
+        "docs/* narrative roadmaps"
+      ],
+      "on_disk": true,
+      "readable": true
+    },
+    {
+      "surface_id": "AS-03-PHASE-GATE-STATUS",
+      "label": "phase_gate_status",
+      "description": "Per-phase gate classifications and blocking reasons (open / closed_ratified / materially_implemented_open_governance)",
+      "primary_file": "governance/phase_gate_status.json",
+      "authority_owner": "governance/authority_adr_0001_source_of_truth.md",
+      "surface_type": "machine_readable_json",
+      "supersedes": [
+        "docs/claude-code-roadmap.md",
+        "config/promotion_manifest.json"
+      ],
+      "on_disk": true,
+      "readable": true
+    },
+    {
+      "surface_id": "AS-04-NEXT-PACKAGE-CLASS",
+      "label": "next_package_class",
+      "description": "Currently allowed package class and transition history",
+      "primary_file": "governance/next_package_class.json",
+      "authority_owner": "governance",
+      "surface_type": "machine_readable_json",
+      "supersedes": [
+        "config/promotion_manifest.json",
+        "docs/* narrative roadmaps"
+      ],
+      "on_disk": true,
+      "readable": true
+    },
+    {
+      "surface_id": "AS-05-RUNTIME-CONTRACT",
+      "label": "runtime_contract_version",
+      "description": "Runtime primitive surface and contract version fingerprint",
+      "primary_file": "governance/runtime_contract_version.json",
+      "authority_owner": "governance/authority_adr_0001_source_of_truth.md",
+      "surface_type": "machine_readable_json",
+      "supersedes": [
+        "framework/ module versions (code only; no governance ratification)"
+      ],
+      "on_disk": true,
+      "readable": true
+    },
+    {
+      "surface_id": "AS-06-TACTICAL-FAMILY-CLASSIFICATION",
+      "label": "tactical_family_classification",
+      "description": "EO/ED/MC/LOB/ORT/PGS family lock state and unlock preconditions",
+      "primary_file": "governance/tactical_family_classification.json",
+      "authority_owner": "governance/authority_adr_0002_tactical_family_classification.md",
+      "surface_type": "machine_readable_json",
+      "supersedes": [],
+      "on_disk": true,
+      "readable": true
+    },
+    {
+      "surface_id": "AS-07-SCHEMA-CONTRACT-REGISTRY",
+      "label": "schema_contract_registry",
+      "description": "Active vs legacy_frozen schema classification for framework modules",
+      "primary_file": "governance/schema_contract_registry.json",
+      "authority_owner": "governance/authority_adr_0001_source_of_truth.md",
+      "surface_type": "machine_readable_json",
+      "supersedes": [],
+      "on_disk": true,
+      "readable": true
+    },
+    {
+      "surface_id": "AS-08-PROMOTION-MANIFEST-LEGACY",
+      "label": "promotion_manifest_legacy",
+      "description": "Legacy tactical release authority (frozen pending migration)",
+      "primary_file": "config/promotion_manifest.json",
+      "authority_owner": "config/promotion_manifest.json",
+      "surface_type": "legacy_frozen_json",
+      "supersedes": [],
+      "on_disk": true,
+      "readable": true
+    },
+    {
+      "surface_id": "AS-09-NARRATIVE-ROADMAP-DOCS",
+      "label": "narrative_roadmap_docs",
+      "description": "docs/claude-code-roadmap.md and related narrative roadmap documents (advisory only)",
+      "primary_file": "docs/claude-code-roadmap.md",
+      "authority_owner": "narrative_only",
+      "surface_type": "narrative_advisory_md",
+      "supersedes": [],
+      "on_disk": true,
+      "readable": true
+    }
+  ],
+  "conflicts": [
+    {
+      "conflict_id": "CONF-01",
+      "conflict_type": "phase_numbering_mismatch",
+      "description": "current_phase.json reports current_phase_id=0 (governance_source_of_truth_reconciliation, open) but next_package_class.json reflects Phase 7 closure (current_allowed_class=ratification_only). Phase 0 has been procedurally bypassed without a formal closure record.",
+      "surfaces_involved": [
+        "AS-02-CURRENT-PHASE",
+        "AS-04-NEXT-PACKAGE-CLASS"
+      ],
+      "severity": "high"
+    },
+    {
+      "conflict_id": "CONF-02",
+      "conflict_type": "gate_ordering_inconsistency",
+      "description": "phase_gate_status.json shows Phase 0 as 'open' while Phase 7 is 'closed_ratified'. Phases 1 through 7 were closed without Phase 0 (governance_source_of_truth_reconciliation) receiving a closure record, leaving an unresolved foundational gate.",
+      "surfaces_involved": [
+        "AS-03-PHASE-GATE-STATUS"
+      ],
+      "severity": "high"
+    },
+    {
+      "conflict_id": "CONF-03",
+      "conflict_type": "legacy_authority_coexistence",
+      "description": "config/promotion_manifest.json (legacy tactical release authority) still exists on disk and has not been migrated or formally retired. It supersedes nothing but is itself superseded by governance/ JSON surfaces per ADR 0001. Migration is explicitly deferred per phase_gate_status.json followup note.",
+      "surfaces_involved": [
+        "AS-08-PROMOTION-MANIFEST-LEGACY",
+        "AS-02-CURRENT-PHASE"
+      ],
+      "severity": "low"
+    },
+    {
+      "conflict_id": "CONF-04",
+      "conflict_type": "required_input_docs_absent",
+      "description": "Package P0-01 required 3 input document(s) that are not present on disk: revised_target_architecture_handoff_v4.docx, revised_target_architecture_handoff_v7.docx, control_window_architecture_adoption_packet.md. Inventory was produced from existing on-disk governance/ state only. These docs may contain target-architecture claims that conflict with current governance state; their absence is itself a documentation gap.",
+      "surfaces_involved": [],
+      "severity": "medium",
+      "absent_docs": [
+        "revised_target_architecture_handoff_v4.docx",
+        "revised_target_architecture_handoff_v7.docx",
+        "control_window_architecture_adoption_packet.md"
+      ]
+    }
+  ],
+  "recommended_authority_order": [
+    {
+      "rank": 1,
+      "surface_id": "AS-01-CANONICAL-ROADMAP",
+      "label": "canonical_roadmap",
+      "rationale": "Defines the phase structure that all other surfaces reference; must be correct before any closure decision."
+    },
+    {
+      "rank": 2,
+      "surface_id": "AS-03-PHASE-GATE-STATUS",
+      "label": "phase_gate_status",
+      "rationale": "Per-phase gate classifications are the reconciliation surface for Phase 0 closure; must reflect real state."
+    },
+    {
+      "rank": 3,
+      "surface_id": "AS-02-CURRENT-PHASE",
+      "label": "current_phase",
+      "rationale": "Should be updated to reflect Phase 0 closure once closure evidence is ratified; currently stale."
+    },
+    {
+      "rank": 4,
+      "surface_id": "AS-04-NEXT-PACKAGE-CLASS",
+      "label": "next_package_class",
+      "rationale": "Allowed package class derives from current phase; update after current_phase is reconciled."
+    },
+    {
+      "rank": 5,
+      "surface_id": "AS-05-RUNTIME-CONTRACT",
+      "label": "runtime_contract_version",
+      "rationale": "Phase 1 hardening requires this surface to be explicitly ratified; downstream of Phase 0 closure."
+    },
+    {
+      "rank": 6,
+      "surface_id": "AS-06-TACTICAL-FAMILY-CLASSIFICATION",
+      "label": "tactical_family_classification",
+      "rationale": "Family unlock criteria depend on phase authority being correct; reconcile after Phase 0/1 closure."
+    },
+    {
+      "rank": 7,
+      "surface_id": "AS-07-SCHEMA-CONTRACT-REGISTRY",
+      "label": "schema_contract_registry",
+      "rationale": "Schema active/frozen classification is stable; update as new modules are adopted."
+    },
+    {
+      "rank": 8,
+      "surface_id": "AS-08-PROMOTION-MANIFEST-LEGACY",
+      "label": "promotion_manifest_legacy",
+      "rationale": "Formally retire or migrate after Phase 0/1 authority surfaces are closed."
+    }
+  ],
+  "phase0_gate_status": {
+    "gate_classification": "open",
+    "closure_record_on_disk": true,
+    "blocking_reason": "machine-readable authority artifacts are being introduced by RECON-W1 and have not yet been ratified as closed",
+    "assessment": "OPEN \u2014 Phase 0 has no closure record. The governance_source_of_truth_reconciliation phase requires an explicit closure package before the authority surface inventory is considered fully ratified."
+  },
+  "surface_count": 9,
+  "conflict_count": 4,
+  "high_severity_conflicts": 2
+}
