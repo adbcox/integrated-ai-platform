@@ -212,6 +212,15 @@ from .cmdb_promotion_ratifier import (
     CmdbPromotionArtifact,
     ratify_cmdb_promotion,
 )
+from .domain_branch_proof_harness import (
+    BRANCH_VERDICT_DONE,
+    BRANCH_VERDICT_SCAFFOLD_COMPLETE_PRODUCT_DEFERRED,
+    BRANCH_VERDICT_BLOCKED,
+    BRANCH_PROOF_CRITERIA,
+    BranchProofCriterionResult,
+    BranchProofResult,
+    DomainBranchProofHarness,
+)
 from .retry_telemetry_integration import (
     LoopRetryIntegrationRecord,
     LoopRetryStore,
@@ -680,4 +689,11 @@ __all__ = [
     "CMDB_PROMOTION_DEFERRED",
     "CmdbPromotionArtifact",
     "ratify_cmdb_promotion",
+    "BRANCH_VERDICT_DONE",
+    "BRANCH_VERDICT_SCAFFOLD_COMPLETE_PRODUCT_DEFERRED",
+    "BRANCH_VERDICT_BLOCKED",
+    "BRANCH_PROOF_CRITERIA",
+    "BranchProofCriterionResult",
+    "BranchProofResult",
+    "DomainBranchProofHarness",
 ]
