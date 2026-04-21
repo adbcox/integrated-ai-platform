@@ -86,6 +86,7 @@ from .evidence_backed_task_expander import (
     EXPANSION_CANDIDATES, TaskExpansionDecision, TaskExpansionRecord,
     EvidenceBackedTaskExpander, emit_expansion_record,
 )
+from .failure_cluster_analysis import FailureCluster, FailureClusterReport, FailureClusterAnalyzer, emit_failure_clusters
 from .retry_telemetry_integration import (
     LoopRetryIntegrationRecord,
     LoopRetryStore,
@@ -439,4 +440,8 @@ __all__ = [
     "TaskExpansionRecord",
     "EvidenceBackedTaskExpander",
     "emit_expansion_record",
+    "FailureCluster",
+    "FailureClusterReport",
+    "FailureClusterAnalyzer",
+    "emit_failure_clusters",
 ]
