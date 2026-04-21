@@ -78,6 +78,7 @@ from .task_repetition_harness import (
     make_synthetic_repetition_tasks,
 )
 from .search_action_dispatch import dispatch_search
+from .list_dir_dispatch import dispatch_list_dir
 from .tool_registry import DEFAULT_REGISTRY, ToolContractEntry, ToolRegistry
 from .tool_schema import (
     ApplyPatchAction,
@@ -259,4 +260,5 @@ __all__ = [
     "RatificationArtifact",
     "ratify",
     "dispatch_search",
+    "dispatch_list_dir",
 ]
