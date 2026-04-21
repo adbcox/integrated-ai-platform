@@ -90,6 +90,14 @@ from .failure_cluster_analysis import FailureCluster, FailureClusterReport, Fail
 from .adapter_readiness_stress import StressCheck, StressHarnessResult, AdapterReadinessStressHarness, emit_stress_result
 from .controlled_adapter_scaffold import ScaffoldGate, AdapterScaffoldPlan, ControlledAdapterScaffold, emit_scaffold_plan
 from .terminal_autonomy_ratifier import RatificationCriterion, TerminalRatificationRecord, TerminalAutonomyRatifier, emit_terminal_ratification
+from .expansion_readiness_inspector import (
+    ExpansionReadinessItem,
+    ExpansionReadinessReport,
+    READINESS_EXPANSION_READY,
+    READINESS_EXPANSION_PARTIAL,
+    READINESS_EXPANSION_BLOCKED,
+    inspect_expansion_readiness,
+)
 from .retry_telemetry_integration import (
     LoopRetryIntegrationRecord,
     LoopRetryStore,
@@ -459,4 +467,10 @@ __all__ = [
     "TerminalRatificationRecord",
     "TerminalAutonomyRatifier",
     "emit_terminal_ratification",
+    "ExpansionReadinessItem",
+    "ExpansionReadinessReport",
+    "READINESS_EXPANSION_READY",
+    "READINESS_EXPANSION_PARTIAL",
+    "READINESS_EXPANSION_BLOCKED",
+    "inspect_expansion_readiness",
 ]
