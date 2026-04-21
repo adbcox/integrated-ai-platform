@@ -125,12 +125,20 @@ Every future roadmap intake must update the canonical roadmap docs in the same i
 - **Always update:** `docs/roadmap/ROADMAP_INDEX.md`
 - **Also update when strategic priority, pull order, or ranking changes:** `docs/roadmap/ROADMAP_MASTER.md`
 
+### Required execution-readiness updates
+
+Before a newly added roadmap item is considered fully added to the roadmap system, it must also reach one of the following states in the same roadmap-processing cycle or the immediately following dedicated enrichment cycle:
+
+- a dedicated execution pack under `docs/roadmap/`, or
+- equivalent canonical enrichment in the implementation guide plus a clearly documented path to its later execution pack
+
 ### Intake completion rule
 
 A roadmap intake is **not complete** unless:
 
-1. the item exists in `ROADMAP_INDEX.md`, and
-2. `ROADMAP_MASTER.md` has been updated whenever the intake changes priority interpretation, pull-first ordering, or the most important roadmap cluster.
+1. the item exists in `ROADMAP_INDEX.md`,
+2. `ROADMAP_MASTER.md` has been updated whenever the intake changes priority interpretation, pull-first ordering, or the most important roadmap cluster, and
+3. the item has either execution-pack coverage or explicit canonical enrichment coverage with a clear follow-on execution-pack path.
 
 ### Priority interpretation rule
 
@@ -148,5 +156,6 @@ When in doubt, read files in this order:
 1. `docs/roadmap/ROADMAP_MASTER.md`
 2. `docs/roadmap/ROADMAP_INDEX.md`
 3. `docs/roadmap/STANDARDS.md`
-4. any dated sync or execution-context files in `docs/roadmap/`
-5. legacy files under `roadmap/` only for historical context
+4. `docs/roadmap/EXECUTION_PACK_INDEX.md`
+5. any dated sync or execution-context files in `docs/roadmap/`
+6. legacy files under `roadmap/` only for historical context
