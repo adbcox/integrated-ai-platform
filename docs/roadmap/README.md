@@ -18,12 +18,21 @@ The roadmap is the authoritative planning and governance layer for the platform.
 - **Execution derivative:** GitHub issues, PRs, and implementation packages
 - **Reference key:** every execution artifact should reference one or more roadmap IDs such as `RM-GOV-001`
 
+## Canonicality note
+
+This `docs/roadmap/` directory supersedes the older top-level `roadmap/` documentation root.
+
+- Use `docs/roadmap/` for all new roadmap updates.
+- Treat the top-level `roadmap/` tree as legacy planning storage unless and until it is fully migrated.
+- Do not create new canonical roadmap items in multiple places.
+
 ## Directory contents
 
 - `ROADMAP_INDEX.md` — master roadmap index
 - `STANDARDS.md` — IDs, categories, statuses, metrics, naming, and impact rules
 - `FEATURE_BLOCK_GROUPING.md` — grouped-package planning logic for shared-touch work
 - `CMDB_LINKAGE.md` — mapping expectations between roadmap items and systems/assets
+- `ROADMAP_CHAT_SYNC_2026-04-21.md` — detailed normalization of roadmap items captured in chat and synced into the canonical roadmap system
 - `TEMPLATES/ROADMAP_ITEM_TEMPLATE.md` — template for new roadmap items
 
 ## Workflow
