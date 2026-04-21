@@ -35,3 +35,11 @@ Operating rule:
 - `RM-CORE-004` — Stabilize artifact persistence
 - `RM-CORE-005` — Wrap local execution commands
 - `RM-CORE-006` — Establish baseline local-run validation
+
+### High-priority development items (completed)
+
+- `RM-DEV-005` — Local autonomy uplift, OSS intake, and Aider reliability hardening **(COMPLETED)**
+  - Local autonomy uplift validated via Phase 4 and Phase 5 substrate packs
+  - Aider constrained to controlled adapter / transport target (ADR 0023)
+  - OSS intake formalized with registry, boundaries, and rollback strategy
+  - Repo-visible authority artifacts now carry prior chat-only decisions
