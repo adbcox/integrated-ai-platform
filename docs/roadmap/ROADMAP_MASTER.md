@@ -44,6 +44,7 @@ Unless blocked by lower-phase prerequisites, pull work in this order:
 The highest-value roadmap cluster for the home developer assistant is:
 
 - `RM-DEV-005` — Local autonomy uplift, OSS intake, and Aider reliability hardening
+- `RM-INTEL-002` — Verified OSS capability harvest and compatibility validation for the local development assistant
 - `RM-DEV-003` — Bounded autonomous code generation
 - `RM-DEV-002` — Dual-model inline QC coding loop for the developer assistant
 - `RM-INTEL-001` — Open-source watchtower with update alerts and adoption recommendations
@@ -51,6 +52,23 @@ The highest-value roadmap cluster for the home developer assistant is:
 - `RM-DEV-001` — Add Xcode and Apple-platform coding capability to the developer assistant
 
 These items should be treated as the most strategically important cluster in the roadmap.
+
+## Immediate discovery priority inside the local-development-assistant program
+
+### RM-INTEL-002 — Verified OSS capability harvest and compatibility validation for the local development assistant
+
+**Status:** Proposed  
+**Priority:** Critical  
+**Why it is immediate:** This item exists to aggressively identify open-source codebases, helper repos, protocols, structural-search tools, memory layers, benchmarks, and sandboxing/code-intelligence components that can materially improve the local agent without rebuilding those capabilities from scratch.
+
+### Discovery rule
+
+Within the local-development-assistant program, `RM-INTEL-002` is the top-priority discovery and validation stream. It should:
+
+1. aggressively search for viable OSS components,
+2. verify them against the current architecture and already-adopted shortlist,
+3. classify them as adopt-now / evaluate / watch / reject,
+4. and feed the results back into `RM-DEV-005`, `RM-DEV-003`, and `RM-INTEL-001`.
 
 ## Canonical backlog inventory
 
@@ -72,6 +90,7 @@ That file is the canonical inventory of roadmap IDs currently captured in the re
 - `RM-DEV-005`
 - `RM-AUTO-001`
 - `RM-INTEL-001`
+- `RM-INTEL-002`
 
 ### C. Core system / packaging / platform control
 - `RM-CORE-001`
