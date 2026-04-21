@@ -67,6 +67,7 @@ from .adapter_campaign_pre_authorizer import (
     PRE_AUTH_DECISION_DEFERRED,
     pre_authorize_adapter_campaign,
 )
+from .search_aware_inspect import SearchAwareInspectResult, SearchAwareInspectRunner
 from .retry_telemetry_integration import (
     LoopRetryIntegrationRecord,
     LoopRetryStore,
@@ -377,4 +378,6 @@ __all__ = [
     "PHASE_COMPLETE",
     "PHASE_PARTIAL",
     "ratify_phase_closeout",
+    "SearchAwareInspectResult",
+    "SearchAwareInspectRunner",
 ]
