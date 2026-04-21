@@ -78,6 +78,7 @@ from .fused_prompt_context import FusedPromptContext, build_fused_prompt
 from .bounded_critique_adopter import CritiqueAdoptionRecord, BoundedCritiqueAdopter
 from .bounded_retry_controller import RetryDecisionRecord, BoundedRetryController
 from .unified_local_metrics import UnifiedLocalMetrics, compute_unified_metrics, emit_unified_metrics
+from .task_class_benchmark import TaskClassBenchmarkEntry, TaskClassBenchmarkReport, TaskClassBenchmarkRunner
 from .retry_telemetry_integration import (
     LoopRetryIntegrationRecord,
     LoopRetryStore,
@@ -413,4 +414,7 @@ __all__ = [
     "UnifiedLocalMetrics",
     "compute_unified_metrics",
     "emit_unified_metrics",
+    "TaskClassBenchmarkEntry",
+    "TaskClassBenchmarkReport",
+    "TaskClassBenchmarkRunner",
 ]
