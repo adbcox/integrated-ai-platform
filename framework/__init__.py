@@ -221,6 +221,11 @@ from .domain_branch_proof_harness import (
     BranchProofResult,
     DomainBranchProofHarness,
 )
+from .domain_branch_first_wave_ratifier import (
+    FirstWavePromotionRecord,
+    FirstWavePromotionArtifact,
+    ratify_first_wave_promotion,
+)
 from .retry_telemetry_integration import (
     LoopRetryIntegrationRecord,
     LoopRetryStore,
@@ -696,4 +701,7 @@ __all__ = [
     "BranchProofCriterionResult",
     "BranchProofResult",
     "DomainBranchProofHarness",
+    "FirstWavePromotionRecord",
+    "FirstWavePromotionArtifact",
+    "ratify_first_wave_promotion",
 ]
