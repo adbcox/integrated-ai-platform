@@ -1,0 +1,65 @@
+{
+  "sample_count": 5,
+  "local_execute_count": 3,
+  "claude_fallback_count": 2,
+  "hard_stop_count": 0,
+  "local_execute_rate": 0.6,
+  "sample_decisions": [
+    {
+      "decision_id": "ROUTE-20260421133938-LEDT-P4-boun",
+      "packet_id": "LEDT-P4-bounded-a",
+      "route": "local_execute",
+      "eligibility_passed": true,
+      "preflight_passed": true,
+      "decision_reason": "eligibility passed and preflight ready",
+      "fallback_authorized": false,
+      "fallback_authorization_reason": null,
+      "decided_at": "2026-04-21T13:39:38+00:00"
+    },
+    {
+      "decision_id": "ROUTE-20260421133938-LEDT-P4-boun",
+      "packet_id": "LEDT-P4-bounded-b",
+      "route": "local_execute",
+      "eligibility_passed": true,
+      "preflight_passed": true,
+      "decision_reason": "eligibility passed and preflight ready",
+      "fallback_authorized": false,
+      "fallback_authorization_reason": null,
+      "decided_at": "2026-04-21T13:39:38+00:00"
+    },
+    {
+      "decision_id": "ROUTE-20260421133938-LEDT-P4-boun",
+      "packet_id": "LEDT-P4-bounded-c",
+      "route": "local_execute",
+      "eligibility_passed": true,
+      "preflight_passed": true,
+      "decision_reason": "eligibility passed and preflight ready",
+      "fallback_authorized": false,
+      "fallback_authorization_reason": null,
+      "decided_at": "2026-04-21T13:39:38+00:00"
+    },
+    {
+      "decision_id": "ROUTE-20260421133938-LEDT-P4-ext-",
+      "packet_id": "LEDT-P4-ext-api",
+      "route": "claude_fallback",
+      "eligibility_passed": false,
+      "preflight_passed": true,
+      "decision_reason": "local execution not viable; eligibility failed: has_external_api_calls=True disqualifies local execution",
+      "fallback_authorized": true,
+      "fallback_authorization_reason": "eligibility failed: has_external_api_calls=True disqualifies local execution",
+      "decided_at": "2026-04-21T13:39:38+00:00"
+    },
+    {
+      "decision_id": "ROUTE-20260421133938-LEDT-P4-no-v",
+      "packet_id": "LEDT-P4-no-val-cmd",
+      "route": "claude_fallback",
+      "eligibility_passed": false,
+      "preflight_passed": false,
+      "decision_reason": "local execution not viable; eligibility failed: no validation_commands specified",
+      "fallback_authorized": true,
+      "fallback_authorization_reason": "eligibility failed: no validation_commands specified",
+      "decided_at": "2026-04-21T13:39:38+00:00"
+    }
+  ],
+  "proved_at": "2026-04-21T13:39:38+00:00"
+}
