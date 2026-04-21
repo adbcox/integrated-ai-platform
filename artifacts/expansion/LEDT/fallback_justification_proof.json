@@ -1,0 +1,42 @@
+{
+  "sample_count": 3,
+  "avoidable_count": 3,
+  "class_distribution": {
+    "tool_unavailable": 1,
+    "scope_exceeded": 1,
+    "validation_failure": 1
+  },
+  "records": [
+    {
+      "justification_id": "JUST-20260421134047-aider-missin",
+      "packet_id": "aider-missing",
+      "route_decision_id": "ROUTE-20260421134047-aider-missin",
+      "justification_class": "tool_unavailable",
+      "evidence": "aider package not found on sys.path during preflight C1 check",
+      "avoidable_in_future": true,
+      "mitigation_hint": "install aider via pip before running local execution",
+      "recorded_at": "2026-04-21T13:40:47+00:00"
+    },
+    {
+      "justification_id": "JUST-20260421134047-scope-exceed",
+      "packet_id": "scope-exceeded",
+      "route_decision_id": "ROUTE-20260421134047-scope-exceed",
+      "justification_class": "scope_exceeded",
+      "evidence": "file_scope_count=12 exceeds max 5 allowed by eligibility contract",
+      "avoidable_in_future": true,
+      "mitigation_hint": "split packet into sub-packets each touching <= 5 files",
+      "recorded_at": "2026-04-21T13:40:47+00:00"
+    },
+    {
+      "justification_id": "JUST-20260421134047-no-validatio",
+      "packet_id": "no-validation",
+      "route_decision_id": "ROUTE-20260421134047-no-validatio",
+      "justification_class": "validation_failure",
+      "evidence": "no validation_commands specified in packet input; overall_ready=False",
+      "avoidable_in_future": true,
+      "mitigation_hint": "add at least one validation command (e.g. make check) to packet spec",
+      "recorded_at": "2026-04-21T13:40:47+00:00"
+    }
+  ],
+  "proved_at": "2026-04-21T13:40:47+00:00"
+}
