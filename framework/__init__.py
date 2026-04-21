@@ -49,6 +49,7 @@ from .search_cache_adapter import CachedSearchAdapter
 from .pattern_guided_inspector import InspectHint, PatternGuidedInspector
 from .loop_task_builder import TaskBuildContext, LoopTaskBuilder
 from .routing_config_adopter import AdoptionRecommendation, RoutingAdoptionResult, RoutingConfigAdopter, save_adoption_result
+from .critique_specializer import CritiqueSpecialization, CritiqueSpecializer
 from .retry_telemetry_integration import (
     LoopRetryIntegrationRecord,
     LoopRetryStore,
@@ -335,4 +336,6 @@ __all__ = [
     "RoutingAdoptionResult",
     "RoutingConfigAdopter",
     "save_adoption_result",
+    "CritiqueSpecialization",
+    "CritiqueSpecializer",
 ]
