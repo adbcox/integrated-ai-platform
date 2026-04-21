@@ -48,6 +48,7 @@ from .loop_artifact_publisher import LoopArtifactRecord, LoopArtifactPublisher
 from .search_cache_adapter import CachedSearchAdapter
 from .pattern_guided_inspector import InspectHint, PatternGuidedInspector
 from .loop_task_builder import TaskBuildContext, LoopTaskBuilder
+from .routing_config_adopter import AdoptionRecommendation, RoutingAdoptionResult, RoutingConfigAdopter, save_adoption_result
 from .retry_telemetry_integration import (
     LoopRetryIntegrationRecord,
     LoopRetryStore,
@@ -330,4 +331,8 @@ __all__ = [
     "PatternGuidedInspector",
     "TaskBuildContext",
     "LoopTaskBuilder",
+    "AdoptionRecommendation",
+    "RoutingAdoptionResult",
+    "RoutingConfigAdopter",
+    "save_adoption_result",
 ]
