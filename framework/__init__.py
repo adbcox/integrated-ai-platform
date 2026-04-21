@@ -62,6 +62,7 @@ from .retrieval_cache import CachedRetrievalResult, RetrievalCache
 from .loop_retrieval_bridge import LoopContextBundle, LoopRetrievalBridge
 from .routing_config import TaskRoutingOverride, RoutingConfig, DEFAULT_ROUTING_CONFIG, load_routing_config, save_routing_config
 from .memory_critique_enricher import CritiqueEnrichment, enrich_critique, render_enriched_retry_prompt
+from .readiness_evaluator import ReadinessCriterion, ReadinessEvaluation, evaluate_readiness
 from .autonomy_metrics_extended import (
     TaskClassMetricsExtended,
     ExtendedAutonomyMetrics,
@@ -249,4 +250,7 @@ __all__ = [
     "CritiqueEnrichment",
     "enrich_critique",
     "render_enriched_retry_prompt",
+    "ReadinessCriterion",
+    "ReadinessEvaluation",
+    "evaluate_readiness",
 ]
