@@ -1,0 +1,64 @@
+{
+  "sample_count": 5,
+  "local_first_count": 4,
+  "claude_only_count": 1,
+  "local_first_rate": 0.8,
+  "records": [
+    {
+      "metadata_id": "META-20260421134119-LEDT-P2-eligibil",
+      "packet_id": "LEDT-P2-eligibility",
+      "preferred_executor": "local_first",
+      "eligibility_id": null,
+      "route_decision_id": null,
+      "local_exec_allowed": true,
+      "claude_fallback_allowed": false,
+      "routing_policy_version": "ledt-v1",
+      "created_at": "2026-04-21T13:41:19+00:00"
+    },
+    {
+      "metadata_id": "META-20260421134119-LEDT-P3-prefligh",
+      "packet_id": "LEDT-P3-preflight",
+      "preferred_executor": "local_first",
+      "eligibility_id": null,
+      "route_decision_id": null,
+      "local_exec_allowed": true,
+      "claude_fallback_allowed": false,
+      "routing_policy_version": "ledt-v1",
+      "created_at": "2026-04-21T13:41:19+00:00"
+    },
+    {
+      "metadata_id": "META-20260421134119-LEDT-P4-route-de",
+      "packet_id": "LEDT-P4-route-decision",
+      "preferred_executor": "local_first",
+      "eligibility_id": null,
+      "route_decision_id": null,
+      "local_exec_allowed": true,
+      "claude_fallback_allowed": false,
+      "routing_policy_version": "ledt-v1",
+      "created_at": "2026-04-21T13:41:19+00:00"
+    },
+    {
+      "metadata_id": "META-20260421134119-LEDT-P5-fallback",
+      "packet_id": "LEDT-P5-fallback-justification",
+      "preferred_executor": "local_first",
+      "eligibility_id": null,
+      "route_decision_id": null,
+      "local_exec_allowed": true,
+      "claude_fallback_allowed": false,
+      "routing_policy_version": "ledt-v1",
+      "created_at": "2026-04-21T13:41:19+00:00"
+    },
+    {
+      "metadata_id": "META-20260421134119-LEDT-P12-closeou",
+      "packet_id": "LEDT-P12-closeout",
+      "preferred_executor": "claude_only",
+      "eligibility_id": null,
+      "route_decision_id": null,
+      "local_exec_allowed": true,
+      "claude_fallback_allowed": true,
+      "routing_policy_version": "ledt-v1",
+      "created_at": "2026-04-21T13:41:19+00:00"
+    }
+  ],
+  "proved_at": "2026-04-21T13:41:19+00:00"
+}
