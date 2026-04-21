@@ -1,0 +1,45 @@
+{
+  "ratification_id": "LACE2-RAT-20260421120049",
+  "criteria": [
+    {
+      "criterion_id": "C1",
+      "description": "Real benchmark runs completed",
+      "passed": true,
+      "evidence": "total_tasks=8"
+    },
+    {
+      "criterion_id": "C2",
+      "description": "Real tmp files were written",
+      "passed": true,
+      "evidence": "tasks ran with tmp fixture writes: 8"
+    },
+    {
+      "criterion_id": "C3",
+      "description": "Regime comparison valid",
+      "passed": true,
+      "evidence": "regime_upgrade_confirmed=True"
+    },
+    {
+      "criterion_id": "C4",
+      "description": "Positive pass rate on real-file tasks",
+      "passed": true,
+      "evidence": "pass_rate=1.0"
+    },
+    {
+      "criterion_id": "C5",
+      "description": "Failure mining complete",
+      "passed": true,
+      "evidence": "total_failures=3"
+    }
+  ],
+  "criteria_passed": 5,
+  "criteria_total": 5,
+  "verdict": "real_local_autonomy_uplift_confirmed",
+  "limitations": [
+    "No LLM-generated code edits were tested; all file mutations are mechanical string replacements.",
+    "First-pass rate measures mechanical correctness only, not semantic code quality.",
+    "8-task benchmark pack is too small for statistical confidence.",
+    "Retry-loop evidence remains limited; P9 measures first-pass baseline only."
+  ],
+  "ratified_at": "2026-04-21T12:00:49+00:00"
+}

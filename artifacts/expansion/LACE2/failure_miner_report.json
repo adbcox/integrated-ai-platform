@@ -1,0 +1,28 @@
+{
+  "miner_id": "FAIL-MINE-20260421120008",
+  "benchmark_failures": 0,
+  "repair_mismatches": 0,
+  "replay_not_replayable": 3,
+  "total_failures": 3,
+  "failure_entries": [
+    {
+      "surface": "replay_gate",
+      "item_id": "LACE2-DECOMP",
+      "failure_kind": "not_replayable",
+      "detail": "outcome_class='first_pass_success' is not replayable"
+    },
+    {
+      "surface": "replay_gate",
+      "item_id": "LACE2-RETRIEVAL",
+      "failure_kind": "not_replayable",
+      "detail": "outcome_class='first_pass_success' is not replayable"
+    },
+    {
+      "surface": "replay_gate",
+      "item_id": "LACE2-REPAIR-RETRY",
+      "failure_kind": "not_replayable",
+      "detail": "outcome_class='retry_success' is not replayable"
+    }
+  ],
+  "mined_at": "2026-04-21T12:00:08+00:00"
+}

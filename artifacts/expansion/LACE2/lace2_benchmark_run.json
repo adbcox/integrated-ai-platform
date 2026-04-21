@@ -1,0 +1,89 @@
+{
+  "run_id": "LACE2-RUN-20260421120014",
+  "benchmark_kind": "real_file_baseline",
+  "total_tasks": 8,
+  "passed_count": 8,
+  "failed_count": 0,
+  "pass_rate": 1.0,
+  "kind_pass_rates": {
+    "text_replacement": 1.0,
+    "insert_block": 1.0,
+    "add_guard": 1.0,
+    "add_field": 1.0
+  },
+  "task_results": [
+    {
+      "task_id": "LACE2-RF-01",
+      "task_kind": "text_replacement",
+      "passed": true,
+      "content_match": true,
+      "grep_match": true,
+      "actual_content": "    result_state: str = \"pending\"",
+      "failure_reason": null
+    },
+    {
+      "task_id": "LACE2-RF-02",
+      "task_kind": "text_replacement",
+      "passed": true,
+      "content_match": true,
+      "grep_match": true,
+      "actual_content": "    max_attempts: int = 3",
+      "failure_reason": null
+    },
+    {
+      "task_id": "LACE2-RF-03",
+      "task_kind": "insert_block",
+      "passed": true,
+      "content_match": true,
+      "grep_match": true,
+      "actual_content": "    notes: str = \"\"\n    # enriched: bool = False",
+      "failure_reason": null
+    },
+    {
+      "task_id": "LACE2-RF-04",
+      "task_kind": "insert_block",
+      "passed": true,
+      "content_match": true,
+      "grep_match": true,
+      "actual_content": "    status: str = \"active\"\n    # cooldown_seconds: int = 0",
+      "failure_reason": null
+    },
+    {
+      "task_id": "LACE2-RF-05",
+      "task_kind": "add_guard",
+      "passed": true,
+      "content_match": true,
+      "grep_match": true,
+      "actual_content": "    # guard: failure_kind must be non-empty\n    def decide(self, failure: FailureRecord) -> RepairDecision:",
+      "failure_reason": null
+    },
+    {
+      "task_id": "LACE2-RF-06",
+      "task_kind": "add_guard",
+      "passed": true,
+      "content_match": true,
+      "grep_match": true,
+      "actual_content": "    # guard: old_string must be non-empty\n    def _run_task(self, task: LocalAutonomyTask) -> TaskRunResult:",
+      "failure_reason": null
+    },
+    {
+      "task_id": "LACE2-RF-07",
+      "task_kind": "add_field",
+      "passed": true,
+      "content_match": true,
+      "grep_match": true,
+      "actual_content": "    enriched_at: str\n    # enriched_by: str = \"local\"",
+      "failure_reason": null
+    },
+    {
+      "task_id": "LACE2-RF-08",
+      "task_kind": "add_field",
+      "passed": true,
+      "content_match": true,
+      "grep_match": true,
+      "actual_content": "    acceptance_grep: str\n    # notes: str = \"\"",
+      "failure_reason": null
+    }
+  ],
+  "ran_at": "2026-04-21T12:00:14+00:00"
+}

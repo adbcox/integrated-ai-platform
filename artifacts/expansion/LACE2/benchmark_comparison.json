@@ -1,0 +1,13 @@
+{
+  "comparison_id": "REGIME-CMP-20260421120008",
+  "lace1_benchmark_kind": "synthetic_baseline",
+  "lace1_total_tasks": 12,
+  "lace1_pass_rate": 1.0,
+  "lace2_benchmark_kind": "real_file_baseline",
+  "lace2_total_tasks": 8,
+  "lace2_pass_rate": 1.0,
+  "pass_rate_delta": 0.0,
+  "regime_upgrade_confirmed": true,
+  "compared_at": "2026-04-21T12:00:08+00:00",
+  "artifact_path": null
+}
