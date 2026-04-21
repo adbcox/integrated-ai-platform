@@ -1,11 +1,9 @@
 {
   "phase7_final_pack": "final_promotion_ratification_v1",
-  "generated_at": "2026-04-21T18:25:00.637086+00:00",
-  "phase7_final_ratified": false,
-  "promotion_gate_cleared": false,
-  "remaining_blockers": [
-    "live_evidence: live_dispatch_succeeded=False (dispatch_mode='dry_run_only'); live Aider execution required to clear this blocker"
-  ],
+  "generated_at": "2026-04-21T21:48:54.131847+00:00",
+  "phase7_final_ratified": true,
+  "promotion_gate_cleared": true,
+  "remaining_blockers": [],
   "live_evidence_seen": true,
   "all_checks_passed": true,
   "escalation_status": "NOT_ESCALATED",
@@ -13,20 +11,18 @@
     "evidence_inputs_loaded": {
       "promotion_pack": true,
       "live_evidence": true,
-      "live_proof_chain": false
+      "live_proof_chain": true
     },
-    "load_errors": [
-      "file not found: artifacts/local_runs/local_live_proof_chain.json"
-    ],
+    "load_errors": [],
     "promotion_pack_all_checks_passed": true,
     "live_evidence_telemetry_complete": true,
     "live_dispatch_succeeded": false,
     "dispatch_mode": "dry_run_only",
-    "live_proof_chain_present": false,
+    "live_proof_chain_present": true,
     "live_proof_notes": [
-      "live_proof_chain: artifacts/local_runs/local_live_proof_chain.json not found; no additional live execution evidence available"
+      "live_proof_chain: live_dispatch_succeeded=True found; live dispatch blocker cleared from chain"
     ],
-    "total_blockers": 1
+    "total_blockers": 0
   },
   "component_summary": [
     {
@@ -44,7 +40,7 @@
   "evidence_inputs_loaded": {
     "promotion_pack": true,
     "live_evidence": true,
-    "live_proof_chain": false
+    "live_proof_chain": true
   },
   "phase_linkage": "Phase 7 (full_autonomy_and_promotion)",
   "authority_sources": [
