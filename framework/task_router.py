@@ -19,6 +19,7 @@ from typing import Optional
 
 from framework.local_memory_store import LocalMemoryStore
 from framework.model_profiles import ModelProfile, list_active_profiles, resolve_profile_for_task_class
+from framework.routing_config import RoutingConfig, DEFAULT_ROUTING_CONFIG
 
 # -- import-time interface assertions --
 assert "profile_name" in ModelProfile.__dataclass_fields__, \
@@ -79,6 +80,7 @@ def route_task(
     memory_store: Optional[LocalMemoryStore] = None,
     allow_external: bool = False,
     force_profile: Optional[str] = None,
+    routing_config: Optional[RoutingConfig] = None,
 ) -> RoutingDecision:
     """Select the best local profile for a task class, escalating if degraded.
 
@@ -95,6 +97,7 @@ def route_task(
         RoutingDecision with the chosen profile and the reason.
     """
     store = memory_store or LocalMemoryStore()
+    cfg = routing_config if routing_config is not None else DEFAULT_ROUTING_CONFIG
     local_profiles = _ollama_profiles_by_name()
 
     # forced override
@@ -121,7 +124,8 @@ def route_task(
     # check failure rate for base profile
     base_rate = _profile_failure_rate(store, task_class, base_profile.profile_name)
 
-    if base_rate < _DEGRADED_FAILURE_RATE:
+    _threshold = cfg.threshold_for(task_class)
+    if base_rate < _threshold:
         return RoutingDecision(
             profile_name=base_profile.profile_name,
             backend=base_profile.backend,
@@ -138,7 +142,7 @@ def route_task(
         if candidate is None:
             continue
         candidate_rate = _profile_failure_rate(store, task_class, candidate_name)
-        if candidate_rate < _DEGRADED_FAILURE_RATE:
+        if candidate_rate < _threshold:
             return RoutingDecision(
                 profile_name=candidate.profile_name,
                 backend=candidate.backend,

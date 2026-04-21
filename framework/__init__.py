@@ -60,6 +60,7 @@ from .memory_compactor import MemoryCompactionResult, compact_memory
 from .repo_pattern_store import PatternEntry, RepoPatternLibrary, build_repo_pattern_library, save_repo_pattern_library
 from .retrieval_cache import CachedRetrievalResult, RetrievalCache
 from .loop_retrieval_bridge import LoopContextBundle, LoopRetrievalBridge
+from .routing_config import TaskRoutingOverride, RoutingConfig, DEFAULT_ROUTING_CONFIG, load_routing_config, save_routing_config
 from .autonomy_metrics_extended import (
     TaskClassMetricsExtended,
     ExtendedAutonomyMetrics,
@@ -239,4 +240,9 @@ __all__ = [
     "ExtendedAutonomyMetrics",
     "collect_extended_metrics",
     "save_extended_metrics",
+    "TaskRoutingOverride",
+    "RoutingConfig",
+    "DEFAULT_ROUTING_CONFIG",
+    "load_routing_config",
+    "save_routing_config",
 ]
