@@ -116,6 +116,26 @@ To prevent roadmap drift or split authority:
 - Do not add new canonical roadmap items under the top-level `roadmap/` tree.
 - If an item matters operationally, ensure it exists in the normalized index and not only in chat.
 
+## Mandatory intake synchronization rule
+
+Every future roadmap intake must update the canonical roadmap docs in the same intake cycle.
+
+### Required file updates
+
+- **Always update:** `docs/roadmap/ROADMAP_INDEX.md`
+- **Also update when strategic priority, pull order, or ranking changes:** `docs/roadmap/ROADMAP_MASTER.md`
+
+### Intake completion rule
+
+A roadmap intake is **not complete** unless:
+
+1. the item exists in `ROADMAP_INDEX.md`, and
+2. `ROADMAP_MASTER.md` has been updated whenever the intake changes priority interpretation, pull-first ordering, or the most important roadmap cluster.
+
+### Priority interpretation rule
+
+If a new item becomes more important than existing work, changes the local development assistant focus set, or alters what should be pulled next, that change must be reflected in `ROADMAP_MASTER.md` immediately rather than deferred.
+
 ## Legacy rule
 
 The top-level `roadmap/` tree is legacy historical material.
