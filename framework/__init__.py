@@ -47,6 +47,7 @@ from .gitdiff_review_packager import DiffReviewRecord, GitDiffReviewPackager
 from .loop_artifact_publisher import LoopArtifactRecord, LoopArtifactPublisher
 from .search_cache_adapter import CachedSearchAdapter
 from .pattern_guided_inspector import InspectHint, PatternGuidedInspector
+from .loop_task_builder import TaskBuildContext, LoopTaskBuilder
 from .retry_telemetry_integration import (
     LoopRetryIntegrationRecord,
     LoopRetryStore,
@@ -327,4 +328,6 @@ __all__ = [
     "CachedSearchAdapter",
     "InspectHint",
     "PatternGuidedInspector",
+    "TaskBuildContext",
+    "LoopTaskBuilder",
 ]
