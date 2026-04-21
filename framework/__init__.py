@@ -863,3 +863,5 @@ from .replay_proof import ReplayProofRow, ReplayProofRecord, ReplayProofRunner
 from .real_file_benchmark_pack import RealFileTask, LACE2_REAL_FILE_PACK, validate_real_file_greps, emit_real_file_pack, load_real_file_pack
 
 from .real_file_benchmark_fixture import FixtureResult, RealFileBenchmarkFixture
+
+from .lace2_benchmark_runner import TaskRunResult, Lace2BenchmarkRecord, Lace2BenchmarkRunner
