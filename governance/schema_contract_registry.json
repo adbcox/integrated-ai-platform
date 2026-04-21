@@ -1,5 +1,5 @@
 {
-  "active_count": 4,
+  "active_count": 5,
   "authority_owner": "governance",
   "baseline_commit": "53ae4d4f177b176a7bffaa63988f63fa0efa622c",
   "generated_at": "2026-04-18T08:33:06-04:00",
@@ -81,30 +81,36 @@
     {
       "adr_ref": "governance/authority_adr_0001_source_of_truth.md",
       "classification": "active",
-      "consumer_count": 4,
+      "consumer_count": 7,
       "consumer_modules": [
         "artifacts/phase2_schema_entry_validation_report.py",
         "framework/phase2_session_bundle.py",
+        "framework/session_job_adapters.py",
         "framework/worker_runtime.py",
-        "tests/test_phase2_session_bundle.py"
+        "tests/test_canonical_id_seam.py",
+        "tests/test_phase2_session_bundle.py",
+        "tests/test_runtime_adoption_seam.py"
       ],
       "module": "framework.canonical_job_schema",
       "path": "framework/canonical_job_schema.py",
-      "rationale": "imported by 4 non-schema module(s); required surface of active runtime/tactical code"
+      "rationale": "imported by 7 non-schema module(s); required surface of active runtime/tactical code"
     },
     {
       "adr_ref": "governance/authority_adr_0001_source_of_truth.md",
       "classification": "active",
-      "consumer_count": 4,
+      "consumer_count": 7,
       "consumer_modules": [
         "artifacts/phase2_schema_entry_validation_report.py",
         "framework/phase2_session_bundle.py",
+        "framework/session_job_adapters.py",
         "framework/worker_runtime.py",
-        "tests/test_phase2_session_bundle.py"
+        "tests/test_canonical_id_seam.py",
+        "tests/test_phase2_session_bundle.py",
+        "tests/test_runtime_adoption_seam.py"
       ],
       "module": "framework.canonical_session_schema",
       "path": "framework/canonical_session_schema.py",
-      "rationale": "imported by 4 non-schema module(s); required surface of active runtime/tactical code"
+      "rationale": "imported by 7 non-schema module(s); required surface of active runtime/tactical code"
     },
     {
       "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
@@ -1431,18 +1437,20 @@
     {
       "adr_ref": "governance/authority_adr_0001_source_of_truth.md",
       "classification": "active",
-      "consumer_count": 6,
+      "consumer_count": 8,
       "consumer_modules": [
         "framework/inference_gateway.py",
         "framework/local_command_runner.py",
         "framework/runtime_artifact_service.py",
         "framework/runtime_validation_pack.py",
+        "tests/test_canonical_id_seam.py",
         "tests/test_inference_gateway.py",
+        "tests/test_local_command_runner.py",
         "tests/test_runtime_artifact_service.py"
       ],
       "module": "framework.runtime_telemetry_schema",
       "path": "framework/runtime_telemetry_schema.py",
-      "rationale": "imported by 6 non-schema module(s); required surface of active runtime/tactical code"
+      "rationale": "imported by 8 non-schema module(s); required surface of active runtime/tactical code"
     },
     {
       "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
@@ -1589,6 +1597,36 @@
       "rationale": "core schema retained as legacy_frozen at baseline_commit; no direct importer detected via static scan"
     },
     {
+      "adr_ref": "governance/authority_adr_0001_source_of_truth.md",
+      "classification": "active",
+      "consumer_count": 20,
+      "consumer_modules": [
+        "framework/__init__.py",
+        "framework/apply_patch_dispatch.py",
+        "framework/file_local_devloop.py",
+        "framework/gated_tool_dispatch.py",
+        "framework/mvp_coding_loop.py",
+        "framework/read_file_dispatch.py",
+        "framework/runtime_adoption_proof.py",
+        "framework/runtime_execution_adapter.py",
+        "framework/sandbox_tool_dispatch.py",
+        "framework/tool_bridge.py",
+        "framework/tool_registry.py",
+        "framework/typed_permission_gate.py",
+        "tests/test_file_local_devloop_seam.py",
+        "tests/test_gated_tool_dispatch_seam.py",
+        "tests/test_runtime_adoption_seam.py",
+        "tests/test_runtime_execution_adapter_seam.py",
+        "tests/test_sandbox_tool_dispatch_seam.py",
+        "tests/test_tool_bridge_seam.py",
+        "tests/test_tool_contract_seam.py",
+        "tests/test_typed_permission_gate_seam.py"
+      ],
+      "module": "framework.tool_schema",
+      "path": "framework/tool_schema.py",
+      "rationale": "imported by 20 non-schema module(s); required surface of active runtime/tactical code"
+    },
+    {
       "adr_ref": "governance/authority_adr_0002_tactical_family_classification.md",
       "classification": "legacy_frozen",
       "consumer_count": 0,
@@ -1692,5 +1730,5 @@
     "config/promotion_manifest.json (legacy; frozen pending migration)",
     "docs/* narrative roadmaps (advisory only)"
   ],
-  "total": 182
+  "total": 183
 }
