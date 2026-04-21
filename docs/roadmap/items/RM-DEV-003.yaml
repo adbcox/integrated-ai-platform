@@ -65,7 +65,7 @@ milestones:
 planning:
   planning_packet_ref: null
   planning_status: "complete"
-  planning_notes: "Integrated one-pass slice with RM-INTEL-001."
+  planning_notes: "Integrated slice accepted at commit fcb4093ebc490fa172c362b3909888258dbb0036; ready for archiving."
 execution:
   execution_package_refs:
     - "RM-DEV-003-RM-INTEL-001-INTEGRATED-BASELINE"
@@ -128,3 +128,4 @@ metadata:
   tags:
     - "dev"
     - "bounded-autonomy"
+    - "ready-for-archiving"

@@ -36,7 +36,6 @@ Operating rule:
 - `RM-CORE-005` — Wrap local execution commands
 - `RM-CORE-006` — Establish baseline local-run validation
 
-<<<<<<< HEAD
 ### Development capability items
 
 - `RM-DEV-003` — Bounded autonomous code generation
@@ -53,3 +52,8 @@ Operating rule:
   - Aider constrained to controlled adapter / transport target (ADR 0023)
   - OSS intake formalized with registry, boundaries, and rollback strategy
   - Repo-visible authority artifacts now carry prior chat-only decisions
+
+### Integrated baseline closure (completed; ready for archiving)
+
+- `RM-DEV-003` — accepted integrated baseline commit `fcb4093ebc490fa172c362b3909888258dbb0036`
+- `RM-INTEL-001` — accepted integrated baseline commit `fcb4093ebc490fa172c362b3909888258dbb0036`

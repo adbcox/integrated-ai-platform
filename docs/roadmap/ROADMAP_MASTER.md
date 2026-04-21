@@ -9,10 +9,11 @@ Canonical machine-readable roadmap authority remains:
 - `docs/roadmap/data/sync_state.yaml`
 - `docs/roadmap/items/RM-*.yaml`
 
-Current high-priority integrated capability slice:
+Accepted integrated baseline closure (completed; ready for archiving):
 
 - `RM-DEV-003` — bounded autonomous code generation baseline
 - `RM-INTEL-001` — OSS watchtower baseline with adoption recommendations
+- accepted baseline commit: `fcb4093ebc490fa172c362b3909888258dbb0036`
 
 Execution packs:
 
