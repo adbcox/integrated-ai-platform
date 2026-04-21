@@ -79,6 +79,7 @@ from .bounded_critique_adopter import CritiqueAdoptionRecord, BoundedCritiqueAdo
 from .bounded_retry_controller import RetryDecisionRecord, BoundedRetryController
 from .unified_local_metrics import UnifiedLocalMetrics, compute_unified_metrics, emit_unified_metrics
 from .task_class_benchmark import TaskClassBenchmarkEntry, TaskClassBenchmarkReport, TaskClassBenchmarkRunner
+from .local_quality_score import LocalQualityScore, compute_quality_score, emit_quality_score
 from .retry_telemetry_integration import (
     LoopRetryIntegrationRecord,
     LoopRetryStore,
@@ -417,4 +418,7 @@ __all__ = [
     "TaskClassBenchmarkEntry",
     "TaskClassBenchmarkReport",
     "TaskClassBenchmarkRunner",
+    "LocalQualityScore",
+    "compute_quality_score",
+    "emit_quality_score",
 ]
