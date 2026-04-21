@@ -837,3 +837,5 @@ from .replay_gate import ReplayGate, ReplaySpec
 from .planner_executor_handoff import PlannerExecutorHandoff, HandoffSpec, ExecutionOrder
 
 from .local_autonomy_benchmark_pack import LocalAutonomyTask, LACE1_TASK_PACK, load_benchmark_pack, emit_benchmark_pack, validate_acceptance_greps
+
+from .lace1_benchmark_runner import TaskRunResult, BenchmarkRunReport, Lace1BenchmarkRunner
