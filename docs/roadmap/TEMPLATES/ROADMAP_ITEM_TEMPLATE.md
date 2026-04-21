@@ -77,4 +77,6 @@ Before considering the roadmap intake complete:
 - [ ] Check whether this intake changes strategic priority, pull order, or roadmap ranking
 - [ ] If yes, update `docs/roadmap/ROADMAP_MASTER.md` in the same intake cycle
 - [ ] If detailed normalization is needed, add a dated sync/supporting file under `docs/roadmap/`
+- [ ] Create or assign dedicated execution-pack coverage, or explicitly record canonical enrichment coverage and the path to later execution-pack treatment
+- [ ] Add or update `docs/roadmap/EXECUTION_PACK_INDEX.md` if a dedicated execution pack exists
 - [ ] Do not leave the item only in chat, issues, or legacy `roadmap/` files
