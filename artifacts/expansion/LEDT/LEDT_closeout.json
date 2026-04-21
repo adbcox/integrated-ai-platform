@@ -1,0 +1,55 @@
+{
+  "closeout_id": "LEDT-CLOSE-20260421134624",
+  "campaign_id": "LEDT",
+  "campaign_verdict": "ledt_campaign_complete",
+  "packets_completed": 12,
+  "packets_expected": 12,
+  "artifacts_present": 11,
+  "artifacts_expected": 11,
+  "modules_importable": 10,
+  "modules_expected": 10,
+  "what_was_built": [
+    "LEDT-P1: transition tranche selector (RM-GOV-003 scoring from LACE2 evidence)",
+    "LEDT-P2: local execution eligibility contract (5-criterion evaluator with disqualifiers)",
+    "LEDT-P3: local execution preflight evaluator (aider, code_executor, scope, validation checks)",
+    "LEDT-P4: execution route decision surface (local_execute / claude_fallback / hard_stop)",
+    "LEDT-P5: fallback justification model (evidence-required, class-enforced writer)",
+    "LEDT-P6: packet routing metadata schema (local_first default, ledt-v1 policy version)",
+    "LEDT-P7: local run receipt model (route, validations, fallback status per execution)",
+    "LEDT-P8: planner preference schema (local_first default with Claude condition gate)",
+    "LEDT-P9: fallback audit surface (justified / avoidable / invalid classification)",
+    "LEDT-P10: local-first proof harness (5-sample decision chain, local_first_rate=0.8)",
+    "LEDT-P11: transition ratifier (5-criterion verdict: local_exec_default_confirmed)",
+    "LEDT-P12: transition closeout (this artifact)"
+  ],
+  "what_changed_operationally": [
+    "Route decisions now default to local_execute for any packet where eligibility passes and preflight is ready",
+    "Claude fallback requires explicit FallbackJustificationRecord with class and evidence; narrative excuses rejected",
+    "Packet routing metadata defaults preferred_executor='local_first' unless overridden",
+    "Planner preference records enforce local_first as default and require explicit conditions for Claude execution",
+    "Fallback events are now auditable as justified / avoidable / invalid via FallbackAuditor"
+  ],
+  "when_claude_execution_allowed": [
+    "aider and framework.code_executor both unavailable (preflight C2 check fails)",
+    "packet file_scope_count > 5 and task cannot be split without semantic loss",
+    "explicit hard_stop condition identified by eligibility evaluator",
+    "manual override with FallbackJustificationRecord class='manual_override' and >= 20 chars evidence"
+  ],
+  "what_remains_unproven": [
+    "No live execution loop tested; routing is decision-surface proof only",
+    "Proof harness uses synthetic packet descriptions, not live campaign packets",
+    "Fallback audit uses constructed receipts, not production execution history",
+    "Planner preference schema is not yet wired into any live campaign plan emitter",
+    "Local-first rate on real LACE2/LEDT-style packets may differ from the 5-sample harness"
+  ],
+  "known_limitations": [
+    "No live execution loop tested; all routing decisions are decision-surface proofs only",
+    "LocalExecPreflightEvaluator does not make live Ollama network checks; only import probes",
+    "Proof harness local_first_rate=0.8 is based on 5 synthetic samples \u2014 statistically insufficient",
+    "Fallback audit constructs receipts and justifications directly; no integration with real executor receipts",
+    "PlannerPreferenceBuilder is not wired into any campaign plan generator or stage6_manager",
+    "ExecRouteDecider is not wired into any live execution path or packet scheduling loop"
+  ],
+  "transition_verdict": "local_exec_default_confirmed",
+  "closed_at": "2026-04-21T13:46:24+00:00"
+}
