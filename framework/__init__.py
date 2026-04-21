@@ -47,6 +47,8 @@ from .session_job_adapters import make_session_adapter, make_job_adapter, sessio
 from .read_file_dispatch import dispatch_read_file
 from .runtime_adoption_proof import make_bounded_context
 from .context_retrieval import RetrievalQuery, RetrievedFile, RetrievalResult, retrieve_context, retrieve_file_content
+from .validation_emit_adapter import emit_loop_validation
+from .mvp_coding_loop import MVPTask, MVPLoopResult, MVPCodingLoopRunner, SAFE_TASK_KINDS
 from .tool_registry import DEFAULT_REGISTRY, ToolContractEntry, ToolRegistry
 from .tool_schema import (
     ApplyPatchAction,
@@ -164,4 +166,9 @@ __all__ = [
     "RetrievalResult",
     "retrieve_context",
     "retrieve_file_content",
+    "emit_loop_validation",
+    "MVPTask",
+    "MVPLoopResult",
+    "MVPCodingLoopRunner",
+    "SAFE_TASK_KINDS",
 ]
