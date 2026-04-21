@@ -88,6 +88,7 @@ from .evidence_backed_task_expander import (
 )
 from .failure_cluster_analysis import FailureCluster, FailureClusterReport, FailureClusterAnalyzer, emit_failure_clusters
 from .adapter_readiness_stress import StressCheck, StressHarnessResult, AdapterReadinessStressHarness, emit_stress_result
+from .controlled_adapter_scaffold import ScaffoldGate, AdapterScaffoldPlan, ControlledAdapterScaffold, emit_scaffold_plan
 from .retry_telemetry_integration import (
     LoopRetryIntegrationRecord,
     LoopRetryStore,
@@ -449,4 +450,8 @@ __all__ = [
     "StressHarnessResult",
     "AdapterReadinessStressHarness",
     "emit_stress_result",
+    "ScaffoldGate",
+    "AdapterScaffoldPlan",
+    "ControlledAdapterScaffold",
+    "emit_scaffold_plan",
 ]
