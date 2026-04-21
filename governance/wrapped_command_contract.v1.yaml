@@ -1,0 +1,369 @@
+---
+# Wrapped Command Contract v1
+# Authority surface: P1-05-WRAPPED-COMMAND-CONTRACT-1
+# Governed by: ADR-0003 (workspace contract), governance/definition_of_done.v1.yaml,
+#   governance/execution_control_package.schema.json
+# Scope: all SUBSTRATE, LOCAL-FIRST, and ESCALATION coding run command executions
+
+version: "1.0.0"
+contract_id: "WRAPPED-COMMAND-CONTRACT-V1"
+generated_at: "2026-04-21"
+authority_owner: "governance/authority_adr_0001_source_of_truth.md"
+adr_ref: "ADR-0003"
+phase_linkage: "Phase 1 (runtime_contract_foundation)"
+
+# ─────────────────────────────────────────────
+# COMMAND BOUNDARY
+# Defines the canonical interface for command execution.
+# Raw direct shell execution is not the canonical interface.
+# ─────────────────────────────────────────────
+command_boundary:
+  canonical_interface: "framework.wrapped_command_runner (or equivalent wrapper abstraction)"
+  description: >
+    All command execution in coding runs must go through an approved command wrapper
+    boundary. The wrapper normalizes inputs, captures result shape, enforces timeouts,
+    and records side-effect metadata. Direct invocation of shell commands outside the
+    wrapper is non-canonical and requires explicit exception handling.
+
+  raw_shell_not_canonical:
+    value: true
+    rule: >
+      Raw direct shell execution (e.g., os.system(), subprocess.run() without the
+      wrapper contract, bare shell invocations) is not the canonical interface for
+      runtime work. Sessions must use the approved wrapper boundary or declare an
+      explicit exception in the exceptions section of their package.
+    hard_stop_on_violation: false
+    action_on_violation: "Flag as scope violation in residual_notes; do not block commit if output is otherwise valid"
+    rationale: >
+      Uncontrolled shell execution bypasses timeout enforcement, exit-code normalization,
+      side-effect capture, and artifact tracing. The wrapper contract ensures all
+      command outputs are observable and governable.
+
+  approved_entrypoints:
+    description: "Approved wrapper entry points for command execution"
+    primary: "framework/wrapped_command_runner.py::run_command(category, command, timeout_override=None)"
+    fallback: "bin/run_*.py scripts using subprocess with explicit timeout and result capture"
+    test_only: "subprocess.run() in seam tests when directly testing the wrapper contract itself"
+    note: >
+      The test_only exception permits bare subprocess.run() in seam test files that
+      explicitly test runner scripts. These are not runtime work — they are validation
+      work in the scratch mount scope.
+
+  wrapper_responsibilities:
+    - "Accept command category classification"
+    - "Enforce per-category timeout"
+    - "Capture stdout, stderr, exit_code, duration_ms"
+    - "Record files_touched estimate from write-scope metadata"
+    - "Return normalized CommandResult"
+    - "Signal repo_write_violation when unexpected files appear in git status"
+
+# ─────────────────────────────────────────────
+# COMMAND CATEGORIES
+# Classification of commands by purpose and risk level
+# ─────────────────────────────────────────────
+command_categories:
+  description: >
+    Every command executed through the wrapper must be assigned a category.
+    Category determines timeout policy, side-effect expectations, and artifact tracing.
+
+  build:
+    category_id: "build"
+    description: "Compilation, packaging, or build system invocations"
+    examples:
+      - "make check"
+      - "make quick"
+      - "python3 setup.py build"
+      - "pip install -e ."
+    expected_side_effects: "none beyond build cache and compiled artifacts"
+    write_scope: "build_cache_only"
+    default_timeout_seconds: 120
+    exit_code_success: [0]
+    artifact_tracing_required: false
+
+  test:
+    category_id: "test"
+    description: "Test runners and validation suites"
+    examples:
+      - "python3 -m pytest tests/"
+      - "make test-offline"
+      - "python3 -m pytest tests/test_*_seam.py -v"
+    expected_side_effects: "tmp_path writes only (scratch mount)"
+    write_scope: "scratch_only"
+    default_timeout_seconds: 180
+    exit_code_success: [0]
+    artifact_tracing_required: false
+    note: "Test commands may write to tmp_path (scratch); never to source mount"
+
+  lint:
+    category_id: "lint"
+    description: "Static analysis, syntax checks, format validation"
+    examples:
+      - "python3 -m py_compile bin/*.py"
+      - "shellcheck shell/*.sh"
+      - "python3 -m flake8 bin/"
+    expected_side_effects: "none"
+    write_scope: "read_only"
+    default_timeout_seconds: 60
+    exit_code_success: [0]
+    artifact_tracing_required: false
+
+  diff:
+    category_id: "diff"
+    description: "File comparison, git diff, change detection"
+    examples:
+      - "git diff"
+      - "git status"
+      - "git diff HEAD~1"
+      - "diff file_a.py file_b.py"
+    expected_side_effects: "none"
+    write_scope: "read_only"
+    default_timeout_seconds: 30
+    exit_code_success: [0, 1]
+    note: "exit_code=1 is not an error for diff commands; it means differences were found"
+    artifact_tracing_required: false
+
+  inspect:
+    category_id: "inspect"
+    description: "File reads, directory listing, metadata queries, JSON validation"
+    examples:
+      - "python3 -m json.tool artifacts/governance/foo.json"
+      - "cat governance/workspace_contract.v1.yaml"
+      - "ls -ltr artifacts/governance/"
+      - "python3 bin/run_*.py --dry-run"
+    expected_side_effects: "none"
+    write_scope: "read_only"
+    default_timeout_seconds: 30
+    exit_code_success: [0]
+    artifact_tracing_required: false
+
+  artifact_emit:
+    category_id: "artifact_emit"
+    description: "Commands that write declared artifact outputs to artifact root paths"
+    examples:
+      - "python3 bin/run_core_adr_index.py"
+      - "python3 bin/run_workspace_contract_check.py"
+      - "python3 bin/run_wrapped_command_contract_check.py"
+    expected_side_effects: "writes to artifacts/governance/ or declared artifact root paths only"
+    write_scope: "artifact_root_only"
+    default_timeout_seconds: 60
+    exit_code_success: [0]
+    artifact_tracing_required: true
+    note: >
+      artifact_emit commands must declare their artifact_outputs in the package's
+      artifact_outputs field. Any write to a non-declared path is a contract violation.
+
+# ─────────────────────────────────────────────
+# RESULT CONTRACT
+# Normalized shape of all command execution results
+# ─────────────────────────────────────────────
+result_contract:
+  description: >
+    Every command executed through the wrapper returns a CommandResult with a
+    normalized shape. This shape is the canonical record for validation, telemetry,
+    and artifact tracing.
+
+  status:
+    field: "status"
+    type: "string"
+    allowed_values: ["success", "failure", "timeout", "error"]
+    description: >
+      High-level outcome of the command execution. 'success' means exit_code is
+      in the category's exit_code_success list. 'failure' means non-zero exit_code
+      outside success list. 'timeout' means the command exceeded its timeout.
+      'error' means the wrapper itself encountered an exception before completion.
+    required: true
+
+  stdout:
+    field: "stdout"
+    type: "string"
+    description: "Captured standard output of the command, as a single string"
+    required: true
+    truncation_policy: "Truncate to 64KB if exceeded; append [TRUNCATED] marker"
+
+  stderr:
+    field: "stderr"
+    type: "string"
+    description: "Captured standard error of the command, as a single string"
+    required: true
+    truncation_policy: "Truncate to 16KB if exceeded; append [TRUNCATED] marker"
+
+  exit_code:
+    field: "exit_code"
+    type: "integer"
+    description: "Raw exit code returned by the process (or -1 on timeout/error)"
+    required: true
+
+  duration_ms:
+    field: "duration_ms"
+    type: "integer"
+    description: "Wall-clock elapsed time in milliseconds from command start to completion"
+    required: true
+    note: "duration_ms=-1 indicates measurement failure; do not use as latency signal"
+
+  category:
+    field: "category"
+    type: "string"
+    description: "Command category assigned at dispatch time (build/test/lint/diff/inspect/artifact_emit)"
+    required: true
+
+  command:
+    field: "command"
+    type: "string or list"
+    description: "The command as dispatched (string for shell=True, list for shell=False)"
+    required: true
+
+  timeout_applied:
+    field: "timeout_applied"
+    type: "integer"
+    description: "Timeout in seconds that was enforced for this invocation"
+    required: true
+
+# ─────────────────────────────────────────────
+# TIMEOUT POLICY
+# Per-category timeout enforcement
+# ─────────────────────────────────────────────
+timeout_policy:
+  description: >
+    Timeouts are enforced per command category. A command that exceeds its timeout
+    is terminated and returns status='timeout'. Timeouts prevent runaway processes
+    from blocking a session indefinitely.
+
+  default_timeout_seconds:
+    value: 120
+    rule: >
+      If no category-specific override applies and no explicit timeout_override is
+      provided at dispatch time, the default timeout of 120 seconds is enforced.
+    hard_stop_if_exceeded: false
+    action_on_timeout: "Terminate process; return CommandResult(status='timeout', exit_code=-1)"
+
+  category_overrides:
+    build: 120
+    test: 180
+    lint: 60
+    diff: 30
+    inspect: 30
+    artifact_emit: 60
+    note: >
+      Category overrides are applied before the default. An explicit timeout_override
+      at dispatch time takes precedence over both category and default values.
+
+  timeout_failure_handling:
+    status_on_timeout: "timeout"
+    exit_code_on_timeout: -1
+    stderr_note: "Command terminated by wrapper timeout enforcement"
+    escalation_threshold: >
+      If more than 3 timeout events occur in a single session, flag as escalation
+      candidate in residual_notes. Do not hard-stop; timeouts are expected in some
+      build/test scenarios.
+    retry_policy: >
+      No automatic retry on timeout. The session may retry with an explicit
+      timeout_override or escalate to a larger category timeout.
+
+# ─────────────────────────────────────────────
+# SIDE EFFECT METADATA
+# Captures what a command writes and where
+# ─────────────────────────────────────────────
+side_effect_metadata:
+  description: >
+    Each command execution through the wrapper must carry side-effect metadata
+    that describes the expected write scope. Unexpected writes (files appearing
+    in git status that are not in allowed_files and not gitignored) trigger the
+    repo_write_violation_signal.
+
+  files_touched:
+    field: "files_touched"
+    type: "list of strings"
+    description: >
+      List of file paths the command is expected to write to. For read-only
+      categories (lint, diff, inspect), this list is empty. For artifact_emit
+      commands, this list matches the package's artifact_outputs paths.
+    required: false
+    note: "Optional at dispatch time; validated post-execution via git status"
+
+  write_scope:
+    field: "write_scope"
+    type: "string"
+    allowed_values: ["read_only", "scratch_only", "artifact_root_only", "build_cache_only", "source_mount_declared"]
+    description: >
+      Classifies the write scope of the command. 'source_mount_declared' means the
+      command writes to source mount paths explicitly listed in the package's
+      allowed_files. Any write to source mount paths NOT in allowed_files is a
+      contract violation regardless of write_scope classification.
+    required: true
+
+  artifact_outputs:
+    field: "artifact_outputs"
+    type: "list of strings"
+    description: >
+      For artifact_emit commands: list of artifact root paths written. These must
+      match the package's artifact_outputs declarations. For all other categories:
+      this list is empty.
+    required: false
+
+  repo_write_violation_signal:
+    field: "repo_write_violation_signal"
+    type: "boolean"
+    description: >
+      Set to true if post-execution git status reveals untracked or modified files
+      that are not in allowed_files and not gitignored. This signals a workspace
+      contract violation: the command wrote to the source mount without authorization.
+    required: false
+    default: false
+    action_on_true: >
+      Log violation in residual_notes. Do not hard-stop automatically; surface to
+      session control for review. The workspace contract defines this as a violation
+      but the wrapped command contract delegates enforcement to session governance.
+
+# ─────────────────────────────────────────────
+# EXCEPTIONS
+# Approved deviations from the canonical wrapper boundary
+# ─────────────────────────────────────────────
+exceptions:
+  direct_shell_in_seam_tests:
+    rule: >
+      Seam test files (tests/test_*_seam.py) may use subprocess.run() directly
+      to test runner scripts. This is scratch-mount test work, not runtime command
+      execution. These calls are exempt from the wrapper boundary requirement.
+    approved: true
+    scope: "tests/test_*_seam.py files only"
+    condition: "Testing runner scripts via subprocess.run(); not runtime session work"
+
+  runner_scripts_use_subprocess:
+    rule: >
+      Runner scripts in bin/run_*.py may use subprocess.run() directly when they
+      implement the runner boundary itself. These scripts ARE the wrapper boundary
+      for their specific validation commands. They are not bypassing the wrapper;
+      they are implementing it.
+    approved: true
+    scope: "bin/run_*.py scripts implementing the runner boundary"
+    condition: "Script is implementing a validation runner, not delegating to one"
+
+  make_check_and_quick_direct:
+    rule: >
+      During seam test validation steps, calling make check and make quick via
+      subprocess is approved as part of the session validation discipline. These
+      calls are categorized as 'build' and are exempt from requiring the full
+      wrapper abstraction at Phase 1, pending framework implementation in Phase 2.
+    approved: true
+    scope: "make check, make quick validation steps in session discipline"
+    phase_note: "Full wrapper enforcement deferred to Phase 2 runtime implementation"
+
+  escalation_for_interactive_commands:
+    rule: >
+      Commands requiring interactive input (e.g., gcloud auth login, git rebase -i)
+      cannot be wrapped by the standard timeout/capture contract. These must be
+      declared as ESCALATION-required in the package's escalation_rule. The wrapper
+      must not attempt to wrap interactive commands.
+    approved: true
+    scope: "Interactive commands requiring TTY or interactive I/O"
+    action: "Escalate; do not attempt wrapping"
+
+  raw_shell_exception_requires_declaration:
+    rule: >
+      Direct shell execution outside the wrapper (os.system, bare subprocess not
+      in an approved exception above) is non-canonical and requires explicit
+      declaration in the package's exceptions or residual_notes. Undeclared direct
+      shell usage is a wrapper boundary violation.
+    approved: false
+    action_on_violation: "Flag in residual_notes as wrapper_boundary_violation; do not block commit"
+    hard_stop: false

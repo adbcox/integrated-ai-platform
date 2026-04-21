@@ -1,0 +1,45 @@
+{
+  "artifact_id": "P1-05-WRAPPED-COMMAND-CONTRACT-VALIDATION-1",
+  "generated_at": "2026-04-21T15:43:26.924383+00:00",
+  "contract_path": "governance/wrapped_command_contract.v1.yaml",
+  "yaml_loaded": true,
+  "required_sections_checked": [
+    "version",
+    "command_boundary",
+    "command_categories",
+    "result_contract",
+    "timeout_policy",
+    "side_effect_metadata",
+    "exceptions"
+  ],
+  "required_sections_present": true,
+  "result_fields_checked": [
+    "status",
+    "stdout",
+    "stderr",
+    "exit_code",
+    "duration_ms"
+  ],
+  "result_fields_present": true,
+  "timeout_fields_checked": [
+    "default_timeout_seconds",
+    "category_overrides",
+    "timeout_failure_handling"
+  ],
+  "timeout_fields_present": true,
+  "side_effect_fields_checked": [
+    "files_touched",
+    "write_scope",
+    "artifact_outputs",
+    "repo_write_violation_signal"
+  ],
+  "side_effect_fields_present": true,
+  "content_errors": [],
+  "phase_linkage": "Phase 1 (runtime_contract_foundation)",
+  "authority_sources": [
+    "ADR-0003",
+    "ADR-0006",
+    "governance/definition_of_done.v1.yaml",
+    "governance/execution_control_package.schema.json"
+  ]
+}
