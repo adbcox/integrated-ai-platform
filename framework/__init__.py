@@ -94,6 +94,13 @@ from .aider_runtime_adapter import AiderRuntimeAdapter, _EXPERIMENTAL_FLAG
 from .cmdb_authority_pilot import CmdbAuthorityRecord, CmdbAuthorityPilot, read_cmdb_authority
 from .cmdb_integration_gate import CmdbGateDecision, CmdbIntegrationGate, evaluate_cmdb_gate, GATE_PASS, GATE_BLOCK
 from .domain_branch_contract import DOMAIN_BRANCH_RUNNER_VERSION, DomainBranchPolicy, DomainBranchManifest, DomainBranchRunner
+from .expansion_closeout_ratifier import (
+    EXPANSION_COMPLETE,
+    EXPANSION_PARTIAL,
+    ExpansionCloseoutComponent,
+    ExpansionCloseoutArtifact,
+    ratify_expansion_closeout,
+)
 from .domain_branch_second_wave import (
     ATHLETE_ANALYTICS_POLICY,
     OFFICE_AUTOMATION_POLICY,
@@ -564,4 +571,9 @@ __all__ = [
     "OFFICE_AUTOMATION_POLICY",
     "SECOND_WAVE_MANIFEST",
     "SecondWaveDomainRunner",
+    "EXPANSION_COMPLETE",
+    "EXPANSION_PARTIAL",
+    "ExpansionCloseoutComponent",
+    "ExpansionCloseoutArtifact",
+    "ratify_expansion_closeout",
 ]
