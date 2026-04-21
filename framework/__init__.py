@@ -40,6 +40,8 @@ from .runtime_execution_adapter import (
     extract_session_id,
     make_job_id,
 )
+from .apply_patch_dispatch import dispatch_apply_patch
+from .file_local_devloop import FileLocalTask, FileLocalResult, FileLocalDevloopRunner
 from .tool_registry import DEFAULT_REGISTRY, ToolContractEntry, ToolRegistry
 from .tool_schema import (
     ApplyPatchAction,
@@ -139,4 +141,8 @@ __all__ = [
     "execute_typed_actions",
     "extract_session_id",
     "make_job_id",
+    "dispatch_apply_patch",
+    "FileLocalTask",
+    "FileLocalResult",
+    "FileLocalDevloopRunner",
 ]
