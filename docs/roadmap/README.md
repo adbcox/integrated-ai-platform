@@ -51,7 +51,8 @@ This `docs/roadmap/` directory supersedes the older top-level `roadmap/` documen
 5. Assign stable ID, category, type, and normalized metrics.
 6. Record affected systems, expected file families, and dependencies.
 7. Evaluate whether the item should be executed alone or as part of a grouped feature block.
-8. Open GitHub issues or execution docs only after the roadmap item is clear enough to drive work.
+8. Ensure the item reaches execution-pack or equivalent canonical enrichment state before considering the intake complete.
+9. Open GitHub issues or execution docs only after the roadmap item is clear enough to drive work.
 
 ## Rule
 
