@@ -93,6 +93,7 @@ This index contains the normalized roadmap items currently captured for the inte
 | ID | Type | Priority | Title |
 |---|---|---:|---|
 | RM-INTEL-001 | Feature | High | Open-source watchtower with update alerts and adoption recommendations |
+| RM-INTEL-002 | Program | Critical | Verified OSS capability harvest and compatibility validation for the local development assistant |
 
 ## Core platform / packaging / access
 
@@ -121,5 +122,6 @@ This index contains the normalized roadmap items currently captured for the inte
 - This index is the normalized backlog reference.
 - Item details can be split into individual per-item files later using the roadmap template.
 - GitHub issues and execution packages should reference these roadmap IDs.
-- `RM-DEV-005` is the current pull-first roadmap priority for the local home developer assistant and should be preferred over new domain-expansion pulls unless lower-phase prerequisites block it.
+- `RM-DEV-005` remains the current pull-first roadmap priority for the local home developer assistant.
+- `RM-INTEL-002` is the current critical OSS-discovery and validation priority under the local development assistant program and should be used to drive verified adopt/evaluate/watch/reject decisions for external codebases and helpers.
 - Detailed normalization for the roadmap items captured in chat on 2026-04-21 is stored in `docs/roadmap/ROADMAP_CHAT_SYNC_2026-04-21.md`.
