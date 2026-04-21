@@ -827,3 +827,5 @@ from .repo_understanding_substrate import RepoUnderstandingSubstrate, RepoUnders
 from .task_decomposition_substrate import TaskDecompositionSubstrate, DecomposedTaskBundle, SubTask
 
 from .repair_policy_gate import RepairPolicyGate, RepairDecision, FailureRecord
+
+from .artifact_packaging_gate import ArtifactPackagingGate, BundledArtifact
