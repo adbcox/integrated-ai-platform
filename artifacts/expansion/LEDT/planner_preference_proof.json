@@ -1,0 +1,39 @@
+{
+  "sample_count": 2,
+  "local_first_rate": 1.0,
+  "claude_allowed_count": 1,
+  "records": [
+    {
+      "preference_id": "PREF-20260421134242-LEDT",
+      "campaign_id": "LEDT",
+      "default_executor_preference": "local_first",
+      "claude_execution_allowed": false,
+      "claude_execution_conditions": [],
+      "rationale": "LACE2 proved real bounded local execution; LEDT adds routing machinery to make local the default.",
+      "upstream_evidence_ids": [
+        "LACE2_closeout.json",
+        "lace2_autonomy_proof_ratification.json",
+        "artifacts/expansion/LEDT/local_first_proof.json"
+      ],
+      "issued_at": "2026-04-21T13:42:42+00:00"
+    },
+    {
+      "preference_id": "PREF-20260421134242-LEDT-exception",
+      "campaign_id": "LEDT-exception",
+      "default_executor_preference": "local_first",
+      "claude_execution_allowed": true,
+      "claude_execution_conditions": [
+        "aider and framework.code_executor both unavailable (preflight C2 failed)",
+        "packet file_scope_count > 5 and task cannot be split",
+        "explicit hard_stop condition identified in eligibility check"
+      ],
+      "rationale": "Claude execution permitted only under explicit disqualifying conditions.",
+      "upstream_evidence_ids": [
+        "LACE2_closeout.json",
+        "route_decision_proof.json"
+      ],
+      "issued_at": "2026-04-21T13:42:42+00:00"
+    }
+  ],
+  "proved_at": "2026-04-21T13:42:42+00:00"
+}
