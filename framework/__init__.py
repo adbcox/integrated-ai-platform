@@ -185,6 +185,13 @@ from .aider_promotion_ratifier import (
     AiderPromotionArtifact,
     ratify_aider_promotion,
 )
+from .codex_availability_gate import (
+    CODEX_GATE_PASS,
+    CODEX_GATE_BLOCK,
+    CodexAvailabilityCheck,
+    CodexAvailabilityReport,
+    evaluate_codex_availability,
+)
 from .retry_telemetry_integration import (
     LoopRetryIntegrationRecord,
     LoopRetryStore,
@@ -634,4 +641,9 @@ __all__ = [
     "AIDER_PROMOTION_PARTIAL",
     "AiderPromotionArtifact",
     "ratify_aider_promotion",
+    "CODEX_GATE_PASS",
+    "CODEX_GATE_BLOCK",
+    "CodexAvailabilityCheck",
+    "CodexAvailabilityReport",
+    "evaluate_codex_availability",
 ]
