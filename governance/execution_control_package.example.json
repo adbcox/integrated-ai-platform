@@ -1,0 +1,133 @@
+{
+  "package_id": "P0-03-EXECUTION-CONTROL-PACKAGE-1",
+  "label": "SUBSTRATE",
+  "objective": "Create the first machine-readable execution-control package template for Phase 0, formalizing the slice-control model with schema, example, and spec so future coding slices have explicit machine-verifiable contracts.",
+  "allowed_files": [
+    "governance/execution_control_package.schema.json",
+    "governance/execution_control_package.example.json",
+    "docs/specs/execution_control_package.md",
+    "bin/run_execution_control_package_check.py",
+    "tests/test_execution_control_package_seam.py"
+  ],
+  "forbidden_files": [
+    "framework/**",
+    "roadmap_governance/**",
+    "docs/authority_inputs/**",
+    "framework/__init__.py",
+    "config/promotion_manifest.json",
+    "governance/canonical_roadmap.json",
+    "governance/authority_adr_*",
+    "governance/current_phase.json",
+    "governance/phase_gate_status.json",
+    "governance/next_package_class.json",
+    "governance/runtime_contract_version.json",
+    "governance/tactical_family_classification.json",
+    "governance/schema_contract_registry.json",
+    "docs/adr/**"
+  ],
+  "validation_order": [
+    {
+      "step": 1,
+      "description": "Verify readable grounding inputs: 5 ADR files from P0-02",
+      "check": "docs/adr/ADR-0001-canonical-session-job-schema.md, docs/adr/ADR-0002-typed-tool-system.md, docs/adr/ADR-0003-workspace-contract.md, docs/adr/ADR-0006-artifact-bundle.md, docs/adr/ADR-0007-autonomy-scorecard.md must exist and be non-empty"
+    },
+    {
+      "step": 2,
+      "description": "Create schema, example, and spec files",
+      "check": "governance/execution_control_package.schema.json, governance/execution_control_package.example.json, docs/specs/execution_control_package.md must exist"
+    },
+    {
+      "step": 3,
+      "description": "Run validation script",
+      "command": "python3 bin/run_execution_control_package_check.py"
+    },
+    {
+      "step": 4,
+      "description": "Validate artifact exists, parses, and confirms schema load + example valid",
+      "check": "artifacts/governance/execution_control_package_validation.json must exist and parse as JSON with schema_loaded=true and example_valid=true"
+    },
+    {
+      "step": 5,
+      "description": "Run seam tests",
+      "command": "python3 -m pytest tests/test_execution_control_package_seam.py -v"
+    },
+    {
+      "step": 6,
+      "description": "Full syntax check",
+      "command": "make check"
+    }
+  ],
+  "rollback_rule": {
+    "remove_on_failure": [
+      "governance/execution_control_package.schema.json",
+      "governance/execution_control_package.example.json",
+      "docs/specs/execution_control_package.md",
+      "bin/run_execution_control_package_check.py",
+      "tests/test_execution_control_package_seam.py",
+      "artifacts/governance/execution_control_package_validation.json"
+    ],
+    "preserve_always": [
+      "governance/canonical_roadmap.json",
+      "governance/phase_gate_status.json",
+      "governance/next_package_class.json",
+      "governance/schema_contract_registry.json",
+      "governance/runtime_contract_version.json",
+      "governance/tactical_family_classification.json",
+      "governance/authority_adr_*",
+      "framework/**",
+      "docs/adr/**",
+      "docs/authority_inputs/**",
+      "artifacts/governance/phase_authority_inventory.json",
+      "artifacts/governance/core_adr_index.json"
+    ]
+  },
+  "artifact_outputs": [
+    {
+      "path": "artifacts/governance/execution_control_package_validation.json",
+      "artifact_id": "P0-03-EXEC-CTRL-PKG-VALIDATION-1",
+      "required_fields": [
+        "artifact_id",
+        "generated_at",
+        "schema_path",
+        "example_path",
+        "schema_loaded",
+        "example_valid",
+        "required_fields_checked",
+        "required_fields_present",
+        "phase_linkage",
+        "authority_sources"
+      ]
+    }
+  ],
+  "escalation_rule": {
+    "escalate_if": [
+      "any file in forbidden_files would need to be modified to satisfy the objective",
+      "the JSON schema cannot be constructed without importing external schema validation libraries not present in stdlib",
+      "example fails to validate against schema and the schema definition itself is ambiguous"
+    ],
+    "escalation_route": "control_window"
+  },
+  "acceptance_gates": [
+    "scope compliance: only allowed_files touched",
+    "governance/execution_control_package.schema.json exists and is valid JSON",
+    "governance/execution_control_package.example.json exists, is valid JSON, and validates against the schema",
+    "docs/specs/execution_control_package.md exists with all required sections",
+    "artifacts/governance/execution_control_package_validation.json exists and parses",
+    "validation artifact: schema_loaded=true",
+    "validation artifact: example_valid=true",
+    "validation artifact: required_fields_present=true",
+    "pytest passes (all seam tests)",
+    "make check passes",
+    "escalation status explicitly reported"
+  ],
+  "phase_linkage": "Phase 0 (governance_source_of_truth_reconciliation), Phase 1 (runtime_contract_foundation)",
+  "authority_sources": [
+    "P0-01-AUTHORITY-SURFACE-INVENTORY-1",
+    "ADR-0001-canonical-session-job-schema",
+    "ADR-0003-workspace-contract",
+    "ADR-0006-artifact-bundle",
+    "ADR-0007-autonomy-scorecard",
+    "governance/next_package_class.json (current_allowed_class=ratification_only)"
+  ],
+  "schema_version": 1
+}

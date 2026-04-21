@@ -1,0 +1,144 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "governance/execution_control_package.schema.json",
+  "title": "ExecutionControlPackage",
+  "description": "Schema for execution-control packages that govern bounded coding slices in the integrated AI platform. Each package declares its own scope, validation requirements, rollback rule, and acceptance gates so that SUBSTRATE and LOCAL-FIRST sessions operate under explicit, machine-verifiable contracts.",
+  "type": "object",
+  "required": [
+    "package_id",
+    "label",
+    "objective",
+    "allowed_files",
+    "forbidden_files",
+    "validation_order",
+    "rollback_rule",
+    "artifact_outputs",
+    "escalation_rule",
+    "acceptance_gates",
+    "phase_linkage",
+    "authority_sources",
+    "schema_version"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "package_id": {
+      "type": "string",
+      "description": "Unique package identifier. Formats: {PHASE}-{NUM}-{DESCRIPTOR}-{SEQ} (e.g. P0-01-...) or {COMPONENT}-P{PHASE}-{DESCRIPTOR}-{SEQ} (e.g. LACE2-P9-...).",
+      "pattern": "^[A-Z][A-Z0-9]*-[A-Z0-9]+-[A-Z0-9-]+-[0-9]+$"
+    },
+    "label": {
+      "type": "string",
+      "description": "Execution routing label.",
+      "enum": ["SUBSTRATE", "LOCAL-FIRST", "ESCALATION"]
+    },
+    "objective": {
+      "type": "string",
+      "description": "Single focused goal for this package. Must not be compound or speculative.",
+      "minLength": 10
+    },
+    "allowed_files": {
+      "type": "array",
+      "description": "Exhaustive list of file paths this package may create or modify. Glob patterns permitted.",
+      "items": { "type": "string" },
+      "minItems": 1
+    },
+    "forbidden_files": {
+      "type": "array",
+      "description": "Exhaustive list of file paths or patterns this package must not touch.",
+      "items": { "type": "string" },
+      "minItems": 1
+    },
+    "validation_order": {
+      "type": "array",
+      "description": "Ordered list of validation steps. Each step must pass before proceeding.",
+      "items": {
+        "type": "object",
+        "required": ["step", "description"],
+        "additionalProperties": false,
+        "properties": {
+          "step": { "type": "integer", "minimum": 1 },
+          "description": { "type": "string" },
+          "command": { "type": "string" },
+          "check": { "type": "string" }
+        }
+      },
+      "minItems": 1
+    },
+    "rollback_rule": {
+      "type": "object",
+      "description": "What to remove and what to preserve if any gate fails.",
+      "required": ["remove_on_failure", "preserve_always"],
+      "additionalProperties": false,
+      "properties": {
+        "remove_on_failure": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Files created by this package that must be removed on gate failure."
+        },
+        "preserve_always": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Pre-existing files that must never be modified or removed."
+        }
+      }
+    },
+    "artifact_outputs": {
+      "type": "array",
+      "description": "Required artifact files this package must produce.",
+      "items": {
+        "type": "object",
+        "required": ["path", "artifact_id", "required_fields"],
+        "additionalProperties": false,
+        "properties": {
+          "path": { "type": "string" },
+          "artifact_id": { "type": "string" },
+          "required_fields": {
+            "type": "array",
+            "items": { "type": "string" },
+            "minItems": 1
+          }
+        }
+      },
+      "minItems": 1
+    },
+    "escalation_rule": {
+      "type": "object",
+      "description": "Conditions under which this package must escalate instead of proceeding.",
+      "required": ["escalate_if", "escalation_route"],
+      "additionalProperties": false,
+      "properties": {
+        "escalate_if": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "List of conditions that trigger escalation."
+        },
+        "escalation_route": {
+          "type": "string",
+          "description": "Where escalation is directed (e.g., control_window, human_review)."
+        }
+      }
+    },
+    "acceptance_gates": {
+      "type": "array",
+      "description": "All conditions that must be true for the package to be accepted by the control window.",
+      "items": { "type": "string" },
+      "minItems": 1
+    },
+    "phase_linkage": {
+      "type": "string",
+      "description": "Canonical phase(s) this package operates under.",
+      "minLength": 1
+    },
+    "authority_sources": {
+      "type": "array",
+      "description": "Governance authority surfaces this package derives its constraints from.",
+      "items": { "type": "string" },
+      "minItems": 1
+    },
+    "schema_version": {
+      "type": "integer",
+      "description": "Schema version for this execution control package format.",
+      "minimum": 1
+    }
+  }
+}

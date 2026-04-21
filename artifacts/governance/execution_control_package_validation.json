@@ -1,0 +1,33 @@
+{
+  "artifact_id": "P0-03-EXEC-CTRL-PKG-VALIDATION-1",
+  "generated_at": "2026-04-21T14:27:15.626943+00:00",
+  "schema_path": "governance/execution_control_package.schema.json",
+  "example_path": "governance/execution_control_package.example.json",
+  "schema_loaded": true,
+  "example_valid": true,
+  "required_fields_checked": [
+    "package_id",
+    "label",
+    "objective",
+    "allowed_files",
+    "forbidden_files",
+    "validation_order",
+    "rollback_rule",
+    "artifact_outputs",
+    "escalation_rule",
+    "acceptance_gates",
+    "phase_linkage",
+    "authority_sources",
+    "schema_version"
+  ],
+  "required_fields_present": true,
+  "validation_errors": [],
+  "phase_linkage": "Phase 0 (governance_source_of_truth_reconciliation), Phase 1 (runtime_contract_foundation)",
+  "authority_sources": [
+    "P0-01-AUTHORITY-SURFACE-INVENTORY-1",
+    "ADR-0001-canonical-session-job-schema",
+    "ADR-0003-workspace-contract",
+    "ADR-0006-artifact-bundle",
+    "ADR-0007-autonomy-scorecard"
+  ]
+}
