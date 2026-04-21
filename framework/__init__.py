@@ -42,6 +42,7 @@ from .runtime_execution_adapter import (
 )
 from .apply_patch_dispatch import dispatch_apply_patch
 from .file_local_devloop import FileLocalTask, FileLocalResult, FileLocalDevloopRunner
+from .devloop_benchmark import DevloopTask, DevloopBenchmarkResult, DevloopBenchmarkRunner, SYNTHETIC_TASK_FAMILY
 from .tool_registry import DEFAULT_REGISTRY, ToolContractEntry, ToolRegistry
 from .tool_schema import (
     ApplyPatchAction,
@@ -145,4 +146,8 @@ __all__ = [
     "FileLocalTask",
     "FileLocalResult",
     "FileLocalDevloopRunner",
+    "DevloopTask",
+    "DevloopBenchmarkResult",
+    "DevloopBenchmarkRunner",
+    "SYNTHETIC_TASK_FAMILY",
 ]
