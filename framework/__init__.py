@@ -865,3 +865,5 @@ from .real_file_benchmark_pack import RealFileTask, LACE2_REAL_FILE_PACK, valida
 from .real_file_benchmark_fixture import FixtureResult, RealFileBenchmarkFixture
 
 from .lace2_benchmark_runner import TaskRunResult, Lace2BenchmarkRecord, Lace2BenchmarkRunner
+
+from .benchmark_regime_comparator import RegimeComparisonRecord, BenchmarkRegimeComparator
