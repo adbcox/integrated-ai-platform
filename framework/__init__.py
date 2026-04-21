@@ -206,6 +206,12 @@ from .cmdb_promotion_evidence import (
     CmdbEvidenceReport,
     evaluate_cmdb_promotion_evidence,
 )
+from .cmdb_promotion_ratifier import (
+    CMDB_PROMOTION_DONE,
+    CMDB_PROMOTION_DEFERRED,
+    CmdbPromotionArtifact,
+    ratify_cmdb_promotion,
+)
 from .retry_telemetry_integration import (
     LoopRetryIntegrationRecord,
     LoopRetryStore,
@@ -670,4 +676,8 @@ __all__ = [
     "CmdbProofCriterionResult",
     "CmdbEvidenceReport",
     "evaluate_cmdb_promotion_evidence",
+    "CMDB_PROMOTION_DONE",
+    "CMDB_PROMOTION_DEFERRED",
+    "CmdbPromotionArtifact",
+    "ratify_cmdb_promotion",
 ]
