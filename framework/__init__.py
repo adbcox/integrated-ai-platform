@@ -103,6 +103,7 @@ from .cmdb_authoritative_promotion_ratifier import CmdbRatificationCriterion, Cm
 from .cmdb_terminal_authoritative_reratifier import CmdbTerminalDecision, CmdbTerminalAuthoritativeReratifier, emit_cmdb_terminal_decision
 from .cmdb_integration_gate import CmdbGateDecision, CmdbIntegrationGate, evaluate_cmdb_gate, GATE_PASS, GATE_BLOCK
 from .rm_gov_promotion_ratifier import RmGovSubclaimResult, RmGovItemDecision, RmGovPromotionDecision, RmGovPromotionRatifier, emit_rm_gov_promotion_decision
+from .rm_gov_terminal_closeout import RmGovCloseoutEntry, RmGovTerminalCloseout, RmGovTerminalCloseoutEmitter, emit_rm_gov_terminal_closeout
 from .domain_branch_contract import DOMAIN_BRANCH_RUNNER_VERSION, DomainBranchPolicy, DomainBranchManifest, DomainBranchRunner
 from .expansion_closeout_ratifier import (
     EXPANSION_COMPLETE,
@@ -815,4 +816,8 @@ __all__ = [
     "RmGovPromotionDecision",
     "RmGovPromotionRatifier",
     "emit_rm_gov_promotion_decision",
+    "RmGovCloseoutEntry",
+    "RmGovTerminalCloseout",
+    "RmGovTerminalCloseoutEmitter",
+    "emit_rm_gov_terminal_closeout",
 ]
