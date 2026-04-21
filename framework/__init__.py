@@ -152,6 +152,18 @@ from .expansion_readiness_inspector import (
     READINESS_EXPANSION_BLOCKED,
     inspect_expansion_readiness,
 )
+from .promotion_baseline_inspector import (
+    BLOCKER_CLASS_HARD,
+    BLOCKER_CLASS_SOFT,
+    BLOCKER_CLASS_NONE,
+    CURRENT_STATE_PARTIAL,
+    CURRENT_STATE_DEFERRED,
+    CURRENT_STATE_SEED_COMPLETE,
+    CURRENT_STATE_DONE,
+    PromotionCandidate,
+    PromotionBaselineReport,
+    inspect_promotion_baseline,
+)
 from .retry_telemetry_integration import (
     LoopRetryIntegrationRecord,
     LoopRetryStore,
@@ -576,4 +588,14 @@ __all__ = [
     "ExpansionCloseoutComponent",
     "ExpansionCloseoutArtifact",
     "ratify_expansion_closeout",
+    "BLOCKER_CLASS_HARD",
+    "BLOCKER_CLASS_SOFT",
+    "BLOCKER_CLASS_NONE",
+    "CURRENT_STATE_PARTIAL",
+    "CURRENT_STATE_DEFERRED",
+    "CURRENT_STATE_SEED_COMPLETE",
+    "CURRENT_STATE_DONE",
+    "PromotionCandidate",
+    "PromotionBaselineReport",
+    "inspect_promotion_baseline",
 ]
