@@ -52,6 +52,7 @@ from .routing_config_adopter import AdoptionRecommendation, RoutingAdoptionResul
 from .critique_specializer import CritiqueSpecialization, CritiqueSpecializer
 from .first_pass_metric import FirstPassStat, FirstPassReport, compute_first_pass_metrics, save_first_pass_report
 from .evidence_accumulation_batch import BatchRunConfig, BatchKindResult, BatchRunResult, EvidenceAccumulationBatch
+from .threshold_tuner import ThresholdRecommendation, ThresholdTuningResult, tune_thresholds, save_tuning_result
 from .retry_telemetry_integration import (
     LoopRetryIntegrationRecord,
     LoopRetryStore,
@@ -348,4 +349,8 @@ __all__ = [
     "BatchKindResult",
     "BatchRunResult",
     "EvidenceAccumulationBatch",
+    "ThresholdRecommendation",
+    "ThresholdTuningResult",
+    "tune_thresholds",
+    "save_tuning_result",
 ]
