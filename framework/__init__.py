@@ -73,6 +73,7 @@ from .diff_result_packager import DiffResultPackage, DiffResultPackager
 from .bounded_result_publisher import PublicationRecord, BoundedResultPublisher
 from .loop_evidence_bundle import LoopEvidenceBundle, build_evidence_bundle, emit_evidence_bundle
 from .result_artifact_manifest import ResultArtifactManifest, build_manifest, emit_manifest
+from .hybrid_inspect_context import HybridInspectContext, build_hybrid_inspect_context
 from .retry_telemetry_integration import (
     LoopRetryIntegrationRecord,
     LoopRetryStore,
@@ -397,4 +398,6 @@ __all__ = [
     "ResultArtifactManifest",
     "build_manifest",
     "emit_manifest",
+    "HybridInspectContext",
+    "build_hybrid_inspect_context",
 ]
