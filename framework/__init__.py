@@ -179,6 +179,12 @@ from .aider_live_proof import (
     AiderLiveProofReport,
     run_aider_live_proof,
 )
+from .aider_promotion_ratifier import (
+    AIDER_PROMOTION_DONE,
+    AIDER_PROMOTION_PARTIAL,
+    AiderPromotionArtifact,
+    ratify_aider_promotion,
+)
 from .retry_telemetry_integration import (
     LoopRetryIntegrationRecord,
     LoopRetryStore,
@@ -624,4 +630,8 @@ __all__ = [
     "AiderLiveProofRecord",
     "AiderLiveProofReport",
     "run_aider_live_proof",
+    "AIDER_PROMOTION_DONE",
+    "AIDER_PROMOTION_PARTIAL",
+    "AiderPromotionArtifact",
+    "ratify_aider_promotion",
 ]
