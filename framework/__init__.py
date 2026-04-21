@@ -82,6 +82,7 @@ from .list_dir_dispatch import dispatch_list_dir
 from .git_diff_dispatch import dispatch_git_diff
 from .publish_artifact_dispatch import dispatch_publish_artifact
 from .retry_telemetry import RetryTelemetryRecord, record_retry_telemetry
+from .retrieval_cache_warmer import CacheWarmingResult, warm_retrieval_cache
 from .tool_registry import DEFAULT_REGISTRY, ToolContractEntry, ToolRegistry
 from .tool_schema import (
     ApplyPatchAction,
@@ -268,4 +269,6 @@ __all__ = [
     "dispatch_publish_artifact",
     "RetryTelemetryRecord",
     "record_retry_telemetry",
+    "CacheWarmingResult",
+    "warm_retrieval_cache",
 ]
