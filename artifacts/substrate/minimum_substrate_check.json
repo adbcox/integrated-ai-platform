@@ -1,0 +1,135 @@
+{
+  "substrate_pack": "minimum_substrate_v1",
+  "generated_at": "2026-04-21T16:24:01.455409+00:00",
+  "schema_loaded": true,
+  "tool_registry_loaded": true,
+  "workspace_contract_loaded": true,
+  "permission_model_loaded": true,
+  "artifact_bundle_loaded": true,
+  "all_checks_passed": true,
+  "component_summary": [
+    {
+      "module": "framework/session_job_schema_v1.py",
+      "classes": [
+        "SessionRecord",
+        "JobRecord"
+      ]
+    },
+    {
+      "module": "framework/tool_contracts_v1.py",
+      "classes": [
+        "ToolContractV1"
+      ],
+      "instances": 4
+    },
+    {
+      "module": "framework/tool_registry_v1.py",
+      "classes": [
+        "ToolRegistryV1"
+      ]
+    },
+    {
+      "module": "framework/workspace_controller_v1.py",
+      "classes": [
+        "WorkspaceDescriptorV1",
+        "WorkspaceControllerV1"
+      ]
+    },
+    {
+      "module": "framework/permission_decision_v1.py",
+      "classes": [
+        "PermissionDecisionV1",
+        "Decision"
+      ]
+    },
+    {
+      "module": "framework/artifact_bundle_v1.py",
+      "classes": [
+        "ArtifactBundleV1"
+      ]
+    }
+  ],
+  "check_details": {
+    "session_job_schema": {
+      "ok": true,
+      "session_fields": [
+        "session_id",
+        "package_id",
+        "package_label",
+        "objective",
+        "allowed_files",
+        "forbidden_files",
+        "selected_profile",
+        "selected_backend",
+        "workspace_root",
+        "artifact_root",
+        "escalation_status",
+        "final_outcome",
+        "generated_at"
+      ],
+      "job_fields": [
+        "job_id",
+        "package_id",
+        "package_label",
+        "objective",
+        "allowed_files",
+        "forbidden_files",
+        "selected_profile",
+        "selected_backend",
+        "workspace_root",
+        "artifact_root",
+        "escalation_status",
+        "final_outcome",
+        "session_id",
+        "generated_at",
+        "validations_run",
+        "validation_results",
+        "artifacts_produced"
+      ]
+    },
+    "tool_registry": {
+      "ok": true,
+      "tools_registered": [
+        "publish_artifact",
+        "read_file",
+        "run_command",
+        "run_tests"
+      ]
+    },
+    "workspace_controller": {
+      "ok": true,
+      "layout_valid": true
+    },
+    "permission_model": {
+      "ok": true,
+      "decisions_verified": [
+        "allow",
+        "deny",
+        "ask"
+      ]
+    },
+    "artifact_bundle": {
+      "ok": true,
+      "bundle_fields": [
+        "session",
+        "job",
+        "tools_used",
+        "validations_run",
+        "artifacts_produced",
+        "escalation_status",
+        "final_outcome",
+        "residual_notes"
+      ]
+    }
+  },
+  "phase_linkage": "Phase 2 (minimum_substrate_implementation)",
+  "authority_sources": [
+    "governance/phase1_hardening_baseline.v1.yaml",
+    "governance/workspace_contract.v1.yaml",
+    "governance/local_run_validation_pack.v1.yaml",
+    "ADR-0001",
+    "ADR-0002",
+    "ADR-0003",
+    "ADR-0006"
+  ]
+}
