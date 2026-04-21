@@ -41,12 +41,14 @@ class AiderRuntimeAdapter:
         self,
         command_runner: Optional[LocalCommandRunner] = None,
         policy: Optional[AiderAdapterPolicy] = None,
+        preflight_checker: Optional[AiderPreflightChecker] = None,
     ) -> None:
         self._runner = command_runner or LocalCommandRunner()
         self._policy = policy or DEFAULT_AIDER_POLICY
+        self._preflight_checker = preflight_checker
 
     def preflight(self) -> dict:
-        checker = AiderPreflightChecker()
+        checker = self._preflight_checker if self._preflight_checker is not None else AiderPreflightChecker()
         result = checker.run_preflight()
         return {
             "verdict": result.verdict,
