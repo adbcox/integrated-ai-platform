@@ -30,6 +30,28 @@ from .runtime_artifact_service import RuntimeArtifactService
 from .runtime_workspace_contract import RuntimeWorkspace, assert_read_only_source, build_workspace
 from .workspace import WorkspaceContext, WorkspaceController
 from .worker_runtime import WorkerPool, WorkerRuntime
+from .tool_bridge import SCHEMA_TOOL_NAMES, is_schema_action, tool_name_for
+from .tool_registry import DEFAULT_REGISTRY, ToolContractEntry, ToolRegistry
+from .tool_schema import (
+    ApplyPatchAction,
+    ApplyPatchObservation,
+    GitDiffAction,
+    GitDiffObservation,
+    ListDirAction,
+    ListDirObservation,
+    PublishArtifactAction,
+    PublishArtifactObservation,
+    ReadFileAction,
+    ReadFileObservation,
+    RepoMapAction,
+    RepoMapObservation,
+    RunCommandAction,
+    RunCommandObservation,
+    RunTestsAction,
+    RunTestsObservation,
+    SearchAction,
+    SearchObservation,
+)
 
 __all__ = [
     "BackendProfile",
@@ -73,4 +95,28 @@ __all__ = [
     "build_workspace",
     "get_backend_profile",
     "select_backend_profile_auto",
+    "ApplyPatchAction",
+    "ApplyPatchObservation",
+    "DEFAULT_REGISTRY",
+    "GitDiffAction",
+    "GitDiffObservation",
+    "ListDirAction",
+    "ListDirObservation",
+    "PublishArtifactAction",
+    "PublishArtifactObservation",
+    "ReadFileAction",
+    "ReadFileObservation",
+    "RepoMapAction",
+    "RepoMapObservation",
+    "RunCommandAction",
+    "RunCommandObservation",
+    "RunTestsAction",
+    "RunTestsObservation",
+    "SCHEMA_TOOL_NAMES",
+    "SearchAction",
+    "SearchObservation",
+    "ToolContractEntry",
+    "ToolRegistry",
+    "is_schema_action",
+    "tool_name_for",
 ]

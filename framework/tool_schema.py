@@ -99,7 +99,9 @@ class RepoMapObservation(ToolObservation):
 @dataclass(frozen=True)
 class ApplyPatchAction(ToolAction):
     path: str
-    patch: str
+    old_string: str
+    new_string: str
+    replace_all: bool = False
 
 
 @dataclass(frozen=True)
@@ -131,16 +133,18 @@ class GitDiffObservation(ToolObservation):
 
 @dataclass(frozen=True)
 class RunCommandAction(ToolAction):
-    argv: tuple
+    command: str
     cwd: str = "."
-    timeout_s: int = 30
+    timeout_seconds: int = 30
+    env: tuple = ()
 
 
 @dataclass(frozen=True)
 class RunCommandObservation(ToolObservation):
-    return_code: int
     stdout: str
     stderr: str
+    exit_code: int
+    timed_out: bool = False
     error: Optional[str] = None
 
 
@@ -150,16 +154,19 @@ class RunCommandObservation(ToolObservation):
 
 @dataclass(frozen=True)
 class RunTestsAction(ToolAction):
-    test_path: str = "."
-    pattern: Optional[str] = None
+    test_paths: tuple = ()
+    timeout_seconds: int = 120
+    extra_args: tuple = ()
 
 
 @dataclass(frozen=True)
 class RunTestsObservation(ToolObservation):
-    passed: int
-    failed: int
-    errors: int
-    output: str
+    stdout: str
+    stderr: str
+    exit_code: int
+    passed: int = 0
+    failed: int = 0
+    skipped: int = 0
     error: Optional[str] = None
 
 

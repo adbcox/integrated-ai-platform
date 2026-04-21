@@ -117,13 +117,13 @@ class RepresentativeConstructionTest(unittest.TestCase):
         self.assertIsNone(o.error)
 
     def test_run_command_action_constructible(self) -> None:
-        a = RunCommandAction(argv=("make", "check"))
-        self.assertEqual(a.argv, ("make", "check"))
+        a = RunCommandAction(command="make check")
+        self.assertEqual(a.command, "make check")
         self.assertEqual(a.cwd, ".")
-        self.assertEqual(a.timeout_s, 30)
+        self.assertEqual(a.timeout_seconds, 30)
 
     def test_apply_patch_action_constructible(self) -> None:
-        a = ApplyPatchAction(path="foo.py", patch="--- a\n+++ b\n")
+        a = ApplyPatchAction(path="foo.py", old_string="old", new_string="new")
         self.assertEqual(a.path, "foo.py")
 
 
@@ -143,13 +143,13 @@ class AllActionTypesConstructibleTest(unittest.TestCase):
         self.assertIsInstance(RepoMapAction(), RepoMapAction)
 
     def test_apply_patch_action(self) -> None:
-        self.assertIsInstance(ApplyPatchAction(path="x", patch=""), ApplyPatchAction)
+        self.assertIsInstance(ApplyPatchAction(path="x", old_string="", new_string=""), ApplyPatchAction)
 
     def test_git_diff_action(self) -> None:
         self.assertIsInstance(GitDiffAction(), GitDiffAction)
 
     def test_run_command_action(self) -> None:
-        self.assertIsInstance(RunCommandAction(argv=("echo",)), RunCommandAction)
+        self.assertIsInstance(RunCommandAction(command="echo"), RunCommandAction)
 
     def test_run_tests_action(self) -> None:
         self.assertIsInstance(RunTestsAction(), RunTestsAction)
@@ -184,13 +184,13 @@ class AllObservationTypesConstructibleTest(unittest.TestCase):
 
     def test_run_command_observation(self) -> None:
         self.assertIsInstance(
-            RunCommandObservation(return_code=0, stdout="", stderr=""),
+            RunCommandObservation(stdout="", stderr="", exit_code=0),
             RunCommandObservation,
         )
 
     def test_run_tests_observation(self) -> None:
         self.assertIsInstance(
-            RunTestsObservation(passed=1, failed=0, errors=0, output=""),
+            RunTestsObservation(stdout="", stderr="", exit_code=0, passed=1, failed=0, skipped=0),
             RunTestsObservation,
         )
 
@@ -215,9 +215,9 @@ class FrozenTest(unittest.TestCase):
             o.content = "d"  # type: ignore[misc]
 
     def test_run_command_action_frozen(self) -> None:
-        a = RunCommandAction(argv=("make",))
+        a = RunCommandAction(command="make")
         with self.assertRaises(FrozenInstanceError):
-            a.argv = ("ls",)  # type: ignore[misc]
+            a.command = "ls"  # type: ignore[misc]
 
     def test_apply_patch_observation_frozen(self) -> None:
         o = ApplyPatchObservation(path="f", applied=False)
