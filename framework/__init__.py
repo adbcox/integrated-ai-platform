@@ -845,3 +845,5 @@ from .failure_pattern_miner import FailurePattern, FailurePatternReport, Failure
 from .autonomy_uplift_ratifier import UpliftCriterion, UpliftRatificationRecord, AutonomyUpliftRatifier, VERDICT_SUBSTRATE_UPLIFT_CONFIRMED, VERDICT_PARTIAL_SUBSTRATE_UPLIFT, VERDICT_SUBSTRATE_UPLIFT_NOT_CONFIRMED
 
 from .grouped_package_expansion_selector import PackageCandidate, GroupedPackageSelectionRecord, GroupedPackageExpansionSelector
+
+from .retrieval_enrichment_substrate import EntitySignal, EnrichedCandidate, RetrievalEnrichmentRecord, RetrievalEnrichmentSubstrate
