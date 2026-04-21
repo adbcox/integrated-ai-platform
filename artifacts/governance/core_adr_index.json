@@ -1,0 +1,182 @@
+{
+  "artifact_id": "P0-02-CORE-ADR-INDEX-1",
+  "generated_at": "2026-04-21T14:18:06.976944+00:00",
+  "adr_count": 7,
+  "adr_ids": [
+    "ADR-0001",
+    "ADR-0002",
+    "ADR-0003",
+    "ADR-0004",
+    "ADR-0005",
+    "ADR-0006",
+    "ADR-0007"
+  ],
+  "adr_titles": {
+    "ADR-0001": "ADR-0001: Canonical Session and Job Schema",
+    "ADR-0002": "ADR-0002: Typed Tool System",
+    "ADR-0003": "ADR-0003: Workspace Contract",
+    "ADR-0004": "ADR-0004: Inference Gateway",
+    "ADR-0005": "ADR-0005: Permission Model",
+    "ADR-0006": "ADR-0006: Artifact Bundle",
+    "ADR-0007": "ADR-0007: Autonomy Scorecard"
+  },
+  "adr_statuses": {
+    "ADR-0001": "accepted",
+    "ADR-0002": "accepted",
+    "ADR-0003": "accepted",
+    "ADR-0004": "accepted",
+    "ADR-0005": "accepted",
+    "ADR-0006": "accepted",
+    "ADR-0007": "accepted"
+  },
+  "phase_linkage": {
+    "ADR-0001": "Phase 0 (governance_source_of_truth_reconciliation), Phase 1 (runtime_contract_foundation)",
+    "ADR-0002": "Phase 0 (governance_source_of_truth_reconciliation), Phase 1 (runtime_contract_foundation)",
+    "ADR-0003": "Phase 0 (governance_source_of_truth_reconciliation), Phase 1 (runtime_contract_foundation)",
+    "ADR-0004": "Phase 0 (governance_source_of_truth_reconciliation), Phase 1 (runtime_contract_foundation), Phase 2 (capability_session)",
+    "ADR-0005": "Phase 0 (governance_source_of_truth_reconciliation), Phase 1 (runtime_contract_foundation)",
+    "ADR-0006": "Phase 0 (governance_source_of_truth_reconciliation), Phase 1 (runtime_contract_foundation)",
+    "ADR-0007": "Phase 0 (governance_source_of_truth_reconciliation), Phase 1 (runtime_contract_foundation), Phase 7 (capability_session \u2014 closed_ratified)"
+  },
+  "authority_sources": {
+    "ADR-0001": [
+      "P0-01-AUTHORITY-SURFACE-INVENTORY-1",
+      "AS-11-HANDOFF-V7",
+      "AS-CW-01",
+      "governance/schema_contract_registry.json"
+    ],
+    "ADR-0002": [
+      "P0-01-AUTHORITY-SURFACE-INVENTORY-1",
+      "AS-11-HANDOFF-V7",
+      "AS-CW-01",
+      "governance/schema_contract_registry.json (framework.tool_schema)"
+    ],
+    "ADR-0003": [
+      "P0-01-AUTHORITY-SURFACE-INVENTORY-1",
+      "AS-V7-01 (canonical_roadmap)",
+      "AS-CW-02 (phase closure requires explicit record)",
+      "governance/current_phase.json"
+    ],
+    "ADR-0004": [
+      "P0-01-AUTHORITY-SURFACE-INVENTORY-1",
+      "AS-V7-02",
+      "AS-11-HANDOFF-V7",
+      "governance/runtime_contract_version.json"
+    ],
+    "ADR-0005": [
+      "P0-01-AUTHORITY-SURFACE-INVENTORY-1",
+      "AS-V7-03",
+      "AS-CW-03 (next_package_class gating)",
+      "governance/next_package_class.json",
+      "governance/tactical_family_classification.json"
+    ],
+    "ADR-0006": [
+      "P0-01-AUTHORITY-SURFACE-INVENTORY-1",
+      "AS-V7-04",
+      "AS-CW-01 (governance/ as source of truth)",
+      "governance/phase_gate_status.json"
+    ],
+    "ADR-0007": [
+      "P0-01-AUTHORITY-SURFACE-INVENTORY-1",
+      "AS-V7-01",
+      "AS-11-HANDOFF-V7",
+      "governance/canonical_roadmap.json",
+      "governance/phase_gate_status.json"
+    ]
+  },
+  "adrs": [
+    {
+      "adr_id": "ADR-0001",
+      "title": "ADR-0001: Canonical Session and Job Schema",
+      "status": "accepted",
+      "path": "docs/adr/ADR-0001-canonical-session-job-schema.md",
+      "phase_linkage": "Phase 0 (governance_source_of_truth_reconciliation), Phase 1 (runtime_contract_foundation)",
+      "authority_sources": [
+        "P0-01-AUTHORITY-SURFACE-INVENTORY-1",
+        "AS-11-HANDOFF-V7",
+        "AS-CW-01",
+        "governance/schema_contract_registry.json"
+      ]
+    },
+    {
+      "adr_id": "ADR-0002",
+      "title": "ADR-0002: Typed Tool System",
+      "status": "accepted",
+      "path": "docs/adr/ADR-0002-typed-tool-system.md",
+      "phase_linkage": "Phase 0 (governance_source_of_truth_reconciliation), Phase 1 (runtime_contract_foundation)",
+      "authority_sources": [
+        "P0-01-AUTHORITY-SURFACE-INVENTORY-1",
+        "AS-11-HANDOFF-V7",
+        "AS-CW-01",
+        "governance/schema_contract_registry.json (framework.tool_schema)"
+      ]
+    },
+    {
+      "adr_id": "ADR-0003",
+      "title": "ADR-0003: Workspace Contract",
+      "status": "accepted",
+      "path": "docs/adr/ADR-0003-workspace-contract.md",
+      "phase_linkage": "Phase 0 (governance_source_of_truth_reconciliation), Phase 1 (runtime_contract_foundation)",
+      "authority_sources": [
+        "P0-01-AUTHORITY-SURFACE-INVENTORY-1",
+        "AS-V7-01 (canonical_roadmap)",
+        "AS-CW-02 (phase closure requires explicit record)",
+        "governance/current_phase.json"
+      ]
+    },
+    {
+      "adr_id": "ADR-0004",
+      "title": "ADR-0004: Inference Gateway",
+      "status": "accepted",
+      "path": "docs/adr/ADR-0004-inference-gateway.md",
+      "phase_linkage": "Phase 0 (governance_source_of_truth_reconciliation), Phase 1 (runtime_contract_foundation), Phase 2 (capability_session)",
+      "authority_sources": [
+        "P0-01-AUTHORITY-SURFACE-INVENTORY-1",
+        "AS-V7-02",
+        "AS-11-HANDOFF-V7",
+        "governance/runtime_contract_version.json"
+      ]
+    },
+    {
+      "adr_id": "ADR-0005",
+      "title": "ADR-0005: Permission Model",
+      "status": "accepted",
+      "path": "docs/adr/ADR-0005-permission-model.md",
+      "phase_linkage": "Phase 0 (governance_source_of_truth_reconciliation), Phase 1 (runtime_contract_foundation)",
+      "authority_sources": [
+        "P0-01-AUTHORITY-SURFACE-INVENTORY-1",
+        "AS-V7-03",
+        "AS-CW-03 (next_package_class gating)",
+        "governance/next_package_class.json",
+        "governance/tactical_family_classification.json"
+      ]
+    },
+    {
+      "adr_id": "ADR-0006",
+      "title": "ADR-0006: Artifact Bundle",
+      "status": "accepted",
+      "path": "docs/adr/ADR-0006-artifact-bundle.md",
+      "phase_linkage": "Phase 0 (governance_source_of_truth_reconciliation), Phase 1 (runtime_contract_foundation)",
+      "authority_sources": [
+        "P0-01-AUTHORITY-SURFACE-INVENTORY-1",
+        "AS-V7-04",
+        "AS-CW-01 (governance/ as source of truth)",
+        "governance/phase_gate_status.json"
+      ]
+    },
+    {
+      "adr_id": "ADR-0007",
+      "title": "ADR-0007: Autonomy Scorecard",
+      "status": "accepted",
+      "path": "docs/adr/ADR-0007-autonomy-scorecard.md",
+      "phase_linkage": "Phase 0 (governance_source_of_truth_reconciliation), Phase 1 (runtime_contract_foundation), Phase 7 (capability_session \u2014 closed_ratified)",
+      "authority_sources": [
+        "P0-01-AUTHORITY-SURFACE-INVENTORY-1",
+        "AS-V7-01",
+        "AS-11-HANDOFF-V7",
+        "governance/canonical_roadmap.json",
+        "governance/phase_gate_status.json"
+      ]
+    }
+  ]
+}
