@@ -841,3 +841,5 @@ from .local_autonomy_benchmark_pack import LocalAutonomyTask, LACE1_TASK_PACK, l
 from .lace1_benchmark_runner import TaskRunResult, BenchmarkRunReport, Lace1BenchmarkRunner
 
 from .failure_pattern_miner import FailurePattern, FailurePatternReport, FailurePatternMiner
+
+from .autonomy_uplift_ratifier import UpliftCriterion, UpliftRatificationRecord, AutonomyUpliftRatifier, VERDICT_SUBSTRATE_UPLIFT_CONFIRMED, VERDICT_PARTIAL_SUBSTRATE_UPLIFT, VERDICT_SUBSTRATE_UPLIFT_NOT_CONFIRMED
