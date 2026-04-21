@@ -1,0 +1,54 @@
+{
+  "artifact_id": "P1-02-INFERENCE-GATEWAY-CONTRACT-VALIDATION-1",
+  "generated_at": "2026-04-21T15:24:19.886687+00:00",
+  "contract_path": "governance/inference_gateway_contract.v1.yaml",
+  "yaml_loaded": true,
+  "required_sections_checked": [
+    "version",
+    "gateway_api",
+    "profile_resolution",
+    "backend_routing",
+    "timeout_retry_policy",
+    "telemetry_contract",
+    "exceptions"
+  ],
+  "required_sections_present": true,
+  "routing_fields_checked": [
+    "request_fields",
+    "response_fields",
+    "supported_backends",
+    "default_backend",
+    "input_profile_id",
+    "resolution_order",
+    "fallback_behavior",
+    "ollama_default_rule",
+    "allowed_backends",
+    "direct_backend_calls_forbidden",
+    "timeout_seconds",
+    "retry_budget",
+    "failure_class_handling"
+  ],
+  "routing_fields_present": true,
+  "telemetry_fields_checked": [
+    "session_id",
+    "package_id",
+    "selected_profile",
+    "selected_backend",
+    "prompt_hash",
+    "response_hash",
+    "token_counts",
+    "latency_ms",
+    "finish_reason",
+    "retry_count"
+  ],
+  "telemetry_fields_present": true,
+  "content_errors": [],
+  "phase_linkage": "Phase 1 (runtime_contract_foundation)",
+  "authority_sources": [
+    "ADR-0004",
+    "ADR-0001",
+    "governance/model_profiles.v1.yaml",
+    "governance/definition_of_done.v1.yaml",
+    "governance/autonomy_scorecard.v1.yaml"
+  ]
+}

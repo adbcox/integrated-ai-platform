@@ -1,0 +1,367 @@
+---
+# Inference Gateway Contract v1
+# Authority surface: P1-02-INFERENCE-GATEWAY-CONTRACT-1
+# Governed by: ADR-0004 (inference gateway), governance/model_profiles.v1.yaml,
+#   governance/definition_of_done.v1.yaml
+# Scope: all inference calls made by the platform runtime
+
+version: "1.0.0"
+contract_id: "INFERENCE-GATEWAY-CONTRACT-V1"
+generated_at: "2026-04-21"
+authority_owner: "governance/authority_adr_0001_source_of_truth.md"
+adr_ref: "ADR-0004"
+phase_linkage: "Phase 1 (runtime_contract_foundation)"
+profiles_authority: "governance/model_profiles.v1.yaml"
+
+# ─────────────────────────────────────────────
+# GATEWAY API
+# The normalized request/response contract
+# all callers must use. No direct backend calls.
+# ─────────────────────────────────────────────
+gateway_api:
+  default_backend: "ollama"
+
+  supported_backends:
+    - "ollama"
+    - "remote_api"
+
+  request_fields:
+    request_id:
+      type: "string"
+      required: true
+      description: "Unique identifier for this inference call; used for telemetry correlation"
+    session_id:
+      type: "string"
+      required: true
+      description: "Parent session identifier; links this call to the executing session"
+    package_id:
+      type: "string"
+      required: true
+      description: "Package that originated this request; used for audit and scoring"
+    profile_id:
+      type: "string"
+      required: true
+      description: "Named model profile from governance/model_profiles.v1.yaml; gateway resolves to backend/model"
+    prompt:
+      type: "string"
+      required: true
+      description: "Full prompt text sent to the model"
+    temperature_override:
+      type: "float"
+      required: false
+      description: "If present, overrides the profile's default temperature; must be within profile min/max bounds"
+    max_tokens:
+      type: "integer"
+      required: false
+      description: "Maximum tokens in the completion; defaults to profile context_window limit"
+    stop_sequences:
+      type: "list[string]"
+      required: false
+      description: "Token sequences that terminate generation"
+    stream:
+      type: "boolean"
+      required: false
+      default: false
+      description: "If true, stream tokens as they are generated"
+
+  response_fields:
+    request_id:
+      type: "string"
+      required: true
+      description: "Echoed from request; used for correlation"
+    session_id:
+      type: "string"
+      required: true
+    package_id:
+      type: "string"
+      required: true
+    profile_id_requested:
+      type: "string"
+      required: true
+      description: "Profile ID from the request"
+    profile_id_resolved:
+      type: "string"
+      required: true
+      description: "Actual profile used (may differ if fallback was triggered)"
+    backend_used:
+      type: "string"
+      required: true
+      description: "Actual backend that served the request (ollama or remote_api)"
+    model_used:
+      type: "string"
+      required: true
+      description: "Exact model identifier used"
+    completion:
+      type: "string"
+      required: true
+      description: "Generated text completion"
+    finish_reason:
+      type: "string"
+      required: true
+      description: "Why generation stopped: stop, length, timeout, error"
+      allowed_values:
+        - "stop"
+        - "length"
+        - "timeout"
+        - "error"
+    fallback_triggered:
+      type: "boolean"
+      required: true
+      description: "True if the gateway fell back from the requested profile to an alternate"
+    fallback_reason:
+      type: "string"
+      required: false
+      description: "Human-readable reason fallback was triggered; null if fallback_triggered=false"
+    retry_count:
+      type: "integer"
+      required: true
+      description: "Number of retry attempts before this response was produced"
+    token_counts:
+      type: "object"
+      required: true
+      description: "Token usage: {prompt_tokens, completion_tokens, total_tokens}"
+    latency_ms:
+      type: "integer"
+      required: true
+      description: "Wall-clock time from request dispatch to first token (or completion if non-streaming)"
+    error:
+      type: "string"
+      required: false
+      description: "Error message if finish_reason=error; null otherwise"
+
+# ─────────────────────────────────────────────
+# PROFILE RESOLUTION
+# How the gateway maps profile_id to a backend/model
+# ─────────────────────────────────────────────
+profile_resolution:
+  authority: "governance/model_profiles.v1.yaml"
+
+  input_profile_id:
+    rule: "The request's profile_id must match a key in governance/model_profiles.v1.yaml::profiles"
+    hard_stop_on_unknown_profile: true
+    action_on_unknown: "Return error response with finish_reason=error; do not attempt inference"
+
+  resolution_order:
+    step_1: "Look up profile_id in governance/model_profiles.v1.yaml::profiles"
+    step_2: "Verify profile.enabled=true; if false, treat as unknown profile (hard stop)"
+    step_3: "Extract backend, model_name, context_window, timeout_seconds from profile"
+    step_4: "Apply temperature_override from request if present and within profile min/max; else use profile default"
+    step_5: "Dispatch request to the resolved backend with resolved model and parameters"
+    step_6: "On failure or timeout, consult profile.fallback_to for the fallback profile name"
+    step_7: "If fallback_to is non-null, repeat from step_1 with fallback profile; set fallback_triggered=true"
+    step_8: "If fallback_to is null or 'ESCALATE', return escalation response; do not route to SUBSTRATE"
+
+  fallback_behavior:
+    rule: "Fallback is driven entirely by the fallback_to field in the profile definition"
+    fallback_chain:
+      fast: "hard"
+      balanced: "hard"
+      hard: "ESCALATE"
+      long_context: "hard"
+    escalation_response:
+      finish_reason: "error"
+      error: "Fallback chain exhausted. Escalate to control window."
+      fallback_triggered: true
+      fallback_reason: "All profiles in chain failed or timed out"
+    substrate_not_in_chain:
+      rule: "The fallback chain never routes to a remote_api (SUBSTRATE/Claude) backend. Claude is not in the fallback chain."
+      hard_stop_on_violation: true
+
+# ─────────────────────────────────────────────
+# BACKEND ROUTING
+# Which backends exist and how they are selected
+# ─────────────────────────────────────────────
+backend_routing:
+  allowed_backends:
+    - "ollama"
+    - "remote_api"
+
+  ollama_default_rule:
+    rule: "All LOCAL-FIRST profiles route exclusively through the ollama backend. The gateway selects ollama whenever the resolved profile has backend=ollama."
+    enforcement: "Profile field backend=ollama is the binding selector; gateway must not substitute another backend"
+    base_url_source: "OLLAMA_API_BASE environment variable (default: http://localhost:11434)"
+    long_context_url_source: "OLLAMA_API_BASE_32B environment variable for the long_context profile"
+
+  remote_api_rule:
+    rule: "The remote_api backend is used only for SUBSTRATE-labeled packages. It must never be selected for LOCAL-FIRST packages."
+    enforcement: "Gateway checks package routing label before dispatching to remote_api; LOCAL-FIRST packages are hard-stopped if remote_api is attempted"
+    hard_stop_on_local_first_remote_api: true
+
+  direct_backend_calls_forbidden:
+    value: true
+    rule: >
+      Application logic (stage probes, manager scripts, framework modules) must not
+      call Ollama or any remote API directly. All inference calls must go through the
+      gateway API defined in this contract. Direct calls bypass telemetry, fallback
+      handling, profile resolution, and the Claude-not-routine enforcement.
+    hard_stop_on_violation: true
+    detection: "Any import of requests, httpx, or ollama client libraries outside framework/inference_adapter.py is a violation"
+
+  backend_health_check:
+    rule: "The gateway must verify backend availability before dispatching. An unavailable backend triggers the fallback chain immediately without counting as a retry."
+    ollama_health_endpoint: "/api/tags"
+    remote_api_health_endpoint: "API-specific ping or models list endpoint"
+
+# ─────────────────────────────────────────────
+# TIMEOUT / RETRY POLICY
+# How the gateway handles slow or failing backends
+# ─────────────────────────────────────────────
+timeout_retry_policy:
+  timeout_seconds:
+    rule: "The gateway enforces the timeout_seconds from the resolved profile. If the model does not complete within this window, the attempt is treated as a timeout failure."
+    timeout_counts_as: "failure (not retry)"
+    action_on_timeout: "Trigger fallback_to profile if available; else escalate"
+    profile_overrides:
+      fast: 120
+      balanced: 180
+      hard: 300
+      long_context: 600
+
+  retry_budget:
+    rule: "The gateway allows at most one retry per profile before falling back. A retry is re-sending the same request to the same backend/model after a transient error."
+    max_retries_per_profile: 1
+    retry_on:
+      - "transient_network_error"
+      - "backend_temporarily_unavailable"
+    do_not_retry_on:
+      - "timeout"
+      - "context_length_exceeded"
+      - "model_not_found"
+      - "hard_stop_error"
+    retry_increments_retry_count: true
+
+  failure_class_handling:
+    transient_network_error:
+      action: "Retry once; if retry also fails, trigger fallback_to"
+      counts_as_retry: true
+    timeout:
+      action: "Do not retry; trigger fallback_to immediately"
+      counts_as_retry: false
+    context_length_exceeded:
+      action: "Do not retry with same profile; try long_context if available; else escalate"
+      counts_as_retry: false
+    model_not_found:
+      action: "Hard stop; return error response; do not fall back (model configuration error)"
+      counts_as_retry: false
+    all_profiles_exhausted:
+      action: "Return escalation response; set finish_reason=error with exhausted chain message"
+      counts_as_retry: false
+
+# ─────────────────────────────────────────────
+# TELEMETRY CONTRACT
+# Required fields in every gateway telemetry record
+# ─────────────────────────────────────────────
+telemetry_contract:
+  authority: "ADR-0004, ADR-0001 (session schema session_id linkage)"
+  emit_on: "every gateway request/response pair, regardless of outcome"
+  storage: "telemetry records are appended to the session artifact bundle"
+
+  fields:
+    session_id:
+      type: "string"
+      required: true
+      description: "Links telemetry record to the parent session"
+
+    package_id:
+      type: "string"
+      required: true
+      description: "Package that originated the inference call"
+
+    selected_profile:
+      type: "string"
+      required: true
+      description: "The profile_id_resolved (actual profile used, post-fallback)"
+
+    selected_backend:
+      type: "string"
+      required: true
+      description: "The backend_used value from the response"
+
+    prompt_hash:
+      type: "string"
+      required: true
+      description: "SHA-256 of the prompt text (hex); enables deduplication and audit without storing raw prompts"
+
+    response_hash:
+      type: "string"
+      required: true
+      description: "SHA-256 of the completion text (hex); enables reproducibility verification"
+
+    token_counts:
+      type: "object"
+      required: true
+      description: "{prompt_tokens: int, completion_tokens: int, total_tokens: int}"
+
+    latency_ms:
+      type: "integer"
+      required: true
+      description: "Wall-clock latency from dispatch to first token or completion"
+
+    finish_reason:
+      type: "string"
+      required: true
+      description: "stop | length | timeout | error"
+
+    retry_count:
+      type: "integer"
+      required: true
+      description: "Number of retries before the final response; 0 if succeeded on first attempt"
+
+    fallback_triggered:
+      type: "boolean"
+      required: true
+
+    escalation_triggered:
+      type: "boolean"
+      required: true
+      description: "True if the call chain ended with an escalation response"
+
+    error_class:
+      type: "string"
+      required: false
+      description: "One of the failure classes from timeout_retry_policy.failure_class_handling; null on success"
+
+  scoring_use:
+    first_pass_success: "Derived from retry_count=0 AND fallback_triggered=false AND escalation_triggered=false"
+    retry_count: "Directly from retry_count field"
+    escalation_rate: "Derived from escalation_triggered=true"
+    note: "Telemetry fields are the canonical source for autonomy_scorecard metric computation"
+
+# ─────────────────────────────────────────────
+# EXCEPTIONS
+# Override rules that supersede default routing
+# ─────────────────────────────────────────────
+exceptions:
+  claude_is_escalation_only_not_routine_backend:
+    rule: >
+      Claude (SUBSTRATE / remote_api) is not a routine inference backend profile.
+      It must never appear in a fallback chain for LOCAL-FIRST packages.
+      Any invocation of the remote_api backend for a LOCAL-FIRST package is an
+      escalation event and must be recorded as escalation_triggered=true.
+      Adding Claude as a fallback in model_profiles.v1.yaml is forbidden without
+      an explicit ESCALATION-labeled package and control-window approval.
+    hard_stop_on_violation: true
+    scoring_impact: "escalation_triggered=true; first_pass_success not credited"
+    dod_ref: "escalation_handling.claude_rescue_not_local_autonomy"
+    adr_ref: "ADR-0004"
+
+  temperature_override_bounds_enforced:
+    rule: >
+      If a request provides temperature_override, it must be within the profile's
+      declared min and max. An out-of-bounds override is rejected with a hard stop;
+      it does not silently fall back to the profile default.
+    hard_stop_on_violation: true
+
+  prompt_hash_required_even_on_error:
+    rule: >
+      The telemetry record must always include prompt_hash, even if the request
+      failed before reaching the backend. This enables audit of what was attempted
+      regardless of outcome.
+    hard_stop_on_omission: true
+
+  no_ambient_inference:
+    rule: >
+      Inference calls must only be made in the context of an active gateway request
+      with a valid session_id and package_id. Ambient or background inference calls
+      (e.g., speculative pre-generation, keepalive prompts) are forbidden.
+    hard_stop_on_violation: true
