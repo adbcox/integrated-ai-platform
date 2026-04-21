@@ -80,6 +80,7 @@ from .task_repetition_harness import (
 from .search_action_dispatch import dispatch_search
 from .list_dir_dispatch import dispatch_list_dir
 from .git_diff_dispatch import dispatch_git_diff
+from .publish_artifact_dispatch import dispatch_publish_artifact
 from .tool_registry import DEFAULT_REGISTRY, ToolContractEntry, ToolRegistry
 from .tool_schema import (
     ApplyPatchAction,
@@ -263,4 +264,5 @@ __all__ = [
     "dispatch_search",
     "dispatch_list_dir",
     "dispatch_git_diff",
+    "dispatch_publish_artifact",
 ]
