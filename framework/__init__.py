@@ -198,6 +198,14 @@ from .codex_promotion_ratifier import (
     CodexPromotionArtifact,
     ratify_codex_promotion,
 )
+from .cmdb_promotion_evidence import (
+    CMDB_PROOF_SUFFICIENT,
+    CMDB_PROOF_INSUFFICIENT,
+    CMDB_PROOF_CRITERIA,
+    CmdbProofCriterionResult,
+    CmdbEvidenceReport,
+    evaluate_cmdb_promotion_evidence,
+)
 from .retry_telemetry_integration import (
     LoopRetryIntegrationRecord,
     LoopRetryStore,
@@ -656,4 +664,10 @@ __all__ = [
     "CODEX_LONG_TERM_DEFERRED",
     "CodexPromotionArtifact",
     "ratify_codex_promotion",
+    "CMDB_PROOF_SUFFICIENT",
+    "CMDB_PROOF_INSUFFICIENT",
+    "CMDB_PROOF_CRITERIA",
+    "CmdbProofCriterionResult",
+    "CmdbEvidenceReport",
+    "evaluate_cmdb_promotion_evidence",
 ]
