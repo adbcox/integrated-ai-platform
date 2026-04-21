@@ -50,6 +50,7 @@ from .pattern_guided_inspector import InspectHint, PatternGuidedInspector
 from .loop_task_builder import TaskBuildContext, LoopTaskBuilder
 from .routing_config_adopter import AdoptionRecommendation, RoutingAdoptionResult, RoutingConfigAdopter, save_adoption_result
 from .critique_specializer import CritiqueSpecialization, CritiqueSpecializer
+from .first_pass_metric import FirstPassStat, FirstPassReport, compute_first_pass_metrics, save_first_pass_report
 from .retry_telemetry_integration import (
     LoopRetryIntegrationRecord,
     LoopRetryStore,
@@ -338,4 +339,8 @@ __all__ = [
     "save_adoption_result",
     "CritiqueSpecialization",
     "CritiqueSpecializer",
+    "FirstPassStat",
+    "FirstPassReport",
+    "compute_first_pass_metrics",
+    "save_first_pass_report",
 ]
