@@ -53,6 +53,7 @@ from .mvp_benchmark import MVPBenchmarkTaskSpec, MVPBenchmarkResult, MVPBenchmar
 from .matrix_closure_evidence import MatrixItemState, MatrixItemRecord, derive_campaign_closure, emit_closeout_record
 from .task_prompt_pack import SUPPORTED_TASK_CLASSES, PromptPack, get_prompt_pack, render_prompt
 from .local_memory_store import FailurePattern, SuccessPattern, LocalMemoryStore, record_mvp_loop_outcome
+from .critique_injector import CritiqueResult, build_critique, render_retry_prompt
 from .tool_registry import DEFAULT_REGISTRY, ToolContractEntry, ToolRegistry
 from .tool_schema import (
     ApplyPatchAction,
@@ -191,4 +192,7 @@ __all__ = [
     "SuccessPattern",
     "LocalMemoryStore",
     "record_mvp_loop_outcome",
+    "CritiqueResult",
+    "build_critique",
+    "render_retry_prompt",
 ]
