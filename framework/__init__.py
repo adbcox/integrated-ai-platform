@@ -74,6 +74,7 @@ from .bounded_result_publisher import PublicationRecord, BoundedResultPublisher
 from .loop_evidence_bundle import LoopEvidenceBundle, build_evidence_bundle, emit_evidence_bundle
 from .result_artifact_manifest import ResultArtifactManifest, build_manifest, emit_manifest
 from .hybrid_inspect_context import HybridInspectContext, build_hybrid_inspect_context
+from .fused_prompt_context import FusedPromptContext, build_fused_prompt
 from .retry_telemetry_integration import (
     LoopRetryIntegrationRecord,
     LoopRetryStore,
@@ -400,4 +401,6 @@ __all__ = [
     "emit_manifest",
     "HybridInspectContext",
     "build_hybrid_inspect_context",
+    "FusedPromptContext",
+    "build_fused_prompt",
 ]
