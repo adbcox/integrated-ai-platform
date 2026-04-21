@@ -16,6 +16,7 @@ def test_local_live_proof_chain_builder_complete(tmp_path):
         "artifact_paths": ["artifact1.json", "artifact2.json"],
         "result": "success",
         "recorded_at": datetime.now(timezone.utc).isoformat(),
+        "live_execution_signal": True
     }
 
     summary_data = {
@@ -79,6 +80,8 @@ def test_local_live_proof_chain_builder_complete(tmp_path):
     assert chain.artifact_count == 4
     assert chain.final_result == "success"
     assert chain.live_execution_signal == True
+    assert chain.live_dispatch_succeeded == True
+    assert chain.dispatch_mode == "local_live"
 
     chain_path = tmp_path / 'local_live_proof_chain.json'
     with open(chain_path, 'w') as f:
@@ -97,9 +100,14 @@ def test_local_live_proof_chain_builder_complete(tmp_path):
             "final_result": "success",
             "live_execution_signal": True,
             "proof_generated_at": chain.proof_generated_at,
+            "live_dispatch_succeeded": True,
+            "dispatch_mode": "local_live"
         }
 
 def test_local_live_proof_chain_builder_partial(tmp_path):
+    # Only baseline present — summary, index, bundle absent.
+    # Builder returns a partial chain (no FileNotFoundError for optional inputs).
+    # live_dispatch_succeeded must be False; dispatch_mode must be "unknown".
     baseline_data = {
         "package_id": "P1-LF-01-LOCAL-RUN-BASELINE-RECEIPT-1",
         "executor": "aider_ollama",
@@ -120,10 +128,26 @@ def test_local_live_proof_chain_builder_partial(tmp_path):
     index_path = tmp_path / 'local_run_report_index.json'
     bundle_path = tmp_path / 'local_evidence_bundle.json'
 
-    try:
-        chain = LocalLiveProofChainBuilder.from_files(baseline_path, summary_path, index_path, bundle_path)
-    except FileNotFoundError as e:
-        assert str(e) == f"Baseline receipt not found at {summary_path}"
-        return
+    chain = LocalLiveProofChainBuilder.from_files(baseline_path, summary_path, index_path, bundle_path)
 
-    assert False, "Expected FileNotFoundError"
+    assert chain.package_id == "P1-LF-01-LOCAL-RUN-BASELINE-RECEIPT-1"
+    assert chain.executor == "aider_ollama"
+    assert chain.route == "local_first"
+    assert chain.evidence_inputs_seen == ["baseline_receipt"]
+    assert chain.live_execution_signal is True
+    assert chain.live_dispatch_succeeded is False
+    assert chain.dispatch_mode == "unknown"
+
+
+def test_local_live_proof_chain_builder_missing_baseline_raises(tmp_path):
+    # Builder raises FileNotFoundError only when the baseline itself is absent.
+    baseline_path = tmp_path / 'local_run_baseline_receipt.json'
+    summary_path = tmp_path / 'local_run_receipt_summary.json'
+    index_path = tmp_path / 'local_run_report_index.json'
+    bundle_path = tmp_path / 'local_evidence_bundle.json'
+
+    try:
+        LocalLiveProofChainBuilder.from_files(baseline_path, summary_path, index_path, bundle_path)
+        assert False, "Expected FileNotFoundError"
+    except FileNotFoundError as e:
+        assert str(baseline_path) in str(e)

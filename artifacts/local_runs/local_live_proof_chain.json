@@ -1,0 +1,18 @@
+{
+  "package_id": "P1-LF-01-LOCAL-RUN-BASELINE-RECEIPT-1",
+  "executor": "aider_ollama",
+  "route": "local_first",
+  "evidence_inputs_seen": [
+    "baseline_receipt",
+    "summary",
+    "index",
+    "bundle"
+  ],
+  "validation_count": 4,
+  "artifact_count": 4,
+  "final_result": "success",
+  "live_execution_signal": true,
+  "proof_generated_at": "2026-04-21T21:48:12.981505+00:00",
+  "live_dispatch_succeeded": true,
+  "dispatch_mode": "local_live"
+}
