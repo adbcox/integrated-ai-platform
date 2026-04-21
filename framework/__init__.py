@@ -71,6 +71,7 @@ from .search_aware_inspect import SearchAwareInspectResult, SearchAwareInspectRu
 from .listdir_inspect_helper import TargetDiscoveryResult, ListDirInspectHelper
 from .diff_result_packager import DiffResultPackage, DiffResultPackager
 from .bounded_result_publisher import PublicationRecord, BoundedResultPublisher
+from .loop_evidence_bundle import LoopEvidenceBundle, build_evidence_bundle, emit_evidence_bundle
 from .retry_telemetry_integration import (
     LoopRetryIntegrationRecord,
     LoopRetryStore,
@@ -389,4 +390,7 @@ __all__ = [
     "DiffResultPackager",
     "PublicationRecord",
     "BoundedResultPublisher",
+    "LoopEvidenceBundle",
+    "build_evidence_bundle",
+    "emit_evidence_bundle",
 ]
