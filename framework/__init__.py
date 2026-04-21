@@ -43,6 +43,9 @@ from .runtime_execution_adapter import (
 from .apply_patch_dispatch import dispatch_apply_patch
 from .file_local_devloop import FileLocalTask, FileLocalResult, FileLocalDevloopRunner
 from .devloop_benchmark import DevloopTask, DevloopBenchmarkResult, DevloopBenchmarkRunner, SYNTHETIC_TASK_FAMILY
+from .session_job_adapters import make_session_adapter, make_job_adapter, session_to_context_dict
+from .read_file_dispatch import dispatch_read_file
+from .runtime_adoption_proof import make_bounded_context
 from .tool_registry import DEFAULT_REGISTRY, ToolContractEntry, ToolRegistry
 from .tool_schema import (
     ApplyPatchAction,
@@ -150,4 +153,9 @@ __all__ = [
     "DevloopBenchmarkResult",
     "DevloopBenchmarkRunner",
     "SYNTHETIC_TASK_FAMILY",
+    "make_session_adapter",
+    "make_job_adapter",
+    "session_to_context_dict",
+    "dispatch_read_file",
+    "make_bounded_context",
 ]
