@@ -70,6 +70,7 @@ from .adapter_campaign_pre_authorizer import (
 from .search_aware_inspect import SearchAwareInspectResult, SearchAwareInspectRunner
 from .listdir_inspect_helper import TargetDiscoveryResult, ListDirInspectHelper
 from .diff_result_packager import DiffResultPackage, DiffResultPackager
+from .bounded_result_publisher import PublicationRecord, BoundedResultPublisher
 from .retry_telemetry_integration import (
     LoopRetryIntegrationRecord,
     LoopRetryStore,
@@ -386,4 +387,6 @@ __all__ = [
     "ListDirInspectHelper",
     "DiffResultPackage",
     "DiffResultPackager",
+    "PublicationRecord",
+    "BoundedResultPublisher",
 ]
