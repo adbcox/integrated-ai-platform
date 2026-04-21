@@ -1,0 +1,306 @@
+---
+# Autonomy Scorecard v1 — Canonical metrics for phase progression and local-autonomy evaluation
+# Authority surface: P0-06-AUTONOMY-SCORECARD-1
+# Governed by: ADR-0007, governance/definition_of_done.v1.yaml,
+#   governance/cmdb_lite_registry.v1.yaml (autonomy_scorecard section)
+# Scope: all coding runs and phase transitions
+
+version: "1.0.0"
+scorecard_id: "AUTONOMY-SCORECARD-V1"
+generated_at: "2026-04-21"
+authority_owner: "governance/authority_adr_0001_source_of_truth.md"
+adr_ref: "ADR-0007"
+baseline_phase: 7
+baseline_commit: "f5013c3"
+baseline_source: "governance/phase7_closure_evidence.json"
+
+# ─────────────────────────────────────────────
+# METRICS
+# One entry per required metric.
+# Each entry defines how the metric is measured,
+# what unit it uses, and what scope it covers.
+# ─────────────────────────────────────────────
+metrics:
+  first_pass_success:
+    description: >
+      Fraction of coding tasks where the primary execution path (semantic generation
+      or Aider local model) produces a valid, passing result on the first attempt,
+      without requiring a deterministic fallback, retry, or escalation.
+    unit: "ratio (0.0–1.0)"
+    measurement_scope: "per benchmark task set or per session, whichever is declared"
+    measurement_method: >
+      Count tasks where first_attempt_passed=true divided by total tasks attempted.
+      A task counts as first-pass success only if make check and seam tests pass
+      without any retry, fallback, or escalation on that task.
+    phase7_baseline: 0.889
+    dod_ref: "required_validation.make_check_required"
+    notes: "Maps to ADR-0007 dimension: semantic_generation_rate"
+
+  retry_count:
+    description: >
+      Average number of retries required per task before a passing result is achieved.
+      A retry is any re-execution of the same task after an initial failure,
+      including fallback model attempts but excluding escalation.
+    unit: "count (average per task, non-negative integer or float)"
+    measurement_scope: "per benchmark task set or per session"
+    measurement_method: >
+      Sum of all retry attempts across tasks divided by total tasks attempted.
+      A task with zero retries contributes 0. A task that escalated without
+      a successful retry contributes the number of retries attempted before escalation.
+    phase7_baseline: 0
+    dod_ref: "required_validation.no_partial_done"
+    notes: "Lower is better. 0 means all tasks succeeded on first attempt."
+
+  escalation_rate:
+    description: >
+      Fraction of coding run steps that required escalation to the control window
+      or human review. Escalation includes: hard stops triggered, scope violations
+      detected, grounding input failures, and explicit escalation requests.
+    unit: "ratio (0.0–1.0)"
+    measurement_scope: "per session or per package batch"
+    measurement_method: >
+      Count steps where escalation_status=ESCALATED divided by total steps executed.
+      A step is a single package execution. Escalations resolved within the same
+      package via recovery (same package_id + recovery note) count as one escalation.
+    phase7_baseline: 0.0
+    dod_ref: "telemetry_completeness.escalation_status"
+    notes: "Lower is better. 0.0 means no escalations in the measured set."
+
+  artifact_completeness:
+    description: >
+      Fraction of required artifacts that were produced, present at their declared
+      paths, parse successfully, and contain the declared artifact_id.
+      An artifact that exists but fails to parse counts as incomplete.
+    unit: "ratio (0.0–1.0)"
+    measurement_scope: "per package or per session artifact bundle"
+    measurement_method: >
+      Count artifact_outputs entries that satisfy all four conditions
+      (exists, non-empty, parses, artifact_id matches) divided by total
+      declared artifact_outputs entries.
+    phase7_baseline: 1.0
+    dod_ref: "required_artifacts.required_runtime_artifacts"
+    adr_ref: "ADR-0006"
+    notes: "Must be 1.0 for governance sessions. Any value < 1.0 in governance sessions is a hard stop."
+
+  validation_pass_rate:
+    description: >
+      Fraction of validation steps (make check, seam tests, runner scripts)
+      that pass on the first execution, without modification of the implementation
+      after the step begins.
+    unit: "ratio (0.0–1.0)"
+    measurement_scope: "per package validation_order"
+    measurement_method: >
+      Count validation_order steps that pass on first execution divided by
+      total steps in validation_order. A step that requires a code fix and
+      re-run counts as failed on first execution regardless of eventual outcome.
+    phase7_baseline: 0.90
+    dod_ref: "required_validation.validation_order_required"
+    notes: "Target is >= 0.90. A pass rate < 0.70 triggers the caution band."
+
+  promotion_readiness:
+    description: >
+      Binary indicator of whether the current state of the platform satisfies
+      all preconditions for phase progression or package class advancement.
+      True only when all blocking conditions are resolved and the autonomy
+      grade meets the minimum threshold for the target phase.
+    unit: "boolean"
+    measurement_scope: "per phase transition evaluation"
+    measurement_method: >
+      Evaluate all phase_progression_rules for the target transition.
+      promotion_readiness=true only if every rule evaluates to satisfied.
+      A single unsatisfied blocking rule sets promotion_readiness=false.
+    phase7_baseline: true
+    dod_ref: "acceptance_rules.substrate.substrate_done_condition"
+    notes: "Assessed at phase closure time. Not a continuous metric."
+
+# ─────────────────────────────────────────────
+# THRESHOLDS
+# Per-metric target, warning, and blocking bands
+# ─────────────────────────────────────────────
+thresholds:
+  first_pass_success:
+    target: 0.85
+    warning: 0.70
+    blocking: 0.50
+    direction: "higher_is_better"
+    notes: "Below 0.50 blocks phase progression regardless of other scores"
+
+  retry_count:
+    target: 0.0
+    warning: 1.0
+    blocking: 3.0
+    direction: "lower_is_better"
+    notes: "Average > 3.0 retries per task blocks advancement; signals systemic generation failure"
+
+  escalation_rate:
+    target: 0.0
+    warning: 0.10
+    blocking: 0.25
+    direction: "lower_is_better"
+    notes: "Escalation rate > 0.25 signals scope or grounding failures requiring architectural review"
+
+  artifact_completeness:
+    target: 1.0
+    warning: 0.95
+    blocking: 0.90
+    direction: "higher_is_better"
+    governance_session_minimum: 1.0
+    notes: "For governance sessions, anything below 1.0 is an immediate hard stop"
+
+  validation_pass_rate:
+    target: 0.90
+    warning: 0.70
+    blocking: 0.50
+    direction: "higher_is_better"
+    notes: "Below 0.50 indicates the implementation is systematically breaking validation"
+
+  promotion_readiness:
+    target: true
+    warning: "one_or_more_non_blocking_rules_unsatisfied"
+    blocking: "any_blocking_rule_unsatisfied"
+    direction: "boolean"
+    notes: "promotion_readiness=false with any blocking rule unsatisfied prevents phase progression"
+
+# ─────────────────────────────────────────────
+# INTERPRETATIONS
+# How to read composite scorecard state
+# ─────────────────────────────────────────────
+interpretations:
+  good:
+    condition: >
+      first_pass_success >= 0.85 AND retry_count <= 1.0 AND escalation_rate <= 0.10
+      AND artifact_completeness >= 0.95 AND validation_pass_rate >= 0.90
+      AND promotion_readiness = true (if evaluated)
+    grade: "A"
+    meaning: "Platform is operating within design parameters. Phase progression unblocked."
+    action: "Proceed with next package. Record scorecard in session artifact bundle."
+
+  caution:
+    condition: >
+      Any metric in warning band but none in blocking band.
+      Examples: first_pass_success in [0.70, 0.85) OR escalation_rate in (0.10, 0.25)
+      OR validation_pass_rate in [0.70, 0.90)
+    grade: "B or C"
+    meaning: "Platform is degrading. Continued operation is permitted but root cause must be identified."
+    action: >
+      Document the caution metric and its current value in residual_notes.
+      Do not suppress the warning. Investigate before next capability session.
+
+  failing:
+    condition: >
+      Any metric at or below its blocking threshold.
+      Examples: first_pass_success < 0.50 OR escalation_rate > 0.25
+      OR artifact_completeness < 0.90 (or < 1.0 for governance sessions)
+      OR any blocking phase_progression_rule unsatisfied
+    grade: "D or F"
+    meaning: "Platform has a systemic failure. Phase progression is blocked."
+    action: >
+      Hard stop. Do not attempt further capability sessions until the failing
+      metric is resolved. Escalate to control window with evidence of the failure
+      and a proposed recovery plan.
+
+  regression_detected:
+    condition: >
+      Any metric worse than the phase7_baseline value by more than the warning band
+      (i.e., first_pass_success < 0.70, retry_count > 1.0, escalation_rate > 0.10,
+      artifact_completeness < 0.95, validation_pass_rate < 0.70)
+    grade: "F (regression)"
+    meaning: "A regression from the Phase 7 baseline has been detected."
+    action: >
+      Hard stop. Regression must be resolved before any further package execution.
+      Report regression_detected=true in the session artifact bundle.
+
+# ─────────────────────────────────────────────
+# PHASE PROGRESSION RULES
+# Conditions required for phase transitions
+# ─────────────────────────────────────────────
+phase_progression_rules:
+  phase_1_complete:
+    description: "Phase 1 (runtime_contract_foundation) may close when all conditions are met"
+    conditions:
+      - "governance/runtime_contract_version.json is ratified by a governance ADR"
+      - "framework/job_schema.py conforms to ADR-0001 canonical session/job schema"
+      - "framework/permission_engine.py satisfies ADR-0005 Layers 1–3"
+      - "framework/inference_adapter.py implements ADR-0004 inference_request/inference_response contract"
+      - "autonomy_scorecard.first_pass_success >= 0.85 on the current benchmark set"
+      - "autonomy_scorecard.regression_detected = false"
+    gate_adr: "ADR-0001, ADR-0004, ADR-0005"
+    current_status: "open — runtime contract materially implemented but governance ADR not yet issued"
+
+  phase_2_ready:
+    description: "Phase 2 (inner_loop_autonomous_repair) capability sessions may begin when:"
+    conditions:
+      - "Phase 1 is closed_ratified"
+      - "governance/tactical_unlock_criteria.json has at least one family with unlocked status"
+      - "autonomy_scorecard.escalation_rate <= 0.10 over the last 10 packages"
+      - "autonomy_scorecard.artifact_completeness = 1.0 for the last 5 governance sessions"
+      - "promotion_readiness = true"
+    gate_adr: "ADR-0003, ADR-0005"
+    current_status: "closed_ratified — Phase 2 completed per governance/phase2_closure_evidence.json"
+
+  local_autonomy_gate:
+    description: >
+      The local-autonomy gate determines whether LOCAL-FIRST execution is sufficiently
+      reliable to be the primary route for capability sessions.
+    conditions:
+      - "autonomy_scorecard.first_pass_success >= 0.70 on LOCAL-FIRST benchmark"
+      - "autonomy_scorecard.retry_count <= 1.0 average on LOCAL-FIRST benchmark"
+      - "autonomy_scorecard.escalation_rate <= 0.10 on LOCAL-FIRST packages"
+      - "No claude_rescue_not_local_autonomy violations in last 5 LOCAL-FIRST packages"
+    interpretation: >
+      If this gate fails, LOCAL-FIRST packages must be escalated to SUBSTRATE review
+      before execution. The gate is re-evaluated each time a LOCAL-FIRST benchmark
+      set of >= 5 packages is completed.
+    dod_ref: "escalation_handling.claude_rescue_not_local_autonomy"
+
+# ─────────────────────────────────────────────
+# EXCEPTIONS
+# Scoring rules that override default metric accumulation
+# ─────────────────────────────────────────────
+exceptions:
+  claude_escalation_not_counted_as_local_autonomy:
+    rule: >
+      When a LOCAL-FIRST package is resolved by SUBSTRATE (Claude) execution —
+      whether via explicit escalation approval or claude_rescue_not_local_autonomy
+      violation — the result must NOT be counted as a successful LOCAL-FIRST attempt.
+      The task must be recorded as escalated regardless of whether Claude succeeded.
+    impact: "escalation_rate +1 for the LOCAL-FIRST benchmark; first_pass_success does not receive credit"
+    rationale: >
+      Counting SUBSTRATE rescues as LOCAL-FIRST successes would mask the true
+      capability level of the local execution path and undermine the autonomy
+      development goal per CLAUDE.md Local-First Preference section.
+    dod_ref: "escalation_handling.claude_rescue_not_local_autonomy"
+
+  missing_artifact_bundle_blocks_positive_scoring:
+    rule: >
+      If a session's artifact bundle is missing, incomplete (bundle_valid=false),
+      or contains artifacts that fail to parse, the artifact_completeness score
+      for that session is 0.0 regardless of how many artifacts were actually
+      produced on disk.
+    impact: "artifact_completeness forced to 0.0 for the affected session"
+    rationale: >
+      An artifact bundle that cannot be validated provides no auditability guarantee.
+      Partial credit for unverifiable artifacts creates false confidence in
+      governance conformance.
+    adr_ref: "ADR-0006"
+    dod_ref: "required_artifacts.artifact_parse_requirement"
+
+  hard_stop_not_retry:
+    rule: >
+      A hard stop (sys.exit(1) from a validation script, gate failure, or scope
+      violation) is recorded as an escalation event, not as a retry.
+      Hard stops increment escalation_rate; they do not increment retry_count.
+    impact: "escalation_rate +1; retry_count unchanged"
+    rationale: >
+      Hard stops represent a qualitatively different failure mode from retries.
+      Conflating them would make it impossible to distinguish systemic validation
+      failures (hard stops) from normal generation variance (retries).
+
+  governance_session_artifact_completeness_floor:
+    rule: >
+      For governance_session type runs, artifact_completeness has a hard floor of 1.0.
+      Any value below 1.0 is immediately converted to 0.0 for scoring purposes
+      and triggers a failing interpretation regardless of other metrics.
+    impact: "Overall grade forced to F if artifact_completeness < 1.0 in a governance session"
+    adr_ref: "ADR-0006, ADR-0007"
+    dod_ref: "required_artifacts.required_runtime_artifacts"
