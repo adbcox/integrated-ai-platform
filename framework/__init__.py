@@ -867,3 +867,5 @@ from .real_file_benchmark_fixture import FixtureResult, RealFileBenchmarkFixture
 from .lace2_benchmark_runner import TaskRunResult, Lace2BenchmarkRecord, Lace2BenchmarkRunner
 
 from .benchmark_regime_comparator import RegimeComparisonRecord, BenchmarkRegimeComparator
+
+from .real_run_failure_miner import FailureEntry, FailureMinerRecord, RealRunFailureMiner
