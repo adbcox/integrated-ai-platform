@@ -2,7 +2,7 @@ import os
 import json
 from datetime import datetime, timedelta
 from unittest.mock import patch, mock_open
-from bin.run_ledt_tranche_selector import score_blocks, read_lace2_closeout, write_tranche_selection
+from bin.run_ledt_tranche_selector import score_blocks, read_lace2_closeout, write_tranche_selection, main
 
 def test_score_blocks():
     # Mock _collect_shared_touch_surfaces to return a fixed number of touch surfaces
