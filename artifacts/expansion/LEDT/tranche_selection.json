@@ -1,0 +1,44 @@
+{
+  "campaign_id": "LEDT",
+  "tranche_id": "LEDT-TRANCHE-1",
+  "lace2_upstream_verdict": "lace2_campaign_complete",
+  "selected_blocks": [
+    {
+      "block_id": "FB-EXEC-ELIGIBILITY-AND-PREFLIGHT",
+      "description": "Typed eligibility contract and preflight evaluator for local execution readiness",
+      "base_score": 0.92,
+      "shared_touch_count": 0,
+      "final_score": 0.92
+    },
+    {
+      "block_id": "FB-ROUTE-DECISION-AND-FALLBACK-GATE",
+      "description": "Typed route decision surface (local/fallback/hard_stop) and fallback justification model",
+      "base_score": 0.91,
+      "shared_touch_count": 0,
+      "final_score": 0.91
+    },
+    {
+      "block_id": "FB-AUDIT-PROOF-AND-RATIFICATION",
+      "description": "Fallback audit surface, local-first proof harness, transition ratification, and closeout",
+      "base_score": 0.9,
+      "shared_touch_count": 0,
+      "final_score": 0.9
+    },
+    {
+      "block_id": "FB-PACKET-ROUTING-METADATA-AND-RECEIPT",
+      "description": "Packet routing metadata defaulting to local_first and local run receipt model",
+      "base_score": 0.89,
+      "shared_touch_count": 0,
+      "final_score": 0.89
+    },
+    {
+      "block_id": "FB-PLANNER-PREFERENCE-SCHEMA",
+      "description": "Planner preference schema defaulting to local_first with explicit Claude conditions",
+      "base_score": 0.87,
+      "shared_touch_count": 0,
+      "final_score": 0.87
+    }
+  ],
+  "scoring_method": "rm_gov_003_shared_touch_count",
+  "selected_at": "2026-04-21T13:37:15.405525+00:00"
+}

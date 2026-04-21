@@ -1,69 +1,105 @@
+#!/usr/bin/env python3
+"""LEDT-P1: Freeze LEDT transition feature-block tranche via RM-GOV-003 scoring."""
+from __future__ import annotations
+
 import json
-from datetime import datetime
 import os
 import sys
+from datetime import datetime, timezone
 
-# Add the parent directory to sys.path to make roadmap_governance importable
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from roadmap_governance.planner_service import _collect_shared_touch_surfaces
 
-# Define the five transition feature blocks inline with base_score and touch_surfaces
-transition_feature_blocks = [
-    {"block_id": "LEDT-BLOCK-1", "base_score": 0.8},
-    {"block_id": "LEDT-BLOCK-2", "base_score": 0.75},
-    {"block_id": "LEDT-BLOCK-3", "base_score": 0.7},
-    {"block_id": "LEDT-BLOCK-4", "base_score": 0.65},
-    {"block_id": "LEDT-BLOCK-5", "base_score": 0.6}
+import inspect
+_sig = str(inspect.signature(_collect_shared_touch_surfaces))
+assert "item_ids" in _sig, f"INTERFACE MISMATCH: expected item_ids in signature, got {_sig}"
+
+LACE2_CLOSEOUT = "artifacts/expansion/LACE2/LACE2_closeout.json"
+OUTPUT = "artifacts/expansion/LEDT/tranche_selection.json"
+
+TRANSITION_BLOCKS = [
+    {
+        "block_id": "FB-EXEC-ELIGIBILITY-AND-PREFLIGHT",
+        "description": "Typed eligibility contract and preflight evaluator for local execution readiness",
+        "base_score": 0.92,
+        "touch_surfaces": ["local_exec_eligibility", "preflight_evaluator", "disqualifier_model"],
+    },
+    {
+        "block_id": "FB-ROUTE-DECISION-AND-FALLBACK-GATE",
+        "description": "Typed route decision surface (local/fallback/hard_stop) and fallback justification model",
+        "base_score": 0.91,
+        "touch_surfaces": ["exec_route_decision", "fallback_justification", "fallback_gate"],
+    },
+    {
+        "block_id": "FB-PACKET-ROUTING-METADATA-AND-RECEIPT",
+        "description": "Packet routing metadata defaulting to local_first and local run receipt model",
+        "base_score": 0.89,
+        "touch_surfaces": ["packet_routing_metadata", "local_run_receipt", "routing_policy"],
+    },
+    {
+        "block_id": "FB-PLANNER-PREFERENCE-SCHEMA",
+        "description": "Planner preference schema defaulting to local_first with explicit Claude conditions",
+        "base_score": 0.87,
+        "touch_surfaces": ["planner_preference", "claude_condition_model"],
+    },
+    {
+        "block_id": "FB-AUDIT-PROOF-AND-RATIFICATION",
+        "description": "Fallback audit surface, local-first proof harness, transition ratification, and closeout",
+        "base_score": 0.90,
+        "touch_surfaces": ["fallback_audit", "local_first_proof", "transition_ratifier", "closeout"],
+    },
 ]
 
+
 def score_blocks(blocks):
+    scored = []
     for block in blocks:
-        shared_touch_surfaces = _collect_shared_touch_surfaces([block["block_id"]])
-        block["final_score"] = block["base_score"] + 0.05 * len(shared_touch_surfaces)
-    return sorted(blocks, key=lambda x: x["final_score"], reverse=True)
+        shared_count = len(_collect_shared_touch_surfaces([block["block_id"]]))
+        final_score = round(block["base_score"] + 0.05 * shared_count, 4)
+        scored.append({
+            "block_id": block["block_id"],
+            "description": block["description"],
+            "base_score": block["base_score"],
+            "shared_touch_count": shared_count,
+            "final_score": final_score,
+        })
+    return sorted(scored, key=lambda x: x["final_score"], reverse=True)
 
-def read_lace2_closeout(file_path='artifacts/expansion/LACE2/LACE2_closeout.json'):
-    try:
-        with open(file_path, 'r') as f:
-            return json.load(f)
-    except FileNotFoundError:
-        print("LACE2 closeout file not found.")
-        return None
-    except json.JSONDecodeError:
-        print("Invalid JSON in LACE2 closeout file.")
-        return None
-
-def write_tranche_selection(tranche_selection, output_path='artifacts/expansion/LEDT/tranche_selection.json'):
-    os.makedirs(os.path.dirname(output_path), exist_ok=True)
-    with open(output_path, 'w') as f:
-        json.dump(tranche_selection, f, indent=4)
 
 def main():
-    # Read artifacts/expansion/LACE2/LACE2_closeout.json
-    lace2_closeout = read_lace2_closeout()
-    if not lace2_closeout:
-        return
+    if not os.path.exists(LACE2_CLOSEOUT):
+        raise SystemExit(f"HARD STOP: {LACE2_CLOSEOUT} not found")
 
-    # Hard-stop if campaign_verdict is missing
-    if 'campaign_verdict' not in lace2_closeout or lace2_closeout['campaign_verdict'] != 'lace2_campaign_complete':
-        print("Campaign verdict missing or incorrect.")
-        return
+    with open(LACE2_CLOSEOUT) as f:
+        lace2_closeout = json.load(f)
 
-    # Score the blocks
-    scored_blocks = score_blocks(transition_feature_blocks)
+    verdict = lace2_closeout.get("campaign_verdict")
+    if verdict != "lace2_campaign_complete":
+        raise SystemExit(f"HARD STOP: lace2 campaign_verdict={verdict!r}, expected lace2_campaign_complete")
 
-    # Emit the results to artifacts/expansion/LEDT/tranche_selection.json
+    scored_blocks = score_blocks(TRANSITION_BLOCKS)
+
     tranche_selection = {
         "campaign_id": "LEDT",
         "tranche_id": "LEDT-TRANCHE-1",
-        "lace2_upstream_verdict": lace2_closeout['campaign_verdict'],
+        "lace2_upstream_verdict": verdict,
         "selected_blocks": scored_blocks,
         "scoring_method": "rm_gov_003_shared_touch_count",
-        "selected_at": datetime.utcnow().isoformat()
+        "selected_at": datetime.now(timezone.utc).isoformat(),
     }
 
-    write_tranche_selection(tranche_selection)
+    os.makedirs(os.path.dirname(OUTPUT), exist_ok=True)
+    with open(OUTPUT, "w") as f:
+        json.dump(tranche_selection, f, indent=2)
+
+    print(f"tranche_id:         LEDT-TRANCHE-1")
+    print(f"lace2_verdict:      {verdict}")
+    print(f"blocks_selected:    {len(scored_blocks)}")
+    for b in scored_blocks:
+        print(f"  {b['block_id']}: {b['final_score']}")
+    print(f"artifact:           {OUTPUT}")
+
 
 if __name__ == "__main__":
     main()
