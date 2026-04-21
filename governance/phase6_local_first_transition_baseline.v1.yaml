@@ -1,0 +1,195 @@
+---
+# Phase 6 Local-First Transition Baseline v1
+# Authority surface: P6-01-LOCAL-FIRST-TRANSITION-PACK-1
+# Governed by: governance/phase5_closeout_baseline.v1.yaml,
+#   governance/phase5_readiness_baseline.v1.yaml,
+#   governance/local_run_validation_pack.v1.yaml,
+#   governance/definition_of_done.v1.yaml
+# Scope: Phase 6 local-first transition gate; Claude off routine path
+
+version: "1.0.0"
+baseline_id: "PHASE6-LOCAL-FIRST-TRANSITION-BASELINE-V1"
+generated_at: "2026-04-21"
+authority_owner: "governance/authority_adr_0001_source_of_truth.md"
+phase_linkage: "Phase 6 (local_first_routine)"
+
+# ─────────────────────────────────────────────
+# PHASE IDENTITY
+# ─────────────────────────────────────────────
+phase_id: "phase_6"
+phase_label: "Phase 6 — Local-First Routine"
+phase_status: "transition_in_progress"
+description: >
+  Phase 6 establishes local-first (Aider/Ollama) as the routine execution path.
+  Claude Code is removed from the routine implementation path; escalation to
+  Claude is explicit, counted separately, and does not count as local autonomy
+  progress. All routine bounded implementation work must route through local
+  executors. Phase 6 transition is complete when routine_local_execution_ready
+  is true and claude_removed_from_routine_path_signal is true.
+
+# ─────────────────────────────────────────────
+# REQUIRED MODULES
+# ─────────────────────────────────────────────
+required_modules:
+  local_execution_ledger_v1:
+    module: "framework/local_execution_ledger_v1.py"
+    classes:
+      - LocalExecutionLedgerV1
+      - LedgerEntryV1
+    status: "present"
+
+  aider_execution_adapter_v1:
+    module: "framework/aider_execution_adapter_v1.py"
+    classes:
+      - AiderExecutionAdapterV1
+      - AiderHandoffRecordV1
+    status: "present"
+
+  local_autonomy_evidence_bridge_v1:
+    module: "framework/local_autonomy_evidence_bridge_v1.py"
+    classes:
+      - LocalAutonomyEvidenceBridgeV1
+      - LocalAutonomyEvidenceSummaryV1
+    status: "present"
+
+  escalation_record_v1:
+    module: "framework/escalation_record_v1.py"
+    classes:
+      - EscalationRecordV1
+      - EscalationRegistryV1
+    status: "present"
+
+  phase6_transition_v1:
+    module: "framework/phase6_transition_v1.py"
+    classes:
+      - Phase6TransitionV1
+      - Phase6TransitionResultV1
+    status: "present"
+
+# ─────────────────────────────────────────────
+# REQUIRED CAPABILITIES
+# ─────────────────────────────────────────────
+required_capabilities:
+  local_execution_ledger:
+    module: "local_execution_ledger_v1"
+    description: >
+      Record run_id, executor, route, validation_results, and escalation_status
+      for each local execution attempt. Compute pass_rate across all recorded runs.
+
+  aider_local_first_handoff:
+    module: "aider_execution_adapter_v1"
+    description: >
+      Structure a local-first Aider execution handoff with package_id,
+      allowed_files, validation_sequence, adapter_status, and
+      execution_mode = local_first. Return AiderHandoffRecordV1.
+
+  autonomy_evidence_bridge:
+    module: "local_autonomy_evidence_bridge_v1"
+    description: >
+      Derive routine_local_execution_ready, explicit_escalation_required,
+      claude_removed_from_routine_path_signal, and evidence_gaps from
+      the execution ledger, unified validation artifact, and qualification
+      readiness result.
+
+  explicit_escalation_accounting:
+    module: "escalation_record_v1"
+    description: >
+      Record each escalation with escalation_requested, escalation_approved,
+      escalation_reason, executor, and counts_as_local_autonomy_progress.
+      Enforce that Claude/remote executor runs never count as local autonomy
+      progress (invariant enforced at construction time).
+
+  local_first_transition_result:
+    module: "phase6_transition_v1"
+    description: >
+      Assemble local execution ledger, aider handoff, autonomy evidence bridge,
+      and escalation registry into a structured Phase6TransitionResultV1 with
+      transition_ready boolean.
+
+# ─────────────────────────────────────────────
+# COMPLETION REQUIREMENTS
+# ─────────────────────────────────────────────
+completion_requirements:
+  routine_local_execution_ready:
+    description: >
+      routine_local_execution_ready = true in the transition artifact.
+      Requires: local executor runs present, local pass_rate >= 0.75,
+      qualification_result.readiness_ready = true,
+      unified_artifact.all_passed = true.
+    status: "met_by_p6_01"
+
+  explicit_escalation_required_for_claude:
+    description: >
+      explicit_escalation_required = true in autonomy evidence summary.
+      Claude invocation must be an explicit documented escalation event.
+    status: "met_by_p6_01"
+
+  claude_not_counted_as_local_autonomy_progress:
+    description: >
+      EscalationRecordV1 enforces counts_as_local_autonomy_progress = false
+      for all Claude/remote executor runs. Invariant is structural, not advisory.
+    status: "met_by_p6_01"
+
+  transition_artifact_emitted:
+    description: >
+      artifacts/substrate/phase6_transition_pack_check.json present and valid
+      with all_checks_passed = true.
+    status: "met_by_p6_01"
+
+# Minimum gate values
+completion_gate:
+  minimum_local_execution_cases: 3
+  routine_local_execution_ready_required: true
+  claude_removed_signal_required: true
+  phase6_transition_gate_status: "met_by_p6_01"
+
+# ─────────────────────────────────────────────
+# REMAINING BLOCKERS
+# ─────────────────────────────────────────────
+remaining_blockers:
+  - id: "P6-BLOCKER-01"
+    description: >
+      LocalExecutionLedgerV1 is in-memory only; no durable file-backed store yet.
+      Real cross-session ledger persistence deferred to Phase 7.
+    deferred_to: "phase_7"
+
+  - id: "P6-BLOCKER-02"
+    description: >
+      AiderExecutionAdapterV1 structures handoffs only; no live Aider process
+      control wired. Real Aider subprocess dispatch deferred to Phase 7.
+    deferred_to: "phase_7"
+
+  - id: "P6-BLOCKER-03"
+    description: >
+      LocalAutonomyEvidenceBridgeV1 derives evidence from synthetic ledger entries;
+      not yet consuming real Aider/Ollama execution telemetry from live runs.
+    deferred_to: "phase_7"
+
+  - id: "P6-BLOCKER-04"
+    description: >
+      EscalationRegistryV1 records synthetic escalation events only; not yet
+      wired to real escalation approval workflow.
+    deferred_to: "phase_7"
+
+# ─────────────────────────────────────────────
+# TRANSITION GATE
+# ─────────────────────────────────────────────
+transition_gate:
+  description: >
+    Phase 6 transition is complete and Phase 7 entry is authorized when
+    ALL of the following are true:
+      1. routine_local_execution_ready = true in transition artifact
+      2. claude_removed_from_routine_path_signal = true in autonomy evidence
+      3. explicit_escalation_required = true in autonomy evidence
+      4. local_execution_cases_run >= 3 in transition artifact
+      5. escalation_accounting_checked = true in transition artifact
+      6. all_checks_passed = true in transition artifact
+      7. make check passes
+      8. Phase 6 seam tests pass
+
+  gate_status: "pending"
+  gate_cleared_by: null
+  note: >
+    This gate is evaluated by running Phase6TransitionV1 against the evidence
+    produced by the Phase 6 transition runner. Gate is NOT cleared at P6-01
+    package creation time; it requires promotion evidence to be scored.

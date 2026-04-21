@@ -1,0 +1,430 @@
+{
+  "phase6_pack": "local_first_transition_v1",
+  "generated_at": "2026-04-21T17:07:01.390704+00:00",
+  "required_modules_loaded": true,
+  "local_execution_cases_run": 4,
+  "escalation_accounting_checked": true,
+  "routine_local_execution_ready": true,
+  "claude_removed_from_routine_path_signal": true,
+  "all_checks_passed": true,
+  "escalation_status": "NOT_ESCALATED",
+  "component_summary": [
+    {
+      "module": "framework/local_execution_ledger_v1.py",
+      "classes": [
+        "LocalExecutionLedgerV1",
+        "LedgerEntryV1"
+      ]
+    },
+    {
+      "module": "framework/aider_execution_adapter_v1.py",
+      "classes": [
+        "AiderExecutionAdapterV1",
+        "AiderHandoffRecordV1"
+      ]
+    },
+    {
+      "module": "framework/local_autonomy_evidence_bridge_v1.py",
+      "classes": [
+        "LocalAutonomyEvidenceBridgeV1",
+        "LocalAutonomyEvidenceSummaryV1"
+      ]
+    },
+    {
+      "module": "framework/escalation_record_v1.py",
+      "classes": [
+        "EscalationRecordV1",
+        "EscalationRegistryV1"
+      ]
+    },
+    {
+      "module": "framework/phase6_transition_v1.py",
+      "classes": [
+        "Phase6TransitionV1",
+        "Phase6TransitionResultV1"
+      ]
+    },
+    {
+      "module": "governance/phase6_local_first_transition_baseline.v1.yaml",
+      "type": "baseline"
+    }
+  ],
+  "check_details": {
+    "modules_loaded": {
+      "ok": true,
+      "errors": []
+    },
+    "ledger": {
+      "total_runs": 4,
+      "passed_runs": 4,
+      "pass_rate": 1.0,
+      "entries": [
+        {
+          "run_id": "local-bug-001",
+          "package_id": "PKG-BUG-001",
+          "package_label": "SUBSTRATE",
+          "executor": "aider",
+          "route": "local_fast",
+          "validations_run": [
+            "make_check",
+            "pytest"
+          ],
+          "validation_results": {
+            "make_check": true,
+            "pytest": true
+          },
+          "artifacts_produced": [],
+          "escalation_status": "NOT_ESCALATED",
+          "final_outcome": "PASS",
+          "recorded_at": "2026-04-21T17:07:01.378718+00:00",
+          "all_passed": true,
+          "notes": []
+        },
+        {
+          "run_id": "local-feat-001",
+          "package_id": "PKG-FEAT-001",
+          "package_label": "SUBSTRATE",
+          "executor": "aider",
+          "route": "local_fast",
+          "validations_run": [
+            "make_check",
+            "pytest"
+          ],
+          "validation_results": {
+            "make_check": true,
+            "pytest": true
+          },
+          "artifacts_produced": [],
+          "escalation_status": "NOT_ESCALATED",
+          "final_outcome": "PASS",
+          "recorded_at": "2026-04-21T17:07:01.378727+00:00",
+          "all_passed": true,
+          "notes": []
+        },
+        {
+          "run_id": "local-test-001",
+          "package_id": "PKG-TEST-001",
+          "package_label": "SUBSTRATE",
+          "executor": "aider",
+          "route": "local_fast",
+          "validations_run": [
+            "make_check",
+            "pytest"
+          ],
+          "validation_results": {
+            "make_check": true,
+            "pytest": true
+          },
+          "artifacts_produced": [],
+          "escalation_status": "NOT_ESCALATED",
+          "final_outcome": "PASS",
+          "recorded_at": "2026-04-21T17:07:01.378730+00:00",
+          "all_passed": true,
+          "notes": []
+        },
+        {
+          "run_id": "local-report-001",
+          "package_id": "PKG-REPORT-001",
+          "package_label": "SUBSTRATE",
+          "executor": "aider",
+          "route": "local_fast",
+          "validations_run": [
+            "make_check",
+            "pytest"
+          ],
+          "validation_results": {
+            "make_check": true,
+            "pytest": true
+          },
+          "artifacts_produced": [],
+          "escalation_status": "NOT_ESCALATED",
+          "final_outcome": "PASS",
+          "recorded_at": "2026-04-21T17:07:01.378732+00:00",
+          "all_passed": true,
+          "notes": []
+        }
+      ]
+    },
+    "aider_handoff": {
+      "package_id": "P6-01-LOCAL-FIRST-TRANSITION-PACK-1",
+      "allowed_files": [
+        "framework/local_execution_ledger_v1.py",
+        "framework/aider_execution_adapter_v1.py",
+        "framework/local_autonomy_evidence_bridge_v1.py",
+        "framework/escalation_record_v1.py",
+        "framework/phase6_transition_v1.py"
+      ],
+      "validation_sequence": [
+        "python3 -m pytest tests/ -x -q",
+        "make check",
+        "make quick"
+      ],
+      "adapter_status": "ready",
+      "execution_mode": "local_first",
+      "task_class": "narrow_feature",
+      "difficulty": "medium",
+      "handoff_at": "2026-04-21T17:07:01.378746+00:00",
+      "notes": []
+    },
+    "autonomy_evidence": {
+      "routine_local_execution_ready": true,
+      "explicit_escalation_required": true,
+      "claude_removed_from_routine_path_signal": true,
+      "evidence_gaps": [],
+      "evidence_detail": {
+        "total_ledger_runs": 4,
+        "local_executor_runs": 4,
+        "local_pass_rate": 1.0,
+        "claude_executor_runs": 0,
+        "qualification_readiness_ready": true,
+        "unified_artifact_all_passed": true
+      }
+    },
+    "escalation_registry": {
+      "total_records": 4,
+      "escalated_count": 0,
+      "autonomy_progress_count": 4,
+      "records": [
+        {
+          "run_id": "local-bug-001",
+          "package_id": "PKG-BUG-001",
+          "escalation_requested": false,
+          "escalation_approved": false,
+          "escalation_reason": "routine_local_run",
+          "counts_as_local_autonomy_progress": true,
+          "executor": "aider",
+          "recorded_at": "2026-04-21T17:07:01.378768+00:00",
+          "notes": []
+        },
+        {
+          "run_id": "local-feat-001",
+          "package_id": "PKG-FEAT-001",
+          "escalation_requested": false,
+          "escalation_approved": false,
+          "escalation_reason": "routine_local_run",
+          "counts_as_local_autonomy_progress": true,
+          "executor": "aider",
+          "recorded_at": "2026-04-21T17:07:01.378771+00:00",
+          "notes": []
+        },
+        {
+          "run_id": "local-test-001",
+          "package_id": "PKG-TEST-001",
+          "escalation_requested": false,
+          "escalation_approved": false,
+          "escalation_reason": "routine_local_run",
+          "counts_as_local_autonomy_progress": true,
+          "executor": "aider",
+          "recorded_at": "2026-04-21T17:07:01.378773+00:00",
+          "notes": []
+        },
+        {
+          "run_id": "local-report-001",
+          "package_id": "PKG-REPORT-001",
+          "escalation_requested": false,
+          "escalation_approved": false,
+          "escalation_reason": "routine_local_run",
+          "counts_as_local_autonomy_progress": true,
+          "executor": "aider",
+          "recorded_at": "2026-04-21T17:07:01.378774+00:00",
+          "notes": []
+        }
+      ]
+    },
+    "phase6_baseline": {
+      "ok": true,
+      "errors": []
+    },
+    "transition_result": {
+      "phase_id": "phase_6",
+      "package_id": "P6-01-LOCAL-FIRST-TRANSITION-PACK-1",
+      "generated_at": "2026-04-21T17:07:01.390685+00:00",
+      "ledger_summary": {
+        "total_runs": 4,
+        "passed_runs": 4,
+        "pass_rate": 1.0,
+        "entries": [
+          {
+            "run_id": "local-bug-001",
+            "package_id": "PKG-BUG-001",
+            "package_label": "SUBSTRATE",
+            "executor": "aider",
+            "route": "local_fast",
+            "validations_run": [
+              "make_check",
+              "pytest"
+            ],
+            "validation_results": {
+              "make_check": true,
+              "pytest": true
+            },
+            "artifacts_produced": [],
+            "escalation_status": "NOT_ESCALATED",
+            "final_outcome": "PASS",
+            "recorded_at": "2026-04-21T17:07:01.378718+00:00",
+            "all_passed": true,
+            "notes": []
+          },
+          {
+            "run_id": "local-feat-001",
+            "package_id": "PKG-FEAT-001",
+            "package_label": "SUBSTRATE",
+            "executor": "aider",
+            "route": "local_fast",
+            "validations_run": [
+              "make_check",
+              "pytest"
+            ],
+            "validation_results": {
+              "make_check": true,
+              "pytest": true
+            },
+            "artifacts_produced": [],
+            "escalation_status": "NOT_ESCALATED",
+            "final_outcome": "PASS",
+            "recorded_at": "2026-04-21T17:07:01.378727+00:00",
+            "all_passed": true,
+            "notes": []
+          },
+          {
+            "run_id": "local-test-001",
+            "package_id": "PKG-TEST-001",
+            "package_label": "SUBSTRATE",
+            "executor": "aider",
+            "route": "local_fast",
+            "validations_run": [
+              "make_check",
+              "pytest"
+            ],
+            "validation_results": {
+              "make_check": true,
+              "pytest": true
+            },
+            "artifacts_produced": [],
+            "escalation_status": "NOT_ESCALATED",
+            "final_outcome": "PASS",
+            "recorded_at": "2026-04-21T17:07:01.378730+00:00",
+            "all_passed": true,
+            "notes": []
+          },
+          {
+            "run_id": "local-report-001",
+            "package_id": "PKG-REPORT-001",
+            "package_label": "SUBSTRATE",
+            "executor": "aider",
+            "route": "local_fast",
+            "validations_run": [
+              "make_check",
+              "pytest"
+            ],
+            "validation_results": {
+              "make_check": true,
+              "pytest": true
+            },
+            "artifacts_produced": [],
+            "escalation_status": "NOT_ESCALATED",
+            "final_outcome": "PASS",
+            "recorded_at": "2026-04-21T17:07:01.378732+00:00",
+            "all_passed": true,
+            "notes": []
+          }
+        ]
+      },
+      "aider_handoff": {
+        "package_id": "P6-01-LOCAL-FIRST-TRANSITION-PACK-1",
+        "allowed_files": [
+          "framework/local_execution_ledger_v1.py",
+          "framework/aider_execution_adapter_v1.py",
+          "framework/local_autonomy_evidence_bridge_v1.py",
+          "framework/escalation_record_v1.py",
+          "framework/phase6_transition_v1.py"
+        ],
+        "validation_sequence": [
+          "python3 -m pytest tests/ -x -q",
+          "make check",
+          "make quick"
+        ],
+        "adapter_status": "ready",
+        "execution_mode": "local_first",
+        "task_class": "narrow_feature",
+        "difficulty": "medium",
+        "handoff_at": "2026-04-21T17:07:01.378746+00:00",
+        "notes": []
+      },
+      "autonomy_evidence": {
+        "routine_local_execution_ready": true,
+        "explicit_escalation_required": true,
+        "claude_removed_from_routine_path_signal": true,
+        "evidence_gaps": [],
+        "evidence_detail": {
+          "total_ledger_runs": 4,
+          "local_executor_runs": 4,
+          "local_pass_rate": 1.0,
+          "claude_executor_runs": 0,
+          "qualification_readiness_ready": true,
+          "unified_artifact_all_passed": true
+        }
+      },
+      "escalation_registry_summary": {
+        "total_records": 4,
+        "escalated_count": 0,
+        "autonomy_progress_count": 4,
+        "records": [
+          {
+            "run_id": "local-bug-001",
+            "package_id": "PKG-BUG-001",
+            "escalation_requested": false,
+            "escalation_approved": false,
+            "escalation_reason": "routine_local_run",
+            "counts_as_local_autonomy_progress": true,
+            "executor": "aider",
+            "recorded_at": "2026-04-21T17:07:01.378768+00:00",
+            "notes": []
+          },
+          {
+            "run_id": "local-feat-001",
+            "package_id": "PKG-FEAT-001",
+            "escalation_requested": false,
+            "escalation_approved": false,
+            "escalation_reason": "routine_local_run",
+            "counts_as_local_autonomy_progress": true,
+            "executor": "aider",
+            "recorded_at": "2026-04-21T17:07:01.378771+00:00",
+            "notes": []
+          },
+          {
+            "run_id": "local-test-001",
+            "package_id": "PKG-TEST-001",
+            "escalation_requested": false,
+            "escalation_approved": false,
+            "escalation_reason": "routine_local_run",
+            "counts_as_local_autonomy_progress": true,
+            "executor": "aider",
+            "recorded_at": "2026-04-21T17:07:01.378773+00:00",
+            "notes": []
+          },
+          {
+            "run_id": "local-report-001",
+            "package_id": "PKG-REPORT-001",
+            "escalation_requested": false,
+            "escalation_approved": false,
+            "escalation_reason": "routine_local_run",
+            "counts_as_local_autonomy_progress": true,
+            "executor": "aider",
+            "recorded_at": "2026-04-21T17:07:01.378774+00:00",
+            "notes": []
+          }
+        ]
+      },
+      "escalation_status": "NOT_ESCALATED",
+      "transition_ready": true,
+      "closing_notes": []
+    }
+  },
+  "phase_linkage": "Phase 6 (local_first_routine)",
+  "authority_sources": [
+    "governance/phase6_local_first_transition_baseline.v1.yaml",
+    "governance/phase5_closeout_baseline.v1.yaml",
+    "governance/phase5_readiness_baseline.v1.yaml"
+  ]
+}
