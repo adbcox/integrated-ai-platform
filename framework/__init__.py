@@ -45,6 +45,7 @@ from .search_loop_adapter import SearchLoopResult, SearchLoopAdapter
 from .listdir_loop_adapter import DirEntry, DirListing, ListDirLoopAdapter
 from .gitdiff_review_packager import DiffReviewRecord, GitDiffReviewPackager
 from .loop_artifact_publisher import LoopArtifactRecord, LoopArtifactPublisher
+from .search_cache_adapter import CachedSearchAdapter
 from .retry_telemetry_integration import (
     LoopRetryIntegrationRecord,
     LoopRetryStore,
@@ -322,4 +323,5 @@ __all__ = [
     "LoopRetryStore",
     "record_loop_attempt",
     "record_loop_attempt_batch",
+    "CachedSearchAdapter",
 ]
