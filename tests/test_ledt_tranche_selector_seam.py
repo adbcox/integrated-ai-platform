@@ -6,7 +6,7 @@ from bin.run_ledt_tranche_selector import score_blocks, read_lace2_closeout, wri
 
 def test_score_blocks():
     # Mock _collect_shared_touch_surfaces to return a fixed number of touch surfaces
-    with patch('roadmap_governance.planner_service._collect_shared_touch_surfaces', return_value=['touch1', 'touch2']):
+    with patch('bin.run_ledt_tranche_selector._collect_shared_touch_surfaces', return_value=['touch1', 'touch2']):
         blocks = [
             {"block_id": "LEDT-BLOCK-1", "base_score": 0.8},
             {"block_id": "LEDT-BLOCK-2", "base_score": 0.75}

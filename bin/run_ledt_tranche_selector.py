@@ -1,7 +1,12 @@
 import json
 from datetime import datetime
-from roadmap_governance.planner_service import _collect_shared_touch_surfaces
 import os
+import sys
+
+# Add the parent directory to sys.path to make roadmap_governance importable
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+from roadmap_governance.planner_service import _collect_shared_touch_surfaces
 
 # Define the five transition feature blocks inline with base_score and touch_surfaces
 transition_feature_blocks = [
