@@ -1,0 +1,45 @@
+{
+  "ratification_id": "LEDT-RAT-20260421134528",
+  "criteria": [
+    {
+      "criterion_id": "C1",
+      "description": "Eligibility contract defined and evaluable",
+      "passed": true,
+      "evidence": "LocalExecEligibilityRecord has 'eligible' field; evaluate() works"
+    },
+    {
+      "criterion_id": "C2",
+      "description": "Route decision defaults to local_execute",
+      "passed": true,
+      "evidence": "local_first_rate=0.8 from local_first_proof.json"
+    },
+    {
+      "criterion_id": "C3",
+      "description": "Packet routing metadata defaults to local_first",
+      "passed": true,
+      "evidence": "local_first_rate=0.8 from packet_routing_metadata_proof.json"
+    },
+    {
+      "criterion_id": "C4",
+      "description": "Run receipt captures route and fallback status",
+      "passed": true,
+      "evidence": "LocalRunReceipt has route_chosen and fallback_used fields"
+    },
+    {
+      "criterion_id": "C5",
+      "description": "Fallback audit operational with >= 1 avoidable",
+      "passed": true,
+      "evidence": "avoidable_count=1 from fallback_audit.json"
+    }
+  ],
+  "criteria_passed": 5,
+  "criteria_total": 5,
+  "verdict": "local_exec_default_confirmed",
+  "limitations": [
+    "No live execution loop tested; routing is decision-surface proof only",
+    "Proof harness uses synthetic packet descriptions, not live campaign packets",
+    "Fallback audit uses constructed receipts, not production execution history",
+    "Planner preference schema is not yet wired into any live campaign plan emitter"
+  ],
+  "ratified_at": "2026-04-21T13:45:28+00:00"
+}
