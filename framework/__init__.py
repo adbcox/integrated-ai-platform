@@ -49,6 +49,7 @@ from .runtime_adoption_proof import make_bounded_context
 from .context_retrieval import RetrievalQuery, RetrievedFile, RetrievalResult, retrieve_context, retrieve_file_content
 from .validation_emit_adapter import emit_loop_validation
 from .mvp_coding_loop import MVPTask, MVPLoopResult, MVPCodingLoopRunner, SAFE_TASK_KINDS
+from .mvp_benchmark import MVPBenchmarkTaskSpec, MVPBenchmarkResult, MVPBenchmarkRunner, MVP_SYNTHETIC_TASKS
 from .tool_registry import DEFAULT_REGISTRY, ToolContractEntry, ToolRegistry
 from .tool_schema import (
     ApplyPatchAction,
@@ -171,4 +172,8 @@ __all__ = [
     "MVPLoopResult",
     "MVPCodingLoopRunner",
     "SAFE_TASK_KINDS",
+    "MVPBenchmarkTaskSpec",
+    "MVPBenchmarkResult",
+    "MVPBenchmarkRunner",
+    "MVP_SYNTHETIC_TASKS",
 ]
