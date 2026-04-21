@@ -853,3 +853,5 @@ from .lace1_expansion_closeout_ratifier import Lace1CloseoutRecord, Lace1Expansi
 from .live_retrieval_proof import LiveRetrievalProofRecord, LiveRetrievalProofRunner
 
 from .decomp_handoff_proof import DecompHandoffProofRecord, DecompHandoffProofRunner
+
+from .repair_policy_proof import DecisionProofRow, RepairPolicyProofRecord, RepairPolicyProofRunner
