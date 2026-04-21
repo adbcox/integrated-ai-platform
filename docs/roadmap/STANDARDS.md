@@ -202,8 +202,9 @@ Every future roadmap intake must update the canonical roadmap docs in the same i
 
 A roadmap intake is not complete unless:
 
-1. the new or changed item is reflected in `ROADMAP_INDEX.md`, and
-2. `ROADMAP_MASTER.md` is updated whenever the intake changes strategic priority interpretation, pull-first ordering, or the most important roadmap cluster.
+1. the new or changed item is reflected in `ROADMAP_INDEX.md`,
+2. `ROADMAP_MASTER.md` is updated whenever the intake changes strategic priority interpretation, pull-first ordering, or the most important roadmap cluster, and
+3. the item has either dedicated execution-pack coverage or explicit canonical enrichment coverage with a documented path to deeper execution-pack treatment.
 
 ### Prohibited intake pattern
 
