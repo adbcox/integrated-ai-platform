@@ -313,6 +313,10 @@ from .aider_config_provider import (
     check_config_keys_present,
     check_all_blocking_checks_pass,
 )
+from .aider_live_gate_wired import (
+    evaluate_wired_aider_gate,
+    run_wired_aider_proof,
+)
 from .task_class_readiness import (
     TaskClassVerdict,
     TaskClassReadinessReport,
@@ -531,6 +535,8 @@ __all__ = [
     "make_fully_wired_preflight_checker",
     "check_config_keys_present",
     "check_all_blocking_checks_pass",
+    "evaluate_wired_aider_gate",
+    "run_wired_aider_proof",
     "LocalAutonomyDashboard",
     "build_local_autonomy_dashboard",
     "emit_dashboard",
