@@ -1,0 +1,37 @@
+{
+  "selection_id": "LACE2-PKG-SEL-20260421120153",
+  "candidates": [
+    {
+      "tranche_id": "MT2-TRACE-REPLAY-PIPELINE",
+      "description": "Connect enriched traces to replay gate with bounded pipeline proof",
+      "base_score": 0.87,
+      "shared_touch_count": 0,
+      "replay_failure_boost": 0.05,
+      "ratification_boost": 0.0,
+      "final_score": 0.92
+    },
+    {
+      "tranche_id": "MT2-RETRIEVAL-STAGE4-WIRING",
+      "description": "Wire live retrieval enrichment into stage_rag4 bounded proof path",
+      "base_score": 0.88,
+      "shared_touch_count": 0,
+      "replay_failure_boost": 0.0,
+      "ratification_boost": 0.03,
+      "final_score": 0.91
+    },
+    {
+      "tranche_id": "MT2-RETRY-LOOP-WIRING",
+      "description": "Wire retry loop around real benchmark runner; prove first vs retry delta",
+      "base_score": 0.85,
+      "shared_touch_count": 0,
+      "replay_failure_boost": 0.05,
+      "ratification_boost": 0.0,
+      "final_score": 0.9
+    }
+  ],
+  "selected_tranche": "MT2-TRACE-REPLAY-PIPELINE",
+  "selection_rationale": "MT2-TRACE-REPLAY-PIPELINE selected with final_score=0.92; replay_failure_boost=0.05, ratification_boost=0.0",
+  "lace2_verdict": "real_local_autonomy_uplift_confirmed",
+  "total_failures": 3,
+  "scored_at": "2026-04-21T12:01:53+00:00"
+}
