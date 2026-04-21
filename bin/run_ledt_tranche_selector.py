@@ -18,16 +18,26 @@ def score_blocks(blocks):
         block["final_score"] = block["base_score"] + 0.05 * len(shared_touch_surfaces)
     return sorted(blocks, key=lambda x: x["final_score"], reverse=True)
 
-def main():
-    # Read artifacts/expansion/LACE2/LACE2_closeout.json
+def read_lace2_closeout(file_path='artifacts/expansion/LACE2/LACE2_closeout.json'):
     try:
-        with open('artifacts/expansion/LACE2/LACE2_closeout.json', 'r') as f:
-            lace2_closeout = json.load(f)
+        with open(file_path, 'r') as f:
+            return json.load(f)
     except FileNotFoundError:
         print("LACE2 closeout file not found.")
-        return
+        return None
     except json.JSONDecodeError:
         print("Invalid JSON in LACE2 closeout file.")
+        return None
+
+def write_tranche_selection(tranche_selection, output_path='artifacts/expansion/LEDT/tranche_selection.json'):
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
+    with open(output_path, 'w') as f:
+        json.dump(tranche_selection, f, indent=4)
+
+def main():
+    # Read artifacts/expansion/LACE2/LACE2_closeout.json
+    lace2_closeout = read_lace2_closeout()
+    if not lace2_closeout:
         return
 
     # Hard-stop if campaign_verdict is missing
@@ -48,11 +58,7 @@ def main():
         "selected_at": datetime.utcnow().isoformat()
     }
 
-    # Create parent dirs if needed
-    os.makedirs('artifacts/expansion/LEDT', exist_ok=True)
-
-    with open('artifacts/expansion/LEDT/tranche_selection.json', 'w') as f:
-        json.dump(tranche_selection, f, indent=4)
+    write_tranche_selection(tranche_selection)
 
 if __name__ == "__main__":
     main()
