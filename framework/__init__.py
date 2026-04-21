@@ -851,3 +851,5 @@ from .retrieval_enrichment_substrate import EntitySignal, EnrichedCandidate, Ret
 from .lace1_expansion_closeout_ratifier import Lace1CloseoutRecord, Lace1ExpansionCloseoutRatifier, CAMPAIGN_VERDICT_COMPLETE, CAMPAIGN_VERDICT_PARTIAL
 
 from .live_retrieval_proof import LiveRetrievalProofRecord, LiveRetrievalProofRunner
+
+from .decomp_handoff_proof import DecompHandoffProofRecord, DecompHandoffProofRunner
