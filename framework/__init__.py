@@ -91,6 +91,7 @@ from .adapter_readiness_stress import StressCheck, StressHarnessResult, AdapterR
 from .controlled_adapter_scaffold import ScaffoldGate, AdapterScaffoldPlan, ControlledAdapterScaffold, emit_scaffold_plan
 from .terminal_autonomy_ratifier import RatificationCriterion, TerminalRatificationRecord, TerminalAutonomyRatifier, emit_terminal_ratification
 from .aider_runtime_adapter import AiderRuntimeAdapter, _EXPERIMENTAL_FLAG
+from .cmdb_authority_pilot import CmdbAuthorityRecord, CmdbAuthorityPilot, read_cmdb_authority
 from .codex_defer_adapter import (
     CODEX_AVAILABLE,
     CODEX_DECISION_AVAILABLE,
@@ -527,4 +528,7 @@ __all__ = [
     "CODEX_DECISION_DEFERRED",
     "CodexDeferArtifact",
     "emit_codex_defer",
+    "CmdbAuthorityRecord",
+    "CmdbAuthorityPilot",
+    "read_cmdb_authority",
 ]
