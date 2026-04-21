@@ -1,0 +1,202 @@
+---
+# Phase 7 Promotion Baseline v1
+# Authority surface: P7-01-LIVE-LOCAL-FIRST-CLOSEOUT-AND-PROMOTION-PACK-1
+# Governed by: governance/phase6_local_first_transition_baseline.v1.yaml,
+#   governance/phase5_closeout_baseline.v1.yaml,
+#   governance/local_run_validation_pack.v1.yaml,
+#   governance/definition_of_done.v1.yaml
+# Scope: Phase 7 promotion gate; Phase 6 closeout ratification; live local-first evidence
+
+version: "1.0.0"
+baseline_id: "PHASE7-PROMOTION-BASELINE-V1"
+generated_at: "2026-04-21"
+authority_owner: "governance/authority_adr_0001_source_of_truth.md"
+phase_linkage: "Phase 7 (full_autonomy_and_promotion)"
+
+# ─────────────────────────────────────────────
+# PHASE IDENTITY
+# ─────────────────────────────────────────────
+phase_id: "phase_7"
+phase_label: "Phase 7 — Full Local Autonomy and Promotion"
+phase_status: "promotion_in_progress"
+description: >
+  Phase 7 closes Phase 6 with real evidence and establishes the promotion gate
+  for full local-first autonomous operation. The persistent execution ledger,
+  live Aider dispatch surface, real telemetry bridge, explicit escalation
+  workflow, and Phase 6 closeout ratification must all produce structured
+  evidence before Phase 7 promotion is authorized.
+
+# ─────────────────────────────────────────────
+# REQUIRED MODULES
+# ─────────────────────────────────────────────
+required_modules:
+  persistent_execution_ledger_v1:
+    module: "framework/persistent_execution_ledger_v1.py"
+    classes:
+      - PersistentExecutionLedgerV1
+      - PersistentLedgerEntryV1
+    status: "present"
+
+  live_aider_dispatch_v1:
+    module: "framework/live_aider_dispatch_v1.py"
+    classes:
+      - LiveAiderDispatchV1
+      - AiderDispatchRecordV1
+    status: "present"
+
+  local_autonomy_telemetry_bridge_v1:
+    module: "framework/local_autonomy_telemetry_bridge_v1.py"
+    classes:
+      - LocalAutonomyTelemetryBridgeV1
+      - TelemetryEvidenceSummaryV1
+    status: "present"
+
+  escalation_workflow_v1:
+    module: "framework/escalation_workflow_v1.py"
+    classes:
+      - EscalationWorkflowV1
+      - EscalationEventV1
+      - EscalationDecisionV1
+    status: "present"
+
+  phase6_closeout_ratifier_v1:
+    module: "framework/phase6_closeout_ratifier_v1.py"
+    classes:
+      - Phase6CloseoutRatifierV1
+      - Phase6CloseoutResultV1
+    status: "present"
+
+  phase7_promotion_v1:
+    module: "framework/phase7_promotion_v1.py"
+    classes:
+      - Phase7PromotionV1
+      - Phase7PromotionResultV1
+    status: "present"
+
+# ─────────────────────────────────────────────
+# REQUIRED CAPABILITIES
+# ─────────────────────────────────────────────
+required_capabilities:
+  persistent_local_execution_ledger:
+    module: "persistent_execution_ledger_v1"
+    description: >
+      File-backed JSONL ledger that persists run_id, executor, route,
+      validation_results, escalation_status, and final_outcome across
+      sessions. append_record(), load_records(), summarize() required.
+
+  live_aider_dispatch:
+    module: "live_aider_dispatch_v1"
+    description: >
+      Structured Aider dispatch surface with dry-run and live modes.
+      Returns AiderDispatchRecordV1 with package_id, allowed_files,
+      validation_sequence, execution_mode = local_first, dispatch_command,
+      and dispatch_status.
+
+  real_autonomy_evidence_bridge:
+    module: "local_autonomy_telemetry_bridge_v1"
+    description: >
+      Derive routine_local_execution_ready, first_pass_success_signal,
+      retry_discipline_signal, escalation_rate_signal, and
+      artifact_completeness_signal from persistent ledger and real artifacts.
+
+  explicit_escalation_workflow:
+    module: "escalation_workflow_v1"
+    description: >
+      Record escalation events with approver_type and enforce that Claude/
+      remote executor runs never count as local autonomy progress. Includes
+      evaluate() helper for escalation decisions.
+
+  phase6_closeout_ratification:
+    module: "phase6_closeout_ratifier_v1"
+    description: >
+      Ratify Phase 6 closeout by checking Phase 6 blocker resolution from
+      persistent ledger, telemetry evidence, and escalation workflow. Return
+      phase6_closed boolean and blockers_remaining list.
+
+  phase7_promotion_decision:
+    module: "phase7_promotion_v1"
+    description: >
+      Evaluate Phase 7 promotion readiness from phase6_closeout result,
+      telemetry evidence, and regression summary. Return promotion_ready,
+      promotion_blockers, and promotion_summary.
+
+# ─────────────────────────────────────────────
+# COMPLETION REQUIREMENTS
+# ─────────────────────────────────────────────
+completion_requirements:
+  phase6_blockers_closed:
+    description: >
+      All four Phase 6 blockers must be addressed by the P7-01 surfaces.
+      Phase6CloseoutRatifierV1 must return phase6_closed = true.
+    status: "met_by_p7_01"
+
+  real_local_execution_evidence_present:
+    description: >
+      PersistentExecutionLedgerV1 must have >= 3 real or synthetic local
+      executor runs written and reloaded. live_local_cases_run >= 3 in artifact.
+    status: "met_by_p7_01"
+
+  explicit_escalation_accounting:
+    description: >
+      EscalationWorkflowV1 must record escalation events with explicit
+      approver_type and counts_as_local_autonomy_progress enforcement.
+    status: "met_by_p7_01"
+
+  promotion_decision_emitted:
+    description: >
+      Phase7PromotionV1 must emit Phase7PromotionResultV1 with promotion_ready
+      boolean and promotion_blockers list. promotion_ready present in artifact.
+    status: "met_by_p7_01"
+
+# Minimum gate values
+completion_gate:
+  minimum_live_local_cases: 3
+  phase6_closed_required: true
+  promotion_decision_required: true
+  phase7_promotion_gate_status: "met_by_p7_01"
+
+# ─────────────────────────────────────────────
+# REMAINING BLOCKERS
+# ─────────────────────────────────────────────
+remaining_blockers:
+  - id: "P7-BLOCKER-01"
+    description: >
+      LiveAiderDispatchV1 dry-run mode only in this package; live subprocess
+      dispatch requires Aider installed and a real task message. Live dispatch
+      to be exercised in the first real Phase 7 task execution.
+    deferred_to: "phase_7_live_execution"
+
+  - id: "P7-BLOCKER-02"
+    description: >
+      LocalAutonomyTelemetryBridgeV1 consumes synthetic ledger entries only
+      in P7-01; real Aider/Ollama execution telemetry wiring requires live
+      Phase 7 execution sessions.
+    deferred_to: "phase_7_live_execution"
+
+  - id: "P7-BLOCKER-03"
+    description: >
+      EscalationWorkflowV1 evaluator uses heuristic thresholds; not yet wired
+      to real failure telemetry from live Aider runs.
+    deferred_to: "phase_7_live_execution"
+
+# ─────────────────────────────────────────────
+# PROMOTION GATE
+# ─────────────────────────────────────────────
+promotion_gate:
+  description: >
+    Phase 7 promotion is authorized and full local-first autonomy is established
+    when ALL of the following are true:
+      1. phase6_closed = true (Phase6CloseoutRatifierV1)
+      2. promotion_ready = true (Phase7PromotionV1)
+      3. live_local_cases_run >= 3 in the promotion artifact
+      4. escalation_accounting_checked = true in the promotion artifact
+      5. all_checks_passed = true in the promotion artifact
+      6. make check passes
+      7. Phase 7 seam tests pass
+
+  gate_status: "pending"
+  gate_cleared_by: null
+  note: >
+    This gate is evaluated by running Phase7PromotionV1 against the evidence
+    produced by the P7-01 promotion runner. Gate NOT cleared at P7-01
+    package creation time; requires live execution evidence to be scored.

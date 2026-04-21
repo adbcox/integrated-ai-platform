@@ -1,0 +1,212 @@
+{
+  "phase7_pack": "live_local_first_promotion_v1",
+  "generated_at": "2026-04-21T17:16:02.118442+00:00",
+  "required_modules_loaded": true,
+  "live_local_cases_run": 4,
+  "escalation_accounting_checked": true,
+  "phase6_closed": true,
+  "promotion_ready": true,
+  "promotion_blockers": [],
+  "all_checks_passed": true,
+  "escalation_status": "NOT_ESCALATED",
+  "component_summary": [
+    {
+      "module": "framework/persistent_execution_ledger_v1.py",
+      "classes": [
+        "PersistentExecutionLedgerV1",
+        "PersistentLedgerEntryV1"
+      ]
+    },
+    {
+      "module": "framework/live_aider_dispatch_v1.py",
+      "classes": [
+        "LiveAiderDispatchV1",
+        "AiderDispatchRecordV1"
+      ]
+    },
+    {
+      "module": "framework/local_autonomy_telemetry_bridge_v1.py",
+      "classes": [
+        "LocalAutonomyTelemetryBridgeV1",
+        "TelemetryEvidenceSummaryV1"
+      ]
+    },
+    {
+      "module": "framework/escalation_workflow_v1.py",
+      "classes": [
+        "EscalationWorkflowV1",
+        "EscalationEventV1",
+        "EscalationDecisionV1"
+      ]
+    },
+    {
+      "module": "framework/phase6_closeout_ratifier_v1.py",
+      "classes": [
+        "Phase6CloseoutRatifierV1",
+        "Phase6CloseoutResultV1"
+      ]
+    },
+    {
+      "module": "framework/phase7_promotion_v1.py",
+      "classes": [
+        "Phase7PromotionV1",
+        "Phase7PromotionResultV1"
+      ]
+    },
+    {
+      "module": "governance/phase7_promotion_baseline.v1.yaml",
+      "type": "baseline"
+    }
+  ],
+  "check_details": {
+    "modules_loaded": {
+      "ok": true,
+      "errors": []
+    },
+    "ledger": {
+      "total_runs": 4,
+      "passed_runs": 4,
+      "pass_rate": 1.0,
+      "executor_counts": {
+        "aider": 4
+      },
+      "ledger_path": "/Users/admin/repos/integrated-ai-platform-exec/artifacts/substrate/p7_synthetic_ledger.jsonl"
+    },
+    "dispatch": {
+      "package_id": "P7-01",
+      "allowed_files": [
+        "framework/persistent_execution_ledger_v1.py"
+      ],
+      "validation_sequence": [
+        "python3 -m pytest tests/ -x -q",
+        "make check"
+      ],
+      "execution_mode": "local_first",
+      "dispatch_command": "aider --message 'run validation suite' framework/persistent_execution_ledger_v1.py",
+      "dispatch_status": "dry_run",
+      "dispatched_at": "2026-04-21T17:16:02.106362+00:00",
+      "exit_code": null,
+      "stdout_preview": "",
+      "stderr_preview": "",
+      "notes": [
+        "dry_run=True; no subprocess executed"
+      ]
+    },
+    "telemetry": {
+      "routine_local_execution_ready": true,
+      "first_pass_success_signal": true,
+      "retry_discipline_signal": true,
+      "escalation_rate_signal": true,
+      "artifact_completeness_signal": true,
+      "evidence_gaps": [],
+      "signal_detail": {
+        "total_ledger_runs": 4,
+        "local_executor_runs": 4,
+        "local_pass_rate": 1.0,
+        "claude_executor_runs": 0,
+        "escalation_rate": 0.0,
+        "retries_within_budget": true
+      }
+    },
+    "escalation_workflow": {
+      "total_events": 4,
+      "escalated_count": 0,
+      "autonomy_progress_count": 4,
+      "events": [
+        {
+          "run_id": "p7-bug-001",
+          "package_id": "P7-01",
+          "escalation_requested": false,
+          "escalation_reason": "routine_local_run",
+          "escalation_approved": false,
+          "approver_type": "auto",
+          "executor": "aider",
+          "counts_as_local_autonomy_progress": true,
+          "recorded_at": "2026-04-21T17:16:02.106385+00:00",
+          "notes": []
+        },
+        {
+          "run_id": "p7-feat-001",
+          "package_id": "P7-01",
+          "escalation_requested": false,
+          "escalation_reason": "routine_local_run",
+          "escalation_approved": false,
+          "approver_type": "auto",
+          "executor": "aider",
+          "counts_as_local_autonomy_progress": true,
+          "recorded_at": "2026-04-21T17:16:02.106388+00:00",
+          "notes": []
+        },
+        {
+          "run_id": "p7-test-001",
+          "package_id": "P7-01",
+          "escalation_requested": false,
+          "escalation_reason": "routine_local_run",
+          "escalation_approved": false,
+          "approver_type": "auto",
+          "executor": "aider",
+          "counts_as_local_autonomy_progress": true,
+          "recorded_at": "2026-04-21T17:16:02.106390+00:00",
+          "notes": []
+        },
+        {
+          "run_id": "p7-report-001",
+          "package_id": "P7-01",
+          "escalation_requested": false,
+          "escalation_reason": "routine_local_run",
+          "escalation_approved": false,
+          "approver_type": "auto",
+          "executor": "aider",
+          "counts_as_local_autonomy_progress": true,
+          "recorded_at": "2026-04-21T17:16:02.106391+00:00",
+          "notes": []
+        }
+      ]
+    },
+    "phase6_closeout": {
+      "phase6_closed": true,
+      "blockers_remaining": [],
+      "closeout_summary": {
+        "ledger_total_runs": 4,
+        "ledger_pass_rate": 1.0,
+        "routine_local_execution_ready": true,
+        "escalation_events_recorded": 4,
+        "autonomy_progress_count": 4,
+        "evidence_gaps": [],
+        "phase6_blockers_evaluated": [
+          "P6-BLOCKER-01",
+          "P6-BLOCKER-02",
+          "P6-BLOCKER-03",
+          "P6-BLOCKER-04"
+        ]
+      },
+      "ratified_at": "2026-04-21T17:16:02.106403+00:00"
+    },
+    "phase7_baseline": {
+      "ok": true,
+      "errors": []
+    },
+    "promotion": {
+      "phase_id": "phase_7",
+      "package_id": "P7-01-LIVE-LOCAL-FIRST-CLOSEOUT-AND-PROMOTION-PACK-1",
+      "promotion_ready": true,
+      "promotion_blockers": [],
+      "promotion_summary": {
+        "phase6_closed": true,
+        "routine_local_execution_ready": true,
+        "first_pass_success_signal": true,
+        "artifact_completeness_signal": true,
+        "regression_pass_rate": 1.0,
+        "regression_cases_run": 4,
+        "evidence_gaps": []
+      },
+      "generated_at": "2026-04-21T17:16:02.118437+00:00"
+    }
+  },
+  "phase_linkage": "Phase 7 (full_autonomy_and_promotion)",
+  "authority_sources": [
+    "governance/phase7_promotion_baseline.v1.yaml",
+    "governance/phase6_local_first_transition_baseline.v1.yaml",
+    "governance/phase5_closeout_baseline.v1.yaml"
+  ]
+}
