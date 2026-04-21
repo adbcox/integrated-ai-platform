@@ -31,6 +31,7 @@ from .runtime_workspace_contract import RuntimeWorkspace, assert_read_only_sourc
 from .workspace import WorkspaceContext, WorkspaceController
 from .worker_runtime import WorkerPool, WorkerRuntime
 from .tool_bridge import SCHEMA_TOOL_NAMES, is_schema_action, tool_name_for
+from .typed_permission_gate import PermissionRule, ToolPermission, TypedPermissionGate
 from .tool_registry import DEFAULT_REGISTRY, ToolContractEntry, ToolRegistry
 from .tool_schema import (
     ApplyPatchAction,
@@ -119,4 +120,7 @@ __all__ = [
     "ToolRegistry",
     "is_schema_action",
     "tool_name_for",
+    "PermissionRule",
+    "ToolPermission",
+    "TypedPermissionGate",
 ]
