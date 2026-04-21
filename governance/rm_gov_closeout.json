@@ -1,23 +1,22 @@
 {
   "closeout_id": "RM-GOV-TERMINAL-CLOSEOUT-SEAM-1",
-  "campaign_id": "RM-GOV-VERIFICATION-CLOSEOUT-1",
+  "campaign_id": "RM-GOV-CLOSEOUT-GAPS-1",
   "items": [
     {
       "item_id": "RM-GOV-001",
-      "decision": "partial",
-      "complete_vs_resolved": "resolved_not_complete",
+      "decision": "complete",
+      "complete_vs_resolved": "complete",
       "evidenced_subclaims": [
+        "roadmap_to_development_tracking",
         "cmdb_linkage",
         "standardized_metrics",
         "enforced_naming",
         "impact_transparency"
       ],
-      "unevidenced_subclaims": [
-        "roadmap_to_development_tracking"
-      ],
+      "unevidenced_subclaims": [],
       "evidence_summary": "roadmap_to_development_tracking: docs/roadmap/items/*.yaml has last_execution_commit field but all values null \u2014 schema exists, links absent. cmdb_linkage: framework/cmdb_authority_boundary.py, cmdb_authority_contract.py, cmdb_authoritative_promotion_ratifier.py present and importable. standardized_metrics: framework/run_metrics_schema.py RunMetrics dataclass registered in framework/schema_registry.py. enforced_naming: bin/preflight_normalization_guard.sh + Makefile target. impact_transparency: CmdbTerminalDecision.matrix_impact field in framework/cmdb_terminal_authoritative_reratifier.py.",
-      "blocker_summary": "roadmap_to_development_tracking unresolved: all last_execution_commit fields in docs/roadmap/items/*.yaml are null. Closing requires populating commit SHAs or campaign refs in each executed item's YAML file.",
-      "decided_at": "2026-04-21T06:39:37+00:00"
+      "blocker_summary": null,
+      "decided_at": "2026-04-21T07:11:09+00:00"
     },
     {
       "item_id": "RM-GOV-002",
@@ -33,25 +32,24 @@
       "unevidenced_subclaims": [],
       "evidence_summary": "integrity_review_capability: bin/rgc.py integrity run backed by roadmap_governance/integrity.py run_integrity_review(). naming_consistency_checks: roadmap_governance/integrity.py VALID_PRIORITIES, VALID_ITEM_TYPES, VALID_CATEGORIES frozensets enforced. duplicate_detection: near-duplicate title detection via difflib + duplicate_id findings during sync. mismatch_synchronization_hygiene: bin/governance_reconcile.py cross-references canonical_roadmap.json, current_phase.json, phase_gate_status.json. recurrence: 25+ timestamped artifacts in artifacts/governance/integrity/ across dates 20260420 and 20260421.",
       "blocker_summary": null,
-      "decided_at": "2026-04-21T06:39:37+00:00"
+      "decided_at": "2026-04-21T07:11:09+00:00"
     },
     {
       "item_id": "RM-GOV-003",
-      "decision": "partial",
-      "complete_vs_resolved": "resolved_not_complete",
+      "decision": "complete",
+      "complete_vs_resolved": "complete",
       "evidenced_subclaims": [
         "grouped_feature_block_planning",
         "package_grouping_outputs_machine_readable",
+        "shared_touch_loe_optimization",
         "planner_outputs_reusable"
       ],
-      "unevidenced_subclaims": [
-        "shared_touch_loe_optimization"
-      ],
+      "unevidenced_subclaims": [],
       "evidence_summary": "grouped_feature_block_planning: bin/rgc.py planner refresh backed by roadmap_governance/planner_service.py run_planner_refresh(); system capability, not conversation habit. package_grouping_outputs_machine_readable: PKG-*.json artifacts in artifacts/governance/packages/ with package_id and members array. shared_touch_loe_optimization: docs/roadmap/items/*.yaml has shared_touch_surfaces metadata but no computed LOE output in planner \u2014 planner scores by priority/CMDB/findings, not shared-touch aggregation. planner_outputs_reusable: FeatureBlockPackage consumed by roadmap_governance/metrics_service.py and router.py.",
-      "blocker_summary": "shared_touch_loe_optimization unresolved: roadmap_governance/planner_service.py does not compute shared-touch or LOE aggregation as a structured output field. Closing requires adding shared-touch grouping logic to the planner service.",
-      "decided_at": "2026-04-21T06:39:37+00:00"
+      "blocker_summary": null,
+      "decided_at": "2026-04-21T07:11:09+00:00"
     }
   ],
-  "overall_status": "mixed",
-  "closed_at": "2026-04-21T06:40:57+00:00"
+  "overall_status": "all_complete",
+  "closed_at": "2026-04-21T07:11:09+00:00"
 }

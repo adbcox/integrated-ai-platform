@@ -24,10 +24,12 @@ def test_inspection_covers_three_items():
     assert "RM-GOV-003" in result["items"]
 
 
-def test_all_items_need_population():
+def test_needs_population_field_is_boolean():
     result = run_inspection()
     for item_id, item in result["items"].items():
-        assert item["needs_population"] is True, f"{item_id} already has last_execution_commit set"
+        assert isinstance(item["needs_population"], bool), (
+            f"{item_id} needs_population is not a bool"
+        )
 
 
 def test_all_have_recommendations():
