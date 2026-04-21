@@ -1,0 +1,116 @@
+{
+  "sample_count": 3,
+  "ready_count": 3,
+  "not_ready_count": 0,
+  "sample_reports": [
+    {
+      "report_id": "PRE-20260421133850-LEDT-P3-seam-tes",
+      "packet_id": "LEDT-P3-seam-test",
+      "aider_importable": true,
+      "code_executor_importable": true,
+      "file_scope_risk": "low",
+      "validation_commands_present": true,
+      "checks": [
+        {
+          "check_id": "C1",
+          "check_name": "aider_importable",
+          "passed": true,
+          "detail": "aider package found"
+        },
+        {
+          "check_id": "C2",
+          "check_name": "code_executor_importable",
+          "passed": true,
+          "detail": "framework.code_executor found"
+        },
+        {
+          "check_id": "C3",
+          "check_name": "file_scope_risk",
+          "passed": true,
+          "detail": "file_scope_count=2 \u2192 risk=low"
+        },
+        {
+          "check_id": "C4",
+          "check_name": "validation_commands_present",
+          "passed": true,
+          "detail": "2 validation commands"
+        }
+      ],
+      "overall_ready": true,
+      "preflight_at": "2026-04-21T13:38:50+00:00"
+    },
+    {
+      "report_id": "PRE-20260421133850-LEDT-P4-route-de",
+      "packet_id": "LEDT-P4-route-decision",
+      "aider_importable": true,
+      "code_executor_importable": true,
+      "file_scope_risk": "low",
+      "validation_commands_present": true,
+      "checks": [
+        {
+          "check_id": "C1",
+          "check_name": "aider_importable",
+          "passed": true,
+          "detail": "aider package found"
+        },
+        {
+          "check_id": "C2",
+          "check_name": "code_executor_importable",
+          "passed": true,
+          "detail": "framework.code_executor found"
+        },
+        {
+          "check_id": "C3",
+          "check_name": "file_scope_risk",
+          "passed": true,
+          "detail": "file_scope_count=3 \u2192 risk=low"
+        },
+        {
+          "check_id": "C4",
+          "check_name": "validation_commands_present",
+          "passed": true,
+          "detail": "2 validation commands"
+        }
+      ],
+      "overall_ready": true,
+      "preflight_at": "2026-04-21T13:38:50+00:00"
+    },
+    {
+      "report_id": "PRE-20260421133850-LEDT-P10-proof-h",
+      "packet_id": "LEDT-P10-proof-harness",
+      "aider_importable": true,
+      "code_executor_importable": true,
+      "file_scope_risk": "low",
+      "validation_commands_present": true,
+      "checks": [
+        {
+          "check_id": "C1",
+          "check_name": "aider_importable",
+          "passed": true,
+          "detail": "aider package found"
+        },
+        {
+          "check_id": "C2",
+          "check_name": "code_executor_importable",
+          "passed": true,
+          "detail": "framework.code_executor found"
+        },
+        {
+          "check_id": "C3",
+          "check_name": "file_scope_risk",
+          "passed": true,
+          "detail": "file_scope_count=1 \u2192 risk=low"
+        },
+        {
+          "check_id": "C4",
+          "check_name": "validation_commands_present",
+          "passed": true,
+          "detail": "2 validation commands"
+        }
+      ],
+      "overall_ready": true,
+      "preflight_at": "2026-04-21T13:38:50+00:00"
+    }
+  ],
+  "reported_at": "2026-04-21T13:38:50+00:00"
+}
