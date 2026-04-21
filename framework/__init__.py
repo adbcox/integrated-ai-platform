@@ -164,6 +164,13 @@ from .promotion_baseline_inspector import (
     PromotionBaselineReport,
     inspect_promotion_baseline,
 )
+from .aider_live_execution_gate import (
+    LIVE_GATE_PASS,
+    LIVE_GATE_BLOCK,
+    AiderLiveGateCheck,
+    AiderLiveGateReport,
+    evaluate_aider_live_gate,
+)
 from .retry_telemetry_integration import (
     LoopRetryIntegrationRecord,
     LoopRetryStore,
@@ -598,4 +605,9 @@ __all__ = [
     "PromotionCandidate",
     "PromotionBaselineReport",
     "inspect_promotion_baseline",
+    "LIVE_GATE_PASS",
+    "LIVE_GATE_BLOCK",
+    "AiderLiveGateCheck",
+    "AiderLiveGateReport",
+    "evaluate_aider_live_gate",
 ]
