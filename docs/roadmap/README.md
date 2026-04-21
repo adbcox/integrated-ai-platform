@@ -15,6 +15,7 @@ The roadmap is the authoritative planning and governance layer for the platform.
 ## Operating model
 
 - **Canonical source of truth:** repo docs in `docs/roadmap/`
+- **Single master roadmap document:** `docs/roadmap/ROADMAP_MASTER.md`
 - **Execution derivative:** GitHub issues, PRs, and implementation packages
 - **Reference key:** every execution artifact should reference one or more roadmap IDs such as `RM-GOV-001`
 
@@ -28,20 +29,23 @@ This `docs/roadmap/` directory supersedes the older top-level `roadmap/` documen
 
 ## Directory contents
 
-- `ROADMAP_INDEX.md` — master roadmap index
+- `ROADMAP_MASTER.md` — single first-read master roadmap document and priority authority
+- `ROADMAP_INDEX.md` — master normalized roadmap index
 - `STANDARDS.md` — IDs, categories, statuses, metrics, naming, and impact rules
 - `FEATURE_BLOCK_GROUPING.md` — grouped-package planning logic for shared-touch work
 - `CMDB_LINKAGE.md` — mapping expectations between roadmap items and systems/assets
 - `ROADMAP_CHAT_SYNC_2026-04-21.md` — detailed normalization of roadmap items captured in chat and synced into the canonical roadmap system
+- `EXECUTION_CONTEXT_SYNC_2026-04-21.md` — selective migration of durable execution-context from legacy roadmap status material
 - `TEMPLATES/ROADMAP_ITEM_TEMPLATE.md` — template for new roadmap items
 
 ## Workflow
 
-1. Add or amend roadmap items here first.
-2. Assign stable ID, category, type, and normalized metrics.
-3. Record affected systems, expected file families, and dependencies.
-4. Evaluate whether the item should be executed alone or as part of a grouped feature block.
-5. Open GitHub issues or execution docs only after the roadmap item is clear enough to drive work.
+1. Read `ROADMAP_MASTER.md` first for strategic priority and canonical interpretation.
+2. Add or amend roadmap items in `ROADMAP_INDEX.md`.
+3. Assign stable ID, category, type, and normalized metrics.
+4. Record affected systems, expected file families, and dependencies.
+5. Evaluate whether the item should be executed alone or as part of a grouped feature block.
+6. Open GitHub issues or execution docs only after the roadmap item is clear enough to drive work.
 
 ## Rule
 
