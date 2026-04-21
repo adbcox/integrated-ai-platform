@@ -29,6 +29,18 @@ This index lists the dedicated execution packs available under `docs/roadmap/`.
 - `RM-INV-003` → `RM-INV-003_EXECUTION_PACK.md`
 - `RM-OPS-001` → `RM-OPS-001_EXECUTION_PACK.md`
 
+### Core platform / UI / domain execution packs
+- `RM-CORE-002` → `RM-CORE-002_EXECUTION_PACK.md`
+- `RM-UI-001` → `RM-UI-001_EXECUTION_PACK.md`
+- `RM-DOCAPP-002` → `RM-DOCAPP-002_EXECUTION_PACK.md`
+- `RM-SHOP-002` → `RM-SHOP-002_EXECUTION_PACK.md`
+- `RM-SHOP-003` → `RM-SHOP-003_EXECUTION_PACK.md`
+- `RM-MEDIA-002` → `RM-MEDIA-002_EXECUTION_PACK.md`
+- `RM-MEDIA-004` → `RM-MEDIA-004_EXECUTION_PACK.md`
+- `RM-HW-001` → `RM-HW-001_EXECUTION_PACK.md`
+- `RM-HOME-001` → `RM-HOME-001_EXECUTION_PACK.md`
+- `RM-AUTO-MECH-001` → `RM-AUTO-MECH-001_EXECUTION_PACK.md`
+
 ## Rule
 
 When a roadmap item has a dedicated execution pack, use that pack first for execution handoffs instead of rebuilding the context from scratch.
