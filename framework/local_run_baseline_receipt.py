@@ -1,5 +1,4 @@
 from dataclasses import dataclass, asdict
-from datetime import datetime
 import json
 
 @dataclass(frozen=True)

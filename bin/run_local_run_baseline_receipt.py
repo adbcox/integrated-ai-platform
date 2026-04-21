@@ -9,7 +9,7 @@ OUTPUT = "artifacts/local_runs/local_run_baseline_receipt.json"
 
 def main():
     receipt = LocalRunBaselineReceipt(
-        package_id="P1-LF-01-LOCAL-RUN-BASELINE-RECEIPT-1",
+        package_id="P1-LF-02-LOCAL-RUN-BASELINE-RECEIPT-RECOVERY-1",
         executor="aider_ollama",
         route="local_first",
         validations_run=["validation1", "validation2"],

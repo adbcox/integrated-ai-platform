@@ -6,7 +6,7 @@ from framework.local_run_baseline_receipt import LocalRunBaselineReceipt, LocalR
 
 def test_local_run_baseline_receipt_writer(tmp_path):
     receipt = LocalRunBaselineReceipt(
-        package_id="P1-LF-01-LOCAL-RUN-BASELINE-RECEIPT-1",
+        package_id="P1-LF-02-LOCAL-RUN-BASELINE-RECEIPT-RECOVERY-1",
         executor="aider_ollama",
         route="local_first",
         validations_run=["validation1", "validation2"],
@@ -25,7 +25,7 @@ def test_local_run_baseline_receipt_writer(tmp_path):
     with open(output_path, 'r') as f:
         data = json.load(f)
         assert data == {
-            "package_id": "P1-LF-01-LOCAL-RUN-BASELINE-RECEIPT-1",
+            "package_id": "P1-LF-02-LOCAL-RUN-BASELINE-RECEIPT-RECOVERY-1",
             "executor": "aider_ollama",
             "route": "local_first",
             "validations_run": ["validation1", "validation2"],
