@@ -294,6 +294,13 @@ from .aider_preflight import (
     AiderPreflightChecker,
     emit_preflight_artifact,
 )
+from .aider_preflight_blocker_inspector import (
+    BLOCKER_PERMISSION_GATE,
+    BLOCKER_CONFIG_KEYS,
+    PreflightBlockerRecord,
+    PreflightBlockerArtifact,
+    inspect_preflight_blockers,
+)
 from .task_class_readiness import (
     TaskClassVerdict,
     TaskClassReadinessReport,
@@ -499,6 +506,11 @@ __all__ = [
     "AiderPreflightResult",
     "AiderPreflightChecker",
     "emit_preflight_artifact",
+    "BLOCKER_PERMISSION_GATE",
+    "BLOCKER_CONFIG_KEYS",
+    "PreflightBlockerRecord",
+    "PreflightBlockerArtifact",
+    "inspect_preflight_blockers",
     "LocalAutonomyDashboard",
     "build_local_autonomy_dashboard",
     "emit_dashboard",
