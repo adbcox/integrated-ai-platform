@@ -1,0 +1,32 @@
+{
+  "artifact_id": "P1-01-MODEL-PROFILES-VALIDATION-1",
+  "generated_at": "2026-04-21T15:18:12.529004+00:00",
+  "profiles_path": "governance/model_profiles.v1.yaml",
+  "yaml_loaded": true,
+  "required_profiles_checked": [
+    "fast",
+    "balanced",
+    "hard",
+    "long_context"
+  ],
+  "required_profiles_present": true,
+  "required_fields_checked": [
+    "profile_id",
+    "backend",
+    "model_name",
+    "context_window",
+    "timeout_seconds",
+    "temperature_policy",
+    "intended_task_class",
+    "enabled"
+  ],
+  "required_fields_present": true,
+  "content_errors": [],
+  "phase_linkage": "Phase 1 (runtime_contract_foundation)",
+  "authority_sources": [
+    "ADR-0004",
+    "governance/cmdb_lite_registry.v1.yaml",
+    "governance/definition_of_done.v1.yaml",
+    "governance/autonomy_scorecard.v1.yaml"
+  ]
+}

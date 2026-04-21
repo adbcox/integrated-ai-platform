@@ -1,0 +1,203 @@
+---
+# Model Profiles v1 — Typed authority surface for Ollama-first LOCAL-FIRST routing
+# Authority surface: P1-01-MODEL-PROFILES-1
+# Governed by: ADR-0004 (inference gateway), governance/cmdb_lite_registry.v1.yaml::model_profiles,
+#   governance/definition_of_done.v1.yaml (acceptance_rules.local_first)
+# Scope: all LOCAL-FIRST coding runs; SUBSTRATE and ESCALATION are not covered here
+
+version: "1.0.0"
+profiles_id: "MODEL-PROFILES-V1"
+generated_at: "2026-04-21"
+authority_owner: "governance/authority_adr_0001_source_of_truth.md"
+adr_ref: "ADR-0004"
+phase_linkage: "Phase 1 (runtime_contract_foundation)"
+
+# ─────────────────────────────────────────────
+# DEFAULT BACKEND
+# All LOCAL-FIRST profiles route through Ollama.
+# SUBSTRATE (Claude) is NOT a routine profile;
+# see exceptions section below.
+# ─────────────────────────────────────────────
+default_backend: "ollama"
+
+# ─────────────────────────────────────────────
+# PROFILES
+# One entry per named model profile.
+# These map directly to Makefile targets and
+# the inference gateway routing rules in ADR-0004.
+# ─────────────────────────────────────────────
+profiles:
+  fast:
+    profile_id: "fast"
+    backend: "ollama"
+    model_name: "qwen2.5-coder:14b"
+    context_window: 32768
+    timeout_seconds: 120
+    temperature_policy:
+      default: 0.15
+      min: 0.0
+      max: 0.4
+      rationale: "Low temperature for deterministic, narrow code edits; guard clause, assertion, single-file replacement tasks"
+    intended_task_class:
+      - "narrow_routine_coding_slice"
+      - "guard_clause_addition"
+      - "assertion_addition"
+      - "single_file_replacement"
+      - "governance_documentation"
+    max_file_scope: 5
+    make_target: "aider-fast"
+    enabled: true
+    fallback_to: "hard"
+    notes: >
+      Primary default for LOCAL-FIRST packages. Preferred for all tasks that
+      fit within 5 files and do not require deep architectural reasoning.
+      Fast iteration; low latency on local hardware.
+
+  balanced:
+    profile_id: "balanced"
+    backend: "ollama"
+    model_name: "qwen2.5-coder:14b"
+    context_window: 32768
+    timeout_seconds: 180
+    temperature_policy:
+      default: 0.20
+      min: 0.0
+      max: 0.5
+      rationale: "Slightly higher temperature than fast to allow more varied generation for multi-step tasks"
+    intended_task_class:
+      - "narrow_routine_coding_slice"
+      - "multi_file_bounded_modification"
+      - "refactor_bounded"
+      - "test_suite_extension"
+    max_file_scope: 5
+    make_target: "aider-fast"
+    enabled: true
+    fallback_to: "hard"
+    notes: >
+      Same model as fast but with a wider temperature band and longer timeout
+      for bounded multi-file modifications. Use when the task touches 2–5 files
+      with coordinated changes but does not require a larger model.
+
+  hard:
+    profile_id: "hard"
+    backend: "ollama"
+    model_name: "deepseek-coder-v2"
+    context_window: 65536
+    timeout_seconds: 300
+    temperature_policy:
+      default: 0.20
+      min: 0.0
+      max: 0.6
+      rationale: "Moderate temperature for complex reasoning tasks; allow diversity without sacrificing correctness"
+    intended_task_class:
+      - "complex_refactor"
+      - "architectural_change_bounded"
+      - "multi_step_semantic_generation"
+      - "harder_semantic_tasks"
+      - "cross_module_bounded_modification"
+    max_file_scope: 5
+    make_target: "aider-hard"
+    enabled: true
+    fallback_to: null
+    notes: >
+      Fallback model for tasks where fast/balanced fail. Use for complex refactors,
+      architectural changes within bounded scope, and multi-step semantic generation.
+      If hard fails, the run must escalate — not silently route to SUBSTRATE.
+
+  long_context:
+    profile_id: "long_context"
+    backend: "ollama"
+    model_name: "32b-model"
+    context_window: 131072
+    timeout_seconds: 600
+    temperature_policy:
+      default: 0.15
+      min: 0.0
+      max: 0.4
+      rationale: "Low temperature for large-context precision; high context window used for full-file or multi-file reading"
+    intended_task_class:
+      - "large_context_analysis"
+      - "whole_file_rewrite_bounded"
+      - "cross_module_semantic_analysis"
+      - "long_document_generation"
+    max_file_scope: 5
+    make_target: "aider-smart"
+    env_var: "OLLAMA_API_BASE_32B"
+    enabled: true
+    fallback_to: "hard"
+    notes: >
+      32B parameter model for tasks requiring large context windows.
+      Requires OLLAMA_API_BASE_32B environment variable to be set.
+      Timeout is 600s due to larger model inference latency.
+      Use when fast/balanced/hard are context-constrained by file size.
+
+# ─────────────────────────────────────────────
+# ROUTING NOTES
+# Guidance for the inference gateway on profile selection
+# ─────────────────────────────────────────────
+routing_notes:
+  selection_order:
+    - "Use the profile declared in the package's model_profiles reference if explicit"
+    - "Default to fast for packages touching <= 2 files with simple task classes"
+    - "Use balanced for packages touching 3–5 files with coordinated changes"
+    - "Use hard when fast/balanced return non-semantic (deterministic fallback) results"
+    - "Use long_context when the primary model's context_window is insufficient for the file sizes involved"
+
+  fallback_chain:
+    fast: "hard"
+    balanced: "hard"
+    hard: "ESCALATE — do not fall through to SUBSTRATE"
+    long_context: "hard"
+
+  file_scope_enforcement:
+    rule: "No profile may be used for a task touching more than max_file_scope files"
+    action_on_violation: "ESCALATE — split the package or request an explicit ESCALATION label"
+
+  timeout_policy:
+    rule: "If the model does not respond within timeout_seconds, the attempt is treated as a failure"
+    action_on_timeout: "Increment retry_count; attempt fallback_to profile if available; escalate if fallback also times out"
+
+  package_class_gate:
+    rule: "All LOCAL-FIRST routing is gated by governance/next_package_class.json::current_allowed_class"
+    current_allowed_class: "ratification_only"
+    implication: "Only governance_session and measurement_session types are permitted under ratification_only; LOCAL-FIRST capability sessions are blocked until package class advances"
+
+# ─────────────────────────────────────────────
+# EXCEPTIONS
+# Override rules that supersede default routing
+# ─────────────────────────────────────────────
+exceptions:
+  claude_is_not_a_routine_profile:
+    rule: >
+      Claude (SUBSTRATE) is not a model profile for LOCAL-FIRST routing.
+      Any use of Claude in a LOCAL-FIRST package is an escalation event,
+      not a valid profile selection. There is no claude profile in this
+      authority surface and none should be added without an explicit
+      ESCALATION label and control-window approval.
+    hard_stop_on_violation: true
+    dod_ref: "escalation_handling.claude_rescue_not_local_autonomy"
+    scoring_impact: "Counts as escalation_rate +1; does not credit first_pass_success for the LOCAL-FIRST session"
+
+  disabled_profile_must_not_be_used:
+    rule: >
+      A profile with enabled=false must not be selected for any LOCAL-FIRST run.
+      Attempting to use a disabled profile is a hard stop.
+    hard_stop_on_violation: true
+
+  fallback_exhaustion_requires_escalation:
+    rule: >
+      When the fallback_chain terminates at ESCALATE (e.g., hard fails and has
+      no fallback), the exec terminal must escalate to the control window.
+      It must not attempt to route to SUBSTRATE, use a different profile
+      outside the chain, or retry indefinitely.
+    hard_stop_on_violation: true
+    dod_ref: "acceptance_rules.local_first.local_first_fallback"
+
+  env_var_required_for_long_context:
+    rule: >
+      The long_context profile requires the OLLAMA_API_BASE_32B environment
+      variable to be set. If this variable is absent, the profile is treated
+      as unavailable and the fallback_to=hard profile is used instead.
+      If hard also fails, escalate.
+    hard_stop_on_violation: false
+    action: "fallback_to=hard if OLLAMA_API_BASE_32B is absent"
