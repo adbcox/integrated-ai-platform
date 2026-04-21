@@ -1,0 +1,168 @@
+---
+# Phase 7 Terminal Closeout Baseline v1
+# Authority surface: P7-02-LIVE-EVIDENCE-CLOSEOUT-PACK-1
+# Governed by: governance/phase7_promotion_baseline.v1.yaml,
+#   governance/phase6_local_first_transition_baseline.v1.yaml,
+#   governance/local_run_validation_pack.v1.yaml,
+#   governance/definition_of_done.v1.yaml
+# Scope: Phase 7 terminal closeout; live evidence gate; promotion gate ratification
+
+version: "1.0.0"
+baseline_id: "PHASE7-TERMINAL-CLOSEOUT-BASELINE-V1"
+generated_at: "2026-04-21"
+authority_owner: "governance/authority_adr_0001_source_of_truth.md"
+phase_linkage: "Phase 7 (full_autonomy_and_promotion)"
+
+# ─────────────────────────────────────────────
+# PHASE IDENTITY
+# ─────────────────────────────────────────────
+phase_id: "phase_7"
+phase_label: "Phase 7 — Terminal Closeout"
+phase_status: "terminal_closeout_in_progress"
+description: >
+  Phase 7 terminal closeout converts the synthetic promotion proof from P7-01
+  into live evidence proof. The live Aider dispatch proof surface, real telemetry
+  ingestion, live escalation evidence, and promotion gate ratifier must all produce
+  structured, truthful evidence before the terminal gate is cleared.
+  Live evidence is preferred; explicit dry-run-only fallback is accepted with
+  truthful disclosure of the gap.
+
+# ─────────────────────────────────────────────
+# REQUIRED MODULES
+# ─────────────────────────────────────────────
+required_modules:
+  live_aider_proof_v1:
+    module: "framework/live_aider_proof_v1.py"
+    classes:
+      - LiveAiderProofV1
+      - AiderProofResultV1
+    status: "present"
+
+  real_telemetry_ingestion_v1:
+    module: "framework/real_telemetry_ingestion_v1.py"
+    classes:
+      - RealTelemetryIngestionV1
+      - TelemetryIngestionResultV1
+    status: "present"
+
+  live_escalation_evidence_v1:
+    module: "framework/live_escalation_evidence_v1.py"
+    classes:
+      - LiveEscalationEvidenceV1
+      - EscalationEvidenceSummaryV1
+    status: "present"
+
+  promotion_gate_ratifier_v1:
+    module: "framework/promotion_gate_ratifier_v1.py"
+    classes:
+      - PromotionGateRatifierV1
+      - PromotionGateResultV1
+    status: "present"
+
+  phase7_terminal_closeout_v1:
+    module: "framework/phase7_terminal_closeout_v1.py"
+    classes:
+      - Phase7TerminalCloseoutV1
+      - Phase7TerminalCloseoutResultV1
+    status: "present"
+
+# ─────────────────────────────────────────────
+# REQUIRED LIVE EVIDENCE
+# ─────────────────────────────────────────────
+required_live_evidence:
+  live_or_truthful_dispatch_proof:
+    description: >
+      LiveAiderProofV1 must return a structured AiderProofResultV1.
+      If live dispatch is not supported (Aider not installed), dispatch_mode
+      must be set to dry_run_only with an explicit failure_reason.
+      No false live claims permitted.
+    required: true
+
+  real_telemetry_ingestion:
+    description: >
+      RealTelemetryIngestionV1 must ingest the persistent execution ledger
+      and known artifact paths. telemetry_complete = true requires at least
+      one ledger entry AND one real artifact file found on disk.
+    required: true
+
+  explicit_escalation_accounting:
+    description: >
+      LiveEscalationEvidenceV1 must derive evidence from actual EscalationWorkflowV1
+      run records. local_autonomy_progress_preserved must be true: no Claude/remote
+      executor event may be marked counts_as_local_autonomy_progress.
+    required: true
+
+  promotion_gate_decision:
+    description: >
+      PromotionGateRatifierV1 must return a structured PromotionGateResultV1
+      with promotion_gate_cleared boolean and blockers_remaining list.
+      If gate is not cleared, all blockers must be listed explicitly.
+    required: true
+
+# ─────────────────────────────────────────────
+# COMPLETION REQUIREMENTS
+# ─────────────────────────────────────────────
+completion_requirements:
+  phase6_closed_true:
+    description: >
+      Phase6CloseoutRatifierV1.phase6_closed = true must be confirmed
+      in the terminal closeout record.
+    status: "met_by_p7_02"
+
+  promotion_ready_decided:
+    description: >
+      Phase7PromotionV1 must have emitted a promotion_ready decision
+      (true or false). The decision must be explicit, not absent.
+    status: "met_by_p7_02"
+
+  blockers_remaining_explicit:
+    description: >
+      All remaining blockers must be explicitly listed in the terminal
+      closeout artifact. An empty list is acceptable; absent is not.
+    status: "met_by_p7_02"
+
+  terminal_gate_decided:
+    description: >
+      PromotionGateRatifierV1 must emit promotion_gate_cleared boolean.
+      Phase7TerminalCloseoutV1 must emit terminal_closeout_ready boolean.
+    status: "met_by_p7_02"
+
+# ─────────────────────────────────────────────
+# REMAINING BLOCKERS
+# ─────────────────────────────────────────────
+remaining_blockers:
+  - id: "P7-LIVE-BLOCKER-01"
+    description: >
+      LiveAiderProofV1 falls back to dry_run_only when Aider is not installed.
+      Promotion gate cleared with dry_run_only has a noted gap.
+      Full live dispatch proof requires Aider installed and a real task message.
+    deferred_to: "first_real_aider_execution_session"
+
+  - id: "P7-LIVE-BLOCKER-02"
+    description: >
+      RealTelemetryIngestionV1 currently consumes only artifacts from prior
+      substrate packages. Real Aider/Ollama execution artifacts will extend
+      the real_artifacts_seen count in live execution sessions.
+    deferred_to: "first_real_aider_execution_session"
+
+# ─────────────────────────────────────────────
+# TERMINAL GATE
+# ─────────────────────────────────────────────
+terminal_gate:
+  description: >
+    Phase 7 terminal closeout is complete and full local autonomy is established
+    when ALL of the following are true:
+      1. phase6_closed = true
+      2. promotion_ready = true (or all blockers listed)
+      3. promotion_gate_cleared = true (or all gate blockers listed)
+      4. terminal_closeout_ready = true OR blockers_remaining is fully explicit
+      5. all_checks_passed = true in the terminal artifact
+      6. make check passes
+      7. Phase 7 live-evidence seam tests pass
+
+  gate_status: "pending"
+  gate_cleared_by: null
+  note: >
+    Gate cleared when live Aider execution evidence replaces dry-run-only proof.
+    In the current P7-02 run, gate may have residual blocker
+    (P7-LIVE-BLOCKER-01: dry_run_only dispatch). This is explicitly disclosed.
