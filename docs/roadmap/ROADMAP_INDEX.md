@@ -51,9 +51,11 @@ For completion and archive truth, use:
 - `RM-INTEL-003` — personalized real-news briefing with interest-aware ranking, source-quality controls, and anti-clickbait summarization
 - `RM-OPS-006` — governed desktop computer-use and non-API automation layer for local operator tasks
 - `RM-OPS-007` — emulator and governed BlueStacks automation lab for bounded computer-use experiments
+- `RM-OPS-009` — caller identity, reverse phone lookup, and communication screening layer
+- `RM-OPS-010` — lawful tenant and worker screening workflow using public-record and approved verification sources
 - `RM-GOV-009` — expanded to explicitly prioritize GitHub, Google Calendar, and Gmail connector posture
-- `RM-INV-003` — expanded to include hardware upgrade-value and cost/performance justification logic
-- `RM-UI-005` — expanded to include future macOS companion/overlay mode alongside task-routing, Aider, and OpenHands scope
+- `RM-INV-003` — expanded to include hardware upgrade-value and cost-performance justification logic
+- `RM-UI-005` — expanded to include future macOS companion/overlay mode alongside task-routing, Aider, OpenHands, and local model runtime policy
 
 ## Remaining active backlog by family
 
@@ -80,6 +82,8 @@ For completion and archive truth, use:
 - `RM-OPS-005`
 - `RM-OPS-006`
 - `RM-OPS-007`
+- `RM-OPS-009`
+- `RM-OPS-010`
 - `RM-UI-001`
 - `RM-UI-002`
 - `RM-UI-003`
