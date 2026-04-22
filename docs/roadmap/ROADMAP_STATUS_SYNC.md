@@ -57,6 +57,8 @@ Examples of still-active work include:
 - `RM-OPS-003`
 - `RM-OPS-004`
 - `RM-OPS-005`
+- `RM-OPS-006`
+- `RM-OPS-007`
 - `RM-UI-001`
 - `RM-UI-002`
 - `RM-UI-003`
@@ -71,11 +73,13 @@ Examples of still-active work include:
 - `RM-HOME-002`
 - `RM-HOME-003`
 - `RM-HOME-004`
+- `RM-HOME-005`
 - `RM-MEDIA-001`
 - `RM-MEDIA-002`
 - `RM-MEDIA-003`
 - `RM-MEDIA-004`
 - `RM-MEDIA-005`
+- `RM-INTEL-003`
 - `RM-SHOP-001`
 - `RM-SHOP-002`
 - `RM-SHOP-003`
