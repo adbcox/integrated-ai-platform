@@ -78,6 +78,7 @@ The governance branch now also includes active architecture-alignment and operat
 - `RM-GOV-006` — Hybrid roadmap operations layer with Plane on top of repo-doc canonical roadmap
 - `RM-GOV-007` — Plane deployment, roadmap field mapping, and repo-to-Plane sync implementation
 - `RM-GOV-008` — External application and integration registry with phased adoption and interface guidance
+- `RM-GOV-009` — External application connectivity and integration control plane
 
 These items are not the architectural backbone, but they are now part of the active governance layer required to keep roadmap execution aligned with the architecture source of truth.
 
@@ -116,6 +117,7 @@ These items are no longer to be treated as active from this summary surface:
 - `RM-GOV-006`
 - `RM-GOV-007`
 - `RM-GOV-008`
+- `RM-GOV-009`
 
 ### Developer assistant / local autonomy / execution
 - `RM-DEV-001`
