@@ -7,6 +7,7 @@
 - **Category:**
 - **Type:** `Program | System | Feature | Enhancement`
 - **Status:**
+- **Maturity:** `M0 | M1 | M2 | M3 | M4 | M5`
 - **Priority:**
 - **Priority class:**
 - **Queue rank:**
@@ -48,6 +49,18 @@ Explain the practical value and system-level importance.
 - dependency 1
 - dependency 2
 
+## Risks and issues
+
+### Key risks
+
+- risk 1
+- risk 2
+
+### Known issues / blockers
+
+- issue or blocker 1
+- issue or blocker 2
+
 ## CMDB / asset linkage
 
 - asset or service 1
@@ -85,6 +98,12 @@ Complete this section whenever the roadmap item depends on an external product, 
 
 Define the smallest useful and coherent first implementation slice.
 
+## Status transition notes
+
+- Expected next status:
+- Transition condition:
+- Validation / closeout condition:
+
 ## Notes
 
 Optional implementation, risk, or sequencing notes.
@@ -96,6 +115,8 @@ Before considering the roadmap intake complete:
 - [ ] Add or update the normalized item entry in `docs/roadmap/ROADMAP_INDEX.md`
 - [ ] Check whether this intake changes strategic priority, pull order, or roadmap ranking
 - [ ] If yes, update `docs/roadmap/ROADMAP_MASTER.md` in the same intake cycle
+- [ ] Check the item against `ITEM_MATURITY_MODEL.md`
+- [ ] Create or update risk and blocker visibility where material
 - [ ] If detailed normalization is needed, add a dated sync/supporting file under `docs/roadmap/`
 - [ ] Create or assign dedicated execution-pack coverage, or explicitly record canonical enrichment coverage and the path to later execution-pack treatment
 - [ ] Add or update `docs/roadmap/EXECUTION_PACK_INDEX.md` if a dedicated execution pack exists
