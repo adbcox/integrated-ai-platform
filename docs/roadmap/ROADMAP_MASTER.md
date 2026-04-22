@@ -4,16 +4,31 @@ This file is the **human-readable roadmap summary and strategic interpretation v
 
 It is **not** the canonical status source.
 
+## Architecture anchor
+
+The roadmap is downstream of the master architecture.
+
+Read `docs/architecture/MASTER_SYSTEM_ARCHITECTURE.md` first when you need to understand:
+
+- what the system is trying to become
+- what the shared runtime architecture is
+- what the non-negotiable platform rules are
+- why the roadmap is sequenced the way it is
+
+Then use the roadmap files to understand planning, status, execution sequence, and grouped delivery.
+
 ## Authority rule
 
-Read roadmap files in this order:
+Read planning and roadmap files in this order:
 
-1. `docs/roadmap/ROADMAP_AUTHORITY.md`
-2. `docs/roadmap/ROADMAP_STATUS_SYNC.md`
-3. `docs/roadmap/ROADMAP_MASTER.md`
-4. `docs/roadmap/ROADMAP_INDEX.md`
-5. `docs/roadmap/STANDARDS.md`
-6. `docs/roadmap/EXECUTION_PACK_INDEX.md`
+1. `docs/architecture/MASTER_SYSTEM_ARCHITECTURE.md`
+2. `docs/roadmap/ROADMAP_AUTHORITY.md`
+3. `docs/roadmap/ROADMAP_STATUS_SYNC.md`
+4. `docs/roadmap/ROADMAP_MASTER.md`
+5. `docs/roadmap/ROADMAP_INDEX.md`
+6. `docs/roadmap/STANDARDS.md`
+7. `docs/roadmap/EXECUTION_PACK_INDEX.md`
+8. `docs/roadmap/EXTERNAL_APPLICATIONS_AND_INTEGRATIONS.md`
 
 ## What this file does
 
@@ -28,6 +43,17 @@ This file does **not** control item completion/archive truth.
 ## Primary objective
 
 The most important program objective remains to strengthen the **local development assistant** so the system becomes a highly reliable home developer assistant with minimal dependence on Claude Code or Codex for routine coding work.
+
+This is an architectural objective before it is a roadmap objective.
+
+The roadmap should therefore continue to prioritize:
+
+1. shared runtime completion
+2. local Ollama-first coding reliability
+3. artifact and validation completeness
+4. developer assistant proof on the shared substrate
+5. governance, evidence, and anti-drift hardening
+6. controlled expansion into broader domain branches
 
 ## Completed / archived correction note
 
@@ -44,6 +70,16 @@ The highest-value **active** roadmap cluster for the home developer assistant is
 - `RM-OPS-005` — End-to-end telemetry, tracing, and audit evidence pipeline
 - `RM-OPS-004` — Backup, restore, disaster-recovery, and configuration export verification
 - `RM-INV-002` — Photo-driven inventory capture and capability mapping system for assets, components, consumables, and tools
+
+## Active governance alignment cluster
+
+The governance branch now also includes active architecture-alignment and operations-layer items that support the roadmap itself:
+
+- `RM-GOV-006` — Hybrid roadmap operations layer with Plane on top of repo-doc canonical roadmap
+- `RM-GOV-007` — Plane deployment, roadmap field mapping, and repo-to-Plane sync implementation
+- `RM-GOV-008` — External application and integration registry with phased adoption and interface guidance
+
+These items are not the architectural backbone, but they are now part of the active governance layer required to keep roadmap execution aligned with the architecture source of truth.
 
 ## Closed items removed from active interpretation
 
@@ -77,6 +113,9 @@ These items are no longer to be treated as active from this summary surface:
 - `RM-GOV-001`
 - `RM-GOV-002`
 - `RM-GOV-003`
+- `RM-GOV-006`
+- `RM-GOV-007`
+- `RM-GOV-008`
 
 ### Developer assistant / local autonomy / execution
 - `RM-DEV-001`
@@ -130,12 +169,15 @@ To prevent roadmap drift or split authority:
 - Update `ROADMAP_STATUS_SYNC.md` when item status changes on this branch.
 - Keep this file aligned with the active/closed interpretation from the status sync.
 - Use execution packs for detailed execution context, not for completion truth.
+- Keep this file aligned with `docs/architecture/MASTER_SYSTEM_ARCHITECTURE.md` when core platform direction changes.
 
 ## Reader rule
 
 When in doubt:
 
-1. use `ROADMAP_STATUS_SYNC.md` for status truth
-2. use this file for strategic interpretation
-3. use `ROADMAP_INDEX.md` for backlog inventory
-4. use execution packs for implementation depth
+1. use `docs/architecture/MASTER_SYSTEM_ARCHITECTURE.md` for architecture truth
+2. use `ROADMAP_STATUS_SYNC.md` for status truth
+3. use this file for strategic interpretation
+4. use `ROADMAP_INDEX.md` for backlog inventory
+5. use execution packs for implementation depth
+6. use `EXTERNAL_APPLICATIONS_AND_INTEGRATIONS.md` for external dependency and interface posture
