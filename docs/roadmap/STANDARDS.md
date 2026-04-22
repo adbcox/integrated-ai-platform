@@ -185,7 +185,42 @@ Before work moves into execution, each item should identify:
 
 This is mandatory for reducing unintended issues.
 
-## 11. Grouping rule
+## 11. External dependency documentation-pack rule
+
+Any roadmap item that depends on an external product, service, API, protocol, OSS application, or major third-party integration must include a **verified documentation pack** before it is considered execution-ready.
+
+The documentation pack should prefer official and primary sources.
+
+### Minimum documentation-pack fields
+
+- official docs home
+- primary repository or vendor page
+- API reference, if applicable
+- authentication / authorization / OAuth docs, if applicable
+- installation or deployment docs, if applicable
+- configuration docs, if applicable
+- webhook / event / callback docs, if applicable
+- rate limits / quotas / usage limits, if applicable
+- changelog / release notes, if applicable
+- version / compatibility notes, if applicable
+- known caveats or integration constraints
+- repo-specific adoption note: `adopt-now`, `evaluate`, `watch`, or `reject`
+
+### Quality rule
+
+Do not treat a random link dump as a documentation pack.
+Use official docs, primary repos, and high-trust references only.
+Each documentation pack should help future execution make better implementation decisions rather than forcing the research to be repeated.
+
+### Execution-readiness rule
+
+External-integration roadmap items should not be treated as execution-ready until the verified documentation pack exists in either:
+
+- the item’s execution pack,
+- a linked research dossier,
+- or another canonical roadmap support document explicitly referenced by the execution pack.
+
+## 12. Grouping rule
 
 Roadmap items should not only be evaluated individually.
 They should also be evaluated for grouped execution when they share:
@@ -199,7 +234,7 @@ They should also be evaluated for grouped execution when they share:
 
 Grouped execution should be preferred when it reduces repeated touches and lowers total LOE without creating unacceptable risk.
 
-## 12. Canonical item schema
+## 13. Canonical item schema
 
 Each roadmap item should contain:
 
@@ -227,12 +262,12 @@ Each roadmap item should contain:
 - `Feature-block grouping candidates`
 - `Recommended first milestone`
 
-## 13. Canonical execution rule
+## 14. Canonical execution rule
 
 Roadmap docs are the canonical source.
 GitHub issues, execution prompts, package docs, and PRs are downstream execution artifacts and must reference the roadmap IDs they implement.
 
-## 14. Mandatory intake synchronization rule
+## 15. Mandatory intake synchronization rule
 
 Every future roadmap intake must update the canonical roadmap docs in the same intake cycle.
 
