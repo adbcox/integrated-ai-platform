@@ -8,6 +8,9 @@
 - **Type:** `Program | System | Feature | Enhancement`
 - **Status:**
 - **Priority:**
+- **Priority class:**
+- **Queue rank:**
+- **Target horizon:**
 - **LOE:**
 - **Strategic value:**
 - **Architecture fit:**
@@ -50,6 +53,23 @@ Explain the practical value and system-level importance.
 - asset or service 1
 - asset or service 2
 
+## External dependency documentation pack
+
+Complete this section whenever the roadmap item depends on an external product, service, API, protocol, OSS application, or major third-party integration.
+
+- **Official docs home:**
+- **Primary repo or vendor page:**
+- **API reference:**
+- **Auth / OAuth / permission docs:**
+- **Installation / deployment docs:**
+- **Configuration docs:**
+- **Webhook / event docs:**
+- **Rate limits / quotas:**
+- **Changelog / release notes:**
+- **Version / compatibility notes:**
+- **Known caveats / integration constraints:**
+- **Adoption note:** `adopt-now | evaluate | watch | reject`
+
 ## Grouping candidates
 
 - `RM-...`
@@ -79,4 +99,5 @@ Before considering the roadmap intake complete:
 - [ ] If detailed normalization is needed, add a dated sync/supporting file under `docs/roadmap/`
 - [ ] Create or assign dedicated execution-pack coverage, or explicitly record canonical enrichment coverage and the path to later execution-pack treatment
 - [ ] Add or update `docs/roadmap/EXECUTION_PACK_INDEX.md` if a dedicated execution pack exists
+- [ ] If the item depends on an external integration, complete or link the verified documentation pack
 - [ ] Do not leave the item only in chat, issues, or legacy `roadmap/` files
