@@ -18,6 +18,7 @@ Use this document as the roadmap-facing catalog for external systems.
 - Roadmap items remain the execution/governance units.
 - This catalog is the cross-cutting external-systems reference.
 - Every external system used by the platform should appear here once it is approved, conditionally approved, or under active consideration.
+- The platform should prefer one governing external-connectivity model rather than per-app ad hoc integrations.
 
 ## Status values
 
@@ -26,6 +27,23 @@ Use this document as the roadmap-facing catalog for external systems.
 - `Conditional` — only adopt if later evidence justifies it
 - `Reference only` — informative or optional external surface, not a core dependency
 - `Unresolved` — named in planning, but still needs verification or final decision
+
+## External connectivity architecture rule
+
+External systems should not be integrated one by one with independent auth, sync, polling, webhook, and error-handling logic.
+
+Instead, the platform should converge toward one **external application connectivity and integration control plane** with:
+
+- standardized adapter boundaries
+- centralized auth posture and credential reference rules
+- standard sync modes such as polling, push, webhook, and event normalization
+- capability registration for each connector
+- health/error visibility for external integrations
+- local policy and orchestration on top of external capabilities
+
+This is now tracked as:
+
+- `RM-GOV-009` — external application connectivity and integration control plane
 
 ## Core catalog
 
@@ -82,6 +100,32 @@ Use this document as the roadmap-facing catalog for external systems.
 | ChatGPT desktop / OpenAI API | AI surface | Integrate / reference | Developer and planning workflows | App and/or API | Chat interface, desktop workflow, API access | https://openai.com/chatgpt/desktop/ and https://platform.openai.com/docs/quickstart | https://platform.openai.com/docs/quickstart | Human workflow tool and optional API-backed integration | External AI surface, not the local default engine |
 | Claude Code | AI coding surface | Controlled adapter / reference | Controlled adapters phase | Yes if used | Supervisory coding path and optional adapter | https://docs.anthropic.com/en/docs/claude-code/overview | https://docs.anthropic.com/en/docs/claude-code/getting-started | Controlled adapter behind shared runtime where possible | Must not become default backbone |
 
+## Market comparison and category-reference apps
+
+These are primarily reference applications used to track market expectations, identify possible future integrations, and clarify where the platform should integrate instead of rebuild. They are **not** the architecture backbone and should not override the local-first control-plane/runtime direction.
+
+| System | Domain group | Decision | Phase / group | Install required | Primary role | Official source / download | API / integration docs | Integration pattern | Notes |
+|---|---|---|---|---|---|---|---|---|---|
+| Perplexity | Research / assistant | Reference only | Market comparison layer | External app/service | Research/search product-category reference | https://www.perplexity.ai/ | Public API/docs only if later justified | Compare category expectations; do not use as backbone | Useful for research UX reference |
+| Granola | Meeting notes | Reference only | Market comparison layer | External app/service | Meeting-note / transcript formatting reference | https://www.granola.ai/ | Verify later if integration is ever desired | Category reference only | Useful for meetings branch benchmarking |
+| Wispr Flow | Dictation / voice | Reference only | Market comparison layer | External app/service | Voice dictation product-category reference | https://wisprflow.ai/ | Verify later if integration is ever desired | Category reference only | Useful for voice-input expectations |
+| Gamma | Presentation / doc generation | Reference only | Market comparison layer | External app/service | Generated-doc / deck product-category reference | https://gamma.app/ | Verify later if integration is ever desired | Category reference only | Useful for generated-output expectations |
+| NotebookLM | Knowledge / document transformation | Reference only | Market comparison layer | External app/service | Knowledge-product comparison surface | https://notebooklm.google/ | Verify later if integration is ever desired | Category reference only | Useful for document/audio transformation reference |
+| Cursor | Coding assistant | Reference only | Competitive coding comparison | External app/service | Coding product-category comparison | https://www.cursor.com/ | No backbone use | Competitive/comparison reference only | Compare UX/coding expectations only |
+| Replit | App-building / agentic coding | Reference only | Competitive app-building comparison | External app/service | Natural-language app-building comparison | https://replit.com/ | No backbone use | Competitive/comparison reference only | Compare productization patterns only |
+| Codeium | Coding assistant | Reference only | Competitive coding comparison | External app/service | Coding-autocomplete comparison | https://codeium.com/ | No backbone use | Competitive/comparison reference only | Comparison set only |
+| Lindy | Workflow automation | Reference only | Market comparison layer | External app/service | Workflow-agent category reference | https://www.lindy.ai/ | Verify later if integration is ever desired | Category reference only | Helps benchmark workflow-agent UX |
+| ElevenLabs | Voice / speech | Reference only | Future creative/voice branch | External app/service | Voice synthesis comparison/reference | https://elevenlabs.io/ | Verify later if integration is ever desired | Category reference only | Use only if later branch needs justify it |
+
+## Integration pattern guidance
+
+Use these default patterns when deciding how to bring in an external system:
+
+- **Adopt** when the system is strong commodity infrastructure and does not threaten platform sovereignty
+- **Hybrid** when the system is useful but must sit behind a repo-owned adapter, wrapper, policy layer, or orchestration boundary
+- **Reference only** when the system is primarily a benchmark, market comparison, or future possibility
+- **Conditional** when adoption should be evidence-gated and deferred until core runtime maturity justifies it
+
 ## Rules for any new external system
 
 Before adding a new external application here, capture:
@@ -103,3 +147,4 @@ Before adding a new external application here, capture:
 3. resolve the exact identity of “Sportster” if it is still intended
 4. add per-system version pinning and local deployment notes after approval
 5. link each external system to the relevant roadmap item IDs once item-level normalization is complete
+6. use `RM-GOV-009` to define the standard integration-control-plane model before broadening one-off external adapters
