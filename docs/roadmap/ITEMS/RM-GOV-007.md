@@ -5,7 +5,11 @@
 - **Category:** `GOV`
 - **Type:** `System`
 - **Status:** `Accepted`
+- **Maturity:** `M3`
 - **Priority:** `High`
+- **Priority class:** `P1`
+- **Queue rank:** `2`
+- **Target horizon:** `next`
 - **LOE:** `M`
 - **Strategic value:** `5`
 - **Architecture fit:** `5`
@@ -54,6 +58,18 @@ Implement the first operational rollout of the hybrid roadmap model by deploying
 - `RM-GOV-003` — feature-block package planner
 - `RM-GOV-006` — hybrid roadmap operations layer with Plane on top of repo-doc canonical roadmap
 
+## Risks and issues
+
+### Key risks
+
+- implementation could overfit to Plane-specific fields and weaken portability
+- sync behavior could become noisy or brittle if authority boundaries are not kept simple
+
+### Known issues / blockers
+
+- self-hosted deployment approach still needs to be finalized for the actual environment
+- the first 10 to 20 item sync set still needs explicit selection and validation rules
+
 ## CMDB / asset linkage
 
 - deployment should be compatible with future CMDB-aware mapping of systems, assets, and services referenced by roadmap items
@@ -74,6 +90,12 @@ Implement the first operational rollout of the hybrid roadmap model by deploying
 ## Recommended first milestone
 
 Stand up a minimal self-hosted Plane instance, define the roadmap property schema in Plane, map 10 to 20 active roadmap items into the operational layer, and document the canonical sync conventions between repo docs, Plane, GitHub issues, and PR references.
+
+## Status transition notes
+
+- Expected next status: `Planned`
+- Transition condition: deployment posture, property schema, and pilot sync scope are explicitly defined
+- Validation / closeout condition: a working pilot exists and the sync conventions are documented in the canonical roadmap/governance set
 
 ## Notes
 
