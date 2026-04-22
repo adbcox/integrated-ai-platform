@@ -63,10 +63,14 @@ This `docs/roadmap/` directory supersedes the older top-level `roadmap/` documen
 - `CHANGE_CONTROL.md` — how roadmap changes must be recorded
 - `INTAKE_AND_NORMALIZATION_PROCESS.md` — how new items enter the canonical roadmap
 - `EXECUTION_READINESS_CHECKLIST.md` — checklist before an item is treated as execution-ready
+- `STATUS_TRANSITION_RULES.md` — normalized roadmap status movement rules
+- `ITEM_MATURITY_MODEL.md` — maturity model independent of status
+- `BACKLOG_HYGIENE_CHECKLIST.md` — recurring backlog quality checks
 - `DEPENDENCY_MANAGEMENT.md` — dependency and blocker handling guidance
 - `RISK_AND_ISSUE_MANAGEMENT.md` — risk, issue, and escalation guidance
 - `REVIEW_CADENCE.md` — planning review and sync cadence
 - `WORKING_CONVENTIONS.md` — naming, reference, issue/PR, and traceability conventions
+- `DOCUMENT_RETENTION_AND_DEPRECATION_POLICY.md` — how roadmap docs are retained, superseded, or deprecated
 
 ### Supporting and historical materials
 
@@ -81,7 +85,7 @@ This `docs/roadmap/` directory supersedes the older top-level `roadmap/` documen
 2. Read roadmap authority and status docs for current state truth.
 3. Use `ROADMAP_MASTER.md` for strategic interpretation.
 4. Use `ROADMAP_INDEX.md` for backlog inventory.
-5. Use `STANDARDS.md` and the PM operating docs for intake, readiness, dependency, and review discipline.
+5. Use `STANDARDS.md` and the PM operating docs for intake, readiness, dependency, lifecycle, maturity, and review discipline.
 6. Use grouped-execution, CMDB linkage, and external-system docs as needed.
 7. Open GitHub issues or execution docs only after the roadmap item is clear enough to drive work.
 
