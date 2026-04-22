@@ -55,6 +55,7 @@ This index contains the normalized roadmap items currently captured for the inte
 | RM-DEV-006 | System | Critical | Structure-aware code intelligence layer (Tree-sitter, LSP, structural search) |
 | RM-DEV-007 | System | High | Indexed code search and multi-repo retrieval backend |
 | RM-DEV-008 | System | High | Memory governance, summarization, and provenance policy for the local agent |
+| RM-DEV-009 | Program | High | Agent operating-docs and persistent execution-memory package |
 
 ## Agents / autonomy / workflow orchestration
 
@@ -142,5 +143,6 @@ This index contains the normalized roadmap items currently captured for the inte
 - GitHub issues and execution packages should reference these roadmap IDs.
 - `RM-DEV-005` remains the current pull-first roadmap priority for the local home developer assistant.
 - `RM-INTEL-002` is the current critical OSS-discovery and validation priority under the local development assistant program and should be used to drive verified adopt/evaluate/watch/reject decisions for external codebases and helpers.
+- `RM-DEV-009` is the grouped package for high-value agent-operating docs, persistent project memory, command references, validation order, and scoped execution rules intended to reduce token usage and ambiguity for Codex CLI and Claude Code sessions.
 - `RM-CORE-003`, `RM-GOV-004`, `RM-AUTO-002`, `RM-CORE-004`, `RM-CORE-005`, `RM-OPS-004`, `RM-OPS-005`, `RM-INV-004`, `RM-DEV-006`, and `RM-DEV-008` are the current normalized P0/P1 architecture-closure items promoted from the 2026-04-21 system gap review.
 - Detailed normalization for the roadmap items captured in chat on 2026-04-21 is stored in `docs/roadmap/ROADMAP_CHAT_SYNC_2026-04-21.md`.
