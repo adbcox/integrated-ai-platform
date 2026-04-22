@@ -1,0 +1,172 @@
+schema_version: '1.0'
+kind: roadmap_item
+id: RM-DEV-009
+slug: agent-operating-docs-and-persistent-execution-memory
+title: Agent operating-docs and persistent execution-memory package
+category: DEV
+type: agent_operating_layer
+status: complete
+priority: P1
+scoring:
+  loe: 3
+  strategic_value: 5
+  architecture_fit: 5
+  execution_risk: 2
+  dependency_burden: 1
+  readiness: 4
+description: 'Create persistent, model-operable agent documentation that reduces token
+  waste and execution ambiguity for future AI-driven execution systems. Establish
+  the agent-docs layer as a reusable reference consumed by execution templates and
+  operating rules.
+
+  '
+why_it_matters: 'Agent systems waste token budget and suffer coordination failures
+  when executing against repos without persistent operating documentation. RM-DEV-009
+  establishes the agent-docs layer that execution systems can consume, reducing token
+  cost per task and improving execution consistency across bounded codegen runs.
+
+  '
+scope:
+  objective: 'Create the agent-docs layer with command reference, validation order,
+    known failures, and repo map. Make it consumable by execution templates and small
+    models.
+
+    '
+  in_scope:
+  - agent-docs directory structure
+  - commands.md (real repo commands only)
+  - validation_order.md (exact execution sequence)
+  - known_failures.md (failure patterns + corrections)
+  - repo_map.md (key directories + purpose)
+  out_of_scope:
+  - implementation of memory persistence
+  - execution engine changes
+  - new tools or commands
+dependencies:
+  blocked_by: []
+  depends_on:
+  - RM-CORE-003
+  - RM-GOV-004
+  - RM-AUTO-002
+  enables:
+  - RM-DEV-008
+  related_items: []
+impact:
+  affected_systems:
+  - control_plane
+  - agent_runtime
+  - governance
+  expected_file_families:
+  - docs/agent/**
+  - CLAUDE.md
+  - AGENTS.md
+  impact_summary: 'Establishes persistent agent-facing documentation that reduces
+    token waste, improves execution consistency, and enables smaller models to operate
+    effectively within the repo.
+
+    '
+cmdb:
+  refs:
+  - subsystem:control_plane
+  - subsystem:agent_runtime
+  asset_links: []
+  service_links: []
+grouping:
+  feature_block_candidates:
+  - FB-DEV-AGENT-OPERATING-LAYER
+  package_group: PKG-DEV-AGENT-OPERATING-LAYER
+  shared_touch_surfaces:
+  - agent-docs directory
+  - execution template operability
+  - root operating files
+milestones:
+  recommended_first_milestone: create-agent-docs-layer
+  downstream_milestones:
+  - consume docs in execution templates
+  - validate with bounded codegen runs
+planning:
+  planning_packet_ref: null
+  planning_status: not_started
+  planning_notes: ''
+execution:
+  execution_package_refs:
+  - docs/roadmap/RM-DEV-009_EXECUTION_PACK.md
+  execution_status: not_started
+  last_execution_commit: null
+validation:
+  validation_artifact_refs: []
+  validation_status: not_started
+  definition_of_done_ref: docs/roadmap/STANDARDS.md
+governance:
+  phase_target: Phase 3
+  architectural_lane: agent_operating_layer
+  risk_tier: low
+  allowed_change_scope: narrow
+  requires_explicit_escalation: false
+ai_operability:
+  canonical_summary: 'RM-DEV-009 creates persistent agent-docs layer: commands, validation_order,
+    known_failures, repo_map. Input: completed RM-CORE-003/GOV-004/AUTO-002. Output:
+    agent-facing reference docs consumed by RM-DEV-008 and execution systems.
+
+    '
+  developer_intent: 'Make the repo self-describing to execution systems. An agent
+    should be able to read docs/agent/* and CLAUDE.md/AGENTS.md and understand how
+    to operate safely.
+
+    '
+  non_goals:
+  - Do not implement memory persistence
+  - Do not change runtime behavior
+  - Do not create duplicate docs
+  allowed_files:
+  - docs/agent/**
+  - CLAUDE.md
+  - AGENTS.md
+  forbidden_files:
+  - framework/**
+  - bin/**
+  - tests/**
+  validation_order:
+  - verify all files in docs/agent/ exist and are readable
+  - verify CLAUDE.md and AGENTS.md exist and contain required sections
+  - cross-check commands against actual Makefile/scripts
+  - verify no broken links to governance or roadmap files
+  rollback_rule: 'Revert docs/agent/*, CLAUDE.md, AGENTS.md to pre-execution state.
+
+    '
+  artifact_outputs:
+  - docs/agent/commands.md
+  - docs/agent/validation_order.md
+  - docs/agent/known_failures.md
+  - docs/agent/repo_map.md
+  - CLAUDE.md (operating rules + agent-docs pointers)
+  - AGENTS.md (mission + session discipline)
+  promotion_linkage:
+    required: false
+    manifest_refs: []
+sync:
+  plane:
+    sync_enabled: true
+    sync_mode: repo_to_plane_authoritative
+    workspace: Integrated AI Platform
+    project: Roadmap Ops
+    plane_item_id: null
+    last_synced_at: null
+    writeback_fields_allowed:
+    - operational_state
+    - assignee
+    - cycle
+    - module
+    - labels
+  github:
+    issue_ref: null
+    pr_refs: []
+metadata:
+  owner: adrian
+  created_at: '2026-04-22'
+  updated_at: '2026-04-22'
+  tags:
+  - agent-docs
+  - operating-layer
+  - execution-reference
+archive_status: ready_for_archive

@@ -1,0 +1,229 @@
+schema_version: "1.0"
+kind: "governance_schema"
+id: "backup_restore_schema"
+name: "Backup and Restore Schema"
+description: >
+  Schema for backup, restore, and disaster recovery procedures covering
+  coverage definitions, restore verification, DR procedures, and rollback.
+
+namespace: "backup.restore"
+
+backup_model:
+  name: "backup_definition"
+  required_fields:
+    - backup_id
+    - coverage_scope
+    - backup_frequency
+    - retention_policy
+    - verification_method
+
+  coverage_scope_types:
+    - scope: "full_repo"
+      description: "Complete repository including all files and git history"
+      includes:
+        - all source files
+        - all configuration
+        - git repository
+        - all artifacts
+
+    - scope: "governance"
+      description: "Governance layer only"
+      includes:
+        - governance/
+        - docs/roadmap/
+        - docs/standards/
+
+    - scope: "artifacts"
+      description: "Execution artifacts and validation results"
+      includes:
+        - artifacts/
+        - bin/validate_*.py
+
+    - scope: "execution_state"
+      description: "Current execution state and context"
+      includes:
+        - current sessions
+        - active tasks
+        - pending approvals
+
+  backup_frequency:
+    - interval: "continuous"
+      description: "Real-time replication or continuous backup"
+
+    - interval: "hourly"
+      description: "Every hour"
+
+    - interval: "daily"
+      description: "Once per day (typically overnight)"
+
+    - interval: "weekly"
+      description: "Once per week (typically weekend)"
+
+    - interval: "on_demand"
+      description: "Manual backup as needed"
+
+restore_model:
+  name: "restore_procedure"
+  required_fields:
+    - restore_id
+    - backup_source
+    - restore_target
+    - restore_verification
+    - rollback_anchor
+
+  restore_strategies:
+    - strategy: "point_in_time"
+      description: "Restore to specific point in time"
+      recovery_time_objective: "minutes"
+      recovery_point_objective: "< 1 hour"
+
+    - strategy: "incremental"
+      description: "Restore only changes since last restore"
+      recovery_time_objective: "minutes"
+      recovery_point_objective: "< 1 hour"
+
+    - strategy: "full"
+      description: "Full repository restore"
+      recovery_time_objective: "hours"
+      recovery_point_objective: "< 1 day"
+
+  verification_checks:
+    - check: "file_integrity"
+      description: "Verify restored files are valid (checksums, syntax)"
+
+    - check: "schema_validity"
+      description: "Verify YAML/JSON files are valid"
+
+    - check: "git_history"
+      description: "Verify git repository is intact"
+
+    - check: "artifact_linkage"
+      description: "Verify execution artifacts link correctly"
+
+disaster_recovery_model:
+  name: "dr_procedures"
+  procedures:
+    - procedure: "repository_loss"
+      description: "Handle complete repository loss"
+      triggers:
+        - git repository becomes inaccessible
+        - all local copies lost
+      recovery_steps:
+        - step: "1"
+          action: "Restore from off-site backup"
+          estimated_time: "< 1 hour"
+        - step: "2"
+          action: "Verify repository integrity"
+          estimated_time: "< 30 minutes"
+        - step: "3"
+          action: "Verify execution artifacts"
+          estimated_time: "< 30 minutes"
+        - step: "4"
+          action: "Resume execution"
+          estimated_time: "immediate"
+
+    - procedure: "execution_state_loss"
+      description: "Handle loss of in-progress execution state"
+      triggers:
+        - session data lost
+        - active tasks interrupted
+      recovery_steps:
+        - step: "1"
+          action: "Identify incomplete tasks"
+          estimated_time: "< 5 minutes"
+        - step: "2"
+          action: "Restore from last checkpoint"
+          estimated_time: "< 15 minutes"
+        - step: "3"
+          action: "Re-run validation"
+          estimated_time: "< 30 minutes"
+        - step: "4"
+          action: "Resume or restart task"
+          estimated_time: "< 15 minutes"
+
+    - procedure: "governance_corruption"
+      description: "Handle corruption of governance files"
+      triggers:
+        - YAML/JSON files become invalid
+        - schema violations detected
+      recovery_steps:
+        - step: "1"
+          action: "Identify corrupted files"
+          estimated_time: "< 10 minutes"
+        - step: "2"
+          action: "Restore from backup"
+          estimated_time: "< 30 minutes"
+        - step: "3"
+          action: "Re-validate all schemas"
+          estimated_time: "< 1 hour"
+        - step: "4"
+          action: "Update dependencies"
+          estimated_time: "< 30 minutes"
+
+rollback_model:
+  name: "rollback_definition"
+  required_fields:
+    - rollback_id
+    - trigger_condition
+    - rollback_actions
+    - rollback_verification
+
+  trigger_conditions:
+    - condition: "validation_failure"
+      description: "Any validation check fails"
+
+    - condition: "safety_violation"
+      description: "Safety or security boundary violated"
+
+    - condition: "explicit_request"
+      description: "Human explicitly requests rollback"
+
+  rollback_actions:
+    - action: "delete_new_files"
+      description: "Delete all newly created files"
+      reversible: false
+
+    - action: "revert_modifications"
+      description: "Revert modified files to prior state"
+      reversible: true
+
+    - action: "restore_from_backup"
+      description: "Restore specific files from backup"
+      reversible: true
+
+    - action: "reset_git_branch"
+      description: "Reset git branch to prior commit"
+      reversible: true
+
+configuration_export_import:
+  name: "config_portability"
+  export_model:
+    description: "Export current configuration state"
+    formats:
+      - format: "yaml"
+        description: "YAML representation of all configs"
+      - format: "json"
+        description: "JSON representation of all configs"
+    includes:
+      - governance files
+      - schema definitions
+      - item definitions
+      - validation rules
+
+  import_model:
+    description: "Import configuration into another environment"
+    validation:
+      - validate schema syntax
+      - validate references
+      - validate permissions
+    steps:
+      - step: "1"
+        action: "Parse configuration files"
+      - step: "2"
+        action: "Validate against schemas"
+      - step: "3"
+        action: "Check for conflicts"
+      - step: "4"
+        action: "Import configuration"
+      - step: "5"
+        action: "Verify in target environment"

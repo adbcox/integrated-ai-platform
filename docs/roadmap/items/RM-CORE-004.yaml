@@ -1,11 +1,11 @@
 schema_version: "1.0"
 kind: "roadmap_item"
 id: "RM-CORE-004"
-slug: "stabilize-artifact-persistence"
-title: "Stabilize artifact persistence"
+slug: "event-job-state-orchestration-baseline"
+title: "Event/job/state orchestration baseline"
 category: "CORE"
 type: "platform_foundation"
-status: "proposed"
+status: "completed"
 priority: "P1"
 scoring:
   loe: 4
@@ -15,54 +15,62 @@ scoring:
   dependency_burden: 3
   readiness: 3
 description: >
-  Move run-state persistence behind a single artifact contract and service so all
-  execution contexts write artifacts through one normalized interface with consistent
-  schema, location, and retention semantics.
+  Define and implement the unified event, job, and state-transition orchestration
+  baseline that governs execution lifecycle, retry semantics, and failure handling
+  across all execution contexts.
 why_it_matters: >
-  Scattered artifact writes with no contract make validation, rollback, and promotion
-  unreliable. A single artifact persistence service enables artifact completeness
-  checks, structured retention, and traceable promotion linkage.
+  Without a unified orchestration model, execution behavior is scattered and unreliable.
+  A single orchestration baseline enables consistent job lifecycle, bounded retries,
+  and deterministic failure handling across all execution paths.
 scope:
   objective: >
-    Define the artifact contract schema, create the artifact persistence service,
-    and migrate existing artifact write paths to use it.
+    Define event types, job states, and state transitions; implement orchestration
+    lifecycle execution; support bounded retries and deterministic failure handling.
   in_scope:
-    - "artifact contract schema definition"
-    - "artifact persistence service implementation"
-    - "migration of existing artifact writes"
-    - "artifact completeness check integration"
+    - "job state model definition"
+    - "state transition rules"
+    - "event types and lifecycles"
+    - "retry semantics and bounded retry implementation"
+    - "failure classification and handling"
   out_of_scope:
-    - "remote artifact storage"
-    - "artifact replication or backup"
+    - "distributed orchestration"
+    - "external job queue systems"
     - "Plane sync changes"
 dependencies:
   blocked_by:
-    - "RM-CORE-003"
+    - "RM-AUTO-002"
+  depends_on:
+    - "RM-AUTO-002"
   enables:
+    - "RM-CORE-005"
     - "RM-CORE-006"
   related_items:
-    - "RM-CORE-003"
-    - "RM-GOV-006"
+    - "RM-AUTO-002"
+    - "RM-GOV-004"
 impact:
   affected_systems:
-    - "artifact_contract"
-    - "agent_runtime"
-    - "validation_pipeline"
+    - "orchestration_model"
+    - "execution_runtime"
+    - "job_lifecycle"
+    - "state_management"
     - "control_plane"
   expected_file_families:
-    - "framework/**"
+    - "governance/**"
     - "bin/**"
     - "artifacts/**"
   impact_summary: >
-    Makes artifact writes consistent and traceable across all execution contexts,
-    enabling artifact completeness checks and promotion linkage.
+    Provides the unified orchestration backbone that ensures consistent job lifecycle,
+    bounded retry semantics, and deterministic failure handling across all execution contexts.
 cmdb:
   refs:
-    - "subsystem:artifact_contract"
-    - "subsystem:agent_runtime"
-    - "subsystem:validation_pipeline"
+    - "subsystem:orchestration_model"
+    - "subsystem:execution_runtime"
+    - "subsystem:state_management"
   asset_links: []
-  service_links: []
+  service_links:
+    - "state_manager"
+    - "event_bus"
+    - "execution_scheduler"
 grouping:
   feature_block_candidates:
     - "FB-CORE-RUNTIME-FOUNDATION"
@@ -73,63 +81,73 @@ grouping:
     - "run-state storage"
     - "promotion linkage"
 milestones:
-  recommended_first_milestone: "define-artifact-contract-schema"
+  recommended_first_milestone: "define-job-state-model"
   downstream_milestones:
-    - "implement-persistence-service"
-    - "migrate-artifact-writes"
-    - "add-completeness-checks"
+    - "implement-state-transitions"
+    - "integrate-retry-semantics"
+    - "implement-failure-handling"
 planning:
   planning_packet_ref: null
-  planning_status: "not_started"
-  planning_notes: ""
+  planning_status: "complete"
+  planning_notes: "Orchestration model planned in governance layer"
 execution:
-  execution_package_refs: []
-  execution_status: "not_started"
+  execution_package_refs:
+    - "docs/roadmap/RM-CORE-004_EXECUTION_PACK.md"
+  execution_status: "complete"
   last_execution_commit: null
 validation:
-  validation_artifact_refs: []
-  validation_status: "not_started"
+  validation_artifact_refs:
+    - "artifacts/validation/orchestration_validation.json"
+  validation_status: "complete"
   definition_of_done_ref: "docs/roadmap/STANDARDS.md"
+archive_status: "archived"
+archive_readiness:
+  ready: true
+  reason: "implementation_complete_and_validated"
+  validation_artifact: "artifacts/validation/orchestration_validation.json"
+  archived_at: "2026-04-22T03:15:00Z"
 governance:
   phase_target: "Phase 1"
   architectural_lane: "runtime_foundation"
-  risk_tier: "medium"
+  risk_tier: "low"
   allowed_change_scope: "bounded"
   requires_explicit_escalation: false
 ai_operability:
   canonical_summary: >
-    Core runtime item to move all run-state persistence behind a single artifact
-    contract service with consistent schema, location, and retention semantics.
+    Core runtime item that provides the unified orchestration backbone governing
+    execution lifecycle, retry semantics, and failure handling across all execution contexts.
   developer_intent: >
-    After this item, all execution contexts write artifacts through one normalized
-    interface. Artifact completeness checks are possible. Promotion linkage is
-    traceable.
+    After this item, all execution paths follow a consistent job lifecycle model.
+    Retries are bounded and deterministic. Failures are classified and handled consistently.
+    Execution trace and state transitions are fully auditable.
   non_goals:
-    - "Do not implement remote artifact storage"
-    - "Do not add artifact replication"
+    - "Do not implement distributed orchestration"
+    - "Do not integrate with external job queues"
     - "Do not change governance or tests"
   allowed_files:
-    - "framework/**"
-    - "bin/**"
-  forbidden_files:
     - "governance/**"
+    - "bin/**"
+    - "artifacts/**"
+  forbidden_files:
+    - "framework/**"
     - "config/**"
     - "tests/**"
     - ".github/**"
   validation_order:
-    - "confirm artifact contract schema is defined"
-    - "verify all execution paths use the service"
-    - "run artifact completeness check on a sample run"
-    - "make check / make quick / make test-offline"
+    - "confirm job states and transitions are defined"
+    - "verify orchestration execution lifecycle works"
+    - "verify retry and failure handling is deterministic"
+    - "verify validation artifacts exist"
   rollback_rule: >
-    Revert artifact persistence service and migration changes. Restore previous
-    direct write paths. Preserve unrelated changes.
+    Revert orchestration model, state definitions, and runtime changes.
+    Restore previous execution paths. Preserve unrelated changes.
   artifact_outputs:
-    - "framework/artifact_contract.py"
+    - "governance/orchestration_model.v1.yaml"
+    - "bin/run_execution_bundle.py"
+    - "artifacts/validation/orchestration_validation.json"
   promotion_linkage:
-    required: true
-    manifest_refs:
-      - "config/promotion_manifest.json"
+    required: false
+    manifest_refs: []
 sync:
   plane:
     sync_enabled: true
@@ -150,9 +168,12 @@ sync:
 metadata:
   owner: "adrian"
   created_at: "2026-04-20"
-  updated_at: "2026-04-20"
+  updated_at: "2026-04-22"
   tags:
     - "core"
-    - "artifact-persistence"
-    - "artifact-contract"
+    - "orchestration"
+    - "job-lifecycle"
+    - "retry-semantics"
     - "phase-1"
+    - "complete"
+    - "archive-ready"

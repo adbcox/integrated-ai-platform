@@ -1,0 +1,55 @@
+schema_version: '1.0'
+kind: roadmap_item
+id: RM-INV-005
+slug: asset-roadmap-execution-linkage
+title: Asset-to-roadmap and asset-to-execution linkage layer
+category: INV
+type: integration
+status: completed
+archive_status: archived
+priority: P1
+description: 'Create machine-readable linkage between roadmap items, execution packs,
+  concrete assets, and validation references.
+
+  '
+scope:
+  objective: Operational linkage registry for traceable closeout evidence.
+  in_scope:
+  - linkage rule schema
+  - asset mappings for active 6-item bundle
+  - integration chain references
+  out_of_scope:
+  - automatic discovery of all repo assets
+dependencies:
+  blocked_by: []
+  depends_on:
+  - RM-GOV-005
+  enables: []
+execution:
+  execution_package_refs:
+  - docs/roadmap/RM-INV-005_EXECUTION_PACK.md
+  execution_status: complete
+validation:
+  validation_artifact_refs:
+  - artifacts/governance/rm_bundle_6_closeout_validation.json
+  - artifacts/governance/rm_bundle_6_archive_validation.json
+  validation_status: passed
+ai_operability:
+  allowed_files:
+  - governance/**
+  - docs/roadmap/**
+  - bin/**
+  - artifacts/**
+  forbidden_files:
+  - .github/**
+  artifact_outputs:
+  - governance/asset_execution_linkage.v1.yaml
+metadata:
+  owner: adrian
+  created_at: '2026-04-22'
+  updated_at: '2026-04-22'
+archive_readiness:
+  ready: true
+  reason: bundle_archive_pass_completed
+  validation_artifact: artifacts/governance/rm_bundle_6_archive_validation.json
+  archived_at: '2026-04-22T04:10:00Z'

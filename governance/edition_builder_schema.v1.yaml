@@ -1,0 +1,185 @@
+schema_version: "1.0"
+kind: "edition_builder_schema"
+title: "Edition Builder Baseline"
+description: "Feature set, packaging structure, and deployment target definitions"
+
+edition_definition:
+  required_fields:
+    - id
+    - name
+    - feature_set
+  fields:
+    id:
+      type: string
+      description: "Edition identifier"
+      example: "edition-pro-macos-v1"
+
+    name:
+      type: string
+      description: "Edition display name"
+      example: "Professional Edition for macOS"
+
+    description:
+      type: string
+      description: "Edition description for marketing/docs"
+
+    feature_set:
+      type: array
+      description: "Included features in this edition"
+      items:
+        type: string
+      example:
+        - "core-device-control"
+        - "advanced-analytics"
+        - "multi-device-management"
+        - "api-access"
+
+    target_platform:
+      type: string
+      enum: ["macos", "windows", "linux", "web", "ios", "android"]
+      description: "Primary platform for this edition"
+
+    version:
+      type: string
+      description: "Edition version"
+      example: "1.0.0"
+
+feature_set_definition:
+  required_fields:
+    - id
+    - name
+    - category
+  fields:
+    id:
+      type: string
+      description: "Feature identifier"
+      example: "core-device-control"
+
+    name:
+      type: string
+      description: "Human-readable feature name"
+
+    category:
+      type: string
+      enum: ["core", "advanced", "enterprise", "beta"]
+      description: "Feature category/tier"
+
+    description:
+      type: string
+      description: "Feature description"
+
+    dependencies:
+      type: array
+      description: "Other features required"
+      items:
+        type: string
+
+    hardware_requirements:
+      type: object
+      description: "Minimum hardware requirements"
+      fields:
+        memory: string
+        storage: string
+        cpu: string
+        special_hardware: array
+
+    platform_support:
+      type: object
+      description: "Platform compatibility"
+      fields:
+        macos:
+          supported: boolean
+          minimum_version: string
+        windows:
+          supported: boolean
+          minimum_version: string
+        linux:
+          supported: boolean
+        web:
+          supported: boolean
+
+packaging_definition:
+  required_fields:
+    - id
+    - edition_id
+    - bundle_contents
+  fields:
+    id:
+      type: string
+      description: "Package identifier"
+
+    edition_id:
+      type: string
+      description: "Edition this package represents"
+
+    bundle_contents:
+      type: array
+      description: "Items included in package"
+      items:
+        product_id: string
+        quantity: integer
+        role: string
+
+    deployment_instructions:
+      type: array
+      description: "Steps for deployment"
+      items:
+        type: string
+
+    prerequisites:
+      type: array
+      description: "Required software/hardware"
+      items:
+        type: string
+
+    post_deployment_setup:
+      type: array
+      description: "Configuration steps after deployment"
+      items:
+        type: string
+
+platform_posture:
+  macos:
+    description: "macOS deployment posture"
+    deployment_methods:
+      - "app-bundle"
+      - "homebrew"
+      - "direct-download"
+    code_signing: required
+    minimum_version: "10.15"
+    architecture_support:
+      - "x86_64"
+      - "arm64"
+
+  windows:
+    description: "Windows deployment posture"
+    deployment_methods:
+      - "msi-installer"
+      - "direct-download"
+      - "windows-store"
+    code_signing: required
+    minimum_version: "Windows 10"
+    architecture_support:
+      - "x86_64"
+
+  web:
+    description: "Web deployment posture"
+    deployment_methods:
+      - "cdn"
+      - "self-hosted"
+    hosting_requirement: "https"
+    browser_support:
+      - "chrome"
+      - "firefox"
+      - "safari"
+      - "edge"
+
+integration_point:
+  description: "Editions package features for deployment and surface in control center"
+  inbound_feeds:
+    - "procurement (BOM from product search)"
+    - "feature definitions"
+  outbound_feeds:
+    - "to control center for capability surface"
+    - "to site generation for download pages"
+    - "to hardware design for embedded editions"

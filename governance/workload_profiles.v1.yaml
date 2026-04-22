@@ -1,0 +1,98 @@
+---
+schema_version: "1.0"
+kind: workload_profiles
+generated_at: "2026-04-22T03:00:00Z"
+description: "Workload profile registry for runtime routing decisions"
+
+profiles:
+  - id: metadata_only
+    name: "Metadata Only"
+    description: "Read-only metadata inspection and planning workload; no code modification, no artifact generation"
+    intended_workload_shape:
+      roadmap_items: "1-3"
+      validation_steps: "0-2"
+      expected_artifacts: "0-1"
+      allowed_files: "governance/**, docs/**"
+      forbidden_files: "framework/**, bin/**, tests/**"
+    max_retry_count: 1
+    validation_intensity: "minimal"
+    orchestration_mode: "stateless"
+    artifact_expectation_level: "none"
+    preferred_services:
+      - roadmap_registry
+      - roadmap_graph
+      - dependency_planner
+    escalation_rule: "fail if dependency_planner unavailable"
+
+  - id: governance_update
+    name: "Governance Update"
+    description: "Update governance artifacts (YAML/JSON), validate consistency, no code changes"
+    intended_workload_shape:
+      roadmap_items: "1-2"
+      validation_steps: "2-4"
+      expected_artifacts: "1-3"
+      allowed_files: "governance/**, schemas/**"
+      forbidden_files: "framework/**, bin/**, tests/**, src/**"
+    max_retry_count: 2
+    validation_intensity: "moderate"
+    orchestration_mode: "stateless"
+    artifact_expectation_level: "validation_outputs"
+    preferred_services:
+      - governance_authority
+      - roadmap_registry
+      - validator
+    escalation_rule: "fail if governance_authority or validator unavailable"
+
+  - id: planning_compile
+    name: "Planning & Compile"
+    description: "Dependency planning, bundle compilation, execution strategy selection"
+    intended_workload_shape:
+      roadmap_items: "2-6"
+      validation_steps: "3-6"
+      expected_artifacts: "2-4"
+      allowed_files: "governance/**, artifacts/planning/**, artifacts/execution/**"
+      forbidden_files: "framework/**, tests/**"
+    max_retry_count: 2
+    validation_intensity: "moderate"
+    orchestration_mode: "transactional"
+    artifact_expectation_level: "planning_and_bundle"
+    preferred_services:
+      - dependency_planner
+      - execution_compiler
+      - code_intelligence
+      - retrieval_index
+    escalation_rule: "fail if dependency_planner or execution_compiler unavailable; warn if retrieval_index unavailable"
+
+  - id: runtime_execution
+    name: "Runtime Execution"
+    description: "Full execution lifecycle: load bundle, check readiness, resolve services, execute orchestration, emit run artifact"
+    intended_workload_shape:
+      roadmap_items: "1-4"
+      validation_steps: "4-8"
+      expected_artifacts: "3-6"
+      allowed_files: "governance/**, artifacts/**"
+      forbidden_files: "framework/core/**"
+    max_retry_count: 3
+    validation_intensity: "comprehensive"
+    orchestration_mode: "stateful"
+    artifact_expectation_level: "run_result_and_ledger"
+    preferred_services:
+      - execution_scheduler
+      - state_manager
+      - event_bus
+      - validator
+      - qc_engine
+    escalation_rule: "fail if execution_scheduler or state_manager unavailable; continue with degraded if event_bus unavailable"
+
+risk_tier_classification:
+  metadata_only: "LOW"
+  governance_update: "LOW"
+  planning_compile: "MEDIUM"
+  runtime_execution: "HIGH"
+
+profile_selection_hints:
+  - "If no validation_steps: prefer metadata_only"
+  - "If only governance fields modified: prefer governance_update"
+  - "If planning or compilation: prefer planning_compile"
+  - "If full execution required: use runtime_execution"
+  - "If retry_count > 0: escalate to next safer profile and reduce max_retries"

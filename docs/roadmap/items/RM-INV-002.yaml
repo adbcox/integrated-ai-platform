@@ -1,0 +1,174 @@
+schema_version: "1.0"
+kind: "roadmap_item"
+id: "RM-INV-002"
+slug: "photo-driven-inventory-capability-mapping"
+title: "Photo-driven inventory capture and capability mapping system"
+category: "INV"
+type: "capability_foundation"
+status: "completed"
+priority: "P1"
+
+scoring:
+  loe: 4
+  strategic_value: 4
+  architecture_fit: 4
+  execution_risk: 2
+  dependency_burden: 2
+  readiness: 3
+
+description: >
+  Establish baseline for photo-driven asset inventory capture and capability
+  mapping system that links physical/digital assets, components, consumables,
+  and tools to roadmap execution work and system configuration.
+
+why_it_matters: >
+  Execution work must be grounded in real assets and capabilities. Without
+  structured inventory capture and capability mapping, execution planning
+  remains disconnected from actual resources. Baseline enables asset-driven
+  planning and verification.
+
+scope:
+  objective: >
+    Define asset capture structure with photo linkage, capability mapping
+    structure, asset-to-execution linkage, and capability query posture.
+  in_scope:
+    - "asset inventory schema"
+    - "photo metadata and linkage"
+    - "component and consumables tracking"
+    - "tool and equipment registry"
+    - "capability mapping structure"
+    - "asset-to-execution linkage"
+  out_of_scope:
+    - "real-time asset monitoring"
+    - "vision model-driven OCR"
+    - "vendor asset management integration"
+
+dependencies:
+  blocked_by: []
+  depends_on:
+    - "RM-OPS-005"
+    - "RM-OPS-004"
+  enables: []
+  related_items:
+    - "RM-OPS-005"
+    - "RM-OPS-004"
+    - "RM-DEV-001"
+
+impact:
+  affected_systems:
+    - "inventory"
+    - "asset_management"
+    - "capability_planning"
+  expected_file_families:
+    - "governance/asset_inventory_schema.v1.yaml"
+  impact_summary: >
+    Provides structured baseline for asset-driven inventory capture and
+    capability mapping grounded in photos and real assets.
+
+cmdb:
+  refs:
+    - "subsystem:inventory"
+    - "subsystem:asset_management"
+  asset_links: []
+  service_links: []
+
+grouping:
+  feature_block_candidates:
+    - "FB-ASSET-INVENTORY"
+  package_group: "PKG-INTEGRATION-BUNDLE-2"
+  shared_touch_surfaces:
+    - "asset capture"
+    - "photo linking"
+    - "capability mapping"
+    - "inventory queries"
+
+milestones:
+  recommended_first_milestone: "define-asset-schema"
+  downstream_milestones:
+    - "define-photo-metadata-structure"
+    - "define-capability-mapping"
+    - "define-asset-execution-linkage"
+
+planning:
+  planning_packet_ref: null
+  planning_status: "not_started"
+  planning_notes: ""
+
+execution:
+  execution_package_refs:
+    - "governance/asset_inventory_schema.v1.yaml"
+  execution_status: "proposed"
+  last_execution_commit: null
+
+validation:
+  validation_artifact_refs:
+    - "governance/asset_inventory_schema.v1.yaml"
+    - "artifacts/bundle_2_integration_demo/goal_to_execution_flow.json"
+  validation_status: "proposed"
+  definition_of_done_ref: "docs/roadmap/STANDARDS.md"
+
+governance:
+  phase_target: "Integration Bundle 2"
+  architectural_lane: "asset_management"
+  risk_tier: "low"
+  allowed_change_scope: "bounded"
+  requires_explicit_escalation: false
+
+ai_operability:
+  canonical_summary: >
+    Photo-driven inventory baseline with asset capture, photo metadata, and
+    capability mapping linked to execution work.
+  developer_intent: >
+    After this item, all assets, components, consumables, and tools can be
+    captured with photos and capability information, and linked to roadmap and
+    execution work.
+  allowed_files:
+    - "governance/**"
+    - "schemas/**"
+    - "artifacts/**"
+    - "docs/roadmap/**"
+  forbidden_files:
+    - "framework/**"
+    - "tests/**"
+    - ".github/**"
+  validation_order:
+    - "confirm asset inventory schema is defined"
+    - "confirm photo metadata structure is specified"
+    - "confirm capability mapping structure is defined"
+    - "confirm asset-to-execution linkage is documented"
+    - "make check passes"
+  rollback_rule: >
+    Remove asset inventory schema and related definitions. Preserve inventory
+    metadata and photos.
+  artifact_outputs:
+    - "governance/asset_inventory_schema.v1.yaml"
+  promotion_linkage:
+    required: false
+    manifest_refs: []
+
+sync:
+  plane:
+    sync_enabled: true
+    sync_mode: "repo_to_plane_authoritative"
+    workspace: "Integrated AI Platform"
+    project: "Roadmap Ops"
+    plane_item_id: null
+    last_synced_at: null
+    writeback_fields_allowed:
+      - "operational_state"
+      - "assignee"
+      - "cycle"
+      - "module"
+      - "labels"
+  github:
+    issue_ref: null
+    pr_refs: []
+
+metadata:
+  owner: "system"
+  created_at: "2026-04-22"
+  updated_at: "2026-04-22"
+  tags:
+    - "inventory"
+    - "asset-management"
+    - "capability-mapping"

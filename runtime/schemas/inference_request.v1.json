@@ -1,0 +1,51 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Inference Request Schema",
+  "description": "Normalized request to inference gateway for model routing decision",
+  "type": "object",
+  "properties": {
+    "goal": {
+      "type": "string",
+      "description": "User-provided task or goal description"
+    },
+    "context": {
+      "type": "object",
+      "description": "Contextual information about the request",
+      "additionalProperties": true
+    },
+    "profile": {
+      "type": ["string", "null"],
+      "description": "Requested profile (fast/balanced/hard) or null for auto-selection",
+      "enum": ["fast", "balanced", "hard", null]
+    },
+    "constraints": {
+      "type": "object",
+      "description": "Request constraints (complexity, escalation, timeout preference)",
+      "properties": {
+        "explicit_escalation": {
+          "type": "boolean",
+          "description": "Explicitly request hard profile / Claude fallback"
+        },
+        "require_fast": {
+          "type": "boolean",
+          "description": "Prefer fast profile if possible"
+        },
+        "max_timeout_seconds": {
+          "type": "integer",
+          "description": "Maximum acceptable timeout"
+        }
+      },
+      "additionalProperties": true
+    },
+    "session_id": {
+      "type": ["string", "null"],
+      "description": "Session identifier if available"
+    },
+    "job_id": {
+      "type": ["string", "null"],
+      "description": "Job identifier if available"
+    }
+  },
+  "required": ["goal"],
+  "additionalProperties": false
+}

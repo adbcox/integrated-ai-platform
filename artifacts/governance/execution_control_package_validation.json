@@ -1,6 +1,6 @@
 {
   "artifact_id": "P0-03-EXEC-CTRL-PKG-VALIDATION-1",
-  "generated_at": "2026-04-21T14:27:15.626943+00:00",
+  "generated_at": "2026-04-22T04:18:47.749498+00:00",
   "schema_path": "governance/execution_control_package.schema.json",
   "example_path": "governance/execution_control_package.example.json",
   "schema_loaded": true,

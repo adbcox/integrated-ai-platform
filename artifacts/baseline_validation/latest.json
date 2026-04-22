@@ -1,14 +1,14 @@
 {
   "all_passed": true,
-  "baseline_commit": "365c6b9ce3888751555c2ef5679bf867954ea901",
+  "baseline_commit": "bf22c811dc77dc809cc278be848dbabf5c3884db",
   "commands": {
     "check": {
       "argv": "make check",
       "command_name": "check",
-      "completed_at": "2026-04-20T21:04:24+00:00",
-      "duration_ms": 245,
+      "completed_at": "2026-04-22T14:10:45+00:00",
+      "duration_ms": 240,
       "return_code": 0,
-      "started_at": "2026-04-20T21:04:24+00:00",
+      "started_at": "2026-04-22T14:10:44+00:00",
       "stderr_head": "",
       "stdout_head": "[1/3] Syntax-checking active shell scripts...\nOK: bootstrap.sh\nOK: bop.sh\nOK: browser_operator_batch_tasks.sh\nOK: browser_operator_disks_check.sh\nOK: browser_operator_login_flow.sh\nOK: browser_operator_open_and_click.sh\nOK: browser_operator_open_app.sh\nOK: browser_operator_open_container_target.sh\nOK: browser_operator_storage_check.sh\nOK: control-plane-setup.sh\nOK: operator_task.sh\nOK: run_local_api.sh\nOK: setup_homelab_project.sh\nOK: start_api.sh\nOK: start_codex.sh\nOK: test_local_api.sh\nOK: update_homelab_project.sh\nOK: validate_shell.sh\n\n[2/3] Syntax-checking shared shell helpers...\nOK: shell/common.sh\n\n[3/3] Running helper smoke tests...\nPASS: shell validation complete.\n[python] Syntax-checking top-level Python files...\nOK: api_server.py\nOK: app.py\nOK: browser_operator.py\nOK: browser_operator_api.py\nOK: config_guard.py\nOK: opnsense_runner.py\nOK: qnap_runner.py\nPASS: make check complete.\n",
       "success": true
@@ -16,18 +16,18 @@
     "quick": {
       "argv": "make quick",
       "command_name": "quick",
-      "completed_at": "2026-04-20T21:04:25+00:00",
-      "duration_ms": 84,
+      "completed_at": "2026-04-22T14:10:46+00:00",
+      "duration_ms": 1601,
       "return_code": 0,
-      "started_at": "2026-04-20T21:04:24+00:00",
+      "started_at": "2026-04-22T14:10:45+00:00",
       "stderr_head": "",
-      "stdout_head": "[quick] Reviewing files selected for the default Stage-3 quick checks...\nOK: python syntax bin/run_baseline_validation.py\nOK: python syntax tests/test_run_baseline_validation.py\n[quick] PASS: Stage-3 quick checks complete (shell/python syntax review done).\nPASS: make quick complete.\n",
+      "stdout_head": "[quick] Reviewing files selected for the default Stage-3 quick checks...\nOK: python syntax artifacts/phase1_foundation_completion_report.py\nOK: python syntax bin/aider_bootstrap.py\nOK: python syntax bin/compile_execution_bundle.py\nOK: python syntax bin/compute_next_pull.py\nOK: python syntax bin/compute_runtime_metrics.py\nOK: python syntax bin/edition_resolver.py\nOK: python syntax bin/hardware_design_processor.py\nOK: python syntax bin/procurement_evaluator.py\nOK: python syntax bin/roadmap_compiler.py\nOK: python syntax bin/roadmap_dependency_planner.py\nOK: python syntax bin/run_bounded_autonomous_codegen.py\nOK: python syntax bin/run_dependency_planner.py\nOK: python syntax bin/run_execution_bundle.py\nOK: python syntax bin/run_execution_compiler.py\nOK: python syntax bin/run_execution_queue.py\nOK: python syntax bin/run_full_system_orchestrator.py\nOK: python syntax bin/run_integration_demo.py\nOK: python syntax bin/run_local_execution_sovereignty_check.py\nOK: python syntax bin/run_oss_watchtower_projection.py\nOK: python syntax bin/run_phase0_global_gate_closure.py\nOK: python syntax bin/run_phase0_residual_authority_closure.py\nOK: python syntax bin/run_phase7_live_evidence_pack_check.py\nOK: python syntax bin/run_phase_authority_inventory.py\nOK: python syntax bin/run_phase_authority_lock_check.py\nOK: python syntax bin/run_planner_compiler_pipeline.py\nOK: python syntax bin/run_rm_bundle_6_archive_check.py\nOK: python syntax bin/run_rm_bundle_6_closeout_check.py\nOK: python syntax bin/run_rm_dev_002_qc.py\nOK: python syntax bin/run_rm_integrated_5_item_check.py\nOK: python syntax bin/run_rm_intel_refresh_delta.py\nOK: python syntax bin/run_session.py\nOK: python syntax bin/runtime_command.py\nOK: python syntax bin/site_generator.py\nOK: python syntax bin/test_phase1_runtime_integration.py\nOK: python syntax bin/validate_cmdb.py\nOK: python syntax bin/validate_execution_run.py\nOK: python syntax bin/validate_orchestration.py\nOK: python syntax bin/validate_oss_matrix.py\nOK: python syntax b",
       "success": true
     }
   },
   "definition_of_done_met": true,
   "definition_of_done_ref": "docs/execution/definition_of_done.md",
   "dry_run": false,
-  "generated_at": "2026-04-20T21:04:25+00:00",
+  "generated_at": "2026-04-22T14:10:46+00:00",
   "schema_version": 1
 }

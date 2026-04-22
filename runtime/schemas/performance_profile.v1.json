@@ -1,0 +1,146 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Performance Profile",
+  "description": "Execution performance metrics with timing breakdowns and resource tracking",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "profile_kind",
+    "session_id",
+    "job_id",
+    "timing_breakdown",
+    "created_at"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "1.0"
+    },
+    "profile_kind": {
+      "type": "string",
+      "const": "performance_profile"
+    },
+    "session_id": {
+      "type": "string"
+    },
+    "job_id": {
+      "type": "string"
+    },
+    "task_id": {
+      "type": ["string", "null"]
+    },
+    "selected_profile": {
+      "type": ["string", "null"],
+      "enum": ["fast", "balanced", "hard", null],
+      "description": "Runtime profile selected"
+    },
+    "timing_breakdown": {
+      "type": "object",
+      "required": [
+        "total_duration_seconds",
+        "stages"
+      ],
+      "properties": {
+        "total_duration_seconds": {
+          "type": "number",
+          "minimum": 0
+        },
+        "stages": {
+          "type": "object",
+          "description": "Timing for each execution stage",
+          "properties": {
+            "session_job_creation": {
+              "type": "number",
+              "minimum": 0
+            },
+            "profile_selection": {
+              "type": "number",
+              "minimum": 0
+            },
+            "workspace_initialization": {
+              "type": "number",
+              "minimum": 0
+            },
+            "command_execution": {
+              "type": "number",
+              "minimum": 0
+            },
+            "artifact_emission": {
+              "type": "number",
+              "minimum": 0
+            },
+            "workspace_finalization": {
+              "type": "number",
+              "minimum": 0
+            }
+          }
+        }
+      }
+    },
+    "command_metrics": {
+      "type": "object",
+      "properties": {
+        "command": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "command_duration_seconds": {
+          "type": "number",
+          "minimum": 0
+        },
+        "exit_code": {
+          "type": ["integer", "null"]
+        },
+        "stdout_length_bytes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "stderr_length_bytes": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "bottleneck_analysis": {
+      "type": "object",
+      "description": "Identified bottlenecks",
+      "properties": {
+        "slowest_stage": {
+          "type": "string"
+        },
+        "slowest_stage_duration": {
+          "type": "number",
+          "minimum": 0
+        },
+        "percentage_of_total": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100
+        }
+      }
+    },
+    "optimization_suggestions": {
+      "type": "array",
+      "description": "Suggestions for optimization",
+      "items": {
+        "type": "object",
+        "required": ["suggestion", "potential_impact"],
+        "properties": {
+          "suggestion": {
+            "type": "string"
+          },
+          "potential_impact": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+}

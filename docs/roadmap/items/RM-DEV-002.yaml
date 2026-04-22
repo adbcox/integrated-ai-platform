@@ -1,0 +1,60 @@
+schema_version: '1.0'
+kind: roadmap_item
+id: RM-DEV-002
+slug: dual-model-inline-qc-coding-loop
+title: Dual-model inline QC coding loop for the developer assistant
+category: DEV
+type: capability
+status: completed
+archive_status: archived
+priority: P1
+description: 'Establish machine-readable QC findings/results with classification and
+  write-back hooks used by bounded coding and firmware-oriented workflows.
+
+  '
+scope:
+  objective: Operational QC-loop baseline with structured outputs and integration
+    hooks.
+  in_scope:
+  - QC finding schema
+  - QC result template
+  - classification categories
+  - write-back integration
+  out_of_scope:
+  - full autonomous remediation runtime
+dependencies:
+  blocked_by: []
+  depends_on:
+  - RM-DEV-007
+  - RM-CORE-005
+  enables:
+  - RM-INV-005
+execution:
+  execution_package_refs:
+  - docs/roadmap/RM-DEV-002_EXECUTION_PACK.md
+  execution_status: complete
+validation:
+  validation_artifact_refs:
+  - artifacts/governance/rm_bundle_6_closeout_validation.json
+  - artifacts/governance/rm_bundle_6_archive_validation.json
+  validation_status: passed
+ai_operability:
+  allowed_files:
+  - governance/**
+  - docs/roadmap/**
+  - bin/**
+  - artifacts/**
+  forbidden_files:
+  - .github/**
+  artifact_outputs:
+  - governance/qc_finding_schema_rm_dev_002.v1.yaml
+  - governance/rm_dev_002_qc_result_template.v1.json
+metadata:
+  owner: adrian
+  created_at: '2026-04-21'
+  updated_at: '2026-04-22'
+archive_readiness:
+  ready: true
+  reason: bundle_archive_pass_completed
+  validation_artifact: artifacts/governance/rm_bundle_6_archive_validation.json
+  archived_at: '2026-04-22T04:10:00Z'

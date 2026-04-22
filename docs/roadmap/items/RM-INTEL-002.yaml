@@ -1,0 +1,143 @@
+schema_version: "1.0"
+kind: "roadmap_item"
+id: "RM-INTEL-002"
+slug: "verified-oss-capability-harvest-and-compatibility-validation"
+title: "Verified OSS capability harvest and compatibility validation for the local development assistant"
+category: "INTEL"
+type: "capability"
+status: "completed"
+priority: "P1"
+scoring:
+  loe: 3
+  strategic_value: 5
+  architecture_fit: 5
+  execution_risk: 2
+  dependency_burden: 3
+  readiness: 4
+description: >
+  Build the verified OSS harvest layer that validates candidate fit, duplication risk,
+  privacy/local-first constraints, and architecture drift risk before watchtower
+  recommendation projection.
+why_it_matters: >
+  Without a verified harvest layer, watchtower recommendations risk drift, duplication,
+  and ungoverned adoption.
+scope:
+  objective: >
+    Deliver machine-readable verified harvest outputs that feed watchtower and
+    downstream local-autonomy/codegen decisions.
+  in_scope:
+    - "verified OSS candidate matrix"
+    - "recommendation class assignment"
+    - "compatibility/risk evaluation"
+    - "projection linkage into watchtower"
+  out_of_scope:
+    - "automatic internet polling service"
+dependencies:
+  blocked_by: []
+  depends_on:
+    []
+  enables:
+    - "RM-INTEL-001"
+    - "RM-DEV-005"
+  related_items:
+    - "RM-DEV-003"
+    - "RM-DEV-002"
+impact:
+  affected_systems:
+    - "governance"
+    - "roadmap_ops"
+    - "validation_pipeline"
+  expected_file_families:
+    - "governance/**"
+    - "docs/roadmap/**"
+    - "bin/**"
+    - "artifacts/**"
+  impact_summary: >
+    Adds verified OSS intake layer that becomes upstream authority for watchtower
+    and autonomy adoption decisions.
+grouping:
+  feature_block_candidates:
+    - "FB-INTEL-VERIFIED-HARVEST"
+  package_group: "PKG-INTEL-VERIFIED-HARVEST"
+  shared_touch_surfaces:
+    - "verified candidate matrix"
+    - "watchtower projection linkage"
+milestones:
+  recommended_first_milestone: "publish-verified-harvest-v1"
+  downstream_milestones:
+    - "automate-periodic-refresh"
+planning:
+  planning_packet_ref: null
+  planning_status: "complete"
+  planning_notes: "Integrated with RM-INTEL-001, RM-DEV-005, RM-DEV-003, and RM-DEV-002."
+execution:
+  execution_package_refs:
+    - "docs/roadmap/RM-INTEL-002_EXECUTION_PACK.md"
+  execution_status: "complete"
+  last_execution_commit: null
+validation:
+  validation_artifact_refs:
+    - "artifacts/governance/rm_integrated_5_item_validation.json"
+    - "artifacts/validation/oss_matrix_validation.json"
+  validation_status: "complete"
+  definition_of_done_ref: "docs/progress-contract.md"
+archive_status: "archived"
+archive_readiness:
+  ready: true
+  reason: "implementation_complete_and_validated"
+  validation_artifact: "artifacts/validation/oss_matrix_validation.json"
+  archived_at: "2026-04-22T03:15:00Z"
+governance:
+  phase_target: "Phase 3"
+  architectural_lane: "governance_and_capability_support"
+  risk_tier: "low"
+  allowed_change_scope: "bounded"
+  requires_explicit_escalation: false
+ai_operability:
+  canonical_summary: >
+    Verified OSS harvest for compatibility/risk classification feeding watchtower and
+    local-autonomy decisions.
+  developer_intent: >
+    Keep OSS intake machine-readable, auditable, and explicitly linked to roadmap consumers.
+  non_goals:
+    - "Do not auto-adopt runtime backbones from external projects"
+  allowed_files:
+    - "governance/**"
+    - "docs/roadmap/**"
+    - "bin/**"
+    - "artifacts/**"
+  forbidden_files:
+    - ".github/**"
+  validation_order:
+    - "run integrated 5-item validator"
+    - "run targeted pytest seams"
+    - "run make check"
+  rollback_rule: >
+    Revert RM-INTEL-002 integrated slice files and remove emitted validation artifact.
+  artifact_outputs:
+    - "governance/verified_oss_capability_harvest_rm_intel_002.v1.yaml"
+    - "artifacts/governance/rm_integrated_5_item_validation.json"
+sync:
+  plane:
+    sync_enabled: true
+    sync_mode: "repo_to_plane_authoritative"
+    workspace: "Integrated AI Platform"
+    project: "Roadmap Ops"
+    plane_item_id: null
+    last_synced_at: null
+    writeback_fields_allowed:
+      - "operational_state"
+      - "assignee"
+      - "cycle"
+      - "module"
+      - "labels"
+  github:
+    issue_ref: null
+    pr_refs: []
+metadata:
+  owner: "adrian"
+  created_at: "2026-04-21"
+  updated_at: "2026-04-21"
+  tags:
+    - "intel"
+    - "verified-harvest"

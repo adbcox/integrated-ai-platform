@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "schema_id": "RM-DEV-002-QC-FINDING-V1",
+  "run_id": "example-qc-run",
+  "task_contract_ref": "governance/bounded_autonomous_codegen_contract.v1.yaml",
+  "qc_model_profile": "ollama:qc-primary",
+  "secondary_model_profile": "ollama:qc-secondary",
+  "findings": [
+    {
+      "finding_id": "F-COR-001",
+      "category": "correctness",
+      "severity": "high",
+      "summary": "Function returns stale value on error path.",
+      "evidence": "branch at line 88 returns cached state instead of rollback-safe state",
+      "target_files": [
+        "framework/example.py"
+      ],
+      "bounded_fix_hint": "return fallback_state in error branch",
+      "disposition": "must-fix"
+    }
+  ],
+  "category_counts": {
+    "correctness": 1,
+    "safety": 0,
+    "structural": 0,
+    "style_noise": 0
+  },
+  "overall_disposition": "needs-fix",
+  "writeback_actions": [
+    {
+      "action_type": "pattern_capture",
+      "target_surface": "artifacts/codex51/patterns/",
+      "payload_ref": "artifacts/codex51/patterns/qc_example.json",
+      "rationale": "store recurring correctness anti-pattern for future preflight checks"
+    }
+  ]
+}

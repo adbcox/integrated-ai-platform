@@ -1,12 +1,13 @@
-schema_version: "1.0"
-kind: "roadmap_item"
-id: "RM-GOV-002"
-slug: "reconcile-source-of-truth-surfaces"
-title: "Reconcile source-of-truth surfaces"
-category: "GOV"
-type: "governance"
-status: "proposed"
-priority: "P1"
+schema_version: '1.0'
+kind: roadmap_item
+id: RM-GOV-002
+slug: reconcile-source-of-truth-surfaces
+title: Reconcile source-of-truth surfaces
+category: GOV
+type: governance
+status: completed
+archive_status: archived
+priority: P1
 scoring:
   loe: 2
   strategic_value: 5
@@ -14,135 +15,149 @@ scoring:
   execution_risk: 1
   dependency_burden: 1
   readiness: 5
-description: >
-  Remove conflicting current-state labels across all existing authority surfaces and lock
-  canonical phase truth so there is one unambiguous source per authority domain.
-why_it_matters: >
-  Conflicting current-state labels across promotion manifest, governance files, and docs
-  cause divergence in automated decisions and AI session context. Locking canonical phase
-  truth is a prerequisite for reliable execution planning.
+description: 'Remove conflicting current-state labels across all existing authority
+  surfaces and lock canonical phase truth so there is one unambiguous source per authority
+  domain.
+
+  '
+why_it_matters: 'Conflicting current-state labels across promotion manifest, governance
+  files, and docs cause divergence in automated decisions and AI session context.
+  Locking canonical phase truth is a prerequisite for reliable execution planning.
+
+  '
 scope:
-  objective: >
-    Audit all current-state surfaces, remove contradictions, and lock canonical truth
-    in governance-owned files only.
+  objective: 'Audit all current-state surfaces, remove contradictions, and lock canonical
+    truth in governance-owned files only.
+
+    '
   in_scope:
-    - "audit promotion manifest vs governance phase files"
-    - "remove conflicting narrative labels"
-    - "lock canonical authority references in CLAUDE.md and governance README"
+  - audit promotion manifest vs governance phase files
+  - remove conflicting narrative labels
+  - lock canonical authority references in CLAUDE.md and governance README
   out_of_scope:
-    - "runtime code changes"
-    - "new governance schema extensions"
-    - "Plane sync changes"
+  - runtime code changes
+  - new governance schema extensions
+  - Plane sync changes
 dependencies:
   blocked_by: []
+  depends_on: []
   enables:
-    - "RM-GOV-003"
-    - "RM-GOV-004"
+  - RM-GOV-003
+  - RM-GOV-004
   related_items:
-    - "RM-GOV-001"
+  - RM-GOV-001
 impact:
   affected_systems:
-    - "roadmap_ops"
-    - "control_window"
-    - "cmdb_lite"
+  - roadmap_ops
+  - control_window
+  - cmdb_lite
   expected_file_families:
-    - "docs/roadmap/**"
-    - "governance/**"
-  impact_summary: >
-    Establishes unambiguous canonical phase truth that all subsequent execution and
-    planning work can rely on.
+  - docs/roadmap/**
+  - governance/**
+  impact_summary: 'Establishes unambiguous canonical phase truth that all subsequent
+    execution and planning work can rely on.
+
+    '
 cmdb:
   refs:
-    - "subsystem:roadmap_ops"
-    - "subsystem:control_plane"
+  - subsystem:roadmap_ops
+  - subsystem:control_plane
   asset_links: []
   service_links: []
 grouping:
   feature_block_candidates:
-    - "FB-GOV-ROADMAP-AUTHORITY"
-  package_group: "PKG-GOV-PHASE0"
+  - FB-GOV-ROADMAP-AUTHORITY
+  package_group: PKG-GOV-PHASE0
   shared_touch_surfaces:
-    - "governance source of truth"
-    - "promotion manifest"
-    - "roadmap index"
+  - governance source of truth
+  - promotion manifest
+  - roadmap index
 milestones:
-  recommended_first_milestone: "audit-and-identify-conflicts"
+  recommended_first_milestone: audit-and-identify-conflicts
   downstream_milestones:
-    - "lock-canonical-refs"
-    - "remove-conflicting-labels"
+  - lock-canonical-refs
+  - remove-conflicting-labels
 planning:
   planning_packet_ref: null
-  planning_status: "not_started"
-  planning_notes: ""
+  planning_status: not_started
+  planning_notes: ''
 execution:
-  execution_package_refs: []
-  execution_status: "not_started"
-  last_execution_commit: "a24f897147aac88878f4d74bb4db42480586d874"
+  execution_package_refs:
+  - PHASE0-RESIDUAL-AUTHORITY-CLOSURE-1
+  execution_status: completed
+  last_execution_commit: working-tree
 validation:
-  validation_artifact_refs: []
-  validation_status: "not_started"
-  definition_of_done_ref: "docs/roadmap/STANDARDS.md"
+  validation_artifact_refs:
+  - artifacts/governance/phase_authority_inventory.json
+  - artifacts/governance/phase0_residual_authority_closure.json
+  - artifacts/governance/phase0_global_gate_closure.json
+  validation_status: passed
+  definition_of_done_ref: docs/roadmap/STANDARDS.md
 governance:
-  phase_target: "Phase 0"
-  architectural_lane: "governance_freeze"
-  risk_tier: "low"
-  allowed_change_scope: "narrow"
+  phase_target: Phase 0
+  architectural_lane: governance_freeze
+  risk_tier: low
+  allowed_change_scope: narrow
   requires_explicit_escalation: false
 ai_operability:
-  canonical_summary: >
-    Governance item to remove conflicting current-state labels and lock canonical phase
-    truth across all authority surfaces.
-  developer_intent: >
-    After this item, there is exactly one answer to "what phase is the system in" and
-    exactly one file that holds that answer.
+  canonical_summary: 'Governance item to remove conflicting current-state labels and
+    lock canonical phase truth across all authority surfaces.
+
+    '
+  developer_intent: 'After this item, there is exactly one answer to "what phase is
+    the system in" and exactly one file that holds that answer.
+
+    '
   non_goals:
-    - "Do not change runtime or inference code"
-    - "Do not create new governance schema extensions"
-    - "Do not alter the promotion manifest schema"
+  - Do not change runtime or inference code
+  - Do not create new governance schema extensions
+  - Do not alter the promotion manifest schema
   allowed_files:
-    - "docs/roadmap/**"
-    - "governance/**"
-    - "CLAUDE.md"
+  - docs/roadmap/**
+  - governance/**
+  - CLAUDE.md
   forbidden_files:
-    - "bin/**"
-    - "framework/**"
-    - "tests/**"
-    - "config/**"
+  - bin/**
+  - framework/**
+  - tests/**
+  - config/**
   validation_order:
-    - "audit all current-state labels"
-    - "confirm one canonical source per authority domain"
-    - "verify CLAUDE.md governance section points correctly"
-    - "manual review"
-  rollback_rule: >
-    Revert only the files modified by this item. Preserve all unrelated changes.
+  - audit all current-state labels
+  - confirm one canonical source per authority domain
+  - verify CLAUDE.md governance section points correctly
+  - manual review
+  rollback_rule: 'Revert only the files modified by this item. Preserve all unrelated
+    changes.
+
+    '
   artifact_outputs:
-    - "governance/current_phase.json"
-    - "docs/roadmap/ROADMAP_INDEX.md"
+  - governance/current_phase.json
+  - docs/roadmap/ROADMAP_INDEX.md
   promotion_linkage:
     required: false
     manifest_refs: []
 sync:
   plane:
     sync_enabled: true
-    sync_mode: "repo_to_plane_authoritative"
-    workspace: "Integrated AI Platform"
-    project: "Roadmap Ops"
+    sync_mode: repo_to_plane_authoritative
+    workspace: Integrated AI Platform
+    project: Roadmap Ops
     plane_item_id: null
     last_synced_at: null
     writeback_fields_allowed:
-      - "operational_state"
-      - "assignee"
-      - "cycle"
-      - "module"
-      - "labels"
+    - operational_state
+    - assignee
+    - cycle
+    - module
+    - labels
   github:
     issue_ref: null
     pr_refs: []
 metadata:
-  owner: "adrian"
-  created_at: "2026-04-20"
-  updated_at: "2026-04-20"
+  owner: adrian
+  created_at: '2026-04-20'
+  updated_at: '2026-04-22'
   tags:
-    - "governance"
-    - "source-of-truth"
-    - "phase-0"
+  - governance
+  - source-of-truth
+  - phase-0

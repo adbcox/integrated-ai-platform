@@ -5,7 +5,7 @@ slug: "canonical-roadmap-machine-readable-registry"
 title: "Create canonical machine-readable roadmap registry"
 category: "GOV"
 type: "platform_foundation"
-status: "proposed"
+status: "completed"
 priority: "P1"
 scoring:
   loe: 3
@@ -38,6 +38,8 @@ scope:
     - "runtime or inference implementation work"
 dependencies:
   blocked_by: []
+  depends_on:
+    []
   enables:
     - "RM-GOV-002"
     - "RM-GOV-003"

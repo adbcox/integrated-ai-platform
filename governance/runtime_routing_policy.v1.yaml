@@ -1,0 +1,178 @@
+---
+schema_version: "1.0"
+kind: runtime_routing_policy
+generated_at: "2026-04-22T03:00:00Z"
+description: "Runtime routing policy: decision rules for execution strategy selection"
+
+strategies:
+  - id: direct_execute
+    name: "Direct Execute"
+    description: "Immediate execution without pre-flight validation; minimal overhead"
+    conditions:
+      - "validation_steps < 2"
+      - "roadmap_items <= 2"
+      - "dependency_readiness == ready"
+    preconditions:
+      - "all_dependencies satisfied"
+    effects:
+      - "skip_pre_flight"
+      - "proceed_to_orchestration"
+      - "record_strategy_choice"
+    risk_tier: "MEDIUM"
+    retry_allowed: true
+    max_retries: 2
+
+  - id: validate_first
+    name: "Validate First"
+    description: "Run pre-flight validation before orchestration; suitable for governance or planning work"
+    conditions:
+      - "validation_steps >= 2"
+      - "expected_artifacts >= 1"
+    preconditions:
+      - "validator service available"
+    effects:
+      - "run_validation_steps"
+      - "halt_if_validation_fails"
+      - "proceed_to_orchestration_if_passed"
+    risk_tier: "MEDIUM"
+    retry_allowed: true
+    max_retries: 2
+
+  - id: staged_execute
+    name: "Staged Execute"
+    description: "Multi-stage execution with checkpoints; for complex workloads with multiple roadmap items"
+    conditions:
+      - "roadmap_items > 2"
+      - "validation_steps >= 4"
+      - "expected_artifacts >= 3"
+    preconditions:
+      - "state_manager service available"
+      - "execution_scheduler service available"
+    effects:
+      - "initialize_staging"
+      - "execute_per_stage"
+      - "checkpoint_between_stages"
+      - "validate_each_stage"
+      - "proceed_or_rollback"
+    risk_tier: "HIGH"
+    retry_allowed: true
+    max_retries: 3
+
+  - id: safe_fail
+    name: "Safe Fail"
+    description: "Fail-safe mode: halt execution and report without proceeding"
+    conditions:
+      - "dependency_readiness == blocked"
+      - "critical_service_unavailable == true"
+      - "previous_retry_count >= max_retries"
+    preconditions:
+      - "no preconditions; always available"
+    effects:
+      - "record_failure_reason"
+      - "preserve_failure_context"
+      - "skip_orchestration"
+      - "emit_failure_artifact"
+    risk_tier: "LOW"
+    retry_allowed: false
+    max_retries: 0
+
+routing_rules:
+  - rule_id: "RR-001"
+    name: "Metadata-only routing"
+    condition: "(validation_steps == 0) AND (expected_artifacts <= 1)"
+    selected_strategy: "direct_execute"
+    selected_profile: "metadata_only"
+    reason: "No validation required, minimal artifact expectation"
+
+  - rule_id: "RR-002"
+    name: "Governance update routing"
+    condition: "(validation_steps >= 2) AND (validation_steps <= 4) AND (roadmap_items <= 2)"
+    selected_strategy: "validate_first"
+    selected_profile: "governance_update"
+    reason: "Moderate validation for governance consistency"
+
+  - rule_id: "RR-003"
+    name: "Planning and compilation routing"
+    condition: "(roadmap_items >= 2) AND (roadmap_items <= 6) AND (validation_steps >= 3)"
+    selected_strategy: "validate_first"
+    selected_profile: "planning_compile"
+    reason: "Multi-item planning requires validation before compilation"
+
+  - rule_id: "RR-004"
+    name: "Complex runtime execution routing"
+    condition: "(roadmap_items > 2) AND (validation_steps >= 4) AND (expected_artifacts >= 3)"
+    selected_strategy: "staged_execute"
+    selected_profile: "runtime_execution"
+    reason: "Complex workload requires staged execution with checkpoints"
+
+  - rule_id: "RR-005"
+    name: "Simple runtime execution routing"
+    condition: "(roadmap_items <= 2) AND (validation_steps >= 2) AND (expected_artifacts >= 1)"
+    selected_strategy: "validate_first"
+    selected_profile: "runtime_execution"
+    reason: "Simple runtime work with validation"
+
+  - rule_id: "RR-006"
+    name: "Dependency blocked fallback"
+    condition: "dependency_readiness == blocked"
+    selected_strategy: "safe_fail"
+    selected_profile: "metadata_only"
+    reason: "Cannot proceed without satisfied dependencies"
+
+  - rule_id: "RR-007"
+    name: "Service unavailable fallback"
+    condition: "critical_service_unavailable == true"
+    selected_strategy: "safe_fail"
+    selected_profile: "metadata_only"
+    reason: "Required service unavailable; cannot continue safely"
+
+  - rule_id: "RR-008"
+    name: "Retry exhaustion fallback"
+    condition: "retry_count >= max_retries"
+    selected_strategy: "safe_fail"
+    selected_profile: "metadata_only"
+    reason: "Retry budget exhausted; fail safely"
+
+fallback_behavior:
+  default_strategy: "safe_fail"
+  default_profile: "metadata_only"
+  rule_match_required: true
+  unmatched_rule_behavior: "select_safe_fail"
+
+service_availability_check:
+  critical_services:
+    - execution_scheduler
+    - state_manager
+    - validator
+  non_critical_services:
+    - event_bus
+    - pattern_library
+
+code_intelligence_inputs:
+  - field: "tool_adoption_level"
+    source: "governance/code_intelligence_decisions.v1.yaml"
+    use_case: "Determine code modification risk tier"
+  - field: "adoption_roadmap"
+    source: "governance/code_intelligence_decisions.v1.yaml"
+    use_case: "Select tools based on readiness"
+
+oss_inputs:
+  - field: "decision"
+    source: "governance/oss_capability_matrix.v1.yaml"
+    use_case: "Route based on OSS adoption status"
+  - field: "integration_status"
+    source: "governance/oss_capability_matrix.v1.yaml"
+    use_case: "Escalate if critical OSS integration blocked"
+
+retry_policy_integration:
+  retryable_errors:
+    - transient_network_error
+    - temporary_file_lock
+    - resource_temporarily_unavailable
+  non_retryable_errors:
+    - validation_failed
+    - syntax_error
+    - forbidden_file_modified
+    - hard_dependency_failed
+  backoff_multiplier: 2.0
+  retry_delay_seconds: 5

@@ -1,6 +1,6 @@
 {
   "artifact_id": "P0-06-AUTONOMY-SCORECARD-VALIDATION-1",
-  "generated_at": "2026-04-21T15:08:54.310976+00:00",
+  "generated_at": "2026-04-22T14:15:13.834571+00:00",
   "scorecard_path": "governance/autonomy_scorecard.v1.yaml",
   "yaml_loaded": true,
   "required_metrics_checked": [

@@ -1,0 +1,173 @@
+schema_version: "1.0"
+kind: "roadmap_item"
+id: "RM-DEV-001"
+slug: "xcode-apple-platform-coding-capability"
+title: "Add Xcode and Apple-platform coding capability to developer assistant"
+category: "DEV"
+type: "capability_foundation"
+status: "completed"
+priority: "P1"
+
+scoring:
+  loe: 4
+  strategic_value: 4
+  architecture_fit: 4
+  execution_risk: 2
+  dependency_burden: 1
+  readiness: 3
+
+description: >
+  Establish baseline for Xcode and Apple-platform coding capability in the
+  developer assistant, enabling bounded complex coding work for iOS, macOS,
+  watchOS, and tvOS targets with structured workflow and execution posture.
+
+why_it_matters: >
+  Apple-platform development is out of scope for current local coding system.
+  Adding Apple/Xcode capability extends the developer assistant to cover a
+  major development ecosystem and expands the target for local-first coding.
+
+scope:
+  objective: >
+    Define Apple-platform workflow posture, Xcode-oriented execution notes,
+    platform-specific constraints, and repo-visible support structures for
+    Apple development work.
+  in_scope:
+    - "Apple platform workflow structure"
+    - "Xcode project and build structure"
+    - "iOS/macOS/watchOS/tvOS target support"
+    - "Objective-C and Swift language support"
+    - "CocoaPods and SPM dependency management"
+    - "Signing and provisioning workflow"
+  out_of_scope:
+    - "Xcode IDE implementation"
+    - "App Store submission automation"
+    - "Real device debugging infrastructure"
+
+dependencies:
+  blocked_by: []
+  depends_on:
+    - "RM-INV-002"
+  enables: []
+  related_items:
+    - "RM-INV-002"
+    - "RM-AUTO-001"
+
+impact:
+  affected_systems:
+    - "developer_assistant"
+    - "apple_platforms"
+    - "multi_platform_development"
+  expected_file_families:
+    - "governance/apple_xcode_workflow.v1.yaml"
+  impact_summary: >
+    Extends developer assistant to Apple platforms and provides structured
+    baseline for Xcode-oriented bounded complex coding work.
+
+cmdb:
+  refs:
+    - "subsystem:developer_assistant"
+    - "subsystem:apple_platforms"
+  asset_links: []
+  service_links: []
+
+grouping:
+  feature_block_candidates:
+    - "FB-APPLE-PLATFORM-DEVELOPMENT"
+  package_group: "PKG-INTEGRATION-BUNDLE-2"
+  shared_touch_surfaces:
+    - "Apple workflow"
+    - "Xcode posture"
+    - "platform-specific constraints"
+    - "language support"
+
+milestones:
+  recommended_first_milestone: "define-apple-workflow-structure"
+  downstream_milestones:
+    - "define-xcode-project-posture"
+    - "define-platform-specific-constraints"
+    - "define-language-support-structure"
+
+planning:
+  planning_packet_ref: null
+  planning_status: "not_started"
+  planning_notes: ""
+
+execution:
+  execution_package_refs:
+    - "governance/apple_xcode_workflow.v1.yaml"
+  execution_status: "proposed"
+  last_execution_commit: null
+
+validation:
+  validation_artifact_refs:
+    - "governance/apple_xcode_workflow.v1.yaml"
+    - "artifacts/bundle_2_integration_demo/goal_to_execution_flow.json"
+  validation_status: "proposed"
+  definition_of_done_ref: "docs/roadmap/STANDARDS.md"
+
+governance:
+  phase_target: "Integration Bundle 2"
+  architectural_lane: "developer_assistance"
+  risk_tier: "low"
+  allowed_change_scope: "bounded"
+  requires_explicit_escalation: false
+
+ai_operability:
+  canonical_summary: >
+    Apple/Xcode workflow baseline with platform-specific structures and
+    constraints for iOS, macOS, watchOS, and tvOS development.
+  developer_intent: >
+    After this item, the developer assistant can handle bounded complex Xcode
+    and Apple-platform coding work with explicit workflow structure and
+    constraint enforcement.
+  allowed_files:
+    - "governance/**"
+    - "schemas/**"
+    - "artifacts/**"
+    - "docs/roadmap/**"
+  forbidden_files:
+    - "framework/**"
+    - "tests/**"
+    - ".github/**"
+  validation_order:
+    - "confirm Apple workflow structure is defined"
+    - "confirm Xcode project posture is specified"
+    - "confirm platform-specific constraints are documented"
+    - "confirm language support structure is defined"
+    - "confirm build and signing workflow is documented"
+    - "make check passes"
+  rollback_rule: >
+    Remove Apple/Xcode workflow schema and related definitions. Preserve
+    platform documentation.
+  artifact_outputs:
+    - "governance/apple_xcode_workflow.v1.yaml"
+  promotion_linkage:
+    required: false
+    manifest_refs: []
+
+sync:
+  plane:
+    sync_enabled: true
+    sync_mode: "repo_to_plane_authoritative"
+    workspace: "Integrated AI Platform"
+    project: "Roadmap Ops"
+    plane_item_id: null
+    last_synced_at: null
+    writeback_fields_allowed:
+      - "operational_state"
+      - "assignee"
+      - "cycle"
+      - "module"
+      - "labels"
+  github:
+    issue_ref: null
+    pr_refs: []
+
+metadata:
+  owner: "system"
+  created_at: "2026-04-22"
+  updated_at: "2026-04-22"
+  tags:
+    - "apple-platform"
+    - "xcode"
+    - "developer-assistant"

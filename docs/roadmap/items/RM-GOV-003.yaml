@@ -5,7 +5,7 @@ slug: "create-core-adr-set"
 title: "Create core ADR set"
 category: "GOV"
 type: "governance"
-status: "proposed"
+status: "completed"
 priority: "P1"
 scoring:
   loe: 3
@@ -40,6 +40,8 @@ scope:
     - "Plane sync changes"
 dependencies:
   blocked_by:
+    - "RM-GOV-002"
+  depends_on:
     - "RM-GOV-002"
   enables:
     - "RM-GOV-004"
@@ -85,11 +87,18 @@ planning:
   planning_notes: ""
 execution:
   execution_package_refs: []
-  execution_status: "not_started"
+  execution_status: "completed"
   last_execution_commit: "53ae4d4f177b176a7bffaa63988f63fa0efa622c"
 validation:
-  validation_artifact_refs: []
-  validation_status: "not_started"
+  validation_artifact_refs:
+    - "governance/adr/ADR-SESSION-SCHEMA.md"
+    - "governance/adr/ADR-TOOL-SYSTEM.md"
+    - "governance/adr/ADR-WORKSPACE-CONTRACT.md"
+    - "governance/adr/ADR-INFERENCE-GATEWAY.md"
+    - "governance/adr/ADR-PERMISSION-MODEL.md"
+    - "governance/adr/ADR-ARTIFACT-BUNDLE.md"
+    - "governance/adr/ADR-AUTONOMY-SCORECARD.md"
+  validation_status: "completed"
   definition_of_done_ref: "docs/roadmap/STANDARDS.md"
 governance:
   phase_target: "Phase 0"

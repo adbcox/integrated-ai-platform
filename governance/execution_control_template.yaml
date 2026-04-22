@@ -1,0 +1,206 @@
+schema_version: "1.0"
+kind: "execution_control_template"
+generated_at: "2026-04-22T00:00:00Z"
+
+description: >
+  Template schema for execution-control packages. Used by execution systems,
+  prompt-builders, and bounded codegen runners to understand scope, constraints,
+  validation requirements, and rollback rules for safe execution.
+
+template_structure:
+
+  execution_id:
+    type: "string"
+    pattern: "EXEC-[A-Z0-9-]+"
+    description: "Unique identifier for this execution instance"
+    required: true
+
+  roadmap_ids:
+    type: "array[string]"
+    pattern: "RM-[A-Z]+-[0-9]+"
+    description: "Source roadmap item IDs (can be multi-item bundles)"
+    required: true
+    example: ["RM-DEV-005", "RM-CORE-003"]
+
+  generated_at:
+    type: "ISO8601 timestamp"
+    description: "When this control package was created"
+    required: true
+
+  objective:
+    type: "string"
+    description: "High-level goal for this execution"
+    required: true
+    example: "Implement local autonomy uplift"
+
+  scope:
+    type: "object"
+    required: true
+    fields:
+      summary:
+        type: "string"
+        description: "One-sentence scope"
+        required: true
+
+      in_scope:
+        type: "array[string]"
+        description: "Specific capabilities included"
+        required: true
+
+      out_of_scope:
+        type: "array[string]"
+        description: "Specific capabilities excluded"
+        required: true
+
+  first_read_files:
+    type: "array[string]"
+    description: "Files that must be read first before any implementation"
+    required: true
+    example:
+      - "CLAUDE.md"
+      - "AGENTS.md"
+      - "docs/agent/commands.md"
+      - "docs/agent/validation_order.md"
+
+  allowed_files:
+    type: "array[string]"
+    description: "Glob patterns for files that can be modified"
+    required: true
+    example: ["framework/**", "bin/**"]
+
+  forbidden_files:
+    type: "array[string]"
+    description: "Glob patterns for files that must NOT be modified"
+    required: true
+    example: ["tests/**", ".github/**"]
+
+  expected_artifacts:
+    type: "array[object]"
+    description: "Artifacts that must be produced by successful execution"
+    required: true
+    fields:
+      artifact_type:
+        type: "string"
+        example: "file"
+
+      path:
+        type: "string"
+        example: "governance/memory_classification.yaml"
+
+      required:
+        type: "boolean"
+
+  validations:
+    type: "array[object]"
+    description: "Validation gates in execution order"
+    required: true
+    fields:
+      step:
+        type: "integer"
+        description: "Step number (1-indexed)"
+
+      name:
+        type: "string"
+        description: "Validation name"
+        example: "yaml_parse"
+
+      command:
+        type: "string"
+        description: "Command to run (optional)"
+
+      gate:
+        type: "string"
+        description: "Gate ID this unlocks"
+
+      on_failure:
+        type: "enum: [halt, warn, continue]"
+
+  rollback_rule:
+    type: "string"
+    description: "Instructions for rolling back if validation fails"
+    required: true
+    example: "Revert governance/**, docs/agent/** to pre-execution state"
+
+  completion_rule:
+    type: "string"
+    description: "Criteria for successful completion"
+    required: true
+    example: "All artifacts exist, all validations pass, no syntax errors"
+
+example_template:
+  execution_id: "EXEC-RM-DEV-009-20260422-0001"
+  roadmap_ids: ["RM-DEV-009"]
+  generated_at: "2026-04-22T10:00:00Z"
+
+  objective: "Create agent-operating-docs layer"
+
+  scope:
+    summary: "Build persistent agent-facing documentation"
+    in_scope:
+      - "agent-docs directory"
+      - "commands.md"
+      - "validation_order.md"
+      - "known_failures.md"
+      - "repo_map.md"
+    out_of_scope:
+      - "memory persistence implementation"
+      - "execution engine changes"
+
+  first_read_files:
+    - "CLAUDE.md"
+    - "AGENTS.md"
+    - "docs/roadmap/RM-DEV-009_EXECUTION_PACK.md"
+    - "docs/roadmap/items/RM-DEV-009.yaml"
+
+  allowed_files:
+    - "docs/agent/**"
+    - "CLAUDE.md"
+    - "AGENTS.md"
+
+  forbidden_files:
+    - "framework/**"
+    - "bin/**"
+    - "tests/**"
+
+  expected_artifacts:
+    - artifact_type: "file"
+      path: "docs/agent/commands.md"
+      required: true
+
+    - artifact_type: "file"
+      path: "docs/agent/validation_order.md"
+      required: true
+
+    - artifact_type: "file"
+      path: "docs/agent/known_failures.md"
+      required: true
+
+    - artifact_type: "file"
+      path: "docs/agent/repo_map.md"
+      required: true
+
+  validations:
+    - step: 1
+      name: "verify_agent_docs"
+      gate: "docs_created"
+      on_failure: "halt"
+
+    - step: 2
+      name: "verify_root_files"
+      gate: "root_files_updated"
+      on_failure: "halt"
+
+    - step: 3
+      name: "cross_reference_check"
+      gate: "integration_verified"
+      on_failure: "halt"
+
+    - step: 4
+      name: "run_make_check"
+      command: "make check"
+      gate: "syntax_validation"
+      on_failure: "halt"
+
+  rollback_rule: "Revert docs/agent/**, CLAUDE.md, AGENTS.md to pre-execution state"
+
+  completion_rule: "All agent-docs files exist, CLAUDE.md and AGENTS.md updated, no syntax errors"

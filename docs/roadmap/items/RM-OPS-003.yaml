@@ -1,0 +1,161 @@
+schema_version: "1.0"
+kind: "roadmap_item"
+id: "RM-OPS-003"
+slug: "performance-profiling-optimization"
+title: "Performance profiling and optimization"
+category: "OPS"
+type: "capability_foundation"
+status: "completed"
+priority: "P1"
+scoring:
+  loe: 3
+  strategic_value: 3
+  architecture_fit: 4
+  execution_risk: 1
+  dependency_burden: 1
+  readiness: 2
+
+description: >
+  Establish performance profiling to measure execution timing, resource usage,
+  and efficiency. Identify bottlenecks and optimize critical paths.
+  Enable data-driven optimization decisions.
+
+why_it_matters: >
+  Without profiling, optimization is guesswork. Profiling reveals where time
+  and resources are spent, enabling targeted optimization. Required for
+  scaling Phase 2 beyond proof-of-concept.
+
+scope:
+  objective: >
+    Wire execution timing into runtime modules. Collect timing and resource metrics.
+    Emit profiling data in structured format. Identify slow paths and optimization
+    opportunities.
+  in_scope:
+    - "execution timing (session, command, gateway invocation)"
+    - "resource usage tracking (memory, CPU)"
+    - "profiling event emission"
+    - "bottleneck identification"
+  out_of_scope:
+    - "continuous performance optimization"
+    - "automated tuning"
+    - "distributed profiling"
+
+dependencies:
+  blocked_by:
+    - "RM-OPS-002"
+  depends_on:
+    - "RM-OPS-002"
+  enables:
+    - "RM-UI-002"
+  related_items:
+    - "RM-OPS-001"
+    - "RM-OPS-002"
+    - "RM-UI-002"
+
+impact:
+  affected_systems:
+    - "runtime"
+    - "operations"
+  expected_file_families:
+    - "runtime/performance_profiler.py"
+  impact_summary: >
+    Enables measurement of execution performance and resource usage.
+
+cmdb:
+  refs:
+    - "subsystem:runtime"
+  asset_links: []
+  service_links: []
+
+grouping:
+  feature_block_candidates:
+    - "FB-PHASE2-OPS-SUBSTRATE"
+  package_group: "PKG-PHASE2-SUBSTRATE"
+  shared_touch_surfaces:
+    - "performance metrics"
+    - "resource tracking"
+    - "profiling"
+
+milestones:
+  recommended_first_milestone: "define-timing-metrics"
+  downstream_milestones:
+    - "wire-profiling-into-executor"
+    - "emit-profiling-data"
+
+planning:
+  planning_packet_ref: null
+  planning_status: "completed"
+  planning_notes: "Performance profiling integrated into runtime_executor with PerformanceProfiler class, tracking stage timing, command metrics, bottleneck analysis, and optimization suggestions"
+
+execution:
+  execution_package_refs:
+    - "runtime/performance_profiler.py"
+    - "runtime/runtime_executor.py (instrumented)"
+  execution_status: "completed"
+  last_execution_commit: "phase2_ops_003_completed"
+
+validation:
+  validation_artifact_refs:
+    - "artifacts/validation/phase2_ops_validation.json"
+    - "artifacts/validation/performance_profile_a23585ef.json"
+  validation_status: "completed"
+  definition_of_done_ref: "docs/roadmap/STANDARDS.md"
+
+governance:
+  phase_target: "Phase 2"
+  architectural_lane: "ops_substrate"
+  risk_tier: "low"
+  allowed_change_scope: "bounded"
+  requires_explicit_escalation: false
+
+ai_operability:
+  canonical_summary: >
+    Phase 2 ops item establishing performance profiling with timing and resource metrics.
+  developer_intent: >
+    After this item, all execution is instrumented with timing and resource metrics.
+    Profiling data enables identification of bottlenecks and optimization targets.
+  allowed_files:
+    - "runtime/**"
+    - "governance/**"
+  forbidden_files:
+    - "framework/**"
+    - "tests/**"
+    - ".github/**"
+  validation_order:
+    - "confirm timing metrics are collected"
+    - "confirm resource usage is tracked"
+    - "confirm profiling data is emitted"
+    - "make check passes"
+  rollback_rule: >
+    Remove performance_profiler module. Restore runtime to non-instrumented state.
+  artifact_outputs: []
+  promotion_linkage:
+    required: false
+    manifest_refs: []
+
+sync:
+  plane:
+    sync_enabled: true
+    sync_mode: "repo_to_plane_authoritative"
+    workspace: "Integrated AI Platform"
+    project: "Roadmap Ops"
+    plane_item_id: null
+    last_synced_at: null
+    writeback_fields_allowed:
+      - "operational_state"
+      - "assignee"
+      - "cycle"
+      - "module"
+      - "labels"
+  github:
+    issue_ref: null
+    pr_refs: []
+
+metadata:
+  owner: "system"
+  created_at: "2026-04-22"
+  updated_at: "2026-04-22"
+  tags:
+    - "phase-2"
+    - "ops"
+    - "profiling"

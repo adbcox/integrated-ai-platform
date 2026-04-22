@@ -1,0 +1,214 @@
+---
+schema_version: "1.0"
+kind: cmdb_topology
+generated_at: "2026-04-22T03:00:00Z"
+
+subsystems:
+  control_plane:
+    id: control_plane
+    name: "Control Plane"
+    description: "Governance, planning, decision authority"
+    services:
+      - id: dependency_planner
+        name: "Dependency Planner"
+        description: "Evaluates roadmap graph, identifies next eligible items"
+        capabilities:
+          - roadmap_graph_analysis
+          - dependency_classification
+          - candidate_ranking
+        dependencies:
+          - roadmap_registry
+          - roadmap_graph
+
+      - id: roadmap_registry
+        name: "Roadmap Registry"
+        description: "Authoritative roadmap item definitions and status"
+        capabilities:
+          - item_definition_storage
+          - status_tracking
+          - archive_management
+        dependencies: []
+
+      - id: governance_authority
+        name: "Governance Authority"
+        description: "Manages execution control policies, compliance, validation rules"
+        capabilities:
+          - policy_definition
+          - compliance_checking
+          - rule_enforcement
+        dependencies:
+          - roadmap_registry
+
+      - id: roadmap_graph
+        name: "Roadmap Graph"
+        description: "Maintains dependency relationships between roadmap items"
+        capabilities:
+          - dependency_tracking
+          - edge_management
+          - blocking_analysis
+        dependencies:
+          - roadmap_registry
+
+  runtime:
+    id: runtime
+    name: "Runtime"
+    description: "Execution scheduling, state management, event coordination"
+    services:
+      - id: execution_scheduler
+        name: "Execution Scheduler"
+        description: "Schedules execution bundles, manages job lifecycle"
+        capabilities:
+          - bundle_scheduling
+          - job_lifecycle_management
+          - priority_handling
+        dependencies:
+          - event_bus
+          - state_manager
+          - execution_compiler
+
+      - id: state_manager
+        name: "State Manager"
+        description: "Tracks execution state, manages transitions, stores snapshots"
+        capabilities:
+          - state_tracking
+          - transition_validation
+          - snapshot_management
+        dependencies:
+          - event_bus
+
+      - id: event_bus
+        name: "Event Bus"
+        description: "Distributes execution events, coordinates subsystems"
+        capabilities:
+          - event_publication
+          - event_subscription
+          - event_ordering
+        dependencies: []
+
+  inference:
+    id: inference
+    name: "Inference"
+    description: "Code generation, analysis, decision-making"
+    services:
+      - id: code_generator
+        name: "Code Generator"
+        description: "Generates code modifications via local/cloud models"
+        capabilities:
+          - bounded_code_generation
+          - pattern_synthesis
+          - modification_validation
+        dependencies:
+          - code_intelligence
+          - retrieval_index
+
+      - id: execution_compiler
+        name: "Execution Compiler"
+        description: "Compiles roadmap items into executable bundles"
+        capabilities:
+          - bundle_compilation
+          - validation_step_generation
+          - artifact_packaging
+        dependencies:
+          - code_generator
+
+      - id: code_intelligence
+        name: "Code Intelligence"
+        description: "Provides structure-aware analysis via Tree-sitter, LSP, AST-grep"
+        capabilities:
+          - syntax_parsing
+          - semantic_analysis
+          - pattern_matching
+          - symbol_search
+        dependencies: []
+
+  retrieval:
+    id: retrieval
+    name: "Retrieval"
+    description: "Code search, pattern matching, symbol resolution"
+    services:
+      - id: retrieval_index
+        name: "Retrieval Index"
+        description: "Full-text + semantic index of codebase"
+        capabilities:
+          - keyword_search
+          - semantic_search
+          - symbol_resolution
+          - dependency_graph_search
+        dependencies:
+          - code_intelligence
+
+      - id: pattern_library
+        name: "Pattern Library"
+        description: "Stores verified patterns, templates, solutions"
+        capabilities:
+          - pattern_storage
+          - pattern_search
+          - pattern_reuse
+        dependencies: []
+
+  evaluation:
+    id: evaluation
+    name: "Evaluation"
+    description: "Validation, QC, success verification"
+    services:
+      - id: validator
+        name: "Validator"
+        description: "Syntax, semantic, integration validation"
+        capabilities:
+          - syntax_validation
+          - semantic_validation
+          - integration_testing
+          - artifact_verification
+        dependencies:
+          - code_intelligence
+
+      - id: qc_engine
+        name: "QC Engine"
+        description: "Quality control, acceptance criteria evaluation"
+        capabilities:
+          - test_execution
+          - coverage_analysis
+          - acceptance_verification
+        dependencies:
+          - validator
+
+subsystem_edges:
+  - from: runtime
+    to: control_plane
+    type: governance_discovery
+    description: "Runtime queries control plane for next items and policies"
+
+  - from: inference
+    to: retrieval
+    description: "Inference uses retrieval for context and examples"
+
+  - from: runtime
+    to: inference
+    description: "Runtime triggers code generation via inference layer"
+
+  - from: evaluation
+    to: inference
+    description: "Evaluation validates inference outputs"
+
+  - from: control_plane
+    to: runtime
+    description: "Control plane sends execution directives to runtime"
+
+integration_points:
+  - name: execution_compilation
+    from: control_plane
+    to: runtime
+    data: execution_bundle_schema
+    description: "Dependency planner output fed to execution scheduler"
+
+  - name: code_intelligence_integration
+    from: inference
+    to: retrieval
+    data: symbol_graph
+    description: "Code intelligence powers retrieval indexing"
+
+  - name: event_driven_orchestration
+    from: runtime
+    to: evaluation
+    data: execution_event
+    description: "Runtime events trigger validation checkpoints"

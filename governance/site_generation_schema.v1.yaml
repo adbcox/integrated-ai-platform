@@ -1,0 +1,248 @@
+schema_version: "1.0"
+kind: "site_generation_schema"
+title: "Website Generation Baseline"
+description: "Site workflow, SEO/analytics structure, and reusable templates"
+
+site_generation_workflow:
+  required_fields:
+    - id
+    - name
+    - steps
+  fields:
+    id:
+      type: string
+      description: "Workflow identifier"
+      example: "workflow-deploy-docs"
+
+    name:
+      type: string
+      description: "Workflow name"
+
+    description:
+      type: string
+      description: "What this workflow generates"
+
+    steps:
+      type: array
+      description: "Ordered workflow steps"
+      items:
+        step_name: string
+        input: object
+        output: object
+        transformer: string
+
+    trigger:
+      type: string
+      enum: ["manual", "scheduled", "event", "deployment"]
+      description: "What triggers this workflow"
+
+    output_path:
+      type: string
+      description: "Where generated site is written"
+
+    notification:
+      type: object
+      description: "Notification settings on completion"
+      fields:
+        email: boolean
+        slack: boolean
+        webhook: string
+
+seo_metadata:
+  required_fields:
+    - page_title
+    - meta_description
+  fields:
+    page_title:
+      type: string
+      description: "HTML title tag content"
+      max_length: 60
+
+    meta_description:
+      type: string
+      description: "HTML meta description tag"
+      max_length: 160
+
+    canonical_url:
+      type: string
+      format: "URI"
+      description: "Canonical URL for this page"
+
+    open_graph:
+      type: object
+      description: "Open Graph metadata for social sharing"
+      fields:
+        og_title: string
+        og_description: string
+        og_image: string
+        og_type: string
+
+    structured_data:
+      type: object
+      description: "JSON-LD structured data"
+      example:
+        type: "WebPage"
+        headline: string
+        description: string
+
+    keywords:
+      type: array
+      description: "Target keywords for SEO"
+      items:
+        type: string
+      max_items: 10
+
+    robots:
+      type: string
+      description: "Robots meta directive"
+      example: "index, follow"
+
+analytics_integration:
+  required_fields:
+    - provider
+    - tracking_id
+  fields:
+    provider:
+      type: string
+      enum: ["google-analytics", "plausible", "mixpanel", "custom"]
+      description: "Analytics provider"
+
+    tracking_id:
+      type: string
+      description: "Provider-specific tracking ID"
+
+    events_to_track:
+      type: array
+      description: "Custom events to track"
+      items:
+        event_name: string
+        trigger: string
+        properties: array
+
+    goals:
+      type: array
+      description: "Conversion goals"
+      items:
+        goal_name: string
+        trigger_condition: string
+
+    privacy_policy:
+      type: string
+      description: "Privacy policy URL"
+
+template_definition:
+  required_fields:
+    - id
+    - name
+    - content_type
+  fields:
+    id:
+      type: string
+      description: "Template identifier"
+      example: "tmpl-product-page"
+
+    name:
+      type: string
+      description: "Template name"
+
+    content_type:
+      type: string
+      enum: ["product", "feature", "blog", "landing", "documentation", "release-notes"]
+      description: "Type of content this template creates"
+
+    layout:
+      type: string
+      description: "HTML/CSS layout structure"
+
+    required_variables:
+      type: array
+      description: "Variables that must be provided"
+      items:
+        type: string
+
+    optional_variables:
+      type: array
+      description: "Optional customization variables"
+      items:
+        type: string
+
+    seo_defaults:
+      type: object
+      description: "Default SEO settings for this template"
+
+    example_content:
+      type: string
+      description: "Example content using this template"
+
+reusable_workflow_template:
+  required_fields:
+    - id
+    - name
+    - template_steps
+  fields:
+    id:
+      type: string
+      description: "Workflow template identifier"
+      example: "workflow-template-docs-publish"
+
+    name:
+      type: string
+      description: "Template name"
+
+    description:
+      type: string
+      description: "Template description"
+
+    template_steps:
+      type: array
+      description: "Parameterized workflow steps"
+      items:
+        step_template: string
+        parameters: array
+
+    parameters:
+      type: object
+      description: "Workflow customization parameters"
+      fields:
+        content_source: string
+        output_folder: string
+        seo_template: string
+
+    success_criteria:
+      type: array
+      description: "Checks that validate workflow success"
+      items:
+        check_name: string
+        validation: string
+
+site_deployment:
+  description: "How generated site is deployed"
+  destinations:
+    production:
+      type: string
+      description: "Production hosting"
+    staging:
+      type: string
+      description: "Staging environment for preview"
+    preview:
+      type: string
+      description: "Temporary preview URL"
+
+  deployment_steps:
+    - "build site from templates"
+    - "generate SEO metadata"
+    - "add analytics tracking"
+    - "validate broken links"
+    - "upload to destination"
+    - "update CDN cache"
+    - "notify via webhook"
+
+integration_point:
+  description: "Website generation supports delivery documentation and control center help"
+  inbound_feeds:
+    - "edition definitions (for product pages)"
+    - "release notes (from deployment)"
+    - "control center docs (from capability schema)"
+  outbound_feeds:
+    - "published website"
+    - "sitemap and SEO data"

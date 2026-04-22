@@ -5,7 +5,8 @@ slug: "lock-definition-of-done-for-coding-runs"
 title: "Lock definition of done for coding runs"
 category: "GOV"
 type: "governance"
-status: "proposed"
+status: "completed"
+archive_status: "ready_for_archive"
 priority: "P1"
 scoring:
   loe: 2
@@ -38,6 +39,8 @@ scope:
     - "Plane sync changes"
 dependencies:
   blocked_by:
+    - "RM-GOV-005"
+  depends_on:
     - "RM-GOV-005"
   enables:
     - "RM-GOV-007"
@@ -77,16 +80,19 @@ milestones:
     - "link-to-autonomy-scorecard"
 planning:
   planning_packet_ref: null
-  planning_status: "not_started"
-  planning_notes: ""
+  planning_status: "complete"
+  planning_notes: "Definition of done ratified and linked to autonomy scorecard authority."
 execution:
-  execution_package_refs: []
-  execution_status: "not_started"
+  execution_package_refs:
+    - "docs/execution/definition_of_done.md"
+  execution_status: "completed"
   last_execution_commit: null
 validation:
-  validation_artifact_refs: []
-  validation_status: "not_started"
-  definition_of_done_ref: "docs/roadmap/STANDARDS.md"
+  validation_artifact_refs:
+    - "artifacts/governance/definition_of_done_validation.json"
+    - "artifacts/governance/rm_gov_006_definition_of_done_closeout.json"
+  validation_status: "passed"
+  definition_of_done_ref: "docs/execution/definition_of_done.md"
 governance:
   phase_target: "Phase 0"
   architectural_lane: "governance_freeze"
@@ -145,8 +151,12 @@ sync:
 metadata:
   owner: "adrian"
   created_at: "2026-04-20"
-  updated_at: "2026-04-20"
+  updated_at: "2026-04-22"
   tags:
     - "governance"
     - "definition-of-done"
     - "phase-0"
+archive_readiness:
+  ready: true
+  reason: "definition_of_done_ratified"
+  validation_artifact: "artifacts/governance/rm_gov_006_definition_of_done_closeout.json"

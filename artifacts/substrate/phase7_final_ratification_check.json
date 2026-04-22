@@ -1,6 +1,6 @@
 {
   "phase7_final_pack": "final_promotion_ratification_v1",
-  "generated_at": "2026-04-21T21:48:54.131847+00:00",
+  "generated_at": "2026-04-22T13:45:11.324500+00:00",
   "phase7_final_ratified": true,
   "promotion_gate_cleared": true,
   "remaining_blockers": [],
@@ -16,11 +16,11 @@
     "load_errors": [],
     "promotion_pack_all_checks_passed": true,
     "live_evidence_telemetry_complete": true,
-    "live_dispatch_succeeded": false,
-    "dispatch_mode": "dry_run_only",
+    "live_dispatch_succeeded": true,
+    "dispatch_mode": "live",
     "live_proof_chain_present": true,
     "live_proof_notes": [
-      "live_proof_chain: live_dispatch_succeeded=True found; live dispatch blocker cleared from chain"
+      "live_proof_chain: live_dispatch_succeeded=True present, but current live evidence controls gate truth"
     ],
     "total_blockers": 0
   },

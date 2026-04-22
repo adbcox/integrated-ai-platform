@@ -1,0 +1,166 @@
+schema_version: '1.0'
+kind: roadmap_item
+id: RM-DEV-008
+slug: memory-governance-summarization-and-provenance-policy
+title: Memory governance, summarization, and provenance policy for the local agent
+category: DEV
+type: memory_governance
+status: complete
+priority: P1
+scoring:
+  loe: 3
+  strategic_value: 5
+  architecture_fit: 5
+  execution_risk: 2
+  dependency_burden: 2
+  readiness: 4
+description: 'Define explicit memory governance rules that distinguish between root
+  memory, modular docs, scoped rules, and known-failures. Create machine-readable
+  provenance policy for execution-memory persistence so bounded codegen respects architectural
+  boundaries.
+
+  '
+why_it_matters: 'Without explicit memory governance, execution systems pollute persistent
+  state with transient decisions, amplify mistakes across runs, and lose visibility
+  into where decisions originate. RM-DEV-008 establishes the boundary-drawing layer
+  that separates persistent architectural truth from ephemeral execution context.
+
+  '
+scope:
+  objective: 'Define memory classification schema, provenance rules, summarization
+    policy, and validation boundaries for execution-memory persistence.
+
+    '
+  in_scope:
+  - memory classification schema (root / modular / scoped / known-failures)
+  - provenance policy (who decides what gets persisted)
+  - summarization rules (what gets compressed, what stays verbatim)
+  - validation boundaries (what can and cannot write to persistent memory)
+  out_of_scope:
+  - runtime memory management implementation
+  - model training or fine-tuning
+  - execution engine changes
+dependencies:
+  blocked_by: []
+  depends_on:
+  - RM-DEV-009
+  - RM-CORE-003
+  - RM-GOV-004
+  enables:
+  - bounded autonomy execution with governance
+  related_items: []
+impact:
+  affected_systems:
+  - control_plane
+  - agent_runtime
+  - governance
+  expected_file_families:
+  - governance/**
+  - docs/agent/**
+  impact_summary: 'Establishes machine-readable memory governance that prevents state
+    pollution, maintains provenance clarity, and enables auditable execution traces.
+
+    '
+cmdb:
+  refs:
+  - subsystem:control_plane
+  - subsystem:agent_runtime
+  asset_links: []
+  service_links: []
+grouping:
+  feature_block_candidates:
+  - FB-DEV-MEMORY-GOVERNANCE
+  package_group: PKG-DEV-MEMORY-GOVERNANCE
+  shared_touch_surfaces:
+  - execution-memory boundaries
+  - persistent state provenance
+  - memory classification rules
+milestones:
+  recommended_first_milestone: define-memory-classification-schema
+  downstream_milestones:
+  - codify provenance policy
+  - implement memory validation gates
+planning:
+  planning_packet_ref: null
+  planning_status: not_started
+  planning_notes: ''
+execution:
+  execution_package_refs:
+  - docs/roadmap/RM-DEV-008_EXECUTION_PACK.md
+  execution_status: not_started
+  last_execution_commit: null
+validation:
+  validation_artifact_refs: []
+  validation_status: not_started
+  definition_of_done_ref: docs/roadmap/STANDARDS.md
+governance:
+  phase_target: Phase 3
+  architectural_lane: memory_governance
+  risk_tier: medium
+  allowed_change_scope: narrow
+  requires_explicit_escalation: false
+ai_operability:
+  canonical_summary: 'RM-DEV-008 defines memory governance rules: classification (root/modular/scoped/failures),
+    provenance (who decides), summarization (what compresses), validation (what persists).
+    Input: RM-DEV-009 agent-docs + CORE-003/GOV-004 governance. Output: memory policy
+    consumed by bounded execution systems.
+
+    '
+  developer_intent: 'Make persistent memory auditable and bounded. Execution systems
+    should understand exactly what can and cannot write to persistent state, where
+    decisions come from, and why they persist.
+
+    '
+  non_goals:
+  - Do not implement runtime memory management
+  - Do not change execution engine behavior
+  - Do not require model retraining
+  allowed_files:
+  - governance/**
+  - docs/agent/**
+  forbidden_files:
+  - framework/**
+  - bin/**
+  - tests/**
+  validation_order:
+  - verify memory classification schema is valid YAML
+  - verify provenance policy is unambiguous
+  - verify memory-governance files are cross-referenced in execution templates
+  - verify no circular dependencies in governance rules
+  rollback_rule: 'Revert governance/memory_* files and RM-DEV-008 related docs to
+    pre-execution state.
+
+    '
+  artifact_outputs:
+  - governance/memory_classification.yaml
+  - governance/memory_provenance_policy.yaml
+  - docs/agent/memory_governance.md
+  promotion_linkage:
+    required: false
+    manifest_refs: []
+sync:
+  plane:
+    sync_enabled: true
+    sync_mode: repo_to_plane_authoritative
+    workspace: Integrated AI Platform
+    project: Roadmap Ops
+    plane_item_id: null
+    last_synced_at: null
+    writeback_fields_allowed:
+    - operational_state
+    - assignee
+    - cycle
+    - module
+    - labels
+  github:
+    issue_ref: null
+    pr_refs: []
+metadata:
+  owner: adrian
+  created_at: '2026-04-22'
+  updated_at: '2026-04-22'
+  tags:
+  - memory-governance
+  - provenance
+  - bounded-autonomy
+archive_status: ready_for_archive

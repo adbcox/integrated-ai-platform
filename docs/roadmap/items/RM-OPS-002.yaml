@@ -1,0 +1,159 @@
+schema_version: "1.0"
+kind: "roadmap_item"
+id: "RM-OPS-002"
+slug: "failure-analysis-recovery"
+title: "Failure analysis and recovery"
+category: "OPS"
+type: "capability_foundation"
+status: "completed"
+priority: "P1"
+scoring:
+  loe: 3
+  strategic_value: 4
+  architecture_fit: 4
+  execution_risk: 2
+  dependency_burden: 1
+  readiness: 2
+
+description: >
+  Establish failure detection and recovery mechanisms. Classify failures (timeout, crash,
+  invalid_output). Implement deterministic retry logic with backoff. Enable graceful
+  degradation and fallback routing.
+
+why_it_matters: >
+  Without failure recovery, transient errors kill entire execution chains. Recovery
+  mechanisms enable robust operation in real-world conditions (slow models, resource
+  contention, transient failures).
+
+scope:
+  objective: >
+    Define failure taxonomy. Implement retry logic in gateway and executor.
+    Classify failures and route to appropriate recovery handler (retry, fallback, escalate).
+  in_scope:
+    - "failure taxonomy and classification"
+    - "retry policy (backoff, budget)"
+    - "fallback routing (to harder profiles)"
+    - "failure event logging"
+  out_of_scope:
+    - "user-facing error messages"
+    - "rollback / undo mechanisms"
+    - "distributed failure consensus"
+
+dependencies:
+  blocked_by:
+    - "RM-OPS-001"
+  depends_on:
+    - "RM-OPS-001"
+  enables:
+    - "RM-OPS-003"
+  related_items:
+    - "RM-OPS-001"
+    - "RM-OPS-003"
+
+impact:
+  affected_systems:
+    - "inference_gateway"
+    - "runtime"
+  expected_file_families:
+    - "runtime/failure_recovery.py"
+  impact_summary: >
+    Enables deterministic retry and fallback recovery for execution failures.
+
+cmdb:
+  refs:
+    - "subsystem:runtime"
+  asset_links: []
+  service_links: []
+
+grouping:
+  feature_block_candidates:
+    - "FB-PHASE2-OPS-SUBSTRATE"
+  package_group: "PKG-PHASE2-SUBSTRATE"
+  shared_touch_surfaces:
+    - "failure handling"
+    - "retry logic"
+    - "fallback routing"
+
+milestones:
+  recommended_first_milestone: "define-failure-taxonomy"
+  downstream_milestones:
+    - "implement-retry-policy"
+    - "implement-fallback-routing"
+
+planning:
+  planning_packet_ref: null
+  planning_status: "completed"
+  planning_notes: "Failure classification integrated into runtime_executor with failure_classifier module, classifying 9 failure types and suggesting recovery actions"
+
+execution:
+  execution_package_refs:
+    - "runtime/failure_classifier.py"
+    - "runtime/runtime_executor.py (instrumented)"
+  execution_status: "completed"
+  last_execution_commit: "phase2_ops_002_completed"
+
+validation:
+  validation_artifact_refs:
+    - "artifacts/validation/phase2_ops_validation.json"
+    - "artifacts/validation/failure_record_a23585ef.json"
+  validation_status: "completed"
+  definition_of_done_ref: "docs/roadmap/STANDARDS.md"
+
+governance:
+  phase_target: "Phase 2"
+  architectural_lane: "ops_substrate"
+  risk_tier: "low"
+  allowed_change_scope: "bounded"
+  requires_explicit_escalation: false
+
+ai_operability:
+  canonical_summary: >
+    Phase 2 ops item establishing failure recovery with retry and fallback routing.
+  developer_intent: >
+    After this item, execution failures are handled deterministically with retry and
+    fallback logic. Transient failures don't terminate execution chains.
+  allowed_files:
+    - "runtime/**"
+    - "framework/**"
+    - "governance/**"
+  forbidden_files:
+    - "tests/**"
+    - ".github/**"
+  validation_order:
+    - "confirm failure taxonomy is defined"
+    - "confirm retry policy is implemented"
+    - "confirm fallback routing works"
+    - "make check passes"
+  rollback_rule: >
+    Remove failure_recovery module. Restore gateway to non-retrying behavior.
+  artifact_outputs: []
+  promotion_linkage:
+    required: false
+    manifest_refs: []
+
+sync:
+  plane:
+    sync_enabled: true
+    sync_mode: "repo_to_plane_authoritative"
+    workspace: "Integrated AI Platform"
+    project: "Roadmap Ops"
+    plane_item_id: null
+    last_synced_at: null
+    writeback_fields_allowed:
+      - "operational_state"
+      - "assignee"
+      - "cycle"
+      - "module"
+      - "labels"
+  github:
+    issue_ref: null
+    pr_refs: []
+
+metadata:
+  owner: "system"
+  created_at: "2026-04-22"
+  updated_at: "2026-04-22"
+  tags:
+    - "phase-2"
+    - "ops"
+    - "failure-recovery"

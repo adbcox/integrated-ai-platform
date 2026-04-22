@@ -1,0 +1,52 @@
+{
+  "schema_version": "1.0.0",
+  "authority_owner": "governance/authority_adr_0001_source_of_truth.md",
+  "decision_type": "phase_closure_ratification",
+  "phase_id": 1,
+  "phase_name": "runtime_contract_foundation",
+  "closure_package_id": "PHASE-1-CLOSE-1",
+  "decision_status": "ratified",
+  "ratified_at": "2026-04-22T14:23:51+00:00",
+  "ratified_by_control_window": "exec-lane-canonical-intake-reopen-pass",
+  "ratification_basis": "All Phase 1 success invariants validated; runtime contract primitives present and checksummed; all closure evidence complete",
+  "contract_version_ratified": "rt-1.0.0+d9f4b3f7b1eb",
+  "contract_fingerprint": {
+    "primitives_count": 7,
+    "all_checksummed": true,
+    "primitives": [
+      "framework/worker_runtime.py",
+      "framework/job_schema.py",
+      "framework/session_schema.py",
+      "framework/tool_system.py",
+      "framework/workspace.py",
+      "framework/permission_engine.py",
+      "framework/sandbox.py"
+    ]
+  },
+  "success_invariants_verified": {
+    "artifact_bundle_emitted_per_run": true,
+    "baseline_validation_pack_succeeds_deterministically": true,
+    "make_check_passes": true,
+    "make_quick_passes": true,
+    "model_profiles_exercised_by_tests": true,
+    "second_validation_run_uses_fresh_roots_without_manual_repair": true,
+    "workspace_and_artifact_contract_exercised_by_tests": true,
+    "wrapped_command_runner_exercised_by_tests": true,
+    "all_verified": true
+  },
+  "closure_evidence_references": [
+    "governance/phase1_local_runtime_closure_evidence.json",
+    "governance/runtime_contract_version.json",
+    "governance/authority_adr_0018_phase1_local_runtime_closure.md"
+  ],
+  "implications": {
+    "current_phase_advances_to": 2,
+    "blocked_package_classes_unblocked": [
+      "canonical_phase_advancement",
+      "feature_expansion"
+    ],
+    "next_allowed_package_class": "autonomous_roadmap_item_creation",
+    "tactical_family_unlock_status": "pending_phase2_advancement"
+  },
+  "notes": "Phase 1 closes with ratified runtime contract. All 7 primitives checksummed and stable. This unblocks canonical phase advancement and allows new roadmap item intake for Phase 2."
+}

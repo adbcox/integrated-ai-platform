@@ -1,9 +1,11 @@
-schema_version: "1.0"
+schema_version: "1.1"
 kind: "oss_watchtower_candidates"
-registry_id: "RM-INTEL-001-BASELINE-V1"
+registry_id: "RM-INTEL-001-BASELINE-V2"
 package_id: "RM-INTEL-001"
 status: "active_baseline"
 updated_at: "2026-04-21T00:00:00Z"
+verified_harvest_source: "governance/verified_oss_capability_harvest_rm_intel_002.v1.yaml"
+source_package_id: "RM-INTEL-002"
 recommendation_classes:
   - "adopt-now"
   - "evaluate"
@@ -16,7 +18,7 @@ candidates:
     license: "MIT"
     maintenance_signal: "high_active_releases"
     integration_role: "default local model manager for local-first coding sessions"
-    roadmap_linkage: ["RM-CORE-001", "RM-DEV-003", "RM-INTEL-001"]
+    roadmap_linkage: ["RM-CORE-001", "RM-DEV-005", "RM-DEV-003", "RM-INTEL-001", "RM-INTEL-002"]
     recommendation_class: "adopt-now"
     removal_fallback_posture: "Switch to optional backend route (vLLM) behind existing inference gateway."
     notes: "Primary local route; keep transport behind repo-owned gateway."
@@ -26,7 +28,7 @@ candidates:
     license: "Apache-2.0"
     maintenance_signal: "high_active_releases"
     integration_role: "bounded code-edit transport adapter"
-    roadmap_linkage: ["RM-DEV-003", "RM-DEV-005", "RM-INTEL-001"]
+    roadmap_linkage: ["RM-DEV-005", "RM-DEV-003", "RM-DEV-002", "RM-INTEL-001", "RM-INTEL-002"]
     recommendation_class: "evaluate"
     removal_fallback_posture: "Disable adapter transport and use existing local/manual execution paths."
     notes: "Treat as adapter target only; not architecture backbone."
@@ -36,7 +38,7 @@ candidates:
     license: "MIT"
     maintenance_signal: "active_spec_and_clients"
     integration_role: "tool interoperability boundary"
-    roadmap_linkage: ["RM-DEV-003", "RM-INTEL-001"]
+    roadmap_linkage: ["RM-DEV-005", "RM-DEV-003", "RM-DEV-002", "RM-INTEL-001", "RM-INTEL-002"]
     recommendation_class: "adopt-now"
     removal_fallback_posture: "Pin and freeze tool adapters while keeping repo-owned interfaces."
     notes: "Protocol boundary for external tool integration."
@@ -46,7 +48,7 @@ candidates:
     license: "MIT"
     maintenance_signal: "active_community"
     integration_role: "reference patterns for workspace/tool substrate"
-    roadmap_linkage: ["RM-DEV-003", "RM-INTEL-001"]
+    roadmap_linkage: ["RM-DEV-005", "RM-DEV-003", "RM-INTEL-001", "RM-INTEL-002"]
     recommendation_class: "watch"
     removal_fallback_posture: "Retain repo-native workspace contracts; drop external pattern intake."
     notes: "Reference intake only; avoid runtime replacement."
@@ -56,7 +58,7 @@ candidates:
     license: "Apache-2.0"
     maintenance_signal: "high_active_releases"
     integration_role: "vector memory substrate for retrieval/planning"
-    roadmap_linkage: ["RM-DEV-003", "RM-INTEL-001"]
+    roadmap_linkage: ["RM-DEV-005", "RM-DEV-003", "RM-DEV-002", "RM-INTEL-001", "RM-INTEL-002"]
     recommendation_class: "evaluate"
     removal_fallback_posture: "Fall back to existing non-vector retrieval mode behind same interfaces."
     notes: "Useful for bounded context retrieval under larger autonomy tiers."
@@ -66,7 +68,7 @@ candidates:
     license: "Apache-2.0"
     maintenance_signal: "stable_and_maintained"
     integration_role: "sandbox isolation baseline for bounded execution"
-    roadmap_linkage: ["RM-DEV-003", "RM-INTEL-001"]
+    roadmap_linkage: ["RM-DEV-005", "RM-DEV-003", "RM-INTEL-001", "RM-INTEL-002"]
     recommendation_class: "evaluate"
     removal_fallback_posture: "Revert to current bounded local sandbox strategy."
     notes: "Use where isolation hardening is required."
@@ -76,7 +78,7 @@ candidates:
     license: "MIT"
     maintenance_signal: "active_benchmark_updates"
     integration_role: "benchmark surface for autonomy quality and regression tracking"
-    roadmap_linkage: ["RM-DEV-003", "RM-INTEL-001"]
+    roadmap_linkage: ["RM-DEV-005", "RM-DEV-003", "RM-DEV-002", "RM-INTEL-001", "RM-INTEL-002"]
     recommendation_class: "adopt-now"
     removal_fallback_posture: "Fallback to internal qualification packs while benchmark runner is held."
     notes: "Supports trusted attribution for capability gains."
@@ -86,7 +88,97 @@ candidates:
     license: "Apache-2.0"
     maintenance_signal: "active_community"
     integration_role: "IDE-side assistant integration candidate"
-    roadmap_linkage: ["RM-INTEL-001"]
+    roadmap_linkage: ["RM-DEV-005", "RM-INTEL-001", "RM-INTEL-002"]
     recommendation_class: "watch"
     removal_fallback_posture: "No runtime dependency; keep current CLI/operator workflow."
-    notes: "Track for operator UX only; non-blocking for RM-DEV-003 baseline."
+    notes: "Track for operator UX only; non-blocking for bounded autonomy baseline."
+  - name: "Tree-sitter"
+    category: "syntax_analysis"
+    source_url: "https://github.com/tree-sitter/tree-sitter"
+    license: "MIT"
+    maintenance_signal: "high_active_releases"
+    integration_role: "AST-level parsing for bounded edits and QC"
+    roadmap_linkage: ["RM-DEV-003", "RM-DEV-002", "RM-INTEL-001", "RM-INTEL-002"]
+    recommendation_class: "adopt-now"
+    removal_fallback_posture: "Fallback to text-only parse heuristics while preserving QC surface compatibility."
+    notes: "High-value for structural code checks and bounded rewrite guardrails."
+  - name: "LSP"
+    category: "editor_semantic_protocol"
+    source_url: "https://microsoft.github.io/language-server-protocol/"
+    license: "protocol_spec"
+    maintenance_signal: "stable_spec"
+    integration_role: "semantic symbols/diagnostics boundary"
+    roadmap_linkage: ["RM-DEV-003", "RM-DEV-002", "RM-INTEL-001", "RM-INTEL-002"]
+    recommendation_class: "adopt-now"
+    removal_fallback_posture: "Fallback to repo-local symbol indexing surfaces."
+    notes: "Supports richer semantic retrieval and QC evidence for bounded runs."
+  - name: "ast-grep"
+    category: "structural_search_rewrite"
+    source_url: "https://github.com/ast-grep/ast-grep"
+    license: "MIT"
+    maintenance_signal: "active_releases"
+    integration_role: "bounded structural search/rewrite assistant"
+    roadmap_linkage: ["RM-DEV-003", "RM-DEV-002", "RM-INTEL-001", "RM-INTEL-002"]
+    recommendation_class: "evaluate"
+    removal_fallback_posture: "Fallback to existing grep/search and manual bounded refactors."
+    notes: "Potential accelerator for structure-aware bounded changes."
+  - name: "Zoekt"
+    category: "code_search_index"
+    source_url: "https://github.com/sourcegraph/zoekt"
+    license: "Apache-2.0"
+    maintenance_signal: "maintained"
+    integration_role: "high-speed code index for retrieval"
+    roadmap_linkage: ["RM-DEV-005", "RM-DEV-003", "RM-INTEL-001", "RM-INTEL-002"]
+    recommendation_class: "evaluate"
+    removal_fallback_posture: "Fallback to existing search + retrieval adapters."
+    notes: "Evaluate for large-codebase local retrieval latency improvements."
+  - name: "OpenCode"
+    category: "agentic_coding_runtime"
+    source_url: "https://github.com/opencode-ai/opencode"
+    license: "Apache-2.0"
+    maintenance_signal: "active"
+    integration_role: "external runtime reference"
+    roadmap_linkage: ["RM-DEV-005", "RM-INTEL-001", "RM-INTEL-002"]
+    recommendation_class: "watch"
+    removal_fallback_posture: "No adoption into runtime backbone; maintain repo-owned orchestration."
+    notes: "Watch only to avoid architecture drift via runtime substitution."
+  - name: "Goose"
+    category: "agentic_coding_runtime"
+    source_url: "https://github.com/block/goose"
+    license: "Apache-2.0"
+    maintenance_signal: "active"
+    integration_role: "external runtime reference"
+    roadmap_linkage: ["RM-DEV-005", "RM-INTEL-001", "RM-INTEL-002"]
+    recommendation_class: "watch"
+    removal_fallback_posture: "No adoption into runtime backbone; maintain repo-owned orchestration."
+    notes: "Watch only due to overlap with existing stack."
+  - name: "Plandex"
+    category: "plan_orchestrator"
+    source_url: "https://github.com/plandex-ai/plandex"
+    license: "GPL-3.0"
+    maintenance_signal: "active"
+    integration_role: "planning reference"
+    roadmap_linkage: ["RM-DEV-005", "RM-INTEL-001", "RM-INTEL-002"]
+    recommendation_class: "watch"
+    removal_fallback_posture: "Keep repo-native manager/orchestration stack as sole runtime authority."
+    notes: "Watch due to license constraints and high overlap with manager stack."
+  - name: "Mem0"
+    category: "memory_layer"
+    source_url: "https://github.com/mem0ai/mem0"
+    license: "Apache-2.0"
+    maintenance_signal: "active"
+    integration_role: "optional memory write-back layer"
+    roadmap_linkage: ["RM-DEV-005", "RM-DEV-003", "RM-DEV-002", "RM-INTEL-001", "RM-INTEL-002"]
+    recommendation_class: "evaluate"
+    removal_fallback_posture: "Fallback to existing artifact-backed learning/pattern stores."
+    notes: "Evaluate for structured QC/pattern memory write-back."
+  - name: "OpenGrep"
+    category: "code_search"
+    source_url: "https://github.com/opengrep/opengrep"
+    license: "Apache-2.0"
+    maintenance_signal: "early"
+    integration_role: "search candidate"
+    roadmap_linkage: ["RM-INTEL-001", "RM-INTEL-002"]
+    recommendation_class: "reject"
+    removal_fallback_posture: "Not adopted. Use ast-grep/Zoekt evaluation tracks instead."
+    notes: "Rejected for duplication risk and unclear architecture fit."

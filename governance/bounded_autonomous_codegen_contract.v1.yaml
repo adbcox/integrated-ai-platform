@@ -48,6 +48,11 @@ run_artifact_structure:
     - validation_results
     - decision
     - emitted_artifacts
+integration_hooks:
+  rm_dev_005_local_autonomy_ref: "governance/rm_dev_005a_authority_state.v1.yaml"
+  rm_dev_002_qc_schema_ref: "governance/qc_finding_schema_rm_dev_002.v1.yaml"
+  rm_intel_001_watchtower_ref: "governance/oss_watchtower_candidates.v1.yaml"
+  rm_intel_002_verified_harvest_ref: "governance/verified_oss_capability_harvest_rm_intel_002.v1.yaml"
 example_bounded_task:
   objective: "Implement bounded schema validator for watchtower linkage."
   allowed_files:

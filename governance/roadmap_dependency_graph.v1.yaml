@@ -1,0 +1,545 @@
+schema_version: '1.1'
+kind: roadmap_dependency_graph
+generated_at: '2026-04-22T14:32:06+00:00'
+source_of_truth: docs/roadmap/items/RM-*.yaml
+nodes:
+- id: RM-AUTO-001
+  title: Plain-English goal-to-agent baseline system
+  category: AUTO
+  priority: P1
+  status: completed
+  archive_status: null
+- id: RM-AUTO-002
+  title: Roadmap-to-execution compiler baseline
+  category: AUTO
+  priority: P1
+  status: completed
+  archive_status: archived
+- id: RM-CORE-001
+  title: Introduce internal inference gateway
+  category: CORE
+  priority: P1
+  status: completed
+  archive_status: null
+- id: RM-CORE-002
+  title: Standardize model profiles
+  category: CORE
+  priority: P1
+  status: completed
+  archive_status: null
+- id: RM-CORE-003
+  title: Standardize workspace layout
+  category: CORE
+  priority: P1
+  status: complete
+  archive_status: ready_for_archive
+- id: RM-CORE-004
+  title: Event/job/state orchestration baseline
+  category: CORE
+  priority: P1
+  status: completed
+  archive_status: archived
+- id: RM-CORE-005
+  title: Identity, secrets, permissions, and trust-boundary management
+  category: CORE
+  priority: P1
+  status: completed
+  archive_status: archived
+- id: RM-CORE-006
+  title: Establish baseline local-run validation
+  category: CORE
+  priority: P1
+  status: completed
+  archive_status: ready_for_archive
+- id: RM-DEV-001
+  title: Add Xcode and Apple-platform coding capability to developer assistant
+  category: DEV
+  priority: P1
+  status: completed
+  archive_status: null
+- id: RM-DEV-002
+  title: Dual-model inline QC coding loop for the developer assistant
+  category: DEV
+  priority: P1
+  status: completed
+  archive_status: archived
+- id: RM-DEV-003
+  title: Bounded autonomous code generation
+  category: DEV
+  priority: P1
+  status: completed
+  archive_status: archived
+- id: RM-DEV-004
+  title: Embedded firmware assistant for Nordic and ESP platforms
+  category: DEV
+  priority: P1
+  status: completed
+  archive_status: archived
+- id: RM-DEV-005
+  title: Local autonomy uplift, OSS intake, and Aider reliability hardening
+  category: DEV
+  priority: P1
+  status: complete
+  archive_status: ready_for_archive
+- id: RM-DEV-006
+  title: Structure-aware code intelligence decision layer
+  category: DEVELOPMENT
+  priority: P1
+  status: completed
+  archive_status: archived
+- id: RM-DEV-007
+  title: Indexed code search and multi-repo retrieval backend
+  category: DEV
+  priority: P1
+  status: completed
+  archive_status: archived
+- id: RM-DEV-008
+  title: Memory governance, summarization, and provenance policy for the local agent
+  category: DEV
+  priority: P1
+  status: complete
+  archive_status: ready_for_archive
+- id: RM-DEV-009
+  title: Agent operating-docs and persistent execution-memory package
+  category: DEV
+  priority: P1
+  status: complete
+  archive_status: ready_for_archive
+- id: RM-DOCAPP-002
+  title: Website generation baseline system
+  category: DOCAPP
+  priority: P2
+  status: completed
+  archive_status: ready_for_archive
+- id: RM-ED-001
+  title: Edition builder baseline system
+  category: ED
+  priority: P2
+  status: completed
+  archive_status: ready_for_archive
+- id: RM-GOV-001
+  title: Create canonical machine-readable roadmap registry
+  category: GOV
+  priority: P1
+  status: completed
+  archive_status: null
+- id: RM-GOV-002
+  title: Reconcile source-of-truth surfaces
+  category: GOV
+  priority: P1
+  status: completed
+  archive_status: archived
+- id: RM-GOV-003
+  title: Create core ADR set
+  category: GOV
+  priority: P1
+  status: completed
+  archive_status: null
+- id: RM-GOV-004
+  title: Create machine-readable execution-control package
+  category: GOV
+  priority: P1
+  status: completed
+  archive_status: archived
+- id: RM-GOV-005
+  title: Cycle, release, and batch-governance model for roadmap execution
+  category: GOV
+  priority: P1
+  status: completed
+  archive_status: archived
+- id: RM-GOV-006
+  title: Lock definition of done for coding runs
+  category: GOV
+  priority: P1
+  status: completed
+  archive_status: ready_for_archive
+- id: RM-GOV-007
+  title: Lock autonomy scorecard
+  category: GOV
+  priority: P1
+  status: completed
+  archive_status: ready_for_archive
+- id: RM-HW-001
+  title: Electrical design baseline system
+  category: HW
+  priority: P2
+  status: completed
+  archive_status: ready_for_archive
+- id: RM-INTEL-001
+  title: Open-source watchtower with update alerts and adoption recommendations
+  category: INTEL
+  priority: P1
+  status: completed
+  archive_status: archived
+- id: RM-INTEL-002
+  title: Verified OSS capability harvest and compatibility validation for the local
+    development assistant
+  category: INTEL
+  priority: P1
+  status: completed
+  archive_status: archived
+- id: RM-INV-002
+  title: Photo-driven inventory capture and capability mapping system
+  category: INV
+  priority: P1
+  status: completed
+  archive_status: null
+- id: RM-INV-003
+  title: Procurement and search baseline system
+  category: INV
+  priority: P2
+  status: completed
+  archive_status: ready_for_archive
+- id: RM-INV-004
+  title: CMDB service/application/dependency topology and capability graph
+  category: INVENTORY
+  priority: P1
+  status: completed
+  archive_status: archived
+- id: RM-INV-005
+  title: Asset-to-roadmap and asset-to-execution linkage layer
+  category: INV
+  priority: P1
+  status: completed
+  archive_status: archived
+- id: RM-OPS-001
+  title: Execution tracing and monitoring
+  category: OPS
+  priority: P1
+  status: completed
+  archive_status: null
+- id: RM-OPS-002
+  title: Failure analysis and recovery
+  category: OPS
+  priority: P1
+  status: completed
+  archive_status: null
+- id: RM-OPS-003
+  title: Performance profiling and optimization
+  category: OPS
+  priority: P1
+  status: completed
+  archive_status: null
+- id: RM-OPS-004
+  title: Backup, restore, disaster-recovery, and configuration export verification
+    baseline
+  category: OPS
+  priority: P1
+  status: completed
+  archive_status: null
+- id: RM-OPS-005
+  title: End-to-end telemetry, tracing, and audit evidence pipeline
+  category: OPS
+  priority: P1
+  status: completed
+  archive_status: null
+- id: RM-PHASE1-001
+  title: Ollama-first inference gateway and runtime foundation baseline
+  category: PHASE1
+  priority: P1
+  status: completed
+  archive_status: null
+- id: RM-UI-001
+  title: Master control center baseline system
+  category: UI
+  priority: P2
+  status: completed
+  archive_status: null
+- id: RM-UI-002
+  title: Execution dashboard
+  category: UI
+  priority: P2
+  status: completed
+  archive_status: null
+- id: RM-UI-003
+  title: Failure analyzer UI
+  category: UI
+  priority: P2
+  status: completed
+  archive_status: null
+- id: RM-UI-004
+  title: Performance metrics display
+  category: UI
+  priority: P2
+  status: completed
+  archive_status: null
+edges:
+- from: RM-GOV-004
+  to: RM-AUTO-002
+  type: hard
+  description: RM-AUTO-002 depends on RM-GOV-004
+- from: RM-CORE-003
+  to: RM-AUTO-002
+  type: hard
+  description: RM-AUTO-002 depends on RM-CORE-003
+- from: RM-GOV-003
+  to: RM-CORE-001
+  type: hard
+  description: RM-CORE-001 depends on RM-GOV-003
+- from: RM-GOV-005
+  to: RM-CORE-001
+  type: hard
+  description: RM-CORE-001 depends on RM-GOV-005
+- from: RM-CORE-001
+  to: RM-CORE-002
+  type: hard
+  description: RM-CORE-002 depends on RM-CORE-001
+- from: RM-GOV-003
+  to: RM-CORE-003
+  type: hard
+  description: RM-CORE-003 depends on RM-GOV-003
+- from: RM-AUTO-002
+  to: RM-CORE-004
+  type: hard
+  description: RM-CORE-004 depends on RM-AUTO-002
+- from: RM-CORE-004
+  to: RM-CORE-006
+  type: hard
+  description: RM-CORE-006 depends on RM-CORE-004
+- from: RM-CORE-005
+  to: RM-CORE-006
+  type: hard
+  description: RM-CORE-006 depends on RM-CORE-005
+- from: RM-GOV-006
+  to: RM-CORE-006
+  type: hard
+  description: RM-CORE-006 depends on RM-GOV-006
+- from: RM-INV-002
+  to: RM-DEV-001
+  type: hard
+  description: RM-DEV-001 depends on RM-INV-002
+- from: RM-DEV-007
+  to: RM-DEV-002
+  type: hard
+  description: RM-DEV-002 depends on RM-DEV-007
+- from: RM-CORE-005
+  to: RM-DEV-002
+  type: hard
+  description: RM-DEV-002 depends on RM-CORE-005
+- from: RM-DEV-007
+  to: RM-DEV-004
+  type: hard
+  description: RM-DEV-004 depends on RM-DEV-007
+- from: RM-CORE-005
+  to: RM-DEV-004
+  type: hard
+  description: RM-DEV-004 depends on RM-CORE-005
+- from: RM-INV-004
+  to: RM-DEV-006
+  type: hard
+  description: RM-DEV-006 depends on RM-INV-004
+- from: RM-DEV-009
+  to: RM-DEV-008
+  type: hard
+  description: RM-DEV-008 depends on RM-DEV-009
+- from: RM-CORE-003
+  to: RM-DEV-008
+  type: hard
+  description: RM-DEV-008 depends on RM-CORE-003
+- from: RM-GOV-004
+  to: RM-DEV-008
+  type: hard
+  description: RM-DEV-008 depends on RM-GOV-004
+- from: RM-CORE-003
+  to: RM-DEV-009
+  type: hard
+  description: RM-DEV-009 depends on RM-CORE-003
+- from: RM-GOV-004
+  to: RM-DEV-009
+  type: hard
+  description: RM-DEV-009 depends on RM-GOV-004
+- from: RM-AUTO-002
+  to: RM-DEV-009
+  type: hard
+  description: RM-DEV-009 depends on RM-AUTO-002
+- from: RM-UI-001
+  to: RM-DOCAPP-002
+  type: hard
+  description: RM-DOCAPP-002 depends on RM-UI-001
+- from: RM-ED-001
+  to: RM-DOCAPP-002
+  type: hard
+  description: RM-DOCAPP-002 depends on RM-ED-001
+- from: RM-INV-003
+  to: RM-ED-001
+  type: hard
+  description: RM-ED-001 depends on RM-INV-003
+- from: RM-GOV-002
+  to: RM-GOV-003
+  type: hard
+  description: RM-GOV-003 depends on RM-GOV-002
+- from: RM-GOV-003
+  to: RM-GOV-004
+  type: hard
+  description: RM-GOV-004 depends on RM-GOV-003
+- from: RM-GOV-005
+  to: RM-GOV-006
+  type: hard
+  description: RM-GOV-006 depends on RM-GOV-005
+- from: RM-GOV-006
+  to: RM-GOV-007
+  type: hard
+  description: RM-GOV-007 depends on RM-GOV-006
+- from: RM-INV-003
+  to: RM-HW-001
+  type: hard
+  description: RM-HW-001 depends on RM-INV-003
+- from: RM-OPS-005
+  to: RM-INV-002
+  type: hard
+  description: RM-INV-002 depends on RM-OPS-005
+- from: RM-OPS-004
+  to: RM-INV-002
+  type: hard
+  description: RM-INV-002 depends on RM-OPS-004
+- from: RM-GOV-005
+  to: RM-INV-005
+  type: hard
+  description: RM-INV-005 depends on RM-GOV-005
+- from: RM-PHASE1-001
+  to: RM-OPS-001
+  type: hard
+  description: RM-OPS-001 depends on RM-PHASE1-001
+- from: RM-OPS-001
+  to: RM-OPS-002
+  type: hard
+  description: RM-OPS-002 depends on RM-OPS-001
+- from: RM-OPS-002
+  to: RM-OPS-003
+  type: hard
+  description: RM-OPS-003 depends on RM-OPS-002
+- from: RM-OPS-005
+  to: RM-OPS-004
+  type: hard
+  description: RM-OPS-004 depends on RM-OPS-005
+- from: RM-AUTO-001
+  to: RM-OPS-005
+  type: hard
+  description: RM-OPS-005 depends on RM-AUTO-001
+- from: RM-GOV-001
+  to: RM-OPS-005
+  type: hard
+  description: RM-OPS-005 depends on RM-GOV-001
+- from: RM-AUTO-001
+  to: RM-PHASE1-001
+  type: hard
+  description: RM-PHASE1-001 depends on RM-AUTO-001
+- from: RM-GOV-001
+  to: RM-PHASE1-001
+  type: hard
+  description: RM-PHASE1-001 depends on RM-GOV-001
+- from: RM-OPS-005
+  to: RM-PHASE1-001
+  type: hard
+  description: RM-PHASE1-001 depends on RM-OPS-005
+- from: RM-OPS-004
+  to: RM-PHASE1-001
+  type: hard
+  description: RM-PHASE1-001 depends on RM-OPS-004
+- from: RM-INV-002
+  to: RM-PHASE1-001
+  type: hard
+  description: RM-PHASE1-001 depends on RM-INV-002
+- from: RM-DEV-001
+  to: RM-PHASE1-001
+  type: hard
+  description: RM-PHASE1-001 depends on RM-DEV-001
+- from: RM-ED-001
+  to: RM-UI-001
+  type: hard
+  description: RM-UI-001 depends on RM-ED-001
+- from: RM-OPS-001
+  to: RM-UI-002
+  type: hard
+  description: RM-UI-002 depends on RM-OPS-001
+- from: RM-OPS-002
+  to: RM-UI-002
+  type: hard
+  description: RM-UI-002 depends on RM-OPS-002
+- from: RM-OPS-003
+  to: RM-UI-002
+  type: hard
+  description: RM-UI-002 depends on RM-OPS-003
+- from: RM-OPS-002
+  to: RM-UI-003
+  type: hard
+  description: RM-UI-003 depends on RM-OPS-002
+- from: RM-OPS-003
+  to: RM-UI-004
+  type: hard
+  description: RM-UI-004 depends on RM-OPS-003
+blocking_analysis:
+  eligible_items: []
+  blocked_items: []
+  conditionally_eligible:
+  - RM-AUTO-001
+  - RM-AUTO-002
+  - RM-CORE-001
+  - RM-CORE-002
+  - RM-CORE-003
+  - RM-CORE-004
+  - RM-CORE-005
+  - RM-CORE-006
+  - RM-DEV-001
+  - RM-DEV-002
+  - RM-DEV-003
+  - RM-DEV-004
+  - RM-DEV-005
+  - RM-DEV-006
+  - RM-DEV-007
+  - RM-DEV-008
+  - RM-DEV-009
+  - RM-DOCAPP-002
+  - RM-ED-001
+  - RM-GOV-001
+  - RM-GOV-002
+  - RM-GOV-003
+  - RM-GOV-004
+  - RM-GOV-005
+  - RM-GOV-006
+  - RM-GOV-007
+  - RM-HW-001
+  - RM-INTEL-001
+  - RM-INTEL-002
+  - RM-INV-002
+  - RM-INV-003
+  - RM-INV-004
+  - RM-INV-005
+  - RM-OPS-001
+  - RM-OPS-002
+  - RM-OPS-003
+  - RM-OPS-004
+  - RM-OPS-005
+  - RM-PHASE1-001
+  - RM-UI-001
+  - RM-UI-002
+  - RM-UI-003
+  - RM-UI-004
+  completed_ready_for_archive:
+  - RM-CORE-003
+  - RM-CORE-006
+  - RM-DEV-005
+  - RM-DEV-008
+  - RM-DEV-009
+  - RM-DOCAPP-002
+  - RM-ED-001
+  - RM-GOV-006
+  - RM-GOV-007
+  - RM-HW-001
+  - RM-INV-003
+  archived_items:
+  - RM-AUTO-002
+  - RM-CORE-004
+  - RM-CORE-005
+  - RM-DEV-002
+  - RM-DEV-003
+  - RM-DEV-004
+  - RM-DEV-006
+  - RM-DEV-007
+  - RM-GOV-002
+  - RM-GOV-004
+  - RM-GOV-005
+  - RM-INTEL-001
+  - RM-INTEL-002
+  - RM-INV-004
+  - RM-INV-005

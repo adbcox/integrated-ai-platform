@@ -1,0 +1,166 @@
+schema_version: "1.0"
+kind: "roadmap_item"
+id: "RM-UI-001"
+slug: "master-control-center-baseline"
+title: "Master control center baseline system"
+category: "UI"
+type: "capability_foundation"
+status: "completed"
+priority: "P2"
+scoring:
+  loe: 3
+  strategic_value: 4
+  architecture_fit: 5
+  execution_risk: 2
+  dependency_burden: 1
+  readiness: 4
+
+description: >
+  Establish web-first master control center baseline that surfaces system
+  capability through organized control panels and modules. User-facing
+  capability dashboard for device, application, and deployment management.
+
+why_it_matters: >
+  Control center is the primary user interface. Without structured panel/module
+  architecture, UI capability is scattered. Baseline enables organized,
+  extensible capability surface.
+
+scope:
+  objective: >
+    Define control-surface structure, module/panel hierarchy, and web-first
+    UI baseline layout.
+  in_scope:
+    - "control surface structure"
+    - "module definition schema"
+    - "panel organization"
+    - "web-first layout posture"
+  out_of_scope:
+    - "real component implementation"
+    - "frontend framework choice"
+    - "styling/design system"
+
+dependencies:
+  blocked_by: []
+  depends_on:
+    - "RM-ED-001"
+  enables:
+    - "RM-DOCAPP-002"
+  related_items:
+    - "RM-DOCAPP-002"
+    - "RM-INV-003"
+    - "RM-ED-001"
+
+impact:
+  affected_systems:
+    - "ui"
+    - "control_plane"
+  expected_file_families:
+    - "governance/control_center_schema.v1.yaml"
+  impact_summary: >
+    Provides structured baseline for system control interface.
+
+cmdb:
+  refs:
+    - "subsystem:ui"
+    - "subsystem:control_plane"
+  asset_links: []
+  service_links: []
+
+grouping:
+  feature_block_candidates:
+    - "FB-UI-CONTROL-CENTER"
+  package_group: "PKG-INTEGRATION-PHASE1"
+  shared_touch_surfaces:
+    - "control surfaces"
+    - "panel modules"
+    - "web-first interface"
+
+milestones:
+  recommended_first_milestone: "define-control-surface-schema"
+  downstream_milestones:
+    - "define-panel-structure"
+    - "define-module-hierarchy"
+
+planning:
+  planning_packet_ref: null
+  planning_status: "not_started"
+  planning_notes: ""
+
+execution:
+  execution_package_refs:
+    - "framework/control_center_server.py"
+  execution_status: "completed"
+  last_execution_commit: null
+
+validation:
+  validation_artifact_refs:
+    - "framework/control_center_server.py"
+    - "artifacts/integration_demo/01_hardware_design.json"
+    - "artifacts/integration_demo/02_procurement_evaluation.json"
+    - "artifacts/integration_demo/03_editions_resolved.json"
+    - "artifacts/integration_demo/04_website_generated.json"
+  validation_status: "completed"
+  definition_of_done_ref: "docs/roadmap/STANDARDS.md"
+
+governance:
+  phase_target: "Integration Phase 1"
+  architectural_lane: "capability_surface"
+  risk_tier: "low"
+  allowed_change_scope: "bounded"
+  requires_explicit_escalation: false
+
+ai_operability:
+  canonical_summary: >
+    Master control center baseline with panel structure and web-first UI
+    posture.
+  developer_intent: >
+    After this item, all system controls are organized through structured
+    panels and modules.
+  allowed_files:
+    - "governance/**"
+    - "schemas/**"
+    - "artifacts/**"
+  forbidden_files:
+    - "framework/**"
+    - "tests/**"
+    - ".github/**"
+  validation_order:
+    - "confirm control surface schema is defined"
+    - "confirm panel definition structure exists"
+    - "confirm module hierarchy is valid"
+    - "confirm web-first posture is documented"
+    - "make check passes"
+  rollback_rule: >
+    Remove control center schema and UI definitions. Preserve documentation.
+  artifact_outputs:
+    - "governance/control_center_schema.v1.yaml"
+  promotion_linkage:
+    required: false
+    manifest_refs: []
+
+sync:
+  plane:
+    sync_enabled: true
+    sync_mode: "repo_to_plane_authoritative"
+    workspace: "Integrated AI Platform"
+    project: "Roadmap Ops"
+    plane_item_id: null
+    last_synced_at: null
+    writeback_fields_allowed:
+      - "operational_state"
+      - "assignee"
+      - "cycle"
+      - "module"
+      - "labels"
+  github:
+    issue_ref: null
+    pr_refs: []
+
+metadata:
+  owner: "system"
+  created_at: "2026-04-22"
+  updated_at: "2026-04-22"
+  tags:
+    - "integration"
+    - "ui"
+    - "control-center"

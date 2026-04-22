@@ -1,0 +1,230 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Runtime Execution Result",
+  "description": "Result of executing a bounded runtime slice with session/job, profile, workspace, and artifact linkage",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "result_kind",
+    "session_id",
+    "job_id",
+    "objective",
+    "selected_profile",
+    "backend",
+    "model",
+    "workspace",
+    "command_executed",
+    "command_result",
+    "artifact_emitted",
+    "final_status",
+    "execution_duration_seconds",
+    "created_at",
+    "validation_metadata"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "1.0",
+      "description": "Schema version"
+    },
+    "result_kind": {
+      "type": "string",
+      "const": "runtime_execution_result",
+      "description": "Result artifact kind"
+    },
+    "session_id": {
+      "type": "string",
+      "description": "Session identifier"
+    },
+    "job_id": {
+      "type": "string",
+      "description": "Job identifier"
+    },
+    "task_id": {
+      "type": ["string", "null"],
+      "description": "Optional task identifier"
+    },
+    "objective": {
+      "type": "string",
+      "description": "Execution objective"
+    },
+    "selected_profile": {
+      "type": "string",
+      "enum": ["fast", "balanced", "hard"],
+      "description": "Selected runtime profile"
+    },
+    "backend": {
+      "type": "string",
+      "enum": ["ollama", "claude_fallback"],
+      "description": "Backend used"
+    },
+    "model": {
+      "type": "string",
+      "description": "Model name"
+    },
+    "workspace": {
+      "type": "object",
+      "required": [
+        "session_id",
+        "job_id",
+        "workspace_root",
+        "scratch_dir",
+        "artifact_dir",
+        "lock_file",
+        "status",
+        "created_at"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "session_id": {
+          "type": "string"
+        },
+        "job_id": {
+          "type": "string"
+        },
+        "workspace_root": {
+          "type": "string"
+        },
+        "scratch_dir": {
+          "type": "string"
+        },
+        "artifact_dir": {
+          "type": "string"
+        },
+        "lock_file": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "finalized_at": {
+          "type": ["string", "null"],
+          "format": "date-time"
+        }
+      }
+    },
+    "command_executed": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Command as list of strings"
+    },
+    "command_result": {
+      "type": "object",
+      "required": [
+        "command",
+        "allowed",
+        "exit_code",
+        "stdout",
+        "stderr",
+        "duration_seconds",
+        "timed_out"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "command": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "allowed": {
+          "type": "boolean"
+        },
+        "exit_code": {
+          "type": "integer"
+        },
+        "stdout": {
+          "type": "string"
+        },
+        "stderr": {
+          "type": "string"
+        },
+        "duration_seconds": {
+          "type": "number"
+        },
+        "cwd": {
+          "type": ["string", "null"]
+        },
+        "timed_out": {
+          "type": "boolean"
+        }
+      }
+    },
+    "artifact_emitted": {
+      "type": "object",
+      "required": [
+        "output_path",
+        "size_bytes",
+        "content_hash",
+        "emission_timestamp",
+        "status"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "output_path": {
+          "type": "string"
+        },
+        "size_bytes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "content_hash": {
+          "type": "string"
+        },
+        "emission_timestamp": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "status": {
+          "type": "string"
+        }
+      }
+    },
+    "final_status": {
+      "type": "string",
+      "enum": ["success", "failed", "timeout", "error"],
+      "description": "Execution final status"
+    },
+    "execution_duration_seconds": {
+      "type": "number",
+      "minimum": 0
+    },
+    "execution_control_ref": {
+      "type": ["string", "null"],
+      "description": "Reference to execution control package"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "validation_metadata": {
+      "type": "object",
+      "required": [
+        "schema_version",
+        "validated",
+        "validation_timestamp"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "type": "string",
+          "const": "1.0"
+        },
+        "validated": {
+          "type": "boolean"
+        },
+        "validation_timestamp": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    }
+  }
+}

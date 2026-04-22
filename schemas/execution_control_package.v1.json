@@ -1,0 +1,208 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Execution Control Package v1",
+  "description": "Defines scope, constraints, validation, and rollback semantics for a bounded execution slice. Works in conjunction with session_job_schema.v1.json.",
+  "type": "object",
+  "required": ["objective", "allowed_files", "forbidden_files", "validation_steps", "rollback_rule", "expected_artifacts", "success_criteria"],
+  "additionalProperties": false,
+  "properties": {
+    "objective": {
+      "type": "string",
+      "minLength": 1,
+      "description": "High-level goal for this execution slice"
+    },
+    "scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "summary": {
+          "type": "string",
+          "description": "One-sentence scope summary"
+        },
+        "in_scope": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "Capabilities explicitly included in this slice"
+        },
+        "out_of_scope": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "Capabilities explicitly excluded from this slice"
+        }
+      }
+    },
+    "allowed_files": {
+      "type": "array",
+      "items": {"type": "string"},
+      "minItems": 1,
+      "description": "Glob patterns of files that may be created or modified"
+    },
+    "forbidden_files": {
+      "type": "array",
+      "items": {"type": "string"},
+      "description": "Glob patterns of files that must NOT be touched"
+    },
+    "validation_steps": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["step_number", "name", "command"],
+        "additionalProperties": false,
+        "properties": {
+          "step_number": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Execution order (1-indexed)"
+          },
+          "name": {
+            "type": "string",
+            "description": "Human-readable step name"
+          },
+          "command": {
+            "type": "string",
+            "description": "Shell command or validator to run"
+          },
+          "description": {
+            "type": "string",
+            "description": "What this validation step checks"
+          },
+          "hard_stop": {
+            "type": "boolean",
+            "default": true,
+            "description": "If true, failure stops execution; if false, only warning"
+          },
+          "expected_output_pattern": {
+            "type": "string",
+            "description": "Optional regex pattern to match in output"
+          }
+        }
+      },
+      "minItems": 1,
+      "description": "Validation gates in strict execution order"
+    },
+    "rollback_rule": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "trigger": {
+          "type": "string",
+          "enum": ["any_hard_stop", "any_validation_failure", "explicit_only"],
+          "default": "any_hard_stop",
+          "description": "What triggers a rollback"
+        },
+        "action": {
+          "type": "string",
+          "enum": ["remove_new_files", "revert_modified_files", "git_reset", "restore_backup"],
+          "description": "How to rollback"
+        },
+        "remove_on_failure": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "Files to remove if rollback is triggered"
+        },
+        "preserve_artifacts": {
+          "type": "boolean",
+          "default": true,
+          "description": "Whether to preserve artifacts for debugging"
+        }
+      },
+      "required": ["trigger", "action"],
+      "description": "What happens if validation fails"
+    },
+    "expected_artifacts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["path"],
+        "additionalProperties": false,
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "Path where artifact is written"
+          },
+          "type": {
+            "type": "string",
+            "enum": ["file", "directory", "json", "yaml", "python", "shell"],
+            "description": "Artifact type"
+          },
+          "required": {
+            "type": "boolean",
+            "default": true,
+            "description": "If true, missing artifact fails the slice"
+          },
+          "description": {
+            "type": "string",
+            "description": "What this artifact contains"
+          },
+          "validation": {
+            "type": "string",
+            "enum": ["exists", "parse", "syntax"],
+            "description": "How to validate this artifact"
+          }
+        }
+      },
+      "minItems": 1,
+      "description": "Artifacts that MUST be produced by successful execution"
+    },
+    "success_criteria": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "all_validation_steps_pass": {
+          "type": "boolean",
+          "default": true,
+          "description": "All validation_steps must pass"
+        },
+        "all_artifacts_present": {
+          "type": "boolean",
+          "default": true,
+          "description": "All required expected_artifacts must be produced"
+        },
+        "all_artifacts_parse": {
+          "type": "boolean",
+          "default": true,
+          "description": "All artifacts must be valid (JSON, YAML, Python syntax, etc.)"
+        },
+        "no_forbidden_files_modified": {
+          "type": "boolean",
+          "default": true,
+          "description": "No file in forbidden_files may be touched"
+        },
+        "no_files_outside_allowed": {
+          "type": "boolean",
+          "default": true,
+          "description": "All modified files must be in allowed_files"
+        }
+      },
+      "description": "Criteria for declaring execution successful"
+    },
+    "roadmap_linkage": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "roadmap_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^RM-[A-Z]+-\\d+$"
+          },
+          "description": "Roadmap items this package closes or advances"
+        },
+        "definition_of_done_ref": {
+          "type": "string",
+          "description": "Reference to definition-of-done baseline"
+        },
+        "autonomy_scorecard_ref": {
+          "type": "string",
+          "description": "Reference to autonomy metrics being advanced"
+        }
+      },
+      "description": "Linkage to roadmap and governance"
+    },
+    "constraints": {
+      "type": "array",
+      "items": {"type": "string"},
+      "description": "Additional constraints or requirements"
+    }
+  }
+}

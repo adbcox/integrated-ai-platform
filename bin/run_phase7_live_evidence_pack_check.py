@@ -48,7 +48,7 @@ def _run_aider_proof() -> object:
     return proof.prove(
         package_id="P7-02-LIVE-EVIDENCE-CLOSEOUT-PACK-1",
         allowed_files=["framework/live_aider_proof_v1.py"],
-        message="validate live aider proof surface",
+        message="Do not make any file changes. Respond with READY only.",
         attempt_live=True,
     )
 

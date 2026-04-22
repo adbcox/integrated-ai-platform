@@ -1,10 +1,14 @@
 """LiveAiderDispatchV1: structured live Aider dispatch surface (no broad orchestration)."""
 from __future__ import annotations
 
+import os
 import subprocess
+from pathlib import Path
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
+
+import yaml
 
 
 DISPATCH_STATUS_DRY_RUN = "dry_run"
@@ -14,6 +18,25 @@ DISPATCH_STATUS_COMPLETED = "completed"
 DISPATCH_STATUS_FAILED = "failed"
 
 EXECUTION_MODE_LOCAL_FIRST = "local_first"
+REPO_ROOT = Path(__file__).resolve().parents[1]
+
+
+def _resolve_local_model() -> str:
+    """Resolve a local Ollama model from runtime profile authority."""
+    profiles_path = REPO_ROOT / "governance" / "runtime_profiles.v1.yaml"
+    data = yaml.safe_load(profiles_path.read_text(encoding="utf-8")) or {}
+    profiles = data.get("profiles") or {}
+    hard = profiles.get("hard") or {}
+    backend = str(hard.get("backend") or "").strip().lower()
+    model = str(hard.get("model") or "").strip()
+    if backend == "ollama" and model:
+        return f"ollama/{model}"
+
+    for profile_name in ("balanced", "fast"):
+        profile = profiles.get(profile_name) or {}
+        if str(profile.get("backend") or "").strip().lower() == "ollama" and str(profile.get("model") or "").strip():
+            return f"ollama/{str(profile.get('model')).strip()}"
+    return "ollama/qwen2.5-coder:14b"
 
 
 @dataclass
@@ -79,7 +102,11 @@ class LiveAiderDispatchV1:
             )
 
         files_arg = " ".join(allowed_files)
-        cmd = f"aider --message {message!r} {files_arg}"
+        model_name = _resolve_local_model()
+        cmd = (
+            f"aider --model {model_name!r} --no-show-model-warnings --yes "
+            f"--map-tokens 0 --message {message!r} {files_arg}"
+        )
 
         if dry_run:
             return AiderDispatchRecordV1(
@@ -96,10 +123,24 @@ class LiveAiderDispatchV1:
         # Live dispatch — bounded subprocess; aider may or may not be installed
         try:
             result = subprocess.run(
-                ["aider", "--message", message] + allowed_files,
+                [
+                    "aider",
+                    "--model",
+                    model_name,
+                    "--no-show-model-warnings",
+                    "--yes",
+                    "--map-tokens",
+                    "0",
+                    "--message",
+                    message,
+                ] + allowed_files,
                 capture_output=True,
                 text=True,
                 timeout=300,
+                env={
+                    **os.environ,
+                    "OLLAMA_API_BASE": os.environ.get("OLLAMA_API_BASE", "http://127.0.0.1:11434"),
+                },
             )
             status = DISPATCH_STATUS_COMPLETED if result.returncode == 0 else DISPATCH_STATUS_FAILED
             return AiderDispatchRecordV1(

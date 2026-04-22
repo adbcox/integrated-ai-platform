@@ -1,0 +1,159 @@
+schema_version: "1.0"
+kind: "roadmap_item"
+id: "RM-OPS-001"
+slug: "execution-tracing-monitoring"
+title: "Execution tracing and monitoring"
+category: "OPS"
+type: "capability_foundation"
+status: "completed"
+priority: "P1"
+scoring:
+  loe: 2
+  strategic_value: 4
+  architecture_fit: 5
+  execution_risk: 1
+  dependency_burden: 1
+  readiness: 2
+
+description: >
+  Establish structured execution tracing with session/job/command/result linkage.
+  Log all execution events with timestamps, actors, and state transitions.
+  Enable runtime observability without breaking execution paths.
+
+why_it_matters: >
+  Without tracing, execution is opaque and failures are hard to diagnose.
+  Tracing enables monitoring, debugging, and audit trails. Required for Phase 2
+  reliability.
+
+scope:
+  objective: >
+    Define execution trace schema. Wire tracing into runtime_executor session/job/command lifecycle.
+    Log to structured format (JSON events). Make tracing observable without impacting performance.
+  in_scope:
+    - "execution trace schema (JSON events)"
+    - "session/job/command event mapping"
+    - "timestamp and actor tracking"
+    - "structured log emission"
+  out_of_scope:
+    - "distributed tracing / spans"
+    - "remote log aggregation"
+    - "interactive debug facilities"
+
+dependencies:
+  blocked_by:
+    - "RM-PHASE1-001"
+  depends_on:
+    - "RM-PHASE1-001"
+  enables:
+    - "RM-OPS-002"
+  related_items:
+    - "RM-OPS-002"
+    - "RM-OPS-003"
+
+impact:
+  affected_systems:
+    - "runtime"
+    - "operations"
+  expected_file_families:
+    - "runtime/execution_tracer.py"
+  impact_summary: >
+    Enables structured logging of all execution events.
+
+cmdb:
+  refs:
+    - "subsystem:runtime"
+  asset_links: []
+  service_links: []
+
+grouping:
+  feature_block_candidates:
+    - "FB-PHASE2-OPS-SUBSTRATE"
+  package_group: "PKG-PHASE2-SUBSTRATE"
+  shared_touch_surfaces:
+    - "execution lifecycle"
+    - "runtime events"
+    - "tracing"
+
+milestones:
+  recommended_first_milestone: "define-trace-schema"
+  downstream_milestones:
+    - "wire-tracing-into-executor"
+    - "validate-trace-completeness"
+
+planning:
+  planning_packet_ref: null
+  planning_status: "completed"
+  planning_notes: "Execution tracing integrated into runtime_executor with ExecutionTracer class, recording all stage transitions and events"
+
+execution:
+  execution_package_refs:
+    - "runtime/execution_tracer.py"
+    - "runtime/runtime_executor.py (instrumented)"
+  execution_status: "completed"
+  last_execution_commit: "phase2_ops_001_completed"
+
+validation:
+  validation_artifact_refs:
+    - "artifacts/validation/phase2_ops_validation.json"
+    - "artifacts/validation/execution_trace_a23585ef.json"
+  validation_status: "completed"
+  definition_of_done_ref: "docs/roadmap/STANDARDS.md"
+
+governance:
+  phase_target: "Phase 2"
+  architectural_lane: "ops_substrate"
+  risk_tier: "low"
+  allowed_change_scope: "bounded"
+  requires_explicit_escalation: false
+
+ai_operability:
+  canonical_summary: >
+    Phase 2 ops item establishing structured execution tracing with session/job/command linkage.
+  developer_intent: >
+    After this item, all execution events are logged with context. Tracing enables
+    monitoring and debugging without invasive instrumentation.
+  allowed_files:
+    - "runtime/**"
+    - "governance/**"
+  forbidden_files:
+    - "framework/**"
+    - "tests/**"
+    - ".github/**"
+  validation_order:
+    - "confirm trace schema is defined"
+    - "confirm executor emits trace events"
+    - "confirm session/job/command linkage in traces"
+    - "make check passes"
+  rollback_rule: >
+    Remove execution_tracer module. Restore runtime_executor to pre-tracing state.
+  artifact_outputs: []
+  promotion_linkage:
+    required: false
+    manifest_refs: []
+
+sync:
+  plane:
+    sync_enabled: true
+    sync_mode: "repo_to_plane_authoritative"
+    workspace: "Integrated AI Platform"
+    project: "Roadmap Ops"
+    plane_item_id: null
+    last_synced_at: null
+    writeback_fields_allowed:
+      - "operational_state"
+      - "assignee"
+      - "cycle"
+      - "module"
+      - "labels"
+  github:
+    issue_ref: null
+    pr_refs: []
+
+metadata:
+  owner: "system"
+  created_at: "2026-04-22"
+  updated_at: "2026-04-22"
+  tags:
+    - "phase-2"
+    - "ops"
+    - "tracing"

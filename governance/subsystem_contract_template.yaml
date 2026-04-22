@@ -1,0 +1,173 @@
+schema_version: "1.0"
+kind: "subsystem_contract_template"
+generated_at: "2026-04-22T00:00:00Z"
+
+description: >
+  This is the reusable contract template for declaring subsystem responsibilities,
+  interfaces, dependencies, and observability expectations. Each subsystem declaration
+  must fill out all required fields.
+
+required_fields:
+  - subsystem_id
+  - name
+  - layer
+  - responsibility
+  - owned_interfaces
+  - allowed_dependencies
+  - trust_boundary_id
+  - stability_level
+  - lifecycle_state
+
+example_contract:
+  subsystem_id: "SYS-EXAMPLE-001"
+  name: "example_subsystem"
+
+  purpose: >
+    Brief description of why this subsystem exists and what capability it provides.
+
+  owned_responsibilities:
+    - "Specific capability 1"
+    - "Specific capability 2"
+    - "Specific capability 3"
+
+  layer: "execution"
+
+  trust_boundary_id: "TB-INTERNAL"
+  stability_level: "stable"
+  lifecycle_state: "active"
+
+  owned_interfaces:
+    - interface_name: "interface_1"
+      signature: "function_1(param1: type1) -> return_type1"
+      contract: "Detailed contract for this interface"
+
+    - interface_name: "interface_2"
+      signature: "function_2(param2: type2) -> return_type2"
+      contract: "Detailed contract for this interface"
+
+  allowed_inputs:
+    - source_subsystem_id: "SYS-OTHER-001"
+      input_type: "RPC call"
+      format: "JSON"
+      rate_limit: "unbounded"
+
+    - source_subsystem_id: "SYS-ANOTHER-001"
+      input_type: "artifact write"
+      format: "YAML"
+      rate_limit: "once per cycle"
+
+  allowed_outputs:
+    - target_subsystem_id: "SYS-DOWNSTREAM-001"
+      output_type: "RPC response"
+      format: "JSON"
+      guarantees: "eventual consistency"
+
+    - target_subsystem_id: "SYS-STORAGE-001"
+      output_type: "artifact write"
+      format: "YAML"
+      guarantees: "atomic writes to artifact root"
+
+  dependencies:
+    hard_dependencies:
+      - subsystem_id: "SYS-DEPENDENCY-001"
+        reason: "Required for core functionality"
+        call_pattern: "synchronous RPC"
+
+    soft_dependencies:
+      - subsystem_id: "SYS-OPTIONAL-001"
+        reason: "Used for optimization only"
+        call_pattern: "asynchronous notification"
+
+    forbidden_couplings:
+      - subsystem_id: "SYS-FORBIDDEN-001"
+        reason: "Would create circular dependency"
+
+  allowed_dependencies:
+    - "SYS-DEP-SUBSYSTEM-001"
+    - "SYS-DEP-SUBSYSTEM-002"
+
+  stability_level: "stable"
+
+  lifecycle_state: "active"
+
+  observability_expectations:
+    metrics:
+      - metric_name: "operation_latency_ms"
+        sla: "p99 < 100ms"
+      - metric_name: "success_rate"
+        sla: "> 99.5%"
+      - metric_name: "error_count"
+        sla: "< 1 per 1000 ops"
+
+    logs:
+      - log_level: "INFO"
+        events:
+          - "initialization"
+          - "operation_start"
+          - "operation_end"
+      - log_level: "ERROR"
+        events:
+          - "dependency_failure"
+          - "contract_violation"
+
+    traces:
+      - "distributed tracing required for cross-subsystem calls"
+      - "span context propagation mandatory"
+
+  artifact_expectations:
+    inputs:
+      - artifact_type: "roadmap item"
+        location: "docs/roadmap/items/"
+        immutable: true
+
+    outputs:
+      - artifact_type: "run summary"
+        location: "artifacts/subsystem_name/"
+        retention: "30 days"
+
+  failure_modes:
+    - mode: "dependency_unavailable"
+      impact: "operation fails with timeout"
+      mitigation: "retry with exponential backoff"
+
+    - mode: "contract_violation"
+      impact: "validation gate enforced"
+      mitigation: "escalation to governance"
+
+  rollback_implications:
+    - "All persistent state must be written atomically to artifact root"
+    - "No distributed transactions; eventual consistency only"
+    - "Rollback requires reverting artifact root files"
+
+  testing_requirements:
+    unit_tests:
+      - "interface_1 behavior"
+      - "interface_2 behavior"
+      - "error condition handling"
+
+    integration_tests:
+      - "hard dependency presence validation"
+      - "cross-subsystem contract verification"
+      - "artifact I/O validation"
+
+  security_constraints:
+    allowed_file_patterns:
+      - "framework/**"
+      - "artifacts/**"
+
+    forbidden_file_patterns:
+      - "sensitive/**"
+      - "credentials/**"
+
+    escalation_required: false
+
+  notes: "Any additional notes or context about this subsystem"
+
+template_instructions:
+  1: "Copy this template and fill in all required_fields"
+  2: "Provide concrete examples for owned_interfaces (signatures and contracts)"
+  3: "List exact allowed_dependencies by subsystem_id"
+  4: "Enumerate observable metrics with realistic SLAs"
+  5: "Declare failure modes explicitly; do not omit"
+  6: "Register new subsystems in canonical_architecture_baseline.yaml after validation"
+  7: "Do not bypass this contract; governance enforces it"

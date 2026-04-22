@@ -5,8 +5,8 @@
   ],
   "gates": [
     {
-      "blocking_reason_if_open": "machine-readable authority artifacts are being introduced by RECON-W1 and have not yet been ratified as closed",
-      "classification": "open",
+      "blocking_reason_if_open": null,
+      "classification": "closed_ratified",
       "code_evidence": [
         "bin/governance_reconcile.py",
         "tests/test_governance_reconcile.py"
@@ -23,13 +23,18 @@
         "governance/authority_adr_0002_tactical_family_classification.md",
         "governance/authority_adr_0003_lob_w3_classification.md"
       ],
-      "notes": "Phase 0 stays open until a subsequent reconciliation package ratifies these artifacts and mints a closure record.",
+      "notes": "Phase 0 closed by PHASE0-GLOBAL-GATE-CLOSURE-1 after authority inventory conflicts reached zero and canonical surfaces were reconciled.",
       "phase_id": 0,
-      "phase_name": "governance_source_of_truth_reconciliation"
+      "phase_name": "governance_source_of_truth_reconciliation",
+      "closure_evidence_ref": "artifacts/governance/phase0_global_gate_closure.json",
+      "closure_package_id": "PHASE0-GLOBAL-GATE-CLOSURE-1",
+      "ratified_by_adr": "governance/authority_adr_0001_source_of_truth.md"
     },
     {
-      "blocking_reason_if_open": "runtime primitives exist in framework/ but no governance artifact has yet ratified the contract version",
-      "classification": "materially_implemented_open_governance",
+      "blocking_reason_if_open": null,
+      "classification": "closed_ratified",
+      "closure_evidence_ref": "governance/phase1_local_runtime_closure_evidence.json",
+      "closure_package_id": "PHASE-1-CLOSE-1",
       "code_evidence": [
         "framework/worker_runtime.py",
         "framework/job_schema.py",
@@ -41,11 +46,13 @@
       ],
       "governance_evidence": [
         "governance/runtime_contract_version.json",
-        "governance/phase_gate_status.json"
+        "governance/phase1_closure_decision.json",
+        "governance/phase1_local_runtime_closure_evidence.json"
       ],
-      "notes": "Runtime primitives are present and bound in runtime_contract_version.json; Phase 1 closes only when governance explicitly ratifies that contract version.",
+      "notes": "Phase 1 closed by PHASE-1-CLOSE-1 via explicit runtime contract ratification. All 7 primitives checksummed and stable.",
       "phase_id": 1,
-      "phase_name": "runtime_contract_foundation"
+      "phase_name": "runtime_contract_foundation",
+      "ratified_by_adr": "governance/authority_adr_0018_phase1_local_runtime_closure.md"
     },
     {
       "blocking_reason_if_open": null,
@@ -148,12 +155,31 @@
       "ratified_by_adr": "governance/authority_adr_0025_phase7_closure.md"
     }
   ],
-  "generated_at": "2026-04-18T02:35:18-04:00",
+  "generated_at": "2026-04-22T14:23:51+00:00",
   "schema_version": "1.0.0",
   "supersedes": [
     "docs/claude-code-roadmap.md (narrative only; not machine authority)",
     "docs/version15-master-roadmap.md (historical/legacy narrative only)",
     "docs/system_milestone_roadmap.md (out-of-scope for runtime authority)",
     "config/promotion_manifest.json (legacy tactical release authority; frozen pending explicit migration)"
-  ]
+  ],
+  "legacy_authority_boundary": {
+    "promotion_manifest": {
+      "policy_state": "coexistence_ratified",
+      "ownership": "legacy_tactical_release_only",
+      "precedence": "governance_machine_authority_surfaces_take_precedence",
+      "migration_disposition": "frozen_pending_migration",
+      "migration_requires": "explicit_authority_package"
+    }
+  },
+  "ledt_governance_ratification_ref": "governance/ledt_governance_ratification.json",
+  "phase_authority_lock": {
+    "lock_id": "PHASE-AUTHORITY-LOCK-BUNDLE-1",
+    "scope": "phase-authority lock scoped reconciliation",
+    "status": "scoped_lock_closed",
+    "phase0_global_status": "closed_ratified",
+    "allows_phase0_open_with_late_phase_ratified": false,
+    "evidence_ref": "artifacts/governance/phase_authority_lock_closure.json",
+    "notes": "Phase 0 globally closed; scoped lock remains closed as historical reconciliation evidence."
+  }
 }

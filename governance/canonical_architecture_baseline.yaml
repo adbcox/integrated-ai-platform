@@ -1,0 +1,362 @@
+schema_version: "1.0"
+kind: "canonical_architecture_baseline"
+generated_at: "2026-04-22T00:00:00Z"
+source_of_truth: "repo"
+
+subsystems:
+  - subsystem_id: "SYS-CTRL-001"
+    name: "control_plane"
+    layer: "orchestration"
+    responsibility: "Coordinate execution stages, manage job lifecycle, enforce governance gates"
+    owned_interfaces:
+      - "job_scheduler"
+      - "stage_coordinator"
+      - "gate_enforcer"
+    allowed_dependencies:
+      - "SYS-RUNTIME-001"
+      - "SYS-EVAL-001"
+      - "SYS-ROADMAP-001"
+    trust_boundary_id: "TB-INTERNAL"
+    stability_level: "stable"
+    lifecycle_state: "active"
+    notes: "Central orchestration; no direct user exposure"
+
+  - subsystem_id: "SYS-RUNTIME-001"
+    name: "agent_runtime"
+    layer: "execution"
+    responsibility: "Execute bounded coding tasks with fallback strategies and isolation"
+    owned_interfaces:
+      - "task_executor"
+      - "code_modification_hook"
+      - "artifact_writer"
+    allowed_dependencies:
+      - "SYS-INF-001"
+      - "SYS-ARTIFACT-001"
+      - "SYS-EVAL-001"
+    trust_boundary_id: "TB-INTERNAL"
+    stability_level: "stable"
+    lifecycle_state: "active"
+    notes: "Core execution; handles real code modifications"
+
+  - subsystem_id: "SYS-INF-001"
+    name: "inference_gateway"
+    layer: "inference"
+    responsibility: "Unified access to local and remote inference backends with routing"
+    owned_interfaces:
+      - "model_selector"
+      - "prompt_builder"
+      - "response_handler"
+      - "fallback_router"
+    allowed_dependencies:
+      - "SYS-POLICY-001"
+    trust_boundary_id: "TB-EXTERNAL"
+    stability_level: "stable"
+    lifecycle_state: "active"
+    notes: "Gateway to Ollama, Claude API, and model routing policies"
+
+  - subsystem_id: "SYS-RAG-001"
+    name: "rag_pipeline"
+    layer: "retrieval"
+    responsibility: "Multi-stage retrieval augmentation with entity-aware reranking"
+    owned_interfaces:
+      - "code_search"
+      - "entity_extractor"
+      - "reranker"
+      - "context_aggregator"
+    allowed_dependencies:
+      - "SYS-REPOMAP-001"
+      - "SYS-INF-001"
+    trust_boundary_id: "TB-INTERNAL"
+    stability_level: "stable"
+    lifecycle_state: "active"
+    notes: "Stage RAG 1-6 orchestration; source-only retrieval"
+
+  - subsystem_id: "SYS-REPOMAP-001"
+    name: "codebase_repomap"
+    layer: "indexing"
+    responsibility: "Symbol extraction, repository indexing, and fast lookup"
+    owned_interfaces:
+      - "symbol_extractor"
+      - "index_builder"
+      - "lookup_service"
+    allowed_dependencies: []
+    trust_boundary_id: "TB-INTERNAL"
+    stability_level: "stable"
+    lifecycle_state: "active"
+    notes: "Read-only codebase analysis; no modifications"
+
+  - subsystem_id: "SYS-EVAL-001"
+    name: "evaluation_pipeline"
+    layer: "validation"
+    responsibility: "Execute validation, scoring, and quality assessment"
+    owned_interfaces:
+      - "test_executor"
+      - "code_validator"
+      - "result_scorer"
+    allowed_dependencies:
+      - "SYS-ARTIFACT-001"
+    trust_boundary_id: "TB-INTERNAL"
+    stability_level: "stable"
+    lifecycle_state: "active"
+    notes: "Validation gate enforcement"
+
+  - subsystem_id: "SYS-ARTIFACT-001"
+    name: "artifact_persistence"
+    layer: "storage"
+    responsibility: "Write, read, and manage execution artifacts with versioning"
+    owned_interfaces:
+      - "artifact_writer"
+      - "artifact_reader"
+      - "artifact_index"
+    allowed_dependencies: []
+    trust_boundary_id: "TB-INTERNAL"
+    stability_level: "stable"
+    lifecycle_state: "active"
+    notes: "Canonical artifact root; immutable writes"
+
+  - subsystem_id: "SYS-GOVERNANCE-001"
+    name: "governance"
+    layer: "policy"
+    responsibility: "Enforce roadmap, contracts, and validation rules"
+    owned_interfaces:
+      - "roadmap_loader"
+      - "contract_validator"
+      - "gate_enforcer"
+    allowed_dependencies:
+      - "SYS-ARTIFACT-001"
+      - "SYS-ROADMAP-001"
+    trust_boundary_id: "TB-INTERNAL"
+    stability_level: "stable"
+    lifecycle_state: "active"
+    notes: "Central policy enforcement; no code execution"
+
+  - subsystem_id: "SYS-ROADMAP-001"
+    name: "roadmap_ops"
+    layer: "planning"
+    responsibility: "Maintain roadmap state, dependency graph, and planning logic"
+    owned_interfaces:
+      - "roadmap_loader"
+      - "dependency_planner"
+      - "compiler"
+    allowed_dependencies:
+      - "SYS-ARTIFACT-001"
+    trust_boundary_id: "TB-INTERNAL"
+    stability_level: "stable"
+    lifecycle_state: "active"
+    notes: "Roadmap as code; source canonical"
+
+  - subsystem_id: "SYS-DEVASSIST-001"
+    name: "developer_assistant"
+    layer: "developer_facing"
+    responsibility: "User-facing coding assistance with local-first preference"
+    owned_interfaces:
+      - "task_intake"
+      - "execution_controller"
+      - "feedback_loop"
+    allowed_dependencies:
+      - "SYS-RUNTIME-001"
+      - "SYS-INF-001"
+      - "SYS-EVAL-001"
+    trust_boundary_id: "TB-EXTERNAL"
+    stability_level: "evolving"
+    lifecycle_state: "active"
+    notes: "Primary user interaction point"
+
+  - subsystem_id: "SYS-AIDER-ADAPTER-001"
+    name: "aider_adapter"
+    layer: "adapter"
+    responsibility: "Bridging to Aider for complex multi-file edits"
+    owned_interfaces:
+      - "aider_executor"
+      - "aider_transport"
+    allowed_dependencies:
+      - "SYS-RUNTIME-001"
+    trust_boundary_id: "TB-EXTERNAL"
+    stability_level: "stable"
+    lifecycle_state: "active"
+    notes: "Controlled fallback; not primary path"
+
+  - subsystem_id: "SYS-POLICY-001"
+    name: "model_policy_engine"
+    layer: "policy"
+    responsibility: "Route inference requests to models based on policies and profiles"
+    owned_interfaces:
+      - "policy_evaluator"
+      - "model_selector"
+      - "fallback_handler"
+    allowed_dependencies:
+      - "SYS-INF-001"
+    trust_boundary_id: "TB-EXTERNAL"
+    stability_level: "stable"
+    lifecycle_state: "active"
+    notes: "Encodes model selection rules; supports tactical profiles"
+
+  - subsystem_id: "SYS-LEARNING-001"
+    name: "learning_loops"
+    layer: "feedback"
+    responsibility: "Capture, aggregate, and learn from execution outcomes"
+    owned_interfaces:
+      - "event_recorder"
+      - "attribution_engine"
+      - "outcome_aggregator"
+    allowed_dependencies:
+      - "SYS-ARTIFACT-001"
+      - "SYS-EVAL-001"
+    trust_boundary_id: "TB-INTERNAL"
+    stability_level: "evolving"
+    lifecycle_state: "active"
+    notes: "Autonomous improvement signal capture"
+
+  - subsystem_id: "SYS-PERMISSION-001"
+    name: "permission_engine"
+    layer: "security"
+    responsibility: "Enforce tool access, file modification, and escalation policies"
+    owned_interfaces:
+      - "permission_evaluator"
+      - "escalation_router"
+    allowed_dependencies:
+      - "SYS-GOVERNANCE-001"
+    trust_boundary_id: "TB-INTERNAL"
+    stability_level: "stable"
+    lifecycle_state: "active"
+    notes: "Safety gate for all user-facing operations"
+
+  - subsystem_id: "SYS-STATE-001"
+    name: "state_store"
+    layer: "storage"
+    responsibility: "Persist and retrieve execution state, patterns, and learned outcomes"
+    owned_interfaces:
+      - "state_writer"
+      - "state_reader"
+      - "pattern_store"
+    allowed_dependencies:
+      - "SYS-ARTIFACT-001"
+    trust_boundary_id: "TB-INTERNAL"
+    stability_level: "stable"
+    lifecycle_state: "active"
+    notes: "Backing store for learning and QC feedback"
+
+  - subsystem_id: "SYS-SCHEDULER-001"
+    name: "job_scheduler"
+    layer: "orchestration"
+    responsibility: "Schedule and manage parallel job execution with lifecycle"
+    owned_interfaces:
+      - "job_queue"
+      - "lifecycle_tracker"
+      - "result_collector"
+    allowed_dependencies:
+      - "SYS-ARTIFACT-001"
+    trust_boundary_id: "TB-INTERNAL"
+    stability_level: "stable"
+    lifecycle_state: "active"
+    notes: "WorkerPool and WorkerRuntime implementation"
+
+  - subsystem_id: "SYS-REPORTING-001"
+    name: "reporting_surfaces"
+    layer: "developer_facing"
+    responsibility: "Emit structured reports on execution, validation, and outcomes"
+    owned_interfaces:
+      - "run_report_generator"
+      - "validation_reporter"
+      - "metrics_aggregator"
+    allowed_dependencies:
+      - "SYS-ARTIFACT-001"
+      - "SYS-EVAL-001"
+    trust_boundary_id: "TB-INTERNAL"
+    stability_level: "evolving"
+    lifecycle_state: "active"
+    notes: "Structured output for dashboards and analysis"
+
+trust_boundaries:
+  - id: "TB-INTERNAL"
+    name: "Internal Trusted Boundary"
+    description: "Subsystems within this boundary may freely call each other without escalation"
+    subsystems:
+      - "SYS-CTRL-001"
+      - "SYS-RUNTIME-001"
+      - "SYS-RAG-001"
+      - "SYS-REPOMAP-001"
+      - "SYS-EVAL-001"
+      - "SYS-ARTIFACT-001"
+      - "SYS-GOVERNANCE-001"
+      - "SYS-ROADMAP-001"
+      - "SYS-POLICY-001"
+      - "SYS-LEARNING-001"
+      - "SYS-PERMISSION-001"
+      - "SYS-STATE-001"
+      - "SYS-SCHEDULER-001"
+      - "SYS-REPORTING-001"
+
+  - id: "TB-EXTERNAL"
+    name: "External/Third-Party Boundary"
+    description: "Subsystems in this boundary depend on external services or APIs"
+    subsystems:
+      - "SYS-INF-001"
+      - "SYS-DEVASSIST-001"
+      - "SYS-AIDER-ADAPTER-001"
+
+trust_matrix:
+  description: "Cross-boundary call permissions (source -> target allowed)"
+  rules:
+    - source: "TB-INTERNAL"
+      targets:
+        - "TB-INTERNAL"
+        - "TB-EXTERNAL"
+      reason: "Internal subsystems may call external adapters and gateways"
+
+    - source: "TB-EXTERNAL"
+      targets:
+        - "TB-INTERNAL"
+        - "TB-EXTERNAL"
+      reason: "External subsystems (inference, user I/O) may call back to internal; inference calls to inference allowed"
+
+layer_hierarchy:
+  - layer: "developer_facing"
+    permitted_downstreams: ["adapter", "execution", "developer_facing"]
+
+  - layer: "adapter"
+    permitted_downstreams: ["execution", "orchestration"]
+
+  - layer: "execution"
+    permitted_downstreams: ["inference", "retrieval", "policy", "validation", "feedback", "storage"]
+
+  - layer: "orchestration"
+    permitted_downstreams: ["execution", "validation", "planning", "policy", "feedback"]
+
+  - layer: "inference"
+    permitted_downstreams: ["policy"]
+
+  - layer: "retrieval"
+    permitted_downstreams: ["indexing"]
+
+  - layer: "planning"
+    permitted_downstreams: ["storage"]
+
+  - layer: "policy"
+    permitted_downstreams: []
+
+  - layer: "validation"
+    permitted_downstreams: ["storage"]
+
+  - layer: "feedback"
+    permitted_downstreams: ["storage"]
+
+  - layer: "security"
+    permitted_downstreams: ["policy"]
+
+  - layer: "storage"
+    permitted_downstreams: []
+
+  - layer: "indexing"
+    permitted_downstreams: []
+
+metadata:
+  total_subsystems: 18
+  stability_breakdown:
+    stable: 15
+    evolving: 2
+    experimental: 0
+  layer_count: 10
+  trust_boundaries: 2
+  last_updated: "2026-04-22T00:00:00Z"
+  owner: "adrian"

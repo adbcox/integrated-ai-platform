@@ -1,0 +1,122 @@
+---
+schema_version: "1.0"
+kind: execution_bundle_schema
+generated_at: "2026-04-22T03:00:00Z"
+description: "Schema for executable roadmap bundles"
+
+required_fields:
+  - roadmap_ids
+  - objective
+  - allowed_files
+  - forbidden_files
+  - expected_artifacts
+  - validation_steps
+  - rollback_rule
+  - completion_rule
+
+field_definitions:
+  roadmap_ids:
+    type: array
+    description: "List of roadmap item IDs included in bundle"
+    example: ["RM-INV-004", "RM-GOV-004"]
+
+  objective:
+    type: string
+    description: "Primary goal of this execution bundle"
+    example: "Implement CMDB topology and dependency planner integration"
+
+  allowed_files:
+    type: array
+    description: "File patterns that may be created/modified"
+    items:
+      type: string
+      pattern: "glob pattern"
+    example: ["governance/**", "bin/**", "schemas/**"]
+
+  forbidden_files:
+    type: array
+    description: "File patterns that must NOT be modified"
+    items:
+      type: string
+    example: ["framework/**", "tests/**", ".github/**"]
+
+  expected_artifacts:
+    type: array
+    description: "Artifacts that must exist after execution"
+    items:
+      type: object
+      properties:
+        path:
+          type: string
+        type:
+          type: string
+          enum: ["file", "directory", "generated"]
+        required:
+          type: boolean
+    example:
+      - path: "artifacts/planning/next_pull.json"
+        type: "generated"
+        required: true
+
+  validation_steps:
+    type: array
+    description: "Validation checks to run"
+    items:
+      type: object
+      properties:
+        name:
+          type: string
+        command:
+          type: string
+        expected_exit_code:
+          type: integer
+    example:
+      - name: "YAML syntax"
+        command: "make check"
+        expected_exit_code: 0
+
+  rollback_rule:
+    type: string
+    description: "How to undo execution if validation fails"
+    example: "Git checkout modified files and remove generated artifacts"
+
+  completion_rule:
+    type: string
+    description: "Definition of successful completion"
+    example: "All validators pass, all expected artifacts exist, next_pull.json is non-empty"
+
+optional_fields:
+  - description
+  - author
+  - created_at
+  - modified_at
+  - notes
+
+field_descriptions:
+  description:
+    type: string
+    description: "Additional context for this bundle"
+
+  author:
+    type: string
+    description: "Author or agent responsible"
+
+  created_at:
+    type: string
+    format: iso8601
+    description: "Creation timestamp"
+
+  modified_at:
+    type: string
+    format: iso8601
+    description: "Last modification timestamp"
+
+  notes:
+    type: array
+    description: "Implementation notes or constraints"
+
+validation_constraints:
+  - all_roadmap_ids_must_be_valid
+  - allowed_files_and_forbidden_files_must_not_overlap
+  - expected_artifacts_must_be_testable
+  - validation_steps_must_be_executable

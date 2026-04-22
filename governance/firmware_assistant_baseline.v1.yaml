@@ -1,0 +1,39 @@
+schema_version: "1.0"
+kind: "firmware_assistant_baseline"
+package_id: "RM-DEV-004"
+status: "operational_baseline"
+platform_scope:
+  - id: "nordic_nrf52"
+    families: ["nRF52", "nRF53"]
+    sdk_stack: ["nRF Connect SDK", "Zephyr"]
+  - id: "esp32"
+    families: ["ESP32", "ESP32-S3", "ESP32-C3"]
+    sdk_stack: ["ESP-IDF", "PlatformIO"]
+workflow_contract:
+  required_inputs:
+    - "board_profile"
+    - "target_platform"
+    - "build_command"
+    - "flash_command"
+    - "validation_sequence"
+  stages:
+    - stage_id: "firmware_plan"
+      objective: "Create bounded firmware task contract before edits"
+    - stage_id: "firmware_build"
+      objective: "Run platform build command and capture logs"
+    - stage_id: "firmware_validate"
+      objective: "Run validation sequence (unit, lint, static checks where available)"
+    - stage_id: "firmware_qc"
+      objective: "Emit QC finding envelope aligned to RM-DEV-002 classes"
+artifact_contract:
+  run_manifest: "artifacts/firmware/runs/<run_id>/manifest.json"
+  build_log: "artifacts/firmware/runs/<run_id>/build.log"
+  qc_result: "artifacts/firmware/runs/<run_id>/qc_result.json"
+integration_refs:
+  qc_loop: "governance/qc_finding_schema_rm_dev_002.v1.yaml"
+  indexed_retrieval: "governance/indexed_retrieval_backend.v1.yaml"
+  trust_boundary: "governance/trust_boundary_policy.v1.yaml"
+  cycle_batch_governance: "governance/roadmap_cycle_batch_governance.v1.yaml"
+closeout_evidence:
+  execution_pack: "docs/roadmap/RM-DEV-004_EXECUTION_PACK.md"
+  validator: "bin/run_rm_bundle_6_closeout_check.py"

@@ -1,0 +1,111 @@
+schema_version: "1.0"
+kind: "roadmap_dependency_graph"
+generated_at: "2026-04-22T00:00:00Z"
+
+description: >
+  Machine-readable roadmap dependency graph showing 6-item integration:
+  RM-DEV-009 (agent-docs) → RM-DEV-008 (memory governance) → RM-DEV-005 (local autonomy)
+  all built on RM-CORE-003 (architecture) + RM-GOV-004 (dependency planner) + RM-AUTO-002 (compiler)
+
+nodes:
+  - id: "RM-DEV-009"
+    title: "Agent operating-docs and persistent execution-memory package"
+    category: "DEV"
+    status: "proposed"
+    priority: "P1"
+    blocked: false
+    phase: "Phase 3"
+
+  - id: "RM-DEV-008"
+    title: "Memory governance, summarization, and provenance policy"
+    category: "DEV"
+    status: "proposed"
+    priority: "P1"
+    blocked: false
+    phase: "Phase 3"
+
+  - id: "RM-DEV-005"
+    title: "Local autonomy uplift, OSS intake, and Aider reliability hardening"
+    category: "DEV"
+    status: "completed"
+    priority: "P1"
+    blocked: false
+    phase: "Phase 4-5"
+
+  - id: "RM-CORE-003"
+    title: "Standardize workspace layout"
+    category: "CORE"
+    status: "complete"
+    priority: "P1"
+    blocked: false
+    phase: "Phase 1"
+
+  - id: "RM-GOV-004"
+    title: "Create machine-readable execution-control package"
+    category: "GOV"
+    status: "complete"
+    priority: "P1"
+    blocked: false
+    phase: "Phase 0"
+
+  - id: "RM-AUTO-002"
+    title: "Roadmap-to-execution compiler baseline"
+    category: "AUTO"
+    status: "complete"
+    priority: "P1"
+    blocked: false
+    phase: "Phase 3"
+
+edges:
+  - from: "RM-CORE-003"
+    to: "RM-DEV-009"
+    type: "hard"
+    description: "RM-DEV-009 depends on architecture baseline from RM-CORE-003"
+
+  - from: "RM-GOV-004"
+    to: "RM-DEV-009"
+    type: "hard"
+    description: "RM-DEV-009 depends on dependency planner from RM-GOV-004"
+
+  - from: "RM-AUTO-002"
+    to: "RM-DEV-009"
+    type: "hard"
+    description: "RM-DEV-009 depends on compiler from RM-AUTO-002"
+
+  - from: "RM-DEV-009"
+    to: "RM-DEV-008"
+    type: "hard"
+    description: "RM-DEV-008 depends on agent-docs from RM-DEV-009"
+
+  - from: "RM-CORE-003"
+    to: "RM-DEV-008"
+    type: "hard"
+    description: "RM-DEV-008 uses architecture baseline for subsystem boundaries"
+
+  - from: "RM-GOV-004"
+    to: "RM-DEV-008"
+    type: "hard"
+    description: "RM-DEV-008 uses dependency graph for state management"
+
+  - from: "RM-DEV-008"
+    to: "RM-DEV-005"
+    type: "soft"
+    description: "RM-DEV-005 can consume memory governance from RM-DEV-008"
+
+integration_summary:
+  foundation_layer:
+    - "RM-CORE-003 (architecture baseline)"
+    - "RM-GOV-004 (dependency planner)"
+    - "RM-AUTO-002 (compiler)"
+
+  agent_operating_layer:
+    - "RM-DEV-009 (agent-docs)"
+    - "RM-DEV-008 (memory governance)"
+
+  autonomy_layer:
+    - "RM-DEV-005 (local autonomy uplifted by operating layers)"
+
+flow_description: >
+  System architecture (RM-CORE-003) + dependency planner (RM-GOV-004) + compiler (RM-AUTO-002)
+  enable agent-docs layer (RM-DEV-009). Agent-docs + architecture enable memory governance
+  (RM-DEV-008). Both enable bounded execution with RM-DEV-005 local autonomy policy.

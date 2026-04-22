@@ -1,0 +1,173 @@
+schema_version: "1.0"
+kind: "roadmap_item"
+id: "RM-AUTO-001"
+slug: "plain-english-goal-to-agent-system"
+title: "Plain-English goal-to-agent baseline system"
+category: "AUTO"
+type: "capability_foundation"
+status: "completed"
+priority: "P1"
+
+scoring:
+  loe: 4
+  strategic_value: 5
+  architecture_fit: 5
+  execution_risk: 2
+  dependency_burden: 2
+  readiness: 3
+
+description: >
+  Establish baseline for converting plain-English goals into executable agent
+  tasks, bundles, and execution work with governance guardrails and approval
+  posture.
+
+why_it_matters: >
+  Goals remain unusable until converted into structured, executable, governed
+  work. Baseline enables goal intake, validation, guardrail enforcement, and
+  task generation without manual middleware.
+
+scope:
+  objective: >
+    Define goal intake structure, goal-to-task conversion rules, goal-to-bundle
+    packaging, guardrail posture, and approval workflow.
+  in_scope:
+    - "goal intake schema"
+    - "goal validation structure"
+    - "goal-to-task decomposition rules"
+    - "goal-to-bundle packaging"
+    - "guardrail and constraint enforcement"
+    - "approval and authorization posture"
+  out_of_scope:
+    - "natural language understanding model training"
+    - "broad semantic parsing infrastructure"
+    - "multi-modal goal understanding"
+
+dependencies:
+  blocked_by: []
+  depends_on: []
+  enables:
+    - "RM-GOV-001"
+    - "RM-OPS-005"
+  related_items:
+    - "RM-GOV-001"
+    - "RM-OPS-005"
+    - "RM-INV-002"
+
+impact:
+  affected_systems:
+    - "orchestration"
+    - "goal_management"
+    - "task_execution"
+  expected_file_families:
+    - "governance/goal_intake_schema.v1.yaml"
+  impact_summary: >
+    Provides structured baseline for converting natural goals into executable,
+    governed, auditable work.
+
+cmdb:
+  refs:
+    - "subsystem:orchestration"
+    - "subsystem:task_execution"
+  asset_links: []
+  service_links: []
+
+grouping:
+  feature_block_candidates:
+    - "FB-GOAL-MANAGEMENT"
+  package_group: "PKG-INTEGRATION-BUNDLE-2"
+  shared_touch_surfaces:
+    - "goal intake"
+    - "task decomposition"
+    - "approval workflow"
+
+milestones:
+  recommended_first_milestone: "define-goal-intake-schema"
+  downstream_milestones:
+    - "define-goal-validation-rules"
+    - "define-task-decomposition-strategy"
+    - "define-approval-posture"
+
+planning:
+  planning_packet_ref: null
+  planning_status: "not_started"
+  planning_notes: ""
+
+execution:
+  execution_package_refs:
+    - "governance/goal_intake_schema.v1.yaml"
+  execution_status: "proposed"
+  last_execution_commit: null
+
+validation:
+  validation_artifact_refs:
+    - "governance/goal_intake_schema.v1.yaml"
+    - "artifacts/bundle_2_integration_demo/goal_to_execution_flow.json"
+  validation_status: "proposed"
+  definition_of_done_ref: "docs/roadmap/STANDARDS.md"
+
+governance:
+  phase_target: "Integration Bundle 2"
+  architectural_lane: "goal_management"
+  risk_tier: "low"
+  allowed_change_scope: "bounded"
+  requires_explicit_escalation: false
+
+ai_operability:
+  canonical_summary: >
+    Plain-English goal intake baseline with structure for converting goals to
+    executable tasks and bundles with guardrail enforcement.
+  developer_intent: >
+    After this item, goals can be ingested, validated, and decomposed into
+    structured execution work with transparent approval and constraint
+    enforcement.
+  allowed_files:
+    - "governance/**"
+    - "schemas/**"
+    - "artifacts/**"
+    - "docs/roadmap/**"
+  forbidden_files:
+    - "framework/**"
+    - "tests/**"
+    - ".github/**"
+  validation_order:
+    - "confirm goal intake schema is defined"
+    - "confirm goal validation structure exists"
+    - "confirm task decomposition rules are specified"
+    - "confirm guardrail enforcement is documented"
+    - "confirm approval workflow is defined"
+    - "make check passes"
+  rollback_rule: >
+    Remove goal intake schema and related definitions. Preserve related
+    governance documentation.
+  artifact_outputs:
+    - "governance/goal_intake_schema.v1.yaml"
+  promotion_linkage:
+    required: false
+    manifest_refs: []
+
+sync:
+  plane:
+    sync_enabled: true
+    sync_mode: "repo_to_plane_authoritative"
+    workspace: "Integrated AI Platform"
+    project: "Roadmap Ops"
+    plane_item_id: null
+    last_synced_at: null
+    writeback_fields_allowed:
+      - "operational_state"
+      - "assignee"
+      - "cycle"
+      - "module"
+      - "labels"
+  github:
+    issue_ref: null
+    pr_refs: []
+
+metadata:
+  owner: "system"
+  created_at: "2026-04-22"
+  updated_at: "2026-04-22"
+  tags:
+    - "goal-management"
+    - "orchestration"
+    - "automation"

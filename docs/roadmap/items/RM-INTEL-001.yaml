@@ -6,6 +6,7 @@ title: "Open-source watchtower with update alerts and adoption recommendations"
 category: "INTEL"
 type: "capability"
 status: "completed"
+archive_status: "archived"
 priority: "P1"
 scoring:
   loe: 3
@@ -33,6 +34,8 @@ scope:
     - "automated internet polling service implementation"
 dependencies:
   blocked_by: []
+  depends_on:
+    []
   enables:
     - "RM-DEV-003"
   related_items:
@@ -67,11 +70,13 @@ planning:
 execution:
   execution_package_refs:
     - "RM-DEV-003-RM-INTEL-001-INTEGRATED-BASELINE"
+    - "docs/roadmap/RM-INTEL-001_EXECUTION_PACK.md"
   execution_status: "complete"
   last_execution_commit: "fcb4093ebc490fa172c362b3909888258dbb0036"
 validation:
   validation_artifact_refs:
     - "artifacts/governance/rm_dev_003_rm_intel_001_baseline_validation.json"
+    - "artifacts/governance/rm_integrated_5_item_validation.json"
   validation_status: "passed"
   definition_of_done_ref: "docs/progress-contract.md"
 governance:
@@ -119,6 +124,11 @@ sync:
   github:
     issue_ref: null
     pr_refs: []
+archive_readiness:
+  ready: true
+  reason: implementation_complete_and_validated
+  validation_artifact: artifacts/governance/rm_dev_003_rm_intel_001_baseline_validation.json
+  archived_at: "2026-04-22T03:15:00Z"
 metadata:
   owner: "adrian"
   created_at: "2026-04-21"

@@ -115,7 +115,8 @@ class FinalPromotionRatifierV1:
                     "live Aider execution required to clear this blocker"
                 )
 
-        # Live proof chain — optional but promoted if present
+        # Live proof chain — optional supporting evidence only.
+        # It must not override a failed current live evidence run.
         live_proof_notes: List[str] = []
         if live_proof is None:
             live_proof_notes.append(
@@ -124,17 +125,17 @@ class FinalPromotionRatifierV1:
             )
         else:
             live_evidence_seen = True
-            # If proof chain shows live dispatch succeeded, downgrade the blocker
             if live_proof.get("live_dispatch_succeeded", False):
-                # Remove the live dispatch blocker if present
-                blockers = [
-                    b for b in blockers
-                    if "live_dispatch_succeeded=False" not in b
-                ]
-                live_proof_notes.append(
-                    "live_proof_chain: live_dispatch_succeeded=True found; "
-                    "live dispatch blocker cleared from chain"
-                )
+                if live_evidence is None:
+                    live_proof_notes.append(
+                        "live_proof_chain: live_dispatch_succeeded=True used because "
+                        "current live evidence artifact is missing"
+                    )
+                else:
+                    live_proof_notes.append(
+                        "live_proof_chain: live_dispatch_succeeded=True present, but "
+                        "current live evidence controls gate truth"
+                    )
 
         promotion_gate_cleared = len(blockers) == 0
         # phase7_final_ratified is True only when gate is fully cleared

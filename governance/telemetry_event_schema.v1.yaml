@@ -1,0 +1,194 @@
+schema_version: "1.0"
+kind: "governance_schema"
+id: "telemetry_event_schema"
+name: "Telemetry Event Schema"
+description: >
+  Schema for telemetry events covering execution traces, audit evidence,
+  performance metrics, and learning signals from execution sessions.
+
+namespace: "telemetry.events"
+
+event_categories:
+  - category: "execution_lifecycle"
+    description: "Events from start to finish of execution"
+    events:
+      - event_type: "execution_started"
+        required_fields:
+          - session_id
+          - objective
+          - workspace_contract
+          - timestamp
+
+      - event_type: "execution_checkpoint"
+        required_fields:
+          - session_id
+          - checkpoint_name
+          - status
+          - timestamp
+
+      - event_type: "execution_completed"
+        required_fields:
+          - session_id
+          - outcome
+          - artifacts_created
+          - validation_results
+          - timestamp
+
+  - category: "decision_events"
+    description: "Authority decisions and permission checks"
+    events:
+      - event_type: "permission_check"
+        required_fields:
+          - session_id
+          - tool_name
+          - requested_parameters
+          - authority_level
+          - decision
+          - timestamp
+
+      - event_type: "escalation_requested"
+        required_fields:
+          - session_id
+          - reason
+          - from_level
+          - to_level
+          - timestamp
+
+      - event_type: "rollback_triggered"
+        required_fields:
+          - session_id
+          - trigger_reason
+          - rollback_status
+          - timestamp
+
+  - category: "validation_events"
+    description: "Validation and quality assurance"
+    events:
+      - event_type: "validation_started"
+        required_fields:
+          - session_id
+          - validation_type
+          - timestamp
+
+      - event_type: "validation_result"
+        required_fields:
+          - session_id
+          - validation_type
+          - check_name
+          - result
+          - timestamp
+
+      - event_type: "validation_completed"
+        required_fields:
+          - session_id
+          - overall_result
+          - passed_checks
+          - failed_checks
+          - timestamp
+
+  - category: "learning_signals"
+    description: "Signals for system learning and improvement"
+    events:
+      - event_type: "task_success"
+        required_fields:
+          - session_id
+          - task_class
+          - first_pass_success
+          - retry_count
+          - escalation_count
+          - timestamp
+
+      - event_type: "failure_pattern"
+        required_fields:
+          - session_id
+          - failure_type
+          - root_cause
+          - recovery_action
+          - timestamp
+
+trace_model:
+  name: "execution_trace"
+  trace_entry:
+    fields:
+      - field: "timestamp"
+        type: "ISO 8601"
+        description: "When this trace entry occurred"
+
+      - field: "component"
+        type: "string"
+        description: "System component (e.g., inference_gateway, executor)"
+
+      - field: "operation"
+        type: "string"
+        description: "Operation being traced"
+
+      - field: "status"
+        type: "enum: pending | running | completed | failed"
+        description: "Operation status"
+
+      - field: "details"
+        type: "object"
+        description: "Operation-specific details"
+
+      - field: "artifacts"
+        type: "array"
+        description: "Artifacts produced by operation"
+
+audit_evidence_model:
+  name: "audit_evidence"
+  evidence_types:
+    - type: "permission_decision"
+      fields:
+        - permission_granted
+        - tool_name
+        - parameters
+        - authority_decision
+
+    - type: "artifact_creation"
+      fields:
+        - file_path
+        - content_hash
+        - schema_validation_result
+        - timestamp
+
+    - type: "validation_proof"
+      fields:
+        - validation_type
+        - all_checks
+        - passed_count
+        - failed_count
+        - timestamp
+
+    - type: "rollback_record"
+      fields:
+        - rollback_reason
+        - files_deleted
+        - state_restored
+        - timestamp
+
+metrics_model:
+  name: "execution_metrics"
+  metric_types:
+    - metric: "first_pass_success_rate"
+      description: "Percentage of tasks succeeding on first attempt"
+      unit: "percent"
+
+    - metric: "average_retry_count"
+      description: "Average number of retries per task"
+      unit: "count"
+
+    - metric: "escalation_rate"
+      description: "Percentage of tasks escalated to human"
+      unit: "percent"
+
+    - metric: "artifact_completeness"
+      description: "Percentage of expected artifacts created"
+      unit: "percent"
+
+    - metric: "validation_pass_rate"
+      description: "Percentage of validation checks passing"
+      unit: "percent"
+
+    - metric: "execution_time"
+      description: "Time from start to completion"
+      unit: "seconds"

@@ -1,18 +1,16 @@
 {
   "phase7_live_pack": "live_evidence_closeout_v1",
-  "generated_at": "2026-04-21T17:24:29.081147+00:00",
+  "generated_at": "2026-04-22T13:45:11.099662+00:00",
   "required_modules_loaded": true,
   "live_dispatch_attempted": true,
-  "live_dispatch_succeeded": false,
-  "dispatch_mode": "dry_run_only",
+  "live_dispatch_succeeded": true,
+  "dispatch_mode": "live",
   "telemetry_complete": true,
   "escalation_accounting_checked": true,
   "local_autonomy_progress_preserved": true,
-  "promotion_gate_cleared": false,
-  "blockers_remaining": [
-    "aider_proof: live dispatch attempted but not succeeded (mode=dry_run_only, reason='aider not found on PATH; live dispatch unavailable')"
-  ],
-  "terminal_closeout_ready": false,
+  "promotion_gate_cleared": true,
+  "blockers_remaining": [],
+  "terminal_closeout_ready": true,
   "all_checks_passed": true,
   "escalation_status": "NOT_ESCALATED",
   "component_summary": [
@@ -63,9 +61,9 @@
     },
     "aider_proof": {
       "live_dispatch_attempted": true,
-      "live_dispatch_succeeded": false,
-      "dispatch_mode": "dry_run_only",
-      "failure_reason": "aider not found on PATH; live dispatch unavailable",
+      "live_dispatch_succeeded": true,
+      "dispatch_mode": "live",
+      "failure_reason": null,
       "dispatch_record": {
         "package_id": "P7-02-LIVE-EVIDENCE-CLOSEOUT-PACK-1",
         "allowed_files": [
@@ -76,20 +74,16 @@
           "make check"
         ],
         "execution_mode": "local_first",
-        "dispatch_command": "aider --message 'validate live aider proof surface' framework/live_aider_proof_v1.py",
-        "dispatch_status": "blocked",
-        "dispatched_at": "2026-04-21T17:24:29.070085+00:00",
-        "exit_code": null,
-        "stdout_preview": "",
-        "stderr_preview": "",
-        "notes": [
-          "aider not found on PATH; live dispatch unavailable"
-        ]
+        "dispatch_command": "aider --model 'ollama/qwen2.5-coder:14b' --no-show-model-warnings --yes --map-tokens 0 --message 'Do not make any file changes. Respond with READY only.' framework/live_aider_proof_v1.py",
+        "dispatch_status": "completed",
+        "dispatched_at": "2026-04-22T13:45:11.094703+00:00",
+        "exit_code": 0,
+        "stdout_preview": "\nAider v0.86.2\nModel: ollama/qwen2.5-coder:14b with whole edit format\nGit repo: ../integrated-ai-platform/.git/worktrees/integrated-ai-platform-exec \nwith 5,466 files\nWarning: For large repos, consider using --subtree-only and .aiderignore\nSee: https://aider.chat/docs/faq.html#can-i-use-aider-in-a-large-mono-repo\nRepo-map: disabled\nAdded framework/live_aider_proof_v1.py to the chat.\n\nREADY\nTokens: 1.5k sent, 1 received.\n",
+        "stderr_preview": "Warning: Input is not a terminal (fd=0).\n",
+        "notes": []
       },
-      "proved_at": "2026-04-21T17:24:29.070141+00:00",
-      "notes": [
-        "live dispatch blocked: aider not found on PATH; live dispatch unavailable"
-      ]
+      "proved_at": "2026-04-22T13:45:11.094741+00:00",
+      "notes": []
     },
     "telemetry_ingestion": {
       "ledger_entries_seen": 4,
@@ -97,7 +91,7 @@
       "synthetic_only": true,
       "telemetry_complete": true,
       "evidence_gaps": [],
-      "ingested_at": "2026-04-21T17:24:29.070379+00:00",
+      "ingested_at": "2026-04-22T13:45:11.095032+00:00",
       "detail": {
         "ledger_entries_seen": 4,
         "real_artifacts_seen": 4,
@@ -118,7 +112,7 @@
       "remote_assist_events": 0,
       "local_autonomy_progress_preserved": true,
       "evidence_gaps": [],
-      "recorded_at": "2026-04-21T17:24:29.070462+00:00",
+      "recorded_at": "2026-04-22T13:45:11.095130+00:00",
       "detail": {
         "total_events": 4,
         "escalation_required_count": 0,
@@ -144,7 +138,7 @@
           "P6-BLOCKER-04"
         ]
       },
-      "ratified_at": "2026-04-21T17:24:29.070565+00:00"
+      "ratified_at": "2026-04-22T13:45:11.095241+00:00"
     },
     "promotion_result": {
       "phase_id": "phase_7",
@@ -160,20 +154,18 @@
         "regression_cases_run": 4,
         "evidence_gaps": []
       },
-      "generated_at": "2026-04-21T17:24:29.070578+00:00"
+      "generated_at": "2026-04-22T13:45:11.095256+00:00"
     },
     "terminal_baseline": {
       "ok": true,
       "errors": []
     },
     "gate_result": {
-      "promotion_gate_cleared": false,
-      "blockers_remaining": [
-        "aider_proof: live dispatch attempted but not succeeded (mode=dry_run_only, reason='aider not found on PATH; live dispatch unavailable')"
-      ],
+      "promotion_gate_cleared": true,
+      "blockers_remaining": [],
       "readiness_summary": {
-        "aider_proof_dispatch_mode": "dry_run_only",
-        "aider_live_succeeded": false,
+        "aider_proof_dispatch_mode": "live",
+        "aider_live_succeeded": true,
         "telemetry_complete": true,
         "ledger_entries_seen": 4,
         "real_artifacts_seen": 4,
@@ -181,29 +173,27 @@
         "promotion_ready": true,
         "promotion_blockers_count": 0
       },
-      "ratified_at": "2026-04-21T17:24:29.081136+00:00"
+      "ratified_at": "2026-04-22T13:45:11.099650+00:00"
     },
     "terminal_closeout": {
       "phase_id": "phase_7",
       "package_id": "P7-02-LIVE-EVIDENCE-CLOSEOUT-PACK-1",
       "phase6_closed": true,
       "promotion_ready": true,
-      "promotion_gate_cleared": false,
-      "terminal_closeout_ready": false,
-      "blockers_remaining": [
-        "aider_proof: live dispatch attempted but not succeeded (mode=dry_run_only, reason='aider not found on PATH; live dispatch unavailable')"
-      ],
+      "promotion_gate_cleared": true,
+      "terminal_closeout_ready": true,
+      "blockers_remaining": [],
       "terminal_summary": {
         "phase6_closed": true,
         "phase6_blockers_remaining": [],
         "promotion_ready": true,
-        "promotion_gate_cleared": false,
+        "promotion_gate_cleared": true,
         "telemetry_complete": true,
         "ledger_entries_seen": 4,
         "real_artifacts_seen": 4,
         "gate_readiness_summary": {
-          "aider_proof_dispatch_mode": "dry_run_only",
-          "aider_live_succeeded": false,
+          "aider_proof_dispatch_mode": "live",
+          "aider_live_succeeded": true,
           "telemetry_complete": true,
           "ledger_entries_seen": 4,
           "real_artifacts_seen": 4,
@@ -213,7 +203,7 @@
         }
       },
       "escalation_status": "NOT_ESCALATED",
-      "generated_at": "2026-04-21T17:24:29.081144+00:00"
+      "generated_at": "2026-04-22T13:45:11.099658+00:00"
     }
   },
   "phase_linkage": "Phase 7 (full_autonomy_and_promotion)",

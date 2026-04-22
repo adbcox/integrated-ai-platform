@@ -1,0 +1,46 @@
+schema_version: "1.0"
+kind: "qc_finding_schema"
+schema_id: "RM-DEV-002-QC-FINDING-V1"
+package_id: "RM-DEV-002"
+updated_at: "2026-04-21T00:00:00Z"
+finding_categories:
+  - "correctness"
+  - "safety"
+  - "structural"
+  - "style_noise"
+severity_levels:
+  - "critical"
+  - "high"
+  - "medium"
+  - "low"
+required_finding_fields:
+  - "finding_id"
+  - "category"
+  - "severity"
+  - "summary"
+  - "evidence"
+  - "target_files"
+  - "bounded_fix_hint"
+  - "disposition"
+required_result_fields:
+  - "run_id"
+  - "task_contract_ref"
+  - "qc_model_profile"
+  - "secondary_model_profile"
+  - "findings"
+  - "category_counts"
+  - "overall_disposition"
+  - "writeback_actions"
+writeback_contract:
+  pattern_store_targets:
+    - "artifacts/codex51/patterns/"
+    - "artifacts/codex51/learning/"
+  required_action_fields:
+    - "action_type"
+    - "target_surface"
+    - "payload_ref"
+    - "rationale"
+integration_hooks:
+  bounded_codegen_contract: "governance/bounded_autonomous_codegen_contract.v1.yaml"
+  watchtower_registry: "governance/oss_watchtower_candidates.v1.yaml"
+  verified_harvest: "governance/verified_oss_capability_harvest_rm_intel_002.v1.yaml"

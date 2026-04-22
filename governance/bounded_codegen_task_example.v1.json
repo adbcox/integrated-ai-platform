@@ -1,0 +1,35 @@
+{
+  "objective": "Run bounded integrated validation and emit a governed run artifact for RM-DEV-003.",
+  "allowed_files": [
+    "governance/**",
+    "docs/roadmap/**",
+    "bin/**",
+    "tests/**",
+    "artifacts/**"
+  ],
+  "forbidden_files": [
+    ".github/**",
+    "framework/**"
+  ],
+  "expected_file_posture": "bounded_edit",
+  "validation_sequence": [
+    "python3 -m py_compile bin/run_rm_intel_refresh_delta.py",
+    "python3 -m py_compile bin/run_oss_watchtower_projection.py",
+    "python3 bin/run_rm_intel_refresh_delta.py",
+    "python3 bin/run_oss_watchtower_projection.py"
+  ],
+  "rollback_rule": "If validation fails or scope is violated, revert bounded slice files and remove emitted run/QC artifacts.",
+  "artifact_outputs": [
+    "artifacts/bounded_autonomy/runs/latest_run.json",
+    "artifacts/governance/rm_integrated_5_item_validation.json",
+    "artifacts/qc/latest_qc_result.json"
+  ],
+  "promotion_decision": "hold",
+  "planned_touched_files": [
+    "governance/verified_oss_capability_harvest_rm_intel_002.v1.yaml",
+    "governance/oss_watchtower_candidates.v1.yaml",
+    "governance/qc_finding_schema_rm_dev_002.v1.yaml",
+    "bin/run_bounded_autonomous_codegen.py",
+    "bin/run_rm_dev_002_qc.py"
+  ]
+}

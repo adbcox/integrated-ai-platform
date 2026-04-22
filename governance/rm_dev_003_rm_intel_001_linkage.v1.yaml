@@ -1,7 +1,46 @@
-schema_version: "1.0"
-kind: "rm_dev003_rm_intel001_linkage"
-linkage_id: "RM-DEV-003-RM-INTEL-001-LINKAGE-V1"
+schema_version: "1.1"
+kind: "rm_integrated_5_item_linkage"
+linkage_id: "RM-INTEL-002-RM-INTEL-001-RM-DEV-005-RM-DEV-003-RM-DEV-002-LINKAGE-V1"
 updated_at: "2026-04-21T00:00:00Z"
+intelligence_to_watchtower_flow:
+  source: "RM-INTEL-002"
+  source_surface: "governance/verified_oss_capability_harvest_rm_intel_002.v1.yaml"
+  target: "RM-INTEL-001"
+  target_surface: "governance/oss_watchtower_candidates.v1.yaml"
+  required_projection_rules:
+    - "harvest candidate list projects to watchtower candidates"
+    - "recommendation classes preserved"
+    - "roadmap_linkage contains RM-INTEL-002 and RM-INTEL-001"
+watchtower_and_harvest_to_local_autonomy:
+  target: "RM-DEV-005"
+  required_inputs:
+    - "adopt-now/evaluate/watch/reject from RM-INTEL-002"
+    - "watchtower registry recommendation surface"
+  local_autonomy_surfaces:
+    - "governance/oss_intake_registry.v1.yaml"
+    - "governance/model_profiles.v1.yaml"
+    - "governance/rm_dev_005a_authority_state.v1.yaml"
+local_autonomy_to_bounded_codegen:
+  source: "RM-DEV-005"
+  target: "RM-DEV-003"
+  bounded_codegen_surfaces:
+    - "governance/bounded_autonomous_codegen_contract.v1.yaml"
+    - "artifacts/bounded_autonomy/runs/<run_id>.json"
+  required_capability_guards:
+    - "ollama_first_default_backend"
+    - "adapter_boundary_enforced"
+    - "sandbox/retrieval candidates explicitly routed"
+qc_feedback_to_bounded_codegen:
+  source: "RM-DEV-002"
+  target: "RM-DEV-003"
+  qc_surfaces:
+    - "governance/qc_finding_schema_rm_dev_002.v1.yaml"
+    - "governance/rm_dev_002_qc_result_template.v1.json"
+  required_finding_classes:
+    - "correctness"
+    - "safety"
+    - "structural"
+    - "style_noise"
 rm_dev_003_needs:
   - need_id: "bounded_edit_transport"
     description: "Bounded code edit transport with explicit scope and rollback."
@@ -13,9 +52,9 @@ rm_dev_003_needs:
       reject: []
   - need_id: "tool_protocol_boundary"
     description: "Stable tool interoperability boundary for bounded autonomous runs."
-    directly_supported_candidates: ["MCP"]
+    directly_supported_candidates: ["MCP", "LSP"]
     recommendation_view:
-      adopt_now: ["MCP"]
+      adopt_now: ["MCP", "LSP"]
       evaluate: []
       watch: []
       reject: []
@@ -29,10 +68,10 @@ rm_dev_003_needs:
       reject: []
   - need_id: "retrieval_memory_support"
     description: "Candidate vector-memory substrate for improving bounded planning quality."
-    directly_supported_candidates: ["Qdrant"]
+    directly_supported_candidates: ["Qdrant", "Mem0"]
     recommendation_view:
       adopt_now: []
-      evaluate: ["Qdrant"]
+      evaluate: ["Qdrant", "Mem0"]
       watch: []
       reject: []
   - need_id: "sandbox_isolation_baseline"
@@ -51,8 +90,21 @@ rm_dev_003_needs:
       evaluate: []
       watch: []
       reject: []
+  - need_id: "structural_qc_and_refactor_support"
+    description: "Structure-aware QC and bounded refactor support."
+    directly_supported_candidates: ["Tree-sitter", "ast-grep"]
+    recommendation_view:
+      adopt_now: ["Tree-sitter"]
+      evaluate: ["ast-grep"]
+      watch: []
+      reject: []
 authority_surfaces:
   - "governance/bounded_autonomous_codegen_contract.v1.yaml"
+  - "governance/verified_oss_capability_harvest_rm_intel_002.v1.yaml"
   - "governance/oss_watchtower_candidates.v1.yaml"
-  - "docs/roadmap/RM-DEV-003_EXECUTION_PACK.md"
+  - "governance/qc_finding_schema_rm_dev_002.v1.yaml"
+  - "docs/roadmap/RM-INTEL-002_EXECUTION_PACK.md"
   - "docs/roadmap/RM-INTEL-001_EXECUTION_PACK.md"
+  - "docs/roadmap/RM-DEV-005_EXECUTION_PACK.md"
+  - "docs/roadmap/RM-DEV-003_EXECUTION_PACK.md"
+  - "docs/roadmap/RM-DEV-002_EXECUTION_PACK.md"

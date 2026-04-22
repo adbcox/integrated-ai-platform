@@ -1,0 +1,309 @@
+schema_version: "1.0"
+kind: "roadmap_dependency_graph"
+generated_at: "2026-04-22T00:00:00Z"
+source_of_truth: "repo"
+
+graph_schema:
+  description: "Machine-readable roadmap item dependency graph with blocked/unblocked state"
+  node_type:
+    - id: "roadmap item ID (RM-*)"
+    - title: "human-readable title"
+    - status: "completed | in_validation | proposed | planned"
+    - category: "GOV | CORE | DEV | INTEL | AUTO"
+    - priority: "P1 | P2 | P3"
+    - phase_target: "Phase 0-6"
+
+  edge_type:
+    - source: "blocking item"
+    - target: "blocked item"
+    - type: "hard (must complete before) | soft (recommend before)"
+    - resolved: "true (source complete) | false (source not complete)"
+
+  state_computation:
+    blocked_vs_unblocked: >
+      Item is BLOCKED if ANY hard dependency is not completed.
+      Item is UNBLOCKED if ALL hard dependencies are completed OR item has no hard dependencies.
+    priority_scoring: >
+      base_score = priority_value (P1=3, P2=2, P3=1)
+      readiness = phase_target proximity to current phase
+      depth = how many unblocked items depend on this item
+      pull_priority_score = base_score + (0.5 * depth) + (0.25 * readiness)
+
+nodes:
+  - id: "RM-GOV-001"
+    title: "Create canonical machine-readable roadmap registry"
+    status: "proposed"
+    category: "GOV"
+    priority: "P1"
+    phase_target: "Phase 0"
+    blocked_by: []
+    unblocked_status: "UNBLOCKED"
+
+  - id: "RM-GOV-002"
+    title: "Reconcile source-of-truth surfaces"
+    status: "proposed"
+    category: "GOV"
+    priority: "P1"
+    phase_target: "Phase 0"
+    blocked_by: ["RM-GOV-003"]
+    unblocked_status: "BLOCKED"
+
+  - id: "RM-GOV-003"
+    title: "Create core ADR set"
+    status: "proposed"
+    category: "GOV"
+    priority: "P1"
+    phase_target: "Phase 0"
+    blocked_by: []
+    unblocked_status: "UNBLOCKED"
+
+  - id: "RM-GOV-004"
+    title: "Create machine-readable execution-control package"
+    status: "proposed"
+    category: "GOV"
+    priority: "P1"
+    phase_target: "Phase 0"
+    blocked_by: ["RM-GOV-003"]
+    unblocked_status: "BLOCKED"
+
+  - id: "RM-GOV-005"
+    title: "Create CMDB-lite registry"
+    status: "proposed"
+    category: "GOV"
+    priority: "P1"
+    phase_target: "Phase 0"
+    blocked_by: ["RM-GOV-004"]
+    unblocked_status: "BLOCKED"
+
+  - id: "RM-GOV-006"
+    title: "Lock definition of done for coding runs"
+    status: "proposed"
+    category: "GOV"
+    priority: "P1"
+    phase_target: "Phase 0"
+    blocked_by: ["RM-GOV-004"]
+    unblocked_status: "BLOCKED"
+
+  - id: "RM-GOV-007"
+    title: "Lock autonomy scorecard"
+    status: "proposed"
+    category: "GOV"
+    priority: "P1"
+    phase_target: "Phase 0"
+    blocked_by: ["RM-GOV-006"]
+    unblocked_status: "BLOCKED"
+
+  - id: "RM-CORE-001"
+    title: "Introduce internal inference gateway"
+    status: "proposed"
+    category: "CORE"
+    priority: "P1"
+    phase_target: "Phase 1"
+    blocked_by: []
+    unblocked_status: "UNBLOCKED"
+
+  - id: "RM-CORE-002"
+    title: "Standardize model profiles"
+    status: "proposed"
+    category: "CORE"
+    priority: "P1"
+    phase_target: "Phase 1"
+    blocked_by: ["RM-CORE-001"]
+    unblocked_status: "BLOCKED"
+
+  - id: "RM-CORE-003"
+    title: "Standardize workspace layout"
+    status: "proposed"
+    category: "CORE"
+    priority: "P1"
+    phase_target: "Phase 1"
+    blocked_by: ["RM-GOV-003"]
+    unblocked_status: "BLOCKED"
+
+  - id: "RM-CORE-004"
+    title: "Stabilize artifact persistence"
+    status: "proposed"
+    category: "CORE"
+    priority: "P1"
+    phase_target: "Phase 1"
+    blocked_by: ["RM-CORE-003"]
+    unblocked_status: "BLOCKED"
+
+  - id: "RM-CORE-005"
+    title: "Wrap local execution commands"
+    status: "proposed"
+    category: "CORE"
+    priority: "P1"
+    phase_target: "Phase 1"
+    blocked_by: ["RM-CORE-004"]
+    unblocked_status: "BLOCKED"
+
+  - id: "RM-CORE-006"
+    title: "Establish baseline local-run validation"
+    status: "proposed"
+    category: "CORE"
+    priority: "P1"
+    phase_target: "Phase 1"
+    blocked_by: ["RM-CORE-005"]
+    unblocked_status: "BLOCKED"
+
+  - id: "RM-DEV-002"
+    title: "Dual-model inline QC coding loop for the developer assistant"
+    status: "in_validation"
+    category: "DEV"
+    priority: "P1"
+    phase_target: "Phase 3"
+    blocked_by: []
+    unblocked_status: "UNBLOCKED"
+
+  - id: "RM-DEV-003"
+    title: "Bounded autonomous code generation"
+    status: "completed"
+    category: "DEV"
+    priority: "P1"
+    phase_target: "Phase 3"
+    blocked_by: []
+    unblocked_status: "UNBLOCKED"
+
+  - id: "RM-DEV-005"
+    title: "Local autonomy uplift, OSS intake, and Aider reliability hardening"
+    status: "completed"
+    category: "DEV"
+    priority: "P1"
+    phase_target: "Phase 3"
+    blocked_by: []
+    unblocked_status: "UNBLOCKED"
+
+  - id: "RM-INTEL-001"
+    title: "Open-source watchtower with update alerts and adoption recommendations"
+    status: "completed"
+    category: "INTEL"
+    priority: "P1"
+    phase_target: "Phase 3"
+    blocked_by: ["RM-DEV-003"]
+    unblocked_status: "UNBLOCKED"
+
+  - id: "RM-INTEL-002"
+    title: "Verified OSS capability harvest and compatibility validation for the local development assistant"
+    status: "in_validation"
+    category: "INTEL"
+    priority: "P1"
+    phase_target: "Phase 3"
+    blocked_by: []
+    unblocked_status: "UNBLOCKED"
+
+  - id: "RM-AUTO-002"
+    title: "Roadmap-to-execution compiler baseline"
+    status: "proposed"
+    category: "AUTO"
+    priority: "P1"
+    phase_target: "Phase 3"
+    blocked_by: ["RM-GOV-004", "RM-CORE-003"]
+    unblocked_status: "BLOCKED"
+
+edges:
+  - source: "RM-GOV-003"
+    target: "RM-GOV-002"
+    type: "hard"
+    resolved: true
+
+  - source: "RM-GOV-003"
+    target: "RM-GOV-004"
+    type: "hard"
+    resolved: true
+
+  - source: "RM-GOV-004"
+    target: "RM-GOV-005"
+    type: "hard"
+    resolved: false
+
+  - source: "RM-GOV-004"
+    target: "RM-GOV-006"
+    type: "hard"
+    resolved: false
+
+  - source: "RM-GOV-006"
+    target: "RM-GOV-007"
+    type: "hard"
+    resolved: false
+
+  - source: "RM-CORE-001"
+    target: "RM-CORE-002"
+    type: "hard"
+    resolved: false
+
+  - source: "RM-GOV-003"
+    target: "RM-CORE-003"
+    type: "hard"
+    resolved: true
+
+  - source: "RM-CORE-003"
+    target: "RM-CORE-004"
+    type: "hard"
+    resolved: false
+
+  - source: "RM-CORE-004"
+    target: "RM-CORE-005"
+    type: "hard"
+    resolved: false
+
+  - source: "RM-CORE-005"
+    target: "RM-CORE-006"
+    type: "hard"
+    resolved: false
+
+  - source: "RM-DEV-003"
+    target: "RM-INTEL-001"
+    type: "hard"
+    resolved: true
+
+  - source: "RM-GOV-004"
+    target: "RM-AUTO-002"
+    type: "hard"
+    resolved: false
+
+  - source: "RM-CORE-003"
+    target: "RM-AUTO-002"
+    type: "hard"
+    resolved: false
+
+next_pull_ordering:
+  description: "Ordered list of next items safe to pull and execute (UNBLOCKED only)"
+  candidates:
+    - pull_rank: 1
+      item_id: "RM-GOV-001"
+      pull_priority_score: 3.75
+      reason: "Unblocked; no dependencies; governance foundation"
+
+    - pull_rank: 2
+      item_id: "RM-GOV-003"
+      pull_priority_score: 3.75
+      reason: "Unblocked; blocks multiple downstream items"
+
+    - pull_rank: 3
+      item_id: "RM-CORE-001"
+      pull_priority_score: 3.75
+      reason: "Unblocked; Phase 1 runtime foundation"
+
+    - pull_rank: 4
+      item_id: "RM-DEV-002"
+      pull_priority_score: 3.5
+      reason: "Already in_validation; Phase 3 capability"
+
+    - pull_rank: 5
+      item_id: "RM-INTEL-002"
+      pull_priority_score: 3.5
+      reason: "Already in_validation; Phase 3 capability"
+
+metadata:
+  total_items: 18
+  completed_items: 3
+  in_validation_items: 2
+  proposed_items: 13
+  unblocked_items: 7
+  blocked_items: 11
+  total_edges: 13
+  hard_edges: 13
+  soft_edges: 0
+  critical_path_length: 7
+  last_computed: "2026-04-22T00:00:00Z"

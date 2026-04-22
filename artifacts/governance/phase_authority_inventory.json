@@ -1,6 +1,6 @@
 {
   "inventory_id": "P0-01-AUTHORITY-SURFACE-INVENTORY-1",
-  "generated_at": "2026-04-21T14:07:55.951965+00:00",
+  "generated_at": "2026-04-22T12:53:59.822209+00:00",
   "canonical_phase_source": "governance/canonical_roadmap.json",
   "input_doc_check": [
     {
@@ -25,7 +25,7 @@
       "exists": true,
       "readable": true,
       "surface_type": "architecture_adoption_packet_md",
-      "text_excerpt": "# Control Window Architecture Adoption Packet\n## Authority Reference: Phase 0 \u2014 Governance Source-of-Truth Reconciliation\n\n**Document type**: architecture_adoption_packet  \n**Authority scope**: Phase 0 authority surface reconciliation  \n**Version**: 1.0  \n**Status**: active\n\n---\n\n## Authority Surfac"
+      "text_excerpt": "# Control Window Architecture Adoption Packet\n## Authority Reference: Phase 0 \u2014 Governance Source-of-Truth Reconciliation\n\n**Document type**: architecture_adoption_packet  \n**Authority scope**: Phase 0 authority surface reconciliation  \n**Version**: 1.1  \n**Status**: active\n\n---\n\n## Authority Surfac"
     }
   ],
   "input_docs_all_readable": true,
@@ -145,6 +145,17 @@
       "readable": true
     },
     {
+      "surface_id": "AS-13-LEDT-RATIFICATION",
+      "label": "ledt_governance_ratification",
+      "description": "Governance ratification state for LEDT local-exec-default transition",
+      "primary_file": "governance/ledt_governance_ratification.json",
+      "authority_owner": "governance",
+      "surface_type": "machine_readable_json",
+      "supersedes": [],
+      "on_disk": true,
+      "readable": true
+    },
+    {
       "surface_id": "AS-10-HANDOFF-V4",
       "label": "revised_target_architecture_handoff_v4",
       "description": "Revised target architecture handoff document version 4 \u2014 authority surfaces declared in V4 (superseded by V7)",
@@ -180,62 +191,10 @@
       "surface_type": "architecture_adoption_packet_md",
       "on_disk": true,
       "readable": true,
-      "text_excerpt": "# Control Window Architecture Adoption Packet\n## Authority Reference: Phase 0 \u2014 Governance Source-of-Truth Reconciliation\n\n**Document type**: architecture_adoption_packet  \n**Authority scope**: Phase 0 authority surface reconciliation  \n**Version**: 1.0  \n**Status**: active\n\n---\n\n## Authority Surfac"
+      "text_excerpt": "# Control Window Architecture Adoption Packet\n## Authority Reference: Phase 0 \u2014 Governance Source-of-Truth Reconciliation\n\n**Document type**: architecture_adoption_packet  \n**Authority scope**: Phase 0 authority surface reconciliation  \n**Version**: 1.1  \n**Status**: active\n\n---\n\n## Authority Surfac"
     }
   ],
-  "conflicts": [
-    {
-      "conflict_id": "CONF-01",
-      "conflict_type": "phase_numbering_mismatch",
-      "description": "current_phase.json reports current_phase_id=0 (governance_source_of_truth_reconciliation, open) but next_package_class.json reflects Phase 7 closure (current_allowed_class=ratification_only). Phase 0 has been procedurally bypassed without a formal closure record.",
-      "surfaces_involved": [
-        "AS-02-CURRENT-PHASE",
-        "AS-04-NEXT-PACKAGE-CLASS"
-      ],
-      "corroborated_by_input_docs": [
-        "AS-11-HANDOFF-V7",
-        "AS-12-ADOPTION-PACKET"
-      ],
-      "severity": "high"
-    },
-    {
-      "conflict_id": "CONF-02",
-      "conflict_type": "gate_ordering_inconsistency",
-      "description": "phase_gate_status.json shows Phase 0 as 'open' while Phase 7 is 'closed_ratified'. Phases 1-7 were closed without Phase 0 (governance_source_of_truth_reconciliation) receiving a closure record.",
-      "surfaces_involved": [
-        "AS-03-PHASE-GATE-STATUS"
-      ],
-      "corroborated_by_input_docs": [
-        "AS-11-HANDOFF-V7",
-        "AS-12-ADOPTION-PACKET"
-      ],
-      "severity": "high"
-    },
-    {
-      "conflict_id": "CONF-03",
-      "conflict_type": "legacy_authority_coexistence",
-      "description": "config/promotion_manifest.json (legacy tactical release authority) still exists on disk. Migration is explicitly deferred per phase_gate_status.json followup note.",
-      "surfaces_involved": [
-        "AS-08-PROMOTION-MANIFEST-LEGACY",
-        "AS-02-CURRENT-PHASE"
-      ],
-      "corroborated_by_input_docs": [
-        "AS-10-HANDOFF-V4",
-        "AS-12-ADOPTION-PACKET"
-      ],
-      "severity": "low"
-    },
-    {
-      "conflict_id": "CONF-04",
-      "conflict_type": "campaign_not_ratified_in_governance",
-      "description": "LEDT campaign is complete (ledt_campaign_complete verdict in artifacts/) but no governance authority surface reflects the local-exec-default transition. As noted in handoff V7: LEDT modules are capability_session class and may be ratified without tactical-family unlock.",
-      "surfaces_involved": [],
-      "corroborated_by_input_docs": [
-        "AS-11-HANDOFF-V7"
-      ],
-      "severity": "medium"
-    }
-  ],
+  "conflicts": [],
   "recommended_authority_order": [
     {
       "rank": 1,
@@ -293,14 +252,16 @@
     }
   ],
   "phase0_gate_status": {
-    "gate_classification": "open",
+    "gate_classification": "closed_ratified",
     "closure_record_on_disk": true,
-    "blocking_reason": "machine-readable authority artifacts are being introduced by RECON-W1 and have not yet been ratified as closed",
-    "assessment": "OPEN \u2014 Phase 0 has no closure record. The governance_source_of_truth_reconciliation phase requires an explicit closure package before the authority surface inventory is considered fully ratified."
+    "blocking_reason": null,
+    "assessment": "CLOSED \u2014 Phase 0 gate is closed_ratified in phase_gate_status.json."
   },
-  "surface_count": 12,
-  "governance_surface_count": 9,
+  "surface_count": 13,
+  "governance_surface_count": 10,
   "input_doc_surface_count": 3,
-  "conflict_count": 4,
-  "high_severity_conflicts": 2
+  "conflict_count": 0,
+  "high_severity_conflicts": 0,
+  "closure_ready": true,
+  "closure_status": "closed"
 }

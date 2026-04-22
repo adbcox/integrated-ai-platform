@@ -1,0 +1,157 @@
+schema_version: "1.0"
+kind: "roadmap_item"
+id: "RM-UI-004"
+slug: "performance-metrics-display"
+title: "Performance metrics display"
+category: "UI"
+type: "capability_surface"
+status: "completed"
+priority: "P2"
+scoring:
+  loe: 2
+  strategic_value: 3
+  architecture_fit: 3
+  execution_risk: 1
+  dependency_burden: 2
+  readiness: 1
+
+description: >
+  Build UI surface for performance metrics visualization.
+  Display execution timing, resource usage, bottlenecks, and optimization opportunities.
+  Enable users to understand and optimize execution performance.
+
+why_it_matters: >
+  Without visibility into performance, optimization is impossible.
+  Metrics display enables data-driven optimization decisions and helps
+  identify where time and resources are spent.
+
+scope:
+  objective: >
+    Create web UI for performance metrics visualization. Display timing breakdowns,
+    resource usage graphs, bottleneck identification, and optimization suggestions.
+  in_scope:
+    - "execution timing display (session, command, gateway)"
+    - "resource usage graphs (CPU, memory)"
+    - "bottleneck identification and ranking"
+    - "optimization suggestion display"
+  out_of_scope:
+    - "continuous automatic optimization"
+    - "predictive performance modeling"
+    - "distributed performance tracking"
+
+dependencies:
+  blocked_by:
+    - "RM-OPS-003"
+  depends_on:
+    - "RM-OPS-003"
+  enables: []
+  related_items:
+    - "RM-UI-002"
+    - "RM-OPS-003"
+
+impact:
+  affected_systems:
+    - "ui"
+    - "operations"
+  expected_file_families:
+    - "framework/performance_metrics_ui.py"
+  impact_summary: >
+    Provides UI for performance metrics visualization and analysis.
+
+cmdb:
+  refs:
+    - "subsystem:ui"
+  asset_links: []
+  service_links: []
+
+grouping:
+  feature_block_candidates:
+    - "FB-UI-OPERATIONS"
+  package_group: "PKG-PHASE2-UI"
+  shared_touch_surfaces:
+    - "performance metrics"
+    - "ui surfaces"
+
+milestones:
+  recommended_first_milestone: "define-metrics-display-schema"
+  downstream_milestones:
+    - "implement-timing-display"
+    - "implement-bottleneck-viewer"
+
+planning:
+  planning_packet_ref: null
+  planning_status: "ready"
+  planning_notes: "Unblocked: RM-OPS-003 is complete. Ready for implementation."
+
+execution:
+  execution_package_refs:
+    - "framework/performance_metrics_ui.py"
+    - "framework/ops_artifact_loader.py"
+  execution_status: "completed"
+  last_execution_commit: null
+
+validation:
+  validation_artifact_refs:
+    - "artifacts/validation/phase2_ui_validation.json"
+  validation_status: "complete"
+  definition_of_done_ref: "docs/roadmap/STANDARDS.md"
+
+governance:
+  phase_target: "Phase 2"
+  architectural_lane: "ui_operations"
+  risk_tier: "low"
+  allowed_change_scope: "bounded"
+  requires_explicit_escalation: false
+
+ai_operability:
+  canonical_summary: >
+    Phase 2 UI item providing performance metrics display surface (COMPLETED - consumes OPS artifacts).
+  developer_intent: >
+    Users can visualize performance metrics, identify bottlenecks, and make optimization
+    decisions through integrated metrics UI consuming real OPS performance profile artifacts.
+  allowed_files:
+    - "framework/**"
+    - "governance/**"
+  forbidden_files:
+    - "runtime/**"
+    - "tests/**"
+    - ".github/**"
+  validation_order:
+    - "verify RM-OPS-003 is complete"
+    - "confirm metrics display schema is defined"
+    - "confirm UI displays timing and resource metrics"
+    - "make check passes"
+  rollback_rule: >
+    Remove performance_metrics_ui module.
+  artifact_outputs: []
+  promotion_linkage:
+    required: false
+    manifest_refs: []
+
+sync:
+  plane:
+    sync_enabled: true
+    sync_mode: "repo_to_plane_authoritative"
+    workspace: "Integrated AI Platform"
+    project: "Roadmap Ops"
+    plane_item_id: null
+    last_synced_at: null
+    writeback_fields_allowed:
+      - "operational_state"
+      - "assignee"
+      - "cycle"
+      - "module"
+      - "labels"
+  github:
+    issue_ref: null
+    pr_refs: []
+
+metadata:
+  owner: "system"
+  created_at: "2026-04-22"
+  updated_at: "2026-04-22"
+  tags:
+    - "phase-2"
+    - "ui"
+    - "operations"
+    - "completed"

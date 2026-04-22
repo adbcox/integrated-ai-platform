@@ -1,0 +1,34 @@
+schema_version: "1.0"
+kind: "cycle_batch_governance"
+package_id: "RM-GOV-005"
+status: "operational_baseline"
+cycle_model:
+  cycle_length_days: 14
+  release_checkpoints:
+    - "cycle_start_scope_lock"
+    - "mid_cycle_validation"
+    - "closeout_validation_and_status_sync"
+batch_model:
+  required_batch_fields:
+    - "bundle_id"
+    - "roadmap_items"
+    - "integration_chain"
+    - "validation_commands"
+    - "rollback_rule"
+  closeout_rule: "Bundle can close only when all claimed artifacts exist and validator passes."
+execution_grouping:
+  active_bundle_id: "RM-BUNDLE-DEV002-DEV004-DEV007-CORE005-GOV005-INV005"
+  roadmap_items:
+    - "RM-DEV-002"
+    - "RM-DEV-004"
+    - "RM-DEV-007"
+    - "RM-CORE-005"
+    - "RM-GOV-005"
+    - "RM-INV-005"
+integration_refs:
+  trust_boundary: "governance/trust_boundary_policy.v1.yaml"
+  asset_linkage: "governance/asset_execution_linkage.v1.yaml"
+  status_sync: "docs/roadmap/ROADMAP_STATUS_SYNC.md"
+closeout_evidence:
+  execution_pack: "docs/roadmap/RM-GOV-005_EXECUTION_PACK.md"
+  validator: "bin/run_rm_bundle_6_closeout_check.py"

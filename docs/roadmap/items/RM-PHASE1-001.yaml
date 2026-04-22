@@ -1,0 +1,225 @@
+schema_version: "1.0"
+kind: "roadmap_item"
+id: "RM-PHASE1-001"
+slug: "ollama-first-inference-gateway-runtime"
+title: "Ollama-first inference gateway and runtime foundation baseline"
+category: "PHASE1"
+type: "runtime_foundation"
+status: "completed"
+priority: "P1"
+
+scoring:
+  loe: 3
+  strategic_value: 5
+  architecture_fit: 5
+  execution_risk: 1
+  dependency_burden: 1
+  readiness: 4
+
+description: >
+  Establish Phase 1 runtime foundation for local-first model execution with
+  Ollama primary and Claude API fallback, including profile-based routing,
+  deterministic workspace management, bounded command execution, and structured
+  artifact emission.
+
+why_it_matters: >
+  Phase 0 defines governance authority but lacks execution runtime. Phase 1
+  runtime foundation enables bounded local execution with fallback capacity,
+  profile-aware resource allocation, and reproducible workspace isolation.
+
+scope:
+  objective: >
+    Define and implement runtime profiles, inference gateway, workspace
+    controller, command runner, artifact writer, and validation infrastructure
+    for Ollama-first execution posture.
+  in_scope:
+    - "Runtime profile authority (fast/balanced/hard)"
+    - "Inference gateway with deterministic routing"
+    - "Workspace controller with deterministic paths"
+    - "Bounded command runner with whitelist enforcement"
+    - "Artifact writer for runtime result emission"
+    - "Runtime schemas (request, response, workspace, artifact)"
+    - "Validation script with 25+ checks"
+  out_of_scope:
+    - "Autonomous execution loop"
+    - "Real Ollama model invocation"
+    - "Permission engine implementation"
+    - "Typed tool system"
+    - "Control plane rewrite"
+
+dependencies:
+  blocked_by: []
+  depends_on:
+    - "RM-AUTO-001"
+    - "RM-GOV-001"
+    - "RM-OPS-005"
+    - "RM-OPS-004"
+    - "RM-INV-002"
+    - "RM-DEV-001"
+  enables: []
+  related_items:
+    - "RM-AUTO-001"
+    - "RM-GOV-001"
+
+impact:
+  affected_systems:
+    - "runtime"
+    - "inference_gateway"
+    - "workspace_management"
+    - "artifact_emission"
+  expected_file_families:
+    - "governance/runtime_profiles.v1.yaml"
+    - "runtime/inference_gateway.py"
+    - "runtime/workspace_controller.py"
+    - "runtime/artifact_writer.py"
+    - "runtime/command_runner.py"
+    - "runtime/schemas/"
+  impact_summary: >
+    Provides narrowly-scoped runtime foundation for local Ollama execution with
+    fallback, profile-based routing, and deterministic workspace isolation.
+
+cmdb:
+  refs:
+    - "subsystem:runtime"
+    - "subsystem:inference_gateway"
+  asset_links: []
+  service_links: []
+
+grouping:
+  feature_block_candidates:
+    - "FB-RUNTIME-FOUNDATION"
+  package_group: "PKG-PHASE1-RUNTIME"
+  shared_touch_surfaces:
+    - "Profile-based routing"
+    - "Workspace isolation"
+    - "Artifact emission"
+    - "Command whitelisting"
+
+milestones:
+  recommended_first_milestone: "define-runtime-profiles"
+  downstream_milestones:
+    - "implement-inference-gateway"
+    - "implement-workspace-controller"
+    - "implement-artifact-writer"
+    - "implement-command-runner"
+
+planning:
+  planning_packet_ref: null
+  planning_status: "not_started"
+  planning_notes: ""
+
+execution:
+  execution_package_refs:
+    - "governance/runtime_profiles.v1.yaml"
+  execution_status: "completed"
+  last_execution_commit: null
+
+validation:
+  validation_artifact_refs:
+    - "governance/runtime_profiles.v1.yaml"
+    - "artifacts/validation/phase1_runtime_foundation_validation.json"
+    - "artifacts/validation/phase1_runtime_execution_path_validation.json"
+    - "artifacts/validation/phase1_closeout_validation.json"
+    - "artifacts/validation/phase1_integration_tests.json"
+    - "artifacts/examples/phase1_runtime_run_example.json"
+    - "artifacts/examples/phase1_execution_control_example.json"
+    - "artifacts/examples/phase1_runtime_execution_example.json"
+  validation_status: "completed"
+  definition_of_done_ref: "docs/standards/DEFINITION_OF_DONE.md"
+  execution_harness_evidence:
+    - "runtime/runtime_executor.py — orchestrates end-to-end execution flow"
+    - "runtime/schemas/runtime_execution_result.v1.json — execution result schema"
+    - "artifacts/examples/phase1_execution_control_example.json — control package instance"
+    - "artifacts/examples/phase1_runtime_execution_example.json — real execution proof"
+    - "bin/validate_phase1_runtime_execution_path.py — validation harness with 16 checks"
+    - "bin/validate_phase1_closeout.py — comprehensive closeout validator with 12 checks"
+    - "bin/test_phase1_runtime_integration.py — integration test suite with 8 scenarios"
+
+governance:
+  phase_target: "Phase 1 Runtime"
+  architectural_lane: "runtime_execution"
+  risk_tier: "low"
+  allowed_change_scope: "bounded"
+  requires_explicit_escalation: false
+
+ai_operability:
+  canonical_summary: >
+    Runtime foundation with profile-based routing, deterministic workspace
+    isolation, and bounded command execution for Ollama-first posture.
+  developer_intent: >
+    After this item, all runtime requests are routed through profile-aware
+    inference gateway with fallback capacity, workspace isolation is
+    deterministic and reproducible, and artifact emission is structured.
+  allowed_files:
+    - "governance/**"
+    - "runtime/**"
+    - "schemas/**"
+    - "artifacts/**"
+    - "docs/roadmap/**"
+    - "bin/validate_phase1_runtime_foundation.py"
+    - "bin/validate_phase1_runtime_execution_path.py"
+    - "bin/validate_phase1_closeout.py"
+    - "bin/test_phase1_runtime_integration.py"
+  forbidden_files:
+    - "framework/**"
+    - "tests/**"
+    - ".github/**"
+  validation_order:
+    - "confirm runtime profiles are defined and parse correctly"
+    - "confirm inference gateway module imports and routes correctly"
+    - "confirm workspace controller initializes and finalizes correctly"
+    - "confirm command runner enforces whitelist"
+    - "confirm artifact writer emits valid JSON"
+    - "confirm all 5 runtime schemas parse correctly"
+    - "run validate_phase1_runtime_foundation.py"
+    - "verify artifacts/validation/phase1_runtime_foundation_validation.json has PASS status"
+    - "verify artifacts/examples/phase1_runtime_run_example.json exists and is valid"
+  rollback_rule: >
+    Remove runtime/ directory and runtime_profiles.v1.yaml. Preserve governance
+    and phase0 authority files.
+  artifact_outputs:
+    - "governance/runtime_profiles.v1.yaml"
+    - "runtime/inference_gateway.py"
+    - "runtime/workspace_controller.py"
+    - "runtime/artifact_writer.py"
+    - "runtime/command_runner.py"
+    - "runtime/runtime_executor.py"
+    - "runtime/schemas/"
+    - "artifacts/validation/phase1_runtime_foundation_validation.json"
+    - "artifacts/validation/phase1_runtime_execution_path_validation.json"
+    - "artifacts/validation/phase1_closeout_validation.json"
+    - "artifacts/validation/phase1_integration_tests.json"
+    - "artifacts/examples/phase1_runtime_run_example.json"
+    - "artifacts/examples/phase1_execution_control_example.json"
+    - "artifacts/examples/phase1_runtime_execution_example.json"
+    - "bin/validate_phase1_runtime_foundation.py"
+    - "bin/validate_phase1_runtime_execution_path.py"
+    - "bin/validate_phase1_closeout.py"
+    - "bin/test_phase1_runtime_integration.py"
+  promotion_linkage:
+    required: false
+    manifest_refs: []
+
+sync:
+  plane:
+    sync_enabled: false
+    sync_mode: "repo_to_plane_authoritative"
+    workspace: "Integrated AI Platform"
+    project: "Roadmap Ops"
+    plane_item_id: null
+    last_synced_at: null
+    writeback_fields_allowed: []
+  github:
+    issue_ref: null
+    pr_refs: []
+
+metadata:
+  owner: "system"
+  created_at: "2026-04-22"
+  updated_at: "2026-04-22"
+  completed_at: "2026-04-22"
+  tags:
+    - "runtime"
+    - "inference-gateway"
+    - "phase-1"
+    - "ollama-first"

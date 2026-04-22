@@ -1,0 +1,306 @@
+schema_version: "1.0"
+kind: "execution_bundle_schema"
+generated_at: "2026-04-22T00:00:00Z"
+
+description: >
+  Machine-readable schema for execution bundles compiled from roadmap items.
+  Bundles preserve roadmap identity, scope, governance constraints, and validation
+  requirements through the transformation from planning to execution.
+
+required_fields:
+  - bundle_id
+  - roadmap_id
+  - generated_at
+  - objective
+  - scope
+  - allowed_files
+  - forbidden_files
+  - validation_order
+  - rollback_rule
+  - expected_artifacts
+  - execution_instructions
+
+schema_definition:
+
+  bundle_id:
+    type: "string"
+    pattern: "BUNDLE-[A-Z0-9-]+"
+    description: "Unique identifier for this compiled bundle"
+    example: "BUNDLE-RM-DEV-005-COMPILED-20260422"
+
+  roadmap_id:
+    type: "string"
+    pattern: "RM-[A-Z]+-[0-9]+"
+    description: "Source roadmap item ID (preserved from source)"
+    example: "RM-DEV-005"
+
+  roadmap_title:
+    type: "string"
+    description: "Human-readable title from source roadmap item"
+    example: "Local autonomy uplift, OSS intake, and Aider reliability hardening"
+
+  generated_at:
+    type: "ISO8601 timestamp"
+    description: "When this bundle was compiled"
+    example: "2026-04-22T10:30:00Z"
+
+  compiled_from:
+    type: "string"
+    description: "Compiler version and source"
+    example: "roadmap_compiler.py v1.0"
+
+  objective:
+    type: "string"
+    description: "Machine goal extracted from roadmap item objective field"
+    example: "Deliver local autonomy uplift with OSS intake validation"
+
+  scope:
+    type: "object"
+    fields:
+      in_scope:
+        type: "array[string]"
+        description: "List of specific capabilities in scope"
+        example: ["local model routing", "OSS dependency validation"]
+
+      out_of_scope:
+        type: "array[string]"
+        description: "List of capabilities explicitly out of scope"
+        example: ["container provisioning", "remote model training"]
+
+  subsystem_scope:
+    type: "array[object]"
+    description: "Subsystems affected by this bundle (from RM-CORE-003 inventory)"
+    fields:
+      subsystem_id:
+        type: "string"
+        example: "SYS-AIDER-ADAPTER-001"
+
+      subsystem_name:
+        type: "string"
+        example: "aider_adapter"
+
+      interaction_type:
+        type: "enum: [calls, modified_by, provides_data_to]"
+
+  allowed_files:
+    type: "array[string]"
+    description: "File patterns this bundle is permitted to modify (from roadmap item)"
+    example: ["framework/**", "bin/**", "artifacts/**"]
+
+  forbidden_files:
+    type: "array[string]"
+    description: "File patterns this bundle must NOT modify"
+    example: ["governance/**", ".github/**", "tests/**"]
+
+  validation_order:
+    type: "array[object]"
+    description: "Validation steps that must succeed in order (from roadmap item)"
+    fields:
+      step:
+        type: "integer"
+        description: "Step number (1-indexed)"
+
+      name:
+        type: "string"
+        description: "Short name of validation step"
+        example: "run_make_check"
+
+      command:
+        type: "string"
+        description: "Command to run"
+        example: "make check"
+
+      gates:
+        type: "array[string]"
+        description: "Gates this step unlocks"
+        example: ["syntax_validation"]
+
+      on_failure:
+        type: "enum: [halt, warn, continue]"
+        description: "What to do if validation fails"
+
+  rollback_rule:
+    type: "string"
+    description: "Instructions for rolling back this bundle if validation fails"
+    example: "Revert framework/, bin/, and artifacts/ to pre-bundle state"
+
+  expected_artifacts:
+    type: "array[object]"
+    description: "Artifacts expected to be emitted by executing this bundle"
+    fields:
+      artifact_type:
+        type: "string"
+        example: "run_summary.json"
+
+      location:
+        type: "string"
+        example: "artifacts/system_runs/{run_id}/"
+
+      required:
+        type: "boolean"
+
+  execution_instructions:
+    type: "object"
+    description: "Instructions suitable for passing to prompt-builder or execution engine"
+    fields:
+      objective:
+        type: "string"
+        description: "What to accomplish"
+
+      constraints:
+        type: "array[string]"
+        description: "Hard constraints"
+        example: ["modify only allowed_files", "preserve rollback capability"]
+
+      allowed_modification_patterns:
+        type: "array[string]"
+        description: "Types of modifications permitted"
+        example: ["add function", "modify existing function", "add import"]
+
+      suggested_approach:
+        type: "string"
+        description: "Recommended strategy (from RM-DEV-005 adaptive execution patterns)"
+
+      validation_gates:
+        type: "array[string]"
+        description: "Gates that must pass"
+
+  roadmap_fields_preserved:
+    type: "object"
+    description: "Original roadmap item fields preserved for traceability"
+    fields:
+      category:
+        type: "string"
+        example: "DEV"
+
+      priority:
+        type: "string"
+        example: "P1"
+
+      phase_target:
+        type: "string"
+        example: "Phase 3"
+
+      status:
+        type: "string"
+        example: "completed"
+
+  compilation_metadata:
+    type: "object"
+    description: "Metadata about how this bundle was compiled"
+    fields:
+      compiler_version:
+        type: "string"
+        example: "1.0"
+
+      dependency_planner_state:
+        type: "object"
+        description: "State of dependencies at compilation time"
+        fields:
+          unblocked_at_compile: true | false
+          blockers_resolved: "array[string]"
+
+      subsystem_bindings:
+        type: "array[string]"
+        description: "Subsystems bound from architecture baseline"
+
+example_bundle:
+  bundle_id: "BUNDLE-RM-DEV-005-COMPILED-20260422"
+  roadmap_id: "RM-DEV-005"
+  roadmap_title: "Local autonomy uplift, OSS intake, and Aider reliability hardening"
+  generated_at: "2026-04-22T10:30:00Z"
+  compiled_from: "roadmap_compiler.py v1.0"
+
+  objective: "Deliver local autonomy uplift with OSS intake validation and Aider reliability hardening"
+
+  scope:
+    in_scope:
+      - "local autonomy policy routing"
+      - "OSS dependency intake validation"
+      - "Aider transport reliability hardening"
+    out_of_scope:
+      - "remote model training"
+      - "container provisioning"
+
+  subsystem_scope:
+    - subsystem_id: "SYS-AIDER-ADAPTER-001"
+      subsystem_name: "aider_adapter"
+      interaction_type: "modified_by"
+
+    - subsystem_id: "SYS-POLICY-001"
+      subsystem_name: "model_policy_engine"
+      interaction_type: "modified_by"
+
+  allowed_files:
+    - "framework/**"
+    - "bin/**"
+    - "governance/**"
+    - "artifacts/**"
+
+  forbidden_files:
+    - ".github/**"
+    - "tests/**"
+    - "config/**"
+
+  validation_order:
+    - step: 1
+      name: "run_make_check"
+      command: "make check"
+      gates: ["syntax_validation"]
+      on_failure: "halt"
+
+    - step: 2
+      name: "run_make_quick"
+      command: "make quick"
+      gates: ["quick_checks"]
+      on_failure: "halt"
+
+    - step: 3
+      name: "run_test_offline"
+      command: "make test-offline"
+      gates: ["functional_validation"]
+      on_failure: "halt"
+
+  rollback_rule: "Revert framework/**, bin/**, governance/**, and artifacts/** to pre-bundle state"
+
+  expected_artifacts:
+    - artifact_type: "run_summary.json"
+      location: "artifacts/system_runs/{run_id}/"
+      required: true
+
+    - artifact_type: "validation_report.json"
+      location: "artifacts/validation/"
+      required: true
+
+  execution_instructions:
+    objective: "Implement local autonomy uplift: local-first model routing policy, OSS intake validation, Aider reliability hardening"
+    constraints:
+      - "modify only files in allowed_files"
+      - "preserve all rollback capability"
+      - "validate after each phase"
+    allowed_modification_patterns:
+      - "add function"
+      - "modify existing function"
+      - "add import"
+      - "modify configuration"
+    suggested_approach: "Phase 1: implement policy engine. Phase 2: add OSS intake validation. Phase 3: harden Aider transport."
+    validation_gates:
+      - "syntax_validation"
+      - "quick_checks"
+      - "functional_validation"
+
+  roadmap_fields_preserved:
+    category: "DEV"
+    priority: "P1"
+    phase_target: "Phase 3"
+    status: "completed"
+
+  compilation_metadata:
+    compiler_version: "1.0"
+    dependency_planner_state:
+      unblocked_at_compile: true
+      blockers_resolved: []
+    subsystem_bindings:
+      - "SYS-AIDER-ADAPTER-001"
+      - "SYS-POLICY-001"
+      - "SYS-RUNTIME-001"

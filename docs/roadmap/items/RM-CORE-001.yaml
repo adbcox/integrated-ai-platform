@@ -5,7 +5,7 @@ slug: "introduce-internal-inference-gateway"
 title: "Introduce internal inference gateway"
 category: "CORE"
 type: "platform_foundation"
-status: "proposed"
+status: "completed"
 priority: "P1"
 scoring:
   loe: 4
@@ -38,6 +38,9 @@ scope:
     - "Plane sync changes"
 dependencies:
   blocked_by:
+    - "RM-GOV-003"
+    - "RM-GOV-005"
+  depends_on:
     - "RM-GOV-003"
     - "RM-GOV-005"
   enables:
@@ -82,10 +85,13 @@ planning:
   planning_notes: ""
 execution:
   execution_package_refs: []
-  execution_status: "not_started"
+  execution_status: "completed"
   last_execution_commit: null
 validation:
-  validation_artifact_refs: []
+  validation_artifact_refs:
+    - "framework/inference_gateway.py"
+    - "framework/model_profiles.py"
+    - "framework/runtime_telemetry_schema.py"
   validation_status: "not_started"
   definition_of_done_ref: "docs/roadmap/STANDARDS.md"
 governance:

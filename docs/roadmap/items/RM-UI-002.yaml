@@ -1,0 +1,160 @@
+schema_version: "1.0"
+kind: "roadmap_item"
+id: "RM-UI-002"
+slug: "execution-dashboard"
+title: "Execution dashboard"
+category: "UI"
+type: "capability_surface"
+status: "completed"
+priority: "P2"
+scoring:
+  loe: 3
+  strategic_value: 3
+  architecture_fit: 3
+  execution_risk: 2
+  dependency_burden: 2
+  readiness: 1
+
+description: >
+  Build dashboard surface for execution monitoring and observability.
+  Display real-time execution status, traces, failures, and performance metrics.
+  Integrate with execution tracer (RM-OPS-001) and profiler (RM-OPS-003).
+
+why_it_matters: >
+  Users need visibility into execution state. Dashboard surfaces tracing and metrics
+  collected by ops layer, enabling monitoring without raw log inspection.
+
+scope:
+  objective: >
+    Create web-based dashboard with execution status, trace viewer, failure analyzer,
+    and performance metrics display. Wire to runtime tracing and profiling data.
+  in_scope:
+    - "execution status view (active jobs, completed jobs)"
+    - "trace event viewer and filtering"
+    - "failure display and analysis"
+    - "performance metric visualization"
+  out_of_scope:
+    - "mobile/native interfaces"
+    - "historical data retention"
+    - "alerts and notifications"
+
+dependencies:
+  blocked_by:
+    - "RM-OPS-001"
+    - "RM-OPS-002"
+    - "RM-OPS-003"
+  depends_on:
+    - "RM-OPS-001"
+    - "RM-OPS-002"
+    - "RM-OPS-003"
+  enables: []
+  related_items:
+    - "RM-UI-001"
+    - "RM-UI-003"
+
+impact:
+  affected_systems:
+    - "ui"
+    - "operations"
+  expected_file_families:
+    - "framework/execution_dashboard.py"
+  impact_summary: >
+    Provides web-based monitoring surface for execution state and metrics.
+
+cmdb:
+  refs:
+    - "subsystem:ui"
+  asset_links: []
+  service_links: []
+
+grouping:
+  feature_block_candidates:
+    - "FB-UI-OPERATIONS"
+  package_group: "PKG-PHASE2-UI"
+  shared_touch_surfaces:
+    - "execution monitoring"
+    - "ui surfaces"
+
+milestones:
+  recommended_first_milestone: "define-dashboard-schema"
+  downstream_milestones:
+    - "implement-status-view"
+    - "implement-trace-viewer"
+
+planning:
+  planning_packet_ref: null
+  planning_status: "ready"
+  planning_notes: "Unblocked: RM-OPS-001, RM-OPS-002, RM-OPS-003 are complete. Ready for implementation."
+
+execution:
+  execution_package_refs:
+    - "framework/execution_dashboard_ui.py"
+    - "framework/ops_artifact_loader.py"
+  execution_status: "completed"
+  last_execution_commit: null
+
+validation:
+  validation_artifact_refs:
+    - "artifacts/validation/phase2_ui_validation.json"
+  validation_status: "complete"
+  definition_of_done_ref: "docs/roadmap/STANDARDS.md"
+
+governance:
+  phase_target: "Phase 2"
+  architectural_lane: "ui_operations"
+  risk_tier: "low"
+  allowed_change_scope: "bounded"
+  requires_explicit_escalation: false
+
+ai_operability:
+  canonical_summary: >
+    Phase 2 UI item providing execution dashboard surface (COMPLETED - consumes OPS artifacts).
+  developer_intent: >
+    Users can monitor execution state, view traces, and analyze failures through
+    integrated web dashboard consuming real OPS execution trace artifacts.
+  allowed_files:
+    - "framework/**"
+    - "governance/**"
+  forbidden_files:
+    - "runtime/**"
+    - "tests/**"
+    - ".github/**"
+  validation_order:
+    - "verify RM-OPS-001/002/003 are complete"
+    - "confirm dashboard schema is defined"
+    - "confirm dashboard displays execution state"
+    - "make check passes"
+  rollback_rule: >
+    Remove execution_dashboard module. No dependencies on this item exist yet.
+  artifact_outputs: []
+  promotion_linkage:
+    required: false
+    manifest_refs: []
+
+sync:
+  plane:
+    sync_enabled: true
+    sync_mode: "repo_to_plane_authoritative"
+    workspace: "Integrated AI Platform"
+    project: "Roadmap Ops"
+    plane_item_id: null
+    last_synced_at: null
+    writeback_fields_allowed:
+      - "operational_state"
+      - "assignee"
+      - "cycle"
+      - "module"
+      - "labels"
+  github:
+    issue_ref: null
+    pr_refs: []
+
+metadata:
+  owner: "system"
+  created_at: "2026-04-22"
+  updated_at: "2026-04-22"
+  tags:
+    - "phase-2"
+    - "ui"
+    - "operations"
+    - "completed"

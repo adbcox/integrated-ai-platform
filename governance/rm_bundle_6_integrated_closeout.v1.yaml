@@ -1,0 +1,47 @@
+schema_version: "1.0"
+kind: "integrated_closeout_bundle"
+bundle_id: "RM-BUNDLE-DEV002-DEV004-DEV007-CORE005-GOV005-INV005"
+status: "archived"
+archived_at: "2026-04-22T04:10:00Z"
+roadmap_items:
+  - "RM-DEV-002"
+  - "RM-DEV-004"
+  - "RM-DEV-007"
+  - "RM-CORE-005"
+  - "RM-GOV-005"
+  - "RM-INV-005"
+integration_chain:
+  - step: 1
+    item: "RM-DEV-007"
+    output: "indexed retrieval baseline"
+    consumed_by: ["RM-DEV-004", "RM-DEV-002"]
+  - step: 2
+    item: "RM-DEV-004"
+    output: "firmware assistant bounded workflow"
+    consumed_by: ["RM-DEV-002"]
+  - step: 3
+    item: "RM-DEV-002"
+    output: "QC findings and write-back envelope"
+    consumed_by: ["RM-INV-005", "RM-GOV-005"]
+  - step: 4
+    item: "RM-CORE-005"
+    output: "identity/secrets/permissions trust boundaries"
+    consumed_by: ["RM-DEV-002", "RM-DEV-004", "RM-DEV-007"]
+  - step: 5
+    item: "RM-GOV-005"
+    output: "cycle/release/batch governance model"
+    consumed_by: ["RM-INV-005"]
+  - step: 6
+    item: "RM-INV-005"
+    output: "asset-to-roadmap and asset-to-execution linkage registry"
+    consumed_by: ["archive_validation"]
+artifacts:
+  - "governance/qc_finding_schema_rm_dev_002.v1.yaml"
+  - "governance/firmware_assistant_baseline.v1.yaml"
+  - "governance/indexed_retrieval_backend.v1.yaml"
+  - "governance/trust_boundary_policy.v1.yaml"
+  - "governance/roadmap_cycle_batch_governance.v1.yaml"
+  - "governance/asset_execution_linkage.v1.yaml"
+validation_refs:
+  - "artifacts/governance/rm_bundle_6_closeout_validation.json"
+  - "artifacts/governance/rm_bundle_6_archive_validation.json"

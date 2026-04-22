@@ -8,8 +8,9 @@ adoption recommendations for roadmap-linked implementation decisions.
 ## Canonical machine-readable surfaces
 
 - `governance/oss_watchtower_candidates.v1.yaml`
+- `governance/verified_oss_capability_harvest_rm_intel_002.v1.yaml`
 - `governance/rm_dev_003_rm_intel_001_linkage.v1.yaml`
-- `artifacts/governance/rm_dev_003_rm_intel_001_baseline_validation.json`
+- `artifacts/governance/rm_integrated_5_item_validation.json`
 
 ## Required candidate fields
 
@@ -45,3 +46,9 @@ through:
 - capability-needs to candidate mappings
 - recommendation rationale per need
 - fallback posture for safe bounded operation
+
+## Integration with RM-INTEL-002
+
+Watchtower entries are projected from verified harvest outputs in:
+
+- `governance/verified_oss_capability_harvest_rm_intel_002.v1.yaml`

@@ -1,0 +1,114 @@
+authority_owner: governance/authority_adr_0001_source_of_truth.md
+failure_classes:
+- class_id: scope-violation
+  correction_strategy: replan with scoped files
+  count: 0
+  description: File modification attempts outside allowed_files boundary
+  last_seen: null
+  severity: critical
+- class_id: contract-invalid
+  correction_strategy: validate contract before dispatch
+  count: 0
+  description: Task contract does not meet bounded_autonomous_codegen_contract requirements
+  last_seen: null
+  severity: critical
+- class_id: validation-failed
+  correction_strategy: review modification, run validation locally first
+  count: 0
+  description: Post-generation validation commands returned non-zero exit code
+  last_seen: null
+  severity: high
+- class_id: empty-modification
+  correction_strategy: refine task description, provide context
+  count: 0
+  description: Modification generated no actual file changes
+  last_seen: null
+  severity: medium
+- class_id: syntax-error
+  correction_strategy: use local model for syntax-sensitive tasks, or add examples
+  count: 0
+  description: Generated code has syntax errors detected by validation
+  last_seen: null
+  severity: high
+generated_at: '2026-04-21'
+learned_patterns: []
+metadata:
+  clearing_policy: patterns never removed, only marked historical
+  description: Persistent store for QC findings and learned corrections
+  update_policy: append-only with timestamps
+next_improvements:
+- method: add language-specific linting to validation commands
+  priority: high
+  target: syntax-error prevention
+- method: require before/after artifact snapshots in task
+  priority: medium
+  target: empty-modification prevention
+- method: extract correction patterns from successful runs
+  priority: high
+  target: learned patterns
+prevention_rules:
+- action: block
+  applies_to:
+  - scope-violation
+  description: Check planned files against allowed/forbidden before execution
+  rule_id: always-validate-scope
+- action: block
+  applies_to:
+  - contract-invalid
+  description: Verify task contract meets all required fields
+  rule_id: always-validate-contract
+- action: warn
+  applies_to:
+  - validation-failed
+  - syntax-error
+  description: Ensure task includes validation_commands that can catch errors
+  rule_id: require-validation-commands
+- action: warn
+  applies_to:
+  - empty-modification
+  description: Ensure task has clear description for context
+  rule_id: require-task-description
+run_history:
+- categories:
+  - style_noise
+  finding_count: 1
+  timestamp: '2026-04-22T00:53:38'
+- categories: !!set
+    style_noise: null
+  finding_count: 1
+  timestamp: '2026-04-22T01:03:44+00:00'
+- categories: !!set
+    style_noise: null
+  finding_count: 1
+  timestamp: '2026-04-22T01:04:07+00:00'
+- categories: !!set
+    style_noise: null
+  finding_count: 1
+  timestamp: '2026-04-22T01:04:15+00:00'
+- categories: !!set
+    style_noise: null
+  finding_count: 1
+  timestamp: '2026-04-22T01:04:15+00:00'
+- categories: !!set
+    style_noise: null
+  finding_count: 1
+  timestamp: '2026-04-22T01:04:41+00:00'
+- categories: !!set
+    style_noise: null
+  finding_count: 1
+  timestamp: '2026-04-22T01:04:48+00:00'
+- categories: !!set
+    style_noise: null
+  finding_count: 1
+  timestamp: '2026-04-22T01:04:49+00:00'
+- categories: !!set
+    style_noise: null
+  finding_count: 1
+  timestamp: '2026-04-22T01:04:49+00:00'
+- categories: !!set
+    style_noise: null
+  finding_count: 1
+  timestamp: '2026-04-22T01:04:54+00:00'
+schema_version: 1.0.0
+status: active
+store_id: QC-PATTERN-STORE-V1

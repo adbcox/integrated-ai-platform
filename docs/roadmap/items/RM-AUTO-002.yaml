@@ -1,0 +1,177 @@
+schema_version: '1.0'
+kind: roadmap_item
+id: RM-AUTO-002
+slug: roadmap-to-execution-compiler-baseline
+title: Roadmap-to-execution compiler baseline
+category: AUTO
+type: infrastructure
+status: "completed"
+priority: P1
+scoring:
+  loe: 4
+  strategic_value: 5
+  architecture_fit: 5
+  execution_risk: 2
+  dependency_burden: 2
+  readiness: 3
+description: 'Establish the roadmap-to-execution compiler baseline that transforms
+  selected roadmap items into execution-ready bundles with preserved roadmap ID, scope,
+  validations, rollback rules, and artifact expectations.
+
+  '
+why_it_matters: 'Without a compiler, roadmap items remain disconnected from execution.
+  A compiler bridges roadmap planning to execution by preserving identity, scope,
+  and governance across the transformation.
+
+  '
+scope:
+  objective: 'Deliver executable compiler that reads roadmap items and produces bounded
+    execution bundles with all required fields for prompt-builder rules and execution
+    tracking.
+
+    '
+  in_scope:
+  - execution bundle schema definition
+  - compiler implementation that reads live roadmap
+  - prompt-builder rules template
+  - example compiled bundle for real roadmap item
+  - roadmap ID preservation across compilation
+  out_of_scope:
+  - prompt-builder implementation
+  - bundle execution runtime
+  - Plane sync integration
+dependencies:
+  blocked_by:
+  - RM-GOV-004
+  - RM-CORE-003
+  depends_on:
+  - RM-GOV-004
+  - RM-CORE-003
+  enables: []
+  related_items:
+  - RM-CORE-003
+  - RM-GOV-004
+impact:
+  affected_systems:
+  - roadmap_ops
+  - control_window
+  - control_plane
+  expected_file_families:
+  - governance/**
+  - bin/**
+  - artifacts/**
+  impact_summary: 'Provides the compiler that makes roadmap items executable through
+    bounded, governance-preserving bundles.
+
+    '
+cmdb:
+  refs:
+  - subsystem:roadmap_ops
+  - subsystem:control_plane
+  asset_links: []
+  service_links: []
+grouping:
+  feature_block_candidates:
+  - FB-AUTO-EXECUTION-COMPILATION
+  package_group: PKG-AUTO-COMPILATION
+  shared_touch_surfaces:
+  - execution bundle schema
+  - compiler logic
+  - prompt-builder interface
+milestones:
+  recommended_first_milestone: define-bundle-schema
+  downstream_milestones:
+  - implement-compiler
+  - generate-example-bundle
+planning:
+  planning_packet_ref: null
+  planning_status: not_started
+  planning_notes: ''
+execution:
+  execution_package_refs:
+  - docs/roadmap/RM-AUTO-002_EXECUTION_PACK.md
+  execution_status: complete
+  last_execution_commit: null
+  completion_evidence:
+    validation_artifact: artifacts/governance/rm_core_003_rm_gov_004_rm_auto_002_validation.json
+validation:
+  validation_artifact_refs:
+  - artifacts/governance/rm_core_003_rm_gov_004_rm_auto_002_validation.json
+  validation_status: complete
+  definition_of_done_ref: docs/roadmap/STANDARDS.md
+archive_status: archived
+archive_readiness:
+  ready: true
+  reason: implementation_complete_and_validated
+  validation_artifact: artifacts/governance/rm_core_003_rm_gov_004_rm_auto_002_validation.json
+  archived_at: "2026-04-22T03:15:00Z"
+governance:
+  phase_target: Phase 3
+  architectural_lane: governance_and_planning
+  risk_tier: low
+  allowed_change_scope: bounded
+  requires_explicit_escalation: false
+ai_operability:
+  canonical_summary: 'Compiler to transform roadmap items into execution-ready bundles
+    preserving governance and scope.
+
+    '
+  developer_intent: 'After this item, roadmap items can be compiled to execution bundles
+    automatically, preserving their roadmap identity and governance constraints.
+
+    '
+  non_goals:
+  - Do not implement bundle execution
+  - Do not implement prompt-builder
+  - Do not alter runtime code
+  allowed_files:
+  - governance/**
+  - bin/**
+  - artifacts/**
+  - docs/roadmap/**
+  forbidden_files:
+  - framework/**
+  - tests/**
+  - config/**
+  - .github/**
+  validation_order:
+  - verify bundle schema parses
+  - verify compiler runs on live roadmap
+  - verify example bundle is generated
+  - verify bundle contains all required fields
+  rollback_rule: 'Revert compiler script, bundle schema, and all generated artifacts.
+
+    '
+  artifact_outputs:
+  - governance/execution_bundle_schema.yaml
+  - bin/roadmap_compiler.py
+  - artifacts/compiled_bundles/example_rm_dev_005_bundle.json
+  promotion_linkage:
+    required: false
+    manifest_refs: []
+sync:
+  plane:
+    sync_enabled: true
+    sync_mode: repo_to_plane_authoritative
+    workspace: Integrated AI Platform
+    project: Roadmap Ops
+    plane_item_id: null
+    last_synced_at: null
+    writeback_fields_allowed:
+    - operational_state
+    - assignee
+    - cycle
+    - module
+    - labels
+  github:
+    issue_ref: null
+    pr_refs: []
+metadata:
+  owner: adrian
+  created_at: '2026-04-22'
+  updated_at: '2026-04-22'
+  tags:
+  - automation
+  - compiler
+  - roadmap-execution
+  - phase-3

@@ -1,0 +1,264 @@
+---
+schema_version: "1.0"
+kind: orchestration_model
+generated_at: "2026-04-22T03:00:00Z"
+description: "Event/job/state orchestration baseline for execution bundles"
+
+event_types:
+  - id: execution_bundle_submitted
+    name: "Execution Bundle Submitted"
+    description: "A roadmap bundle has been submitted for execution"
+    payload:
+      - bundle_id
+      - roadmap_ids
+      - objective
+      - submitted_at
+      - submitted_by
+    handler: execution_scheduler
+
+  - id: execution_started
+    name: "Execution Started"
+    description: "Execution of a bundle has begun"
+    payload:
+      - bundle_id
+      - execution_id
+      - started_at
+      - executor_id
+    handler: state_manager, event_bus
+
+  - id: execution_checkpoint
+    name: "Execution Checkpoint"
+    description: "Intermediate checkpoint during execution (e.g., file created, validation passed)"
+    payload:
+      - execution_id
+      - checkpoint_name
+      - checkpoint_data
+      - timestamp
+    handler: state_manager
+
+  - id: validation_step_completed
+    name: "Validation Step Completed"
+    description: "A validation check has completed (success or failure)"
+    payload:
+      - execution_id
+      - validation_name
+      - result
+      - details
+      - timestamp
+    handler: validator, state_manager
+
+  - id: execution_failed
+    name: "Execution Failed"
+    description: "Execution encountered unrecoverable error"
+    payload:
+      - execution_id
+      - error_type
+      - error_message
+      - failed_at
+      - rollback_initiated
+    handler: state_manager, execution_scheduler
+
+  - id: execution_succeeded
+    name: "Execution Succeeded"
+    description: "Execution completed successfully, all validations passed"
+    payload:
+      - execution_id
+      - completed_at
+      - artifacts_produced
+      - validation_results
+    handler: state_manager, event_bus
+
+  - id: state_transition_requested
+    name: "State Transition Requested"
+    description: "Request to transition execution to new state (pause, resume, cancel)"
+    payload:
+      - execution_id
+      - from_state
+      - to_state
+      - reason
+      - requested_at
+      - requested_by
+    handler: state_manager
+
+job_states:
+  - id: pending
+    name: "Pending"
+    description: "Job submitted, waiting for execution"
+    valid_transitions:
+      - to: executing
+        event: execution_started
+      - to: cancelled
+        event: state_transition_requested
+
+  - id: executing
+    name: "Executing"
+    description: "Job is actively running"
+    valid_transitions:
+      - to: paused
+        event: state_transition_requested
+      - to: failed
+        event: execution_failed
+      - to: succeeded
+        event: execution_succeeded
+
+  - id: paused
+    name: "Paused"
+    description: "Job execution is paused"
+    valid_transitions:
+      - to: executing
+        event: state_transition_requested
+      - to: cancelled
+        event: state_transition_requested
+
+  - id: succeeded
+    name: "Succeeded"
+    description: "Job completed successfully"
+    valid_transitions: []
+    final_state: true
+
+  - id: failed
+    name: "Failed"
+    description: "Job failed; rollback executed or required"
+    valid_transitions:
+      - to: pending
+        event: state_transition_requested
+        note: "Retry after human inspection or automatic remediation"
+    final_state: false
+
+  - id: cancelled
+    name: "Cancelled"
+    description: "Job was cancelled by user or system"
+    valid_transitions: []
+    final_state: true
+
+state_transitions:
+  - from: pending
+    to: executing
+    event: execution_started
+    preconditions:
+      - "all dependencies satisfied"
+      - "executor available"
+    effects:
+      - "initialize execution context"
+      - "start timer"
+      - "log transition"
+
+  - from: executing
+    to: paused
+    event: state_transition_requested
+    preconditions:
+      - "execution is checkpointable"
+    effects:
+      - "save execution snapshot"
+      - "pause all active tasks"
+      - "log transition"
+
+  - from: paused
+    to: executing
+    event: state_transition_requested
+    preconditions:
+      - "snapshot exists"
+    effects:
+      - "restore execution context from snapshot"
+      - "resume tasks"
+      - "log transition"
+
+  - from: executing
+    to: succeeded
+    event: execution_succeeded
+    preconditions:
+      - "all validation steps passed"
+      - "all expected artifacts exist"
+    effects:
+      - "archive execution"
+      - "mark roadmap items complete"
+      - "emit success event"
+
+  - from: executing
+    to: failed
+    event: execution_failed
+    preconditions:
+      - "error is unrecoverable OR retry exhausted"
+    effects:
+      - "execute rollback_rule"
+      - "capture error context"
+      - "emit failure event"
+
+  - from: pending
+    to: cancelled
+    event: state_transition_requested
+    preconditions:
+      - "user or system initiated cancellation"
+    effects:
+      - "mark as cancelled"
+      - "release reserved resources"
+      - "emit cancellation event"
+
+  - from: paused
+    to: cancelled
+    event: state_transition_requested
+    preconditions:
+      - "user initiated cancellation"
+      - "snapshot can be cleaned up"
+    effects:
+      - "discard execution snapshot"
+      - "mark as cancelled"
+      - "log transition"
+
+  - from: failed
+    to: pending
+    event: state_transition_requested
+    preconditions:
+      - "human inspection completed"
+      - "or automatic remediation applied"
+    effects:
+      - "reset execution state"
+      - "clear error context"
+      - "log transition"
+
+retry_policy:
+  max_retries: 3
+  retry_delay_seconds: 5
+  backoff_multiplier: 2.0
+  retryable_errors:
+    - transient_network_error
+    - temporary_file_lock
+    - resource_temporarily_unavailable
+  non_retryable_errors:
+    - validation_failed
+    - syntax_error
+    - forbidden_file_modified
+    - hard_dependency_failed
+
+failure_policy:
+  on_validation_failure: "stop execution, execute rollback, mark failed"
+  on_timeout: "execute rollback, mark failed, increment retry counter"
+  on_forbidden_file_modified: "stop immediately, mark failed, alert"
+  on_hard_dependency_failure: "cascade failure to dependent items, stop"
+  on_soft_dependency_failure: "log warning, continue execution"
+
+execution_context:
+  fields:
+    - execution_id
+    - bundle_id
+    - roadmap_ids
+    - state
+    - started_at
+    - paused_at
+    - resumed_at
+    - completed_at
+    - checkpoint_history
+    - validation_results
+    - events_emitted
+    - error_context
+  persistence:
+    backend: "postgres or sqlite (runtime choice)"
+    table: "executions"
+
+orchestration_guarantees:
+  - "at_least_once event delivery"
+  - "ordered event processing per job"
+  - "idempotent state transitions"
+  - "atomicity per state transition"
+  - "snapshots capture consistent state"
+  - "rollback rules are executed deterministically"

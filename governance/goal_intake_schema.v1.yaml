@@ -1,0 +1,196 @@
+schema_version: "1.0"
+kind: "governance_schema"
+id: "goal_intake_schema"
+name: "Goal Intake Schema"
+description: >
+  Schema for plain-English goal intake and conversion into structured execution
+  work.
+
+# Goal intake structure
+goal_definition:
+  type: "object"
+  description: "A plain-English goal statement and metadata"
+  properties:
+    goal_id:
+      type: "string"
+      description: "Unique identifier for the goal (auto-generated)"
+      pattern: "^goal-[a-z0-9-]+$"
+    goal_text:
+      type: "string"
+      description: "Plain-English goal statement"
+      minLength: 10
+      maxLength: 1000
+    goal_category:
+      type: "string"
+      enum:
+        - "capability_building"
+        - "bug_fixing"
+        - "performance_improvement"
+        - "security_hardening"
+        - "operational_reliability"
+        - "documentation"
+        - "infrastructure"
+      description: "Category of the goal"
+    goal_priority:
+      type: "string"
+      enum: ["P0", "P1", "P2", "P3"]
+      description: "Priority level"
+    goal_owner:
+      type: "string"
+      description: "User ID or team ID responsible for the goal"
+    goal_deadline:
+      type: "string"
+      format: "date-time"
+      description: "Target completion date (optional)"
+    intake_timestamp:
+      type: "string"
+      format: "date-time"
+      description: "When goal was intake (auto-generated)"
+    intake_source:
+      type: "string"
+      enum: ["human", "system", "integration"]
+      description: "Where the goal originated"
+
+# Goal validation
+goal_validation:
+  type: "object"
+  description: "Validation rules and constraints"
+  properties:
+    constraints:
+      type: "array"
+      items:
+        type: "object"
+        properties:
+          constraint_type:
+            type: "string"
+            enum: ["scope", "resource", "timeline", "risk", "safety"]
+          constraint_value:
+            type: "string"
+          is_blocking:
+            type: "boolean"
+      description: "List of constraints on this goal"
+    guardrails:
+      type: "array"
+      items:
+        type: "string"
+      description: "Safety guardrails that must be enforced"
+    approval_required:
+      type: "boolean"
+      description: "Whether human approval is required before execution"
+
+# Goal-to-task decomposition
+task_decomposition:
+  type: "object"
+  description: "Breakdown of goal into executable tasks"
+  properties:
+    decomposition_strategy:
+      type: "string"
+      enum: ["single_task", "sequential_tasks", "parallel_tasks", "bundled_execution"]
+      description: "How to decompose this goal"
+    tasks:
+      type: "array"
+      items:
+        type: "object"
+        properties:
+          task_id:
+            type: "string"
+            description: "Unique task identifier"
+          task_description:
+            type: "string"
+            description: "What this task does"
+          task_priority:
+            type: "string"
+            enum: ["P0", "P1", "P2", "P3"]
+          execution_order:
+            type: "integer"
+            minimum: 0
+          dependencies:
+            type: "array"
+            items: { type: "string" }
+            description: "Other task IDs this depends on"
+          estimated_effort:
+            type: "string"
+            enum: ["xs", "s", "m", "l", "xl"]
+          success_criteria:
+            type: "array"
+            items: { type: "string" }
+    estimated_total_effort:
+      type: "string"
+      enum: ["xs", "s", "m", "l", "xl", "xxl"]
+
+# Goal-to-bundle packaging
+bundle_packaging:
+  type: "object"
+  description: "Packaging of goal-derived work into execution bundles"
+  properties:
+    bundle_id:
+      type: "string"
+      description: "Unique bundle identifier"
+      pattern: "^bundle-[a-z0-9-]+$"
+    bundle_name:
+      type: "string"
+      description: "Human-readable bundle name"
+    bundle_type:
+      type: "string"
+      enum: ["feature", "bugfix", "maintenance", "security", "infrastructure"]
+    task_ids:
+      type: "array"
+      items: { type: "string" }
+      description: "Task IDs included in this bundle"
+    estimated_duration:
+      type: "string"
+      description: "Estimated wall-clock time to complete bundle"
+    risk_level:
+      type: "string"
+      enum: ["low", "medium", "high"]
+
+# Approval and authorization
+approval_workflow:
+  type: "object"
+  description: "Approval gates and authorization model"
+  properties:
+    approval_required:
+      type: "boolean"
+    approval_gates:
+      type: "array"
+      items:
+        type: "object"
+        properties:
+          gate_name:
+            type: "string"
+          gate_type:
+            type: "string"
+            enum: ["safety_review", "scope_review", "risk_review", "resource_availability"]
+          required_approvers:
+            type: "array"
+            items: { type: "string" }
+          approval_status:
+            type: "string"
+            enum: ["pending", "approved", "rejected"]
+          approval_timestamp:
+            type: "string"
+            format: "date-time"
+    authorization_level:
+      type: "string"
+      enum: ["public", "internal", "restricted", "confidential"]
+
+# Guardrail enforcement
+guardrails:
+  type: "array"
+  items:
+    type: "object"
+    properties:
+      guardrail_id:
+        type: "string"
+      guardrail_type:
+        type: "string"
+        enum: ["scope_bounds", "resource_limits", "safety_constraint", "compliance_rule", "approval_gate"]
+      rule:
+        type: "string"
+        description: "The actual guardrail rule in English"
+      enforcement_action:
+        type: "string"
+        enum: ["block", "warn", "log", "escalate"]
+      is_blocking:
+        type: "boolean"
+        description: "If true, execution must stop if violated"

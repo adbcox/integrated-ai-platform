@@ -6,6 +6,7 @@ title: "Bounded autonomous code generation"
 category: "DEV"
 type: "capability"
 status: "completed"
+archive_status: "archived"
 priority: "P1"
 scoring:
   loe: 3
@@ -34,6 +35,8 @@ scope:
     - "broad runtime architecture rewrite"
 dependencies:
   blocked_by: []
+  depends_on:
+    []
   enables:
     - "RM-INTEL-001"
   related_items:
@@ -69,11 +72,13 @@ planning:
 execution:
   execution_package_refs:
     - "RM-DEV-003-RM-INTEL-001-INTEGRATED-BASELINE"
+    - "docs/roadmap/RM-DEV-003_EXECUTION_PACK.md"
   execution_status: "complete"
   last_execution_commit: "fcb4093ebc490fa172c362b3909888258dbb0036"
 validation:
   validation_artifact_refs:
     - "artifacts/governance/rm_dev_003_rm_intel_001_baseline_validation.json"
+    - "artifacts/governance/rm_integrated_5_item_validation.json"
   validation_status: "passed"
   definition_of_done_ref: "docs/progress-contract.md"
 governance:
@@ -121,11 +126,26 @@ sync:
   github:
     issue_ref: null
     pr_refs: []
+archive_readiness:
+  ready: true
+  reason: implementation_complete_and_validated
+  validation_artifact: artifacts/governance/rm_dev_003_rm_intel_001_baseline_validation.json
+  archived_at: "2026-04-22T03:15:00Z"
+closure:
+  closed_at: "2026-04-22T01:15:00Z"
+  closure_status: "complete_ready_for_archive"
+  closure_evidence_ref: "governance/rm_dev_003_closure_evidence.json"
+  closure_decision: "Adaptive, QC-driven bounded execution baseline implemented with deterministic strategy selection, real code modifications, QC write-back, and retry logic. All tests passing, orchestrator gates cleared, no active blockers. Ready for archive."
+  archive_readiness: true
+  archive_notes: "Terminal baseline for Phase 3. Advancement work continues in RM-DEV-002, RM-INTEL-002, RM-DEV-005. Can be archived without impact."
 metadata:
   owner: "adrian"
   created_at: "2026-04-21"
-  updated_at: "2026-04-21"
+  updated_at: "2026-04-22"
+  closed_at: "2026-04-22T01:15:00Z"
   tags:
     - "dev"
     - "bounded-autonomy"
     - "ready-for-archiving"
+    - "archive_candidate"
+    - "closure_complete"

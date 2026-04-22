@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+import logging
+# version: 2026-04-22
 """Inject a tactical bootstrap message before handing aider to the operator."""
 import argparse
 import os

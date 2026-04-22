@@ -1,0 +1,159 @@
+schema_version: "1.0"
+kind: "cmdb_lite"
+generated_at: "2026-04-22T00:00:00Z"
+description: "Lightweight CMDB for integrated AI platform execution"
+
+phase:
+  current: "Phase 3"
+  status: "active"
+  description: "Active development with local autonomy and bounded codegen"
+
+subsystem_inventory:
+  - id: "control_plane"
+    name: "control_plane"
+    layer: "orchestration"
+    responsibility: "Execution coordination and governance enforcement"
+    status: "active"
+
+  - id: "agent_runtime"
+    name: "agent_runtime"
+    layer: "execution"
+    responsibility: "Bounded task execution with fallback strategies"
+    status: "active"
+
+  - id: "inference_gateway"
+    name: "inference_gateway"
+    layer: "inference"
+    responsibility: "Model selection and prompt delivery"
+    status: "active"
+
+  - id: "memory_management"
+    name: "memory_management"
+    layer: "state"
+    responsibility: "Persistent memory with provenance policy"
+    status: "proposed"
+
+  - id: "governance"
+    name: "governance"
+    layer: "authority"
+    responsibility: "Policy enforcement and decision authority"
+    status: "active"
+
+  - id: "domain_retrieval"
+    name: "domain_retrieval"
+    layer: "retrieval"
+    responsibility: "Code search and context aggregation"
+    status: "active"
+
+model_profiles:
+  default: "ollama_local"
+  profiles:
+    - id: "ollama_local"
+      name: "Local Ollama"
+      model: "qwen2.5-coder:14b"
+      endpoint: "http://localhost:11434"
+      role: "primary"
+      status: "active"
+
+    - id: "claude_escalation"
+      name: "Claude API"
+      endpoint: "https://api.anthropic.com"
+      role: "escalation_only"
+      status: "active"
+
+    - id: "aider_adapter"
+      name: "Aider Temporary Adapter"
+      role: "transport_adapter"
+      status: "active"
+      notes: "Adapter-only; not architecture authority"
+
+artifact_root: "artifacts/"
+
+adapter_status:
+  aider:
+    role: "temporary_transport_adapter"
+    boundary: "enforced"
+    status: "active"
+
+  claude:
+    role: "escalation_and_architecture"
+    boundary: "escalation_only"
+    status: "active"
+
+runtime_contract_version: "1.0"
+
+runtime_contract:
+  canonical_schemas:
+    - path: "schemas/session_job_schema.v1.json"
+      purpose: "Unified session/job execution contract (goal, config, trace, validation, outcome)"
+      authority: "authority_adr_0001"
+    - path: "schemas/execution_control_package.v1.json"
+      purpose: "Bounded execution slice template with scope, validation, rollback rules"
+      authority: "authority_adr_0001"
+  validation_examples:
+    - path: "artifacts/examples/session_run_example.json"
+      purpose: "Real execution instance demonstrating full lifecycle"
+  validation_script:
+    - path: "bin/validate_session_schema.py"
+      purpose: "Validate example instance against canonical schema"
+      command: "python3 bin/validate_session_schema.py"
+  runtime_entrypoint:
+    - path: "bin/run_session.py"
+      purpose: "Execute bounded session with real command execution and artifact output"
+      command: "python3 bin/run_session.py <session_path> <output_path>"
+  command_execution_layer:
+    - path: "bin/runtime_command.py"
+      purpose: "Safely execute shell commands with structured result capture"
+
+validation_surfaces:
+  - "make check"
+  - "make quick"
+  - "make test-offline"
+
+governance_authority:
+  authority_model_adr: "governance/authority_adr_0001_source_of_truth.md"
+  canonical_sources:
+    - path: "governance/definition_of_done.v1.yaml"
+      purpose: "Canonical definition of done for all coding runs"
+      authority: "authority_adr_0001, ADR-0006"
+    - path: "governance/autonomy_scorecard.v1.yaml"
+      purpose: "Canonical autonomy metrics and phase progression criteria"
+      authority: "authority_adr_0001, ADR-0007"
+    - path: "governance/execution_control_template.yaml"
+      purpose: "Machine-readable execution-control package template"
+      authority: "authority_adr_0001"
+    - path: "framework/canonical_session_schema.py"
+      purpose: "Canonical session/job identity and state contract"
+      authority: "authority_adr_0001"
+    - path: "framework/canonical_job_schema.py"
+      purpose: "Canonical job object derived from session"
+      authority: "authority_adr_0001"
+    - path: "docs/roadmap/ROADMAP_AUTHORITY.md"
+      purpose: "Roadmap three-layer authority model"
+      authority: "authority_adr_0001"
+    - path: "docs/progress-contract.md"
+      purpose: "Session discipline and approved session types"
+      authority: "ADR-0000 (session operating rules)"
+  operability_references:
+    - path: "docs/roadmap/STANDARDS.md"
+      purpose: "Roadmap standards and naming conventions"
+    - path: "CLAUDE.md"
+      purpose: "System operating rules and architecture"
+    - path: "AGENTS.md"
+      purpose: "Agent session discipline and operating rules"
+    - path: "docs/agent/commands.md"
+      purpose: "Real repo commands executable by agents"
+  validation_entrypoints:
+    - path: "bin/validate_roadmap_consistency.py"
+      purpose: "Validate three-layer roadmap authority consistency"
+      command: "python3 bin/validate_roadmap_consistency.py"
+    - path: "bin/run_definition_of_done_check.py"
+      purpose: "Validate coding run artifact completeness against DoD"
+      command: "python3 bin/run_definition_of_done_check.py"
+    - path: "bin/run_autonomy_scorecard_check.py"
+      purpose: "Validate autonomy metrics against baseline"
+      command: "python3 bin/run_autonomy_scorecard_check.py"
+  make_targets:
+    - "make check"
+    - "make quick"
+    - "make test-offline"

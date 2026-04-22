@@ -2,12 +2,19 @@
 
 This guide tracks the immediate execution order for high-leverage roadmap items.
 
-## Accepted integrated closure
+## Active integrated bundle
 
-1. `RM-DEV-003` — bounded autonomous code generation baseline (`completed`)
-2. `RM-INTEL-001` — OSS watchtower with update alerts and adoption recommendations (`completed`)
-3. accepted baseline commit: `fcb4093ebc490fa172c362b3909888258dbb0036`
+1. `RM-INTEL-002` — verified OSS capability harvest and compatibility validation
+2. `RM-INTEL-001` — watchtower recommendation layer
+3. `RM-DEV-005` — local autonomy + adapter/routing governance
+4. `RM-DEV-003` — bounded autonomous code generation
+5. `RM-DEV-002` — dual-model inline QC loop
 
-## Archival readiness
+## Integration rule
 
-Both items are accepted as the integrated baseline closure and are ready for archiving per roadmap-item authority records.
+This bundle advances only when all links are present:
+
+- `RM-INTEL-002` validated candidate outcomes are consumed by `RM-INTEL-001`.
+- `RM-INTEL-001` + `RM-INTEL-002` recommendation outputs feed `RM-DEV-005`.
+- `RM-DEV-005` policy/profile/memory direction feeds bounded execution in `RM-DEV-003`.
+- `RM-DEV-002` QC findings classify and feed back into bounded execution artifacts.

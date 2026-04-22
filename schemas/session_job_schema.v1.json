@@ -1,0 +1,324 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Canonical Session/Job Runtime Contract v1",
+  "description": "Unified schema for session (intent boundary) and job (execution unit) lifecycle. Single contract covering goal, execution config, workspace, execution trace, validation, and outcome.",
+  "type": "object",
+  "required": ["session_id", "job_id", "task_id", "objective", "allowed_files", "forbidden_files", "validation_steps", "final_outcome"],
+  "additionalProperties": false,
+  "properties": {
+    "session_id": {
+      "type": "string",
+      "description": "Groups one or more jobs sharing a single intent boundary",
+      "minLength": 1
+    },
+    "job_id": {
+      "type": "string",
+      "description": "Unique identifier for a single discrete execution unit",
+      "minLength": 1
+    },
+    "task_id": {
+      "type": "string",
+      "description": "Reference to the task being executed",
+      "minLength": 1
+    },
+    "repo_id": {
+      "type": "string",
+      "description": "Repository identifier or reference",
+      "default": "adbcox/integrated-ai-platform"
+    },
+    "branch": {
+      "type": "string",
+      "description": "Git branch where execution occurs",
+      "default": "main"
+    },
+    "requester": {
+      "type": "string",
+      "description": "User or system that initiated execution",
+      "default": "system"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Session creation timestamp"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Last update timestamp"
+    },
+    "objective": {
+      "type": "string",
+      "description": "High-level goal for this execution",
+      "minLength": 1
+    },
+    "task_class": {
+      "type": "string",
+      "enum": ["substrate", "local_first", "escalation"],
+      "description": "Classification of task type per definition-of-done"
+    },
+    "constraints": {
+      "type": "array",
+      "items": {"type": "string"},
+      "description": "Execution constraints and requirements"
+    },
+    "stop_conditions": {
+      "type": "array",
+      "items": {"type": "string"},
+      "description": "Explicit stop/escalation conditions"
+    },
+    "allowed_tools": {
+      "type": "array",
+      "items": {"type": "string"},
+      "description": "Tools permitted for this execution",
+      "minItems": 1
+    },
+    "risk_tier": {
+      "type": "string",
+      "enum": ["low", "standard", "high"],
+      "default": "standard",
+      "description": "Risk classification for this execution"
+    },
+    "selected_model_profile": {
+      "type": "string",
+      "description": "Model profile selected for primary execution (e.g., ollama_local, claude_escalation)"
+    },
+    "selected_runtime": {
+      "type": "string",
+      "default": "local",
+      "enum": ["local", "escalation", "hybrid"],
+      "description": "Runtime destination"
+    },
+    "allowed_files": {
+      "type": "array",
+      "items": {"type": "string"},
+      "minItems": 1,
+      "description": "Glob patterns of files that may be modified"
+    },
+    "forbidden_files": {
+      "type": "array",
+      "items": {"type": "string"},
+      "description": "Glob patterns of files that must NOT be modified"
+    },
+    "workspace_id": {
+      "type": "string",
+      "description": "Workspace identifier"
+    },
+    "source_mount": {
+      "type": "string",
+      "description": "Path to read-only source checkout"
+    },
+    "scratch_mount": {
+      "type": "string",
+      "description": "Path to writable scratch space"
+    },
+    "artifact_root": {
+      "type": "string",
+      "default": "artifacts/",
+      "description": "Path where execution artifacts are written"
+    },
+    "network_policy": {
+      "type": "string",
+      "enum": ["disabled", "restricted", "enabled"],
+      "default": "disabled",
+      "description": "Network access policy"
+    },
+    "retry_budget": {
+      "type": "integer",
+      "minimum": 0,
+      "default": 0,
+      "description": "Number of retries allowed before escalation"
+    },
+    "token_budget": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Token budget for model invocations (if applicable)"
+    },
+    "validation_steps": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["step_number", "name"],
+        "additionalProperties": false,
+        "properties": {
+          "step_number": {"type": "integer", "minimum": 1},
+          "name": {"type": "string"},
+          "command": {"type": "string"},
+          "description": {"type": "string"},
+          "hard_stop": {"type": "boolean", "default": true}
+        }
+      },
+      "minItems": 1,
+      "description": "Ordered validation gates in execution order"
+    },
+    "expected_artifacts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["path"],
+        "additionalProperties": false,
+        "properties": {
+          "path": {"type": "string"},
+          "type": {"type": "string", "enum": ["file", "directory", "json", "yaml", "python", "shell"]},
+          "required": {"type": "boolean", "default": true},
+          "description": {"type": "string"}
+        }
+      },
+      "description": "Artifacts that must be produced by this execution"
+    },
+    "tool_trace": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "properties": {
+          "timestamp": {"type": "string", "format": "date-time"},
+          "tool_name": {"type": "string"},
+          "input": {"type": ["object", "string"]},
+          "output": {"type": ["object", "string"]},
+          "status": {"type": "string", "enum": ["pending", "executing", "success", "failure"]},
+          "error": {"type": "string"}
+        }
+      },
+      "description": "Record of tool invocations during execution"
+    },
+    "permission_decisions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "properties": {
+          "timestamp": {"type": "string", "format": "date-time"},
+          "permission_type": {"type": "string"},
+          "decision": {"type": "string", "enum": ["approved", "denied", "escalated"]},
+          "reason": {"type": "string"}
+        }
+      },
+      "description": "Approval/permission decisions during execution"
+    },
+    "command_results": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "properties": {
+          "timestamp": {"type": "string", "format": "date-time"},
+          "command": {"type": "string"},
+          "return_code": {"type": "integer"},
+          "stdout": {"type": "string"},
+          "stderr": {"type": "string"}
+        }
+      },
+      "description": "Results from executed shell or system commands"
+    },
+    "patch_sets": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "properties": {
+          "timestamp": {"type": "string", "format": "date-time"},
+          "file_path": {"type": "string"},
+          "patch": {"type": "string"},
+          "status": {"type": "string", "enum": ["pending", "applied", "reverted"]},
+          "reason": {"type": "string"}
+        }
+      },
+      "description": "Code modifications (patches) applied during execution"
+    },
+    "test_results": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "properties": {
+          "timestamp": {"type": "string", "format": "date-time"},
+          "test_suite": {"type": "string"},
+          "test_name": {"type": "string"},
+          "status": {"type": "string", "enum": ["pass", "fail", "skip"]},
+          "error": {"type": "string"},
+          "duration_seconds": {"type": "number"}
+        }
+      },
+      "description": "Test execution results"
+    },
+    "validation_linkage": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "definition_of_done_ref": {"type": "string"},
+        "autonomy_scorecard_ref": {"type": "string"},
+        "validation_gates_passed": {
+          "type": "array",
+          "items": {"type": "string"}
+        }
+      },
+      "description": "Linkage to governance validation surfaces"
+    },
+    "benchmark_linkage": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "benchmark_id": {"type": "string"},
+        "benchmark_name": {"type": "string"},
+        "result_path": {"type": "string"}
+      },
+      "description": "Optional linkage to benchmark execution"
+    },
+    "promotion_linkage": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "roadmap_id": {"type": "string"},
+        "roadmap_item_ref": {"type": "string"},
+        "promotion_gate_status": {"type": "string"}
+      },
+      "description": "Optional linkage to roadmap promotion"
+    },
+    "final_outcome": {
+      "type": "string",
+      "enum": ["success", "partial_success", "failure", "escalated"],
+      "description": "Final outcome of the execution session"
+    },
+    "success_criteria_met": {
+      "type": "boolean",
+      "description": "Whether all success criteria were met"
+    },
+    "failure_reason": {
+      "type": "string",
+      "description": "If outcome is failure/escalated, the reason"
+    },
+    "artifact_verification": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "artifacts_produced": {
+          "type": "array",
+          "items": {"type": "string"}
+        },
+        "missing_artifacts": {
+          "type": "array",
+          "items": {"type": "string"}
+        },
+        "artifact_parse_status": {
+          "type": "object",
+          "additionalProperties": {"type": "boolean"}
+        }
+      },
+      "description": "Verification of expected artifacts"
+    },
+    "escalation_history": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "properties": {
+          "timestamp": {"type": "string", "format": "date-time"},
+          "escalation_type": {"type": "string"},
+          "reason": {"type": "string"},
+          "resolved": {"type": "boolean"}
+        }
+      },
+      "description": "Record of escalations and resolutions"
+    }
+  }
+}

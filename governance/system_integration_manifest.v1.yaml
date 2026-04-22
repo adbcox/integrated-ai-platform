@@ -1,0 +1,176 @@
+schema_version: "1.0"
+kind: "integration_manifest"
+title: "5-Item Bundle Integration Manifest"
+description: "Procurement → Edition → UI → Docs → Hardware design flow"
+timestamp: "2026-04-22T00:00:00Z"
+
+bundle_items:
+  - "RM-INV-003"
+  - "RM-ED-001"
+  - "RM-UI-001"
+  - "RM-DOCAPP-002"
+  - "RM-HW-001"
+
+integration_flow:
+  description: |
+    This manifest proves integration across all 5 items:
+
+    1. Hardware designs (RM-HW-001) define what gets built
+    2. Product search (RM-INV-003) finds components for procurement
+    3. Edition builder (RM-CORE-002) packages features and hardware into deployable editions
+    4. Control center UI (RM-UI-001) surfaces edition capabilities to users
+    5. Website generation (RM-DOCAPP-002) documents delivery and user guides
+
+procurement_supports_acquisition:
+  item: "RM-INV-003"
+  schema: "governance/product_search_schema.v1.yaml"
+  capability: "structured product search, pricing history, inventory-aware decisions"
+
+  integration_points:
+    - "BOM from hardware designs feeds procurement"
+    - "pricing_history informs edition cost calculations"
+    - "inventory_record guides procurement timing"
+
+  evidence:
+    - product_record with category, specifications, search_tags
+    - pricing_record with bulk_pricing for volume decisions
+    - inventory_record with reorder_level and lead_time
+    - procurement_decision with inventory-aware reasoning
+
+edition_builder_supports_deployment:
+  item: "RM-ED-001"
+  schema: "governance/edition_builder_schema.v1.yaml"
+  capability: "feature sets, packaging structure, platform-specific deployment"
+
+  integration_points:
+    - "hardware components from procurement in packaging_definition"
+    - "feature_set_definition maps to control_center modules"
+    - "platform_posture defines macos/windows deployment targets"
+    - "edition_definition used by site_generation for product pages"
+
+  evidence:
+    - edition_definition with feature_set array
+    - feature_set_definition with platform_support and hardware_requirements
+    - packaging_definition with bundle_contents and deployment_instructions
+    - platform_posture for macos, windows, web with deployment methods
+
+control_center_surfaces_capability:
+  item: "RM-UI-001"
+  schema: "governance/control_center_schema.v1.yaml"
+  capability: "web-first UI panels and modules for system control"
+
+  integration_points:
+    - "modules map directly to features from edition_builder"
+    - "edition_availability field in module_definition controls visibility"
+    - "panel_definition organizes control surfaces by capability"
+    - "control_actions reference hardware and device management"
+    - "web_first_posture supports responsive multi-platform UI"
+
+  evidence:
+    - control_surface_definition with panel organization
+    - panel_definition with modules and permissions
+    - module_definition with edition_availability and interactive_controls
+    - control_actions grouped by capability (device_control, configuration, analytics)
+
+website_generation_supports_delivery:
+  item: "RM-DOCAPP-002"
+  schema: "governance/site_generation_schema.v1.yaml"
+  capability: "dynamic site generation, SEO/analytics, reusable templates"
+
+  integration_points:
+    - "edition_definition feeds product_page template"
+    - "control_center_schema generates help/documentation for modules"
+    - "hardware_design_schema generates technical specs pages"
+    - "pricing from procurement appears on product pages"
+    - "workflow_trigger on edition/hardware release"
+
+  evidence:
+    - site_generation_workflow with ordered steps
+    - seo_metadata with open_graph and structured_data
+    - analytics_integration with custom events for product tracking
+    - template_definition for product, feature, documentation content types
+    - reusable_workflow_template for docs publishing
+
+hardware_design_extends_embedded:
+  item: "RM-HW-001"
+  schema: "governance/hardware_design_schema.v1.yaml"
+  capability: "ESP32/Nordic design workflows, design assistant, artifact models"
+
+  integration_points:
+    - "hardware_project BOM feeds procurement search"
+    - "edition_builder includes hardware in packaging"
+    - "design_assistant provides design checks and recommendations"
+    - "artifact_model (schematic, PCB, BOM) are deliverables"
+    - "workflow_steps guide design from concept to manufacturing"
+
+  evidence:
+    - hardware_project with esp32_configuration and nordic_configuration
+    - design_assistant_structure with automated checks
+    - artifact_model with revision_history and review_checklist
+    - bom_definition tied to components and suppliers
+    - workflow_steps from design_phase through manufacturing
+
+inbound_outbound_feeds:
+  RM-INV-003:
+    inbound:
+      - "BOM from hardware design"
+      - "component requirements from edition builder"
+    outbound:
+      - "pricing data to edition cost calculation"
+      - "inventory status to procurement workflow"
+      - "component data to website product pages"
+
+  RM-ED-001:
+    inbound:
+      - "component list from procurement"
+      - "features from business requirements"
+      - "platform constraints from control center"
+    outbound:
+      - "feature list to control center UI"
+      - "packaging/BOM to website deployment pages"
+      - "platform targets to hardware design"
+
+  RM-UI-001:
+    inbound:
+      - "module list from feature definitions"
+      - "edition availability constraints"
+      - "device capability data"
+    outbound:
+      - "user actions to device management"
+      - "capability surface to website documentation"
+
+  RM-DOCAPP-002:
+    inbound:
+      - "release notes from deployment"
+      - "product spec from editions"
+      - "technical docs from control center and hardware"
+    outbound:
+      - "published website"
+      - "SEO data"
+      - "analytics insights"
+
+  RM-HW-001:
+    inbound:
+      - "component availability from procurement"
+      - "form factor from edition requirements"
+    outbound:
+      - "BOM to procurement"
+      - "specs to control center"
+      - "design docs to website"
+
+success_criteria:
+  all_schemas_parseable: "All 5 YAML/JSON schemas valid"
+  items_created: "All 4 roadmap items exist in docs/roadmap/items/"
+  cross_references: "Each item references at least 2 others"
+  integration_visible: "Flow from procurement → edition → UI → docs → hardware is documented"
+  artifacts_present: "All expected artifact files exist and are valid"
+  no_conflicts: "No required fields missing, no circular dependencies"
+
+validation_checklist:
+  - "[ ] All .yaml files parse correctly"
+  - "[ ] All schema definitions have required_fields"
+  - "[ ] Cross-references between items are bidirectional"
+  - "[ ] Integration points documented in each schema"
+  - "[ ] No forbidden files modified"
+  - "[ ] make quick passes"
+  - "[ ] make check passes"

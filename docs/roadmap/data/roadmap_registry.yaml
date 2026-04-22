@@ -1,274 +1,473 @@
-schema_version: "1.0"
-kind: "roadmap_registry"
-generated_at: "2026-04-20T12:00:00Z"
-source_of_truth: "repo"
+schema_version: '1.0'
+kind: roadmap_registry
+generated_at: '2026-04-20T12:00:00Z'
+source_of_truth: repo
 items:
-  - id: "RM-GOV-001"
-    path: "docs/roadmap/items/RM-GOV-001.yaml"
-    title: "Create canonical machine-readable roadmap registry"
-    category: "GOV"
-    status: "proposed"
-    priority: "P1"
-    package_group: "PKG-GOV-AUTHORITY"
-    affected_systems:
-      - "roadmap_ops"
-      - "control_window"
-      - "cmdb_lite"
-    expected_file_families:
-      - "docs/roadmap/**"
-      - "docs/architecture/cmdb-lite/**"
-    plane_sync_enabled: true
-    plane_item_id: null
-  - id: "RM-GOV-002"
-    path: "docs/roadmap/items/RM-GOV-002.yaml"
-    title: "Reconcile source-of-truth surfaces"
-    category: "GOV"
-    status: "proposed"
-    priority: "P1"
-    package_group: "PKG-GOV-PHASE0"
-    affected_systems:
-      - "roadmap_ops"
-      - "control_window"
-      - "cmdb_lite"
-    expected_file_families:
-      - "docs/roadmap/**"
-      - "governance/**"
-    plane_sync_enabled: true
-    plane_item_id: null
-  - id: "RM-GOV-003"
-    path: "docs/roadmap/items/RM-GOV-003.yaml"
-    title: "Create core ADR set"
-    category: "GOV"
-    status: "proposed"
-    priority: "P1"
-    package_group: "PKG-GOV-PHASE0"
-    affected_systems:
-      - "roadmap_ops"
-      - "control_plane"
-      - "agent_runtime"
-      - "inference_gateway"
-    expected_file_families:
-      - "governance/authority_adr_*.md"
-      - "docs/roadmap/**"
-    plane_sync_enabled: true
-    plane_item_id: null
-  - id: "RM-GOV-004"
-    path: "docs/roadmap/items/RM-GOV-004.yaml"
-    title: "Create machine-readable execution-control package"
-    category: "GOV"
-    status: "proposed"
-    priority: "P1"
-    package_group: "PKG-GOV-PHASE0"
-    affected_systems:
-      - "roadmap_ops"
-      - "control_window"
-      - "control_plane"
-    expected_file_families:
-      - "docs/roadmap/**"
-      - "docs/execution/**"
-    plane_sync_enabled: true
-    plane_item_id: null
-  - id: "RM-GOV-005"
-    path: "docs/roadmap/items/RM-GOV-005.yaml"
-    title: "Create CMDB-lite registry"
-    category: "GOV"
-    status: "proposed"
-    priority: "P1"
-    package_group: "PKG-GOV-PHASE0"
-    affected_systems:
-      - "cmdb_lite"
-      - "roadmap_ops"
-      - "control_plane"
-      - "agent_runtime"
-    expected_file_families:
-      - "docs/architecture/cmdb-lite/**"
-      - "docs/roadmap/**"
-    plane_sync_enabled: true
-    plane_item_id: null
-  - id: "RM-GOV-006"
-    path: "docs/roadmap/items/RM-GOV-006.yaml"
-    title: "Lock definition of done for coding runs"
-    category: "GOV"
-    status: "proposed"
-    priority: "P1"
-    package_group: "PKG-GOV-PHASE0"
-    affected_systems:
-      - "control_plane"
-      - "validation_pipeline"
-      - "roadmap_ops"
-    expected_file_families:
-      - "docs/roadmap/**"
-      - "docs/execution/**"
-    plane_sync_enabled: true
-    plane_item_id: null
-  - id: "RM-GOV-007"
-    path: "docs/roadmap/items/RM-GOV-007.yaml"
-    title: "Lock autonomy scorecard"
-    category: "GOV"
-    status: "proposed"
-    priority: "P1"
-    package_group: "PKG-GOV-PHASE0"
-    affected_systems:
-      - "control_plane"
-      - "agent_runtime"
-      - "validation_pipeline"
-      - "roadmap_ops"
-    expected_file_families:
-      - "docs/roadmap/**"
-      - "docs/execution/**"
-    plane_sync_enabled: true
-    plane_item_id: null
-  - id: "RM-CORE-001"
-    path: "docs/roadmap/items/RM-CORE-001.yaml"
-    title: "Introduce internal inference gateway"
-    category: "CORE"
-    status: "proposed"
-    priority: "P1"
-    package_group: "PKG-CORE-PHASE1"
-    affected_systems:
-      - "inference_gateway"
-      - "agent_runtime"
-      - "control_plane"
-    expected_file_families:
-      - "framework/**"
-      - "bin/**"
-    plane_sync_enabled: true
-    plane_item_id: null
-  - id: "RM-CORE-002"
-    path: "docs/roadmap/items/RM-CORE-002.yaml"
-    title: "Standardize model profiles"
-    category: "CORE"
-    status: "proposed"
-    priority: "P1"
-    package_group: "PKG-CORE-PHASE1"
-    affected_systems:
-      - "inference_gateway"
-      - "agent_runtime"
-    expected_file_families:
-      - "policies/**"
-      - "framework/**"
-      - "config/**"
-    plane_sync_enabled: true
-    plane_item_id: null
-  - id: "RM-CORE-003"
-    path: "docs/roadmap/items/RM-CORE-003.yaml"
-    title: "Standardize workspace layout"
-    category: "CORE"
-    status: "proposed"
-    priority: "P1"
-    package_group: "PKG-CORE-PHASE1"
-    affected_systems:
-      - "agent_runtime"
-      - "artifact_contract"
-      - "control_plane"
-    expected_file_families:
-      - "framework/**"
-      - "bin/**"
-      - "artifacts/**"
-    plane_sync_enabled: true
-    plane_item_id: null
-  - id: "RM-CORE-004"
-    path: "docs/roadmap/items/RM-CORE-004.yaml"
-    title: "Stabilize artifact persistence"
-    category: "CORE"
-    status: "proposed"
-    priority: "P1"
-    package_group: "PKG-CORE-PHASE1"
-    affected_systems:
-      - "artifact_contract"
-      - "agent_runtime"
-      - "validation_pipeline"
-      - "control_plane"
-    expected_file_families:
-      - "framework/**"
-      - "bin/**"
-      - "artifacts/**"
-    plane_sync_enabled: true
-    plane_item_id: null
-  - id: "RM-CORE-005"
-    path: "docs/roadmap/items/RM-CORE-005.yaml"
-    title: "Wrap local execution commands"
-    category: "CORE"
-    status: "proposed"
-    priority: "P1"
-    package_group: "PKG-CORE-PHASE1"
-    affected_systems:
-      - "agent_runtime"
-      - "validation_pipeline"
-      - "control_plane"
-    expected_file_families:
-      - "framework/**"
-      - "bin/**"
-      - "shell/**"
-    plane_sync_enabled: true
-    plane_item_id: null
-  - id: "RM-CORE-006"
-    path: "docs/roadmap/items/RM-CORE-006.yaml"
-    title: "Establish baseline local-run validation"
-    category: "CORE"
-    status: "proposed"
-    priority: "P1"
-    package_group: "PKG-CORE-PHASE1"
-    affected_systems:
-      - "validation_pipeline"
-      - "agent_runtime"
-      - "artifact_contract"
-      - "control_plane"
-    expected_file_families:
-      - "artifacts/**"
-      - "docs/execution/**"
-    plane_sync_enabled: true
-    plane_item_id: null
-  - id: "RM-DEV-005"
-    path: "docs/roadmap/items/RM-DEV-005.yaml"
-    title: "Local autonomy uplift, OSS intake, and Aider reliability hardening"
-    category: "DEV"
-    status: "completed"
-    priority: "P1"
-    package_group: "PKG-DEV-PHASE3"
-    affected_systems:
-      - "agent_runtime"
-      - "validation_pipeline"
-      - "governance"
-    expected_file_families:
-      - "framework/**"
-      - "bin/**"
-      - "governance/**"
-      - "artifacts/**"
-    plane_sync_enabled: true
-    plane_item_id: null
-  - id: "RM-DEV-003"
-    path: "docs/roadmap/items/RM-DEV-003.yaml"
-    title: "Bounded autonomous code generation"
-    category: "DEV"
-    status: "completed"
-    priority: "P1"
-    package_group: "PKG-DEV-INTEGRATED-AUTONOMY-INTEL"
-    affected_systems:
-      - "agent_runtime"
-      - "governance"
-      - "validation_pipeline"
-    expected_file_families:
-      - "governance/**"
-      - "docs/roadmap/**"
-      - "bin/**"
-      - "artifacts/**"
-    plane_sync_enabled: true
-    plane_item_id: null
-  - id: "RM-INTEL-001"
-    path: "docs/roadmap/items/RM-INTEL-001.yaml"
-    title: "Open-source watchtower with update alerts and adoption recommendations"
-    category: "INTEL"
-    status: "completed"
-    priority: "P1"
-    package_group: "PKG-DEV-INTEGRATED-AUTONOMY-INTEL"
-    affected_systems:
-      - "governance"
-      - "roadmap_ops"
-    expected_file_families:
-      - "governance/**"
-      - "docs/roadmap/**"
-      - "bin/**"
-      - "artifacts/**"
-    plane_sync_enabled: true
-    plane_item_id: null
+- id: RM-GOV-001
+  path: docs/roadmap/items/RM-GOV-001.yaml
+  title: Create canonical machine-readable roadmap registry
+  category: GOV
+  status: proposed
+  priority: P1
+  package_group: PKG-GOV-AUTHORITY
+  affected_systems:
+  - roadmap_ops
+  - control_window
+  - cmdb_lite
+  expected_file_families:
+  - docs/roadmap/**
+  - docs/architecture/cmdb-lite/**
+  plane_sync_enabled: true
+  plane_item_id: null
+- id: RM-GOV-002
+  path: docs/roadmap/items/RM-GOV-002.yaml
+  title: Reconcile source-of-truth surfaces
+  category: GOV
+  status: completed
+  archive_status: archived
+  priority: P1
+  package_group: PKG-GOV-PHASE0
+  affected_systems:
+  - roadmap_ops
+  - control_window
+  - cmdb_lite
+  expected_file_families:
+  - docs/roadmap/**
+  - governance/**
+  plane_sync_enabled: true
+  plane_item_id: null
+- id: RM-GOV-003
+  path: docs/roadmap/items/RM-GOV-003.yaml
+  title: Create core ADR set
+  category: GOV
+  status: proposed
+  priority: P1
+  package_group: PKG-GOV-PHASE0
+  affected_systems:
+  - roadmap_ops
+  - control_plane
+  - agent_runtime
+  - inference_gateway
+  expected_file_families:
+  - governance/authority_adr_*.md
+  - docs/roadmap/**
+  plane_sync_enabled: true
+  plane_item_id: null
+- id: RM-GOV-004
+  path: docs/roadmap/items/RM-GOV-004.yaml
+  title: Create machine-readable execution-control package
+  category: GOV
+  status: completed
+  archive_status: archived
+  priority: P1
+  package_group: PKG-GOV-PHASE0
+  affected_systems:
+  - roadmap_ops
+  - control_window
+  - control_plane
+  expected_file_families:
+  - docs/roadmap/**
+  - docs/execution/**
+  plane_sync_enabled: true
+  plane_item_id: null
+- id: RM-GOV-005
+  path: docs/roadmap/items/RM-GOV-005.yaml
+  title: Cycle, release, and batch-governance model for roadmap execution
+  category: GOV
+  status: completed
+  priority: P1
+  package_group: PKG-GOV-PHASE0
+  affected_systems:
+  - cmdb_lite
+  - roadmap_ops
+  - control_plane
+  - agent_runtime
+  expected_file_families:
+  - docs/architecture/cmdb-lite/**
+  - docs/roadmap/**
+  plane_sync_enabled: true
+  plane_item_id: null
+  archive_status: archived
+- id: RM-GOV-006
+  path: docs/roadmap/items/RM-GOV-006.yaml
+  title: Lock definition of done for coding runs
+  category: GOV
+  status: completed
+  archive_status: ready_for_archive
+  priority: P1
+  package_group: PKG-GOV-PHASE0
+  affected_systems:
+  - control_plane
+  - validation_pipeline
+  - roadmap_ops
+  expected_file_families:
+  - docs/roadmap/**
+  - docs/execution/**
+  plane_sync_enabled: true
+  plane_item_id: null
+- id: RM-GOV-007
+  path: docs/roadmap/items/RM-GOV-007.yaml
+  title: Lock autonomy scorecard
+  category: GOV
+  status: completed
+  archive_status: ready_for_archive
+  priority: P1
+  package_group: PKG-GOV-PHASE0
+  affected_systems:
+  - control_plane
+  - agent_runtime
+  - validation_pipeline
+  - roadmap_ops
+  expected_file_families:
+  - docs/roadmap/**
+  - docs/execution/**
+  plane_sync_enabled: true
+  plane_item_id: null
+- id: RM-CORE-001
+  path: docs/roadmap/items/RM-CORE-001.yaml
+  title: Introduce internal inference gateway
+  category: CORE
+  status: proposed
+  priority: P1
+  package_group: PKG-CORE-PHASE1
+  affected_systems:
+  - inference_gateway
+  - agent_runtime
+  - control_plane
+  expected_file_families:
+  - framework/**
+  - bin/**
+  plane_sync_enabled: true
+  plane_item_id: null
+- id: RM-CORE-002
+  path: docs/roadmap/items/RM-CORE-002.yaml
+  title: Standardize model profiles
+  category: CORE
+  status: proposed
+  priority: P1
+  package_group: PKG-CORE-PHASE1
+  affected_systems:
+  - inference_gateway
+  - agent_runtime
+  expected_file_families:
+  - policies/**
+  - framework/**
+  - config/**
+  plane_sync_enabled: true
+  plane_item_id: null
+- id: RM-CORE-003
+  path: docs/roadmap/items/RM-CORE-003.yaml
+  title: Standardize workspace layout
+  category: CORE
+  status: complete
+  archive_status: ready_for_archive
+  priority: P1
+  package_group: PKG-CORE-PHASE1
+  affected_systems:
+  - agent_runtime
+  - artifact_contract
+  - control_plane
+  expected_file_families:
+  - framework/**
+  - bin/**
+  - artifacts/**
+  plane_sync_enabled: true
+  plane_item_id: null
+- id: RM-CORE-004
+  path: docs/roadmap/items/RM-CORE-004.yaml
+  title: Stabilize artifact persistence
+  category: CORE
+  status: proposed
+  priority: P1
+  package_group: PKG-CORE-PHASE1
+  affected_systems:
+  - artifact_contract
+  - agent_runtime
+  - validation_pipeline
+  - control_plane
+  expected_file_families:
+  - framework/**
+  - bin/**
+  - artifacts/**
+  plane_sync_enabled: true
+  plane_item_id: null
+- id: RM-CORE-005
+  path: docs/roadmap/items/RM-CORE-005.yaml
+  title: Wrap local execution commands
+  category: CORE
+  status: completed
+  priority: P1
+  package_group: PKG-CORE-PHASE1
+  affected_systems:
+  - agent_runtime
+  - validation_pipeline
+  - control_plane
+  expected_file_families:
+  - framework/**
+  - bin/**
+  - shell/**
+  plane_sync_enabled: true
+  plane_item_id: null
+  archive_status: archived
+- id: RM-CORE-006
+  path: docs/roadmap/items/RM-CORE-006.yaml
+  title: Establish baseline local-run validation
+  category: CORE
+  status: completed
+  archive_status: ready_for_archive
+  priority: P1
+  package_group: PKG-CORE-PHASE1
+  affected_systems:
+  - validation_pipeline
+  - agent_runtime
+  - artifact_contract
+  - control_plane
+  expected_file_families:
+  - artifacts/**
+  - docs/execution/**
+  plane_sync_enabled: true
+  plane_item_id: null
+- id: RM-DEV-005
+  path: docs/roadmap/items/RM-DEV-005.yaml
+  title: Local autonomy uplift, OSS intake, and Aider reliability hardening
+  category: DEV
+  status: complete
+  priority: P1
+  package_group: PKG-DEV-PHASE3
+  affected_systems:
+  - agent_runtime
+  - validation_pipeline
+  - governance
+  expected_file_families:
+  - framework/**
+  - bin/**
+  - governance/**
+  - artifacts/**
+  plane_sync_enabled: true
+  plane_item_id: null
+  archive_status: ready_for_archive
+- id: RM-DEV-003
+  path: docs/roadmap/items/RM-DEV-003.yaml
+  title: Bounded autonomous code generation
+  category: DEV
+  status: completed
+  priority: P1
+  package_group: PKG-DEV-INTEGRATED-AUTONOMY-INTEL
+  affected_systems:
+  - agent_runtime
+  - governance
+  - validation_pipeline
+  expected_file_families:
+  - governance/**
+  - docs/roadmap/**
+  - bin/**
+  - artifacts/**
+  plane_sync_enabled: true
+  plane_item_id: null
+- id: RM-INTEL-001
+  path: docs/roadmap/items/RM-INTEL-001.yaml
+  title: Open-source watchtower with update alerts and adoption recommendations
+  category: INTEL
+  status: completed
+  priority: P1
+  package_group: PKG-DEV-INTEGRATED-AUTONOMY-INTEL
+  affected_systems:
+  - governance
+  - roadmap_ops
+  expected_file_families:
+  - governance/**
+  - docs/roadmap/**
+  - bin/**
+  - artifacts/**
+  plane_sync_enabled: true
+  plane_item_id: null
+- id: RM-INTEL-002
+  path: docs/roadmap/items/RM-INTEL-002.yaml
+  title: Verified OSS capability harvest and compatibility validation for the local
+    development assistant
+  category: INTEL
+  status: in_validation
+  priority: P1
+  package_group: PKG-INTEL-VERIFIED-HARVEST
+  affected_systems:
+  - governance
+  - roadmap_ops
+  - validation_pipeline
+  expected_file_families:
+  - governance/**
+  - docs/roadmap/**
+  - bin/**
+  - artifacts/**
+  plane_sync_enabled: true
+  plane_item_id: null
+- id: RM-DEV-002
+  path: docs/roadmap/items/RM-DEV-002.yaml
+  title: Dual-model inline QC coding loop for the developer assistant
+  category: DEV
+  status: completed
+  priority: P1
+  package_group: PKG-DEV-QC-BASELINE
+  affected_systems:
+  - validation_pipeline
+  - agent_runtime
+  - governance
+  expected_file_families:
+  - governance/**
+  - docs/roadmap/**
+  - bin/**
+  - artifacts/**
+  plane_sync_enabled: true
+  plane_item_id: null
+  archive_status: archived
+- id: RM-AUTO-002
+  path: docs/roadmap/items/RM-AUTO-002.yaml
+  title: Roadmap-to-execution compiler baseline
+  category: AUTO
+  status: complete
+  archive_status: ready_for_archive
+  priority: P1
+  package_group: PKG-AUTO-COMPILATION
+  affected_systems:
+  - roadmap_ops
+  - control_window
+  - control_plane
+  expected_file_families:
+  - governance/**
+  - bin/**
+  - artifacts/**
+  - docs/roadmap/**
+  plane_sync_enabled: true
+  plane_item_id: null
+- id: RM-DEV-009
+  path: docs/roadmap/items/RM-DEV-009.yaml
+  title: Agent operating-docs and persistent execution-memory package
+  category: DEV
+  status: complete
+  priority: P1
+  package_group: PKG-DEV-AGENT-OPERATING-LAYER
+  affected_systems:
+  - control_plane
+  - agent_runtime
+  - governance
+  expected_file_families:
+  - docs/agent/**
+  - CLAUDE.md
+  - AGENTS.md
+  plane_sync_enabled: true
+  plane_item_id: null
+  archive_status: ready_for_archive
+- id: RM-DEV-008
+  path: docs/roadmap/items/RM-DEV-008.yaml
+  title: Memory governance, summarization, and provenance policy for the local agent
+  category: DEV
+  status: complete
+  priority: P1
+  package_group: PKG-DEV-MEMORY-GOVERNANCE
+  affected_systems:
+  - control_plane
+  - agent_runtime
+  - governance
+  expected_file_families:
+  - governance/**
+  - docs/agent/**
+  plane_sync_enabled: true
+  plane_item_id: null
+  archive_status: ready_for_archive
+- id: RM-DEV-004
+  path: docs/roadmap/items/RM-DEV-004.yaml
+  title: Embedded firmware assistant for Nordic and ESP platforms
+  category: DEV
+  status: completed
+  archive_status: archived
+  priority: P1
+  package_group: null
+  affected_systems: []
+  expected_file_families: []
+  plane_sync_enabled: true
+  plane_item_id: null
+- id: RM-DEV-007
+  path: docs/roadmap/items/RM-DEV-007.yaml
+  title: Indexed code search and multi-repo retrieval backend
+  category: DEV
+  status: completed
+  archive_status: archived
+  priority: P1
+  package_group: null
+  affected_systems: []
+  expected_file_families: []
+  plane_sync_enabled: true
+  plane_item_id: null
+- id: RM-INV-005
+  path: docs/roadmap/items/RM-INV-005.yaml
+  title: Asset-to-roadmap and asset-to-execution linkage layer
+  category: INV
+  status: completed
+  archive_status: archived
+  priority: P1
+  package_group: null
+  affected_systems: []
+  expected_file_families: []
+  plane_sync_enabled: true
+  plane_item_id: null
+- id: RM-INV-003
+  path: docs/roadmap/items/RM-INV-003.yaml
+  title: Procurement and search baseline system
+  category: INV
+  status: completed
+  archive_status: ready_for_archive
+  priority: P2
+  package_group: PKG-INTEGRATION-PHASE1
+  affected_systems:
+  - procurement
+  - inventory
+  - acquisition
+  expected_file_families:
+  - governance/product_search_schema.v1.yaml
+  plane_sync_enabled: true
+  plane_item_id: null
+- id: RM-ED-001
+  path: docs/roadmap/items/RM-ED-001.yaml
+  title: Edition builder baseline system
+  category: ED
+  status: completed
+  archive_status: ready_for_archive
+  priority: P2
+  package_group: PKG-INTEGRATION-PHASE1
+  affected_systems:
+  - deployment
+  - packaging
+  - edition_management
+  expected_file_families:
+  - governance/edition_builder_schema.v1.yaml
+  plane_sync_enabled: true
+  plane_item_id: null
+- id: RM-DOCAPP-002
+  path: docs/roadmap/items/RM-DOCAPP-002.yaml
+  title: Website generation baseline system
+  category: DOCAPP
+  status: completed
+  archive_status: ready_for_archive
+  priority: P2
+  package_group: PKG-INTEGRATION-PHASE1
+  affected_systems:
+  - documentation
+  - delivery
+  expected_file_families:
+  - governance/site_generation_schema.v1.yaml
+  plane_sync_enabled: true
+  plane_item_id: null
+- id: RM-HW-001
+  path: docs/roadmap/items/RM-HW-001.yaml
+  title: Electrical design baseline system
+  category: HW
+  status: completed
+  archive_status: ready_for_archive
+  priority: P2
+  package_group: PKG-INTEGRATION-PHASE1
+  affected_systems:
+  - hardware
+  - embedded
+  expected_file_families:
+  - governance/hardware_design_schema.v1.yaml
+  plane_sync_enabled: true
+  plane_item_id: null

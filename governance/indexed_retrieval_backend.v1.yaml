@@ -1,0 +1,38 @@
+schema_version: "1.0"
+kind: "indexed_retrieval_backend"
+package_id: "RM-DEV-007"
+status: "operational_baseline"
+backend_decisions:
+  primary_backend:
+    name: "repomap_generator"
+    implementation_ref: "framework/codebase_repomap.py"
+    recommendation_class: "adopt-now"
+    rationale: "Local-first symbol/dependency extraction with no external service dependency."
+  secondary_backends:
+    - name: "ast-grep"
+      recommendation_class: "evaluate"
+      rationale: "Strong structural matching for targeted edits."
+    - name: "zoekt"
+      recommendation_class: "watch"
+      rationale: "Potential scale gains for very large multi-repo index surfaces."
+multi_repo_contract:
+  index_roots:
+    - "framework/"
+    - "bin/"
+    - "governance/"
+  exclude_globs:
+    - ".git/**"
+    - "artifacts/**"
+    - "__pycache__/**"
+  retrieval_outputs:
+    - "symbol_hits"
+    - "dependency_hits"
+    - "path_hits"
+integration_refs:
+  firmware_assistant: "governance/firmware_assistant_baseline.v1.yaml"
+  qc_loop: "governance/qc_finding_schema_rm_dev_002.v1.yaml"
+  trust_boundary: "governance/trust_boundary_policy.v1.yaml"
+  asset_linkage: "governance/asset_execution_linkage.v1.yaml"
+closeout_evidence:
+  execution_pack: "docs/roadmap/RM-DEV-007_EXECUTION_PACK.md"
+  validator: "bin/run_rm_bundle_6_closeout_check.py"

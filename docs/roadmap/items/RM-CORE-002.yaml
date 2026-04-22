@@ -5,7 +5,7 @@ slug: "standardize-model-profiles"
 title: "Standardize model profiles"
 category: "CORE"
 type: "platform_foundation"
-status: "proposed"
+status: "completed"
 priority: "P1"
 scoring:
   loe: 2
@@ -40,6 +40,8 @@ scope:
     - "Plane sync changes"
 dependencies:
   blocked_by:
+    - "RM-CORE-001"
+  depends_on:
     - "RM-CORE-001"
   enables:
     - "RM-CORE-005"
@@ -81,11 +83,13 @@ planning:
   planning_notes: ""
 execution:
   execution_package_refs: []
-  execution_status: "not_started"
+  execution_status: "completed"
   last_execution_commit: null
 validation:
-  validation_artifact_refs: []
-  validation_status: "not_started"
+  validation_artifact_refs:
+    - "framework/model_profiles.py"
+    - "governance/runtime_profiles.v1.yaml"
+  validation_status: "completed"
   definition_of_done_ref: "docs/roadmap/STANDARDS.md"
 governance:
   phase_target: "Phase 1"

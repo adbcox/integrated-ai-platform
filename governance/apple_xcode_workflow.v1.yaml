@@ -1,0 +1,266 @@
+schema_version: "1.0"
+kind: "governance_schema"
+id: "apple_xcode_workflow"
+name: "Apple Xcode Workflow Schema"
+description: >
+  Schema for Apple/Xcode platform coding capability including Xcode project
+  posture, platform-specific constraints, language support, and build/test
+  automation for iOS, macOS, tvOS, and watchOS development.
+
+namespace: "apple.xcode"
+
+supported_platforms:
+  - platform: "iOS"
+    description: "iPhone and iPad"
+    min_deployment_target: "13.0"
+    supported_devices:
+      - iPhone
+      - iPad
+
+  - platform: "macOS"
+    description: "Mac desktop and server"
+    min_deployment_target: "10.15"
+    supported_architectures:
+      - arm64
+      - x86_64
+
+  - platform: "tvOS"
+    description: "Apple TV"
+    min_deployment_target: "13.0"
+
+  - platform: "watchOS"
+    description: "Apple Watch"
+    min_deployment_target: "6.0"
+
+xcode_project_structure:
+  name: "xcode_project_posture"
+  required_components:
+    - component: "project_file"
+      file_extension: ".xcodeproj"
+      description: "Xcode project file defining targets and settings"
+
+    - component: "workspace_file"
+      file_extension: ".xcworkspace"
+      description: "Optional workspace for managing multiple projects"
+
+    - component: "pbxproj"
+      location: "inside .xcodeproj"
+      description: "Project object model file"
+
+    - component: "target"
+      description: "Build target for specific platform/product"
+      required_for_each: "product"
+
+    - component: "build_phases"
+      description: "Compile sources, link frameworks, copy resources"
+      required_for_each: "target"
+
+    - component: "build_settings"
+      description: "Compilation and linking settings per target"
+      required_for_each: "target"
+
+swift_support:
+  name: "swift_coding"
+  swift_versions:
+    - version: "5.x"
+      description: "Modern Swift compiler"
+      xcode_requirement: "Xcode 12.5+"
+
+  package_model:
+    - model: "SPM"
+      description: "Swift Package Manager"
+      format: "Package.swift"
+
+    - model: "CocoaPods"
+      description: "CocoaPods dependency manager"
+      format: "Podfile"
+
+    - model: "Carthage"
+      description: "Carthage decentralized dependency manager"
+      format: "Cartfile"
+
+  stdlib:
+    - framework: "Foundation"
+      description: "Core Swift APIs"
+
+    - framework: "UIKit / SwiftUI"
+      description: "User interface frameworks"
+
+    - framework: "Combine"
+      description: "Functional reactive programming"
+
+    - framework: "Async/Await"
+      description: "Structured concurrency (Swift 5.5+)"
+
+objective_c_support:
+  name: "objective_c_coding"
+  version: "latest"
+  description: "Support for Objective-C legacy and hybrid projects"
+  interop:
+    - pattern: "Swift + ObjC"
+      description: "Mixed projects with both languages"
+      bridging_header: "Bridging-Header.h"
+
+build_system:
+  name: "xcode_build_system"
+  build_system: "Xcode Build System (New)"
+  description: "Modern build system (Xcode 11+)"
+
+  build_configuration:
+    - config: "Debug"
+      description: "Debug symbols, optimizations disabled"
+
+    - config: "Release"
+      description: "Optimized for distribution"
+
+  build_automation:
+    - tool: "xcodebuild"
+      description: "Command-line build tool"
+      usage: "xcodebuild -project Project.xcodeproj -target TargetName"
+
+    - tool: "xcrun"
+      description: "Xcode run tool for compilers, simulators, etc."
+      usage: "xcrun simctl boot <simulator_id>"
+
+testing_framework:
+  name: "xcode_testing"
+  frameworks:
+    - framework: "XCTest"
+      description: "Unit and UI testing framework"
+      test_types:
+        - type: "Unit Tests"
+          description: "Test individual units of code"
+
+        - type: "UI Tests"
+          description: "Test user interface interactions"
+
+        - type: "Performance Tests"
+          description: "Measure code performance"
+
+    - framework: "Quick/Nimble"
+      description: "BDD-style testing framework"
+
+simulator_and_device:
+  name: "testing_environments"
+  simulator:
+    description: "iOS/tvOS/watchOS simulator on Mac"
+    tool: "Xcode Simulator"
+    supported_os_versions: "all recent versions"
+    architecture: "x86_64 or arm64"
+
+  physical_device:
+    description: "Real hardware device"
+    requirement: "Apple Developer account"
+    provisioning: "Automatic or manual provisioning profiles"
+    signing: "Code signing with developer certificate"
+
+code_signing:
+  name: "apple_code_signing"
+  requirements:
+    - requirement: "Apple Developer Account"
+      for: "Device testing and distribution"
+
+    - requirement: "Signing Certificate"
+      types:
+        - type: "Development"
+          for: "Testing on physical devices"
+
+        - type: "Distribution"
+          for: "App Store and enterprise distribution"
+
+    - requirement: "Provisioning Profile"
+      types:
+        - type: "Development"
+          for: "Testing on registered devices"
+
+        - type: "Ad Hoc"
+          for: "Limited distribution to testers"
+
+        - type: "App Store"
+          for: "Distribution via App Store"
+
+app_store_deployment:
+  name: "app_distribution"
+  channels:
+    - channel: "App Store"
+      description: "Official Apple app store"
+      requirements:
+        - app review process
+        - appropriate content rating
+        - privacy policy
+
+    - channel: "TestFlight"
+      description: "Beta testing distribution"
+      requirements:
+        - Apple Developer account
+        - build uploaded to App Store Connect
+
+    - channel: "Enterprise"
+      description: "In-house enterprise distribution"
+      requirements:
+        - enterprise developer program
+        - MDM deployment
+
+platform_constraints:
+  name: "apple_platform_specific"
+  constraints:
+    - constraint: "sandboxing"
+      description: "App sandboxing security model"
+
+    - constraint: "notarization"
+      description: "macOS app notarization requirement"
+
+    - constraint: "privacy"
+      description: "Privacy manifest and data use declarations"
+
+    - constraint: "background_execution"
+      description: "Limits on background app execution"
+
+    - constraint: "location_privacy"
+      description: "User location data restrictions"
+
+development_environment:
+  name: "xcode_dev_setup"
+  requirements:
+    - requirement: "macOS version"
+      versions: "macOS 11+ recommended"
+
+    - requirement: "Xcode version"
+      versions: "Latest stable version recommended"
+
+    - requirement: "Command line tools"
+      tool: "xcode-select --install"
+
+    - requirement: "Simulator runtime"
+      for: "iOS/tvOS/watchOS development"
+
+continuous_integration:
+  name: "xcode_ci_cd"
+  ci_systems:
+    - system: "Xcode Cloud"
+      description: "Apple's native CI/CD service"
+
+    - system: "GitHub Actions"
+      description: "GitHub workflow automation"
+
+    - system: "Fastlane"
+      description: "Mobile CI/CD automation framework"
+
+  common_workflows:
+    - workflow: "build_test_archive"
+      steps:
+        - step: "1"
+          action: "Build app"
+        - step: "2"
+          action: "Run tests"
+        - step: "3"
+          action: "Archive for distribution"
+
+    - workflow: "upload_testflight"
+      steps:
+        - step: "1"
+          action: "Build and archive"
+        - step: "2"
+          action: "Upload to TestFlight"
+        - step: "3"
+          action: "Notify testers"

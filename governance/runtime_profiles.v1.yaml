@@ -1,0 +1,85 @@
+schema_version: "1.0"
+kind: "governance_schema"
+id: "runtime_profiles"
+name: "Runtime Profile Authority"
+description: "Defines execution profiles for model backend routing and resource allocation"
+
+profiles:
+  fast:
+    backend: "ollama"
+    intended_use: "simple and low-risk coding and analysis tasks"
+    model: "qwen2.5-coder:14b"
+    timeout_seconds: 45
+    max_retries: 3
+    context_window_tokens: 2048
+    response_schema: "inference_response.v1.json"
+    allowed_usage_notes: >
+      Use for read operations, simple file analysis, straightforward
+      documentation queries, low-complexity single-file modifications,
+      and rapid prototyping where speed is valued over exhaustiveness.
+
+  balanced:
+    backend: "ollama"
+    intended_use: "medium-complexity coding and repository tasks"
+    model: "qwen2.5-coder:32b"
+    timeout_seconds: 90
+    max_retries: 2
+    context_window_tokens: 4096
+    response_schema: "inference_response.v1.json"
+    allowed_usage_notes: >
+      Use for normal coding tasks, multi-file refactoring, moderately
+      complex logic changes, repository navigation, cross-file analysis,
+      and standard bounded feature implementation work.
+
+  hard:
+    backend: "ollama"
+    intended_use: "high-complexity local-first routine and escalation within local boundary"
+    model: "qwen2.5-coder:14b"
+    timeout_seconds: 180
+    max_retries: 1
+    context_window_tokens: 8192
+    response_schema: "inference_response.v1.json"
+    allowed_usage_notes: >
+      Use for complex architectural decisions, high-stakes refactoring,
+      unresolved edge cases, and explicit escalation requests that still
+      remain within local execution policy. This profile stays local-first;
+      outside-model escalation is exception-only and must be separately
+      authorized.
+
+selection_heuristics:
+  profile_keywords:
+    fast:
+      - "simple"
+      - "quick"
+      - "read"
+      - "analyze"
+      - "summarize"
+      - "list"
+    balanced:
+      - "implement"
+      - "modify"
+      - "refactor"
+      - "multi-step"
+      - "cross-file"
+      - "feature"
+    hard:
+      - "escalate"
+      - "fallback"
+      - "complex"
+      - "architecture"
+      - "critical"
+      - "error"
+
+  complexity_signals:
+    explicit_escalation: "hard"
+    multi_file_references: "balanced_or_hard"
+    explicit_require_fast: "fast"
+    simple_token_count: "fast"
+    medium_token_count: "balanced"
+    high_token_count: "hard"
+
+metadata:
+  owner: "system"
+  created_at: "2026-04-22"
+  updated_at: "2026-04-22"
+  governance_tier: "execution_authority"

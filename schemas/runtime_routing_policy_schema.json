@@ -1,0 +1,136 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Runtime Routing Policy Schema",
+  "type": "object",
+  "required": ["schema_version", "kind", "strategies", "routing_rules"],
+  "properties": {
+    "schema_version": {
+      "type": "string"
+    },
+    "kind": {
+      "type": "string",
+      "enum": ["runtime_routing_policy"]
+    },
+    "generated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "description": {
+      "type": "string"
+    },
+    "strategies": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "description",
+          "conditions",
+          "preconditions",
+          "effects",
+          "risk_tier",
+          "retry_allowed",
+          "max_retries"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "conditions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "preconditions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "effects": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "risk_tier": {
+            "type": "string",
+            "enum": ["LOW", "MEDIUM", "HIGH"]
+          },
+          "retry_allowed": {
+            "type": "boolean"
+          },
+          "max_retries": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      }
+    },
+    "routing_rules": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "rule_id",
+          "name",
+          "condition",
+          "selected_strategy",
+          "selected_profile",
+          "reason"
+        ],
+        "properties": {
+          "rule_id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "condition": {
+            "type": "string"
+          },
+          "selected_strategy": {
+            "type": "string"
+          },
+          "selected_profile": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "fallback_behavior": {
+      "type": "object",
+      "required": ["default_strategy", "default_profile", "rule_match_required"]
+    },
+    "service_availability_check": {
+      "type": "object",
+      "properties": {
+        "critical_services": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "non_critical_services": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

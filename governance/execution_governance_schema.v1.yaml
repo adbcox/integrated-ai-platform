@@ -1,0 +1,141 @@
+schema_version: "1.0"
+kind: "governance_schema"
+id: "execution_governance_schema"
+name: "Execution Governance Schema"
+description: >
+  Schema for execution governance and control definitions covering execution
+  authority decisions, delegation rules, permission models, and control flow.
+
+namespace: "execution.governance"
+
+core_concepts:
+  - name: "execution_authority"
+    description: "Who/what has authority to execute decisions or delegate work"
+    required_fields:
+      - decision_type
+      - authority_level
+      - delegation_rules
+
+  - name: "execution_control"
+    description: "How execution is controlled and monitored"
+    required_fields:
+      - control_type
+      - trigger_conditions
+      - guardrails
+      - escalation_path
+
+  - name: "execution_contract"
+    description: "Contract between execution requestor and executor"
+    required_fields:
+      - objective
+      - scope
+      - constraints
+      - rollback_rule
+
+decision_authority_levels:
+  - level: "autonomous"
+    description: "System executes without human approval"
+    conditions:
+      - low_risk
+      - clear_precedent
+      - bounded_scope
+
+  - level: "delegated"
+    description: "Delegated authority with approval gates"
+    conditions:
+      - medium_risk
+      - defined_constraints
+      - audit_required
+
+  - level: "escalated"
+    description: "Requires human decision"
+    conditions:
+      - high_risk
+      - new_territory
+      - unbounded_scope
+
+control_flow_model:
+  - stage: "intent"
+    description: "Execution intent and objective declaration"
+    validates:
+      - objective clarity
+      - scope definition
+      - authority check
+
+  - stage: "plan"
+    description: "Execution plan with constraints and rollback"
+    validates:
+      - allowed_files
+      - forbidden_files
+      - rollback_safety
+
+  - stage: "execute"
+    description: "Execute with guardrails and monitoring"
+    validates:
+      - permission checks
+      - constraint validation
+      - artifact creation
+
+  - stage: "validate"
+    description: "Validate execution success"
+    validates:
+      - artifact existence
+      - schema validity
+      - integration linkage
+
+guardrail_types:
+  - name: "permission_gate"
+    description: "Tool/capability access control"
+    enforced_by: "role_based_permissions"
+
+  - name: "scope_gate"
+    description: "File/directory access boundaries"
+    enforced_by: "allowed_files / forbidden_files"
+
+  - name: "validation_gate"
+    description: "Artifact validity and completeness"
+    enforced_by: "schema_validation"
+
+  - name: "escalation_gate"
+    description: "Authority level boundary"
+    enforced_by: "decision_authority_levels"
+
+rollback_model:
+  name: "execution_rollback"
+  trigger_conditions:
+    - validation_failure
+    - safety_violation
+    - explicit_request
+
+  rollback_actions:
+    - action: "artifact_cleanup"
+      description: "Delete newly created files"
+
+    - action: "state_revert"
+      description: "Restore prior repo state"
+
+    - action: "audit_record"
+      description: "Record rollback in audit trail"
+
+audit_model:
+  fields:
+    - field: "session_id"
+      description: "Unique execution session identifier"
+
+    - field: "decision_id"
+      description: "Unique decision/authorization identifier"
+
+    - field: "authority_level"
+      description: "Authority level used for decision"
+
+    - field: "timestamp"
+      description: "ISO 8601 timestamp of decision"
+
+    - field: "outcome"
+      description: "success | failure | rolled_back"
+
+    - field: "artifacts_created"
+      description: "List of files created during execution"
+
+    - field: "validation_results"
+      description: "Validation pass/fail for each check"

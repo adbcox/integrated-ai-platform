@@ -1,0 +1,107 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Failure Record",
+  "description": "Normalized failure record with classification, taxonomy, and recovery suggestions",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "record_kind",
+    "session_id",
+    "job_id",
+    "failure_type",
+    "root_cause",
+    "timestamp"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "1.0"
+    },
+    "record_kind": {
+      "type": "string",
+      "const": "failure_record"
+    },
+    "session_id": {
+      "type": "string"
+    },
+    "job_id": {
+      "type": "string"
+    },
+    "task_id": {
+      "type": ["string", "null"]
+    },
+    "failure_type": {
+      "type": "string",
+      "enum": [
+        "command_not_allowed",
+        "command_failed",
+        "command_timeout",
+        "workspace_init_failed",
+        "profile_selection_failed",
+        "artifact_emission_failed",
+        "workspace_finalize_failed",
+        "gateway_error",
+        "unknown_error"
+      ],
+      "description": "Failure taxonomy classification"
+    },
+    "root_cause": {
+      "type": "string",
+      "description": "Classified root cause"
+    },
+    "failure_description": {
+      "type": "string",
+      "description": "Human-readable failure description"
+    },
+    "stage_failed": {
+      "type": "string",
+      "description": "Execution stage where failure occurred"
+    },
+    "command_executed": {
+      "type": ["array", "null"],
+      "items": {
+        "type": "string"
+      }
+    },
+    "exit_code": {
+      "type": ["integer", "null"]
+    },
+    "error_message": {
+      "type": ["string", "null"]
+    },
+    "recovery_suggestions": {
+      "type": "array",
+      "description": "Suggested recovery actions",
+      "items": {
+        "type": "object",
+        "required": ["action", "reason"],
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "retry_with_timeout_increase",
+              "retry_with_profile_change",
+              "check_whitelist",
+              "check_workspace_permissions",
+              "escalate_to_manual",
+              "fallback_to_claude"
+            ]
+          },
+          "reason": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "retry_attempt": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Retry attempt number"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+}

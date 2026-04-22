@@ -1,11 +1,9 @@
 {
   "authority_owner": "governance/authority_adr_0001_source_of_truth.md",
-  "generated_at": "2026-04-18T02:35:18-04:00",
+  "generated_at": "2026-04-22T04:24:31+00:00",
   "phases": [
     {
-      "blocking_reasons": [
-        "machine-readable authority artifacts are being introduced by RECON-W1 and have not yet been ratified as closed"
-      ],
+      "blocking_reasons": [],
       "code_anchors": [
         "bin/governance_reconcile.py",
         "tests/test_governance_reconcile.py"
@@ -23,10 +21,13 @@
         "governance/authority_adr_0003_lob_w3_classification.md"
       ],
       "milestone_ref": null,
-      "notes": "Phase 0 stays open until a subsequent reconciliation package ratifies these artifacts and mints a closure record.",
+      "notes": "Phase 0 closed by PHASE0-GLOBAL-GATE-CLOSURE-1 after authority conflict inventory reached zero and canonical gate surfaces reconciled.",
       "phase_id": 0,
       "phase_name": "governance_source_of_truth_reconciliation",
-      "status": "open"
+      "status": "closed_ratified",
+      "closure_evidence_ref": "artifacts/governance/phase0_global_gate_closure.json",
+      "closure_package_id": "PHASE0-GLOBAL-GATE-CLOSURE-1",
+      "ratified_by_adr": "governance/authority_adr_0001_source_of_truth.md"
     },
     {
       "blocking_reasons": [
@@ -83,7 +84,7 @@
         "governance/authority_adr_0019_phase3_closure.md"
       ],
       "milestone_ref": null,
-      "notes": "Phase 3 closed by CAP-P3-CLOSE-1 via bounded developer-assistant loop evidence (retrieval → read → context-bundle → edit-plan → validate → live-apply). No tactical family unlocked.",
+      "notes": "Phase 3 closed by CAP-P3-CLOSE-1 via bounded developer-assistant loop evidence (retrieval \u2192 read \u2192 context-bundle \u2192 edit-plan \u2192 validate \u2192 live-apply). No tactical family unlocked.",
       "phase_id": 3,
       "phase_name": "codebase_understanding_retrieval_backed_runtime",
       "status": "closed_ratified"

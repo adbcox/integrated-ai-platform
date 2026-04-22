@@ -1,0 +1,145 @@
+---
+schema_version: "1.0"
+kind: code_intelligence_decisions
+generated_at: "2026-04-22T03:00:00Z"
+description: "Structured decision matrix for code intelligence tools and approaches"
+
+decisions:
+  - tool: tree-sitter
+    classification: adopt_now
+    maturity: production
+    use_cases:
+      - repo_understanding
+      - codegen_validation
+      - retrieval_integration
+      - symbol_search
+    integration_points:
+      - code_intelligence_service
+      - retrieval_index
+      - validator
+    rationale: "Fast, incremental, query language (Tree-query) is expressive and maintainable"
+    effort: low
+    risk: low
+    adoption_priority: 1
+
+  - tool: lsp
+    classification: evaluate
+    maturity: emerging
+    use_cases:
+      - real_time_analysis
+      - hover_information
+      - go_to_definition
+      - find_references
+    integration_points:
+      - code_intelligence_service
+      - ide_integration
+    rationale: "Powerful for real-time scenarios, but adds infrastructure complexity (server process)"
+    effort: medium
+    risk: medium
+    adoption_priority: 2
+    dependencies:
+      - language: python
+        lsp: pylsp
+      - language: javascript
+        lsp: node-lsp
+      - language: rust
+        lsp: rust-analyzer
+
+  - tool: ast-grep
+    classification: reject
+    maturity: beta
+    use_cases:
+      - pattern_matching
+      - refactoring
+    integration_points: []
+    rationale: "Overlaps significantly with Tree-sitter; Tree-sitter queries are more powerful"
+    effort: medium
+    risk: high
+    adoption_priority: null
+    replacement: tree-sitter
+
+  - tool: regex
+    classification: watch
+    maturity: legacy
+    use_cases:
+      - legacy_pattern_matching
+      - simple_text_search
+    integration_points:
+      - fallback_retrieval
+    rationale: "Kept for backward compatibility and simple text patterns, but de-emphasized in favor of syntax-aware tools"
+    effort: low
+    risk: low
+    adoption_priority: null
+    deprecation_timeline: "2026-Q4"
+
+capability_matrix:
+  # rows: tools
+  # cols: evaluation criteria
+  tree-sitter:
+    parse_speed: "fast"
+    supports_lsp: "no (different paradigm)"
+    query_language: "tree-query (expressive)"
+    query_library_size: "growing ecosystem"
+    adoption_in_industry: "high (Neovim, Helix, Zed)"
+    maintenance_burden: "low"
+    integration_effort: "low"
+
+  lsp:
+    parse_speed: "varies (language-specific)"
+    supports_lsp: "yes (is LSP)"
+    query_language: "language-specific"
+    query_library_size: "varies"
+    adoption_in_industry: "very high (VSCode, JetBrains)"
+    maintenance_burden: "medium"
+    integration_effort: "medium"
+
+  ast-grep:
+    parse_speed: "medium"
+    supports_lsp: "no"
+    query_language: "pattern syntax"
+    query_library_size: "small"
+    adoption_in_industry: "low"
+    maintenance_burden: "medium"
+    integration_effort: "medium"
+
+  regex:
+    parse_speed: "fast"
+    supports_lsp: "no"
+    query_language: "regex (limited)"
+    query_library_size: "n/a"
+    adoption_in_industry: "legacy"
+    maintenance_burden: "low"
+    integration_effort: "low"
+
+integration_roadmap:
+  phase_1: # now
+    adopt:
+      - tree-sitter
+    evaluate:
+      - lsp
+
+  phase_2: # 2026-Q3
+    adopt:
+      - lsp_python
+      - lsp_rust
+    deprecate: []
+
+  phase_3: # 2026-Q4
+    deprecated:
+      - regex (non-critical paths only)
+    adopted:
+      - tree-sitter
+      - lsp (language-specific)
+
+tool_deployment:
+  - tool: tree-sitter
+    version: "0.24+"
+    install_method: "pip install tree-sitter"
+    integration_code_location: "framework/code_intelligence/tree_sitter_integration.py"
+    query_storage: "governance/tree_sitter_queries/"
+
+  - tool: lsp
+    version: "latest per language"
+    install_method: "language-specific (pip, npm, cargo)"
+    integration_code_location: "framework/code_intelligence/lsp_bridge.py"
+    config_storage: "config/lsp_config.yaml"

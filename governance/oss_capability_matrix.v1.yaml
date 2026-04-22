@@ -1,0 +1,234 @@
+---
+schema_version: "1.0"
+kind: oss_capability_matrix
+generated_at: "2026-04-22T03:00:00Z"
+description: "Verified OSS capabilities, integration fit, adoption decisions"
+
+candidates:
+  - name: tree-sitter
+    category: code_parsing
+    license: MIT
+    maturity: production
+    maintenance: active
+    integration_fit: high
+    duplication_risk: low
+    decision: adopt
+    linked_subsystem: inference
+    rationale: "Fast, incremental, multi-language parsing; core to code intelligence"
+    version: "0.24+"
+    dependencies: []
+    integration_effort: low
+    risk_level: low
+
+  - name: ollama
+    category: local_inference
+    license: MIT
+    maturity: beta
+    maintenance: active
+    integration_fit: high
+    duplication_risk: low
+    decision: adopt
+    linked_subsystem: inference
+    rationale: "Local model hosting, avoids API calls, privacy-preserving"
+    version: "0.3+"
+    dependencies:
+      - docker
+      - 8GB+ RAM
+    integration_effort: medium
+    risk_level: low
+
+  - name: chroma
+    category: vector_database
+    license: Apache-2.0
+    maturity: beta
+    maintenance: active
+    integration_fit: high
+    duplication_risk: low
+    decision: evaluate
+    linked_subsystem: retrieval
+    rationale: "Lightweight embedding DB for semantic search; local or cloud"
+    version: "0.4+"
+    dependencies:
+      - python
+    integration_effort: medium
+    risk_level: low
+
+  - name: postgres
+    category: data_storage
+    license: PostgreSQL
+    maturity: production
+    maintenance: active
+    integration_fit: high
+    duplication_risk: low
+    decision: adopt
+    linked_subsystem: runtime
+    rationale: "Production-grade relational DB for state, jobs, event logs"
+    version: "15+"
+    dependencies: []
+    integration_effort: low
+    risk_level: low
+
+  - name: sqlite
+    category: data_storage
+    license: public_domain
+    maturity: production
+    maintenance: stable
+    integration_fit: high
+    duplication_risk: medium
+    decision: evaluate
+    linked_subsystem: runtime
+    rationale: "Lightweight embedded DB; good for single-machine deployments"
+    version: "3.40+"
+    dependencies: []
+    integration_effort: low
+    risk_level: low
+    note: "Do not use alongside Postgres; choose one per deployment"
+
+  - name: pydantic
+    category: data_validation
+    license: MIT
+    maturity: production
+    maintenance: active
+    integration_fit: high
+    duplication_risk: low
+    decision: adopt
+    linked_subsystem: control_plane
+    rationale: "Type-safe data validation for bundles, configs, schemas"
+    version: "2.0+"
+    dependencies:
+      - python
+    integration_effort: low
+    risk_level: low
+
+  - name: pyyaml
+    category: config_parsing
+    license: MIT
+    maturity: production
+    maintenance: stable
+    integration_fit: high
+    duplication_risk: low
+    decision: adopt
+    linked_subsystem: control_plane
+    rationale: "Standard YAML parsing for roadmap, CMDB, orchestration configs"
+    version: "6.0+"
+    dependencies:
+      - python
+    integration_effort: low
+    risk_level: low
+
+  - name: pytest
+    category: testing
+    license: MIT
+    maturity: production
+    maintenance: active
+    integration_fit: high
+    duplication_risk: low
+    decision: adopt
+    linked_subsystem: evaluation
+    rationale: "Standard Python test framework for validators, compilers"
+    version: "7.0+"
+    dependencies:
+      - python
+    integration_effort: low
+    risk_level: low
+
+  - name: gitpython
+    category: vcs_interface
+    license: BSD
+    maturity: production
+    maintenance: active
+    integration_fit: medium
+    duplication_risk: low
+    decision: evaluate
+    linked_subsystem: runtime
+    rationale: "Git operations from Python; useful for commit validation, history inspection"
+    version: "3.1+"
+    dependencies:
+      - git
+    integration_effort: low
+    risk_level: low
+
+  - name: ast-grep
+    category: code_parsing
+    license: MIT
+    maturity: beta
+    maintenance: active
+    integration_fit: low
+    duplication_risk: high
+    decision: reject
+    linked_subsystem: inference
+    rationale: "Tree-sitter covers same use case more efficiently"
+    replacement: tree-sitter
+    version: null
+    risk_level: medium
+
+  - name: langchain
+    category: llm_orchestration
+    license: MIT
+    maturity: beta
+    maintenance: very_active
+    integration_fit: low
+    duplication_risk: medium
+    decision: watch
+    linked_subsystem: inference
+    rationale: "Powerful LLM orchestration but adds complexity; use only if significant inference workload"
+    version: "0.1.0+"
+    dependencies:
+      - multiple_llm_providers
+    integration_effort: high
+    risk_level: high
+    note: "Deferred: use direct model APIs initially"
+
+  - name: anthropic-sdk
+    category: llm_api
+    license: MIT
+    maturity: production
+    maintenance: active
+    integration_fit: high
+    duplication_risk: low
+    decision: adopt
+    linked_subsystem: inference
+    rationale: "Official SDK for Claude API calls; used for escalation, complex reasoning"
+    version: "0.21+"
+    dependencies:
+      - api_key
+    integration_effort: low
+    risk_level: low
+
+decision_summary:
+  adopt:
+    - tree-sitter
+    - ollama
+    - postgres
+    - pydantic
+    - pyyaml
+    - pytest
+    - anthropic-sdk
+  evaluate:
+    - chroma
+    - sqlite
+    - gitpython
+  watch:
+    - langchain
+  reject:
+    - ast-grep
+
+integration_verification:
+  - subsystem: code_intelligence
+    tools: [tree-sitter, ollama]
+    status: ready
+  - subsystem: retrieval
+    tools: [tree-sitter, chroma]
+    status: in_progress
+  - subsystem: inference
+    tools: [ollama, anthropic-sdk]
+    status: ready
+  - subsystem: runtime
+    tools: [postgres, sqlite]
+    status: ready
+  - subsystem: governance
+    tools: [pydantic, pyyaml]
+    status: ready
+  - subsystem: evaluation
+    tools: [pytest]
+    status: ready

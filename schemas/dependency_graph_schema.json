@@ -1,0 +1,110 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Roadmap Dependency Graph Schema",
+  "type": "object",
+  "required": ["schema_version", "kind", "generated_at", "nodes", "edges"],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+$"
+    },
+    "kind": {
+      "type": "string",
+      "enum": ["roadmap_dependency_graph"]
+    },
+    "generated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "nodes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "title", "category", "priority", "status"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^RM-[A-Z]+-\\d+$"
+          },
+          "title": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string",
+            "enum": ["INVENTORY", "GOVERNANCE", "AUTOMATION", "DEVELOPMENT", "INTELLIGENCE", "CORE"]
+          },
+          "priority": {
+            "type": "string",
+            "enum": ["P1", "P2", "P3"]
+          },
+          "status": {
+            "type": "string",
+            "enum": ["proposed", "in_progress", "completed", "complete", "archived"]
+          },
+          "description": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "edges": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["from", "to", "type"],
+        "properties": {
+          "from": {
+            "type": "string",
+            "pattern": "^RM-[A-Z]+-\\d+$"
+          },
+          "to": {
+            "type": "string",
+            "pattern": "^RM-[A-Z]+-\\d+$"
+          },
+          "type": {
+            "type": "string",
+            "enum": ["hard", "soft", "grouped", "sequence"]
+          },
+          "description": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "grouped_sequences": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "items"],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "description": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "blocking_analysis": {
+      "type": "object",
+      "properties": {
+        "blocked_items": {
+          "type": "array"
+        },
+        "eligible_items": {
+          "type": "array"
+        },
+        "conditionally_eligible": {
+          "type": "array"
+        }
+      }
+    }
+  }
+}

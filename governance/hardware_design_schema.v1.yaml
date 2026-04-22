@@ -1,0 +1,264 @@
+schema_version: "1.0"
+kind: "hardware_design_schema"
+title: "Electrical Design Baseline"
+description: "ESP32 and Nordic workflow support, design-assistant structure, artifact models"
+
+hardware_project:
+  required_fields:
+    - id
+    - name
+    - target_platform
+  fields:
+    id:
+      type: string
+      description: "Project identifier"
+      example: "hw-esp32-sensor-node-v1"
+
+    name:
+      type: string
+      description: "Project name"
+
+    description:
+      type: string
+      description: "Project purpose"
+
+    target_platform:
+      type: string
+      enum: ["esp32", "nrf52840", "nrf5340", "custom"]
+      description: "Target microcontroller"
+
+    version:
+      type: string
+      description: "Hardware revision version"
+
+    design_stage:
+      type: string
+      enum: ["concept", "schematic", "pcb", "prototype", "production"]
+      description: "Current design stage"
+
+esp32_configuration:
+  description: "ESP32-specific design parameters"
+  fields:
+    variant:
+      type: string
+      enum: ["esp32", "esp32-s3", "esp32-c3", "esp32-h2"]
+      description: "ESP32 variant"
+
+    clock_speed:
+      type: string
+      description: "CPU frequency (MHz)"
+
+    flash_size:
+      type: string
+      description: "Flash memory size"
+      enum: ["4MB", "8MB", "16MB", "32MB"]
+
+    ram_size:
+      type: string
+      description: "SRAM size"
+
+    power_supply:
+      type: object
+      description: "Power supply specifications"
+      fields:
+        input_voltage: string
+        output_voltage: string
+        current_max: string
+        regulator_type: string
+
+    connectivity:
+      type: array
+      description: "Enabled connectivity options"
+      items:
+        type: string
+      enum: ["wifi", "bluetooth", "ble-mesh", "zigbee", "matter"]
+
+    pins_used:
+      type: array
+      description: "GPIO pins and their functions"
+      items:
+        pin_number: integer
+        function: string
+        connection: string
+
+nordic_configuration:
+  description: "Nordic (nRF) specific design parameters"
+  fields:
+    variant:
+      type: string
+      enum: ["nrf52832", "nrf52833", "nrf52840", "nrf5340"]
+      description: "Nordic variant"
+
+    processor:
+      type: object
+      description: "Processor specifications"
+      fields:
+        cpu_core: string
+        clock_speed: string
+        flash: string
+        ram: string
+
+    power_management:
+      type: object
+      description: "Power management features"
+      fields:
+        dcdc_converter: boolean
+        ldo: boolean
+        battery_monitoring: boolean
+        sleep_modes: array
+
+    connectivity:
+      type: array
+      description: "Enabled wireless protocols"
+      items:
+        type: string
+      enum: ["ble", "thread", "zigbee", "matter", "nrf-proprietary"]
+
+    antenna:
+      type: object
+      description: "Antenna configuration"
+      fields:
+        type: string
+        gain_dbi: number
+        impedance: string
+
+design_assistant_structure:
+  required_fields:
+    - id
+    - assistant_type
+  fields:
+    id:
+      type: string
+      description: "Assistant identifier"
+      example: "designer-esp32-iot-node"
+
+    assistant_type:
+      type: string
+      enum: ["schematic-review", "bom-generator", "layout-checker", "power-calculator", "signal-integrity"]
+      description: "Type of design assistance"
+
+    purpose:
+      type: string
+      description: "What this assistant helps with"
+
+    checks:
+      type: array
+      description: "Automated design checks"
+      items:
+        check_name: string
+        category: string
+        severity: string
+
+    recommendations:
+      type: array
+      description: "Design improvement suggestions"
+      items:
+        recommendation: string
+        rationale: string
+
+artifact_model:
+  required_fields:
+    - id
+    - artifact_type
+  fields:
+    id:
+      type: string
+      description: "Artifact identifier"
+      example: "artifact-schematic-esp32-sensor"
+
+    artifact_type:
+      type: string
+      enum: ["schematic", "pcb-layout", "bom", "design-doc", "gerber", "manufacturing-spec"]
+      description: "Type of artifact"
+
+    format:
+      type: string
+      description: "File format"
+      example: "KiCAD .sch / Eagle .sch"
+
+    version:
+      type: string
+      description: "Artifact version"
+
+    content:
+      type: object
+      description: "Artifact content structure"
+
+    revision_history:
+      type: array
+      description: "Design revisions"
+      items:
+        revision: string
+        date: string
+        changes: string
+
+    review_checklist:
+      type: array
+      description: "Design review items"
+      items:
+        item: string
+        status: string
+
+bom_definition:
+  required_fields:
+    - project_id
+    - components
+  fields:
+    project_id:
+      type: string
+      description: "Reference to hardware_project.id"
+
+    components:
+      type: array
+      description: "Bill of Materials components"
+      items:
+        part_number: string
+        description: string
+        quantity: integer
+        unit_cost: number
+        supplier: string
+        lead_time_days: integer
+
+    total_cost:
+      type: number
+      description: "Total BOM cost"
+
+    sourcing_notes:
+      type: string
+      description: "Notes on component availability/sourcing"
+
+workflow_steps:
+  design_phase:
+    - "define requirements"
+    - "create schematic"
+    - "run design assistant checks"
+    - "generate BOM"
+    - "review with assistant"
+
+  pcb_phase:
+    - "design PCB layout"
+    - "check design rules"
+    - "generate Gerber files"
+    - "validate manufacturing spec"
+
+  validation_phase:
+    - "power analysis"
+    - "signal integrity check"
+    - "thermal analysis"
+    - "EMC pre-compliance"
+
+  manufacturing:
+    - "generate production files"
+    - "quote from manufacturers"
+    - "prototype batch"
+    - "validate prototype"
+
+integration_point:
+  description: "Hardware designs inform edition packaging and procurement"
+  inbound_feeds:
+    - "edition feature requirements"
+    - "component availability from procurement"
+  outbound_feeds:
+    - "hardware designs to procurement BOM"
+    - "device specs to control center"
+    - "product docs to site generation"

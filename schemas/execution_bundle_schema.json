@@ -1,0 +1,102 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Execution Bundle Schema",
+  "type": "object",
+  "required": ["roadmap_ids", "objective", "allowed_files", "forbidden_files", "expected_artifacts", "validation_steps", "rollback_rule", "completion_rule"],
+  "properties": {
+    "roadmap_ids": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^RM-[A-Z]+-\\d+$"
+      },
+      "minItems": 1
+    },
+    "objective": {
+      "type": "string",
+      "minLength": 1
+    },
+    "description": {
+      "type": "string"
+    },
+    "allowed_files": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1
+    },
+    "forbidden_files": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "expected_artifacts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["path", "type", "required"],
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": ["file", "directory", "generated"]
+          },
+          "required": {
+            "type": "boolean"
+          },
+          "description": {
+            "type": "string"
+          }
+        }
+      },
+      "minItems": 1
+    },
+    "validation_steps": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "command", "expected_exit_code"],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "command": {
+            "type": "string"
+          },
+          "expected_exit_code": {
+            "type": "integer"
+          },
+          "description": {
+            "type": "string"
+          }
+        }
+      },
+      "minItems": 1
+    },
+    "rollback_rule": {
+      "type": "string",
+      "minLength": 1
+    },
+    "completion_rule": {
+      "type": "string",
+      "minLength": 1
+    },
+    "author": {
+      "type": "string"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "notes": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  }
+}

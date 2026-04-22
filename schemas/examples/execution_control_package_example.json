@@ -1,0 +1,109 @@
+{
+  "version": "1.0",
+  "schema_type": "execution_control_package",
+  "example_session_id": "session-phase0-closure-demo",
+  "example_objective": "Complete Phase 0 closure for 6-item bundle",
+  "example_description": "Demonstrate full integrated closure with all required artifacts and governance",
+
+  "execution_control_package": {
+    "primary_session_type": "capability_session",
+    "primary_objective": "Phase 0 closure: governance baseline, execution control, telemetry/audit, backup/DR, inventory, and Apple-platform capability",
+    "blocker_or_capability_gap": "Authority and runtime contract gaps preventing coordinated execution",
+    "why_this_is_highest_leverage": "Phase 0 defines the foundation that all later work depends on",
+    "real_path_to_rerun_before_stopping": "Validation script passes, roadmap surfaces consistent, all artifacts exist on disk",
+
+    "workspace_contract": {
+      "repo": "adbcox/integrated-ai-platform-exec",
+      "branch": "main",
+      "workspace_root": "/Users/admin/repos/integrated-ai-platform-exec",
+      "git_commit_at_start": null,
+      "workspace_id": "default"
+    },
+
+    "scope": {
+      "objective": "Create and integrate Phase 0 closure artifacts for 6-item bundle",
+      "in_scope": [
+        "Item definition files (YAML)",
+        "Governance and schema files",
+        "ADR set",
+        "Validation scripts",
+        "Roadmap surface updates"
+      ],
+      "out_of_scope": [
+        "Implementation of actual features",
+        "Testing real functionality",
+        "Deployment to production"
+      ]
+    },
+
+    "allowed_files": [
+      "docs/roadmap/items/RM-*.yaml",
+      "governance/**",
+      "schemas/**",
+      "artifacts/**",
+      "bin/validate_*.py",
+      "docs/adr/**",
+      "docs/standards/**"
+    ],
+
+    "forbidden_files": [
+      "framework/**",
+      "tests/**",
+      ".github/**",
+      "bin/hardware_design_processor.py",
+      "bin/procurement_evaluator.py",
+      "bin/edition_resolver.py"
+    ],
+
+    "validation_order": [
+      "verify all item YAML files are syntactically valid",
+      "verify all schema files are valid JSON",
+      "verify ADR set is complete and readable",
+      "verify roadmap surfaces are consistent",
+      "run make quick for syntax validation",
+      "run make check for full validation",
+      "run bin/validate_phase0_closure.py",
+      "verify artifacts/validation/phase0_closure_validation.json exists and shows all-pass"
+    ],
+
+    "rollback_rule": "If any validation fails, delete all newly created files and revert roadmap surface changes to prior state",
+
+    "artifact_outputs": {
+      "required": [
+        "docs/roadmap/items/RM-AUTO-001.yaml",
+        "docs/roadmap/items/RM-OPS-005.yaml",
+        "docs/roadmap/items/RM-OPS-004.yaml",
+        "docs/roadmap/items/RM-INV-002.yaml",
+        "docs/roadmap/items/RM-DEV-001.yaml",
+        "governance/goal_intake_schema.v1.yaml",
+        "governance/telemetry_event_schema.v1.yaml",
+        "governance/backup_restore_schema.v1.yaml",
+        "governance/asset_inventory_schema.v1.yaml",
+        "governance/apple_xcode_workflow.v1.yaml",
+        "governance/adr/ADR-SESSION-SCHEMA.md",
+        "governance/adr/ADR-TOOL-SYSTEM.md",
+        "governance/adr/ADR-WORKSPACE-CONTRACT.md",
+        "governance/adr/ADR-INFERENCE-GATEWAY.md",
+        "governance/adr/ADR-PERMISSION-MODEL.md",
+        "governance/adr/ADR-ARTIFACT-BUNDLE.md",
+        "governance/adr/ADR-AUTONOMY-SCORECARD.md",
+        "docs/standards/DEFINITION_OF_DONE.md",
+        "bin/validate_phase0_closure.py",
+        "artifacts/validation/phase0_closure_validation.json"
+      ],
+      "evidence": [
+        "docs/roadmap/ROADMAP_STATUS_SYNC.md updated",
+        "docs/roadmap/ROADMAP_MASTER.md updated",
+        "docs/roadmap/ROADMAP_INDEX.md updated",
+        "all YAML files are valid",
+        "all JSON schemas are valid",
+        "validation script passes with 100% success"
+      ]
+    },
+
+    "promotion_linkage": {
+      "required": false,
+      "manifest_refs": []
+    }
+  }
+}

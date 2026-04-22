@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "campaign_id": "LEDT",
+  "campaign_verdict": "ledt_campaign_complete",
+  "source_artifact": "artifacts/expansion/LEDT/LEDT_closeout.json",
+  "governance_decision": "ratified",
+  "local_exec_default_transition": "ratified",
+  "authority_scope": "governance_session",
+  "phase_scope": "phase0_residual_authority_closure",
+  "notes": "Ratifies LEDT local-exec-default transition as governance-visible state without tactical-family unlock.",
+  "ratified_at": "2026-04-22T00:00:00Z",
+  "ratified_by": "phase0_residual_authority_closure_pass"
+}

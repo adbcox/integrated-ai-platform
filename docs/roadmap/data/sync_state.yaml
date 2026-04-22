@@ -1,243 +1,455 @@
-schema_version: "1.0"
-kind: "roadmap_sync_state"
+schema_version: '1.0'
+kind: roadmap_sync_state
 items:
-  - id: "RM-GOV-001"
-    sync_enabled: true
-    sync_mode: "repo_to_plane_authoritative"
-    plane_workspace: "Integrated AI Platform"
-    plane_project: "Roadmap Ops"
-    plane_item_id: null
-    plane_url: null
-    last_push_at: null
-    last_pull_at: null
-    last_sync_result: "not_synced"
-    writeback_fields_allowed:
-      - "operational_state"
-      - "assignee"
-      - "cycle"
-      - "module"
-  - id: "RM-GOV-002"
-    sync_enabled: true
-    sync_mode: "repo_to_plane_authoritative"
-    plane_workspace: "Integrated AI Platform"
-    plane_project: "Roadmap Ops"
-    plane_item_id: null
-    plane_url: null
-    last_push_at: null
-    last_pull_at: null
-    last_sync_result: "not_synced"
-    writeback_fields_allowed:
-      - "operational_state"
-      - "assignee"
-      - "cycle"
-      - "module"
-  - id: "RM-GOV-003"
-    sync_enabled: true
-    sync_mode: "repo_to_plane_authoritative"
-    plane_workspace: "Integrated AI Platform"
-    plane_project: "Roadmap Ops"
-    plane_item_id: null
-    plane_url: null
-    last_push_at: null
-    last_pull_at: null
-    last_sync_result: "not_synced"
-    writeback_fields_allowed:
-      - "operational_state"
-      - "assignee"
-      - "cycle"
-      - "module"
-  - id: "RM-GOV-004"
-    sync_enabled: true
-    sync_mode: "repo_to_plane_authoritative"
-    plane_workspace: "Integrated AI Platform"
-    plane_project: "Roadmap Ops"
-    plane_item_id: null
-    plane_url: null
-    last_push_at: null
-    last_pull_at: null
-    last_sync_result: "not_synced"
-    writeback_fields_allowed:
-      - "operational_state"
-      - "assignee"
-      - "cycle"
-      - "module"
-  - id: "RM-GOV-005"
-    sync_enabled: true
-    sync_mode: "repo_to_plane_authoritative"
-    plane_workspace: "Integrated AI Platform"
-    plane_project: "Roadmap Ops"
-    plane_item_id: null
-    plane_url: null
-    last_push_at: null
-    last_pull_at: null
-    last_sync_result: "not_synced"
-    writeback_fields_allowed:
-      - "operational_state"
-      - "assignee"
-      - "cycle"
-      - "module"
-  - id: "RM-GOV-006"
-    sync_enabled: true
-    sync_mode: "repo_to_plane_authoritative"
-    plane_workspace: "Integrated AI Platform"
-    plane_project: "Roadmap Ops"
-    plane_item_id: null
-    plane_url: null
-    last_push_at: null
-    last_pull_at: null
-    last_sync_result: "not_synced"
-    writeback_fields_allowed:
-      - "operational_state"
-      - "assignee"
-      - "cycle"
-      - "module"
-  - id: "RM-GOV-007"
-    sync_enabled: true
-    sync_mode: "repo_to_plane_authoritative"
-    plane_workspace: "Integrated AI Platform"
-    plane_project: "Roadmap Ops"
-    plane_item_id: null
-    plane_url: null
-    last_push_at: null
-    last_pull_at: null
-    last_sync_result: "not_synced"
-    writeback_fields_allowed:
-      - "operational_state"
-      - "assignee"
-      - "cycle"
-      - "module"
-  - id: "RM-CORE-001"
-    sync_enabled: true
-    sync_mode: "repo_to_plane_authoritative"
-    plane_workspace: "Integrated AI Platform"
-    plane_project: "Roadmap Ops"
-    plane_item_id: null
-    plane_url: null
-    last_push_at: null
-    last_pull_at: null
-    last_sync_result: "not_synced"
-    writeback_fields_allowed:
-      - "operational_state"
-      - "assignee"
-      - "cycle"
-      - "module"
-  - id: "RM-CORE-002"
-    sync_enabled: true
-    sync_mode: "repo_to_plane_authoritative"
-    plane_workspace: "Integrated AI Platform"
-    plane_project: "Roadmap Ops"
-    plane_item_id: null
-    plane_url: null
-    last_push_at: null
-    last_pull_at: null
-    last_sync_result: "not_synced"
-    writeback_fields_allowed:
-      - "operational_state"
-      - "assignee"
-      - "cycle"
-      - "module"
-  - id: "RM-CORE-003"
-    sync_enabled: true
-    sync_mode: "repo_to_plane_authoritative"
-    plane_workspace: "Integrated AI Platform"
-    plane_project: "Roadmap Ops"
-    plane_item_id: null
-    plane_url: null
-    last_push_at: null
-    last_pull_at: null
-    last_sync_result: "not_synced"
-    writeback_fields_allowed:
-      - "operational_state"
-      - "assignee"
-      - "cycle"
-      - "module"
-  - id: "RM-CORE-004"
-    sync_enabled: true
-    sync_mode: "repo_to_plane_authoritative"
-    plane_workspace: "Integrated AI Platform"
-    plane_project: "Roadmap Ops"
-    plane_item_id: null
-    plane_url: null
-    last_push_at: null
-    last_pull_at: null
-    last_sync_result: "not_synced"
-    writeback_fields_allowed:
-      - "operational_state"
-      - "assignee"
-      - "cycle"
-      - "module"
-  - id: "RM-CORE-005"
-    sync_enabled: true
-    sync_mode: "repo_to_plane_authoritative"
-    plane_workspace: "Integrated AI Platform"
-    plane_project: "Roadmap Ops"
-    plane_item_id: null
-    plane_url: null
-    last_push_at: null
-    last_pull_at: null
-    last_sync_result: "not_synced"
-    writeback_fields_allowed:
-      - "operational_state"
-      - "assignee"
-      - "cycle"
-      - "module"
-  - id: "RM-CORE-006"
-    sync_enabled: true
-    sync_mode: "repo_to_plane_authoritative"
-    plane_workspace: "Integrated AI Platform"
-    plane_project: "Roadmap Ops"
-    plane_item_id: null
-    plane_url: null
-    last_push_at: null
-    last_pull_at: null
-    last_sync_result: "not_synced"
-    writeback_fields_allowed:
-      - "operational_state"
-      - "assignee"
-      - "cycle"
-      - "module"
-  - id: "RM-DEV-005"
-    sync_enabled: true
-    sync_mode: "repo_to_plane_authoritative"
-    plane_workspace: "Integrated AI Platform"
-    plane_project: "Roadmap Ops"
-    plane_item_id: null
-    plane_url: null
-    last_push_at: null
-    last_pull_at: null
-    last_sync_result: "not_synced"
-    writeback_fields_allowed:
-      - "operational_state"
-      - "assignee"
-      - "cycle"
-      - "module"
-  - id: "RM-DEV-003"
-    sync_enabled: true
-    sync_mode: "repo_to_plane_authoritative"
-    plane_workspace: "Integrated AI Platform"
-    plane_project: "Roadmap Ops"
-    plane_item_id: null
-    plane_url: null
-    last_push_at: null
-    last_pull_at: null
-    last_sync_result: "not_synced"
-    writeback_fields_allowed:
-      - "operational_state"
-      - "assignee"
-      - "cycle"
-      - "module"
-  - id: "RM-INTEL-001"
-    sync_enabled: true
-    sync_mode: "repo_to_plane_authoritative"
-    plane_workspace: "Integrated AI Platform"
-    plane_project: "Roadmap Ops"
-    plane_item_id: null
-    plane_url: null
-    last_push_at: null
-    last_pull_at: null
-    last_sync_result: "not_synced"
-    writeback_fields_allowed:
-      - "operational_state"
-      - "assignee"
-      - "cycle"
-      - "module"
+- id: RM-GOV-001
+  sync_enabled: true
+  sync_mode: repo_to_plane_authoritative
+  plane_workspace: Integrated AI Platform
+  plane_project: Roadmap Ops
+  plane_item_id: null
+  plane_url: null
+  last_push_at: null
+  last_pull_at: null
+  last_sync_result: not_synced
+  writeback_fields_allowed:
+  - operational_state
+  - assignee
+  - cycle
+  - module
+- id: RM-GOV-002
+  sync_enabled: true
+  sync_mode: repo_to_plane_authoritative
+  plane_workspace: Integrated AI Platform
+  plane_project: Roadmap Ops
+  plane_item_id: null
+  plane_url: null
+  last_push_at: null
+  last_pull_at: null
+  last_sync_result: not_synced
+  status: completed
+  archive_status: archived
+  writeback_fields_allowed:
+  - operational_state
+  - assignee
+  - cycle
+  - module
+- id: RM-GOV-003
+  sync_enabled: true
+  sync_mode: repo_to_plane_authoritative
+  plane_workspace: Integrated AI Platform
+  plane_project: Roadmap Ops
+  plane_item_id: null
+  plane_url: null
+  last_push_at: null
+  last_pull_at: null
+  last_sync_result: not_synced
+  writeback_fields_allowed:
+  - operational_state
+  - assignee
+  - cycle
+  - module
+- id: RM-GOV-004
+  sync_enabled: true
+  sync_mode: repo_to_plane_authoritative
+  plane_workspace: Integrated AI Platform
+  plane_project: Roadmap Ops
+  plane_item_id: null
+  plane_url: null
+  last_push_at: null
+  last_pull_at: null
+  last_sync_result: not_synced
+  archive_status: archived
+  writeback_fields_allowed:
+  - operational_state
+  - assignee
+  - cycle
+  - module
+- id: RM-GOV-005
+  sync_enabled: true
+  sync_mode: repo_to_plane_authoritative
+  plane_workspace: Integrated AI Platform
+  plane_project: Roadmap Ops
+  plane_item_id: null
+  plane_url: null
+  last_push_at: null
+  last_pull_at: null
+  last_sync_result: not_synced
+  writeback_fields_allowed:
+  - operational_state
+  - assignee
+  - cycle
+  - module
+  archive_status: archived
+- id: RM-GOV-006
+  sync_enabled: true
+  sync_mode: repo_to_plane_authoritative
+  plane_workspace: Integrated AI Platform
+  plane_project: Roadmap Ops
+  plane_item_id: null
+  plane_url: null
+  last_push_at: null
+  last_pull_at: null
+  last_sync_result: not_synced
+  status: completed
+  archive_status: ready_for_archive
+  writeback_fields_allowed:
+  - operational_state
+  - assignee
+  - cycle
+  - module
+- id: RM-GOV-007
+  sync_enabled: true
+  sync_mode: repo_to_plane_authoritative
+  plane_workspace: Integrated AI Platform
+  plane_project: Roadmap Ops
+  plane_item_id: null
+  plane_url: null
+  last_push_at: null
+  last_pull_at: null
+  last_sync_result: not_synced
+  status: completed
+  archive_status: ready_for_archive
+  writeback_fields_allowed:
+  - operational_state
+  - assignee
+  - cycle
+  - module
+- id: RM-CORE-001
+  sync_enabled: true
+  sync_mode: repo_to_plane_authoritative
+  plane_workspace: Integrated AI Platform
+  plane_project: Roadmap Ops
+  plane_item_id: null
+  plane_url: null
+  last_push_at: null
+  last_pull_at: null
+  last_sync_result: not_synced
+  writeback_fields_allowed:
+  - operational_state
+  - assignee
+  - cycle
+  - module
+- id: RM-CORE-002
+  sync_enabled: true
+  sync_mode: repo_to_plane_authoritative
+  plane_workspace: Integrated AI Platform
+  plane_project: Roadmap Ops
+  plane_item_id: null
+  plane_url: null
+  last_push_at: null
+  last_pull_at: null
+  last_sync_result: not_synced
+  writeback_fields_allowed:
+  - operational_state
+  - assignee
+  - cycle
+  - module
+- id: RM-CORE-003
+  sync_enabled: true
+  sync_mode: repo_to_plane_authoritative
+  plane_workspace: Integrated AI Platform
+  plane_project: Roadmap Ops
+  plane_item_id: null
+  plane_url: null
+  last_push_at: null
+  last_pull_at: null
+  last_sync_result: not_synced
+  archive_status: ready_for_archive
+  writeback_fields_allowed:
+  - operational_state
+  - assignee
+  - cycle
+  - module
+- id: RM-CORE-004
+  sync_enabled: true
+  sync_mode: repo_to_plane_authoritative
+  plane_workspace: Integrated AI Platform
+  plane_project: Roadmap Ops
+  plane_item_id: null
+  plane_url: null
+  last_push_at: null
+  last_pull_at: null
+  last_sync_result: not_synced
+  writeback_fields_allowed:
+  - operational_state
+  - assignee
+  - cycle
+  - module
+- id: RM-CORE-005
+  sync_enabled: true
+  sync_mode: repo_to_plane_authoritative
+  plane_workspace: Integrated AI Platform
+  plane_project: Roadmap Ops
+  plane_item_id: null
+  plane_url: null
+  last_push_at: null
+  last_pull_at: null
+  last_sync_result: not_synced
+  writeback_fields_allowed:
+  - operational_state
+  - assignee
+  - cycle
+  - module
+  archive_status: archived
+- id: RM-CORE-006
+  sync_enabled: true
+  sync_mode: repo_to_plane_authoritative
+  plane_workspace: Integrated AI Platform
+  plane_project: Roadmap Ops
+  plane_item_id: null
+  plane_url: null
+  last_push_at: null
+  last_pull_at: null
+  last_sync_result: not_synced
+  status: completed
+  archive_status: ready_for_archive
+  writeback_fields_allowed:
+  - operational_state
+  - assignee
+  - cycle
+  - module
+- id: RM-DEV-005
+  sync_enabled: true
+  sync_mode: repo_to_plane_authoritative
+  plane_workspace: Integrated AI Platform
+  plane_project: Roadmap Ops
+  plane_item_id: null
+  plane_url: null
+  last_push_at: null
+  last_pull_at: null
+  last_sync_result: not_synced
+  writeback_fields_allowed:
+  - operational_state
+  - assignee
+  - cycle
+  - module
+  archive_status: ready_for_archive
+- id: RM-DEV-003
+  sync_enabled: true
+  sync_mode: repo_to_plane_authoritative
+  plane_workspace: Integrated AI Platform
+  plane_project: Roadmap Ops
+  plane_item_id: null
+  plane_url: null
+  last_push_at: null
+  last_pull_at: null
+  last_sync_result: not_synced
+  writeback_fields_allowed:
+  - operational_state
+  - assignee
+  - cycle
+  - module
+  archive_ready: true
+  archive_ready_at: '2026-04-22T01:15:00Z'
+  archive_ready_notes: Closure complete; all tests passing; no active blockers; ready
+    for archive
+- id: RM-INTEL-001
+  sync_enabled: true
+  sync_mode: repo_to_plane_authoritative
+  plane_workspace: Integrated AI Platform
+  plane_project: Roadmap Ops
+  plane_item_id: null
+  plane_url: null
+  last_push_at: null
+  last_pull_at: null
+  last_sync_result: not_synced
+  writeback_fields_allowed:
+  - operational_state
+  - assignee
+  - cycle
+  - module
+- id: RM-INTEL-002
+  sync_enabled: true
+  sync_mode: repo_to_plane_authoritative
+  plane_workspace: Integrated AI Platform
+  plane_project: Roadmap Ops
+  plane_item_id: null
+  plane_url: null
+  last_push_at: null
+  last_pull_at: null
+  last_sync_result: not_synced
+  writeback_fields_allowed:
+  - operational_state
+  - assignee
+  - cycle
+  - module
+- id: RM-DEV-002
+  sync_enabled: true
+  sync_mode: repo_to_plane_authoritative
+  plane_workspace: Integrated AI Platform
+  plane_project: Roadmap Ops
+  plane_item_id: null
+  plane_url: null
+  last_push_at: null
+  last_pull_at: null
+  last_sync_result: not_synced
+  writeback_fields_allowed:
+  - operational_state
+  - assignee
+  - cycle
+  - module
+  archive_status: archived
+- id: RM-AUTO-002
+  sync_enabled: true
+  sync_mode: repo_to_plane_authoritative
+  plane_workspace: Integrated AI Platform
+  plane_project: Roadmap Ops
+  plane_item_id: null
+  plane_url: null
+  last_push_at: null
+  last_pull_at: null
+  last_sync_result: not_synced
+  archive_status: ready_for_archive
+  writeback_fields_allowed:
+  - operational_state
+  - assignee
+  - cycle
+  - module
+- id: RM-DEV-009
+  sync_enabled: true
+  sync_mode: repo_to_plane_authoritative
+  plane_workspace: Integrated AI Platform
+  plane_project: Roadmap Ops
+  plane_item_id: null
+  plane_url: null
+  last_push_at: null
+  last_pull_at: null
+  last_sync_result: not_synced
+  writeback_fields_allowed:
+  - operational_state
+  - assignee
+  - cycle
+  - module
+  archive_status: ready_for_archive
+- id: RM-DEV-008
+  sync_enabled: true
+  sync_mode: repo_to_plane_authoritative
+  plane_workspace: Integrated AI Platform
+  plane_project: Roadmap Ops
+  plane_item_id: null
+  plane_url: null
+  last_push_at: null
+  last_pull_at: null
+  last_sync_result: not_synced
+  writeback_fields_allowed:
+  - operational_state
+  - assignee
+  - cycle
+  - module
+  archive_status: ready_for_archive
+- id: RM-DEV-004
+  sync_enabled: true
+  sync_mode: repo_to_plane_authoritative
+  plane_workspace: Integrated AI Platform
+  plane_project: Roadmap Ops
+  plane_item_id: null
+  plane_url: null
+  last_push_at: null
+  last_pull_at: null
+  last_sync_result: not_synced
+  archive_status: archived
+  writeback_fields_allowed:
+  - operational_state
+  - assignee
+  - cycle
+  - module
+- id: RM-DEV-007
+  sync_enabled: true
+  sync_mode: repo_to_plane_authoritative
+  plane_workspace: Integrated AI Platform
+  plane_project: Roadmap Ops
+  plane_item_id: null
+  plane_url: null
+  last_push_at: null
+  last_pull_at: null
+  last_sync_result: not_synced
+  archive_status: archived
+  writeback_fields_allowed:
+  - operational_state
+  - assignee
+  - cycle
+  - module
+- id: RM-INV-005
+  sync_enabled: true
+  sync_mode: repo_to_plane_authoritative
+  plane_workspace: Integrated AI Platform
+  plane_project: Roadmap Ops
+  plane_item_id: null
+  plane_url: null
+  last_push_at: null
+  last_pull_at: null
+  last_sync_result: not_synced
+  archive_status: archived
+  writeback_fields_allowed:
+  - operational_state
+  - assignee
+  - cycle
+  - module
+- id: RM-INV-003
+  sync_enabled: true
+  sync_mode: repo_to_plane_authoritative
+  plane_workspace: Integrated AI Platform
+  plane_project: Roadmap Ops
+  plane_item_id: null
+  plane_url: null
+  last_push_at: null
+  last_pull_at: null
+  last_sync_result: not_synced
+  status: completed
+  archive_status: ready_for_archive
+  writeback_fields_allowed:
+  - operational_state
+  - assignee
+  - cycle
+  - module
+- id: RM-ED-001
+  sync_enabled: true
+  sync_mode: repo_to_plane_authoritative
+  plane_workspace: Integrated AI Platform
+  plane_project: Roadmap Ops
+  plane_item_id: null
+  plane_url: null
+  last_push_at: null
+  last_pull_at: null
+  last_sync_result: not_synced
+  status: completed
+  archive_status: ready_for_archive
+  writeback_fields_allowed:
+  - operational_state
+  - assignee
+  - cycle
+  - module
+- id: RM-DOCAPP-002
+  sync_enabled: true
+  sync_mode: repo_to_plane_authoritative
+  plane_workspace: Integrated AI Platform
+  plane_project: Roadmap Ops
+  plane_item_id: null
+  plane_url: null
+  last_push_at: null
+  last_pull_at: null
+  last_sync_result: not_synced
+  status: completed
+  archive_status: ready_for_archive
+  writeback_fields_allowed:
+  - operational_state
+  - assignee
+  - cycle
+  - module
+- id: RM-HW-001
+  sync_enabled: true
+  sync_mode: repo_to_plane_authoritative
+  plane_workspace: Integrated AI Platform
+  plane_project: Roadmap Ops
+  plane_item_id: null
+  plane_url: null
+  last_push_at: null
+  last_pull_at: null
+  last_sync_result: not_synced
+  status: completed
+  archive_status: ready_for_archive
+  writeback_fields_allowed:
+  - operational_state
+  - assignee
+  - cycle
+  - module

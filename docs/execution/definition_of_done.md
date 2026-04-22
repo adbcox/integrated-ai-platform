@@ -2,6 +2,7 @@
 
 schema_version: 1
 authority: docs/execution/definition_of_done.md
+ratified_by: RM-GOV-006
 
 ## 1. Artifact completeness
 
@@ -39,3 +40,10 @@ A `run_bundle_manifest.json` must be present at the artifact root for the run.
 
 - if `definition_of_done_met: false` in `latest.json`, the work item must not advance
 - escalation is required when check or quick fails and the cause is not immediately correctable in the current session
+
+## 6. Scorecard linkage
+
+- Definition-of-done outcomes feed autonomy readiness evaluation in `governance/autonomy_scorecard.v1.yaml`
+- Promotion readiness and autonomy gating must use both:
+  - execution completion against sections 1–5 in this document
+  - scorecard thresholds defined in the autonomy scorecard authority surface

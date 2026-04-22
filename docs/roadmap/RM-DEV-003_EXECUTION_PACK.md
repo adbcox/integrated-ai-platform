@@ -10,7 +10,8 @@ artifact outputs, validation order, rollback rule, and promotion/escalation deci
 - `governance/bounded_autonomous_codegen_contract.v1.yaml`
 - `governance/rm_dev_003_rm_intel_001_linkage.v1.yaml`
 - `artifacts/bounded_autonomy/runs/rm_dev_003_baseline_example.json`
-- `artifacts/governance/rm_dev_003_rm_intel_001_baseline_validation.json`
+- `governance/qc_finding_schema_rm_dev_002.v1.yaml`
+- `artifacts/governance/rm_integrated_5_item_validation.json`
 
 ## Required bounded task fields
 
@@ -53,3 +54,11 @@ RM-DEV-003 depends on watchtower recommendations for key bounded-autonomy needs:
 - workspace/sandbox baseline
 - retrieval memory substrate
 - benchmark/qualification substrate
+
+## Integration with RM-DEV-002
+
+Bounded runs are reviewed using machine-readable QC classifications and write-back
+envelopes from:
+
+- `governance/qc_finding_schema_rm_dev_002.v1.yaml`
+- `governance/rm_dev_002_qc_result_template.v1.json`

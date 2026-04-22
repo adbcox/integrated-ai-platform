@@ -8,6 +8,7 @@ import sys
 import zipfile
 from datetime import datetime, timezone
 from pathlib import Path
+import yaml
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT))
@@ -119,12 +120,28 @@ _GOVERNANCE_SURFACE_DEFS = [
         "surface_type": "narrative_advisory_md",
         "supersedes": [],
     },
+    {
+        "surface_id": "AS-13-LEDT-RATIFICATION",
+        "label": "ledt_governance_ratification",
+        "description": "Governance ratification state for LEDT local-exec-default transition",
+        "primary_file": "governance/ledt_governance_ratification.json",
+        "authority_owner": "governance",
+        "surface_type": "machine_readable_json",
+        "supersedes": [],
+    },
 ]
 
 
 def _read_json_safe(path: Path) -> dict | None:
     try:
         return json.loads(path.read_text(encoding="utf-8"))
+    except Exception:
+        return None
+
+
+def _read_yaml_safe(path: Path) -> dict | None:
+    try:
+        return yaml.safe_load(path.read_text(encoding="utf-8"))
     except Exception:
         return None
 
@@ -233,12 +250,18 @@ def _detect_conflicts(governance_surfaces: list[dict], input_doc_surfaces: list[
     current_phase_data = _read_json_safe(REPO_ROOT / "governance" / "current_phase.json")
     next_class_data = _read_json_safe(REPO_ROOT / "governance" / "next_package_class.json")
     phase_gate_data = _read_json_safe(REPO_ROOT / "governance" / "phase_gate_status.json")
+    cmdb_data = _read_yaml_safe(REPO_ROOT / "governance" / "cmdb_lite_registry.v1.yaml") or {}
+    ledt_ratification = _read_json_safe(REPO_ROOT / "governance" / "ledt_governance_ratification.json")
+    scoped_lock_override = (
+        bool((current_phase_data or {}).get("phase_authority_lock", {}).get("allows_phase0_open_with_late_phase_ratified"))
+        and bool((phase_gate_data or {}).get("phase_authority_lock", {}).get("allows_phase0_open_with_late_phase_ratified"))
+    )
 
     # CONF-01: phase numbering mismatch between current_phase and next_package_class
     if current_phase_data and next_class_data:
         reported_phase = current_phase_data.get("current_phase_id")
         allowed_class = next_class_data.get("current_allowed_class")
-        if reported_phase == 0 and allowed_class == "ratification_only":
+        if reported_phase == 0 and allowed_class == "ratification_only" and not scoped_lock_override:
             conflicts.append({
                 "conflict_id": "CONF-01",
                 "conflict_type": "phase_numbering_mismatch",
@@ -255,7 +278,7 @@ def _detect_conflicts(governance_surfaces: list[dict], input_doc_surfaces: list[
     # CONF-02: gate ordering — Phase 0 open while Phase 7 closed
     if phase_gate_data:
         gates = {g["phase_id"]: g["classification"] for g in phase_gate_data.get("gates", [])}
-        if gates.get(0) == "open" and gates.get(7) == "closed_ratified":
+        if gates.get(0) == "open" and gates.get(7) == "closed_ratified" and not scoped_lock_override:
             conflicts.append({
                 "conflict_id": "CONF-02",
                 "conflict_type": "gate_ordering_inconsistency",
@@ -270,13 +293,26 @@ def _detect_conflicts(governance_surfaces: list[dict], input_doc_surfaces: list[
             })
 
     # CONF-03: legacy promotion_manifest coexistence
-    if (REPO_ROOT / "config" / "promotion_manifest.json").exists():
+    cmdb_manifest_entry = next(
+        (
+            entry for entry in (cmdb_data.get("migration_map") or [])
+            if entry.get("surface") == "config/promotion_manifest.json"
+        ),
+        None,
+    )
+    manifest_coexistence_policy = (
+        (current_phase_data or {}).get("legacy_authority_boundary", {}).get("promotion_manifest", {}).get("policy_state") == "coexistence_ratified"
+        and (phase_gate_data or {}).get("legacy_authority_boundary", {}).get("promotion_manifest", {}).get("policy_state") == "coexistence_ratified"
+        and bool(cmdb_manifest_entry)
+        and cmdb_manifest_entry.get("disposition") == "frozen_pending_migration"
+    )
+    if (REPO_ROOT / "config" / "promotion_manifest.json").exists() and not manifest_coexistence_policy:
         conflicts.append({
             "conflict_id": "CONF-03",
             "conflict_type": "legacy_authority_coexistence",
             "description": (
                 "config/promotion_manifest.json (legacy tactical release authority) still exists on disk. "
-                "Migration is explicitly deferred per phase_gate_status.json followup note."
+                "Missing explicit coexistence/precedence policy across current_phase, phase_gate_status, and cmdb_lite_registry."
             ),
             "surfaces_involved": ["AS-08-PROMOTION-MANIFEST-LEGACY", "AS-02-CURRENT-PHASE"],
             "corroborated_by_input_docs": ["AS-10-HANDOFF-V4", "AS-12-ADOPTION-PACKET"],
@@ -287,7 +323,17 @@ def _detect_conflicts(governance_surfaces: list[dict], input_doc_surfaces: list[
     ledt_closeout = REPO_ROOT / "artifacts" / "expansion" / "LEDT" / "LEDT_closeout.json"
     if ledt_closeout.exists():
         ledt_data = _read_json_safe(ledt_closeout)
-        if ledt_data and ledt_data.get("campaign_verdict") == "ledt_campaign_complete":
+        ledt_ratified = (
+            bool(ledt_ratification)
+            and ledt_ratification.get("campaign_id") == "LEDT"
+            and ledt_ratification.get("campaign_verdict") == "ledt_campaign_complete"
+            and ledt_ratification.get("governance_decision") == "ratified"
+            and ledt_ratification.get("local_exec_default_transition") == "ratified"
+            and ledt_ratification.get("source_artifact") == "artifacts/expansion/LEDT/LEDT_closeout.json"
+            and (current_phase_data or {}).get("ledt_governance_ratification_ref") == "governance/ledt_governance_ratification.json"
+            and (phase_gate_data or {}).get("ledt_governance_ratification_ref") == "governance/ledt_governance_ratification.json"
+        )
+        if ledt_data and ledt_data.get("campaign_verdict") == "ledt_campaign_complete" and not ledt_ratified:
             conflicts.append({
                 "conflict_id": "CONF-04",
                 "conflict_type": "campaign_not_ratified_in_governance",
@@ -297,7 +343,7 @@ def _detect_conflicts(governance_surfaces: list[dict], input_doc_surfaces: list[
                     "As noted in handoff V7: LEDT modules are capability_session class and may be "
                     "ratified without tactical-family unlock."
                 ),
-                "surfaces_involved": [],
+                "surfaces_involved": ["AS-13-LEDT-RATIFICATION", "AS-02-CURRENT-PHASE", "AS-03-PHASE-GATE-STATUS"],
                 "corroborated_by_input_docs": ["AS-11-HANDOFF-V7"],
                 "severity": "medium",
             })
@@ -318,16 +364,25 @@ def _compute_phase0_gate_status() -> dict:
                 break
 
     closure_record_exists = (REPO_ROOT / "governance" / "phase0_closure_decision.json").exists()
+    if gate_class == "closed_ratified":
+        assessment = "CLOSED — Phase 0 gate is closed_ratified in phase_gate_status.json."
+    elif closure_record_exists:
+        assessment = (
+            "OPEN — Phase 0 gate remains open even though a closure record exists on disk; "
+            "this indicates stale gate-state reconciliation."
+        )
+    else:
+        assessment = (
+            "OPEN — Phase 0 has no closure record. "
+            "The governance_source_of_truth_reconciliation phase requires an explicit closure package "
+            "before the authority surface inventory is considered fully ratified."
+        )
 
     return {
         "gate_classification": gate_class,
         "closure_record_on_disk": closure_record_exists,
         "blocking_reason": blocking_reason,
-        "assessment": (
-            "OPEN — Phase 0 has no closure record. "
-            "The governance_source_of_truth_reconciliation phase requires an explicit closure package "
-            "before the authority surface inventory is considered fully ratified."
-        ),
+        "assessment": assessment,
     }
 
 
@@ -408,6 +463,8 @@ def build_inventory() -> dict:
     conflicts = _detect_conflicts(governance_surfaces, input_doc_surfaces)
     phase0_status = _compute_phase0_gate_status()
     authority_order = _recommended_authority_order()
+    high_conflicts = [c for c in conflicts if c.get("severity") == "high"]
+    closure_ready = len(high_conflicts) == 0
 
     return {
         "inventory_id": "P0-01-AUTHORITY-SURFACE-INVENTORY-1",
@@ -423,7 +480,9 @@ def build_inventory() -> dict:
         "governance_surface_count": len(governance_surfaces),
         "input_doc_surface_count": len(input_doc_surfaces),
         "conflict_count": len(conflicts),
-        "high_severity_conflicts": sum(1 for c in conflicts if c.get("severity") == "high"),
+        "high_severity_conflicts": len(high_conflicts),
+        "closure_ready": closure_ready,
+        "closure_status": "closed" if closure_ready else "not_closed",
     }
 
 
@@ -447,8 +506,12 @@ def main() -> None:
     print(f"surfaces_total:        {inventory['surface_count']} ({inventory['governance_surface_count']} governance + {inventory['input_doc_surface_count']} input-doc)")
     print(f"conflicts:             {inventory['conflict_count']} ({inventory['high_severity_conflicts']} high severity)")
     print(f"phase0_gate:           {inventory['phase0_gate_status']['gate_classification']}")
+    print(f"closure_ready:         {inventory['closure_ready']}")
     print(f"input_docs_readable:   3/3")
     print(f"artifact:              {out_path}")
+    if not inventory["closure_ready"]:
+        print("HARD STOP: unresolved high-severity authority conflicts remain", file=sys.stderr)
+        sys.exit(1)
 
 
 if __name__ == "__main__":

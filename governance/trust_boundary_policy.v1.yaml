@@ -1,0 +1,47 @@
+schema_version: "1.0"
+kind: "trust_boundary_policy"
+package_id: "RM-CORE-005"
+status: "operational_baseline"
+identity_model:
+  principals:
+    - "human_operator"
+    - "local_execution_agent"
+    - "adapter_target_aider"
+  ownership:
+    human_operator: "approval authority for escalation and policy exceptions"
+    local_execution_agent: "bounded execution authority within allowed file scope"
+    adapter_target_aider: "transport-only adapter; no policy/state authority"
+secrets_policy:
+  secret_classes:
+    - class: "local_api_keys"
+      storage: "environment_or_local_secret_store"
+      repo_allowed: false
+    - class: "service_tokens"
+      storage: "runtime-injected only"
+      repo_allowed: false
+permissions_model:
+  allowed_surfaces:
+    - "docs/roadmap/**"
+    - "governance/**"
+    - "bin/**"
+    - "framework/**"
+    - "tests/**"
+  denied_surfaces:
+    - "secrets/**"
+    - "config/systemd/**"
+    - ".github/**"
+trust_boundaries:
+  - boundary_id: "execution_to_adapter"
+    source: "local_execution_agent"
+    target: "adapter_target_aider"
+    rule: "adapter may execute bounded coding transport only; cannot own architecture state"
+  - boundary_id: "execution_to_secrets"
+    source: "local_execution_agent"
+    target: "local_api_keys"
+    rule: "read via runtime injection only; no artifact persistence"
+integration_refs:
+  cycle_batch_governance: "governance/roadmap_cycle_batch_governance.v1.yaml"
+  asset_linkage: "governance/asset_execution_linkage.v1.yaml"
+closeout_evidence:
+  execution_pack: "docs/roadmap/RM-CORE-005_EXECUTION_PACK.md"
+  validator: "bin/run_rm_bundle_6_closeout_check.py"

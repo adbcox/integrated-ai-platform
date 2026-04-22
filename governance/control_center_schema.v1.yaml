@@ -1,0 +1,183 @@
+schema_version: "1.0"
+kind: "control_center_schema"
+title: "Master Control Center Baseline"
+description: "Web-first UI structure with panels, modules, and control surfaces"
+
+control_surface_definition:
+  required_fields:
+    - id
+    - name
+    - panels
+  fields:
+    id:
+      type: string
+      description: "Control surface identifier"
+      example: "main-dashboard"
+
+    name:
+      type: string
+      description: "Surface display name"
+      example: "Main Dashboard"
+
+    layout:
+      type: string
+      enum: ["grid", "sidebar", "tabbed", "custom"]
+      description: "Layout type"
+
+    panels:
+      type: array
+      description: "Panels in this surface"
+      items:
+        type: string
+
+    default_view:
+      type: string
+      description: "Default panel when surface loads"
+
+    theme:
+      type: string
+      enum: ["light", "dark", "auto"]
+      description: "Color theme preference"
+
+panel_definition:
+  required_fields:
+    - id
+    - name
+    - type
+  fields:
+    id:
+      type: string
+      description: "Panel identifier"
+      example: "panel-device-status"
+
+    name:
+      type: string
+      description: "Panel display name"
+      example: "Device Status"
+
+    type:
+      type: string
+      enum: ["info", "control", "chart", "list", "form", "custom"]
+      description: "Panel type"
+
+    modules:
+      type: array
+      description: "Modules displayed in panel"
+      items:
+        type: string
+
+    refresh_interval:
+      type: integer
+      description: "Data refresh interval in seconds"
+
+    permissions:
+      type: array
+      description: "Required permissions to view"
+      items:
+        type: string
+
+    responsive:
+      type: boolean
+      description: "Mobile-responsive design"
+
+module_definition:
+  required_fields:
+    - id
+    - name
+    - capability
+  fields:
+    id:
+      type: string
+      description: "Module identifier"
+      example: "mod-device-list"
+
+    name:
+      type: string
+      description: "Module name"
+
+    capability:
+      type: string
+      description: "Capability this module surfaces"
+      example: "device-management"
+
+    description:
+      type: string
+      description: "What this module does"
+
+    data_source:
+      type: string
+      description: "API or data feed this module uses"
+
+    interactive_controls:
+      type: array
+      description: "Controls user can interact with"
+      items:
+        control_name: string
+        action: string
+        requires_confirmation: boolean
+
+    display_options:
+      type: object
+      description: "How data is displayed"
+      fields:
+        columns: array
+        sort_default: string
+        filter_options: array
+
+    edition_availability:
+      type: array
+      description: "Which editions include this module"
+      items:
+        type: string
+
+control_actions:
+  device_control:
+    - "power-on"
+    - "power-off"
+    - "reboot"
+    - "diagnostic-run"
+    - "remote-access"
+
+  configuration:
+    - "settings-editor"
+    - "network-config"
+    - "security-settings"
+    - "backup-restore"
+
+  analytics:
+    - "view-logs"
+    - "performance-metrics"
+    - "usage-history"
+    - "export-report"
+
+web_first_posture:
+  primary_interface: "web application"
+  technology_stack:
+    frontend: "browser-based"
+    protocol: "HTTPS"
+    responsiveness: "mobile-first design"
+
+  navigation:
+    primary: "header navigation"
+    secondary: "sidebar navigation"
+    breadcrumb: "enabled"
+
+  performance:
+    lazy_loading: "enabled"
+    caching_strategy: "intelligent client-side"
+    update_method: "websocket or polling"
+
+  accessibility:
+    wcag_level: "AA"
+    keyboard_navigation: "full"
+    screen_reader: "supported"
+
+integration_point:
+  description: "Control center surfaces system capability from editions and hardware"
+  inbound_feeds:
+    - "edition definitions (which modules available)"
+    - "device capability data"
+    - "analytics/metrics"
+  outbound_feeds:
+    - "user actions to device/system"
+    - "to site generation for documentation"

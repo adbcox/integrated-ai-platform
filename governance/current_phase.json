@@ -14,12 +14,18 @@
     "ort",
     "pgs"
   ],
-  "current_phase_id": 0,
-  "current_phase_name": "governance_source_of_truth_reconciliation",
-  "current_phase_status": "open",
-  "generated_at": "2026-04-18T02:35:18-04:00",
-  "next_allowed_package_class": "capability_session",
-  "notes": "current_phase_id intentionally reflects reconciliation reality rather than the legacy Stage/Manager labels in config/promotion_manifest.json.",
+  "current_phase_id": 2,
+  "current_phase_name": "inner_loop_autonomous_repair_and_shared_runtime_adoption",
+  "current_phase_status": "closed_ratified",
+  "generated_at": "2026-04-22T14:23:51+00:00",
+  "next_allowed_package_class": "autonomous_roadmap_item_creation",
+  "notes": "Phase 0 governance_source_of_truth_reconciliation closed. Phase 1 runtime_contract_foundation now closed_ratified via phase1_closure_decision.json (PHASE-1-CLOSE-1). Phase 2 active per phase2_closure_evidence.",
+  "phase1_closed_at_commit": "working-tree",
+  "phase1_closure_adr_ref": "governance/authority_adr_0018_phase1_local_runtime_closure.md",
+  "phase1_closure_decision_ref": "governance/phase1_closure_decision.json",
+  "phase1_closure_evidence_ref": "governance/phase1_local_runtime_closure_evidence.json",
+  "phase1_closure_package_id": "PHASE-1-CLOSE-1",
+  "phase1_status": "closed_ratified",
   "phase2_closed_at_commit": "0981c22b17a87d3e6548c0b337a40305c068c3d3",
   "phase2_closure_adr_ref": "governance/authority_adr_0008_phase2_closure.md",
   "phase2_closure_evidence_ref": "governance/phase2_closure_evidence.json",
@@ -59,5 +65,28 @@
     "docs/version15-master-roadmap.md (historical/legacy narrative only)",
     "docs/system_milestone_roadmap.md (out-of-scope for runtime authority)",
     "config/promotion_manifest.json (legacy tactical release authority; frozen pending explicit migration)"
-  ]
+  ],
+  "legacy_authority_boundary": {
+    "promotion_manifest": {
+      "policy_state": "coexistence_ratified",
+      "ownership": "legacy_tactical_release_only",
+      "precedence": "governance_machine_authority_surfaces_take_precedence",
+      "migration_disposition": "frozen_pending_migration",
+      "migration_requires": "explicit_authority_package"
+    }
+  },
+  "ledt_governance_ratification_ref": "governance/ledt_governance_ratification.json",
+  "phase_authority_lock": {
+    "lock_id": "PHASE-AUTHORITY-LOCK-BUNDLE-1",
+    "scope": "phase-authority lock scoped reconciliation",
+    "status": "scoped_lock_closed",
+    "allows_phase0_open_with_late_phase_ratified": false,
+    "rationale": "Scoped authority lock remains closed and Phase 0 global closure is now ratified via phase0 global gate closure artifact.",
+    "evidence_ref": "artifacts/governance/phase_authority_lock_closure.json",
+    "phase0_global_status": "closed_ratified"
+  },
+  "phase0_closed_at_commit": "working-tree",
+  "phase0_closure_evidence_ref": "artifacts/governance/phase0_global_gate_closure.json",
+  "phase0_closure_package_id": "PHASE0-GLOBAL-GATE-CLOSURE-1",
+  "phase0_status": "closed_ratified"
 }

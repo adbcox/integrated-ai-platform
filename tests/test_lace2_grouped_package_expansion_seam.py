@@ -1,3 +1,4 @@
+# version: 2026-04-22
 """Seam tests for LACE2-P13-GROUPED-MINI-TRANCHE-SELECTOR-SEAM-1."""
 from __future__ import annotations
 

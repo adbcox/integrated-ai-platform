@@ -1,0 +1,198 @@
+schema_version: "1.0"
+kind: "product_search_schema"
+title: "Product Search and Procurement Baseline"
+description: "Canonical product search structure, pricing, and inventory-aware procurement"
+
+product_record:
+  required_fields:
+    - id
+    - name
+    - description
+    - category
+  fields:
+    id:
+      type: string
+      description: "Unique product identifier"
+      example: "prod-esp32-dev-kit-v1"
+
+    name:
+      type: string
+      description: "Product name"
+      example: "ESP32 Developer Kit"
+
+    description:
+      type: string
+      description: "Product description for search"
+
+    category:
+      type: string
+      enum: ["embedded", "networking", "sensor", "power", "storage", "development"]
+      description: "Product category for search filtering"
+
+    specifications:
+      type: object
+      description: "Product technical specifications"
+      fields:
+        cpu: string
+        memory: string
+        interfaces: array
+        power_supply: string
+
+    search_tags:
+      type: array
+      description: "Search keywords for discovery"
+      items:
+        type: string
+      example: ["ESP32", "wireless", "IoT", "embedded"]
+
+pricing_record:
+  required_fields:
+    - product_id
+    - currency
+    - unit_price
+    - recorded_at
+  fields:
+    product_id:
+      type: string
+      description: "Reference to product_record.id"
+
+    currency:
+      type: string
+      description: "Currency code (USD, EUR, GBP, etc.)"
+
+    unit_price:
+      type: number
+      description: "Price per unit"
+      example: 39.99
+
+    bulk_pricing:
+      type: array
+      description: "Volume discount tiers"
+      items:
+        quantity: integer
+        unit_price: number
+      example:
+        - quantity: 10
+          unit_price: 35.99
+        - quantity: 100
+          unit_price: 29.99
+
+    vendor:
+      type: string
+      description: "Vendor/supplier name"
+
+    recorded_at:
+      type: string
+      format: "ISO8601"
+      description: "Timestamp when price was recorded"
+
+pricing_history:
+  required_fields:
+    - product_id
+  fields:
+    product_id:
+      type: string
+      description: "Reference to product_record.id"
+
+    history:
+      type: array
+      description: "Chronological pricing history"
+      items:
+        recorded_at: string
+        unit_price: number
+        vendor: string
+        currency: string
+
+inventory_record:
+  required_fields:
+    - product_id
+    - location
+    - quantity
+  fields:
+    product_id:
+      type: string
+      description: "Reference to product_record.id"
+
+    location:
+      type: string
+      description: "Warehouse/storage location"
+      example: "warehouse-a-shelf-b3"
+
+    quantity:
+      type: integer
+      description: "Units in stock"
+
+    reorder_level:
+      type: integer
+      description: "Minimum quantity before reorder"
+
+    lead_time_days:
+      type: integer
+      description: "Days to receive from supplier"
+
+    last_updated:
+      type: string
+      format: "ISO8601"
+      description: "Last inventory update timestamp"
+
+procurement_decision:
+  required_fields:
+    - product_id
+    - quantity
+    - decision_date
+  fields:
+    product_id:
+      type: string
+      description: "Product being procured"
+
+    quantity:
+      type: integer
+      description: "Units to procure"
+
+    current_inventory:
+      type: integer
+      description: "Current on-hand quantity"
+
+    projected_consumption:
+      type: integer
+      description: "Expected usage before reorder"
+
+    decision_date:
+      type: string
+      format: "ISO8601"
+      description: "When procurement decision was made"
+
+    reasoning:
+      type: string
+      description: "Decision rationale (inventory-aware)"
+      example: "Current stock + projected usage requires reorder in 2 weeks"
+
+    recommended_quantity:
+      type: integer
+      description: "AI-recommended procurement quantity based on consumption pattern"
+
+    total_estimated_cost:
+      type: number
+      description: "Estimated cost including bulk discounts"
+
+search_index:
+  capability: "fast product discovery"
+  indexes:
+    - "product_id"
+    - "name"
+    - "category"
+    - "search_tags"
+  supports:
+    - "text search across name and description"
+    - "category filtering"
+    - "tag-based discovery"
+    - "vendor filtering"
+
+integration_point:
+  description: "Procurement decisions inform edition packaging and UI control surfaces"
+  inbound_feeds:
+    - "control_center inventory status"
+    - "deployment requirements"
+  outbound_feeds:
+    - "to edition-builder for BOM"
+    - "to acquisition workflow"
