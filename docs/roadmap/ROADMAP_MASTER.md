@@ -55,6 +55,20 @@ The roadmap should therefore continue to prioritize:
 5. governance, evidence, and anti-drift hardening
 6. controlled expansion into broader domain branches
 
+## Immediate priority promotion
+
+The critical next implementation target is now:
+
+- `RM-UI-005` — Local execution control dashboard for AI run control, context management, validation status, and truthful completion gating
+
+This item is promoted because it directly improves the operator and local-system ability to:
+
+- see real blocker state
+- avoid context-window overflow failures
+- distinguish patch success from bounded-slice completion
+- see validation/artifact gaps before falsely treating work as done
+- drive the local coding assistant at higher speed with less terminal-only ambiguity
+
 ## Completed / archived correction note
 
 Several items previously shown as active in summary surfaces are now treated as closed in the visible roadmap system and must not be read as active from this file.
@@ -65,6 +79,7 @@ Use `ROADMAP_STATUS_SYNC.md` for status truth.
 
 The highest-value **active** roadmap cluster for the home developer assistant is now:
 
+- `RM-UI-005` — Local execution control dashboard for AI run control, context management, validation status, and truthful completion gating
 - `RM-AUTO-001` — Plain-English goal-to-agent system
 - `RM-GOV-001` — Integrated roadmap-to-development tracking system with CMDB linkage, standardized metrics, enforced naming, and impact transparency
 - `RM-OPS-005` — End-to-end telemetry, tracing, and audit evidence pipeline
@@ -135,6 +150,7 @@ These items are no longer to be treated as active from this summary surface:
 - `RM-UI-002`
 - `RM-UI-003`
 - `RM-UI-004`
+- `RM-UI-005`
 
 ### Inventory / procurement / asset understanding
 - `RM-INV-001`
