@@ -1,1 +1,1 @@
-tests/test_live_aider_proof_v1.py
+framework/live_aider_proof_v1.py
