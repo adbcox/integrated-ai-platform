@@ -21,9 +21,23 @@
 
 Build a single external-application connectivity and integration control plane that standardizes how the platform connects to outside applications, APIs, SaaS tools, local services, and adopted OSS systems. This layer should centralize adapter boundaries, auth handling, sync posture, webhook/event intake, rate-limit handling, capability registration, and policy/governance rules so the rest of the platform does not wire external systems ad hoc.
 
+This item now explicitly includes first-class connector posture for:
+
+- GitHub
+- Google Calendar
+- Gmail
+
+These are not side notes. They are priority examples of why the control plane exists: the same connector surfaces should be consumable by the coding assistant, athlete/coach functions, personal-assistant functions, dashboard/control surfaces, and future agentic workflows without each branch inventing its own auth and sync model.
+
 ## Why it matters
 
-The platform already depends on or plans to depend on a growing set of external systems such as Home Assistant, Plex, Sonarr, Radarr, Plane, Strava, ChatGPT/OpenAI surfaces, and future adopted tools. Without one governing connectivity layer, integrations will drift into one-off adapters, duplicate auth handling, inconsistent polling/sync behavior, and weak operational visibility. A control plane for external connections reduces that drift and makes future autonomous work safer.
+The platform already depends on or plans to depend on a growing set of external systems such as Home Assistant, Plex, Sonarr, Radarr, Plane, Strava, ChatGPT/OpenAI surfaces, GitHub, Google Calendar, Gmail, and future adopted tools. Without one governing connectivity layer, integrations will drift into one-off adapters, duplicate auth handling, inconsistent polling/sync behavior, and weak operational visibility. A control plane for external connections reduces that drift and makes future autonomous work safer.
+
+GitHub, Google Calendar, and Gmail deserve explicit emphasis because they unlock immediate high-value workflows:
+
+- GitHub for governed repo interaction, backup, updates, branch awareness, and code-state integration
+- Google Calendar for schedule, travel, event, and time-awareness across assistant functions
+- Gmail for inbox/context awareness, communication surfaces, and future assistant workflows
 
 ## Key requirements
 
@@ -35,6 +49,27 @@ The platform already depends on or plans to depend on a growing set of external 
 - keep external systems subordinate to the platform architecture rather than allowing them to become hidden backbones
 - remain compatible with MCP where MCP is the preferred boundary
 
+### Explicit connector priorities now in scope
+
+#### GitHub
+- repo state visibility
+- branch/commit/PR awareness where appropriate
+- governed repo update workflows
+- backup and restore-aware repo posture
+- ability for coding/execution surfaces to use GitHub as a governed external system instead of ad hoc shell behavior alone
+
+#### Google Calendar
+- event and travel awareness
+- schedule-aware planning and assistant workflows
+- ability for coach/athlete and personal-assistant systems to consume calendar state through the same connector layer
+- permissioned availability/intention surfaces rather than broad uncontrolled access
+
+#### Gmail
+- inbox/message metadata awareness
+- governed read/send/use posture where later justified
+- ability for multiple assistant branches to consume Gmail-derived context through the same connector layer
+- permission and privacy boundaries explicit from the start
+
 ## Affected systems
 
 - roadmap governance layer
@@ -42,6 +77,8 @@ The platform already depends on or plans to depend on a growing set of external 
 - future runtime tool/adapter boundaries
 - future sync/webhook/event normalization surfaces
 - future dashboard and control-center surfaces that consume external integrations
+- coding assistant / repo operations workflows
+- future athlete/coach and personal-assistant branches
 
 ## Expected file families
 
@@ -50,6 +87,7 @@ The platform already depends on or plans to depend on a growing set of external 
 - future adapter registry/config files
 - future auth/connector policy files
 - future sync/event handling surfaces
+- future GitHub / Google connector binding/config docs
 
 ## Dependencies
 
@@ -64,11 +102,13 @@ The platform already depends on or plans to depend on a growing set of external 
 
 - could become overengineered if built before enough common connector patterns are identified
 - could accidentally become a second backbone if it tries to own platform logic instead of external connectivity concerns
+- privacy/auth posture could drift if Gmail/Calendar are consumed directly by multiple branches without one governing control plane
 
 ### Known issues / blockers
 
 - exact first adapter boundary and connector registry model still need to be defined
 - auth posture must remain consistent with local-first and governance rules
+- GitHub / Google connectors should be implemented through the control plane, not as branch-specific one-offs
 
 ## CMDB / asset linkage
 
@@ -81,16 +121,25 @@ The platform already depends on or plans to depend on a growing set of external 
 - `RM-GOV-006`
 - `RM-GOV-007`
 - `RM-GOV-001`
+- `RM-UI-005`
 
 ## Grouped execution notes
 
-- Shared-touch rationale: this item overlaps heavily with the external systems registry, operational roadmap layer, governance metadata, and future runtime adapter design.
+- Shared-touch rationale: this item overlaps heavily with the external systems registry, operational roadmap layer, governance metadata, execution-control surfaces, and future runtime adapter design.
 - Repeated-touch reduction estimate: high if built together with adjacent governance/integration work.
 - Grouping recommendation: `Bundle now`
 
 ## Recommended first milestone
 
 Define the external connector model for one or two representative systems, including capability registration, auth handling posture, sync/event intake mode, and normalized status/health reporting, then document the control-plane rules those connectors must follow.
+
+The highest-value first concrete connector set should now strongly consider:
+
+- GitHub
+- Google Calendar
+- Gmail
+
+because those connectors will be reusable across the largest number of future assistant and execution workflows.
 
 ## Status transition notes
 
