@@ -1,180 +1,142 @@
 # Integrated AI Platform — Roadmap Master
 
-This is the **single master roadmap document** for the repository.
+This file is the **human-readable roadmap summary and strategic interpretation view** for the repository.
+
+It is **not** the canonical status source.
 
 ## Authority rule
 
-Use this file as the first-read roadmap document.
+Read roadmap files in this order:
 
-- **Canonical roadmap root:** `docs/roadmap/`
-- **Single master roadmap document:** `docs/roadmap/ROADMAP_MASTER.md`
-- **Normalized backlog index:** `docs/roadmap/ROADMAP_INDEX.md`
-- **Roadmap standards:** `docs/roadmap/STANDARDS.md`
+1. `docs/roadmap/ROADMAP_AUTHORITY.md`
+2. `docs/roadmap/ROADMAP_STATUS_SYNC.md`
+3. `docs/roadmap/ROADMAP_MASTER.md`
+4. `docs/roadmap/ROADMAP_INDEX.md`
+5. `docs/roadmap/STANDARDS.md`
+6. `docs/roadmap/EXECUTION_PACK_INDEX.md`
 
-If roadmap information appears in more than one place:
+## What this file does
 
-1. `docs/roadmap/ROADMAP_MASTER.md` controls overall interpretation and priorities.
-2. `docs/roadmap/ROADMAP_INDEX.md` controls normalized item IDs and backlog membership.
-3. `docs/roadmap/STANDARDS.md` controls naming, categories, and metrics.
-4. Legacy material under `roadmap/` is historical context only unless explicitly migrated.
+This file explains:
+- strategic priorities
+- active initiative grouping
+- interpretation of the backlog
+- what should be emphasized next
+
+This file does **not** control item completion/archive truth.
 
 ## Primary objective
 
-The most important roadmap objective is to strengthen the **local development assistant** so the system becomes a highly reliable home developer assistant with minimal dependence on Claude Code or Codex for routine coding work.
+The most important program objective remains to strengthen the **local development assistant** so the system becomes a highly reliable home developer assistant with minimal dependence on Claude Code or Codex for routine coding work.
 
-## Program-critical pull-first item
+## Completed / archived correction note
 
-### RM-DEV-005 — Local autonomy uplift, OSS intake, and Aider reliability hardening
+Several items previously shown as active in summary surfaces are now treated as closed in the visible roadmap system and must not be read as active from this file.
 
-**Status:** Proposed  
-**Priority:** Highest / Program-critical / Pull-first  
-**Why it is first:** This is the main force-multiplier item for the whole system. It improves Ollama-first execution quality, Aider reliability, OSS adoption discipline, local artifact quality, and long-term independence from paid external coding agents.
+Use `ROADMAP_STATUS_SYNC.md` for status truth.
 
-### Pull-first rule
+## Current active strategic cluster
 
-Unless blocked by lower-phase prerequisites, pull work in this order:
+The highest-value **active** roadmap cluster for the home developer assistant is now:
 
-1. `RM-DEV-005` — local autonomy uplift, OSS intake, and Aider reliability hardening
-2. tightly related lower-phase infrastructure that directly unlocks `RM-DEV-005`
-3. other developer-assistant and autonomy items
-4. only then, domain-expansion items
-
-### Local development assistant focus set
-
-The highest-value roadmap cluster for the home developer assistant is:
-
-- `RM-DEV-005` — Local autonomy uplift, OSS intake, and Aider reliability hardening
-- `RM-INTEL-002` — Verified OSS capability harvest and compatibility validation for the local development assistant
-- `RM-DEV-003` — Bounded autonomous code generation
 - `RM-DEV-002` — Dual-model inline QC coding loop for the developer assistant
-- `RM-INTEL-001` — Open-source watchtower with update alerts and adoption recommendations
 - `RM-DEV-004` — Embedded firmware assistant for Nordic and ESP platforms
-- `RM-DEV-001` — Add Xcode and Apple-platform coding capability to the developer assistant
+- `RM-DEV-007` — Indexed code search and multi-repo retrieval backend
+- `RM-CORE-005` — Identity, secrets, permissions, and trust-boundary management
+- `RM-GOV-005` — Cycle, release, and batch-governance model for roadmap execution
+- `RM-INV-005` — Asset-to-roadmap and asset-to-execution linkage layer
 
-These items should be treated as the most strategically important cluster in the roadmap.
+## Closed items removed from active interpretation
 
-## Immediate discovery priority inside the local-development-assistant program
+These items are no longer to be treated as active from this summary surface:
 
-### RM-INTEL-002 — Verified OSS capability harvest and compatibility validation for the local development assistant
+### Archived / completed
+- `RM-AUTO-002`
+- `RM-CORE-004`
+- `RM-DEV-003`
+- `RM-DEV-006`
+- `RM-GOV-004`
+- `RM-INTEL-001`
+- `RM-INTEL-002`
+- `RM-INV-004`
 
-**Status:** Proposed  
-**Priority:** Critical  
-**Why it is immediate:** This item exists to aggressively identify open-source codebases, helper repos, protocols, structural-search tools, memory layers, benchmarks, and sandboxing/code-intelligence components that can materially improve the local agent without rebuilding those capabilities from scratch.
-
-### Discovery rule
-
-Within the local-development-assistant program, `RM-INTEL-002` is the top-priority discovery and validation stream. It should:
-
-1. aggressively search for viable OSS components,
-2. verify them against the current architecture and already-adopted shortlist,
-3. classify them as adopt-now / evaluate / watch / reject,
-4. and feed the results back into `RM-DEV-005`, `RM-DEV-003`, and `RM-INTEL-001`.
-
-## Canonical backlog inventory
-
-The current normalized backlog is maintained in `docs/roadmap/ROADMAP_INDEX.md`.
-That file is the canonical inventory of roadmap IDs currently captured in the repo.
+### Completed / closed
+- `RM-CORE-003`
+- `RM-DEV-005`
+- `RM-DEV-008`
+- `RM-DEV-009`
 
 ## Active roadmap families
 
-### A. Governance / roadmap integrity
+### Governance / roadmap integrity
 - `RM-GOV-001`
 - `RM-GOV-002`
 - `RM-GOV-003`
+- `RM-GOV-005`
 
-### B. Developer assistant / local autonomy / execution
+### Developer assistant / local autonomy / execution
 - `RM-DEV-001`
 - `RM-DEV-002`
-- `RM-DEV-003`
 - `RM-DEV-004`
-- `RM-DEV-005`
+- `RM-DEV-007`
 - `RM-AUTO-001`
-- `RM-INTEL-001`
-- `RM-INTEL-002`
 
-### C. Core system / packaging / platform control
+### Core system / packaging / platform control
 - `RM-CORE-001`
 - `RM-CORE-002`
+- `RM-CORE-005`
 - `RM-OPS-001`
 - `RM-OPS-002`
 - `RM-OPS-003`
+- `RM-OPS-004`
+- `RM-OPS-005`
 - `RM-UI-001`
 - `RM-UI-002`
 - `RM-UI-003`
 - `RM-UI-004`
 
-### D. Inventory / procurement / asset understanding
+### Inventory / procurement / asset understanding
 - `RM-INV-001`
 - `RM-INV-002`
 - `RM-INV-003`
+- `RM-INV-005`
 
-### E. Domain expansion packages
+### Domain expansion packages
 - `RM-DOCAPP-001`
 - `RM-DOCAPP-002`
 - `RM-HW-001`
 - `RM-HW-002`
 - `RM-LANG-001`
 - `RM-HOME-001`
+- `RM-HOME-002`
+- `RM-HOME-003`
+- `RM-HOME-004`
 - `RM-MEDIA-001`
 - `RM-MEDIA-002`
 - `RM-MEDIA-003`
 - `RM-MEDIA-004`
+- `RM-MEDIA-005`
 - `RM-SHOP-001`
 - `RM-SHOP-002`
 - `RM-SHOP-003`
 - `RM-SHOP-004`
+- `RM-SHOP-005`
 - `RM-AUTO-MECH-001`
 
 ## Durable storage rule
 
 To prevent roadmap drift or split authority:
 
-- Add all new roadmap items in `docs/roadmap/ROADMAP_INDEX.md`.
-- Update priority interpretation in `docs/roadmap/ROADMAP_MASTER.md` when strategic ranking changes.
-- Store detailed normalization or chat-derived additions in a dated sync file under `docs/roadmap/`.
-- Do not add new canonical roadmap items under the top-level `roadmap/` tree.
-- If an item matters operationally, ensure it exists in the normalized index and not only in chat.
-
-## Mandatory intake synchronization rule
-
-Every future roadmap intake must update the canonical roadmap docs in the same intake cycle.
-
-### Required file updates
-
-- **Always update:** `docs/roadmap/ROADMAP_INDEX.md`
-- **Also update when strategic priority, pull order, or ranking changes:** `docs/roadmap/ROADMAP_MASTER.md`
-
-### Required execution-readiness updates
-
-Before a newly added roadmap item is considered fully added to the roadmap system, it must also reach one of the following states in the same roadmap-processing cycle or the immediately following dedicated enrichment cycle:
-
-- a dedicated execution pack under `docs/roadmap/`, or
-- equivalent canonical enrichment in the implementation guide plus a clearly documented path to its later execution pack
-
-### Intake completion rule
-
-A roadmap intake is **not complete** unless:
-
-1. the item exists in `ROADMAP_INDEX.md`,
-2. `ROADMAP_MASTER.md` has been updated whenever the intake changes priority interpretation, pull-first ordering, or the most important roadmap cluster, and
-3. the item has either execution-pack coverage or explicit canonical enrichment coverage with a clear follow-on execution-pack path.
-
-### Priority interpretation rule
-
-If a new item becomes more important than existing work, changes the local development assistant focus set, or alters what should be pulled next, that change must be reflected in `ROADMAP_MASTER.md` immediately rather than deferred.
-
-## Legacy rule
-
-The top-level `roadmap/` tree is legacy historical material.
-It may contain useful execution history, but it is not the canonical normalized roadmap database.
+- Do not use this file as direct status truth.
+- Update `ROADMAP_STATUS_SYNC.md` when item status changes on this branch.
+- Keep this file aligned with the active/closed interpretation from the status sync.
+- Use execution packs for detailed execution context, not for completion truth.
 
 ## Reader rule
 
-When in doubt, read files in this order:
+When in doubt:
 
-1. `docs/roadmap/ROADMAP_MASTER.md`
-2. `docs/roadmap/ROADMAP_INDEX.md`
-3. `docs/roadmap/STANDARDS.md`
-4. `docs/roadmap/EXECUTION_PACK_INDEX.md`
-5. any dated sync or execution-context files in `docs/roadmap/`
-6. legacy files under `roadmap/` only for historical context
+1. use `ROADMAP_STATUS_SYNC.md` for status truth
+2. use this file for strategic interpretation
+3. use `ROADMAP_INDEX.md` for backlog inventory
+4. use execution packs for implementation depth
