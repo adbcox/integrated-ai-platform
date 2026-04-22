@@ -11,6 +11,7 @@ The roadmap is the authoritative planning and governance layer for the platform.
 - make impact scope explicit before execution
 - support grouping of related items into shared execution packages
 - improve linkage between roadmap, development, and CMDB-style system inventory
+- support governed autonomous task selection and loop-style execution without scope invention
 
 ## Operating model
 
@@ -39,6 +40,9 @@ This `docs/roadmap/` directory supersedes the older top-level `roadmap/` documen
 6. `docs/roadmap/STANDARDS.md`
 7. `docs/roadmap/ARCHITECTURE_ALIGNMENT.md`
 8. `docs/roadmap/EXTERNAL_APPLICATIONS_AND_INTEGRATIONS.md`
+9. `docs/roadmap/AUTONOMOUS_EXECUTION_OPERATING_MODE.md`
+10. `docs/roadmap/TARGET_SELECTION_POLICY.md`
+11. `docs/roadmap/AUTONOMOUS_READY_QUEUE.md`
 
 ## Directory contents
 
@@ -46,6 +50,7 @@ This `docs/roadmap/` directory supersedes the older top-level `roadmap/` documen
 
 - `ROADMAP_MASTER.md` — single first-read master roadmap document and priority authority
 - `ROADMAP_INDEX.md` — master normalized roadmap index
+- `PROGRAM_DASHBOARD_SUMMARY.md` — executive-level program summary
 - `HIGH_PRIORITY_IMPLEMENTATION_GUIDE.md` — implementation-oriented enrichment guide for critical and high-value roadmap items
 - `EXECUTION_PACK_INDEX.md` — canonical index of dedicated execution packs
 - `STANDARDS.md` — IDs, categories, statuses, metrics, naming, readiness, and impact rules
@@ -54,6 +59,13 @@ This `docs/roadmap/` directory supersedes the older top-level `roadmap/` documen
 - `CMDB_LINKAGE.md` — mapping expectations between roadmap items and systems/assets
 - `EXTERNAL_APPLICATIONS_AND_INTEGRATIONS.md` — canonical external systems catalog
 - `EXTERNAL_SYSTEM_TO_ROADMAP_CROSSWALK.md` — dependency crosswalk from external systems to roadmap work
+
+### Autonomous execution / loop governance
+
+- `AUTONOMOUS_EXECUTION_OPERATING_MODE.md` — governed loop model for autonomous pull/execute/validate/repeat behavior
+- `TARGET_SELECTION_POLICY.md` — how the AI should rank and select the next task
+- `AUTONOMOUS_READY_QUEUE.md` — narrowed queue posture for autonomous pull behavior
+- `ACTIVE_ITEM_NORMALIZATION_AUDIT.md` — final normalization state of active items and blocked placeholders
 
 ### PM / governance operating docs
 
@@ -87,7 +99,8 @@ This `docs/roadmap/` directory supersedes the older top-level `roadmap/` documen
 4. Use `ROADMAP_INDEX.md` for backlog inventory.
 5. Use `STANDARDS.md` and the PM operating docs for intake, readiness, dependency, lifecycle, maturity, and review discipline.
 6. Use grouped-execution, CMDB linkage, and external-system docs as needed.
-7. Open GitHub issues or execution docs only after the roadmap item is clear enough to drive work.
+7. Use the autonomous-execution docs only after the backlog item is normalized and eligible.
+8. Open GitHub issues or execution docs only after the roadmap item is clear enough to drive work.
 
 ## Rule
 
