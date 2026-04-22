@@ -19,17 +19,17 @@ The item is present in summary/inventory surfaces but does not yet have a newer 
 
 ### Governance items
 
-- `RM-GOV-006` — partially normalized
-- `RM-GOV-007` — partially normalized
-- `RM-GOV-008` — partially normalized
+- `RM-GOV-006` — fully normalized
+- `RM-GOV-007` — fully normalized
+- `RM-GOV-008` — fully normalized
 
-### High-value active cluster items needing focused normalization next
+### Active strategic cluster
 
-- `RM-AUTO-001` — inventory/summary normalization should be reviewed
-- `RM-GOV-001` — verify newer schema fields and governance alignment detail
-- `RM-OPS-004` — verify readiness, dependencies, and closeout/validation expectations
-- `RM-OPS-005` — verify readiness, dependencies, and evidence expectations
-- `RM-INV-002` — verify maturity, queueing, risk, and grouped-execution detail
+- `RM-AUTO-001` — fully normalized
+- `RM-GOV-001` — fully normalized
+- `RM-OPS-004` — fully normalized
+- `RM-OPS-005` — fully normalized
+- `RM-INV-002` — fully normalized
 
 ### Broad active backlog
 
@@ -37,14 +37,16 @@ Many active items are currently represented correctly at the summary/index level
 
 ## Recommended next-wave normalization order
 
-1. `RM-GOV-006`
-2. `RM-GOV-007`
-3. `RM-GOV-008`
-4. `RM-AUTO-001`
-5. `RM-GOV-001`
-6. `RM-OPS-004`
-7. `RM-OPS-005`
-8. `RM-INV-002`
+1. `RM-INV-001`
+2. `RM-INV-003`
+3. `RM-CORE-001`
+4. `RM-CORE-002`
+5. `RM-UI-001`
+6. `RM-UI-002`
+7. `RM-HOME-001`
+8. `RM-MEDIA-001`
+9. `RM-MEDIA-002`
+10. `RM-HW-001`
 
 ## Rule
 
