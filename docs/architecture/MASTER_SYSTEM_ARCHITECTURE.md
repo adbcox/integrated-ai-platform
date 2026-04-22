@@ -545,7 +545,7 @@ The architecture follows an adopt/build/hybrid discipline.
 Build locally in-repo when the capability is differentiating system logic, especially for:
 
 - inference gateway
-n- permission system
+- permission system
 - artifact contract
 - validation and promotion packet generation
 - autonomy scorecard and reporting
