@@ -60,6 +60,7 @@ This item should be treated as the next implementation target because it directl
 - local-system ability to auto-detect what kind of coding task is being requested
 - optional immediate usability uplift through OpenHands CLI / Web GUI / GUI server paths
 - future macOS companion / overlay interaction for contextual operator help
+- explicit local model runtime selection and framework-to-Aider handoff discipline
 
 It also leverages work that is already present:
 
@@ -88,6 +89,8 @@ The following concepts are now merged into RM-UI-005:
 - lane-specific allowed-file / forbidden-file behavior
 - orchestration packets that convert high-level intent into bounded Aider runs
 - a future macOS companion/overlay mode for contextual operator assistance
+- explicit local model tier runbook and startup policy
+- framework-first complex-task handling with Aider as bounded tactical executor
 
 ## OpenHands merge rule
 
@@ -156,6 +159,111 @@ Do not let OpenHands create a parallel roadmap or parallel completion standard.
 - support task-specific context minimization so Aider does not over-consume context on bounded tasks
 - support task-specific repo-map / file-load behavior where feasible
 - support lane-specific model/profile selection if the local system uses more than one model class
+
+### Local model runtime policy now in scope
+- explicitly support local model tier selection and display it in the control surface
+- treat local development as local-first by default
+- define and expose three local execution tiers:
+  - `Tier S` — small/tactical tier
+  - `Tier M` — mid/default execution tier
+  - `Tier H` — heavy/framework-planning tier
+- support a framework-first rule for complex tasks where the heavy local tier lays out bounded execution packets before Aider tactical execution
+- record and surface canonical startup/runbook fields for each approved local model tier:
+  - model name
+  - intended role
+  - allowed task classes
+  - startup command
+  - health-check command
+  - default binding into framework/Aider path
+  - escalation threshold
+- do not escalate to Claude Code or Codex by default for complex tasks if the local heavy tier can still produce a valid bounded execution packet
+
+### Explicit model-tier runbook requirements
+The item must define and surface a canonical local runbook for model startup and readiness.
+
+#### Tier S — small/tactical tier
+Use for:
+- one-file edits
+- literal replacements
+- small patch corrections
+- narrow validation-driven repair
+
+Not for:
+- planning-heavy tasks
+- broad refactors
+- architecture decisions
+
+#### Tier M — mid/default execution tier
+Use for:
+- bounded bugfixes
+- small multi-file work
+- normal Aider execution
+- packet-driven implementation
+- structured refactors under explicit scope
+
+This should be the default local execution tier.
+
+#### Tier H — heavy/framework-planning tier
+Use for:
+- framework/task decomposition
+- control-window truth checks
+- planning-heavy local work
+- difficult debugging
+- creation of bounded execution packets for Aider
+- larger task layout before tactical execution
+
+This tier should create the structure for complex tasks, then hand execution to Aider where possible.
+
+#### Canonical runbook fields to record per tier
+For each approved local tier, the runbook must record:
+- canonical model name
+- intended role
+- allowed task classes
+- minimum validation expectations
+- startup command
+- health-check command
+- default binding into framework-first vs Aider execution flow
+- escalation threshold
+- default context-length policy where relevant
+
+#### Canonical startup and readiness policy
+The roadmap item must require the local control system to record and surface:
+- canonical Ollama host/port
+- canonical model names per tier
+- startup command for Ollama
+- startup/verification commands for each approved model
+- Aider invocation pattern per tier
+- readiness verification commands before execution begins
+
+### Framework-first rule for complex tasks
+For complex tasks, the heavy local tier must first produce:
+- objective
+- bounded scope
+- allowed files
+- forbidden files
+- likely affected systems
+- validation order
+- completion conditions
+- blocker conditions
+
+After that, Aider executes the bounded packet.
+
+### Aider execution rule
+Aider is the tactical execution engine, not the planner of record.
+
+Aider should receive:
+- a bounded task packet
+- minimal necessary context
+- explicit validations
+- explicit stop conditions
+
+### External escalation rule
+Claude Code / Codex may be used only if:
+- the heavy local tier cannot form a valid bounded execution packet, or
+- repeated local execution attempts fail on the same blocker, or
+- the task exceeds current local runtime capability in a proven way
+
+Do not escalate because a task merely looks hard.
 
 ### OpenHands integration requirements
 - support a local OpenHands deployment path that can be executed soon
@@ -371,6 +479,17 @@ Required system behavior:
 - preserve blocker/completion/validation truth
 - avoid creating a second unsupervised assistant surface
 
+### Example 7 — framework-first complex-task handling
+Current desired target mode:
+- the operator wants one initial local prompt to produce the task layout/framework and the minimum bounded structure needed for completion
+- Aider should then execute the bounded packet rather than requiring immediate external escalation
+
+Required system behavior:
+- heavy local tier produces the bounded framework packet first
+- Aider executes the packet second
+- validation/control-window truth checks closure third
+- external escalation occurs only after the local path proves insufficient
+
 ## Affected systems
 
 - UI/control surfaces
@@ -383,6 +502,7 @@ Required system behavior:
 - Aider orchestration and task-lane selection layer
 - OpenHands local execution interface layer
 - future macOS companion/overlay interface layer
+- local model runtime/runbook surfaces
 
 ## Expected file families
 
@@ -396,6 +516,7 @@ Required system behavior:
 - future widget/panel/state model docs and tests
 - future local deployment/config files for OpenHands integration
 - future companion/overlay interaction files
+- future local model/runbook configs and health-check surfaces
 
 ## Dependencies
 
@@ -417,6 +538,7 @@ Required system behavior:
 - weak routing causing the wrong lane to be chosen repeatedly
 - letting OpenHands become a parallel execution authority instead of a governed execution surface
 - letting companion/overlay behavior bypass the same governance model as the main dashboard
+- letting local model selection become ad hoc rather than runbook-driven
 
 ### Known issues / blockers
 - exact first slice must remain bounded so this can land in one aggressive pass
@@ -424,6 +546,7 @@ Required system behavior:
 - must respect the existing roadmap/autonomy truth surfaces rather than inventing a parallel queue
 - must keep OpenHands integrated under the same local-first and completion-contract rules as other execution surfaces
 - companion/overlay mode should be added only as a governed extension, not as a freeform assistant surface
+- framework-first handoff must remain bounded so it does not become a vague planning loop
 
 ## CMDB / asset linkage
 
@@ -449,6 +572,13 @@ Required system behavior:
 - **Primary role in this item:** bounded editing/execution engine behind task-specific orchestration packets
 - **Configuration capture:** model selection, repo-map behavior, context policies, drop candidates, and lane-specific validation bindings
 - **Known caveats / integration constraints:** do not use one generic coding flow for all task types; lane-specific orchestration is required
+- **Adoption note:** `adopt-now`
+
+### Ollama / local models
+- **Official docs home:** local model runtime runbook must record the canonical local endpoint and approved model tiers
+- **Primary role in this item:** local-first execution substrate
+- **Configuration capture:** host/port, context-length policy, approved model names, health checks, and tier bindings
+- **Known caveats / integration constraints:** model context size and startup behavior must be explicit, not assumed
 - **Adoption note:** `adopt-now`
 
 ## Grouping candidates
@@ -479,88 +609,14 @@ Deliver a minimum viable local execution control and routing system that:
 6. auto-routes simple task classes into the correct lane
 7. uses Aider as the default editing engine for bounded code work
 8. supports an immediately usable local OpenHands execution surface for operator monitoring and bounded execution handoff
-
-## One-pass implementation package guidance
-
-The first implementation pass should be bounded to a single useful slice. At minimum it should include:
-
-### Required outputs
-- local web UI shell for execution control
-- run-status panel
-- context/token pressure panel
-- validation/artifact/completion panel
-- next-target / blocker panel
-- deterministic task-routing layer for a minimum set of lanes
-- Aider run-packet generator
-- initial OpenHands integration path or launcher wiring
-- integration with current repo truth files and derived planning artifacts
-- tests for core state parsing and panel behavior
-
-### Suggested initial panel set
-- Objective / lane / branch card
-- Blocker chain card
-- Next governed target card
-- Context load and token pressure card
-- Files in context / files changed card
-- Validation results card
-- Artifact outputs card
-- Completion ladder card
-- Route selection / run-packet card
-- OpenHands execution mode/status card
-
-### Minimum lanes to implement first
-- `bounded_feature`
-- `bugfix`
-- `control_window`
-- `repo_audit`
-
-### Minimum data sources the first slice should parse
-- `docs/roadmap/ROADMAP_STATUS_SYNC.md`
-- `docs/roadmap/ROADMAP_MASTER.md`
-- `docs/roadmap/ACTIVE_ITEM_NORMALIZATION_AUDIT.md`
-- `docs/roadmap/AUTONOMOUS_EXECUTION_OPERATING_MODE.md`
-- `docs/roadmap/TARGET_SELECTION_POLICY.md`
-- derived queue / blocker artifacts if present
-- current execution logs or run receipts if present
-- local Aider/OpenHands session state if available
-
-## Resources and implementation references
-
-Use the repo’s own architecture and roadmap governance first. Then use these categories of implementation references while keeping the local-first architecture intact.
-
-### Internal repo references
-- `docs/roadmap/ROADMAP_MASTER.md`
-- `docs/roadmap/ROADMAP_STATUS_SYNC.md`
-- `docs/roadmap/ACTIVE_ITEM_NORMALIZATION_AUDIT.md`
-- `docs/roadmap/AUTONOMOUS_EXECUTION_OPERATING_MODE.md`
-- `docs/roadmap/TARGET_SELECTION_POLICY.md`
-- `docs/roadmap/ITEMS/RM-GOV-001.md`
-- `docs/roadmap/ITEMS/RM-OPS-004.md`
-- `docs/roadmap/ITEMS/RM-OPS-005.md`
-- `docs/roadmap/ITEMS/RM-AUTO-001.md`
-- `docs/roadmap/ITEMS/RM-GOV-009.md`
-- local evidence/run artifacts already present in the repo
-
-### Implementation pattern references
-- existing local control-center / dashboard patterns already intended under RM-UI-001
-- existing next-pull / blocker / validation artifacts already generated in the repo
-- existing local evidence-bundle and live-proof-chain outputs already produced by the runtime/evidence work
-- OpenHands local deployment and GUI/CLI modes
-- Aider context/repo-map/task-specific orchestration patterns
-
-### UX guidance for the first slice
-- prioritize truth visibility over visual polish
-- use explicit red/yellow/green status semantics only when backed by real repo truth
-- prevent hidden state; every “good” status should link back to a file/artifact or validation result
-- separate informational panels from gating panels so the operator can see what blocks closure
-- prefer performance and run clarity over visual complexity
+9. records and surfaces the canonical local model runtime/startup policy used for each lane
 
 ## Status transition notes
 
 - Expected next status: `Planned`
-- Transition condition: implementation boundary, first slice, required repo truth sources, and initial Aider/OpenHands integration posture are explicitly accepted
-- Validation / closeout condition: a working local execution control and routing slice exists, reads canonical repo truth, supports Aider task-specific routing, provides an OpenHands local execution path, and materially reduces false-complete / missed-context / hidden-blocker failures in real local runs
+- Transition condition: implementation boundary, first slice, required repo truth sources, initial Aider/OpenHands integration posture, and local model runbook policy are explicitly accepted
+- Validation / closeout condition: a working local execution control and routing slice exists, reads canonical repo truth, supports Aider task-specific routing, provides an OpenHands local execution path, uses an explicit local model tier policy, and materially reduces false-complete / missed-context / hidden-blocker failures in real local runs
 
 ## Notes
 
-This item is intentionally the most important next implementation target. It is not merely a dashboard improvement. It is the missing operator, routing, and execution surface that turns the current local coding workflow from terminal-heavy and ambiguity-prone into a governed local execution system.
+This item is intentionally the most important next implementation target. It is not merely a dashboard improvement. It is the missing operator, routing, runtime-selection, and execution surface that turns the current local coding workflow from terminal-heavy and ambiguity-prone into a governed local execution system.
