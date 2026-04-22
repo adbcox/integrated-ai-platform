@@ -59,6 +59,7 @@ This item should be treated as the next implementation target because it directl
 - Aider performance through task-specific context selection and routing
 - local-system ability to auto-detect what kind of coding task is being requested
 - optional immediate usability uplift through OpenHands CLI / Web GUI / GUI server paths
+- future macOS companion / overlay interaction for contextual operator help
 
 It also leverages work that is already present:
 
@@ -86,6 +87,7 @@ The following concepts are now merged into RM-UI-005:
 - lane-specific completion gates
 - lane-specific allowed-file / forbidden-file behavior
 - orchestration packets that convert high-level intent into bounded Aider runs
+- a future macOS companion/overlay mode for contextual operator assistance
 
 ## OpenHands merge rule
 
@@ -167,6 +169,12 @@ Do not let OpenHands create a parallel roadmap or parallel completion standard.
 - allow OpenHands runs to consume the same repo truth and execution contracts as Aider-driven runs
 - surface OpenHands run status, selected task, validation state, artifacts, and completion state back into the dashboard
 - keep OpenHands subordinate to the same completion contract and blocker logic
+
+### Companion / overlay mode requirements now in scope
+- support a future macOS companion or overlay interaction mode that can be summoned contextually
+- support cursor-adjacent or screen-aware operator assistance where the interaction remains governed by the same routing and completion model
+- do not let companion behavior bypass the main control/dashboard truth surfaces
+- treat this as an alternate interaction mode over the same execution/control system, not a separate assistant
 
 ### Performance requirements
 - reduce unnecessary file inclusion for bounded tasks
@@ -353,6 +361,16 @@ Required system behavior:
 - make hidden blockers obvious
 - reduce reliance on manual interpretation of long terminal output
 
+### Example 6 — companion/overlay contextual help
+Current future target mode:
+- operator wants context-sensitive guidance near the cursor or in a lightweight overlay
+- the system should help without requiring a full dashboard context switch
+
+Required system behavior:
+- route companion/overlay interactions back into the same governed lanes
+- preserve blocker/completion/validation truth
+- avoid creating a second unsupervised assistant surface
+
 ## Affected systems
 
 - UI/control surfaces
@@ -364,6 +382,7 @@ Required system behavior:
 - future autonomous local execution control loop
 - Aider orchestration and task-lane selection layer
 - OpenHands local execution interface layer
+- future macOS companion/overlay interface layer
 
 ## Expected file families
 
@@ -376,6 +395,7 @@ Required system behavior:
 - future integration adapters for Aider, Codex, Ollama, OpenHands, and validation tools
 - future widget/panel/state model docs and tests
 - future local deployment/config files for OpenHands integration
+- future companion/overlay interaction files
 
 ## Dependencies
 
@@ -385,6 +405,7 @@ Required system behavior:
 - `RM-AUTO-001` — plain-English goal-to-agent system
 - `RM-UI-001` — master control center for the system with web-first UI, tablet support, and later app-based surfaces
 - `RM-GOV-009` — external application connectivity and integration control plane
+- `RM-OPS-006` — governed desktop computer-use and non-API automation layer for local operator tasks
 
 ## Risks and issues
 
@@ -395,12 +416,14 @@ Required system behavior:
 - weak event/state modeling causing stale or misleading run status
 - weak routing causing the wrong lane to be chosen repeatedly
 - letting OpenHands become a parallel execution authority instead of a governed execution surface
+- letting companion/overlay behavior bypass the same governance model as the main dashboard
 
 ### Known issues / blockers
 - exact first slice must remain bounded so this can land in one aggressive pass
 - must not drift into broad control-center scope that belongs to RM-UI-001 overall
 - must respect the existing roadmap/autonomy truth surfaces rather than inventing a parallel queue
 - must keep OpenHands integrated under the same local-first and completion-contract rules as other execution surfaces
+- companion/overlay mode should be added only as a governed extension, not as a freeform assistant surface
 
 ## CMDB / asset linkage
 
@@ -410,16 +433,11 @@ Required system behavior:
 
 ## External dependency documentation pack
 
-Complete this section whenever the roadmap item depends on an external product, service, API, protocol, OSS application, or major third-party integration.
-
 ### OpenHands
 - **Official docs home:** https://docs.openhands.dev/
 - **Primary repo or vendor page:** https://openhands.dev/ and official OpenHands repos/docs
 - **Primary local setup path:** support local installation and `openhands serve` GUI deployment
-- **Supported execution surfaces to consider:**
-  - CLI / terminal mode
-  - `openhands web` browser terminal mode
-  - `openhands serve` full GUI server mode
+- **Supported execution surfaces to consider:** CLI / terminal mode, `openhands web` browser terminal mode, `openhands serve` full GUI server mode
 - **Sandbox posture:** prefer Docker sandbox as default isolated mode; use process/local mode only under explicit controlled conditions
 - **Workspace posture:** support mounting the working repo into OpenHands for bounded tasks
 - **Configuration capture:** record model/backend configuration, port bindings, sandbox mode, and repo mount behavior
@@ -441,6 +459,7 @@ Complete this section whenever the roadmap item depends on an external product, 
 - `RM-OPS-005`
 - `RM-AUTO-001`
 - `RM-GOV-009`
+- `RM-OPS-006`
 
 ## Grouped execution notes
 
