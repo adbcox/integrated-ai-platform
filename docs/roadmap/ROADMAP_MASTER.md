@@ -59,7 +59,7 @@ The roadmap should therefore continue to prioritize:
 
 The critical next implementation target is now:
 
-- `RM-UI-005` — Local execution control dashboard for AI run control, context management, validation status, and truthful completion gating
+- `RM-UI-005` — Local execution control dashboard, task-detection routing layer, Aider workload orchestration system, and OpenHands execution interface
 
 This item is promoted because it directly improves the operator and local-system ability to:
 
@@ -68,6 +68,22 @@ This item is promoted because it directly improves the operator and local-system
 - distinguish patch success from bounded-slice completion
 - see validation/artifact gaps before falsely treating work as done
 - drive the local coding assistant at higher speed with less terminal-only ambiguity
+- support future companion/overlay interaction without creating a second assistant backbone
+
+## Newly captured direction from recent feature evaluation
+
+The roadmap now explicitly captures additional high-value directions that were previously only implicit or scattered:
+
+- `RM-HOME-005` — local voice and ambient assistant layer for Alexa/Google Home replacement using Home Assistant as the device bridge
+- `RM-INTEL-003` — personalized real-news briefing with interest-aware ranking, source-quality controls, and anti-clickbait summarization
+- `RM-OPS-006` — governed desktop computer-use and non-API automation layer for local operator tasks
+- `RM-OPS-007` — emulator and governed BlueStacks automation lab for bounded computer-use experiments (conditional/later)
+
+It also strengthens these already-existing items:
+
+- `RM-GOV-009` now explicitly carries GitHub, Google Calendar, and Gmail connector posture as first-class control-plane priorities
+- `RM-INV-003` now explicitly carries hardware upgrade-value and cost/performance justification logic
+- `RM-UI-005` now explicitly carries companion/overlay interaction mode in addition to the dashboard/routing/Aider/OpenHands scope
 
 ## Completed / archived correction note
 
@@ -79,7 +95,7 @@ Use `ROADMAP_STATUS_SYNC.md` for status truth.
 
 The highest-value **active** roadmap cluster for the home developer assistant is now:
 
-- `RM-UI-005` — Local execution control dashboard for AI run control, context management, validation status, and truthful completion gating
+- `RM-UI-005` — local execution control dashboard, task-detection routing layer, Aider workload orchestration system, and OpenHands execution interface
 - `RM-AUTO-001` — Plain-English goal-to-agent system
 - `RM-GOV-001` — Integrated roadmap-to-development tracking system with CMDB linkage, standardized metrics, enforced naming, and impact transparency
 - `RM-OPS-005` — End-to-end telemetry, tracing, and audit evidence pipeline
@@ -96,6 +112,21 @@ The governance branch now also includes active architecture-alignment and operat
 - `RM-GOV-009` — External application connectivity and integration control plane
 
 These items are not the architectural backbone, but they are now part of the active governance layer required to keep roadmap execution aligned with the architecture source of truth.
+
+## High-value adjacent branch additions
+
+### Home / ambient assistant expansion
+- `RM-HOME-005` extends the home branch toward local voice/ambient assistant behavior built on Home Assistant as the device bridge.
+
+### Intelligence / briefing expansion
+- `RM-INTEL-003` adds a source-quality-aware, non-clickbait personalized news briefing capability.
+
+### Computer-use expansion
+- `RM-OPS-006` creates the governed desktop computer-use layer.
+- `RM-OPS-007` captures emulator/BlueStacks automation as a conditional later-stage lab rather than as a current priority.
+
+### Procurement / upgrade intelligence expansion
+- `RM-INV-003` now explicitly covers justified hardware upgrade evaluation and cost/performance decision support rather than only product lookup.
 
 ## Closed items removed from active interpretation
 
@@ -146,6 +177,8 @@ These items are no longer to be treated as active from this summary surface:
 - `RM-OPS-003`
 - `RM-OPS-004`
 - `RM-OPS-005`
+- `RM-OPS-006`
+- `RM-OPS-007`
 - `RM-UI-001`
 - `RM-UI-002`
 - `RM-UI-003`
@@ -167,11 +200,13 @@ These items are no longer to be treated as active from this summary surface:
 - `RM-HOME-002`
 - `RM-HOME-003`
 - `RM-HOME-004`
+- `RM-HOME-005`
 - `RM-MEDIA-001`
 - `RM-MEDIA-002`
 - `RM-MEDIA-003`
 - `RM-MEDIA-004`
 - `RM-MEDIA-005`
+- `RM-INTEL-003`
 - `RM-SHOP-001`
 - `RM-SHOP-002`
 - `RM-SHOP-003`
