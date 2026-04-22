@@ -5,7 +5,11 @@
 - **Category:** `GOV`
 - **Type:** `System`
 - **Status:** `Accepted`
+- **Maturity:** `M3`
 - **Priority:** `High`
+- **Priority class:** `P1`
+- **Queue rank:** `3`
+- **Target horizon:** `next`
 - **LOE:** `M`
 - **Strategic value:** `5`
 - **Architecture fit:** `5`
@@ -53,6 +57,18 @@ The project has already accumulated a meaningful set of external software decisi
 - `RM-GOV-006` — hybrid roadmap operations layer with Plane on top of repo-doc canonical roadmap
 - `RM-GOV-007` — Plane deployment, roadmap field mapping, and repo-to-Plane sync implementation
 
+## Risks and issues
+
+### Key risks
+
+- the catalog could become stale if it is not maintained as part of normal roadmap intake and review
+- unresolved external products could create false assumptions if they are not clearly labeled and revisited
+
+### Known issues / blockers
+
+- some external-system entries still need stronger per-item traceability into roadmap work
+- certain named systems, such as unresolved athlete-data tools, still need final verification
+
 ## CMDB / asset linkage
 
 - the registry should later link external systems to owned services, hosts, devices, and inventory/CMDB records where applicable
@@ -73,6 +89,12 @@ The project has already accumulated a meaningful set of external software decisi
 ## Recommended first milestone
 
 Create the initial external applications and integrations catalog with the currently known software set, official links, phase/group placement, and integration posture, then normalize links from future roadmap items back to this registry.
+
+## Status transition notes
+
+- Expected next status: `Planned`
+- Transition condition: the catalog structure is accepted and cross-linking/back-reference conventions are defined
+- Validation / closeout condition: the registry is maintained through normal intake/change-control practice and materially supports active roadmap work
 
 ## Notes
 
