@@ -29,6 +29,7 @@ Read planning and roadmap files in this order:
 6. `docs/roadmap/STANDARDS.md`
 7. `docs/roadmap/EXECUTION_PACK_INDEX.md`
 8. `docs/roadmap/EXTERNAL_APPLICATIONS_AND_INTEGRATIONS.md`
+9. `docs/roadmap/LOCAL_AUTONOMY_CRITICAL_PATH.md`
 
 ## What this file does
 
@@ -55,6 +56,30 @@ The roadmap should therefore continue to prioritize:
 5. governance, evidence, and anti-drift hardening
 6. controlled expansion into broader domain branches
 
+## Local autonomy critical-path rule
+
+The roadmap now explicitly treats the following as the **critical path** to local development autonomy:
+
+### NOW
+- `RM-UI-005`
+- `RM-GOV-001`
+- `RM-OPS-005`
+- `RM-OPS-004`
+
+### NEXT
+- `RM-GOV-009`
+- `RM-AUTO-001`
+- `RM-DEV-001`
+
+### LATER
+- `RM-OPS-006`
+- `RM-HOME-005`
+- `RM-INTEL-003`
+- `RM-INV-003`
+- `RM-OPS-007`
+
+Until the NOW tier is materially stable, lower-priority feature work should not displace it unless that work directly strengthens the critical path.
+
 ## Immediate priority promotion
 
 The critical next implementation target is now:
@@ -69,6 +94,7 @@ This item is promoted because it directly improves the operator and local-system
 - see validation/artifact gaps before falsely treating work as done
 - drive the local coding assistant at higher speed with less terminal-only ambiguity
 - support future companion/overlay interaction without creating a second assistant backbone
+- make the local model stack the default path for complex-task decomposition and tactical execution
 
 ## Newly captured direction from recent feature evaluation
 
@@ -83,7 +109,8 @@ It also strengthens these already-existing items:
 
 - `RM-GOV-009` now explicitly carries GitHub, Google Calendar, and Gmail connector posture as first-class control-plane priorities
 - `RM-INV-003` now explicitly carries hardware upgrade-value and cost/performance justification logic
-- `RM-UI-005` now explicitly carries companion/overlay interaction mode in addition to the dashboard/routing/Aider/OpenHands scope
+- `RM-UI-005` now explicitly carries companion/overlay interaction mode and the local model runtime / framework-to-Aider handoff policy
+- `RM-AUTO-001` is now explicitly sequenced after substrate maturity as part of the critical path
 
 ## Completed / archived correction note
 
@@ -96,10 +123,10 @@ Use `ROADMAP_STATUS_SYNC.md` for status truth.
 The highest-value **active** roadmap cluster for the home developer assistant is now:
 
 - `RM-UI-005` — local execution control dashboard, task-detection routing layer, Aider workload orchestration system, and OpenHands execution interface
-- `RM-AUTO-001` — Plain-English goal-to-agent system
 - `RM-GOV-001` — Integrated roadmap-to-development tracking system with CMDB linkage, standardized metrics, enforced naming, and impact transparency
 - `RM-OPS-005` — End-to-end telemetry, tracing, and audit evidence pipeline
 - `RM-OPS-004` — Backup, restore, disaster-recovery, and configuration export verification
+- `RM-AUTO-001` — Plain-English goal-to-agent system (next-tier after substrate)
 - `RM-INV-002` — Photo-driven inventory capture and capability mapping system for assets, components, consumables, and tools
 
 ## Active governance alignment cluster
@@ -234,3 +261,4 @@ When in doubt:
 4. use `ROADMAP_INDEX.md` for backlog inventory
 5. use execution packs for implementation depth
 6. use `EXTERNAL_APPLICATIONS_AND_INTEGRATIONS.md` for external dependency and interface posture
+7. use `LOCAL_AUTONOMY_CRITICAL_PATH.md` for the now/next/later autonomy sequencing rule
