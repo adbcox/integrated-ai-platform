@@ -12,12 +12,18 @@ These items are treated as closed and archived in the visible roadmap system:
 
 - `RM-AUTO-002` — completed / archived
 - `RM-CORE-004` — completed / archived
+- `RM-DEV-002` — completed / archived
 - `RM-DEV-003` — completed / archived
+- `RM-DEV-004` — completed / archived
 - `RM-DEV-006` — completed / archived
+- `RM-DEV-007` — completed / archived
 - `RM-GOV-004` — completed / archived
+- `RM-GOV-005` — completed / archived
 - `RM-INTEL-001` — completed / archived
 - `RM-INTEL-002` — completed / archived
 - `RM-INV-004` — completed / archived
+- `RM-INV-005` — completed / archived
+- `RM-CORE-005` — completed / archived
 
 ## Closed / completed items
 
@@ -35,19 +41,13 @@ Examples of still-active work include:
 - `RM-GOV-001`
 - `RM-GOV-002`
 - `RM-GOV-003`
-- `RM-GOV-005`
 - `RM-DEV-001`
-- `RM-DEV-002`
-- `RM-DEV-004`
-- `RM-DEV-007`
 - `RM-AUTO-001`
 - `RM-CORE-001`
 - `RM-CORE-002`
-- `RM-CORE-005`
 - `RM-INV-001`
 - `RM-INV-002`
 - `RM-INV-003`
-- `RM-INV-005`
 - `RM-OPS-001`
 - `RM-OPS-002`
 - `RM-OPS-003`
