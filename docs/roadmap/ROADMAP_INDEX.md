@@ -43,7 +43,17 @@ For completion and archive truth, use:
 
 ## Next implementation priority
 
-- `RM-UI-005` — treat as the critical next implementation target because it directly improves local execution control, truthful completion gating, context-limit visibility, blocker visibility, and governed next-task pull behavior.
+- `RM-UI-005` — treat as the critical next implementation target because it directly improves local execution control, truthful completion gating, context-limit visibility, blocker visibility, governed next-task pull behavior, Aider task routing, and OpenHands local execution usability.
+
+## Recently added / expanded roadmap coverage
+
+- `RM-HOME-005` — local voice and ambient assistant layer for Alexa/Google Home replacement using Home Assistant as the device bridge
+- `RM-INTEL-003` — personalized real-news briefing with interest-aware ranking, source-quality controls, and anti-clickbait summarization
+- `RM-OPS-006` — governed desktop computer-use and non-API automation layer for local operator tasks
+- `RM-OPS-007` — emulator and governed BlueStacks automation lab for bounded computer-use experiments
+- `RM-GOV-009` — expanded to explicitly prioritize GitHub, Google Calendar, and Gmail connector posture
+- `RM-INV-003` — expanded to include hardware upgrade-value and cost/performance justification logic
+- `RM-UI-005` — expanded to include future macOS companion/overlay mode alongside task-routing, Aider, and OpenHands scope
 
 ## Remaining active backlog by family
 
@@ -68,6 +78,8 @@ For completion and archive truth, use:
 - `RM-OPS-003`
 - `RM-OPS-004`
 - `RM-OPS-005`
+- `RM-OPS-006`
+- `RM-OPS-007`
 - `RM-UI-001`
 - `RM-UI-002`
 - `RM-UI-003`
@@ -89,11 +101,13 @@ For completion and archive truth, use:
 - `RM-HOME-002`
 - `RM-HOME-003`
 - `RM-HOME-004`
+- `RM-HOME-005`
 - `RM-MEDIA-001`
 - `RM-MEDIA-002`
 - `RM-MEDIA-003`
 - `RM-MEDIA-004`
 - `RM-MEDIA-005`
+- `RM-INTEL-003`
 - `RM-SHOP-001`
 - `RM-SHOP-002`
 - `RM-SHOP-003`
