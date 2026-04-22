@@ -29,30 +29,61 @@ This `docs/roadmap/` directory supersedes the older top-level `roadmap/` documen
 - Treat the top-level `roadmap/` tree as legacy planning storage unless and until it is fully migrated.
 - Do not create new canonical roadmap items in multiple places.
 
+## Read-first order
+
+1. `docs/architecture/MASTER_SYSTEM_ARCHITECTURE.md`
+2. `docs/roadmap/ROADMAP_AUTHORITY.md`
+3. `docs/roadmap/ROADMAP_STATUS_SYNC.md`
+4. `docs/roadmap/ROADMAP_MASTER.md`
+5. `docs/roadmap/ROADMAP_INDEX.md`
+6. `docs/roadmap/STANDARDS.md`
+7. `docs/roadmap/ARCHITECTURE_ALIGNMENT.md`
+8. `docs/roadmap/EXTERNAL_APPLICATIONS_AND_INTEGRATIONS.md`
+
 ## Directory contents
+
+### Core roadmap set
 
 - `ROADMAP_MASTER.md` — single first-read master roadmap document and priority authority
 - `ROADMAP_INDEX.md` — master normalized roadmap index
 - `HIGH_PRIORITY_IMPLEMENTATION_GUIDE.md` — implementation-oriented enrichment guide for critical and high-value roadmap items
 - `EXECUTION_PACK_INDEX.md` — canonical index of dedicated execution packs
-- `STANDARDS.md` — IDs, categories, statuses, metrics, naming, and impact rules
+- `STANDARDS.md` — IDs, categories, statuses, metrics, naming, readiness, and impact rules
+- `ARCHITECTURE_ALIGNMENT.md` — architecture-to-roadmap alignment rules
 - `FEATURE_BLOCK_GROUPING.md` — grouped-package planning logic for shared-touch work
 - `CMDB_LINKAGE.md` — mapping expectations between roadmap items and systems/assets
+- `EXTERNAL_APPLICATIONS_AND_INTEGRATIONS.md` — canonical external systems catalog
+- `EXTERNAL_SYSTEM_TO_ROADMAP_CROSSWALK.md` — dependency crosswalk from external systems to roadmap work
+
+### PM / governance operating docs
+
+- `DOCUMENT_MAP.md` — concise map of the roadmap document set
+- `SOURCE_OF_TRUTH_MATRIX.md` — which document controls which class of planning truth
+- `OPERATING_MODEL.md` — how the roadmap should be operated day to day
+- `CHANGE_CONTROL.md` — how roadmap changes must be recorded
+- `INTAKE_AND_NORMALIZATION_PROCESS.md` — how new items enter the canonical roadmap
+- `EXECUTION_READINESS_CHECKLIST.md` — checklist before an item is treated as execution-ready
+- `DEPENDENCY_MANAGEMENT.md` — dependency and blocker handling guidance
+- `RISK_AND_ISSUE_MANAGEMENT.md` — risk, issue, and escalation guidance
+- `REVIEW_CADENCE.md` — planning review and sync cadence
+- `WORKING_CONVENTIONS.md` — naming, reference, issue/PR, and traceability conventions
+
+### Supporting and historical materials
+
 - `ROADMAP_CHAT_SYNC_2026-04-21.md` — detailed normalization of roadmap items captured in chat and synced into the canonical roadmap system
 - `EXECUTION_CONTEXT_SYNC_2026-04-21.md` — selective migration of durable execution-context from legacy roadmap status material
 - `TEMPLATES/ROADMAP_ITEM_TEMPLATE.md` — template for new roadmap items
+- `ITEMS/` — per-item detail files where used
 
 ## Workflow
 
-1. Read `ROADMAP_MASTER.md` first for strategic priority and canonical interpretation.
-2. Read `HIGH_PRIORITY_IMPLEMENTATION_GUIDE.md` for implementation-oriented enrichment on critical and high-value roadmap items.
-3. Read `EXECUTION_PACK_INDEX.md` when a roadmap item has a dedicated execution pack.
-4. Add or amend roadmap items in `ROADMAP_INDEX.md`.
-5. Assign stable ID, category, type, and normalized metrics.
-6. Record affected systems, expected file families, and dependencies.
-7. Evaluate whether the item should be executed alone or as part of a grouped feature block.
-8. Ensure the item reaches execution-pack or equivalent canonical enrichment state before considering the intake complete.
-9. Open GitHub issues or execution docs only after the roadmap item is clear enough to drive work.
+1. Read the architecture master first for platform direction.
+2. Read roadmap authority and status docs for current state truth.
+3. Use `ROADMAP_MASTER.md` for strategic interpretation.
+4. Use `ROADMAP_INDEX.md` for backlog inventory.
+5. Use `STANDARDS.md` and the PM operating docs for intake, readiness, dependency, and review discipline.
+6. Use grouped-execution, CMDB linkage, and external-system docs as needed.
+7. Open GitHub issues or execution docs only after the roadmap item is clear enough to drive work.
 
 ## Rule
 
