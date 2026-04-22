@@ -8,6 +8,7 @@ This document provides a concise map of the roadmap document set so readers do n
 
 - `README.md` — roadmap entry point and reading order
 - `ROADMAP_MASTER.md` — strategic interpretation and active-cluster view
+- `PROGRAM_DASHBOARD_SUMMARY.md` — executive-level program summary for quick review
 - `ROADMAP_INDEX.md` — backlog inventory view
 - `ROADMAP_AUTHORITY.md` — roadmap authority guidance
 - `ROADMAP_STATUS_SYNC.md` — roadmap status truth
@@ -28,6 +29,7 @@ This document provides a concise map of the roadmap document set so readers do n
 - `STATUS_TRANSITION_RULES.md` — normalized roadmap status movement rules
 - `ITEM_MATURITY_MODEL.md` — maturity model independent of status
 - `BACKLOG_HYGIENE_CHECKLIST.md` — recurring backlog quality checks
+- `ACTIVE_ITEM_NORMALIZATION_AUDIT.md` — targeted view of remaining per-item normalization work
 - `DEPENDENCY_MANAGEMENT.md` — dependency and blocker handling guidance
 - `RISK_AND_ISSUE_MANAGEMENT.md` — risk, issue, and escalation guidance
 - `REVIEW_CADENCE.md` — planning review and sync cadence
