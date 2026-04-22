@@ -39,12 +39,11 @@ Use `ROADMAP_STATUS_SYNC.md` for status truth.
 
 The highest-value **active** roadmap cluster for the home developer assistant is now:
 
-- `RM-DEV-002` — Dual-model inline QC coding loop for the developer assistant
-- `RM-DEV-004` — Embedded firmware assistant for Nordic and ESP platforms
-- `RM-DEV-007` — Indexed code search and multi-repo retrieval backend
-- `RM-CORE-005` — Identity, secrets, permissions, and trust-boundary management
-- `RM-GOV-005` — Cycle, release, and batch-governance model for roadmap execution
-- `RM-INV-005` — Asset-to-roadmap and asset-to-execution linkage layer
+- `RM-AUTO-001` — Plain-English goal-to-agent system
+- `RM-GOV-001` — Integrated roadmap-to-development tracking system with CMDB linkage, standardized metrics, enforced naming, and impact transparency
+- `RM-OPS-005` — End-to-end telemetry, tracing, and audit evidence pipeline
+- `RM-OPS-004` — Backup, restore, disaster-recovery, and configuration export verification
+- `RM-INV-002` — Photo-driven inventory capture and capability mapping system for assets, components, consumables, and tools
 
 ## Closed items removed from active interpretation
 
@@ -53,12 +52,18 @@ These items are no longer to be treated as active from this summary surface:
 ### Archived / completed
 - `RM-AUTO-002`
 - `RM-CORE-004`
+- `RM-DEV-002`
 - `RM-DEV-003`
+- `RM-DEV-004`
 - `RM-DEV-006`
+- `RM-DEV-007`
 - `RM-GOV-004`
+- `RM-GOV-005`
 - `RM-INTEL-001`
 - `RM-INTEL-002`
 - `RM-INV-004`
+- `RM-INV-005`
+- `RM-CORE-005`
 
 ### Completed / closed
 - `RM-CORE-003`
@@ -72,19 +77,14 @@ These items are no longer to be treated as active from this summary surface:
 - `RM-GOV-001`
 - `RM-GOV-002`
 - `RM-GOV-003`
-- `RM-GOV-005`
 
 ### Developer assistant / local autonomy / execution
 - `RM-DEV-001`
-- `RM-DEV-002`
-- `RM-DEV-004`
-- `RM-DEV-007`
 - `RM-AUTO-001`
 
 ### Core system / packaging / platform control
 - `RM-CORE-001`
 - `RM-CORE-002`
-- `RM-CORE-005`
 - `RM-OPS-001`
 - `RM-OPS-002`
 - `RM-OPS-003`
@@ -99,7 +99,6 @@ These items are no longer to be treated as active from this summary surface:
 - `RM-INV-001`
 - `RM-INV-002`
 - `RM-INV-003`
-- `RM-INV-005`
 
 ### Domain expansion packages
 - `RM-DOCAPP-001`
