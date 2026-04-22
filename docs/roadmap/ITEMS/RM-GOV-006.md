@@ -5,7 +5,11 @@
 - **Category:** `GOV`
 - **Type:** `Enhancement`
 - **Status:** `Accepted`
+- **Maturity:** `M3`
 - **Priority:** `High`
+- **Priority class:** `P1`
+- **Queue rank:** `1`
+- **Target horizon:** `next`
 - **LOE:** `M`
 - **Strategic value:** `5`
 - **Architecture fit:** `5`
@@ -53,6 +57,18 @@ The current roadmap model is strong at governance definition but weak as an oper
 - `RM-GOV-002` — recurring full-system integrity review
 - `RM-GOV-003` — feature-block package planner
 
+## Risks and issues
+
+### Key risks
+
+- Plane could become treated as a new planning authority instead of an operational overlay
+- metadata drift could occur if repo docs and operational-layer fields diverge
+
+### Known issues / blockers
+
+- final property mapping and sync conventions still need to be documented and tested
+- pull planning still needs a small pilot scope before this model is treated as fully operational
+
 ## CMDB / asset linkage
 
 - roadmap item identity should remain linkable to systems, services, assets, and future CMDB records
@@ -73,6 +89,12 @@ The current roadmap model is strong at governance definition but weak as an oper
 ## Recommended first milestone
 
 Stand up Plane in a self-hosted configuration, define a matching custom-property model for roadmap metadata, and sync a small set of active roadmap items into Plane while preserving repo docs as the canonical source of truth.
+
+## Status transition notes
+
+- Expected next status: `Planned`
+- Transition condition: hybrid operating model confirmed, pilot scope identified, and governance placement agreed
+- Validation / closeout condition: operational model is documented, piloted, and reflected in canonical roadmap/governance surfaces
 
 ## Notes
 
