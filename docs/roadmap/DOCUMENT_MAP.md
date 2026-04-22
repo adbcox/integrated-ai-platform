@@ -25,10 +25,14 @@ This document provides a concise map of the roadmap document set so readers do n
 - `CHANGE_CONTROL.md` — how roadmap changes must be recorded
 - `INTAKE_AND_NORMALIZATION_PROCESS.md` — how new items enter the canonical roadmap
 - `EXECUTION_READINESS_CHECKLIST.md` — checklist before an item is treated as execution-ready
+- `STATUS_TRANSITION_RULES.md` — normalized roadmap status movement rules
+- `ITEM_MATURITY_MODEL.md` — maturity model independent of status
+- `BACKLOG_HYGIENE_CHECKLIST.md` — recurring backlog quality checks
 - `DEPENDENCY_MANAGEMENT.md` — dependency and blocker handling guidance
 - `RISK_AND_ISSUE_MANAGEMENT.md` — risk, issue, and escalation guidance
 - `REVIEW_CADENCE.md` — planning review and sync cadence
 - `WORKING_CONVENTIONS.md` — naming, reference, issue/PR, and traceability conventions
+- `DOCUMENT_RETENTION_AND_DEPRECATION_POLICY.md` — how roadmap docs are retained, superseded, or deprecated
 
 ## Templates and item storage
 
@@ -37,4 +41,4 @@ This document provides a concise map of the roadmap document set so readers do n
 
 ## Reader rule
 
-If a question is about roadmap strategy, status, intake, readiness, grouping, or execution posture, find the matching document here first rather than relying on scattered memory.
+If a question is about roadmap strategy, status, intake, readiness, grouping, execution posture, maturity, or document lifecycle, find the matching document here first rather than relying on scattered memory.
