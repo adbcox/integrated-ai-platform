@@ -13,12 +13,18 @@ For completion and archive truth, use:
 ### Archived and completed
 - `RM-AUTO-002`
 - `RM-CORE-004`
+- `RM-DEV-002`
 - `RM-DEV-003`
+- `RM-DEV-004`
 - `RM-DEV-006`
+- `RM-DEV-007`
 - `RM-GOV-004`
+- `RM-GOV-005`
 - `RM-INTEL-001`
 - `RM-INTEL-002`
 - `RM-INV-004`
+- `RM-INV-005`
+- `RM-CORE-005`
 
 ### Completed and closed
 - `RM-CORE-003`
@@ -26,25 +32,28 @@ For completion and archive truth, use:
 - `RM-DEV-008`
 - `RM-DEV-009`
 
+## Current active focus bundle
+
+- `RM-AUTO-001`
+- `RM-GOV-001`
+- `RM-OPS-005`
+- `RM-OPS-004`
+- `RM-INV-002`
+
 ## Remaining active backlog by family
 
 ### Governance
 - `RM-GOV-001`
 - `RM-GOV-002`
 - `RM-GOV-003`
-- `RM-GOV-005`
 
 ### Developer assistant / execution
 - `RM-DEV-001`
-- `RM-DEV-002`
-- `RM-DEV-004`
-- `RM-DEV-007`
 - `RM-AUTO-001`
 
 ### Core / ops / UI
 - `RM-CORE-001`
 - `RM-CORE-002`
-- `RM-CORE-005`
 - `RM-OPS-001`
 - `RM-OPS-002`
 - `RM-OPS-003`
@@ -59,7 +68,6 @@ For completion and archive truth, use:
 - `RM-INV-001`
 - `RM-INV-002`
 - `RM-INV-003`
-- `RM-INV-005`
 
 ### Domain expansion
 - `RM-DOCAPP-001`
