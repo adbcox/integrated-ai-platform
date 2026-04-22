@@ -18,6 +18,7 @@ This index lists the dedicated execution packs available under `docs/roadmap/`.
 - `RM-DEV-001` → `RM-DEV-001_EXECUTION_PACK.md`
 - `RM-DEV-006` → `RM-DEV-006_EXECUTION_PACK.md`
 - `RM-DEV-008` → `RM-DEV-008_EXECUTION_PACK.md`
+- `RM-DEV-009` → `RM-DEV-009_EXECUTION_PACK.md`
 - `RM-INTEL-001` → `RM-INTEL-001_EXECUTION_PACK.md`
 - `RM-INTEL-002` → `RM-INTEL-002_EXECUTION_PACK.md`
 - `RM-AUTO-001` → `RM-AUTO-001_EXECUTION_PACK.md`
