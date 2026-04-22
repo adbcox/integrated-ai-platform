@@ -46,6 +46,7 @@ For completion and archive truth, use:
 - `RM-GOV-001`
 - `RM-GOV-002`
 - `RM-GOV-003`
+- `RM-GOV-006`
 
 ### Developer assistant / execution
 - `RM-DEV-001`
