@@ -34,11 +34,16 @@ For completion and archive truth, use:
 
 ## Current active focus bundle
 
+- `RM-UI-005`
 - `RM-AUTO-001`
 - `RM-GOV-001`
 - `RM-OPS-005`
 - `RM-OPS-004`
 - `RM-INV-002`
+
+## Next implementation priority
+
+- `RM-UI-005` — treat as the critical next implementation target because it directly improves local execution control, truthful completion gating, context-limit visibility, blocker visibility, and governed next-task pull behavior.
 
 ## Remaining active backlog by family
 
@@ -67,6 +72,7 @@ For completion and archive truth, use:
 - `RM-UI-002`
 - `RM-UI-003`
 - `RM-UI-004`
+- `RM-UI-005`
 
 ### Inventory
 - `RM-INV-001`
