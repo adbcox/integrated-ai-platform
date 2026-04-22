@@ -35,7 +35,17 @@ This document does **not** replace every other document in the repository.
 
 Instead, it sits above them as the explanatory master.
 
-### 2.1 Supporting authority surfaces
+### 2.1 Supporting architecture documents
+
+This master is supported by the following architecture-local detail documents:
+
+- `docs/architecture/README.md` — architecture document index and reading order
+- `docs/architecture/AUTHORITY_SURFACES.md` — document/system authority by truth type
+- `docs/architecture/RUNTIME_SUBSTRATE.md` — shared runtime substrate expectations and boundaries
+- `docs/architecture/EXTERNAL_SYSTEMS_POLICY.md` — adopt/build/hybrid policy and external-system rules
+- `docs/architecture/DOMAIN_BRANCH_RULES.md` — domain branch expansion constraints
+
+### 2.2 Supporting authority surfaces outside the architecture directory
 
 The system still relies on other documents for narrower authority functions:
 
@@ -46,7 +56,7 @@ The system still relies on other documents for narrower authority functions:
 - promotion manifest and validation artifacts — release and promotion truth
 - future CMDB-lite or later CMDB authority surface — architecture/runtime inventory truth
 
-### 2.2 Practical rule
+### 2.3 Practical rule
 
 Use this document when asking:
 
@@ -56,6 +66,8 @@ Use this document when asking:
 - what belongs in the shared runtime versus a branch-specific tool?
 - what external systems are part of the architecture?
 - how should roadmap items be interpreted against the target architecture?
+
+Then use the architecture-local detail documents when you need narrower rules without overloading the master.
 
 ## 3. Executive architecture summary
 
