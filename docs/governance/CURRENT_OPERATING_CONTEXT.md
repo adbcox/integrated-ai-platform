@@ -25,6 +25,12 @@ Interpretation:
 - future work should extend the governed platform rather than re-litigate its foundation by default
 - bounded execution, artifact evidence, validation, and truth-surface sync remain mandatory
 
+Reuse-wave closeout posture:
+- bounded OSS reuse-wave implementation is in-repo
+- OpenHands is implemented with validated headless execution and model-dependent stability
+- MarkItDown / MCP reference servers / PR-Agent are implemented as governed bounded surfaces
+- n8n remains evaluation-only in this wave
+
 ## Mission posture
 
 The system’s mission is broader than coding autonomy.

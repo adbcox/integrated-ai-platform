@@ -3,11 +3,12 @@
 
 from __future__ import annotations  # stage6-grouped
 
-import argparse  # stage6-rag4-v3
+import argparse  # stage7-op  # stage6-rag4-v3
 import json
 import sys
 from collections import Counter
-from datetime import UTC, datetime, timedelta
+from datetime import datetime, timedelta
+from _datetime_compat import UTC
 from pathlib import Path
 from typing import Any, Iterable
 

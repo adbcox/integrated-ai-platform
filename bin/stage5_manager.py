@@ -11,7 +11,8 @@ import shutil
 import subprocess
 import sys
 import tempfile
-from datetime import UTC, datetime
+from datetime import datetime
+from _datetime_compat import UTC
 from pathlib import Path
 from typing import Any
 

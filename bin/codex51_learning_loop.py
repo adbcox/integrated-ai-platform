@@ -19,7 +19,8 @@ import re
 import subprocess
 from collections import Counter, defaultdict
 from dataclasses import dataclass
-from datetime import UTC, datetime, timedelta
+from datetime import datetime, timedelta
+from _datetime_compat import UTC
 from pathlib import Path
 from typing import Any
 

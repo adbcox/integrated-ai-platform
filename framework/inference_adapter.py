@@ -5,11 +5,12 @@ from __future__ import annotations
 import json
 import threading
 from dataclasses import dataclass, field
-from datetime import UTC, datetime
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Protocol
 
 from .backend_profiles import BackendProfile, get_backend_profile
+from .compat import UTC
 
 
 @dataclass(frozen=True)

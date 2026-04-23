@@ -107,3 +107,15 @@ This document is especially relevant to:
 
 This register is designed to minimize drift and token use.
 Future assistants should use it as a practical decision surface for whether to install, wrap, reuse, defer, or reject an open-source AI repository.
+
+## Reuse-wave closeout snapshot
+
+The first reuse-wave closeout is implemented with bounded, governed surfaces.
+
+| System | Closeout state | Evidence surface |
+|---|---|---|
+| OpenHands | implemented; validated headless execution; model-dependent stability | `bin/oss_wave_openhands.sh`, `bin/oss_wave_openhands_validate.py`, `docs/runbooks/OPENHANDS_REUSE_FIRST_RUNBOOK.md` |
+| MarkItDown | implemented bounded install/wrapper/smoke surface | `bin/markitdown_wrapper.py`, `bin/oss_wave_markitdown.sh` |
+| MCP reference servers | implemented bounded shortlist + wrapper/smoke surface (reference/test posture) | `config/oss_wave/mcp_servers.json`, `bin/oss_wave_mcp.sh` |
+| PR-Agent | implemented bounded wrapper/config/workflow surface | `bin/oss_wave_pr_agent.sh`, `.github/workflows/pr-agent.yml.disabled` |
+| n8n | evaluation-only in this wave | `docs/roadmap/N8N_EVALUATION_BOUNDARY.md` |

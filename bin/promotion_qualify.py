@@ -7,7 +7,8 @@ import argparse
 import json
 import sys
 from collections import Counter, deque
-from datetime import UTC, datetime, timedelta
+from datetime import datetime, timedelta
+from _datetime_compat import UTC
 from pathlib import Path
 from typing import Iterable
 

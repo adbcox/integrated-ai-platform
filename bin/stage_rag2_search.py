@@ -2,7 +2,7 @@
 """Stage RAG-2 hybrid retriever for Stage-4 planning.
 
 Compared to Stage RAG-1 this helper:
-- indexes a broader set of surfaces (bin/, shell/, docs/, src/, tests/, Makefile)
+- indexes a broader set of surfaces (bin/, shell/, docs/, src/, tests/, framework/, promotion/, Makefile)
 - uses larger adaptive chunks (default 48 lines with 24-line overlap)
 - augments lexical BM25 scores with light-weight structural cues (nearest
   function/task labels, shebang blocks, or section headers)
@@ -26,7 +26,7 @@ from pathlib import Path
 from typing import Iterable, List, Sequence, Tuple
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-TARGETS = ["bin", "shell", "docs", "src", "tests", "Makefile"]
+TARGETS = ["bin", "shell", "docs", "src", "tests", "framework", "promotion", "Makefile"]
 EXCLUDED_DIRS = {".git", "artifacts", "tmp", "temp", "generated", "node_modules", "__pycache__"}
 
 _TOKENIZER = re.compile(r"[a-z0-9_]+")

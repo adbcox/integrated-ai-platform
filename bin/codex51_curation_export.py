@@ -6,7 +6,8 @@ from __future__ import annotations
 import argparse
 import json
 from collections import Counter
-from datetime import UTC, datetime
+from datetime import datetime
+from _datetime_compat import UTC
 from pathlib import Path
 from typing import Any
 

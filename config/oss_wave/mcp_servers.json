@@ -1,0 +1,28 @@
+{
+  "approved_servers": [
+    {
+      "id": "filesystem",
+      "package": "@modelcontextprotocol/server-filesystem",
+      "mode": "npx",
+      "risk_level": "medium",
+      "default_args": ["__ROOT__"],
+      "security_boundary": "filesystem root must remain under repo root"
+    },
+    {
+      "id": "everything",
+      "package": "@modelcontextprotocol/server-everything",
+      "mode": "npx",
+      "risk_level": "high",
+      "default_args": [],
+      "security_boundary": "for local test/smoke only; not a production backbone"
+    },
+    {
+      "id": "sequential-thinking",
+      "package": "@modelcontextprotocol/server-sequential-thinking",
+      "mode": "npx",
+      "risk_level": "low",
+      "default_args": [],
+      "security_boundary": "planning helper only; no write actions"
+    }
+  ]
+}

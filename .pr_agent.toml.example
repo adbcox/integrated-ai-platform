@@ -1,0 +1,7 @@
+[pr_reviewer]
+require_score_review = true
+require_tests_review = true
+
+[config]
+publish_output = true
+model = "gpt-4.1-mini"

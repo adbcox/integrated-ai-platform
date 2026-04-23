@@ -1,0 +1,16 @@
+name: PR Agent (template disabled)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  pr_agent_review:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: PR Agent action step
+        uses: Codium-ai/pr-agent@main
+        env:
+          OPENAI_KEY: ${{ secrets.OPENAI_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

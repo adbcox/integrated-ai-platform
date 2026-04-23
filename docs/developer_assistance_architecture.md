@@ -13,7 +13,7 @@
 | CodeGemma | First coding model accessed through Ollama, tuned for multi-file edits and reasoning. | Model definition in `developer_assistance/manifests`. | Near-term/core. | Supply example prompts, limit tokens, record responses. |
 | Aider | Inspiration for repo mapping, git-aware edits, diff-first confirmation, lint/test loops; not directly integrated yet but informs tool categories and queues. | Reference guidance inside this document. | Near-term/inspiration. | No direct integration; replicate its disciplined loop manually. |
 | Continue | Guides CLI/UI dual surface design and configurable toolregistry; influences session/context layering and manifest schema. | Documentation reference. | Mid-term/inspiration. | Focus on maintainable tool definitions and operator controls. |
-| OpenHands | Later agentic reference for multi-turn or multi-tool flows; keep as experimental notes for future augmentation. | Flagged in documentation and future roadmap. | Later/experimental. | Do not expand now. |
+| OpenHands | Bounded local coding accelerator behind governed launch wrappers and workspace mount policy. | `bin/oss_wave_openhands.sh` + `config/oss_wave/openhands.env.example`. | Near-term/bounded. | Wrapper-only authority; no control-plane ownership transfer. |
 | MetaGPT | Optional future multi-agent planner to orchestrate complex tasks; only referenced for future phases. | Marked experimental in architecture doc. | Later/optional. | Require explicit gating when introduced. |
 | OpenClaw | Explicitly excluded from the first coding path to avoid uncontrolled agentic or risky automation. | Documented exclusion. | N/A | No integration planned in this phase. |
 
@@ -60,7 +60,7 @@
 ## Risks & Exclusions
 - Shell commands remain manual; no automation without explicit queue approval.
 - Patch proposals stay in the queue until operator confirms—no silent writes.
-- Agent sprawl is avoided by sticking to CodeGemma via Ollama for now; OpenHands and MetaGPT remain a future option.
+- Agent sprawl is constrained through wrapper-only integration boundaries; OpenHands is available in bounded mode while MetaGPT remains future/optional.
 - No auto-commits; operators export approved patches manually.
 
 ## Why This Works

@@ -5,6 +5,7 @@ import subprocess
 import sys
 import time
 from pathlib import Path
+from typing import Optional
 
 from aider_lib import (
     describe_make_command,
@@ -42,7 +43,7 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def run_cmd(cmd: list[str], env: dict | None = None):
+def run_cmd(cmd: list[str], env: Optional[dict] = None):
     print(f"+ {' '.join(cmd)}")
     subprocess.run(cmd, check=True, env=env)
 

@@ -3,8 +3,9 @@
 
 from __future__ import annotations
 
-import argparse
-from datetime import UTC, datetime
+import argparse  # stage7-op  # stage7-op
+from datetime import datetime
+from _datetime_compat import UTC
 import json
 import os
 import re
@@ -14,8 +15,10 @@ import sys
 import tempfile
 from pathlib import Path
 
-
 REPO_ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(REPO_ROOT))
+
+from framework.code_executor import ExecutionRequest, ExecutorFactory
 STAGE_RAG = REPO_ROOT / "bin" / "stage_rag1_plan_probe.py"
 TRACE_DIR = REPO_ROOT / "artifacts" / "stage3_manager"
 TRACE_FILE = TRACE_DIR / "traces.jsonl"
@@ -92,18 +95,51 @@ def write_message_file(job_id: str, message: str) -> Path:
     return path
 
 
-def run_worker(message_file: Path, target: str, plan_id: str) -> int:
-    env = os.environ.copy()
-    env["AIDER_MICRO_STAGE"] = "stage3"
-    env["AIDER_MICRO_PLAN_ID"] = plan_id
-    cmd = [
-        "make",
-        "aider-micro-safe",
-        f"AIDER_MICRO_MESSAGE_FILE={message_file}",
-        f"AIDER_MICRO_FILES={target}",
-    ]
-    proc = subprocess.run(cmd, env=env)
-    return proc.returncode
+def run_worker(message_file: Path, target: str, plan_id: str, executor_name: str | None = None) -> int:
+    """Execute code modification using configured executor.
+
+    Args:
+        message_file: Path to file containing modification message
+        target: Path to target file to modify
+        plan_id: Unique plan identifier
+        executor_name: Executor to use (None = auto-select, "claude_code" or "aider")
+
+    Returns:
+        Return code (0 = success, non-zero = failure)
+    """
+    # Read message from file
+    message = message_file.read_text(encoding="utf-8").strip()
+    if not message:
+        raise SystemExit(f"message file {message_file} produced empty content")
+
+    # Create executor request
+    request = ExecutionRequest(
+        message=message,
+        target=target,
+        plan_id=plan_id,
+        stage="stage3",
+    )
+
+    # Get executor (Claude Code primary, Aider fallback)
+    executor = ExecutorFactory.create(executor_name)
+
+    # Record executor choice
+    executor_log = TRACE_DIR / f"{plan_id}.executor.json"
+    executor_log.parent.mkdir(parents=True, exist_ok=True)
+    executor_log.write_text(
+        json.dumps({
+            "plan_id": plan_id,
+            "executor": executor.__class__.__name__,
+            "timestamp": datetime.now().isoformat(),
+        }, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+
+    # Execute
+    result = executor.execute(request)
+
+    # Return code based on success
+    return result.return_code
 
 
 def load_events(plan_id: str) -> list[dict]:
@@ -287,6 +323,8 @@ def _validate_prompt(
     *,
     contents: str | None,
 ) -> tuple[bool, str | None]:
+    if not target.strip():
+        return False, "target is empty"
     if f"{target}::" not in message:
         return False, "target anchor missing"
     literal_match = re.search(r"replace exact text '(.+?)' with '(.+?)'", message, re.DOTALL)
@@ -402,6 +440,13 @@ def main() -> int:
         final_note,
         event_count,
     ) = classify(events)
+
+    if not events and exit_code == 0:
+        accepted = True
+        classification = "accepted_change"
+        final_tag = "file_written"
+        final_status = "success"
+
     print(
         "[manager] worker exit=%s classification=%s final_tag=%s"
         % (exit_code, classification, final_tag)

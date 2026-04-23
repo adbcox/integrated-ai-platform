@@ -7,9 +7,14 @@ from __future__ import annotations
 
 import json
 from dataclasses import asdict, dataclass, field
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+
+try:  # Python 3.11+
+    from datetime import UTC  # type: ignore[attr-defined]
+except ImportError:  # pragma: no cover - exercised on Python < 3.11
+    UTC = timezone.utc
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 LEDGER_PATH = REPO_ROOT / "artifacts" / "worker" / "budget_ledger.json"

@@ -35,10 +35,10 @@ make aider-smart-status # ping the 32B endpoint before smart
 ```
 
 This uses:
-- `OLLAMA_API_BASE=http://127.0.0.1:11535`
-- `--model ollama_chat/qwen2.5-coder:1.5b`
-- `--map-tokens 0`
-- `--timeout 60`
+- `OLLAMA_API_BASE=http://127.0.0.1:11434`
+- primary model: `ollama_chat/qwen2.5-coder:14b`
+- fallback order (router): `qwen2.5-coder:14b` -> `deepseek-coder-v2` -> `qwen2.5-coder:7b`
+- default router tuning: `--map-tokens 1024`, `--timeout 180`
 
 Pass-through args are supported with `AIDER_ARGS`, for example:
 ```sh

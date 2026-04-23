@@ -5,6 +5,7 @@ import subprocess
 import sys
 import time
 from pathlib import Path
+from typing import Optional
 from fnmatch import fnmatch
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -29,7 +30,8 @@ def git_changed_files() -> list:
     proc = subprocess.run(["git", "status", "--porcelain"], capture_output=True, text=True, check=True)
     files = []
     for line in proc.stdout.splitlines():
-        line = line.strip()
+        # Keep leading spaces: porcelain v1 encodes unstaged changes as " M path".
+        line = line.rstrip()
         if not line:
             continue
         status, path = line[:2], line[3:]
@@ -132,7 +134,7 @@ def write_artifact(task, status, *, changed_files=None, diff_lines=None,
     return artifact
 
 
-def hint_for(code: str) -> str | None:
+def hint_for(code: str) -> Optional[str]:
     return {
         "scope_violation": "Tighten file list or split the task",
         "diff_budget": "Break the change into smaller patches",

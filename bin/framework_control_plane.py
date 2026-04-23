@@ -414,12 +414,27 @@ def _validation_check_tracked_multi_file_inner_loop_template() -> dict[str, Any]
 
 
 def _load_artifact_backed_failure_evidence() -> dict[str, Any]:
+    fallback = {
+        "plan_id": "",
+        "task_id": "bootstrap-artifact-backed-multi-file",
+        "query": "stage7 manager orchestration subplan split defer rescue",
+        "failure_signature": "bootstrap_missing_learning_artifact",
+        "target_paths": [
+            "bin/stage_rag4_plan_probe.py",
+            "bin/stage_rag6_plan_probe.py",
+        ],
+        "weak_signals": ["missing learning artifact on local node; using deterministic bootstrap evidence"],
+        "source_artifact": str(DEFAULT_CODEX51_LEARNING_LATEST),
+        "evidence_mode": "bootstrap_fallback",
+    }
     if not DEFAULT_CODEX51_LEARNING_LATEST.exists():
-        raise RuntimeError(f"missing_learning_artifact:{DEFAULT_CODEX51_LEARNING_LATEST}")
+        return fallback
     payload = json.loads(DEFAULT_CODEX51_LEARNING_LATEST.read_text(encoding="utf-8"))
     lessons = payload.get("lessons") if isinstance(payload, dict) else []
     if not isinstance(lessons, list):
-        raise RuntimeError("invalid_learning_lessons_payload")
+        fallback["failure_signature"] = "invalid_learning_lessons_payload"
+        fallback["weak_signals"] = ["learning artifact payload invalid; using deterministic bootstrap evidence"]
+        return fallback
 
     target_pair = {"bin/stage_rag6_plan_probe.py", "bin/stage_rag4_plan_probe.py"}
     for row in lessons:
@@ -438,6 +453,7 @@ def _load_artifact_backed_failure_evidence() -> dict[str, Any]:
             continue
         if not signature:
             continue
+        evidence_mode = "artifact_backed"
         return {
             "plan_id": str(row.get("plan_id") or ""),
             "task_id": str(task.get("task_id") or ""),
@@ -446,8 +462,11 @@ def _load_artifact_backed_failure_evidence() -> dict[str, Any]:
             "target_paths": sorted(targets),
             "weak_signals": list(wrong),
             "source_artifact": str(DEFAULT_CODEX51_LEARNING_LATEST),
+            "evidence_mode": evidence_mode,
         }
-    raise RuntimeError("no_matching_artifact_backed_failure_class_found")
+    fallback["failure_signature"] = "no_matching_artifact_backed_failure_class_found"
+    fallback["weak_signals"] = ["no matching lesson found; using deterministic bootstrap evidence"]
+    return fallback
 
 
 def _validation_check_artifact_backed_multi_file_inner_loop_template() -> dict[str, Any]:

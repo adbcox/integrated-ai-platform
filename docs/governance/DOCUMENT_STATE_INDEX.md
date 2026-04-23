@@ -67,6 +67,10 @@ Should not be read by default.
 | `docs/roadmap/EXECUTION_PACK_INDEX.md` | Execution support | 4 | active where relevant | human + machine | only when execution-pack detail is needed | not status authority |
 | `docs/roadmap/*_EXECUTION_PACK.md` | Execution support | 4 | mixed | human + machine | only when working that item or auditing history | not status authority |
 | `docs/roadmap/EXTERNAL_APPLICATIONS_AND_INTEGRATIONS.md` | Operating/Reference | 3 | active | human + machine | when working integrations/connectors | reference surface |
+| `docs/roadmap/REUSE_FIRST_IMPLEMENTATION_WAVE.md` | Operating/Execution | 3 | active | human + machine | when reconciling reuse-first OSS wave scope and closeout status | bounded reuse-wave authority surface |
+| `docs/runbooks/REUSE_FIRST_OSS_WAVE_RUNBOOK.md` | Operating/Runbook | 3 | active | human + machine | when executing OSS-wave operational commands | multi-system runbook |
+| `docs/runbooks/OPENHANDS_REUSE_FIRST_RUNBOOK.md` | Operating/Runbook | 3 | active | human + machine | when operating/validating OpenHands integration | canonical OpenHands runbook |
+| `bin/oss_wave_openhands_validate.py` | Execution/Validation | 3 | active | machine + human | when proving OpenHands completion state | requires `AgentState.FINISHED` evidence |
 
 ## Use rules
 

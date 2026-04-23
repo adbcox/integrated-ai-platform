@@ -3,9 +3,10 @@
 
 from __future__ import annotations
 
-import argparse  # stage7-op  # stage7-op  # stage7-op  # stage7-op  # stage7-op  # stage7-op  # stage7-op  # stage7-op  # stage7-op  # stage7-op  # stage7-op  # stage7-op  # stage7-op  # stage6-rag4-v4b  # stage6-rag4-v3b
+import argparse  # stage7-op  # stage7-op  # stage7-op  # stage7-op  # stage7-op  # stage7-op  # stage7-op  # stage7-op  # stage7-op  # stage7-op  # stage7-op  # stage7-op  # stage7-op  # stage7-op  # stage7-op  # stage6-rag4-v4b  # stage6-rag4-v3b
 import datetime as dt
 import json  # stage6-linkscore-v2
+import logging
 import math
 import re
 import subprocess
@@ -21,6 +22,7 @@ LOG_FILE = LOG_DIR / "usage.jsonl"
 
 def run_search(args: argparse.Namespace, *, top_override: int | None = None) -> dict[str, Any]:
     top_value = top_override if top_override is not None else args.top
+    logging.debug(f"Running search with top value: {top_value}")
     cmd = [
         sys.executable,
         str(STAGE_RAG3_SEARCH),
@@ -71,12 +73,94 @@ def _path_domain(path: str) -> str:
         return "docs"
     if path.startswith("tests/"):
         return "tests"
+    if path.startswith("framework/"):
+        return "framework"
+    if path.startswith("promotion/"):
+        return "promotion"
     if path == "Makefile":
         return "makefile"
     return "other"
 
 
 TOKEN_SPLIT_RE = re.compile(r"[^a-z0-9]+")
+
+
+def _extract_entities(query_tokens: list[str]) -> set[str]:
+    """Extract potential class/function/variable names from query.
+
+    Strategy: Tokens with capital letters (CamelCase) or all-caps are likely entities.
+    Avoids false positives from common lowercase words that appear in many files.
+
+    Examples:
+    - "improve ExecutorFactory" → {"ExecutorFactory"}
+    - "enhance promotion workflow" → {} (lowercase, not entities)
+    - "improve Stage RAG" → {"Stage", "RAG"}
+    """
+    assert query_tokens, "Query tokens must not be empty"
+    entities = set()
+    for token in query_tokens:
+        token_str = str(token).strip()
+        if not token_str:
+            continue
+        # CamelCase detection: at least one uppercase, mix of cases, reasonable length
+        has_upper = any(c.isupper() for c in token_str)
+        has_lower = any(c.islower() for c in token_str)
+        if has_upper and has_lower and len(token_str) > 2:
+            entities.add(token_str)
+        # Also capture all-caps if length > 2 (e.g., "RAG4")
+        if token_str.isupper() and len(token_str) > 2:
+            entities.add(token_str)
+    return entities
+
+
+def _entity_definition_score(file_path: str, entities: set[str]) -> float:
+    """Score how strongly a file defines/declares query entities.
+
+    For each entity, checks if the file explicitly defines/declares it:
+    - File defines class/function with entity name → +2.5
+    - File has variable assignment with entity name → +1.0
+
+    Returns score in range [0.0, 3.0] per entity, capped at 3.0 total.
+    Avoids false positives from comments/docstrings by checking line starts.
+    """
+    if not entities:
+        return 0.0
+
+    score = 0.0
+
+    # Try to read file and check for entity definitions
+    try:
+        file_full_path = REPO_ROOT / file_path
+        if not file_full_path.exists():
+            return 0.0
+        file_text = file_full_path.read_text(encoding="utf-8", errors="ignore")
+    except (OSError, ValueError):
+        return 0.0
+
+    lines = file_text.splitlines()
+
+    for entity in entities:
+        entity_lower = entity.lower()
+        entity_score = 0.0
+
+        # Look for actual class/function definitions (at line start after whitespace)
+        for line in lines:
+            stripped = line.lstrip()
+            stripped_lower = stripped.lower()
+
+            # Definition patterns (highest signal)
+            if (stripped_lower.startswith(f"class {entity_lower}") or
+                stripped_lower.startswith(f"def {entity_lower}")):
+                entity_score = 2.5
+                break
+            # Variable/assignment at line start
+            elif stripped_lower.startswith(f"{entity_lower} ="):
+                entity_score = 1.0
+                break  # Found match, move to next entity
+
+        score += entity_score
+
+    return min(score, 3.0)
 
 
 def _path_tokens(path: str) -> set[str]:
@@ -95,6 +179,17 @@ def _family_key(path: str) -> str:
 
 def _query_intent(tokens: list[str]) -> str:
     lowered = [t.lower() for t in tokens]
+
+    # Infrastructure files: config, build, manifests (non-code files)
+    # These need special handling to avoid being confused with docs
+    # Require explicit mention or 2+ config-related terms to avoid false positives
+    infrastructure_terms = {"makefile", "config", "manifest", "yml", "yaml", "toml"}
+    infrastructure_hits = sum(1 for t in lowered if any(term in t for term in infrastructure_terms))
+    # Also accept "promotion_manifest" as explicit infrastructure reference
+    has_manifest_mention = any("manifest" in t for t in lowered)
+    if infrastructure_hits >= 1 or has_manifest_mention:
+        return "infrastructure"
+
     doc_terms = {"doc", "docs", "documentation", "readme", "guide", "roadmap", "policy"}
     code_terms = {
         "stage6",
@@ -110,8 +205,44 @@ def _query_intent(tokens: list[str]) -> str:
         "lane",
         "target",
     }
+    modification_terms = {
+        "add",
+        "improve",
+        "better",
+        "update",
+        "fix",
+        "enhance",
+        "change",
+        "modify",
+        "refactor",
+        "docstring",
+        "documentation",
+        "comment",
+    }
     doc_hits = sum(1 for t in lowered if any(t.startswith(term) for term in doc_terms))
     code_hits = sum(1 for t in lowered if any(t.startswith(term) for term in code_terms))
+    modification_hits = sum(1 for t in lowered if any(t.startswith(term) for term in modification_terms))
+
+    # If query has modification intent (add, improve, fix, etc) + code-related context,
+    # treat as modification task to boost target-specific files over tangentially related ones
+    # Expand detection: code objects (function/class), code-related terms (validation/handling/logic/algorithm),
+    # or manager/system/handler files all indicate code being modified
+    code_object_terms = {"function", "method", "class", "module", "variable", "parameter", "handler", "manager"}
+    code_context_terms = {"validation", "handling", "logic", "algorithm", "error", "exception", "event", "state", "processing"}
+    code_other_terms = {"script", "code", "feature", "implementation", "executor", "classifier", "engine", "workflow", "promotion", "pipeline", "system"}
+
+    # Check if any token contains a code-related term (substring match, not exact)
+    has_code_object = any(term in token for token in lowered for term in code_object_terms)
+    has_code_context = any(term in lowered for term in code_context_terms)
+    has_code_other = any(
+        term in lowered or any(term in token for token in lowered)
+        for term in code_other_terms
+    )
+
+    has_code_signal = has_code_object or has_code_context or has_code_other
+    if modification_hits >= 1 and has_code_signal:
+        return "modification"
+
     if code_hits > doc_hits:
         return "code"
     if doc_hits > code_hits:
@@ -120,11 +251,23 @@ def _query_intent(tokens: list[str]) -> str:
 
 
 def _domain_bonus(*, intent: str, domain: str) -> float:
+    if intent == "modification":
+        # For modification tasks, prefer library/framework files but also support bin managers
+        # Bin files include both tooling/tests AND legitimate manager scripts
+        return {
+            "framework": 1.25,  # Core framework classes are preferred modification targets
+            "promotion": 1.15,  # Promotion system is also legitimate target
+            "other": 0.75,      # artifacts/ and other actual code
+            "bin": 0.0,         # Neutral: bin has both tooling and legitimate manager code
+            "tests": -0.45,     # test files less likely targets
+            "docs": -0.75,      # docs are not modification targets
+            "makefile": -0.65,
+        }.get(domain, 0.75)
     if intent == "code":
         return {
             "bin": 1.35,
             "tests": 0.35,
-            "docs": -1.25,
+            "docs": -2.5,  # Increased penalty: code queries should strongly prefer implementation files
             "makefile": -0.55,
             "other": -0.25,
         }.get(domain, -0.25)
@@ -136,7 +279,45 @@ def _domain_bonus(*, intent: str, domain: str) -> float:
             "tests": -0.45,
             "other": -0.2,
         }.get(domain, -0.2)
+    if intent == "infrastructure":
+        # Infrastructure queries target config/build/manifest files, not code or docs
+        return {
+            "other": 1.5,       # Infrastructure files (Makefile, config, json, etc.) usually "other"
+            "makefile": 1.5,    # Explicit boost for Makefile
+            "docs": -3.0,       # Heavy penalty: docs not infrastructure targets
+            "framework": -0.5,  # Not infrastructure targets
+            "bin": -0.5,        # Not infrastructure targets
+            "tests": -0.5,      # Not infrastructure targets
+            "promotion": -0.5,  # Not infrastructure targets
+        }.get(domain, 1.5)
+    if intent == "mixed":
+        # Mixed intent queries (unclear if code/docs/modification) should moderately favor code files
+        return {
+            "bin": 0.8,         # Moderate boost for code files
+            "framework": 0.5,   # Small boost for framework
+            "docs": -1.5,       # Moderate penalty for docs
+            "tests": 0.0,       # Neutral for tests
+            "other": 0.2,       # Small boost for other code
+        }.get(domain, 0.2)
     return 0.0
+
+
+def _is_modification_target(path: str) -> bool:
+    """Detect if a path looks like a modification target (actual code, not test tooling)."""
+    # Core library/framework files are the prime modification targets
+    if path.startswith("framework/"):
+        return True
+    # Promotion system is legitimate target
+    if path.startswith("promotion/"):
+        return True
+    # Artifacts and explicitly created test directories are likely targets
+    if path.startswith("artifacts/"):
+        return True
+    # Shell scripts are sometimes targets but less likely than code
+    if path.startswith("shell/") and not path.startswith("shell/test"):
+        return True
+    # Exclude bin/ (mostly tooling/tests), docs/, tests/ by default
+    return False
 
 
 def _ranking_score(
@@ -149,7 +330,21 @@ def _ranking_score(
     lane_aligned: bool,
     domain: str,
     intent: str,
+    path: str = "",
 ) -> float:
+    # For modification tasks, lane alignment is less critical; file targeting is critical
+    if intent == "modification":
+        lane_bonus = 0.5 if lane_aligned else -0.5
+        # Strong boost for files that look like modification targets
+        target_bonus = 3.2 if _is_modification_target(path) else -1.8
+        # Git history suggests active development (more likely target)
+        git_bonus = git_history_count * 0.35
+        companion_bonus = (min(related_count, 2) * 0.12) + (sibling_count * 0.08)
+        related_preview_bonus = min(related_score / 420.0, 0.8)
+        domain_intent_bonus = _domain_bonus(intent=intent, domain=domain)
+        return round(base_score + lane_bonus + target_bonus + git_bonus + companion_bonus + related_preview_bonus + domain_intent_bonus, 4)
+
+    # Original scoring for code/docs intents
     # Stage-6 currently executes mostly bin-scoped work; make lane alignment decisive.
     lane_bonus = 2.35 if lane_aligned else -2.35
     companion_bonus = (min(related_count, 4) * 0.18) + (git_history_count * 0.22) + (sibling_count * 0.12)
@@ -333,11 +528,30 @@ def main() -> int:
     preferred_prefixes = [prefix for prefix in args.preferred_prefix if prefix]
     intent = _query_intent(args.query)
     query_tokens = {t.lower() for t in args.query if t}
+    # Extract entity names (CamelCase tokens) for entity-aware reranking
+    entity_names = _extract_entities(args.query)
     search_top = args.top
-    if preferred_prefixes and intent == "code":
-        # Broaden retrieval for code-intent lane runs so we can recover more
-        # lane-aligned candidates without emitting out-of-lane targets.
-        search_top = max(args.top, args.max_targets * 4)
+    if intent == "code":
+        # Broaden retrieval for all code-intent queries to ensure we get implementation files
+        # even when docs files rank higher in BM25 (common for "where is..." or "what files..." queries)
+        # Use max_targets * 6 = ~24 to capture more code files before reranking penalizes docs
+        search_top = max(args.top, args.max_targets * 6)
+    elif intent == "modification":
+        # Broaden retrieval for modification queries to capture actual modification targets
+        # that might not rank high in token-based search but should be ranked high
+        # by domain/path bonuses (e.g., framework/ files vs test/bin files).
+        # Increase to 48 to ensure we get promotion/ and framework/ files even when they
+        # rank lower in BM25 (common for domain-generic queries like "enhance promotion workflow")
+        search_top = max(args.top, 48)
+    elif intent == "infrastructure":
+        # Broaden retrieval for infrastructure queries to capture config/build/manifest files
+        # Use max_targets * 6 = ~24 to ensure we get infrastructure files before penalizing docs
+        search_top = max(args.top, args.max_targets * 6)
+    elif intent == "mixed":
+        # Broaden retrieval for mixed-intent queries to ensure we capture specific files mentioned
+        # in the query even if they don't rank high in initial BM25 search
+        # Use max_targets * 6 = ~24 to get broader coverage for reranking
+        search_top = max(args.top, args.max_targets * 6)
     search_payload = run_search(args, top_override=search_top)
     results = search_payload.get("results", [])
 
@@ -354,6 +568,12 @@ def main() -> int:
         sibling_count, git_history_count = _count_related_sources(related_entries)
         base_score = float(entry.get("score") or 0.0)
         lane_aligned = _path_matches_prefix(path, preferred_prefixes)
+
+        # Entity-aware reranking: boost files that define/declare query entities
+        entity_boost = 0.0
+        if entity_names:
+            entity_boost = _entity_definition_score(path, entity_names)
+
         rank_score = _ranking_score(
             base_score=base_score,
             sibling_count=sibling_count,
@@ -363,7 +583,11 @@ def main() -> int:
             lane_aligned=lane_aligned,
             domain=domain,
             intent=intent,
+            path=path,
         )
+        # Apply entity boost after base ranking
+        rank_score = round(rank_score + entity_boost, 4)
+
         targets.append(
             {
                 "path": path,
@@ -384,6 +608,8 @@ def main() -> int:
                     "lane_aligned": lane_aligned,
                     "query_intent": intent,
                     "domain_bonus": _domain_bonus(intent=intent, domain=domain),
+                    "entity_names": list(entity_names),
+                    "entity_boost": entity_boost,
                 },
             }
         )
@@ -408,17 +634,59 @@ def main() -> int:
             deduped[path] = target
 
     # Keep targets deterministic by retrieval score + companion strength.
-    targets = sorted(
-        deduped.values(),
-        key=lambda item: (int(item.get("lane_aligned", False)), item["rank_score"], item["path"]),
-        reverse=True,
-    )
+    # For infrastructure intent, prioritize "other" domain (infrastructure files).
+    # For modification intent, rank by score; for code intent, prioritize lane-alignment.
+    if intent == "infrastructure":
+        # For infrastructure, prioritize "other" domain files (Makefile, config, etc)
+        targets = sorted(
+            deduped.values(),
+            key=lambda item: (
+                int(item.get("domain") == "other"),  # Prioritize "other" domain (1 > 0)
+                item["rank_score"],
+                item["path"]
+            ),
+            reverse=True,
+        )
+    elif intent == "modification":
+        # Sort purely by ranking score for modification tasks, ignoring lane alignment
+        targets = sorted(
+            deduped.values(),
+            key=lambda item: (item["rank_score"], item["path"]),
+            reverse=True,
+        )
+    else:
+        # For code/docs intent, lane alignment is important
+        targets = sorted(
+            deduped.values(),
+            key=lambda item: (int(item.get("lane_aligned", False)), item["rank_score"], item["path"]),
+            reverse=True,
+        )
     _calibrate_confidences(targets)
-    targets = sorted(
-        targets,
-        key=lambda item: (int(item.get("lane_aligned", False)), item["rank_score"], item["confidence"], item["path"]),
-        reverse=True,
-    )
+
+    # Secondary sort for determinism
+    if intent == "infrastructure":
+        targets = sorted(
+            targets,
+            key=lambda item: (
+                int(item.get("domain") == "other"),  # Prioritize "other" domain
+                item["rank_score"],
+                item["confidence"],
+                item["path"]
+            ),
+            reverse=True,
+        )
+    elif intent == "modification":
+        targets = sorted(
+            targets,
+            key=lambda item: (item["rank_score"], item["confidence"], item["path"]),
+            reverse=True,
+        )
+    else:
+        targets = sorted(
+            targets,
+            key=lambda item: (int(item.get("lane_aligned", False)), item["rank_score"], item["confidence"], item["path"]),
+            reverse=True,
+        )
 
     # For code-intent lane-focused planning, emit lane-aligned targets only when
     # available so Stage-6 does not receive avoidable out-of-lane noise.
@@ -447,6 +715,114 @@ def main() -> int:
             )
         else:
             targets = non_lane_targets
+
+    # Fallback for modification intent: if all top results are from non-preferred domains,
+    # include at least one preferred-domain candidate even if its score is lower.
+    # This handles BM25 ranking biases where unrelated files score higher by chance.
+    if preferred_prefixes and intent == "modification" and targets:
+        top_domains = {_path_domain(t["path"]) for t in targets[: args.max_targets]}
+        has_preferred = any(_path_matches_prefix(t["path"], preferred_prefixes) for t in targets[: args.max_targets])
+        if not has_preferred:
+            # Find the best-scoring preferred-domain candidate from all retrieved targets
+            for all_target in deduped.values():
+                if _path_matches_prefix(all_target["path"], preferred_prefixes):
+                    # Insert it as second choice (after best overall result)
+                    if len(targets) > 0:
+                        targets.insert(1, all_target)
+                    else:
+                        targets.append(all_target)
+                    break
+
+    # Fallback for infrastructure intent: if no "other" domain files in top results,
+    # try to inject known infrastructure files that might be missing from search.
+    # This recovers from stage_rag3 search gaps for Makefile, config files, etc.
+    if intent == "infrastructure" and targets:
+        top_domains = {_path_domain(t["path"]) for t in targets[: args.max_targets]}
+        has_infrastructure = "other" in top_domains or "makefile" in top_domains
+        if not has_infrastructure:
+            # Check for known infrastructure files that should exist
+            # Note: injected with "other" domain for consistency with infrastructure classification
+            infrastructure_files = [
+                ("Makefile", "other"),
+                ("config/promotion_manifest.json", "other"),
+                ("promotion/manifest.py", "promotion"),  # Fallback if JSON not found
+            ]
+
+            # Choose which infrastructure file to inject based on query relevance
+            # Score based on token overlap with query
+            query_tokens_set = set(args.query)
+            best_infra_file = None
+            best_score = -1
+
+            for infra_path, infra_domain in infrastructure_files:
+                candidate_path = REPO_ROOT / infra_path
+                if candidate_path.exists():
+                    # Score based on overlap with query tokens
+                    path_tokens = set(infra_path.lower().split('/'))
+                    overlap = len(query_tokens_set & path_tokens)
+                    if overlap > best_score:
+                        best_score = overlap
+                        best_infra_file = (infra_path, infra_domain)
+
+            # If no query overlap, prefer config files over Makefile
+            if best_score == 0:
+                for infra_path, infra_domain in infrastructure_files:
+                    candidate_path = REPO_ROOT / infra_path
+                    if candidate_path.exists() and "config" in infra_path:
+                        best_infra_file = (infra_path, infra_domain)
+                        break
+
+            # If still nothing, use first available
+            if best_infra_file is None:
+                for infra_path, infra_domain in infrastructure_files:
+                    candidate_path = REPO_ROOT / infra_path
+                    if candidate_path.exists():
+                        best_infra_file = (infra_path, infra_domain)
+                        break
+
+            if best_infra_file:
+                infra_path, infra_domain = best_infra_file
+                # File exists but wasn't retrieved; inject it with moderate score
+                fallback_target = {
+                    "path": infra_path,
+                    "preview": None,
+                    "related": [],
+                    "source": "stage_rag4_fallback",
+                    "base_score": 0.0,
+                    "rank_score": 5.0,  # Low but present
+                    "related_score": 0,
+                    "lane_aligned": False,
+                    "domain": infra_domain,
+                    "selection_reason": {
+                        "sibling_count": 0,
+                        "git_history_count": 0,
+                        "related_paths": [],
+                        "related_count": 0,
+                        "preferred_prefixes": preferred_prefixes,
+                        "lane_aligned": False,
+                        "query_intent": intent,
+                        "domain_bonus": _domain_bonus(intent=intent, domain=infra_domain),
+                        "entity_names": [],
+                        "entity_boost": 0.0,
+                        "fallback_reason": "infrastructure_file_not_in_search",
+                    },
+                }
+                # Insert as second choice if we have other results, otherwise append
+                if len(targets) > 0 and not any(infra_path in t["path"] for t in targets):
+                    targets.insert(1, fallback_target)
+                else:
+                    targets.append(fallback_target)
+
+        # Re-sort after fallback injection to prioritize "other" domain files
+        targets = sorted(
+            targets,
+            key=lambda item: (
+                int(item.get("domain") == "other"),  # Prioritize "other" domain
+                item["rank_score"],
+                item["path"]
+            ),
+            reverse=True,
+        )
 
     targets = targets[: args.max_targets]
 

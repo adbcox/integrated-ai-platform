@@ -4,15 +4,20 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass
-from datetime import UTC, datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
+
+try:  # Python 3.11+
+    from datetime import UTC  # type: ignore[attr-defined]
+except ImportError:  # pragma: no cover - exercised on Python < 3.11
+    UTC = timezone.utc
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_STAGE4_TRACE = REPO_ROOT / "artifacts" / "stage4_manager" / "traces.jsonl"
 
 
-def _parse_timestamp(value: str | None) -> datetime | None:
+def _parse_timestamp(value: Optional[str]) -> Optional[datetime]:
     if not value:
         return None
     try:
@@ -38,14 +43,14 @@ class MemoryDecision:
     literal_shell_risky_risk: bool
     should_force_anchor: bool
     should_reroute_manual: bool
-    reason: str | None = None
+    reason: Optional[str] = None
 
 
 def _read_stage4_rows(
     *,
     lane: str,
     target: str,
-    manifest_version: int | None,
+    manifest_version: Optional[int],
     window_days: int,
     trace_path: Path = DEFAULT_STAGE4_TRACE,
 ) -> list[dict[str, Any]]:
@@ -81,8 +86,8 @@ def assess_target_risk(
     lane: str,
     target: str,
     message: str,
-    manifest_version: int | None,
-    retry_class: str | None = None,
+    manifest_version: Optional[int],
+    retry_class: Optional[str] = None,
     window_days: int = 7,
 ) -> MemoryDecision:
     rows = _read_stage4_rows(
@@ -147,4 +152,3 @@ def assess_target_risk(
         should_reroute_manual=should_reroute_manual,
         reason=reason,
     )
-

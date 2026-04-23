@@ -2,7 +2,7 @@
 """Lightweight local-model evaluation harness over Codex escalation artifacts."""
 from __future__ import annotations
 
-import argparse
+import argparse  # stage7-op
 import json
 import os
 from collections import Counter, defaultdict

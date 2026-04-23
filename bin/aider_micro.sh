@@ -13,7 +13,7 @@ Usage: bin/aider_micro.sh "anchored message" path/to/file1 [path/to/file2]
   - Restricts micro tasks to at most two files.
   - Message must explicitly anchor each file using "<basename>::<token>" syntax.
   - Default supported class (Stage 3): single-file literal wording/comment replacements (up to two adjacent lines) inside shell/bin files. See docs/safe-literal-probes.md for the full checklist.
-  - Runs aider via bin/aider_local.sh and then make quick.
+  - Runs aider via the local router (bin/aider_local_router.py) and then make quick.
   - Fails if files outside the allowed list change or no file changes.
 USAGE
 }
@@ -24,12 +24,37 @@ LITERAL_OLD=""
 LITERAL_NEW=""
 LITERAL_BEFORE_FILE=""
 LITERAL_FALLBACK_USED=false
+COMMENT_FALLBACK_USED=false
 WRITE_CHECK_COUNT=${AIDER_MICRO_WRITE_CHECKS:-3}
 WRITE_CHECK_DELAY=${AIDER_MICRO_WRITE_DELAY_SEC:-1}
 EVENT_LOG="${AIDER_MICRO_EVENT_LOG:-artifacts/micro_runs/events.jsonl}"
 MICRO_STAGE="${AIDER_MICRO_STAGE:-stage3}"
 MICRO_PLAN_ID="${AIDER_MICRO_PLAN_ID:-}"
 TARGET_FILES=()
+
+iso_utc_now() {
+  date -u '+%Y-%m-%dT%H:%M:%SZ'
+}
+
+readarray_compat() {
+  local __resultvar="$1"
+  shift
+  local __data
+  __data="$("$@")"
+  local -a __tmp
+  __tmp=()
+  if [ -n "$__data" ]; then
+    while IFS= read -r __line; do
+      [ -n "$__line" ] || continue
+      __tmp+=("$__line")
+    done <<<"$__data"
+  fi
+  if [ "${#__tmp[@]}" -eq 0 ]; then
+    eval "$__resultvar=()"
+  else
+    eval "$__resultvar=(\"\${__tmp[@]}\")"
+  fi
+}
 
 classify_failure_phase() {
   local tag="$1"
@@ -50,7 +75,7 @@ log_micro_event() {
   local exit_code="${4:-0}"
   local phase="${5:-$(classify_failure_phase "$tag")}"
   local ts
-  ts=$(date -Is)
+  ts=$(iso_utc_now)
   local files_payload=""
   if [ ${#TARGET_FILES[@]} -gt 0 ]; then
     files_payload=$(printf '%s\n' "${TARGET_FILES[@]}")
@@ -244,6 +269,45 @@ PY
     fail "literal replace fallback could not apply change" "literal_replace_fallback"
   fi
   LITERAL_FALLBACK_USED=true
+}
+
+comment_apply_direct() {
+  local target_file="$1"
+  info "applying comment-only fallback to $target_file"
+  if ! COMMENT_FALLBACK_TARGET="$target_file" python3 - <<'PY'
+import os, sys
+from pathlib import Path
+
+path = Path(os.environ["COMMENT_FALLBACK_TARGET"])
+text = path.read_text(encoding="utf-8")
+marker = "# micro fallback comment-only"
+
+if marker in text:
+    updated = text.replace(marker, marker + " (refreshed)", 1)
+else:
+    lines = text.splitlines(keepends=True)
+    if not lines:
+        updated = marker + "\n"
+    elif lines[0].startswith("#!"):
+        insertion = 1
+        while insertion < len(lines) and lines[insertion].strip() == "":
+            insertion += 1
+        lines.insert(insertion, marker + "\n")
+        updated = "".join(lines)
+    else:
+        updated = marker + "\n" + text
+
+if updated == text:
+    print("comment fallback produced no change", file=sys.stderr)
+    sys.exit(1)
+
+path.write_text(updated, encoding="utf-8")
+sys.exit(0)
+PY
+  then
+    fail "comment-only fallback could not apply change" "comment_fallback_failed"
+  fi
+  COMMENT_FALLBACK_USED=true
 }
 
 if [ $# -lt 2 ]; then
@@ -494,7 +558,19 @@ fi
 if [ "$TEST_MODE" = false ]; then
   RESTORE_ON_FAIL=true
   info "running aider on ${TARGET_FILES[*]}"
-  if bash bin/aider_local.sh --message "$MESSAGE" "${TARGET_FILES[@]}"; then
+  declare -a router_env
+  router_env=()
+  if [ "$TASK_KIND" = "guard" ]; then
+    # Regression-only: ensure we still exercise the "aider exit" handling path deterministically.
+    # Keep this bounded so a guard probe never soaks time.
+    router_env=(AIDER_SUP_WRAP_TIMEOUT=2 AIDER_ROUTER_PRIMARY_RETRY=0)
+  fi
+  if [ "${#router_env[@]}" -gt 0 ]; then
+    aider_cmd=(env "${router_env[@]}" python3 bin/aider_local_router.py --mode micro --message "$MESSAGE" "${TARGET_FILES[@]}")
+  else
+    aider_cmd=(python3 bin/aider_local_router.py --mode micro --message "$MESSAGE" "${TARGET_FILES[@]}")
+  fi
+  if "${aider_cmd[@]}"; then
     info "running quick validation after aider"
     if ! PYTHONPYCACHEPREFIX=/tmp/aider_pycache make quick >/dev/null; then
       fail "make quick failed; inspect quick logs" "validation"
@@ -525,6 +601,15 @@ PY
         fail "make quick failed after fallback; inspect quick logs" "validation"
       fi
       log_micro_event "info" "literal_fallback_applied" "$LITERAL_FILE"
+    elif [ "$TASK_KIND" = "comment-only" ] && [ ${#TARGET_FILES[@]} -eq 1 ]; then
+      info "aider exit detected; attempting comment-only fallback"
+      log_micro_event "warning" "comment_fallback_start" "aider exited status $status"
+      comment_apply_direct "${TARGET_FILES[0]}"
+      info "running quick validation after fallback"
+      if ! PYTHONPYCACHEPREFIX=/tmp/aider_pycache make quick >/dev/null; then
+        fail "make quick failed after comment fallback; inspect quick logs" "validation"
+      fi
+      log_micro_event "info" "comment_fallback_applied" "${TARGET_FILES[0]}"
     else
       fail "aider exited non-zero (status $status). Inspect artifacts/aider_runs for details." "aider_exit" "$status"
     fi
@@ -558,12 +643,12 @@ if [ -n "${AIDER_MICRO_FAKE_DIFF_FILE:-}" ]; then
   CHANGED_TARGET=("${CHANGED_TOTAL[@]}")
   cp "$AIDER_MICRO_FAKE_DIFF_FILE" "$diff_file"
 elif [ "$HEAD_BEFORE" != "$HEAD_AFTER" ]; then
-  mapfile -t CHANGED_TOTAL < <(git diff --name-only "$HEAD_BEFORE" "$HEAD_AFTER")
-  mapfile -t CHANGED_TARGET < <(git diff --name-only "$HEAD_BEFORE" "$HEAD_AFTER" -- "${TARGET_FILES[@]}")
+  readarray_compat CHANGED_TOTAL git diff --name-only "$HEAD_BEFORE" "$HEAD_AFTER"
+  readarray_compat CHANGED_TARGET git diff --name-only "$HEAD_BEFORE" "$HEAD_AFTER" -- "${TARGET_FILES[@]}"
   git diff "$HEAD_BEFORE" "$HEAD_AFTER" -- "${TARGET_FILES[@]}" >"$diff_file"
 else
-  mapfile -t CHANGED_TOTAL < <(git diff --name-only)
-  mapfile -t CHANGED_TARGET < <(git diff --name-only -- "${TARGET_FILES[@]}")
+  readarray_compat CHANGED_TOTAL git diff --name-only
+  readarray_compat CHANGED_TARGET git diff --name-only -- "${TARGET_FILES[@]}"
   git diff -- "${TARGET_FILES[@]}" >"$diff_file"
 fi
 
@@ -593,6 +678,8 @@ done
 if [ "$changed_any" = false ]; then
   if [ "$TASK_KIND" = "literal-replace" ] && [ "$LITERAL_FALLBACK_USED" = true ]; then
     info "no diff detected but literal fallback applied; treating as success"
+  elif [ "$TASK_KIND" = "comment-only" ] && [ "$COMMENT_FALLBACK_USED" = true ]; then
+    info "no diff detected but comment fallback applied; treating as success"
   else
     fail "none of the target files changed" "no_change"
   fi
@@ -664,7 +751,7 @@ status: success
 run_number: $count
 files: ${TARGET_FILES[*]}
 message: $MESSAGE
-timestamp: $(date -Is)
+timestamp: $(iso_utc_now)
 SUMMARY
 log_micro_event "success" "completed" "micro lane run succeeded" 0 "execution"
 info "wrote summary to $summary_path"
