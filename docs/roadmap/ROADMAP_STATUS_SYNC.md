@@ -55,7 +55,7 @@ surfaces and may be gitignored/non-committed; they are never canonical authority
 - Outcome:
   - `RM-OPS-007` — completed, archived
   - archived in this convergence run: 19 items
-  - held at `ready_for_archive`: `RM-DEV-008`, `RM-DEV-009` (`execution_status=not_started`)
+  - archive-resolution pass archived: `RM-DEV-008`, `RM-DEV-009`
 
 ## RM-UI-005 Canonical Execution State (Latest)
 

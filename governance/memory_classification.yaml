@@ -1,0 +1,85 @@
+schema_version: "1.0"
+kind: memory_classification
+policy_id: MEM-CLASS-001
+memory_tiers:
+  - tier: root
+    persistence: persistent
+    authority:
+      owner: governance
+      update_requires: explicit_review
+    includes:
+      - canonical operating rules
+      - architecture boundaries
+      - non-negotiable safety constraints
+    excludes:
+      - tactical run notes
+      - transient diagnostics
+    validation_boundary:
+      writable_by:
+        - human_reviewed_governance_change
+      denied_writers:
+        - autonomous_run_output
+        - ad_hoc_prompt_memory
+  - tier: modular
+    persistence: persistent
+    authority:
+      owner: subsystem_maintainers
+      update_requires: scoped_review
+    includes:
+      - module-level operating docs
+      - validated command references
+      - dependency maps
+    excludes:
+      - unresolved design drafts
+      - partial experiment logs
+    validation_boundary:
+      writable_by:
+        - bounded_slice_with_validation
+      denied_writers:
+        - unvalidated_autonomous_output
+  - tier: scoped
+    persistence: session_scoped
+    authority:
+      owner: execution_session
+      update_requires: none
+    includes:
+      - temporary decisions
+      - in-progress investigation notes
+      - local hypotheses
+    excludes:
+      - canonical policy changes
+      - long-term architecture commitments
+    validation_boundary:
+      writable_by:
+        - active_session
+      denied_writers:
+        - cross_session_reuse_without_review
+  - tier: known_failures
+    persistence: persistent
+    authority:
+      owner: operations_and_governance
+      update_requires: reproducible_evidence
+    includes:
+      - failure modes with reproduction steps
+      - validated mitigations
+      - rollback patterns
+    excludes:
+      - anecdotal or unreproduced failures
+    validation_boundary:
+      writable_by:
+        - post_validation_update
+      denied_writers:
+        - speculative_failure_claims
+classification_rules:
+  - rule_id: MC-RULE-001
+    when: decision_changes_architecture_or_authority
+    assign_tier: root
+  - rule_id: MC-RULE-002
+    when: decision_updates_module_operating_docs
+    assign_tier: modular
+  - rule_id: MC-RULE-003
+    when: note_is_session_specific_and_unratified
+    assign_tier: scoped
+  - rule_id: MC-RULE-004
+    when: failure_pattern_has_repro_and_fix
+    assign_tier: known_failures

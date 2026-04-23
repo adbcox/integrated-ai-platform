@@ -47,8 +47,7 @@ roadmap autonomy after RM-OPS-007 archive convergence.
 
 ## Current Hold Set
 
-- `RM-DEV-008` and `RM-DEV-009` are held at `ready_for_archive`
-  because `execution.execution_status=not_started` in canonical item files.
+- none
 
 ## Required Validation Order
 

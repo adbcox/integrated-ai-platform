@@ -82,16 +82,22 @@ milestones:
   - implement memory validation gates
 planning:
   planning_packet_ref: null
-  planning_status: not_started
-  planning_notes: ''
+  planning_status: complete
+  planning_notes: Memory governance deliverables defined and linked to validation
+    evidence.
 execution:
   execution_package_refs:
   - docs/roadmap/RM-DEV-008_EXECUTION_PACK.md
-  execution_status: not_started
+  execution_status: completed
   last_execution_commit: null
 validation:
-  validation_artifact_refs: []
-  validation_status: not_started
+  validation_artifact_refs:
+  - artifacts/validation/rm_dev_008_memory_governance_validation.json
+  - governance/memory_classification.yaml
+  - governance/memory_provenance_policy.yaml
+  - docs/agent/memory_governance.md
+  validation_status: passed
+  item_complete_evidence: true
   definition_of_done_ref: docs/roadmap/STANDARDS.md
 governance:
   phase_target: Phase 3
@@ -158,9 +164,9 @@ sync:
 metadata:
   owner: adrian
   created_at: '2026-04-22'
-  updated_at: '2026-04-22'
+  updated_at: '2026-04-23'
   tags:
   - memory-governance
   - provenance
   - bounded-autonomy
-archive_status: ready_for_archive
+archive_status: archived

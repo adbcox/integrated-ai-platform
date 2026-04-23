@@ -35,7 +35,7 @@ surfaces and may be gitignored/non-committed; they are never canonical authority
 - Convergence validator: `bin/validate_rm_ops007_convergence.py`
 - Convergence report: `artifacts/operations/rm_ops007_archive_convergence_report.json`
 - Validation artifact: `artifacts/validation/rm_ops007_convergence_validation.json`
-- Held items after convergence: `RM-DEV-008`, `RM-DEV-009` (`status=completed`, `execution_status=not_started`)
+- Archive-resolution pass completed: `RM-DEV-008`, `RM-DEV-009` (`completed`, `archived`)
 
 Integrated expansion evidence:
 - `governance/integrated_ops_home_intel_inventory_policy.v1.yaml`

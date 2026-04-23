@@ -1,6 +1,6 @@
 schema_version: '1.1'
 kind: roadmap_dependency_graph
-generated_at: '2026-04-23T04:02:40+00:00'
+generated_at: '2026-04-23T11:06:03+00:00'
 source_of_truth: docs/roadmap/items/RM-*.yaml
 nodes:
 - id: RM-AUTO-001
@@ -98,13 +98,13 @@ nodes:
   category: DEV
   priority: P1
   status: completed
-  archive_status: ready_for_archive
+  archive_status: archived
 - id: RM-DEV-009
   title: Agent operating-docs and persistent execution-memory package
   category: DEV
   priority: P1
   status: completed
-  archive_status: ready_for_archive
+  archive_status: archived
 - id: RM-DOCAPP-002
   title: Website generation baseline system
   category: DOCAPP
@@ -574,9 +574,7 @@ blocking_analysis:
   eligible_items: []
   blocked_items: []
   conditionally_eligible: []
-  completed_ready_for_archive:
-  - RM-DEV-008
-  - RM-DEV-009
+  completed_ready_for_archive: []
   archived_items:
   - RM-AUTO-001
   - RM-AUTO-002
@@ -591,6 +589,8 @@ blocking_analysis:
   - RM-DEV-005
   - RM-DEV-006
   - RM-DEV-007
+  - RM-DEV-008
+  - RM-DEV-009
   - RM-DOCAPP-002
   - RM-ED-001
   - RM-GOV-001

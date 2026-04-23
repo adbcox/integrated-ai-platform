@@ -1,0 +1,72 @@
+schema_version: "1.0"
+kind: memory_provenance_policy
+policy_id: MEM-PROV-001
+provenance:
+  required_fields:
+    - source_surface
+    - decision_owner
+    - decision_timestamp
+    - validation_evidence
+    - change_reason
+  accepted_source_surfaces:
+    - docs/roadmap/items/RM-*.yaml
+    - governance/*.yaml
+    - docs/agent/*.md
+authority_rules:
+  root:
+    approvers:
+      - governance_owner
+      - architecture_owner
+    required_validation:
+      - make check
+      - make quick
+  modular:
+    approvers:
+      - subsystem_owner
+    required_validation:
+      - make check
+  scoped:
+    approvers:
+      - session_executor
+    required_validation: []
+  known_failures:
+    approvers:
+      - operations_owner
+      - governance_owner
+    required_validation:
+      - reproducible_failure_evidence
+summarization_policy:
+  preserve_verbatim:
+    - safety_constraints
+    - authority_decisions
+    - rollback_rules
+  compress_allowed_for:
+    - repetitive_debug_logs
+    - low-signal intermediate notes
+  compression_requirements:
+    - preserve_decision_outcome
+    - retain_evidence_pointer
+    - retain_owner_and_timestamp
+validation_gates:
+  deny_persist_when:
+    - missing_required_provenance_fields
+    - no_validation_evidence_for_persistent_tiers
+    - source_surface_not_accepted
+  allow_persist_when:
+    - provenance_complete
+    - tier_authority_requirements_satisfied
+    - validation_gates_passed
+audit_trail:
+  required: true
+  record_location: artifacts/validation/
+  minimum_entry:
+    - item_id
+    - tier
+    - owner
+    - action
+    - evidence_ref
+rollback_policy:
+  root: revert_to_last_reviewed_canonical_state
+  modular: revert_module_surface_and_related_refs
+  scoped: drop_session_memory_without_cross_session_persist
+  known_failures: revert_entry_if_reproducibility_breaks

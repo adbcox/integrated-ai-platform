@@ -556,7 +556,7 @@ items:
   - AGENTS.md
   plane_sync_enabled: true
   plane_item_id: null
-  archive_status: ready_for_archive
+  archive_status: archived
 - id: RM-DEV-008
   path: docs/roadmap/items/RM-DEV-008.yaml
   title: Memory governance, summarization, and provenance policy for the local agent
@@ -573,7 +573,7 @@ items:
   - docs/agent/**
   plane_sync_enabled: true
   plane_item_id: null
-  archive_status: ready_for_archive
+  archive_status: archived
 - id: RM-DEV-004
   path: docs/roadmap/items/RM-DEV-004.yaml
   title: Embedded firmware assistant for Nordic and ESP platforms

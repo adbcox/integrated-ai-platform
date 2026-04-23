@@ -529,7 +529,7 @@ items:
   - assignee
   - cycle
   - module
-  archive_status: ready_for_archive
+  archive_status: archived
   status: completed
 - id: RM-DEV-008
   sync_enabled: true
@@ -546,7 +546,7 @@ items:
   - assignee
   - cycle
   - module
-  archive_status: ready_for_archive
+  archive_status: archived
   status: completed
 - id: RM-DEV-004
   sync_enabled: true

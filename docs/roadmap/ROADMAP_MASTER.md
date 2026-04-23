@@ -220,7 +220,7 @@ Evidence:
 - `RM-GOV-007`
 - `RM-HW-001`
 
-Held at `ready_for_archive` after convergence (`status=completed`, `execution_status=not_started`):
+Archived in this archive-resolution pass:
 - `RM-DEV-008`
 - `RM-DEV-009`
 
