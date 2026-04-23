@@ -199,3 +199,12 @@ Before adding a new external application here, capture:
 5. add per-system version pinning and local deployment notes after approval
 6. link each external system to the relevant roadmap item IDs once item-level normalization is complete
 7. use `RM-GOV-009` to define the standard integration-control-plane model before broadening one-off external adapters
+
+## Reuse-wave closeout implementation sync
+
+The reuse-first OSS wave has bounded implemented surfaces in-repo and should not be treated as research-only:
+- OpenHands: implemented; validated headless execution; model-dependent stability
+- MarkItDown: implemented bounded wrapper/install/smoke path
+- MCP reference servers: implemented bounded shortlist wrapper/smoke path
+- PR-Agent: implemented bounded wrapper/config/workflow path
+- n8n: evaluation-only (broad rollout deferred)

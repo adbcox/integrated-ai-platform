@@ -8,6 +8,19 @@ It exists to convert the reuse policy into a bounded execution packet.
 
 This wave is intentionally limited to systems that can improve local AI coding capability quickly without forcing a broad architectural rewrite.
 
+## Current implementation closeout status
+
+This wave is no longer planning-only. The bounded closeout implementation is present in-repo with wrappers, runbooks, and validation tooling.
+
+OpenHands closeout status is:
+- implemented
+- validated headless execution
+- model-dependent stability
+
+Validation evidence surface:
+- `python3 bin/oss_wave_openhands_validate.py --timeout-seconds 900`
+- `docs/runbooks/OPENHANDS_REUSE_FIRST_RUNBOOK.md`
+
 ## Scope of this wave
 
 Included now:
@@ -76,6 +89,12 @@ OpenHands provides a substantial local dev-agent surface with CLI/GUI/server opt
 Do not rebuild OpenHands features locally.
 Integrate it as a governed optional execution surface.
 
+#### Closeout state
+- implemented via `bin/oss_wave_openhands.sh`
+- validated via `bin/oss_wave_openhands_validate.py`
+- operational details documented in `docs/runbooks/OPENHANDS_REUSE_FIRST_RUNBOOK.md`
+- stability remains model-dependent
+
 ### 2. PR-Agent
 
 #### Role
@@ -104,6 +123,10 @@ This gives immediate value for review loops and PR summaries without building a 
 #### Implementation boundary
 Do not build first-pass PR review logic if PR-Agent satisfies the use case.
 
+#### Closeout state
+- bounded wrapper/config/workflow surfaces implemented
+- remains governed and subordinate to canonical roadmap/completion authority
+
 ### 3. MarkItDown
 
 #### Role
@@ -131,6 +154,9 @@ It is a high-leverage reusable utility for RAG/document ingestion and can suppor
 #### Implementation boundary
 Do not build a generic broad document conversion layer first.
 Use MarkItDown where it fits.
+
+#### Closeout state
+- install/wrapper/smoke surfaces implemented for bounded local ingestion workflows
 
 ### 4. MCP reference servers
 
@@ -168,6 +194,10 @@ They provide immediate official examples and reusable server surfaces for tool b
 Treat them as reference implementations, not hidden production backbones.
 Wrap them under repo governance.
 
+#### Closeout state
+- approved first-server shortlist and wrapper/smoke surfaces implemented
+- explicitly retained as reference/test surfaces, not hidden production backbone
+
 ### 5. n8n (bounded evaluation lane)
 
 #### Role
@@ -191,6 +221,10 @@ n8n is powerful, but broad workflow rollout would expand scope too far for this 
 
 #### Implementation boundary
 Do not start a full workflow-platform rollout in this wave.
+
+#### Closeout state
+- explicitly evaluation-only
+- broad rollout deferred
 
 ## Execution sequence
 

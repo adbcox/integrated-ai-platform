@@ -2,7 +2,7 @@
 """Assess whether a candidate class has enough real evidence for heuristic validation."""
 from __future__ import annotations
 
-import argparse
+import argparse  # stage7-op
 import json
 import os
 from dataclasses import dataclass

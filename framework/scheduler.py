@@ -5,11 +5,12 @@ from __future__ import annotations
 import queue
 import threading
 from collections import defaultdict
-from datetime import UTC, datetime
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
 from .backend_profiles import BackendProfile
+from .compat import UTC
 from .inference_adapter import InferenceAdapter
 from .job_schema import Job, JobClass, JobLifecycle, JobPriority
 from .learning_hooks import LearningHooks

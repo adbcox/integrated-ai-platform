@@ -5,7 +5,7 @@
 
 from __future__ import annotations
 
-import argparse  # stage7-op
+import argparse  # stage7-op  # stage7-op
 import json
 import os
 import re
@@ -15,7 +15,7 @@ import tempfile
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT))
@@ -38,14 +38,14 @@ PLACEHOLDER_BLOCK_RE = re.compile(
 @dataclass
 class Stage6Job:
     path: str
-    notes: str | None = None
-    lines: str | None = None
-    source: str | None = None
-    refinement_of: str | None = None
-    literal_old: str | None = None
-    literal_new: str | None = None
-    sync_reason: str | None = None
-    message: str | None = None
+    notes: Optional[str] = None
+    lines: Optional[str] = None
+    source: Optional[str] = None
+    refinement_of: Optional[str] = None
+    literal_old: Optional[str] = None
+    literal_new: Optional[str] = None
+    sync_reason: Optional[str] = None
+    message: Optional[str] = None
 
 
 LINK_TOKEN_SPLIT_RE = re.compile(r"[^a-z0-9]+")
@@ -62,6 +62,42 @@ GENERIC_LINK_TOKENS = {
     "py",
     "sh",
 }
+
+
+def _detect_modification_intent(query_tokens: list[str]) -> bool:
+    """Detect if query indicates modification intent (add, fix, improve, etc.)."""
+    modification_terms = {
+        "add",
+        "improve",
+        "better",
+        "update",
+        "fix",
+        "enhance",
+        "change",
+        "modify",
+        "refactor",
+        "docstring",
+        "documentation",
+        "comment",
+    }
+    code_object_terms = {"function", "method", "class", "module", "variable", "parameter", "handler", "manager"}
+    code_context_terms = {"validation", "handling", "logic", "algorithm", "error", "exception", "event", "state", "processing"}
+    code_other_terms = {"script", "code", "feature", "implementation", "executor", "classifier", "engine", "workflow", "promotion", "pipeline", "system"}
+
+    lowered = query_tokens
+    lowered_lower = [t.lower() for t in lowered]
+    modification_hits = sum(1 for t in lowered_lower if any(t.startswith(term) for term in modification_terms))
+
+    has_code_object = any(term in token for token in lowered_lower for term in code_object_terms)
+    has_code_context = any(term in lowered_lower for term in code_context_terms)
+    # Enhanced: check for substring matches in lowered tokens to catch ExecutorFactory, etc.
+    has_code_other = any(
+        term in lowered_lower or any(term in token for token in lowered_lower)
+        for term in code_other_terms
+    )
+
+    has_code_signal = has_code_object or has_code_context or has_code_other
+    return modification_hits >= 1 and has_code_signal
 
 
 def plan_history_path(plan_id: str) -> Path:
@@ -108,7 +144,10 @@ def write_plan_history(plan_id: str, payload: dict[str, Any]) -> None:
         "attempt_count": attempts,
         "last_updated": payload.get("timestamp"),
     }
-    history_path.write_text(json.dumps(merged, ensure_ascii=False, indent=2), encoding="utf-8")
+    try:
+        history_path.write_text(json.dumps(merged, ensure_ascii=False, indent=2), encoding="utf-8")
+    except OSError as e:
+        sys.stderr.write(f"[warning] Failed to write plan history {history_path}: {e}\n")
 
 
 def _read_jsonl_slice(path: Path, start_line: int) -> list[dict[str, Any]]:
@@ -160,12 +199,21 @@ def run_stage_rag4(args: argparse.Namespace) -> dict[str, Any]:
     for prefix in args.preferred_prefix:
         cmd.extend(["--preferred-prefix", prefix])
     cmd.extend(args.query)
-    proc = subprocess.run(cmd, capture_output=True, text=True, check=True)
+    proc = subprocess.run(cmd, capture_output=True, text=True)
+    if proc.returncode != 0:
+        raise SystemExit(f"[stage6] stage_rag4 failed (plan_id={args.plan_id}, query={' '.join(args.query)}): {proc.stderr}")
     return json.loads(proc.stdout)
 
 
 def load_jobs_from_file(path: Path) -> list[Stage6Job]:
-    data = json.loads(path.read_text(encoding="utf-8"))
+    try:
+        content = path.read_text(encoding="utf-8")
+    except OSError as e:
+        raise SystemExit(f"[stage6] failed to read jobs file {path}: {e}")
+    try:
+        data = json.loads(content)
+    except json.JSONDecodeError as e:
+        raise SystemExit(f"[stage6] invalid JSON in jobs file {path}: {e}")
     if not isinstance(data, list):
         raise RuntimeError("jobs file must be a JSON array")
     jobs: list[Stage6Job] = []
@@ -373,7 +421,11 @@ def build_promotion_env(lane: str, versions: dict[str, Any], manifest_version: i
     return env
 
 
-def _synchronize_literal_pair(target_contents: str, literal_old: str, literal_new: str) -> tuple[str, str, str | None]:
+def _synchronize_literal_pair(
+    target_contents: str,
+    literal_old: str,
+    literal_new: str,
+) -> tuple[str, str, Optional[str]]:
     if not target_contents:
         return literal_old, literal_new, None
     if literal_old in target_contents:
@@ -395,7 +447,7 @@ def _synchronize_literal_pair(target_contents: str, literal_old: str, literal_ne
     return live_old, literal_new, "sync_live_block"
 
 
-def _single_line_import_base(value: str) -> str | None:
+def _single_line_import_base(value: str) -> Optional[str]:
     if "\n" in value:
         return None
     text = value.strip()
@@ -413,7 +465,7 @@ def _sync_import_literal_pair(
     target_contents: str,
     literal_old: str,
     literal_new: str,
-) -> tuple[str, str] | None:
+) -> Optional[tuple[str, str]]:
     """Adapt import/from literals per-target when only inline comments differ."""
     base_old = _single_line_import_base(literal_old)
     base_new = _single_line_import_base(literal_new)
@@ -421,7 +473,7 @@ def _sync_import_literal_pair(
         return None
 
     lines = target_contents.splitlines()
-    candidate_old: str | None = None
+    candidate_old: Optional[str] = None
     for line in lines:
         stripped = line.strip()
         if stripped.startswith(base_old):
@@ -870,6 +922,13 @@ def main() -> int:
     allowed_targets = lane_cfg.get("allowed_targets", ["bin/"])
     if not args.preferred_prefix:
         args.preferred_prefix = list(allowed_targets)
+        # For modification-intent queries, expand preferred_prefix to include framework and promotion
+        if _detect_modification_intent(args.query):
+            expanded_prefixes = set(args.preferred_prefix)
+            expanded_prefixes.update(["framework/", "promotion/"])
+            args.preferred_prefix = sorted(list(expanded_prefixes))
+            # Also expand allowed_targets so plan_to_jobs doesn't filter results
+            allowed_targets = sorted(list(expanded_prefixes))
 
     plan_payload: dict[str, Any] = {}
     if args.jobs_file:

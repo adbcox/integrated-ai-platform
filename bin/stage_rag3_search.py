@@ -8,7 +8,7 @@ anchors for both primary and secondary targets.
 
 from __future__ import annotations
 
-import argparse
+import argparse  # stage7-op
 import json
 import subprocess
 import sys

@@ -3,10 +3,11 @@
 from __future__ import annotations
 
 import json
-from datetime import UTC, datetime
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
+from .compat import UTC
 from .job_schema import Job, parse_job
 
 
@@ -30,14 +31,20 @@ class StateStore:
             path.mkdir(parents=True, exist_ok=True)
 
     def _write_json(self, path: Path, payload: dict[str, Any]) -> None:
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+        try:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+        except OSError as e:
+            raise RuntimeError(f"Failed to write JSON to {path}: {e}") from e
 
     def _append_jsonl(self, path: Path, payload: dict[str, Any]) -> None:
-        path.parent.mkdir(parents=True, exist_ok=True)
-        with path.open("a", encoding="utf-8") as handle:
-            json.dump(payload, handle, ensure_ascii=False)
-            handle.write("\n")
+        try:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            with path.open("a", encoding="utf-8") as handle:
+                json.dump(payload, handle, ensure_ascii=False)
+                handle.write("\n")
+        except OSError as e:
+            raise RuntimeError(f"Failed to append JSONL to {path}: {e}") from e
 
     def _read_jsonl(self, path: Path) -> list[dict[str, Any]]:
         if not path.exists():
@@ -88,10 +95,20 @@ class StateStore:
 
     def save_result(self, job_id: str, payload: dict[str, Any]) -> Path:
         path = self.results_dir / f"{job_id}.json"
+        
+        # Extract outcome metadata with defaults
+        outcome_class = payload.get("outcome_class", "unknown")
+        error_category = payload.get("error_category", "")
+        recovery_attempted = payload.get("recovery_attempted", False)
+        
         stamped = {
             "saved_at_utc": datetime.now(UTC).isoformat(timespec="seconds"),
+            "outcome_class": outcome_class,
+            "error_category": error_category,
+            "recovery_attempted": recovery_attempted,
             **payload,
         }
+        
         self._write_json(path, stamped)
         return path
 

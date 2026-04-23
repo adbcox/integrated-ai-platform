@@ -2,11 +2,12 @@
 set -euo pipefail
 
 BASE_DIR="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
-API_BASE="http://127.0.0.1:11535"
-MODEL="ollama_chat/qwen2.5-coder:1.5b"
-MAP_TOKENS="0"
-TIMEOUT="60"
-MODE_LABEL="fast"
+# Live local Ollama default: 127.0.0.1:11434 (verified by /api/tags).
+API_BASE="http://127.0.0.1:11434"
+MODEL="ollama_chat/qwen2.5-coder:14b"
+MAP_TOKENS="1024"
+TIMEOUT="180"
+MODE_LABEL="local"
 HAS_MODEL_OVERRIDE=0
 HAS_MAP_TOKENS_OVERRIDE=0
 HAS_TIMEOUT_OVERRIDE=0
@@ -31,16 +32,16 @@ Usage:
   ./bin/aider_local.sh [--hard] [--smart] [--gpu-experimental] [--api-base <url>] [--smart-status] [aider args...]
 
 Default fast lane settings:
-  OLLAMA_API_BASE defaults to http://127.0.0.1:11535
-  --model ollama_chat/qwen2.5-coder:1.5b (fast micro lane)
-  --map-tokens 0
-  --timeout 60
+  OLLAMA_API_BASE defaults to http://127.0.0.1:11434
+  --model ollama_chat/qwen2.5-coder:14b
+  --map-tokens 1024
+  --timeout 180
 
 Options:
-  --hard               Use explicit harder-task profile (7b, map-tokens 1024, timeout 120)
+  --hard               Use explicit harder-task profile (deepseek-coder-v2, map-tokens 2048, timeout 240)
   --micro-profile      Opt into local-micro-coder-fast profile (Stage 3 experiments)
   --smart              Use 32B smart profile (requires OLLAMA_API_BASE_32B or --api-base)
-  --gpu-experimental   Route to GPU endpoint (127.0.0.1:11434). Experimental only.
+  --gpu-experimental   Alias for the default endpoint (127.0.0.1:11434).
   --api-base <url>     Override Ollama API base URL
   --smart-status       Check the configured smart (32B) endpoint and exit
   -h, --help           Show help
@@ -114,9 +115,9 @@ ping_ollama_or_fail() {
 while [ "$#" -gt 0 ]; do
   case "$1" in
     --hard)
-      MODEL="ollama_chat/qwen2.5-coder:7b"
-      MAP_TOKENS="1024"
-      TIMEOUT="120"
+      MODEL="ollama_chat/deepseek-coder-v2:latest"
+      MAP_TOKENS="2048"
+      TIMEOUT="240"
       MODE_LABEL="hard"
       shift
       ;;
@@ -240,7 +241,7 @@ if [ "${AIDER_LOCAL_SKIP_PING:-0}" != "1" ]; then
   ping_ollama_or_fail "$OLLAMA_API_BASE" "$MODE_LABEL"
 fi
 
-CMD=(aider)
+CMD=(python3 -m aider --no-check-update --no-show-release-notes --analytics-disable --no-auto-commits --no-dirty-commits --yes-always --no-fancy-input --no-browser)
 [ "$HAS_MODEL_OVERRIDE" -eq 1 ] || CMD+=(--model "$MODEL")
 [ "$HAS_MAP_TOKENS_OVERRIDE" -eq 1 ] || CMD+=(--map-tokens "$MAP_TOKENS")
 [ "$HAS_TIMEOUT_OVERRIDE" -eq 1 ] || CMD+=(--timeout "$TIMEOUT")
@@ -266,6 +267,7 @@ export AIDER_SUP_LABEL="${AIDER_SUP_LABEL:-$MODE_LABEL}"
 export AIDER_SUP_MODEL="$EFFECTIVE_MODEL"
 export AIDER_SUP_MAP_TOKENS="$EFFECTIVE_MAP_TOKENS"
 export AIDER_SUP_TIMEOUT="$EFFECTIVE_TIMEOUT"
+export AIDER_SUP_WRAP_TIMEOUT="${AIDER_SUP_WRAP_TIMEOUT:-$EFFECTIVE_TIMEOUT}"
 export AIDER_SUP_TIMEOUT_FLAG="$EFFECTIVE_TIMEOUT"
 export AIDER_SUP_API_BASE="$OLLAMA_API_BASE"
 SUPERVISOR="$BASE_DIR/aider_failure_supervisor.sh"

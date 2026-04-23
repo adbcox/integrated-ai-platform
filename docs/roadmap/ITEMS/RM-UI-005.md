@@ -715,6 +715,15 @@ Deliver a minimum viable local execution control and routing system that:
 - Transition condition: implementation boundary, first slice, required repo truth sources, initial Aider/OpenHands integration posture, local model runbook policy, local AI stack role posture, and reference-implementation reuse posture are explicitly accepted
 - Validation / closeout condition: a working local execution control and routing slice exists, reads canonical repo truth, supports Aider task-specific routing, provides an OpenHands local execution path, uses an explicit local model tier policy, and materially reduces false-complete / missed-context / hidden-blocker failures, unnecessary subsystem re-creation, and stack re-derivation in real local runs
 
+## Reuse-wave closeout status sync
+
+Bounded OpenHands integration work is implemented under this item's scope:
+- wrapper/config/runbook surfaces are in-repo
+- canonical headless validation surface is in-repo (`python3 bin/oss_wave_openhands_validate.py --timeout-seconds 900`)
+- OpenHands status is: implemented / validated headless execution / model-dependent stability
+
+This status sync does not declare full RM-UI-005 completion.
+
 ## Notes
 
 This item is intentionally the most important next implementation target. It is not merely a dashboard improvement. It is the missing operator, routing, runtime-selection, stack-role-preservation, reuse-first, and execution surface that turns the current local coding workflow from terminal-heavy and ambiguity-prone into a governed local execution system.

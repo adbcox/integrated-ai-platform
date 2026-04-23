@@ -11,6 +11,8 @@ This is the canonical review roadmap for taking the current Stage-9/Manager-10/R
 
 This document is planning-only and review-first. It is grounded in current repo state (`config/promotion_manifest.json`, Stage-7/8 managers, RAG6/8 planner, qualify/promote tooling, and artifacts layout).
 
+Bounded reuse-first integration execution for external OSS components is tracked in `docs/roadmap/REUSE_FIRST_IMPLEMENTATION_WAVE.md` and does not change subsystem authority ownership defined here.
+
 ## Part 1 — Current-state assessment
 
 ### 1) Stage system

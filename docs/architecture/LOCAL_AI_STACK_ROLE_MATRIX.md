@@ -181,3 +181,12 @@ This document is especially relevant to:
 
 This matrix is designed to reduce assistant thinking overhead.
 If a future assistant needs to choose a local AI stack tool, it should start here rather than rebuilding the decision from scratch.
+
+## Reuse-wave implementation status note
+
+Current bounded implementation snapshot:
+- OpenHands: implemented with validated headless execution and model-dependent stability (`bin/oss_wave_openhands_validate.py`)
+- MarkItDown: implemented bounded ingestion wrapper path
+- MCP reference servers: implemented bounded shortlist/wrapper path
+- PR-Agent: implemented bounded local/workflow wrapper path
+- n8n: evaluation-only, broad rollout deferred

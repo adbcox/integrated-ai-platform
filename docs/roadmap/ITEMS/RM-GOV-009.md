@@ -240,3 +240,10 @@ The first concrete reuse-first execution packet is now:
 ## Notes
 
 This item should produce one governing connection model for external systems, one explicit role matrix for local AI platform tools, and one reuse-first posture for public implementations and templates. It should reduce one-off integrations, local AI tool sprawl, and unnecessary greenfield implementation.
+
+## Reuse-wave closeout status sync
+
+For current repo truth alignment, this item now carries the implemented bounded reuse-wave status:
+- OpenHands implemented with validated headless execution and model-dependent stability
+- MarkItDown, MCP reference-server wrappers, and PR-Agent wrappers implemented as bounded governed surfaces
+- n8n remains evaluation-only in this wave
