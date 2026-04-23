@@ -4,6 +4,8 @@
 **Authority**: `docs/roadmap/items/RM-*.yaml` (canonical source)
 
 This document is the human-visible status sync surface. Item files are authoritative.
+Artifact note: `artifacts/**` references in this document are derived local evidence
+surfaces and may be gitignored/non-committed; they are never canonical authority.
 
 ## Control Window Sovereignty Verdict (Latest)
 

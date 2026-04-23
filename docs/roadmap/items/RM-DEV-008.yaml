@@ -5,7 +5,7 @@ slug: memory-governance-summarization-and-provenance-policy
 title: Memory governance, summarization, and provenance policy for the local agent
 category: DEV
 type: memory_governance
-status: complete
+status: completed
 priority: P1
 scoring:
   loe: 3

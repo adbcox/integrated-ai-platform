@@ -5,7 +5,7 @@ slug: agent-operating-docs-and-persistent-execution-memory
 title: Agent operating-docs and persistent execution-memory package
 category: DEV
 type: agent_operating_layer
-status: complete
+status: completed
 priority: P1
 scoring:
   loe: 3

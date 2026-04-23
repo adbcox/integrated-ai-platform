@@ -318,7 +318,7 @@ items:
   - assignee
   - cycle
   - module
-  status: complete
+  status: completed
 - id: RM-CORE-004
   sync_enabled: true
   sync_mode: repo_to_plane_authoritative
@@ -404,7 +404,7 @@ items:
   - cycle
   - module
   archive_status: archived
-  status: complete
+  status: completed
 - id: RM-DEV-003
   sync_enabled: true
   sync_mode: repo_to_plane_authoritative
@@ -530,7 +530,7 @@ items:
   - cycle
   - module
   archive_status: ready_for_archive
-  status: complete
+  status: completed
 - id: RM-DEV-008
   sync_enabled: true
   sync_mode: repo_to_plane_authoritative
@@ -547,7 +547,7 @@ items:
   - cycle
   - module
   archive_status: ready_for_archive
-  status: complete
+  status: completed
 - id: RM-DEV-004
   sync_enabled: true
   sync_mode: repo_to_plane_authoritative

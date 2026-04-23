@@ -1,6 +1,8 @@
 # Roadmap Index
 
 Derived index of roadmap state. Canonical status is in `docs/roadmap/items/RM-*.yaml`.
+Artifact note: `artifacts/**` references in this document are derived local evidence
+surfaces and may be gitignored/non-committed; they are never canonical authority.
 
 ## Control Window Sovereignty Status
 
@@ -33,7 +35,7 @@ Derived index of roadmap state. Canonical status is in `docs/roadmap/items/RM-*.
 - Convergence validator: `bin/validate_rm_ops007_convergence.py`
 - Convergence report: `artifacts/operations/rm_ops007_archive_convergence_report.json`
 - Validation artifact: `artifacts/validation/rm_ops007_convergence_validation.json`
-- Held items after convergence: `RM-DEV-008`, `RM-DEV-009` (execution not started)
+- Held items after convergence: `RM-DEV-008`, `RM-DEV-009` (`status=completed`, `execution_status=not_started`)
 
 Integrated expansion evidence:
 - `governance/integrated_ops_home_intel_inventory_policy.v1.yaml`

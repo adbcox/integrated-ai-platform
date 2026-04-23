@@ -9,7 +9,7 @@ The roadmap system is deliberately structured into three layers, each with expli
 **Location**: `docs/roadmap/items/RM-*.yaml`  
 **Authority**: This is the source of truth. All status, archive status, and operational state must be tracked here.  
 **Content**: Each roadmap item as a machine-readable YAML file with:
-- Status (for example `proposed`, `in_progress`, `complete`/`completed`)
+- Status (for example `proposed`, `in_progress`, `completed`)
 - Archive status (`ready_for_archive`/`archived` when applicable)
 - Optional archive readiness metadata when explicitly modeled by the item
 - AI-operability fields (objective, scope, allowed_files, forbidden_files, validation_order, rollback_rule, artifact_outputs)
@@ -27,6 +27,7 @@ The roadmap system is deliberately structured into three layers, each with expli
 - `artifacts/planning/next_pull.json` (next pull candidates, eligible items)
 
 **Authority**: Derived from Layer 1. Must be kept in sync via tooling or manual audit.  
+**Artifact posture**: planning artifacts under `artifacts/**` are derived local outputs and may be gitignored/non-committed in this repo snapshot.  
 **Content**: 
 - Dependency edges between items
 - Blocking analysis sections (eligible_items, conditionally_eligible, blocked_items, archived_items)
@@ -46,6 +47,7 @@ The roadmap system is deliberately structured into three layers, each with expli
 - `docs/roadmap/ROADMAP_STATUS_SYNC.md` (human-visible sync and execution snapshot)
 
 **Authority**: Derived from Layer 1. Must reflect canonical state.  
+**Artifact posture**: summary references to `artifacts/**` are evidence pointers only and do not imply committed canonical authority.  
 **Content**: 
 - High-level narrative descriptions
 - Grouping and categorization

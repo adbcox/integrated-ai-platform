@@ -318,7 +318,7 @@ items:
   path: docs/roadmap/items/RM-CORE-003.yaml
   title: Standardize workspace layout
   category: CORE
-  status: complete
+  status: completed
   archive_status: archived
   priority: P1
   package_group: PKG-CORE-PHASE1
@@ -407,7 +407,7 @@ items:
   path: docs/roadmap/items/RM-DEV-005.yaml
   title: Local autonomy uplift, OSS intake, and Aider reliability hardening
   category: DEV
-  status: complete
+  status: completed
   priority: P1
   package_group: PKG-DEV-PHASE3
   affected_systems:
@@ -543,7 +543,7 @@ items:
   path: docs/roadmap/items/RM-DEV-009.yaml
   title: Agent operating-docs and persistent execution-memory package
   category: DEV
-  status: complete
+  status: completed
   priority: P1
   package_group: PKG-DEV-AGENT-OPERATING-LAYER
   affected_systems:
@@ -561,7 +561,7 @@ items:
   path: docs/roadmap/items/RM-DEV-008.yaml
   title: Memory governance, summarization, and provenance policy for the local agent
   category: DEV
-  status: complete
+  status: completed
   priority: P1
   package_group: PKG-DEV-MEMORY-GOVERNANCE
   affected_systems:

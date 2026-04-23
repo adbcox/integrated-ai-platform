@@ -5,7 +5,7 @@ slug: local-autonomy-uplift-oss-intake-and-aider-hardening
 title: Local autonomy uplift, OSS intake, and Aider reliability hardening
 category: DEV
 type: local_autonomy_uplift
-status: complete
+status: completed
 priority: P1
 scoring:
   loe: 4

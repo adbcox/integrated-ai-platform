@@ -1,6 +1,6 @@
 schema_version: '1.1'
 kind: roadmap_dependency_graph
-generated_at: '2026-04-23T03:38:31+00:00'
+generated_at: '2026-04-23T04:02:40+00:00'
 source_of_truth: docs/roadmap/items/RM-*.yaml
 nodes:
 - id: RM-AUTO-001
@@ -31,7 +31,7 @@ nodes:
   title: Standardize workspace layout
   category: CORE
   priority: P1
-  status: complete
+  status: completed
   archive_status: archived
 - id: RM-CORE-004
   title: Event/job/state orchestration baseline
@@ -79,7 +79,7 @@ nodes:
   title: Local autonomy uplift, OSS intake, and Aider reliability hardening
   category: DEV
   priority: P1
-  status: complete
+  status: completed
   archive_status: archived
 - id: RM-DEV-006
   title: Structure-aware code intelligence decision layer
@@ -97,13 +97,13 @@ nodes:
   title: Memory governance, summarization, and provenance policy for the local agent
   category: DEV
   priority: P1
-  status: complete
+  status: completed
   archive_status: ready_for_archive
 - id: RM-DEV-009
   title: Agent operating-docs and persistent execution-memory package
   category: DEV
   priority: P1
-  status: complete
+  status: completed
   archive_status: ready_for_archive
 - id: RM-DOCAPP-002
   title: Website generation baseline system

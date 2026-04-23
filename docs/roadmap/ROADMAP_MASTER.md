@@ -2,6 +2,8 @@
 
 Derived human-readable roadmap summary.
 Canonical authority remains `docs/roadmap/items/RM-*.yaml`.
+Artifact note: `artifacts/**` references in this document are derived local evidence
+surfaces and may be gitignored/non-committed; they are never canonical authority.
 
 ## Control Window Sovereignty Status
 
@@ -175,7 +177,7 @@ Integrated into runtime_executor with comprehensive validation.
 **Execution**: Full integration chain operational end-to-end (hardware → procurement → edition → website → UI)  
 **Integration point**: `governance/system_integration_manifest.v1.yaml` + `bin/run_integration_demo.py` full orchestration  
 **Item files**: `docs/roadmap/items/RM-{ED-001,INV-003,UI-001,DOCAPP-002,HW-001}.yaml`  
-**Artifacts**: `artifacts/integration_demo/{01,02,03,04}_*.json`, `artifacts/integration_demo/INTEGRATION_SUMMARY.json`  
+**Artifacts**: `artifacts/integration_demo/` (local-derived run outputs), `artifacts/integration_demo/INTEGRATION_SUMMARY.json`  
 **Execution report**: `artifacts/integration_phase1_execution_report.md`
 
 ## Archived in this pass (phase0 global gate closure)
@@ -218,7 +220,7 @@ Evidence:
 - `RM-GOV-007`
 - `RM-HW-001`
 
-Held at `ready_for_archive` after convergence (insufficient execution readiness):
+Held at `ready_for_archive` after convergence (`status=completed`, `execution_status=not_started`):
 - `RM-DEV-008`
 - `RM-DEV-009`
 
