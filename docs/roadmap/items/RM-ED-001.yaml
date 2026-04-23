@@ -1,13 +1,13 @@
-schema_version: "1.0"
-kind: "roadmap_item"
-id: "RM-ED-001"
-slug: "edition-builder-baseline"
-title: "Edition builder baseline system"
-category: "ED"
-type: "capability_foundation"
-status: "completed"
-archive_status: "ready_for_archive"
-priority: "P2"
+schema_version: '1.0'
+kind: roadmap_item
+id: RM-ED-001
+slug: edition-builder-baseline
+title: Edition builder baseline system
+category: ED
+type: capability_foundation
+status: completed
+archive_status: archived
+priority: P2
 scoring:
   loe: 3
   strategic_value: 4
@@ -15,164 +15,157 @@ scoring:
   execution_risk: 2
   dependency_burden: 2
   readiness: 4
+description: 'Establish edition builder baseline that packages features into deployable
+  editions with platform-specific deployment targets. Supports feature bundling, hardware
+  packaging, and multi-platform deployment.
 
-description: >
-  Establish edition builder baseline that packages features into deployable
-  editions with platform-specific deployment targets. Supports feature bundling,
-  hardware packaging, and multi-platform deployment.
-
-why_it_matters: >
-  Edition packaging bridges features to deployments. Without structured edition
-  definitions and packaging, deployment decisions are manual. Baseline enables
+  '
+why_it_matters: 'Edition packaging bridges features to deployments. Without structured
+  edition definitions and packaging, deployment decisions are manual. Baseline enables
   consistent feature packaging across platforms.
 
+  '
 scope:
-  objective: >
-    Define edition structure, feature-set composition, packaging definitions,
+  objective: 'Define edition structure, feature-set composition, packaging definitions,
     and platform-specific deployment postures.
-  in_scope:
-    - "edition definition schema"
-    - "feature set composition"
-    - "packaging structure"
-    - "platform deployment targets (macOS, Windows, Web)"
-  out_of_scope:
-    - "actual feature implementation"
-    - "build/compilation pipeline"
-    - "distribution infrastructure"
 
+    '
+  in_scope:
+  - edition definition schema
+  - feature set composition
+  - packaging structure
+  - platform deployment targets (macOS, Windows, Web)
+  out_of_scope:
+  - actual feature implementation
+  - build/compilation pipeline
+  - distribution infrastructure
 dependencies:
   blocked_by: []
   depends_on:
-    - "RM-INV-003"
+  - RM-INV-003
   enables:
-    - "RM-UI-001"
-    - "RM-HW-001"
+  - RM-UI-001
+  - RM-HW-001
   related_items:
-    - "RM-INV-003"
-    - "RM-UI-001"
-    - "RM-HW-001"
-
+  - RM-INV-003
+  - RM-UI-001
+  - RM-HW-001
 impact:
   affected_systems:
-    - "deployment"
-    - "packaging"
-    - "edition_management"
+  - deployment
+  - packaging
+  - edition_management
   expected_file_families:
-    - "governance/edition_builder_schema.v1.yaml"
-  impact_summary: >
-    Provides structured baseline for feature packaging and multi-platform
+  - governance/edition_builder_schema.v1.yaml
+  impact_summary: 'Provides structured baseline for feature packaging and multi-platform
     edition deployment.
 
+    '
 cmdb:
   refs:
-    - "subsystem:deployment"
-    - "subsystem:packaging"
+  - subsystem:deployment
+  - subsystem:packaging
   asset_links: []
   service_links: []
-
 grouping:
   feature_block_candidates:
-    - "FB-DEPLOYMENT-PACKAGING"
-  package_group: "PKG-INTEGRATION-PHASE1"
+  - FB-DEPLOYMENT-PACKAGING
+  package_group: PKG-INTEGRATION-PHASE1
   shared_touch_surfaces:
-    - "edition definitions"
-    - "feature composition"
-    - "platform deployment"
-
+  - edition definitions
+  - feature composition
+  - platform deployment
 milestones:
-  recommended_first_milestone: "define-edition-schema"
+  recommended_first_milestone: define-edition-schema
   downstream_milestones:
-    - "record-feature-sets"
-    - "define-packaging"
-    - "validate-platform-targets"
-
+  - record-feature-sets
+  - define-packaging
+  - validate-platform-targets
 planning:
   planning_packet_ref: null
-  planning_status: "complete"
-  planning_notes: "Recovered from placeholder state; execution and validation evidence already present."
-
+  planning_status: complete
+  planning_notes: Recovered from placeholder state; execution and validation evidence
+    already present.
 execution:
   execution_package_refs:
-    - "bin/edition_resolver.py"
-  execution_status: "completed"
+  - bin/edition_resolver.py
+  execution_status: completed
   last_execution_commit: null
-
 validation:
   validation_artifact_refs:
-    - "artifacts/integration_demo/03_editions_resolved.json"
-    - "tests/test_edition_resolver.py"
-    - "tests/test_integration_chain.py"
-  validation_status: "passed"
-  definition_of_done_ref: "docs/roadmap/STANDARDS.md"
-
+  - artifacts/integration_demo/03_editions_resolved.json
+  - tests/test_edition_resolver.py
+  - tests/test_integration_chain.py
+  validation_status: passed
+  definition_of_done_ref: docs/roadmap/STANDARDS.md
 governance:
-  phase_target: "Integration Phase 1"
-  architectural_lane: "capability_packaging"
-  risk_tier: "low"
-  allowed_change_scope: "bounded"
+  phase_target: Integration Phase 1
+  architectural_lane: capability_packaging
+  risk_tier: low
+  allowed_change_scope: bounded
   requires_explicit_escalation: false
-
 ai_operability:
-  canonical_summary: >
-    Edition builder baseline to package features into deployable editions with
-    platform-specific targets and hardware packaging support.
-  developer_intent: >
-    After this item, feature sets are packaged into editions with clear platform
-    support and deployment instructions.
+  canonical_summary: 'Edition builder baseline to package features into deployable
+    editions with platform-specific targets and hardware packaging support.
+
+    '
+  developer_intent: 'After this item, feature sets are packaged into editions with
+    clear platform support and deployment instructions.
+
+    '
   non_goals:
-    - "Do not implement actual deployment logic"
-    - "Do not create build infrastructure"
-    - "Do not implement feature code"
+  - Do not implement actual deployment logic
+  - Do not create build infrastructure
+  - Do not implement feature code
   allowed_files:
-    - "governance/**"
-    - "schemas/**"
-    - "artifacts/**"
+  - governance/**
+  - schemas/**
+  - artifacts/**
   forbidden_files:
-    - "framework/**"
-    - "tests/**"
-    - ".github/**"
+  - framework/**
+  - tests/**
+  - .github/**
   validation_order:
-    - "confirm edition definition schema is complete"
-    - "confirm feature set structure exists"
-    - "confirm packaging definition is valid"
-    - "confirm platform posture is defined"
-    - "make check passes"
-  rollback_rule: >
-    Remove edition builder schema and related definitions. Preserve integration
-    point documentation.
+  - confirm edition definition schema is complete
+  - confirm feature set structure exists
+  - confirm packaging definition is valid
+  - confirm platform posture is defined
+  - make check passes
+  rollback_rule: 'Remove edition builder schema and related definitions. Preserve
+    integration point documentation.
+
+    '
   artifact_outputs:
-    - "governance/edition_builder_schema.v1.yaml"
+  - governance/edition_builder_schema.v1.yaml
   promotion_linkage:
     required: false
     manifest_refs: []
-
 sync:
   plane:
     sync_enabled: true
-    sync_mode: "repo_to_plane_authoritative"
-    workspace: "Integrated AI Platform"
-    project: "Roadmap Ops"
+    sync_mode: repo_to_plane_authoritative
+    workspace: Integrated AI Platform
+    project: Roadmap Ops
     plane_item_id: null
     last_synced_at: null
     writeback_fields_allowed:
-      - "operational_state"
-      - "assignee"
-      - "cycle"
-      - "module"
-      - "labels"
+    - operational_state
+    - assignee
+    - cycle
+    - module
+    - labels
   github:
     issue_ref: null
     pr_refs: []
-
 metadata:
-  owner: "system"
-  created_at: "2026-04-22"
-  updated_at: "2026-04-22"
+  owner: system
+  created_at: '2026-04-22'
+  updated_at: '2026-04-23'
   tags:
-    - "integration"
-    - "edition-packaging"
-    - "deployment"
+  - integration
+  - edition-packaging
+  - deployment
 archive_readiness:
   ready: true
-  reason: "integration_execution_and_validation_complete"
-  validation_artifact: "artifacts/integration_demo/INTEGRATION_SUMMARY.json"
+  reason: integration_execution_and_validation_complete
+  validation_artifact: artifacts/integration_demo/INTEGRATION_SUMMARY.json

@@ -96,7 +96,7 @@ validation:
   - artifacts/governance/rm_core_003_rm_gov_004_rm_auto_002_validation.json
   validation_status: complete
   definition_of_done_ref: docs/roadmap/STANDARDS.md
-archive_status: ready_for_archive
+archive_status: archived
 archive_readiness:
   ready: true
   reason: implementation_complete_and_validated
@@ -163,7 +163,7 @@ sync:
 metadata:
   owner: adrian
   created_at: '2026-04-20'
-  updated_at: '2026-04-20'
+  updated_at: '2026-04-23'
   tags:
   - core
   - workspace

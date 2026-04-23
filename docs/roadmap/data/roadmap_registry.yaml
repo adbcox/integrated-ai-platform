@@ -8,7 +8,7 @@ items:
   title: Plain-English goal-to-agent baseline system
   category: AUTO
   status: completed
-  archive_status: ready_for_archive
+  archive_status: archived
   priority: P1
   package_group: PKG-INTEGRATION-BUNDLE-2
   affected_systems:
@@ -27,7 +27,7 @@ items:
   title: Create canonical machine-readable roadmap registry
   category: GOV
   status: completed
-  archive_status: ready_for_archive
+  archive_status: archived
   priority: P1
   package_group: PKG-GOV-AUTHORITY
   affected_systems:
@@ -47,7 +47,7 @@ items:
   title: End-to-end telemetry, tracing, and audit evidence pipeline
   category: OPS
   status: completed
-  archive_status: ready_for_archive
+  archive_status: archived
   priority: P1
   package_group: PKG-INTEGRATION-BUNDLE-2
   affected_systems:
@@ -66,7 +66,7 @@ items:
   title: Integrated operational expansion layer for governed ops/home/intel/inventory
   category: OPS
   status: completed
-  archive_status: ready_for_archive
+  archive_status: archived
   priority: P1
   package_group: PKG-OPS-POST-SUBSTRATE
   affected_systems:
@@ -84,12 +84,36 @@ items:
   autonomous_execution_status: eligible_with_guardrails
   external_dependency_blocks_autonomous_execution: false
   external_dependency_readiness_status: not_applicable
-- id: RM-OPS-004
-  path: docs/roadmap/items/RM-OPS-004.yaml
-  title: Backup, restore, disaster-recovery, and configuration export verification baseline
+- id: RM-OPS-007
+  path: docs/roadmap/items/RM-OPS-007.yaml
+  title: Operational convergence and archive-truth hardening
   category: OPS
   status: completed
-  archive_status: ready_for_archive
+  archive_status: archived
+  priority: P1
+  package_group: PKG-OPS-POST-SUBSTRATE
+  affected_systems:
+  - operations
+  - roadmap_ops
+  - control_window
+  - governance
+  expected_file_families:
+  - framework/rm_ops007_archive_convergence.py
+  - bin/run_rm_ops007_archive_convergence.py
+  - bin/validate_rm_ops007_convergence.py
+  - artifacts/operations/rm_ops007_archive_convergence_report.json
+  plane_sync_enabled: true
+  plane_item_id: null
+  autonomous_execution_status: eligible_with_guardrails
+  external_dependency_blocks_autonomous_execution: false
+  external_dependency_readiness_status: not_applicable
+- id: RM-OPS-004
+  path: docs/roadmap/items/RM-OPS-004.yaml
+  title: Backup, restore, disaster-recovery, and configuration export verification
+    baseline
+  category: OPS
+  status: completed
+  archive_status: archived
   priority: P1
   package_group: PKG-INTEGRATION-BUNDLE-2
   affected_systems:
@@ -124,7 +148,7 @@ items:
   path: docs/roadmap/items/RM-GOV-003.yaml
   title: Create core ADR set
   category: GOV
-  status: proposed
+  status: completed
   priority: P1
   package_group: PKG-GOV-PHASE0
   affected_systems:
@@ -137,6 +161,7 @@ items:
   - docs/roadmap/**
   plane_sync_enabled: true
   plane_item_id: null
+  archive_status: ''
 - id: RM-GOV-004
   path: docs/roadmap/items/RM-GOV-004.yaml
   title: Create machine-readable execution-control package
@@ -177,7 +202,7 @@ items:
   title: Lock definition of done for coding runs
   category: GOV
   status: completed
-  archive_status: ready_for_archive
+  archive_status: archived
   priority: P1
   package_group: PKG-GOV-PHASE0
   affected_systems:
@@ -197,7 +222,7 @@ items:
   title: Lock autonomy scorecard
   category: GOV
   status: completed
-  archive_status: ready_for_archive
+  archive_status: archived
   priority: P1
   package_group: PKG-GOV-PHASE0
   affected_systems:
@@ -238,7 +263,7 @@ items:
   title: Governed connector control-plane and canonical intake activation
   category: GOV
   status: completed
-  archive_status: ready_for_archive
+  archive_status: archived
   priority: P1
   package_group: PKG-GOV-POST-PHASE7
   affected_systems:
@@ -259,7 +284,7 @@ items:
   path: docs/roadmap/items/RM-CORE-001.yaml
   title: Introduce internal inference gateway
   category: CORE
-  status: proposed
+  status: completed
   priority: P1
   package_group: PKG-CORE-PHASE1
   affected_systems:
@@ -271,11 +296,12 @@ items:
   - bin/**
   plane_sync_enabled: true
   plane_item_id: null
+  archive_status: ''
 - id: RM-CORE-002
   path: docs/roadmap/items/RM-CORE-002.yaml
   title: Standardize model profiles
   category: CORE
-  status: proposed
+  status: completed
   priority: P1
   package_group: PKG-CORE-PHASE1
   affected_systems:
@@ -287,12 +313,13 @@ items:
   - config/**
   plane_sync_enabled: true
   plane_item_id: null
+  archive_status: ''
 - id: RM-CORE-003
   path: docs/roadmap/items/RM-CORE-003.yaml
   title: Standardize workspace layout
   category: CORE
   status: complete
-  archive_status: ready_for_archive
+  archive_status: archived
   priority: P1
   package_group: PKG-CORE-PHASE1
   affected_systems:
@@ -309,7 +336,7 @@ items:
   path: docs/roadmap/items/RM-CORE-004.yaml
   title: Stabilize artifact persistence
   category: CORE
-  status: proposed
+  status: completed
   priority: P1
   package_group: PKG-CORE-PHASE1
   affected_systems:
@@ -323,6 +350,7 @@ items:
   - artifacts/**
   plane_sync_enabled: true
   plane_item_id: null
+  archive_status: archived
 - id: RM-CORE-005
   path: docs/roadmap/items/RM-CORE-005.yaml
   title: Wrap local execution commands
@@ -346,7 +374,7 @@ items:
   title: Establish baseline local-run validation
   category: CORE
   status: completed
-  archive_status: ready_for_archive
+  archive_status: archived
   priority: P1
   package_group: PKG-CORE-PHASE1
   affected_systems:
@@ -393,7 +421,7 @@ items:
   - artifacts/**
   plane_sync_enabled: true
   plane_item_id: null
-  archive_status: ready_for_archive
+  archive_status: archived
 - id: RM-DEV-003
   path: docs/roadmap/items/RM-DEV-003.yaml
   title: Bounded autonomous code generation
@@ -412,6 +440,7 @@ items:
   - artifacts/**
   plane_sync_enabled: true
   plane_item_id: null
+  archive_status: archived
 - id: RM-INTEL-001
   path: docs/roadmap/items/RM-INTEL-001.yaml
   title: Open-source watchtower with update alerts and adoption recommendations
@@ -429,12 +458,13 @@ items:
   - artifacts/**
   plane_sync_enabled: true
   plane_item_id: null
+  archive_status: archived
 - id: RM-INTEL-002
   path: docs/roadmap/items/RM-INTEL-002.yaml
   title: Verified OSS capability harvest and compatibility validation for the local
     development assistant
   category: INTEL
-  status: in_validation
+  status: completed
   priority: P1
   package_group: PKG-INTEL-VERIFIED-HARVEST
   affected_systems:
@@ -448,12 +478,14 @@ items:
   - artifacts/**
   plane_sync_enabled: true
   plane_item_id: null
+  archive_status: archived
 - id: RM-INTEL-003
   path: docs/roadmap/items/RM-INTEL-003.yaml
-  title: Governed intelligence watch and operator analysis surface integrated with runtime
+  title: Governed intelligence watch and operator analysis surface integrated with
+    runtime
   category: INTEL
   status: completed
-  archive_status: ready_for_archive
+  archive_status: archived
   priority: P1
   package_group: PKG-OPS-POST-SUBSTRATE
   affected_systems:
@@ -492,8 +524,8 @@ items:
   path: docs/roadmap/items/RM-AUTO-002.yaml
   title: Roadmap-to-execution compiler baseline
   category: AUTO
-  status: complete
-  archive_status: ready_for_archive
+  status: completed
+  archive_status: archived
   priority: P1
   package_group: PKG-AUTO-COMPILATION
   affected_systems:
@@ -583,7 +615,7 @@ items:
   title: Procurement and search baseline system
   category: INV
   status: completed
-  archive_status: ready_for_archive
+  archive_status: archived
   priority: P2
   package_group: PKG-INTEGRATION-PHASE1
   affected_systems:
@@ -599,7 +631,7 @@ items:
   title: Governed home/local-environment operation intents through the unified runtime
   category: HOME
   status: completed
-  archive_status: ready_for_archive
+  archive_status: archived
   priority: P1
   package_group: PKG-OPS-POST-SUBSTRATE
   affected_systems:
@@ -620,7 +652,7 @@ items:
   title: Edition builder baseline system
   category: ED
   status: completed
-  archive_status: ready_for_archive
+  archive_status: archived
   priority: P2
   package_group: PKG-INTEGRATION-PHASE1
   affected_systems:
@@ -636,7 +668,7 @@ items:
   title: Website generation baseline system
   category: DOCAPP
   status: completed
-  archive_status: ready_for_archive
+  archive_status: archived
   priority: P2
   package_group: PKG-INTEGRATION-PHASE1
   affected_systems:
@@ -651,7 +683,7 @@ items:
   title: Electrical design baseline system
   category: HW
   status: completed
-  archive_status: ready_for_archive
+  archive_status: archived
   priority: P2
   package_group: PKG-INTEGRATION-PHASE1
   affected_systems:
@@ -922,3 +954,4 @@ items:
   autonomous_execution_status: eligible_with_guardrails
   external_dependency_blocks_autonomous_execution: false
   external_dependency_readiness_status: not_applicable
+  archive_status: archived

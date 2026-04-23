@@ -1,14 +1,13 @@
-schema_version: "1.0"
-kind: "roadmap_item"
-id: "RM-OPS-005"
-slug: "telemetry-tracing-audit-pipeline"
-title: "End-to-end telemetry, tracing, and audit evidence pipeline"
-category: "OPS"
-type: "capability_foundation"
-status: "completed"
-archive_status: "ready_for_archive"
-priority: "P1"
-
+schema_version: '1.0'
+kind: roadmap_item
+id: RM-OPS-005
+slug: telemetry-tracing-audit-pipeline
+title: End-to-end telemetry, tracing, and audit evidence pipeline
+category: OPS
+type: capability_foundation
+status: completed
+archive_status: archived
+priority: P1
 scoring:
   loe: 4
   strategic_value: 5
@@ -16,233 +15,226 @@ scoring:
   execution_risk: 2
   dependency_burden: 3
   readiness: 3
+description: 'Establish baseline for end-to-end telemetry, execution tracing, and
+  audit evidence capture that links execution activity to goals, decisions, and outcomes.
 
-description: >
-  Establish baseline for end-to-end telemetry, execution tracing, and audit
-  evidence capture that links execution activity to goals, decisions, and
-  outcomes.
+  '
+why_it_matters: 'Without structured telemetry and audit trails, execution remains
+  opaque. Baseline enables observability into what happened, why, and with what outcomes,
+  supporting attribution, debugging, and compliance.
 
-why_it_matters: >
-  Without structured telemetry and audit trails, execution remains opaque.
-  Baseline enables observability into what happened, why, and with what
-  outcomes, supporting attribution, debugging, and compliance.
-
+  '
 scope:
-  objective: >
-    Define event model, trace structure, audit evidence schema, linkage to
-    execution and goals, and evidence retention posture.
-  in_scope:
-    - "event model schema"
-    - "execution trace structure"
-    - "audit evidence format"
-    - "linkage to execution activity"
-    - "linkage to goals and decisions"
-    - "evidence retention and archival"
-  out_of_scope:
-    - "real-time visualization UI"
-    - "APM vendor integration"
-    - "log aggregation infrastructure"
+  objective: 'Define event model, trace structure, audit evidence schema, linkage
+    to execution and goals, and evidence retention posture.
 
+    '
+  in_scope:
+  - event model schema
+  - execution trace structure
+  - audit evidence format
+  - linkage to execution activity
+  - linkage to goals and decisions
+  - evidence retention and archival
+  out_of_scope:
+  - real-time visualization UI
+  - APM vendor integration
+  - log aggregation infrastructure
 dependencies:
   blocked_by: []
   depends_on:
-    - "RM-AUTO-001"
-    - "RM-GOV-001"
+  - RM-AUTO-001
+  - RM-GOV-001
   enables:
-    - "RM-OPS-004"
-    - "RM-INV-002"
+  - RM-OPS-004
+  - RM-INV-002
   related_items:
-    - "RM-AUTO-001"
-    - "RM-GOV-001"
-    - "RM-OPS-004"
-
+  - RM-AUTO-001
+  - RM-GOV-001
+  - RM-OPS-004
 impact:
   affected_systems:
-    - "observability"
-    - "audit"
-    - "compliance"
+  - observability
+  - audit
+  - compliance
   expected_file_families:
-    - "governance/telemetry_event_schema.v1.yaml"
-  impact_summary: >
-    Provides structured baseline for end-to-end observability and audit of all
-    execution activity.
+  - governance/telemetry_event_schema.v1.yaml
+  impact_summary: 'Provides structured baseline for end-to-end observability and audit
+    of all execution activity.
 
+    '
 cmdb:
   refs:
-    - "subsystem:observability"
-    - "subsystem:audit"
+  - subsystem:observability
+  - subsystem:audit
   asset_links: []
   service_links: []
-
 grouping:
   feature_block_candidates:
-    - "FB-TELEMETRY-AUDIT"
-  package_group: "PKG-INTEGRATION-BUNDLE-2"
+  - FB-TELEMETRY-AUDIT
+  package_group: PKG-INTEGRATION-BUNDLE-2
   shared_touch_surfaces:
-    - "event telemetry"
-    - "execution traces"
-    - "audit evidence"
-
+  - event telemetry
+  - execution traces
+  - audit evidence
 milestones:
-  recommended_first_milestone: "define-event-model"
+  recommended_first_milestone: define-event-model
   downstream_milestones:
-    - "define-trace-structure"
-    - "define-audit-evidence-schema"
-    - "define-evidence-linkage"
-
+  - define-trace-structure
+  - define-audit-evidence-schema
+  - define-evidence-linkage
 planning:
   planning_packet_ref: null
-  planning_status: "complete"
-  planning_notes: "Telemetry and audit evidence baseline validated with governance and runtime artifacts."
-
+  planning_status: complete
+  planning_notes: Telemetry and audit evidence baseline validated with governance
+    and runtime artifacts.
 execution:
   execution_package_refs:
-    - "governance/telemetry_event_schema.v1.yaml"
-    - "runtime/execution_tracer.py"
-    - "runtime/failure_classifier.py"
-    - "runtime/performance_profiler.py"
-  execution_status: "completed"
+  - governance/telemetry_event_schema.v1.yaml
+  - runtime/execution_tracer.py
+  - runtime/failure_classifier.py
+  - runtime/performance_profiler.py
+  execution_status: completed
   last_execution_commit: null
-
 validation:
   validation_artifact_refs:
-    - "governance/telemetry_event_schema.v1.yaml"
-    - "artifacts/bundle_2_integration_demo/goal_to_execution_flow.json"
-    - "artifacts/validation/phase0_closure_validation.json"
-    - "artifacts/validation/phase2_ops_validation.json"
-    - "artifacts/validation/roadmap_execution_contract_validation.json"
-  validation_status: "passed"
+  - governance/telemetry_event_schema.v1.yaml
+  - artifacts/bundle_2_integration_demo/goal_to_execution_flow.json
+  - artifacts/validation/phase0_closure_validation.json
+  - artifacts/validation/phase2_ops_validation.json
+  - artifacts/validation/roadmap_execution_contract_validation.json
+  validation_status: passed
   item_complete_evidence: true
-  definition_of_done_ref: "docs/roadmap/STANDARDS.md"
-
+  definition_of_done_ref: docs/roadmap/STANDARDS.md
 governance:
-  phase_target: "Integration Bundle 2"
-  architectural_lane: "observability"
-  risk_tier: "low"
-  allowed_change_scope: "bounded"
+  phase_target: Integration Bundle 2
+  architectural_lane: observability
+  risk_tier: low
+  allowed_change_scope: bounded
   requires_explicit_escalation: false
-
 ai_operability:
-  canonical_summary: >
-    End-to-end telemetry baseline with event model, trace structure, and audit
-    evidence schema linked to execution activity and goals.
-  developer_intent: >
-    After this item, all execution activity generates structured telemetry,
-    traces, and audit evidence that can be queried and analyzed for
-    observability and compliance.
+  canonical_summary: 'End-to-end telemetry baseline with event model, trace structure,
+    and audit evidence schema linked to execution activity and goals.
+
+    '
+  developer_intent: 'After this item, all execution activity generates structured
+    telemetry, traces, and audit evidence that can be queried and analyzed for observability
+    and compliance.
+
+    '
   allowed_files:
-    - "governance/**"
-    - "schemas/**"
-    - "artifacts/**"
-    - "docs/roadmap/**"
+  - governance/**
+  - schemas/**
+  - artifacts/**
+  - docs/roadmap/**
   forbidden_files:
-    - "framework/**"
-    - "tests/**"
-    - ".github/**"
+  - framework/**
+  - tests/**
+  - .github/**
   validation_order:
-    - "confirm event model schema is defined"
-    - "confirm trace structure is specified"
-    - "confirm audit evidence format is defined"
-    - "confirm linkage to execution is documented"
-    - "confirm linkage to goals is documented"
-    - "make check passes"
-  rollback_rule: >
-    Remove telemetry schema and related definitions. Preserve compliance
+  - confirm event model schema is defined
+  - confirm trace structure is specified
+  - confirm audit evidence format is defined
+  - confirm linkage to execution is documented
+  - confirm linkage to goals is documented
+  - make check passes
+  rollback_rule: 'Remove telemetry schema and related definitions. Preserve compliance
     documentation.
+
+    '
   artifact_outputs:
-    - "governance/telemetry_event_schema.v1.yaml"
+  - governance/telemetry_event_schema.v1.yaml
   promotion_linkage:
     required: false
     manifest_refs: []
 execution_contract:
-  contract_version: "1.0"
-  autonomous_execution_status: "eligible_with_guardrails"
-  next_bounded_slice: >
-    Require telemetry/audit evidence outputs and machine-readable validation
-    artifacts as completion gates for any bounded execution slice.
+  contract_version: '1.0'
+  autonomous_execution_status: eligible_with_guardrails
+  next_bounded_slice: 'Require telemetry/audit evidence outputs and machine-readable
+    validation artifacts as completion gates for any bounded execution slice.
+
+    '
   max_autonomous_scope:
     max_files_touched: 10
     max_loc_delta: 550
     allowed_change_kinds:
-      - "telemetry_contract"
-      - "validator_logic"
-      - "roadmap_item_contract"
-      - "governance_doc_sync"
+    - telemetry_contract
+    - validator_logic
+    - roadmap_item_contract
+    - governance_doc_sync
   validation_contract:
     required_validations:
-      - id: "compute_next_pull"
-        command: "python3 bin/compute_next_pull.py"
-        pass_when: "exit_code=0"
-      - id: "validate_execution_contracts"
-        command: "python3 bin/validate_roadmap_execution_contracts.py"
-        pass_when: "status=PASS"
-      - id: "validate_roadmap_consistency"
-        command: "python3 bin/validate_roadmap_consistency.py"
-        pass_when: "exit_code=0"
+    - id: compute_next_pull
+      command: python3 bin/compute_next_pull.py
+      pass_when: exit_code=0
+    - id: validate_execution_contracts
+      command: python3 bin/validate_roadmap_execution_contracts.py
+      pass_when: status=PASS
+    - id: validate_roadmap_consistency
+      command: python3 bin/validate_roadmap_consistency.py
+      pass_when: exit_code=0
     pass_criteria:
-      - "Validation and blocker artifacts regenerate without schema or sync failures."
-      - "Required evidence outputs are referenced in contract-bearing items."
+    - Validation and blocker artifacts regenerate without schema or sync failures.
+    - Required evidence outputs are referenced in contract-bearing items.
   artifact_contract:
     required_artifacts:
-      - "governance/telemetry_event_schema.v1.yaml"
-      - "artifacts/validation/roadmap_execution_contract_validation.json"
-      - "artifacts/planning/blocker_registry.json"
+    - governance/telemetry_event_schema.v1.yaml
+    - artifacts/validation/roadmap_execution_contract_validation.json
+    - artifacts/planning/blocker_registry.json
     evidence_outputs:
-      - "Slice completion requires explicit evidence outputs, not prose-only claims."
-      - "Telemetry/audit requirements stay machine-readable in item contracts."
+    - Slice completion requires explicit evidence outputs, not prose-only claims.
+    - Telemetry/audit requirements stay machine-readable in item contracts.
     machine_readable_outputs:
-      - "artifacts/validation/roadmap_execution_contract_validation.json"
-      - "artifacts/planning/blocker_registry.json"
+    - artifacts/validation/roadmap_execution_contract_validation.json
+    - artifacts/planning/blocker_registry.json
   completion_contract:
     substep_complete_when:
-      - "Evidence and artifact requirements are explicit in execution contract."
+    - Evidence and artifact requirements are explicit in execution contract.
     bounded_slice_complete_when:
-      - "Validation contract checks pass."
-      - "Artifact contract required outputs are emitted."
+    - Validation contract checks pass.
+    - Artifact contract required outputs are emitted.
     item_complete_when:
-      - "Telemetry/audit completion is evidence-based and machine-checkable."
+    - Telemetry/audit completion is evidence-based and machine-checkable.
     blocker_chain_cleared_when:
-      - "No missing telemetry evidence contract remains in required governance items."
+    - No missing telemetry evidence contract remains in required governance items.
     small_patch_is_not_completion: true
   truth_surface_updates_required:
-    - "docs/roadmap/items/RM-OPS-005.yaml"
-    - "artifacts/planning/next_pull.json"
-    - "artifacts/planning/blocker_registry.json"
-    - "governance/roadmap_dependency_graph.v1.yaml"
+  - docs/roadmap/items/RM-OPS-005.yaml
+  - artifacts/planning/next_pull.json
+  - artifacts/planning/blocker_registry.json
+  - governance/roadmap_dependency_graph.v1.yaml
   external_dependency_readiness:
     required: false
-    readiness_status: "not_applicable"
+    readiness_status: not_applicable
     blocks_autonomous_execution: false
     blocking_dependencies: []
-    notes: "Telemetry contract hardening is local-governance scope."
-
+    notes: Telemetry contract hardening is local-governance scope.
 sync:
   plane:
     sync_enabled: true
-    sync_mode: "repo_to_plane_authoritative"
-    workspace: "Integrated AI Platform"
-    project: "Roadmap Ops"
+    sync_mode: repo_to_plane_authoritative
+    workspace: Integrated AI Platform
+    project: Roadmap Ops
     plane_item_id: null
     last_synced_at: null
     writeback_fields_allowed:
-      - "operational_state"
-      - "assignee"
-      - "cycle"
-      - "module"
-      - "labels"
+    - operational_state
+    - assignee
+    - cycle
+    - module
+    - labels
   github:
     issue_ref: null
     pr_refs: []
-
 metadata:
-  owner: "system"
-  created_at: "2026-04-22"
-  updated_at: "2026-04-23"
+  owner: system
+  created_at: '2026-04-22'
+  updated_at: '2026-04-23'
   tags:
-    - "telemetry"
-    - "audit"
-    - "observability"
+  - telemetry
+  - audit
+  - observability
 archive_readiness:
   ready: true
-  reason: "telemetry_and_audit_baseline_validated"
-  validation_artifact: "artifacts/validation/phase2_ops_validation.json"
+  reason: telemetry_and_audit_baseline_validated
+  validation_artifact: artifacts/validation/phase2_ops_validation.json

@@ -1,13 +1,13 @@
-schema_version: "1.0"
-kind: "roadmap_item"
-id: "RM-GOV-007"
-slug: "lock-autonomy-scorecard"
-title: "Lock autonomy scorecard"
-category: "GOV"
-type: "governance"
-status: "completed"
-archive_status: "ready_for_archive"
-priority: "P1"
+schema_version: '1.0'
+kind: roadmap_item
+id: RM-GOV-007
+slug: lock-autonomy-scorecard
+title: Lock autonomy scorecard
+category: GOV
+type: governance
+status: completed
+archive_status: archived
+priority: P1
 scoring:
   loe: 3
   strategic_value: 5
@@ -15,154 +15,162 @@ scoring:
   execution_risk: 1
   dependency_burden: 2
   readiness: 3
-description: >
-  Define and ratify the first-pass autonomy scorecard covering success rate, retry count,
-  escalation rate, code-outcome coverage, artifact completeness, and promotion readiness
-  metrics.
-why_it_matters: >
-  Without a locked autonomy scorecard, there is no measurable definition of when the
-  system is ready to advance to higher autonomy tiers. The scorecard makes readiness
-  decisions deterministic and auditable.
+description: 'Define and ratify the first-pass autonomy scorecard covering success
+  rate, retry count, escalation rate, code-outcome coverage, artifact completeness,
+  and promotion readiness metrics.
+
+  '
+why_it_matters: 'Without a locked autonomy scorecard, there is no measurable definition
+  of when the system is ready to advance to higher autonomy tiers. The scorecard makes
+  readiness decisions deterministic and auditable.
+
+  '
 scope:
-  objective: >
-    Define the six scorecard dimensions, set initial threshold values, and ratify
-    the scorecard as the binding readiness gate for autonomy tier advancement.
+  objective: 'Define the six scorecard dimensions, set initial threshold values, and
+    ratify the scorecard as the binding readiness gate for autonomy tier advancement.
+
+    '
   in_scope:
-    - "first-pass success rate metric"
-    - "retry count metric"
-    - "escalation rate metric"
-    - "code-outcome coverage metric"
-    - "artifact completeness metric"
-    - "promotion readiness metric"
-    - "threshold values for phase advancement"
+  - first-pass success rate metric
+  - retry count metric
+  - escalation rate metric
+  - code-outcome coverage metric
+  - artifact completeness metric
+  - promotion readiness metric
+  - threshold values for phase advancement
   out_of_scope:
-    - "runtime scorecard computation tooling"
-    - "automated scoring pipeline"
-    - "Plane sync changes"
+  - runtime scorecard computation tooling
+  - automated scoring pipeline
+  - Plane sync changes
 dependencies:
   blocked_by:
-    - "RM-GOV-006"
+  - RM-GOV-006
   depends_on:
-    - "RM-GOV-006"
+  - RM-GOV-006
   enables:
-    - "RM-CORE-005"
-    - "RM-CORE-006"
+  - RM-CORE-005
+  - RM-CORE-006
   related_items:
-    - "RM-GOV-003"
-    - "RM-GOV-006"
+  - RM-GOV-003
+  - RM-GOV-006
 impact:
   affected_systems:
-    - "control_plane"
-    - "agent_runtime"
-    - "validation_pipeline"
-    - "roadmap_ops"
+  - control_plane
+  - agent_runtime
+  - validation_pipeline
+  - roadmap_ops
   expected_file_families:
-    - "docs/roadmap/**"
-    - "docs/execution/**"
-  impact_summary: >
-    Provides the binding readiness gate that controls autonomy tier advancement and
-    makes promotion readiness decisions deterministic.
+  - docs/roadmap/**
+  - docs/execution/**
+  impact_summary: 'Provides the binding readiness gate that controls autonomy tier
+    advancement and makes promotion readiness decisions deterministic.
+
+    '
 cmdb:
   refs:
-    - "subsystem:control_plane"
-    - "subsystem:agent_runtime"
-    - "subsystem:validation_pipeline"
+  - subsystem:control_plane
+  - subsystem:agent_runtime
+  - subsystem:validation_pipeline
   asset_links: []
   service_links: []
 grouping:
   feature_block_candidates:
-    - "FB-GOV-ROADMAP-AUTHORITY"
-  package_group: "PKG-GOV-PHASE0"
+  - FB-GOV-ROADMAP-AUTHORITY
+  package_group: PKG-GOV-PHASE0
   shared_touch_surfaces:
-    - "autonomy scorecard"
-    - "promotion readiness"
-    - "escalation rate"
-    - "artifact completeness"
+  - autonomy scorecard
+  - promotion readiness
+  - escalation rate
+  - artifact completeness
 milestones:
-  recommended_first_milestone: "define-scorecard-dimensions"
+  recommended_first_milestone: define-scorecard-dimensions
   downstream_milestones:
-    - "set-threshold-values"
-    - "ratify-scorecard"
-    - "link-to-phase-advancement"
+  - set-threshold-values
+  - ratify-scorecard
+  - link-to-phase-advancement
 planning:
   planning_packet_ref: null
-  planning_status: "complete"
-  planning_notes: "Autonomy scorecard ratified with execution-facing contract."
+  planning_status: complete
+  planning_notes: Autonomy scorecard ratified with execution-facing contract.
 execution:
   execution_package_refs:
-    - "docs/execution/autonomy_scorecard.md"
-  execution_status: "completed"
+  - docs/execution/autonomy_scorecard.md
+  execution_status: completed
   last_execution_commit: null
 validation:
   validation_artifact_refs:
-    - "artifacts/governance/autonomy_scorecard_validation.json"
-    - "artifacts/governance/rm_gov_007_autonomy_scorecard_closeout.json"
-  validation_status: "passed"
-  definition_of_done_ref: "docs/execution/definition_of_done.md"
+  - artifacts/governance/autonomy_scorecard_validation.json
+  - artifacts/governance/rm_gov_007_autonomy_scorecard_closeout.json
+  validation_status: passed
+  definition_of_done_ref: docs/execution/definition_of_done.md
 governance:
-  phase_target: "Phase 0"
-  architectural_lane: "governance_freeze"
-  risk_tier: "low"
-  allowed_change_scope: "narrow"
+  phase_target: Phase 0
+  architectural_lane: governance_freeze
+  risk_tier: low
+  allowed_change_scope: narrow
   requires_explicit_escalation: false
 ai_operability:
-  canonical_summary: >
-    Governance item to define and ratify the first-pass autonomy scorecard covering
-    six dimensions that gate autonomy tier advancement.
-  developer_intent: >
-    After this item, there is a binding autonomy scorecard with numeric thresholds that
-    make readiness decisions deterministic and auditable.
+  canonical_summary: 'Governance item to define and ratify the first-pass autonomy
+    scorecard covering six dimensions that gate autonomy tier advancement.
+
+    '
+  developer_intent: 'After this item, there is a binding autonomy scorecard with numeric
+    thresholds that make readiness decisions deterministic and auditable.
+
+    '
   non_goals:
-    - "Do not implement runtime scorecard computation tooling"
-    - "Do not automate scoring pipelines"
-    - "Do not alter governance schema or config"
+  - Do not implement runtime scorecard computation tooling
+  - Do not automate scoring pipelines
+  - Do not alter governance schema or config
   allowed_files:
-    - "docs/roadmap/**"
-    - "docs/execution/**"
+  - docs/roadmap/**
+  - docs/execution/**
   forbidden_files:
-    - "bin/**"
-    - "framework/**"
-    - "tests/**"
-    - "governance/**"
-    - "config/**"
+  - bin/**
+  - framework/**
+  - tests/**
+  - governance/**
+  - config/**
   validation_order:
-    - "confirm all six dimensions are defined"
-    - "confirm threshold values are set"
-    - "confirm scorecard is ratified in governance"
-    - "manual review"
-  rollback_rule: >
-    Revert only the docs/execution and docs/roadmap files created by this item.
+  - confirm all six dimensions are defined
+  - confirm threshold values are set
+  - confirm scorecard is ratified in governance
+  - manual review
+  rollback_rule: 'Revert only the docs/execution and docs/roadmap files created by
+    this item.
+
+    '
   artifact_outputs:
-    - "docs/execution/autonomy_scorecard.md"
+  - docs/execution/autonomy_scorecard.md
   promotion_linkage:
     required: false
     manifest_refs: []
 sync:
   plane:
     sync_enabled: true
-    sync_mode: "repo_to_plane_authoritative"
-    workspace: "Integrated AI Platform"
-    project: "Roadmap Ops"
+    sync_mode: repo_to_plane_authoritative
+    workspace: Integrated AI Platform
+    project: Roadmap Ops
     plane_item_id: null
     last_synced_at: null
     writeback_fields_allowed:
-      - "operational_state"
-      - "assignee"
-      - "cycle"
-      - "module"
-      - "labels"
+    - operational_state
+    - assignee
+    - cycle
+    - module
+    - labels
   github:
     issue_ref: null
     pr_refs: []
 metadata:
-  owner: "adrian"
-  created_at: "2026-04-20"
-  updated_at: "2026-04-22"
+  owner: adrian
+  created_at: '2026-04-20'
+  updated_at: '2026-04-23'
   tags:
-    - "governance"
-    - "autonomy-scorecard"
-    - "phase-0"
+  - governance
+  - autonomy-scorecard
+  - phase-0
 archive_readiness:
   ready: true
-  reason: "autonomy_scorecard_ratified"
-  validation_artifact: "artifacts/governance/rm_gov_007_autonomy_scorecard_closeout.json"
+  reason: autonomy_scorecard_ratified
+  validation_artifact: artifacts/governance/rm_gov_007_autonomy_scorecard_closeout.json

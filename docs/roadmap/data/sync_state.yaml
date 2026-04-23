@@ -12,7 +12,7 @@ items:
   last_pull_at: null
   last_sync_result: not_synced
   status: completed
-  archive_status: ready_for_archive
+  archive_status: archived
   writeback_fields_allowed:
   - operational_state
   - assignee
@@ -32,7 +32,7 @@ items:
   last_pull_at: null
   last_sync_result: not_synced
   status: completed
-  archive_status: ready_for_archive
+  archive_status: archived
   writeback_fields_allowed:
   - operational_state
   - assignee
@@ -52,7 +52,7 @@ items:
   last_pull_at: null
   last_sync_result: not_synced
   status: completed
-  archive_status: ready_for_archive
+  archive_status: archived
   writeback_fields_allowed:
   - operational_state
   - assignee
@@ -72,7 +72,27 @@ items:
   last_pull_at: null
   last_sync_result: not_synced
   status: completed
-  archive_status: ready_for_archive
+  archive_status: archived
+  writeback_fields_allowed:
+  - operational_state
+  - assignee
+  - cycle
+  - module
+  autonomous_execution_status: eligible_with_guardrails
+  external_dependency_readiness_status: not_applicable
+  external_dependency_blocks_autonomous_execution: false
+- id: RM-OPS-007
+  sync_enabled: true
+  sync_mode: repo_to_plane_authoritative
+  plane_workspace: Integrated AI Platform
+  plane_project: Roadmap Ops
+  plane_item_id: null
+  plane_url: null
+  last_push_at: null
+  last_pull_at: null
+  last_sync_result: not_synced
+  status: completed
+  archive_status: archived
   writeback_fields_allowed:
   - operational_state
   - assignee
@@ -92,7 +112,7 @@ items:
   last_pull_at: null
   last_sync_result: not_synced
   status: completed
-  archive_status: ready_for_archive
+  archive_status: archived
   writeback_fields_allowed:
   - operational_state
   - assignee
@@ -133,6 +153,8 @@ items:
   - assignee
   - cycle
   - module
+  status: completed
+  archive_status: ''
 - id: RM-GOV-004
   sync_enabled: true
   sync_mode: repo_to_plane_authoritative
@@ -149,6 +171,7 @@ items:
   - assignee
   - cycle
   - module
+  status: completed
 - id: RM-GOV-005
   sync_enabled: true
   sync_mode: repo_to_plane_authoritative
@@ -165,6 +188,7 @@ items:
   - cycle
   - module
   archive_status: archived
+  status: completed
 - id: RM-GOV-006
   sync_enabled: true
   sync_mode: repo_to_plane_authoritative
@@ -176,7 +200,7 @@ items:
   last_pull_at: null
   last_sync_result: not_synced
   status: completed
-  archive_status: ready_for_archive
+  archive_status: archived
   writeback_fields_allowed:
   - operational_state
   - assignee
@@ -196,7 +220,7 @@ items:
   last_pull_at: null
   last_sync_result: not_synced
   status: completed
-  archive_status: ready_for_archive
+  archive_status: archived
   writeback_fields_allowed:
   - operational_state
   - assignee
@@ -235,7 +259,7 @@ items:
   last_pull_at: null
   last_sync_result: not_synced
   status: completed
-  archive_status: ready_for_archive
+  archive_status: archived
   writeback_fields_allowed:
   - operational_state
   - assignee
@@ -259,6 +283,8 @@ items:
   - assignee
   - cycle
   - module
+  status: completed
+  archive_status: ''
 - id: RM-CORE-002
   sync_enabled: true
   sync_mode: repo_to_plane_authoritative
@@ -274,6 +300,8 @@ items:
   - assignee
   - cycle
   - module
+  status: completed
+  archive_status: ''
 - id: RM-CORE-003
   sync_enabled: true
   sync_mode: repo_to_plane_authoritative
@@ -284,12 +312,13 @@ items:
   last_push_at: null
   last_pull_at: null
   last_sync_result: not_synced
-  archive_status: ready_for_archive
+  archive_status: archived
   writeback_fields_allowed:
   - operational_state
   - assignee
   - cycle
   - module
+  status: complete
 - id: RM-CORE-004
   sync_enabled: true
   sync_mode: repo_to_plane_authoritative
@@ -305,6 +334,8 @@ items:
   - assignee
   - cycle
   - module
+  status: completed
+  archive_status: archived
 - id: RM-CORE-005
   sync_enabled: true
   sync_mode: repo_to_plane_authoritative
@@ -321,6 +352,7 @@ items:
   - cycle
   - module
   archive_status: archived
+  status: completed
 - id: RM-CORE-006
   sync_enabled: true
   sync_mode: repo_to_plane_authoritative
@@ -332,7 +364,7 @@ items:
   last_pull_at: null
   last_sync_result: not_synced
   status: completed
-  archive_status: ready_for_archive
+  archive_status: archived
   writeback_fields_allowed:
   - operational_state
   - assignee
@@ -371,7 +403,8 @@ items:
   - assignee
   - cycle
   - module
-  archive_status: ready_for_archive
+  archive_status: archived
+  status: complete
 - id: RM-DEV-003
   sync_enabled: true
   sync_mode: repo_to_plane_authoritative
@@ -391,6 +424,8 @@ items:
   archive_ready_at: '2026-04-22T01:15:00Z'
   archive_ready_notes: Closure complete; all tests passing; no active blockers; ready
     for archive
+  status: completed
+  archive_status: archived
 - id: RM-INTEL-001
   sync_enabled: true
   sync_mode: repo_to_plane_authoritative
@@ -406,6 +441,8 @@ items:
   - assignee
   - cycle
   - module
+  status: completed
+  archive_status: archived
 - id: RM-INTEL-002
   sync_enabled: true
   sync_mode: repo_to_plane_authoritative
@@ -421,6 +458,8 @@ items:
   - assignee
   - cycle
   - module
+  status: completed
+  archive_status: archived
 - id: RM-INTEL-003
   sync_enabled: true
   sync_mode: repo_to_plane_authoritative
@@ -432,7 +471,7 @@ items:
   last_pull_at: null
   last_sync_result: not_synced
   status: completed
-  archive_status: ready_for_archive
+  archive_status: archived
   writeback_fields_allowed:
   - operational_state
   - assignee
@@ -457,6 +496,7 @@ items:
   - cycle
   - module
   archive_status: archived
+  status: completed
 - id: RM-AUTO-002
   sync_enabled: true
   sync_mode: repo_to_plane_authoritative
@@ -467,12 +507,13 @@ items:
   last_push_at: null
   last_pull_at: null
   last_sync_result: not_synced
-  archive_status: ready_for_archive
+  archive_status: archived
   writeback_fields_allowed:
   - operational_state
   - assignee
   - cycle
   - module
+  status: completed
 - id: RM-DEV-009
   sync_enabled: true
   sync_mode: repo_to_plane_authoritative
@@ -489,6 +530,7 @@ items:
   - cycle
   - module
   archive_status: ready_for_archive
+  status: complete
 - id: RM-DEV-008
   sync_enabled: true
   sync_mode: repo_to_plane_authoritative
@@ -505,6 +547,7 @@ items:
   - cycle
   - module
   archive_status: ready_for_archive
+  status: complete
 - id: RM-DEV-004
   sync_enabled: true
   sync_mode: repo_to_plane_authoritative
@@ -521,6 +564,7 @@ items:
   - assignee
   - cycle
   - module
+  status: completed
 - id: RM-DEV-007
   sync_enabled: true
   sync_mode: repo_to_plane_authoritative
@@ -537,6 +581,7 @@ items:
   - assignee
   - cycle
   - module
+  status: completed
 - id: RM-INV-005
   sync_enabled: true
   sync_mode: repo_to_plane_authoritative
@@ -553,6 +598,7 @@ items:
   - assignee
   - cycle
   - module
+  status: completed
 - id: RM-INV-003
   sync_enabled: true
   sync_mode: repo_to_plane_authoritative
@@ -564,7 +610,7 @@ items:
   last_pull_at: null
   last_sync_result: not_synced
   status: completed
-  archive_status: ready_for_archive
+  archive_status: archived
   writeback_fields_allowed:
   - operational_state
   - assignee
@@ -581,7 +627,7 @@ items:
   last_pull_at: null
   last_sync_result: not_synced
   status: completed
-  archive_status: ready_for_archive
+  archive_status: archived
   writeback_fields_allowed:
   - operational_state
   - assignee
@@ -601,7 +647,7 @@ items:
   last_pull_at: null
   last_sync_result: not_synced
   status: completed
-  archive_status: ready_for_archive
+  archive_status: archived
   writeback_fields_allowed:
   - operational_state
   - assignee
@@ -618,7 +664,7 @@ items:
   last_pull_at: null
   last_sync_result: not_synced
   status: completed
-  archive_status: ready_for_archive
+  archive_status: archived
   writeback_fields_allowed:
   - operational_state
   - assignee
@@ -635,7 +681,7 @@ items:
   last_pull_at: null
   last_sync_result: not_synced
   status: completed
-  archive_status: ready_for_archive
+  archive_status: archived
   writeback_fields_allowed:
   - operational_state
   - assignee
@@ -884,3 +930,4 @@ items:
   autonomous_execution_status: eligible_with_guardrails
   external_dependency_readiness_status: not_applicable
   external_dependency_blocks_autonomous_execution: false
+  archive_status: archived

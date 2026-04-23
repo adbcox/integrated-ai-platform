@@ -1,13 +1,13 @@
-schema_version: "1.0"
-kind: "roadmap_item"
-id: "RM-GOV-009"
-slug: "autonomous-canonical-item-intake-activation"
-title: "Governed connector control-plane and canonical intake activation"
-category: "GOV"
-type: "governance_session"
-status: "completed"
-archive_status: "ready_for_archive"
-priority: "P1"
+schema_version: '1.0'
+kind: roadmap_item
+id: RM-GOV-009
+slug: autonomous-canonical-item-intake-activation
+title: Governed connector control-plane and canonical intake activation
+category: GOV
+type: governance_session
+status: completed
+archive_status: archived
+priority: P1
 scoring:
   loe: 1
   strategic_value: 5
@@ -15,175 +15,188 @@ scoring:
   execution_risk: 1
   dependency_burden: 1
   readiness: 5
-description: >
-  Activate and evidence governed connector control-plane posture plus
+description: 'Activate and evidence governed connector control-plane posture plus
   autonomous canonical roadmap item intake after post-Phase7 ratification reconciliation.
-why_it_matters: >
-  Local autonomy requires connector authority boundaries and canonical intake activation.
-  Without governed connector controls, autonomy execution can drift into uncontrolled side effects.
+
+  '
+why_it_matters: 'Local autonomy requires connector authority boundaries and canonical
+  intake activation. Without governed connector controls, autonomy execution can drift
+  into uncontrolled side effects.
+
+  '
 scope:
-  objective: >
-    Emit machine-readable connector governance + intake activation evidence from canonical authority surfaces.
+  objective: 'Emit machine-readable connector governance + intake activation evidence
+    from canonical authority surfaces.
+
+    '
   in_scope:
-    - "publish connector control-plane policy for github/gmail/google_calendar"
-    - "define allowed vs disallowed connector operations"
-    - "define connector validation and anti-sprawl constraints"
-    - "validate authority class is autonomous_roadmap_item_creation"
-    - "publish autonomous intake policy surface"
-    - "emit intake activation artifact"
+  - publish connector control-plane policy for github/gmail/google_calendar
+  - define allowed vs disallowed connector operations
+  - define connector validation and anti-sprawl constraints
+  - validate authority class is autonomous_roadmap_item_creation
+  - publish autonomous intake policy surface
+  - emit intake activation artifact
   out_of_scope:
-    - "adding new connectors outside the approved set"
-    - "connector-triggered side effects without human gate"
-    - "creating feature-level roadmap backlog"
-    - "phase advancement changes"
+  - adding new connectors outside the approved set
+  - connector-triggered side effects without human gate
+  - creating feature-level roadmap backlog
+  - phase advancement changes
 dependencies:
   blocked_by: []
   depends_on:
-    - "RM-GOV-008"
+  - RM-GOV-008
   enables: []
   related_items: []
 impact:
   affected_systems:
-    - "connector_control_plane"
-    - "governance"
-    - "roadmap_ops"
+  - connector_control_plane
+  - governance
+  - roadmap_ops
   expected_file_families:
-    - "governance/**"
-    - "artifacts/governance/**"
-    - "bin/**"
+  - governance/**
+  - artifacts/governance/**
+  - bin/**
 cmdb:
   refs:
-    - "subsystem:governance"
+  - subsystem:governance
 planning:
   planning_packet_ref: null
-  planning_status: "complete"
-  planning_notes: "Derived from current_phase next_allowed_package_class and closeout ratification sequence."
+  planning_status: complete
+  planning_notes: Derived from current_phase next_allowed_package_class and closeout
+    ratification sequence.
 execution:
   execution_package_refs:
-    - "governance/autonomous_intake_policy.v1.yaml"
-    - "governance/connector_control_plane_policy.v1.yaml"
-    - "bin/validate_next_tier_autonomy_expansion.py"
-    - "framework/rm_ui005_control_window.py"
-  execution_status: "complete"
-  last_execution_commit: "6b4011326a8f766417ad01508e4adc9dea4a406d"
+  - governance/autonomous_intake_policy.v1.yaml
+  - governance/connector_control_plane_policy.v1.yaml
+  - bin/validate_next_tier_autonomy_expansion.py
+  - framework/rm_ui005_control_window.py
+  execution_status: complete
+  last_execution_commit: 6b4011326a8f766417ad01508e4adc9dea4a406d
 validation:
   validation_artifact_refs:
-    - "bin/run_autonomous_item_intake_activation.py"
-    - "governance/autonomous_intake_policy.v1.yaml"
-    - "governance/connector_control_plane_policy.v1.yaml"
-    - "bin/validate_next_tier_autonomy_expansion.py"
-    - "artifacts/validation/next_tier_autonomy_expansion_validation.json"
-    - "artifacts/governance/autonomous_item_intake_activation.json"
-    - "artifacts/planning/next_pull.json"
-    - "artifacts/planning/blocker_registry.json"
-  validation_status: "passed"
+  - bin/run_autonomous_item_intake_activation.py
+  - governance/autonomous_intake_policy.v1.yaml
+  - governance/connector_control_plane_policy.v1.yaml
+  - bin/validate_next_tier_autonomy_expansion.py
+  - artifacts/validation/next_tier_autonomy_expansion_validation.json
+  - artifacts/governance/autonomous_item_intake_activation.json
+  - artifacts/planning/next_pull.json
+  - artifacts/planning/blocker_registry.json
+  validation_status: passed
   item_complete_evidence: true
-  definition_of_done_ref: "docs/roadmap/STANDARDS.md"
+  definition_of_done_ref: docs/roadmap/STANDARDS.md
 governance:
-  phase_target: "post_phase7_closeout"
-  architectural_lane: "governance_authority"
-  risk_tier: "low"
-  allowed_change_scope: "bounded"
+  phase_target: post_phase7_closeout
+  architectural_lane: governance_authority
+  risk_tier: low
+  allowed_change_scope: bounded
   requires_explicit_escalation: false
 ai_operability:
-  canonical_summary: >
-    Govern connector control-plane posture (github/gmail/google_calendar) and
-    activate canonical intake with machine-readable guardrails.
-  developer_intent: >
-    Ensure autonomy runs through explicit connector boundaries and canonical intake authority.
+  canonical_summary: 'Govern connector control-plane posture (github/gmail/google_calendar)
+    and activate canonical intake with machine-readable guardrails.
+
+    '
+  developer_intent: 'Ensure autonomy runs through explicit connector boundaries and
+    canonical intake authority.
+
+    '
   allowed_files:
-    - "governance/**"
-    - "artifacts/governance/**"
-    - "bin/**"
-    - "docs/roadmap/**"
+  - governance/**
+  - artifacts/governance/**
+  - bin/**
+  - docs/roadmap/**
   forbidden_files:
-    - "framework/**"
-    - "runtime/**"
-    - ".github/**"
+  - framework/**
+  - runtime/**
+  - .github/**
   validation_order:
-    - "run autonomous intake activation script"
-    - "verify activation artifact indicates enabled"
-    - "run roadmap consistency validation"
-  rollback_rule: >
-    Revert intake activation policy and artifact updates.
+  - run autonomous intake activation script
+  - verify activation artifact indicates enabled
+  - run roadmap consistency validation
+  rollback_rule: 'Revert intake activation policy and artifact updates.
+
+    '
   artifact_outputs:
-    - "governance/autonomous_intake_policy.v1.yaml"
-    - "artifacts/governance/autonomous_item_intake_activation.json"
+  - governance/autonomous_intake_policy.v1.yaml
+  - artifacts/governance/autonomous_item_intake_activation.json
 execution_contract:
-  contract_version: "1.0"
-  autonomous_execution_status: "eligible_with_guardrails"
-  next_bounded_slice: >
-    Keep autonomous intake policy/evidence synchronized with queue and blocker
-    truth surfaces after governance contract adoption.
+  contract_version: '1.0'
+  autonomous_execution_status: eligible_with_guardrails
+  next_bounded_slice: 'Keep autonomous intake policy/evidence synchronized with queue
+    and blocker truth surfaces after governance contract adoption.
+
+    '
   max_autonomous_scope:
     max_files_touched: 6
     max_loc_delta: 300
     allowed_change_kinds:
-      - "governance_contract"
-      - "readiness_evidence"
-      - "roadmap_item_contract"
+    - governance_contract
+    - readiness_evidence
+    - roadmap_item_contract
   validation_contract:
     required_validations:
-      - id: "validate_execution_contracts"
-        command: "python3 bin/validate_roadmap_execution_contracts.py"
-        pass_when: "status=PASS"
-      - id: "validate_roadmap_consistency"
-        command: "python3 bin/validate_roadmap_consistency.py"
-        pass_when: "exit_code=0"
+    - id: validate_execution_contracts
+      command: python3 bin/validate_roadmap_execution_contracts.py
+      pass_when: status=PASS
+    - id: validate_roadmap_consistency
+      command: python3 bin/validate_roadmap_consistency.py
+      pass_when: exit_code=0
     pass_criteria:
-      - "Intake activation evidence remains machine-readable and policy-aligned."
-      - "Roadmap consistency remains valid after governance updates."
+    - Intake activation evidence remains machine-readable and policy-aligned.
+    - Roadmap consistency remains valid after governance updates.
   artifact_contract:
     required_artifacts:
-      - "governance/autonomous_intake_policy.v1.yaml"
-      - "artifacts/governance/autonomous_item_intake_activation.json"
-      - "artifacts/planning/blocker_registry.json"
+    - governance/autonomous_intake_policy.v1.yaml
+    - artifacts/governance/autonomous_item_intake_activation.json
+    - artifacts/planning/blocker_registry.json
     evidence_outputs:
-      - "Intake activation evidence remains present and references canonical policy."
-      - "Policy and activation evidence remain referenced."
+    - Intake activation evidence remains present and references canonical policy.
+    - Policy and activation evidence remain referenced.
     machine_readable_outputs:
-      - "artifacts/planning/blocker_registry.json"
+    - artifacts/planning/blocker_registry.json
   completion_contract:
     substep_complete_when:
-      - "Autonomous intake policy and activation evidence are present."
+    - Autonomous intake policy and activation evidence are present.
     bounded_slice_complete_when:
-      - "Validation contract checks pass."
-      - "Artifact contract outputs are present."
+    - Validation contract checks pass.
+    - Artifact contract outputs are present.
     item_complete_when:
-      - "Autonomous canonical intake is activated and validated from canonical authority surfaces."
+    - Autonomous canonical intake is activated and validated from canonical authority
+      surfaces.
     blocker_chain_cleared_when:
-      - "No directly adjacent governance-authority contradiction remains for post-Phase7 intake activation."
+    - No directly adjacent governance-authority contradiction remains for post-Phase7
+      intake activation.
     small_patch_is_not_completion: true
   truth_surface_updates_required:
-    - "docs/roadmap/items/RM-GOV-009.yaml"
-    - "artifacts/planning/next_pull.json"
-    - "artifacts/planning/blocker_registry.json"
-    - "governance/roadmap_dependency_graph.v1.yaml"
+  - docs/roadmap/items/RM-GOV-009.yaml
+  - artifacts/planning/next_pull.json
+  - artifacts/planning/blocker_registry.json
+  - governance/roadmap_dependency_graph.v1.yaml
   external_dependency_readiness:
     required: false
-    readiness_status: "not_applicable"
+    readiness_status: not_applicable
     blocks_autonomous_execution: false
     blocking_dependencies: []
-    notes: "Intake activation scope is repo-local governance."
+    notes: Intake activation scope is repo-local governance.
 sync:
   plane:
     sync_enabled: true
-    sync_mode: "repo_to_plane_authoritative"
-    workspace: "Integrated AI Platform"
-    project: "Roadmap Ops"
+    sync_mode: repo_to_plane_authoritative
+    workspace: Integrated AI Platform
+    project: Roadmap Ops
     plane_item_id: null
     last_synced_at: null
     writeback_fields_allowed:
-      - "operational_state"
-      - "assignee"
-      - "cycle"
-      - "module"
+    - operational_state
+    - assignee
+    - cycle
+    - module
 metadata:
-  owner: "control_window"
-  created_at: "2026-04-22"
-  updated_at: "2026-04-23"
-  completed_at: "2026-04-22T15:57:00Z"
+  owner: control_window
+  created_at: '2026-04-22'
+  updated_at: '2026-04-23'
+  completed_at: '2026-04-22T15:57:00Z'
   tags:
-    - "governance"
-    - "intake"
-    - "connector-control-plane"
+  - governance
+  - intake
+  - connector-control-plane

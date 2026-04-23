@@ -1,6 +1,6 @@
 # Roadmap Status Sync
 
-**Last generated**: 2026-04-22
+**Last generated**: 2026-04-23
 **Authority**: `docs/roadmap/items/RM-*.yaml` (canonical source)
 
 This document is the human-visible status sync surface. Item files are authoritative.
@@ -16,11 +16,11 @@ This document is the human-visible status sync surface. Item files are authorita
 
 - Selector: `bin/compute_next_pull.py`
 - Queue artifact: `artifacts/planning/next_pull.json`
-- `RM-UI-005` canonical item promoted to `completed` with `archive_status=ready_for_archive`
-- `RM-GOV-001` canonical item synchronized to `completed` with `archive_status=ready_for_archive`
-- `RM-OPS-005` and `RM-OPS-004` canonical closeout metadata synchronized with `archive_status=ready_for_archive`
-- `RM-GOV-009` synchronized to connector-governance scope with `archive_status=ready_for_archive`
-- `RM-AUTO-001` synchronized to post-substrate autonomy contract with `archive_status=ready_for_archive`
+- `RM-UI-005` canonical item promoted to `completed` with `archive_status=archived` after convergence
+- `RM-GOV-001` canonical item synchronized to `completed` with `archive_status=archived` after convergence
+- `RM-OPS-005` and `RM-OPS-004` canonical closeout metadata synchronized with `archive_status=archived` after convergence
+- `RM-GOV-009` synchronized to connector-governance scope with `archive_status=archived` after convergence
+- `RM-AUTO-001` synchronized to post-substrate autonomy contract with `archive_status=archived` after convergence
 - `RM-DEV-001` synchronized to governed Apple/Xcode runtime linkage while remaining `archive_status=archived`
 - Chosen next eligible target: `none` (ready queue empty)
 - Blocked placeholder items (explicitly ineligible): `none`
@@ -36,17 +36,31 @@ This document is the human-visible status sync surface. Item files are authorita
   - `artifacts/operations/integrated_ops_expansion_run.json`
   - `artifacts/validation/integrated_ops_expansion_validation.json`
 - Canonical item outcomes:
-  - `RM-OPS-006` — completed, ready_for_archive
-  - `RM-HOME-005` — completed, ready_for_archive
-  - `RM-INTEL-003` — completed, ready_for_archive
-  - `RM-INV-003` — completed, ready_for_archive (reused as integrated inventory decision-support core)
+  - `RM-OPS-006` — completed, archived
+  - `RM-HOME-005` — completed, archived
+  - `RM-INTEL-003` — completed, archived
+  - `RM-INV-003` — completed, archived (reused as integrated inventory decision-support core)
+
+## RM-OPS-007 Convergence Snapshot (Latest)
+
+- Convergence implementation:
+  - `framework/rm_ops007_archive_convergence.py`
+  - `bin/run_rm_ops007_archive_convergence.py`
+  - `bin/validate_rm_ops007_convergence.py`
+- Evidence:
+  - `artifacts/operations/rm_ops007_archive_convergence_report.json`
+  - `artifacts/validation/rm_ops007_convergence_validation.json`
+- Outcome:
+  - `RM-OPS-007` — completed, archived
+  - archived in this convergence run: 19 items
+  - held at `ready_for_archive`: `RM-DEV-008`, `RM-DEV-009` (`execution_status=not_started`)
 
 ## RM-UI-005 Canonical Execution State (Latest)
 
 - Item id: `RM-UI-005`
 - Canonical item file: `docs/roadmap/items/RM-UI-005.yaml`
 - Canonical status: `completed`
-- Canonical archive status: `ready_for_archive`
+- Canonical archive status: `archived`
 - First-slice implementation surfaces:
   - `framework/rm_ui005_control_window.py`
   - `framework/rm_ui005_openhands.py`
@@ -101,10 +115,10 @@ Phase 0 closure evidence:
 
 ## Completed (Phase 0 Closure Bundle)
 
-- `RM-AUTO-001` — Goal-to-agent baseline capability (completed; ready_for_archive)
-- `RM-GOV-001` — Canonical roadmap authority registry (completed; ready_for_archive)
-- `RM-OPS-005` — End-to-end telemetry and audit pipeline (completed; ready_for_archive)
-- `RM-OPS-004` — Backup, restore, and disaster recovery (completed; ready_for_archive)
+- `RM-AUTO-001` — Goal-to-agent baseline capability (completed; archived)
+- `RM-GOV-001` — Canonical roadmap authority registry (completed; archived)
+- `RM-OPS-005` — End-to-end telemetry and audit pipeline (completed; archived)
+- `RM-OPS-004` — Backup, restore, and disaster recovery (completed; archived)
 - `RM-INV-002` — Photo-driven inventory and capability mapping (completed)
 - `RM-DEV-001` — Xcode and Apple-platform capability (completed; now archived)
 

@@ -20,10 +20,19 @@ Derived index of roadmap state. Canonical status is in `docs/roadmap/items/RM-*.
 
 ## Completed Integrated Expansion Index
 
-- `RM-OPS-006` — Integrated operational expansion layer for governed ops/home/intel/inventory (`completed`, `ready_for_archive`)
-- `RM-HOME-005` — Governed home/local-environment intents through unified runtime (`completed`, `ready_for_archive`)
-- `RM-INTEL-003` — Governed intelligence watch and operator analysis surface (`completed`, `ready_for_archive`)
-- `RM-INV-003` — Procurement and search baseline reused as inventory decision-support core (`completed`, `ready_for_archive`)
+- `RM-OPS-006` — Integrated operational expansion layer for governed ops/home/intel/inventory (`completed`, `archived`)
+- `RM-HOME-005` — Governed home/local-environment intents through unified runtime (`completed`, `archived`)
+- `RM-INTEL-003` — Governed intelligence watch and operator analysis surface (`completed`, `archived`)
+- `RM-INV-003` — Procurement and search baseline reused as inventory decision-support core (`completed`, `archived`)
+
+## Completed RM-OPS-007 Convergence Index
+
+- `RM-OPS-007` — Operational convergence and archive-truth hardening (`completed`, `archived`)
+- Convergence runner: `bin/run_rm_ops007_archive_convergence.py`
+- Convergence validator: `bin/validate_rm_ops007_convergence.py`
+- Convergence report: `artifacts/operations/rm_ops007_archive_convergence_report.json`
+- Validation artifact: `artifacts/validation/rm_ops007_convergence_validation.json`
+- Held items after convergence: `RM-DEV-008`, `RM-DEV-009` (execution not started)
 
 Integrated expansion evidence:
 - `governance/integrated_ops_home_intel_inventory_policy.v1.yaml`
@@ -35,14 +44,14 @@ Integrated expansion evidence:
 
 ## Completed Canonical Item
 
-- `RM-UI-005` — Local execution control dashboard, routing layer, Aider orchestration, and OpenHands interface (`completed`, `ready_for_archive`)
+- `RM-UI-005` — Local execution control dashboard, routing layer, Aider orchestration, and OpenHands interface (`completed`, `archived`)
   - canonical file: `docs/roadmap/items/RM-UI-005.yaml`
   - first-slice artifact: `artifacts/rm_ui005/control_window_state.json`
 
 ## Completed NEXT-Tier Expansion
 
-- `RM-GOV-009` — Connector control-plane + canonical intake activation (`completed`, `ready_for_archive`)
-- `RM-AUTO-001` — Plain-English goal to bounded execution contract (`completed`, `ready_for_archive`)
+- `RM-GOV-009` — Connector control-plane + canonical intake activation (`completed`, `archived`)
+- `RM-AUTO-001` — Plain-English goal to bounded execution contract (`completed`, `archived`)
 - `RM-DEV-001` — Apple/Xcode governed runtime capability (`completed`, `archived`)
 
 NEXT-tier evidence:
@@ -144,10 +153,10 @@ Phase 1 runtime foundation evidence:
   * `artifacts/examples/phase1_runtime_execution_example.json` (execution with session linkage)
 
 **Phase 0 Closure Bundle** (6 items, all completed):
-- `RM-AUTO-001` — Goal-to-agent baseline (completed; ready_for_archive)
-- `RM-GOV-001` — Canonical roadmap authority registry (completed; ready_for_archive)
-- `RM-OPS-005` — Telemetry and audit pipeline (completed; ready_for_archive)
-- `RM-OPS-004` — Backup and disaster recovery (completed; ready_for_archive)
+- `RM-AUTO-001` — Goal-to-agent baseline (completed; archived)
+- `RM-GOV-001` — Canonical roadmap authority registry (completed; archived)
+- `RM-OPS-005` — Telemetry and audit pipeline (completed; archived)
+- `RM-OPS-004` — Backup and disaster recovery (completed; archived)
 - `RM-INV-002` — Inventory and capability mapping (completed)
 - `RM-DEV-001` — Xcode and Apple-platform capability (completed; archived)
 

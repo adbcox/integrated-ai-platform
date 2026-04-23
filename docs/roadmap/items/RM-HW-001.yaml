@@ -1,13 +1,13 @@
-schema_version: "1.0"
-kind: "roadmap_item"
-id: "RM-HW-001"
-slug: "electrical-design-baseline"
-title: "Electrical design baseline system"
-category: "HW"
-type: "capability_foundation"
-status: "completed"
-archive_status: "ready_for_archive"
-priority: "P2"
+schema_version: '1.0'
+kind: roadmap_item
+id: RM-HW-001
+slug: electrical-design-baseline
+title: Electrical design baseline system
+category: HW
+type: capability_foundation
+status: completed
+archive_status: archived
+priority: P2
 scoring:
   loe: 4
   strategic_value: 4
@@ -15,157 +15,150 @@ scoring:
   execution_risk: 2
   dependency_burden: 2
   readiness: 3
+description: 'Establish electrical design baseline supporting ESP32 and Nordic hardware
+  workflows. Design-assistant structure for embedded capability. Usable hardware-design
+  artifact models.
 
-description: >
-  Establish electrical design baseline supporting ESP32 and Nordic hardware
-  workflows. Design-assistant structure for embedded capability. Usable
-  hardware-design artifact models.
-
-why_it_matters: >
-  Hardware design is specialized. Without structured design workflows and
-  artifact models, hardware capability is ad-hoc. Baseline enables repeatable,
+  '
+why_it_matters: 'Hardware design is specialized. Without structured design workflows
+  and artifact models, hardware capability is ad-hoc. Baseline enables repeatable,
   verified hardware designs.
 
+  '
 scope:
-  objective: >
-    Define ESP32/Nordic workflow support, design-assistant structure, and
+  objective: 'Define ESP32/Nordic workflow support, design-assistant structure, and
     hardware-design artifact models.
-  in_scope:
-    - "ESP32 workflow support"
-    - "Nordic workflow support"
-    - "design-assistant structure"
-    - "hardware artifact models"
-  out_of_scope:
-    - "PCB layout"
-    - "firmware implementation"
-    - "manufacturing"
 
+    '
+  in_scope:
+  - ESP32 workflow support
+  - Nordic workflow support
+  - design-assistant structure
+  - hardware artifact models
+  out_of_scope:
+  - PCB layout
+  - firmware implementation
+  - manufacturing
 dependencies:
   blocked_by: []
   depends_on:
-    - "RM-INV-003"
+  - RM-INV-003
   enables: []
   related_items:
-    - "RM-ED-001"
-    - "RM-INV-003"
-
+  - RM-ED-001
+  - RM-INV-003
 impact:
   affected_systems:
-    - "hardware"
-    - "embedded"
+  - hardware
+  - embedded
   expected_file_families:
-    - "governance/hardware_design_schema.v1.yaml"
-  impact_summary: >
-    Provides structured baseline for electrical design workflows.
+  - governance/hardware_design_schema.v1.yaml
+  impact_summary: 'Provides structured baseline for electrical design workflows.
 
+    '
 cmdb:
   refs:
-    - "subsystem:hardware"
-    - "subsystem:embedded"
+  - subsystem:hardware
+  - subsystem:embedded
   asset_links: []
   service_links: []
-
 grouping:
   feature_block_candidates:
-    - "FB-HARDWARE-DESIGN"
-  package_group: "PKG-INTEGRATION-PHASE1"
+  - FB-HARDWARE-DESIGN
+  package_group: PKG-INTEGRATION-PHASE1
   shared_touch_surfaces:
-    - "hardware workflows"
-    - "design assistance"
-    - "artifact models"
-
+  - hardware workflows
+  - design assistance
+  - artifact models
 milestones:
-  recommended_first_milestone: "define-hardware-project-schema"
+  recommended_first_milestone: define-hardware-project-schema
   downstream_milestones:
-    - "define-esp32-workflow"
-    - "define-nordic-workflow"
-    - "define-design-assistant"
-
+  - define-esp32-workflow
+  - define-nordic-workflow
+  - define-design-assistant
 planning:
   planning_packet_ref: null
-  planning_status: "complete"
-  planning_notes: "Recovered from placeholder state; execution and validation evidence already present."
-
+  planning_status: complete
+  planning_notes: Recovered from placeholder state; execution and validation evidence
+    already present.
 execution:
   execution_package_refs:
-    - "bin/hardware_design_processor.py"
-  execution_status: "completed"
+  - bin/hardware_design_processor.py
+  execution_status: completed
   last_execution_commit: null
-
 validation:
   validation_artifact_refs:
-    - "artifacts/integration_demo/01_hardware_design.json"
-    - "tests/test_hardware_processor.py"
-    - "tests/test_integration_chain.py"
-  validation_status: "passed"
-  definition_of_done_ref: "docs/roadmap/STANDARDS.md"
-
+  - artifacts/integration_demo/01_hardware_design.json
+  - tests/test_hardware_processor.py
+  - tests/test_integration_chain.py
+  validation_status: passed
+  definition_of_done_ref: docs/roadmap/STANDARDS.md
 governance:
-  phase_target: "Integration Phase 1"
-  architectural_lane: "capability_foundation"
-  risk_tier: "medium"
-  allowed_change_scope: "bounded"
+  phase_target: Integration Phase 1
+  architectural_lane: capability_foundation
+  risk_tier: medium
+  allowed_change_scope: bounded
   requires_explicit_escalation: false
-
 ai_operability:
-  canonical_summary: >
-    Electrical design baseline with ESP32/Nordic workflow support and
-    design-assistant structure.
-  developer_intent: >
-    After this item, hardware designs follow structured workflows and
-    design patterns.
+  canonical_summary: 'Electrical design baseline with ESP32/Nordic workflow support
+    and design-assistant structure.
+
+    '
+  developer_intent: 'After this item, hardware designs follow structured workflows
+    and design patterns.
+
+    '
   allowed_files:
-    - "governance/**"
-    - "schemas/**"
-    - "artifacts/**"
+  - governance/**
+  - schemas/**
+  - artifacts/**
   forbidden_files:
-    - "framework/**"
-    - "tests/**"
-    - ".github/**"
+  - framework/**
+  - tests/**
+  - .github/**
   validation_order:
-    - "confirm hardware project schema is defined"
-    - "confirm ESP32 configuration structure exists"
-    - "confirm Nordic configuration structure exists"
-    - "confirm design assistant structure is valid"
-    - "confirm BOM definition is complete"
-    - "confirm artifact models are documented"
-    - "make check passes"
-  rollback_rule: >
-    Remove hardware design schema and related definitions. Preserve other
-    hardware-related documentation.
+  - confirm hardware project schema is defined
+  - confirm ESP32 configuration structure exists
+  - confirm Nordic configuration structure exists
+  - confirm design assistant structure is valid
+  - confirm BOM definition is complete
+  - confirm artifact models are documented
+  - make check passes
+  rollback_rule: 'Remove hardware design schema and related definitions. Preserve
+    other hardware-related documentation.
+
+    '
   artifact_outputs:
-    - "governance/hardware_design_schema.v1.yaml"
+  - governance/hardware_design_schema.v1.yaml
   promotion_linkage:
     required: false
     manifest_refs: []
-
 sync:
   plane:
     sync_enabled: true
-    sync_mode: "repo_to_plane_authoritative"
-    workspace: "Integrated AI Platform"
-    project: "Roadmap Ops"
+    sync_mode: repo_to_plane_authoritative
+    workspace: Integrated AI Platform
+    project: Roadmap Ops
     plane_item_id: null
     last_synced_at: null
     writeback_fields_allowed:
-      - "operational_state"
-      - "assignee"
-      - "cycle"
-      - "module"
-      - "labels"
+    - operational_state
+    - assignee
+    - cycle
+    - module
+    - labels
   github:
     issue_ref: null
     pr_refs: []
-
 metadata:
-  owner: "system"
-  created_at: "2026-04-22"
-  updated_at: "2026-04-22"
+  owner: system
+  created_at: '2026-04-22'
+  updated_at: '2026-04-23'
   tags:
-    - "integration"
-    - "hardware"
-    - "embedded"
+  - integration
+  - hardware
+  - embedded
 archive_readiness:
   ready: true
-  reason: "integration_execution_and_validation_complete"
-  validation_artifact: "artifacts/integration_demo/INTEGRATION_SUMMARY.json"
+  reason: integration_execution_and_validation_complete
+  validation_artifact: artifacts/integration_demo/INTEGRATION_SUMMARY.json

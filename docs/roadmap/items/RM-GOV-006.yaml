@@ -1,13 +1,13 @@
-schema_version: "1.0"
-kind: "roadmap_item"
-id: "RM-GOV-006"
-slug: "lock-definition-of-done-for-coding-runs"
-title: "Lock definition of done for coding runs"
-category: "GOV"
-type: "governance"
-status: "completed"
-archive_status: "ready_for_archive"
-priority: "P1"
+schema_version: '1.0'
+kind: roadmap_item
+id: RM-GOV-006
+slug: lock-definition-of-done-for-coding-runs
+title: Lock definition of done for coding runs
+category: GOV
+type: governance
+status: completed
+archive_status: archived
+priority: P1
 scoring:
   loe: 2
   strategic_value: 5
@@ -15,148 +15,158 @@ scoring:
   execution_risk: 1
   dependency_burden: 2
   readiness: 4
-description: >
-  Codify and ratify the definition of done for coding runs, covering artifact completeness,
-  validation semantics, rollback semantics, telemetry completeness, and escalation handling.
-why_it_matters: >
-  Without a locked definition of done, coding run success is ambiguous. Automated
-  promotion, AI session closure, and validation pipeline acceptance all require a
-  binding contract for what constitutes a complete run.
+description: 'Codify and ratify the definition of done for coding runs, covering artifact
+  completeness, validation semantics, rollback semantics, telemetry completeness,
+  and escalation handling.
+
+  '
+why_it_matters: 'Without a locked definition of done, coding run success is ambiguous.
+  Automated promotion, AI session closure, and validation pipeline acceptance all
+  require a binding contract for what constitutes a complete run.
+
+  '
 scope:
-  objective: >
-    Define, document, and ratify the definition of done contract that covers the
-    five required dimensions: artifact completeness, validation, rollback, telemetry,
+  objective: 'Define, document, and ratify the definition of done contract that covers
+    the five required dimensions: artifact completeness, validation, rollback, telemetry,
     and escalation.
+
+    '
   in_scope:
-    - "artifact completeness criteria"
-    - "validation pass/fail semantics"
-    - "rollback rule requirements"
-    - "telemetry completeness requirements"
-    - "escalation handling requirements"
+  - artifact completeness criteria
+  - validation pass/fail semantics
+  - rollback rule requirements
+  - telemetry completeness requirements
+  - escalation handling requirements
   out_of_scope:
-    - "runtime enforcement tooling"
-    - "automated validation scoring"
-    - "Plane sync changes"
+  - runtime enforcement tooling
+  - automated validation scoring
+  - Plane sync changes
 dependencies:
   blocked_by:
-    - "RM-GOV-005"
+  - RM-GOV-005
   depends_on:
-    - "RM-GOV-005"
+  - RM-GOV-005
   enables:
-    - "RM-GOV-007"
-    - "RM-CORE-006"
+  - RM-GOV-007
+  - RM-CORE-006
   related_items:
-    - "RM-GOV-004"
+  - RM-GOV-004
 impact:
   affected_systems:
-    - "control_plane"
-    - "validation_pipeline"
-    - "roadmap_ops"
+  - control_plane
+  - validation_pipeline
+  - roadmap_ops
   expected_file_families:
-    - "docs/roadmap/**"
-    - "docs/execution/**"
-  impact_summary: >
-    Provides the canonical definition of done that controls promotion acceptance,
-    session closure, and validation pipeline pass/fail decisions.
+  - docs/roadmap/**
+  - docs/execution/**
+  impact_summary: 'Provides the canonical definition of done that controls promotion
+    acceptance, session closure, and validation pipeline pass/fail decisions.
+
+    '
 cmdb:
   refs:
-    - "subsystem:control_plane"
-    - "subsystem:validation_pipeline"
+  - subsystem:control_plane
+  - subsystem:validation_pipeline
   asset_links: []
   service_links: []
 grouping:
   feature_block_candidates:
-    - "FB-GOV-ROADMAP-AUTHORITY"
-  package_group: "PKG-GOV-PHASE0"
+  - FB-GOV-ROADMAP-AUTHORITY
+  package_group: PKG-GOV-PHASE0
   shared_touch_surfaces:
-    - "definition of done"
-    - "validation pipeline"
-    - "rollback semantics"
-    - "escalation handling"
+  - definition of done
+  - validation pipeline
+  - rollback semantics
+  - escalation handling
 milestones:
-  recommended_first_milestone: "draft-definition-of-done"
+  recommended_first_milestone: draft-definition-of-done
   downstream_milestones:
-    - "ratify-definition-of-done"
-    - "link-to-autonomy-scorecard"
+  - ratify-definition-of-done
+  - link-to-autonomy-scorecard
 planning:
   planning_packet_ref: null
-  planning_status: "complete"
-  planning_notes: "Definition of done ratified and linked to autonomy scorecard authority."
+  planning_status: complete
+  planning_notes: Definition of done ratified and linked to autonomy scorecard authority.
 execution:
   execution_package_refs:
-    - "docs/execution/definition_of_done.md"
-  execution_status: "completed"
+  - docs/execution/definition_of_done.md
+  execution_status: completed
   last_execution_commit: null
 validation:
   validation_artifact_refs:
-    - "artifacts/governance/definition_of_done_validation.json"
-    - "artifacts/governance/rm_gov_006_definition_of_done_closeout.json"
-  validation_status: "passed"
-  definition_of_done_ref: "docs/execution/definition_of_done.md"
+  - artifacts/governance/definition_of_done_validation.json
+  - artifacts/governance/rm_gov_006_definition_of_done_closeout.json
+  validation_status: passed
+  definition_of_done_ref: docs/execution/definition_of_done.md
 governance:
-  phase_target: "Phase 0"
-  architectural_lane: "governance_freeze"
-  risk_tier: "low"
-  allowed_change_scope: "narrow"
+  phase_target: Phase 0
+  architectural_lane: governance_freeze
+  risk_tier: low
+  allowed_change_scope: narrow
   requires_explicit_escalation: false
 ai_operability:
-  canonical_summary: >
-    Governance item to codify and ratify the definition of done for coding runs
-    across artifact completeness, validation, rollback, telemetry, and escalation.
-  developer_intent: >
-    After this item, every coding run has a binding definition of done that can be
-    checked automatically and used to gate promotion.
+  canonical_summary: 'Governance item to codify and ratify the definition of done
+    for coding runs across artifact completeness, validation, rollback, telemetry,
+    and escalation.
+
+    '
+  developer_intent: 'After this item, every coding run has a binding definition of
+    done that can be checked automatically and used to gate promotion.
+
+    '
   non_goals:
-    - "Do not implement runtime enforcement tooling"
-    - "Do not automate validation scoring"
-    - "Do not alter governance schema or config"
+  - Do not implement runtime enforcement tooling
+  - Do not automate validation scoring
+  - Do not alter governance schema or config
   allowed_files:
-    - "docs/roadmap/**"
-    - "docs/execution/**"
+  - docs/roadmap/**
+  - docs/execution/**
   forbidden_files:
-    - "bin/**"
-    - "framework/**"
-    - "tests/**"
-    - "governance/**"
-    - "config/**"
+  - bin/**
+  - framework/**
+  - tests/**
+  - governance/**
+  - config/**
   validation_order:
-    - "confirm all five dimensions are covered"
-    - "confirm definition is machine-readable or formally documented"
-    - "confirm cross-reference to autonomy scorecard exists"
-    - "manual review"
-  rollback_rule: >
-    Revert only the docs/execution and docs/roadmap files created by this item.
+  - confirm all five dimensions are covered
+  - confirm definition is machine-readable or formally documented
+  - confirm cross-reference to autonomy scorecard exists
+  - manual review
+  rollback_rule: 'Revert only the docs/execution and docs/roadmap files created by
+    this item.
+
+    '
   artifact_outputs:
-    - "docs/execution/definition_of_done.md"
+  - docs/execution/definition_of_done.md
   promotion_linkage:
     required: false
     manifest_refs: []
 sync:
   plane:
     sync_enabled: true
-    sync_mode: "repo_to_plane_authoritative"
-    workspace: "Integrated AI Platform"
-    project: "Roadmap Ops"
+    sync_mode: repo_to_plane_authoritative
+    workspace: Integrated AI Platform
+    project: Roadmap Ops
     plane_item_id: null
     last_synced_at: null
     writeback_fields_allowed:
-      - "operational_state"
-      - "assignee"
-      - "cycle"
-      - "module"
-      - "labels"
+    - operational_state
+    - assignee
+    - cycle
+    - module
+    - labels
   github:
     issue_ref: null
     pr_refs: []
 metadata:
-  owner: "adrian"
-  created_at: "2026-04-20"
-  updated_at: "2026-04-22"
+  owner: adrian
+  created_at: '2026-04-20'
+  updated_at: '2026-04-23'
   tags:
-    - "governance"
-    - "definition-of-done"
-    - "phase-0"
+  - governance
+  - definition-of-done
+  - phase-0
 archive_readiness:
   ready: true
-  reason: "definition_of_done_ratified"
-  validation_artifact: "artifacts/governance/rm_gov_006_definition_of_done_closeout.json"
+  reason: definition_of_done_ratified
+  validation_artifact: artifacts/governance/rm_gov_006_definition_of_done_closeout.json

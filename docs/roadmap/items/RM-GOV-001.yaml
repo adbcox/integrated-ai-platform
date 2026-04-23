@@ -1,13 +1,13 @@
-schema_version: "1.0"
-kind: "roadmap_item"
-id: "RM-GOV-001"
-slug: "canonical-roadmap-machine-readable-registry"
-title: "Create canonical machine-readable roadmap registry"
-category: "GOV"
-type: "platform_foundation"
-status: "completed"
-archive_status: "ready_for_archive"
-priority: "P1"
+schema_version: '1.0'
+kind: roadmap_item
+id: RM-GOV-001
+slug: canonical-roadmap-machine-readable-registry
+title: Create canonical machine-readable roadmap registry
+category: GOV
+type: platform_foundation
+status: completed
+archive_status: archived
+priority: P1
 scoring:
   loe: 3
   strategic_value: 5
@@ -15,228 +15,237 @@ scoring:
   execution_risk: 2
   dependency_burden: 2
   readiness: 4
-description: >
-  Create the canonical machine-readable roadmap registry that becomes the AI-readable
-  and control-window-readable source of truth for roadmap items.
-why_it_matters: >
-  Without a canonical machine-readable roadmap registry, the system cannot reliably
-  maintain roadmap authority, grouped execution planning, AI continuity, and
-  repo-authoritative sync into secondary operational systems.
+description: 'Create the canonical machine-readable roadmap registry that becomes
+  the AI-readable and control-window-readable source of truth for roadmap items.
+
+  '
+why_it_matters: 'Without a canonical machine-readable roadmap registry, the system
+  cannot reliably maintain roadmap authority, grouped execution planning, AI continuity,
+  and repo-authoritative sync into secondary operational systems.
+
+  '
 scope:
-  objective: >
-    Establish one repo-native authority surface for roadmap items and their links
-    to planning, execution, validation, file families, and systems.
+  objective: 'Establish one repo-native authority surface for roadmap items and their
+    links to planning, execution, validation, file families, and systems.
+
+    '
   in_scope:
-    - "roadmap item schema"
-    - "item registry"
-    - "sync metadata"
-    - "grouping metadata"
-    - "AI-operability fields"
+  - roadmap item schema
+  - item registry
+  - sync metadata
+  - grouping metadata
+  - AI-operability fields
   out_of_scope:
-    - "full CMDB rollout"
-    - "bidirectional operational writeback"
-    - "tool-driven canonical authority replacement"
-    - "runtime or inference implementation work"
+  - full CMDB rollout
+  - bidirectional operational writeback
+  - tool-driven canonical authority replacement
+  - runtime or inference implementation work
 dependencies:
   blocked_by: []
-  depends_on:
-    []
+  depends_on: []
   enables:
-    - "RM-GOV-002"
-    - "RM-GOV-003"
+  - RM-GOV-002
+  - RM-GOV-003
   related_items: []
 impact:
   affected_systems:
-    - "roadmap_ops"
-    - "control_window"
-    - "cmdb_lite"
-    - "developer_assistant"
+  - roadmap_ops
+  - control_window
+  - cmdb_lite
+  - developer_assistant
   expected_file_families:
-    - "docs/roadmap/**"
-    - "docs/execution/packages/**"
-    - "docs/execution/validations/**"
-    - "docs/architecture/cmdb-lite/**"
-  impact_summary: >
-    Introduces the canonical data surface that planning, execution, validation,
-    and AI continuation workflows will consume.
+  - docs/roadmap/**
+  - docs/execution/packages/**
+  - docs/execution/validations/**
+  - docs/architecture/cmdb-lite/**
+  impact_summary: 'Introduces the canonical data surface that planning, execution,
+    validation, and AI continuation workflows will consume.
+
+    '
 cmdb:
   refs:
-    - "subsystem:roadmap_ops"
-    - "subsystem:control_plane"
-    - "subsystem:agent_runtime"
+  - subsystem:roadmap_ops
+  - subsystem:control_plane
+  - subsystem:agent_runtime
   asset_links: []
   service_links: []
 grouping:
   feature_block_candidates:
-    - "FB-GOV-ROADMAP-AUTHORITY"
-    - "FB-DEV-AI-CONTINUITY"
-  package_group: "PKG-GOV-AUTHORITY"
+  - FB-GOV-ROADMAP-AUTHORITY
+  - FB-DEV-AI-CONTINUITY
+  package_group: PKG-GOV-AUTHORITY
   shared_touch_surfaces:
-    - "roadmap registry"
-    - "execution package schema"
-    - "validation artifact linkage"
+  - roadmap registry
+  - execution package schema
+  - validation artifact linkage
 milestones:
-  recommended_first_milestone: "define-schema-and-registry-layout"
+  recommended_first_milestone: define-schema-and-registry-layout
   downstream_milestones:
-    - "sync-to-plane"
-    - "link-execution-packages"
-    - "validation-artifact-linkage"
+  - sync-to-plane
+  - link-execution-packages
+  - validation-artifact-linkage
 planning:
   planning_packet_ref: null
-  planning_status: "complete"
-  planning_notes: "Canonical authority surfaces and execution-contract governance are synchronized and validated."
+  planning_status: complete
+  planning_notes: Canonical authority surfaces and execution-contract governance are
+    synchronized and validated.
 execution:
   execution_package_refs:
-    - "docs/roadmap/data/enums.yaml"
-    - "docs/roadmap/data/roadmap_registry.yaml"
-    - "docs/roadmap/data/sync_state.yaml"
-    - "governance/roadmap_dependency_graph.v1.yaml"
-  execution_status: "completed"
-  last_execution_commit: "c0461d4ea445a28dfb16649efcb63fb256e3cd48"
+  - docs/roadmap/data/enums.yaml
+  - docs/roadmap/data/roadmap_registry.yaml
+  - docs/roadmap/data/sync_state.yaml
+  - governance/roadmap_dependency_graph.v1.yaml
+  execution_status: completed
+  last_execution_commit: c0461d4ea445a28dfb16649efcb63fb256e3cd48
 validation:
   validation_artifact_refs:
-    - "artifacts/validation/phase0_closure_validation.json"
-    - "artifacts/validation/roadmap_execution_contract_validation.json"
-    - "artifacts/planning/next_pull.json"
-    - "artifacts/planning/blocker_registry.json"
-  validation_status: "passed"
+  - artifacts/validation/phase0_closure_validation.json
+  - artifacts/validation/roadmap_execution_contract_validation.json
+  - artifacts/planning/next_pull.json
+  - artifacts/planning/blocker_registry.json
+  validation_status: passed
   item_complete_evidence: true
-  definition_of_done_ref: "docs/roadmap/STANDARDS.md"
+  definition_of_done_ref: docs/roadmap/STANDARDS.md
 governance:
-  phase_target: "Phase 0.7"
-  architectural_lane: "governance_freeze"
-  risk_tier: "low"
-  allowed_change_scope: "narrow"
+  phase_target: Phase 0.7
+  architectural_lane: governance_freeze
+  risk_tier: low
+  allowed_change_scope: narrow
   requires_explicit_escalation: false
 ai_operability:
-  canonical_summary: >
-    Canonical roadmap authority item for creating the machine-readable registry used
-    by planning, execution, validation, and sync tooling.
-  developer_intent: >
-    Keep roadmap authority in repo. Do not move canonical truth into Plane.
+  canonical_summary: 'Canonical roadmap authority item for creating the machine-readable
+    registry used by planning, execution, validation, and sync tooling.
+
+    '
+  developer_intent: 'Keep roadmap authority in repo. Do not move canonical truth into
+    Plane.
+
+    '
   non_goals:
-    - "Do not make Plane canonical"
-    - "Do not create bidirectional authority drift"
-    - "Do not attach CMDB writes to execution runtime yet"
+  - Do not make Plane canonical
+  - Do not create bidirectional authority drift
+  - Do not attach CMDB writes to execution runtime yet
   allowed_files:
-    - "docs/roadmap/**"
-    - "docs/architecture/cmdb-lite/**"
+  - docs/roadmap/**
+  - docs/architecture/cmdb-lite/**
   forbidden_files:
-    - "src/runtime/**"
-    - "src/inference/**"
-    - ".github/workflows/**"
+  - src/runtime/**
+  - src/inference/**
+  - .github/workflows/**
   validation_order:
-    - "schema validation"
-    - "registry link integrity validation"
-    - "index update validation"
-    - "manual review"
-  rollback_rule: >
-    Revert only files created or modified by this item. Preserve unrelated
+  - schema validation
+  - registry link integrity validation
+  - index update validation
+  - manual review
+  rollback_rule: 'Revert only files created or modified by this item. Preserve unrelated
     modified and untracked files.
+
+    '
   artifact_outputs:
-    - "docs/roadmap/data/enums.yaml"
-    - "docs/roadmap/data/roadmap_registry.yaml"
-    - "docs/roadmap/data/sync_state.yaml"
-    - "docs/roadmap/items/RM-GOV-001.yaml"
-    - "docs/roadmap/ROADMAP_INDEX.md"
-    - "docs/roadmap/README.md"
+  - docs/roadmap/data/enums.yaml
+  - docs/roadmap/data/roadmap_registry.yaml
+  - docs/roadmap/data/sync_state.yaml
+  - docs/roadmap/items/RM-GOV-001.yaml
+  - docs/roadmap/ROADMAP_INDEX.md
+  - docs/roadmap/README.md
   promotion_linkage:
     required: false
     manifest_refs: []
 execution_contract:
-  contract_version: "1.0"
-  autonomous_execution_status: "eligible_with_guardrails"
-  next_bounded_slice: >
-    Validate and enforce execution_contract coverage across active governance/ops/auto
-    items, then regenerate queue and blocker artifacts.
+  contract_version: '1.0'
+  autonomous_execution_status: eligible_with_guardrails
+  next_bounded_slice: 'Validate and enforce execution_contract coverage across active
+    governance/ops/auto items, then regenerate queue and blocker artifacts.
+
+    '
   max_autonomous_scope:
     max_files_touched: 12
     max_loc_delta: 700
     allowed_change_kinds:
-      - "governance_schema"
-      - "roadmap_item_contract"
-      - "selector_logic"
-      - "documentation_sync"
+    - governance_schema
+    - roadmap_item_contract
+    - selector_logic
+    - documentation_sync
   validation_contract:
     required_validations:
-      - id: "compute_next_pull"
-        command: "python3 bin/compute_next_pull.py"
-        pass_when: "exit_code=0"
-      - id: "validate_execution_contracts"
-        command: "python3 bin/validate_roadmap_execution_contracts.py"
-        pass_when: "status=PASS"
-      - id: "validate_roadmap_consistency"
-        command: "python3 bin/validate_roadmap_consistency.py"
-        pass_when: "exit_code=0"
+    - id: compute_next_pull
+      command: python3 bin/compute_next_pull.py
+      pass_when: exit_code=0
+    - id: validate_execution_contracts
+      command: python3 bin/validate_roadmap_execution_contracts.py
+      pass_when: status=PASS
+    - id: validate_roadmap_consistency
+      command: python3 bin/validate_roadmap_consistency.py
+      pass_when: exit_code=0
     pass_criteria:
-      - "Queue and blocker artifacts are regenerated."
-      - "Execution contract validation reports PASS."
+    - Queue and blocker artifacts are regenerated.
+    - Execution contract validation reports PASS.
   artifact_contract:
     required_artifacts:
-      - "artifacts/planning/next_pull.json"
-      - "artifacts/planning/blocker_registry.json"
-      - "artifacts/validation/roadmap_execution_contract_validation.json"
+    - artifacts/planning/next_pull.json
+    - artifacts/planning/blocker_registry.json
+    - artifacts/validation/roadmap_execution_contract_validation.json
     evidence_outputs:
-      - "Machine-readable queue and blocker outputs reflect current item contracts."
-      - "Validation artifact indicates execution-contract schema compliance."
+    - Machine-readable queue and blocker outputs reflect current item contracts.
+    - Validation artifact indicates execution-contract schema compliance.
     machine_readable_outputs:
-      - "artifacts/planning/next_pull.json"
-      - "artifacts/planning/blocker_registry.json"
-      - "artifacts/validation/roadmap_execution_contract_validation.json"
+    - artifacts/planning/next_pull.json
+    - artifacts/planning/blocker_registry.json
+    - artifacts/validation/roadmap_execution_contract_validation.json
   completion_contract:
     substep_complete_when:
-      - "Canonical execution-contract schema and validator exist."
-      - "Required normalized items contain execution_contract blocks."
+    - Canonical execution-contract schema and validator exist.
+    - Required normalized items contain execution_contract blocks.
     bounded_slice_complete_when:
-      - "All validation_contract checks pass."
-      - "artifact_contract required outputs are emitted."
+    - All validation_contract checks pass.
+    - artifact_contract required outputs are emitted.
     item_complete_when:
-      - "Execution governance model is canonical in template + standards + item files."
-      - "Selector and blocker surfaces enforce contract fields for autonomous pull."
+    - Execution governance model is canonical in template + standards + item files.
+    - Selector and blocker surfaces enforce contract fields for autonomous pull.
     blocker_chain_cleared_when:
-      - "No directly adjacent execution-governance contract gap remains in required items."
+    - No directly adjacent execution-governance contract gap remains in required items.
     small_patch_is_not_completion: true
   truth_surface_updates_required:
-    - "docs/roadmap/items/RM-GOV-001.yaml"
-    - "docs/roadmap/TEMPLATES/ROADMAP_ITEM_TEMPLATE.md"
-    - "docs/roadmap/STANDARDS.md"
-    - "docs/roadmap/TARGET_SELECTION_POLICY.md"
-    - "docs/roadmap/AUTONOMOUS_EXECUTION_OPERATING_MODE.md"
-    - "artifacts/planning/next_pull.json"
-    - "artifacts/planning/blocker_registry.json"
-    - "governance/roadmap_dependency_graph.v1.yaml"
+  - docs/roadmap/items/RM-GOV-001.yaml
+  - docs/roadmap/TEMPLATES/ROADMAP_ITEM_TEMPLATE.md
+  - docs/roadmap/STANDARDS.md
+  - docs/roadmap/TARGET_SELECTION_POLICY.md
+  - docs/roadmap/AUTONOMOUS_EXECUTION_OPERATING_MODE.md
+  - artifacts/planning/next_pull.json
+  - artifacts/planning/blocker_registry.json
+  - governance/roadmap_dependency_graph.v1.yaml
   external_dependency_readiness:
     required: false
-    readiness_status: "not_applicable"
+    readiness_status: not_applicable
     blocks_autonomous_execution: false
     blocking_dependencies: []
-    notes: "Governance contract hardening is repo-local."
+    notes: Governance contract hardening is repo-local.
 sync:
   plane:
     sync_enabled: true
-    sync_mode: "repo_to_plane_authoritative"
-    workspace: "Integrated AI Platform"
-    project: "Roadmap Ops"
+    sync_mode: repo_to_plane_authoritative
+    workspace: Integrated AI Platform
+    project: Roadmap Ops
     plane_item_id: null
     last_synced_at: null
     writeback_fields_allowed:
-      - "operational_state"
-      - "assignee"
-      - "cycle"
-      - "module"
-      - "labels"
+    - operational_state
+    - assignee
+    - cycle
+    - module
+    - labels
   github:
     issue_ref: null
     pr_refs: []
 metadata:
-  owner: "adrian"
-  created_at: "2026-04-20"
-  updated_at: "2026-04-23"
+  owner: adrian
+  created_at: '2026-04-20'
+  updated_at: '2026-04-23'
   tags:
-    - "canonical"
-    - "roadmap"
-    - "ai-readable"
+  - canonical
+  - roadmap
+  - ai-readable
 archive_readiness:
   ready: true
-  reason: "canonical_authority_and_contract_validation_passed"
-  validation_artifact: "artifacts/validation/roadmap_execution_contract_validation.json"
+  reason: canonical_authority_and_contract_validation_passed
+  validation_artifact: artifacts/validation/roadmap_execution_contract_validation.json

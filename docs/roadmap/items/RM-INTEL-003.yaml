@@ -1,147 +1,141 @@
-schema_version: "1.0"
-kind: "roadmap_item"
-id: "RM-INTEL-003"
-slug: "governed-intel-watch-analysis-surface"
-title: "Governed intelligence watch and operator analysis surface integrated with runtime"
-category: "INTEL"
-type: "capability_surface"
-status: "completed"
-archive_status: "ready_for_archive"
-priority: "P1"
+schema_version: '1.0'
+kind: roadmap_item
+id: RM-INTEL-003
+slug: governed-intel-watch-analysis-surface
+title: Governed intelligence watch and operator analysis surface integrated with runtime
+category: INTEL
+type: capability_surface
+status: completed
+archive_status: archived
+priority: P1
+description: 'Establish explicit intake->analysis->artifact flow for intelligence/watch
+  signals in the same governed runtime path used by operational and inventory decisions.
 
-description: >
-  Establish explicit intake->analysis->artifact flow for intelligence/watch signals in the
-  same governed runtime path used by operational and inventory decisions.
-
+  '
 scope:
-  objective: "Convert watchtower candidates into bounded operator recommendations with evidence."
+  objective: Convert watchtower candidates into bounded operator recommendations with
+    evidence.
   in_scope:
-    - "watchtower candidate intake"
-    - "policy-bounded recommendation ranking"
-    - "operator-useful recommendation outputs in unified artifact and queue"
+  - watchtower candidate intake
+  - policy-bounded recommendation ranking
+  - operator-useful recommendation outputs in unified artifact and queue
   out_of_scope:
-    - "freeform research workspace"
-    - "ungoverned external crawling"
-
+  - freeform research workspace
+  - ungoverned external crawling
 dependencies:
   blocked_by: []
   depends_on:
-    - "RM-OPS-006"
-    - "RM-INTEL-002"
-    - "RM-GOV-009"
+  - RM-OPS-006
+  - RM-INTEL-002
+  - RM-GOV-009
   enables: []
   related_items:
-    - "RM-HOME-005"
-    - "RM-INV-003"
-
+  - RM-HOME-005
+  - RM-INV-003
 execution:
   execution_package_refs:
-    - "governance/oss_watchtower_candidates.v1.yaml"
-    - "governance/integrated_ops_home_intel_inventory_policy.v1.yaml"
-    - "framework/integrated_ops_home_intel_inventory.py"
-    - "bin/run_integrated_ops_expansion.py"
-  execution_status: "complete"
-  last_execution_commit: "working-tree"
-
+  - governance/oss_watchtower_candidates.v1.yaml
+  - governance/integrated_ops_home_intel_inventory_policy.v1.yaml
+  - framework/integrated_ops_home_intel_inventory.py
+  - bin/run_integrated_ops_expansion.py
+  execution_status: complete
+  last_execution_commit: working-tree
 validation:
   validation_artifact_refs:
-    - "artifacts/operations/integrated_ops_expansion_run.json"
-    - "artifacts/validation/integrated_ops_expansion_validation.json"
-  validation_status: "passed"
+  - artifacts/operations/integrated_ops_expansion_run.json
+  - artifacts/validation/integrated_ops_expansion_validation.json
+  validation_status: passed
   item_complete_evidence: true
-  definition_of_done_ref: "docs/roadmap/STANDARDS.md"
-
+  definition_of_done_ref: docs/roadmap/STANDARDS.md
 ai_operability:
   allowed_files:
-    - "framework/**"
-    - "bin/**"
-    - "governance/**"
-    - "docs/roadmap/**"
-    - "artifacts/**"
-    - "tests/**"
+  - framework/**
+  - bin/**
+  - governance/**
+  - docs/roadmap/**
+  - artifacts/**
+  - tests/**
   forbidden_files:
-    - ".github/**"
-    - "node_modules/**"
-    - "venv/**"
+  - .github/**
+  - node_modules/**
+  - venv/**
   validation_order:
-    - "python3 bin/run_integrated_ops_expansion.py"
-    - "python3 bin/validate_integrated_ops_expansion.py"
-    - "python3 -m pytest -q tests/test_integrated_ops_home_intel_inventory.py"
+  - python3 bin/run_integrated_ops_expansion.py
+  - python3 bin/validate_integrated_ops_expansion.py
+  - python3 -m pytest -q tests/test_integrated_ops_home_intel_inventory.py
   artifact_outputs:
-    - "artifacts/operations/integrated_ops_expansion_run.json"
-
+  - artifacts/operations/integrated_ops_expansion_run.json
 execution_contract:
-  contract_version: "1.0"
-  autonomous_execution_status: "eligible_with_guardrails"
-  next_bounded_slice: "Extend recommendation calibration and source quality checks within current governed path."
+  contract_version: '1.0'
+  autonomous_execution_status: eligible_with_guardrails
+  next_bounded_slice: Extend recommendation calibration and source quality checks
+    within current governed path.
   max_autonomous_scope:
     max_files_touched: 12
     max_loc_delta: 700
     allowed_change_kinds:
-      - "intel_policy"
-      - "recommendation_ranking"
-      - "validation_extension"
+    - intel_policy
+    - recommendation_ranking
+    - validation_extension
   validation_contract:
     required_validations:
-      - id: "run_integrated_ops_expansion"
-        command: "python3 bin/run_integrated_ops_expansion.py"
-        pass_when: "exit_code=0"
-      - id: "validate_integrated_ops_expansion"
-        command: "python3 bin/validate_integrated_ops_expansion.py"
-        pass_when: "exit_code=0"
+    - id: run_integrated_ops_expansion
+      command: python3 bin/run_integrated_ops_expansion.py
+      pass_when: exit_code=0
+    - id: validate_integrated_ops_expansion
+      command: python3 bin/validate_integrated_ops_expansion.py
+      pass_when: exit_code=0
     pass_criteria:
-      - "Intel recommendations are present, bounded, and linked to operator queue."
+    - Intel recommendations are present, bounded, and linked to operator queue.
   artifact_contract:
     required_artifacts:
-      - "artifacts/operations/integrated_ops_expansion_run.json"
+    - artifacts/operations/integrated_ops_expansion_run.json
     evidence_outputs:
-      - "Intel intake and recommendation output are machine-readable and operator-facing."
+    - Intel intake and recommendation output are machine-readable and operator-facing.
     machine_readable_outputs:
-      - "artifacts/operations/integrated_ops_expansion_run.json"
+    - artifacts/operations/integrated_ops_expansion_run.json
   completion_contract:
     substep_complete_when:
-      - "Watchtower signals are ranked into bounded recommendation outputs."
+    - Watchtower signals are ranked into bounded recommendation outputs.
     bounded_slice_complete_when:
-      - "Validation passes and artifact exists."
+    - Validation passes and artifact exists.
     item_complete_when:
-      - "Governed intel path is integrated into shared runtime and evidence model."
+    - Governed intel path is integrated into shared runtime and evidence model.
     blocker_chain_cleared_when:
-      - "No direct intel-analysis blocker remains for this scope."
+    - No direct intel-analysis blocker remains for this scope.
     small_patch_is_not_completion: true
   truth_surface_updates_required:
-    - "docs/roadmap/items/RM-INTEL-003.yaml"
-    - "docs/roadmap/data/roadmap_registry.yaml"
-    - "docs/roadmap/data/sync_state.yaml"
-    - "artifacts/planning/next_pull.json"
-    - "artifacts/planning/blocker_registry.json"
-    - "governance/roadmap_dependency_graph.v1.yaml"
+  - docs/roadmap/items/RM-INTEL-003.yaml
+  - docs/roadmap/data/roadmap_registry.yaml
+  - docs/roadmap/data/sync_state.yaml
+  - artifacts/planning/next_pull.json
+  - artifacts/planning/blocker_registry.json
+  - governance/roadmap_dependency_graph.v1.yaml
   external_dependency_readiness:
     required: false
-    readiness_status: "not_applicable"
+    readiness_status: not_applicable
     blocks_autonomous_execution: false
     blocking_dependencies: []
-    notes: "Uses repo-local watchtower source surface."
-
+    notes: Uses repo-local watchtower source surface.
 sync:
   plane:
     sync_enabled: true
-    sync_mode: "repo_to_plane_authoritative"
-    workspace: "Integrated AI Platform"
-    project: "Roadmap Ops"
+    sync_mode: repo_to_plane_authoritative
+    workspace: Integrated AI Platform
+    project: Roadmap Ops
     plane_item_id: null
     last_synced_at: null
     writeback_fields_allowed:
-      - "operational_state"
-      - "assignee"
-      - "cycle"
-      - "module"
-
+    - operational_state
+    - assignee
+    - cycle
+    - module
 metadata:
-  owner: "intelligence"
-  created_at: "2026-04-23"
-  updated_at: "2026-04-23"
-  completed_at: "2026-04-23T04:00:00Z"
+  owner: intelligence
+  created_at: '2026-04-23'
+  updated_at: '2026-04-23'
+  completed_at: '2026-04-23T04:00:00Z'
   tags:
-    - "intel"
-    - "watch"
-    - "integrated"
+  - intel
+  - watch
+  - integrated

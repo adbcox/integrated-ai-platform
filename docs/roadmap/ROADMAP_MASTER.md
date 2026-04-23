@@ -28,10 +28,10 @@ One bounded shared substrate slice now extends the closed autonomy baseline with
 governed runtime path and evidence model across operations, home intents, intelligence watch,
 and inventory decision support.
 
-- `RM-OPS-006` — Integrated operational expansion layer (single intake/analysis/decision/evidence path) ✓ (ready_for_archive)
-- `RM-HOME-005` — Governed home/local-environment intents through unified runtime path ✓ (ready_for_archive)
-- `RM-INTEL-003` — Governed intelligence watch analysis integrated into operator queue ✓ (ready_for_archive)
-- `RM-INV-003` — Procurement baseline remains complete and is reused by integrated slice ✓ (ready_for_archive)
+- `RM-OPS-006` — Integrated operational expansion layer (single intake/analysis/decision/evidence path) ✓ (archived)
+- `RM-HOME-005` — Governed home/local-environment intents through unified runtime path ✓ (archived)
+- `RM-INTEL-003` — Governed intelligence watch analysis integrated into operator queue ✓ (archived)
+- `RM-INV-003` — Procurement baseline remains complete and is reused by integrated slice ✓ (archived)
 
 Evidence:
 - `governance/integrated_ops_home_intel_inventory_policy.v1.yaml`
@@ -43,8 +43,8 @@ Evidence:
 
 ## Completed: NEXT-Tier Autonomy Expansion Slice
 
-- `RM-GOV-009` — Governed connector control-plane and canonical intake activation (github/gmail/google_calendar boundaries, deny-unlisted posture, runtime route constraints) ✓ (ready_for_archive)
-- `RM-AUTO-001` — Post-substrate plain-English goal to bounded execution contract (packet shaping, route gates, completion/escalation discipline, evidence gates) ✓ (ready_for_archive)
+- `RM-GOV-009` — Governed connector control-plane and canonical intake activation (github/gmail/google_calendar boundaries, deny-unlisted posture, runtime route constraints) ✓ (archived)
+- `RM-AUTO-001` — Post-substrate plain-English goal to bounded execution contract (packet shaping, route gates, completion/escalation discipline, evidence gates) ✓ (archived)
 - `RM-DEV-001` — Apple/Xcode capability aligned to governed local runtime execution authority (control-window and runtime linkage preserved) ✓ (archived)
 
 Evidence:
@@ -57,7 +57,7 @@ Evidence:
 ## Completed: RM-UI-005 Local Execution Control Window
 
 - `RM-UI-005` — Local execution control dashboard, deterministic routing layer, Aider
-  workload packetization, and OpenHands execution interface (canonical item-complete evidence satisfied; ready for archive)
+  workload packetization, and OpenHands execution interface (canonical item-complete evidence satisfied; archived)
 - Canonical item file: `docs/roadmap/items/RM-UI-005.yaml`
 - Implemented first-slice surfaces:
   - `framework/rm_ui005_control_window.py`
@@ -70,10 +70,10 @@ Evidence:
 
 6-item governance foundations bundle establishing authority, execution control, telemetry/audit, backup/DR, inventory, and Apple-platform capability — completed with comprehensive artifact set and validation proof.
 
-- `RM-AUTO-001` — Goal-to-agent baseline (goal intake schema, task decomposition, bundle packaging, approval workflow) ✓ (ready_for_archive)
-- `RM-GOV-001` — Canonical roadmap authority (machine-readable registry and sync surfaces) ✓ (ready_for_archive)
-- `RM-OPS-005` — Telemetry and audit pipeline (event schema, trace model, audit evidence, validation proof) ✓ (ready_for_archive)
-- `RM-OPS-004` — Backup and disaster recovery (backup model, restore procedures, DR playbooks, rollback rules) ✓ (ready_for_archive)
+- `RM-AUTO-001` — Goal-to-agent baseline (goal intake schema, task decomposition, bundle packaging, approval workflow) ✓ (archived)
+- `RM-GOV-001` — Canonical roadmap authority (machine-readable registry and sync surfaces) ✓ (archived)
+- `RM-OPS-005` — Telemetry and audit pipeline (event schema, trace model, audit evidence, validation proof) ✓ (archived)
+- `RM-OPS-004` — Backup and disaster recovery (backup model, restore procedures, DR playbooks, rollback rules) ✓ (archived)
 - `RM-INV-002` — Inventory and capability mapping (asset inventory schema, photo metadata linkage, capability classification) ✓
 - `RM-DEV-001` — Xcode and Apple platform (Swift/ObjC support, build system, testing framework, code signing, AppStore deployment) ✓ (archived)
 
@@ -194,6 +194,32 @@ Evidence:
 - `RM-CORE-005` — Identity, secrets, permissions, and trust-boundary management
 - `RM-GOV-005` — Cycle, release, and batch-governance model for roadmap execution
 - `RM-INV-005` — Asset-to-roadmap and asset-to-execution linkage layer
+
+## Archived in this pass (RM-OPS-007 convergence)
+
+- `RM-OPS-007` — Operational convergence and archive-truth hardening
+- `RM-UI-005`
+- `RM-AUTO-001`
+- `RM-GOV-001`
+- `RM-OPS-005`
+- `RM-OPS-004`
+- `RM-GOV-009`
+- `RM-OPS-006`
+- `RM-HOME-005`
+- `RM-INTEL-003`
+- `RM-INV-003`
+- `RM-CORE-003`
+- `RM-CORE-006`
+- `RM-DEV-005`
+- `RM-DOCAPP-002`
+- `RM-ED-001`
+- `RM-GOV-006`
+- `RM-GOV-007`
+- `RM-HW-001`
+
+Held at `ready_for_archive` after convergence (insufficient execution readiness):
+- `RM-DEV-008`
+- `RM-DEV-009`
 
 Archive reconciliation evidence:
 - `artifacts/governance/rm_bundle_6_archive_validation.json`

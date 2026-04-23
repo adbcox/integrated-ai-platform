@@ -1,13 +1,13 @@
-schema_version: "1.0"
-kind: "roadmap_item"
-id: "RM-DOCAPP-002"
-slug: "website-generation-baseline"
-title: "Website generation baseline system"
-category: "DOCAPP"
-type: "capability_foundation"
-status: "completed"
-archive_status: "ready_for_archive"
-priority: "P2"
+schema_version: '1.0'
+kind: roadmap_item
+id: RM-DOCAPP-002
+slug: website-generation-baseline
+title: Website generation baseline system
+category: DOCAPP
+type: capability_foundation
+status: completed
+archive_status: archived
+priority: P2
 scoring:
   loe: 3
   strategic_value: 3
@@ -15,158 +15,151 @@ scoring:
   execution_risk: 1
   dependency_burden: 1
   readiness: 4
+description: 'Establish website generation baseline with reusable site-generation
+  workflow, SEO/analytics posture, and template structures. Supports delivery documentation
+  and public-facing capability surfaces.
 
-description: >
-  Establish website generation baseline with reusable site-generation workflow,
-  SEO/analytics posture, and template structures. Supports delivery
-  documentation and public-facing capability surfaces.
+  '
+why_it_matters: 'Delivery workflows require public-facing documentation. Without structured
+  site generation, docs are static and fragmented. Baseline enables dynamic, SEO-aware,
+  analytics-backed documentation.
 
-why_it_matters: >
-  Delivery workflows require public-facing documentation. Without structured
-  site generation, docs are static and fragmented. Baseline enables dynamic,
-  SEO-aware, analytics-backed documentation.
-
+  '
 scope:
-  objective: >
-    Define site-generation workflow structure, SEO/analytics integration point,
-    and reusable template schema.
-  in_scope:
-    - "site generation workflow"
-    - "SEO metadata structure"
-    - "analytics integration point"
-    - "template/workflow structure"
-  out_of_scope:
-    - "content creation"
-    - "specific framework"
-    - "hosting infrastructure"
+  objective: 'Define site-generation workflow structure, SEO/analytics integration
+    point, and reusable template schema.
 
+    '
+  in_scope:
+  - site generation workflow
+  - SEO metadata structure
+  - analytics integration point
+  - template/workflow structure
+  out_of_scope:
+  - content creation
+  - specific framework
+  - hosting infrastructure
 dependencies:
   blocked_by: []
   depends_on:
-    - "RM-UI-001"
-    - "RM-ED-001"
+  - RM-UI-001
+  - RM-ED-001
   enables: []
   related_items:
-    - "RM-UI-001"
-    - "RM-INV-003"
-    - "RM-ED-001"
-
+  - RM-UI-001
+  - RM-INV-003
+  - RM-ED-001
 impact:
   affected_systems:
-    - "documentation"
-    - "delivery"
+  - documentation
+  - delivery
   expected_file_families:
-    - "governance/site_generation_schema.v1.yaml"
-  impact_summary: >
-    Provides structured baseline for dynamic website generation.
+  - governance/site_generation_schema.v1.yaml
+  impact_summary: 'Provides structured baseline for dynamic website generation.
 
+    '
 cmdb:
   refs:
-    - "subsystem:documentation"
-    - "subsystem:delivery"
+  - subsystem:documentation
+  - subsystem:delivery
   asset_links: []
   service_links: []
-
 grouping:
   feature_block_candidates:
-    - "FB-DELIVERY-DOCUMENTATION"
-  package_group: "PKG-INTEGRATION-PHASE1"
+  - FB-DELIVERY-DOCUMENTATION
+  package_group: PKG-INTEGRATION-PHASE1
   shared_touch_surfaces:
-    - "site generation"
-    - "SEO/analytics"
-    - "templates"
-
+  - site generation
+  - SEO/analytics
+  - templates
 milestones:
-  recommended_first_milestone: "define-site-generation-workflow"
+  recommended_first_milestone: define-site-generation-workflow
   downstream_milestones:
-    - "define-seo-metadata-structure"
-    - "define-template-schema"
-
+  - define-seo-metadata-structure
+  - define-template-schema
 planning:
   planning_packet_ref: null
-  planning_status: "complete"
-  planning_notes: "Recovered from placeholder state; execution and validation evidence already present."
-
+  planning_status: complete
+  planning_notes: Recovered from placeholder state; execution and validation evidence
+    already present.
 execution:
   execution_package_refs:
-    - "bin/site_generator.py"
-  execution_status: "completed"
+  - bin/site_generator.py
+  execution_status: completed
   last_execution_commit: null
-
 validation:
   validation_artifact_refs:
-    - "artifacts/integration_demo/04_website_generated.json"
-    - "artifacts/integration_demo/site/index.html"
-    - "artifacts/integration_demo/site/sitemap.xml"
-    - "tests/test_site_generator.py"
-    - "tests/test_integration_chain.py"
-  validation_status: "passed"
-  definition_of_done_ref: "docs/roadmap/STANDARDS.md"
-
+  - artifacts/integration_demo/04_website_generated.json
+  - artifacts/integration_demo/site/index.html
+  - artifacts/integration_demo/site/sitemap.xml
+  - tests/test_site_generator.py
+  - tests/test_integration_chain.py
+  validation_status: passed
+  definition_of_done_ref: docs/roadmap/STANDARDS.md
 governance:
-  phase_target: "Integration Phase 1"
-  architectural_lane: "capability_surface"
-  risk_tier: "low"
-  allowed_change_scope: "bounded"
+  phase_target: Integration Phase 1
+  architectural_lane: capability_surface
+  risk_tier: low
+  allowed_change_scope: bounded
   requires_explicit_escalation: false
-
 ai_operability:
-  canonical_summary: >
-    Website generation baseline with workflow structure and SEO/analytics
+  canonical_summary: 'Website generation baseline with workflow structure and SEO/analytics
     posture.
-  developer_intent: >
-    After this item, documentation is generated dynamically with SEO/analytics
-    support.
+
+    '
+  developer_intent: 'After this item, documentation is generated dynamically with
+    SEO/analytics support.
+
+    '
   allowed_files:
-    - "governance/**"
-    - "schemas/**"
-    - "artifacts/**"
+  - governance/**
+  - schemas/**
+  - artifacts/**
   forbidden_files:
-    - "framework/**"
-    - "tests/**"
-    - ".github/**"
+  - framework/**
+  - tests/**
+  - .github/**
   validation_order:
-    - "confirm site generation workflow schema is defined"
-    - "confirm SEO metadata structure exists"
-    - "confirm analytics integration point is valid"
-    - "confirm template definitions are complete"
-    - "make check passes"
-  rollback_rule: >
-    Remove site generation schema and workflow definitions. Preserve
+  - confirm site generation workflow schema is defined
+  - confirm SEO metadata structure exists
+  - confirm analytics integration point is valid
+  - confirm template definitions are complete
+  - make check passes
+  rollback_rule: 'Remove site generation schema and workflow definitions. Preserve
     documentation and other deliverables.
+
+    '
   artifact_outputs:
-    - "governance/site_generation_schema.v1.yaml"
+  - governance/site_generation_schema.v1.yaml
   promotion_linkage:
     required: false
     manifest_refs: []
-
 sync:
   plane:
     sync_enabled: true
-    sync_mode: "repo_to_plane_authoritative"
-    workspace: "Integrated AI Platform"
-    project: "Roadmap Ops"
+    sync_mode: repo_to_plane_authoritative
+    workspace: Integrated AI Platform
+    project: Roadmap Ops
     plane_item_id: null
     last_synced_at: null
     writeback_fields_allowed:
-      - "operational_state"
-      - "assignee"
-      - "cycle"
-      - "module"
-      - "labels"
+    - operational_state
+    - assignee
+    - cycle
+    - module
+    - labels
   github:
     issue_ref: null
     pr_refs: []
-
 metadata:
-  owner: "system"
-  created_at: "2026-04-22"
-  updated_at: "2026-04-22"
+  owner: system
+  created_at: '2026-04-22'
+  updated_at: '2026-04-23'
   tags:
-    - "integration"
-    - "documentation"
-    - "delivery"
+  - integration
+  - documentation
+  - delivery
 archive_readiness:
   ready: true
-  reason: "integration_execution_and_validation_complete"
-  validation_artifact: "artifacts/integration_demo/INTEGRATION_SUMMARY.json"
+  reason: integration_execution_and_validation_complete
+  validation_artifact: artifacts/integration_demo/INTEGRATION_SUMMARY.json

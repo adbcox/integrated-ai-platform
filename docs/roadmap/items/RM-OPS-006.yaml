@@ -1,13 +1,13 @@
-schema_version: "1.0"
-kind: "roadmap_item"
-id: "RM-OPS-006"
-slug: "integrated-operational-expansion-layer"
-title: "Integrated operational expansion layer for governed ops/home/intel/inventory"
-category: "OPS"
-type: "capability_surface"
-status: "completed"
-archive_status: "ready_for_archive"
-priority: "P1"
+schema_version: '1.0'
+kind: roadmap_item
+id: RM-OPS-006
+slug: integrated-operational-expansion-layer
+title: Integrated operational expansion layer for governed ops/home/intel/inventory
+category: OPS
+type: capability_surface
+status: completed
+archive_status: archived
+priority: P1
 scoring:
   loe: 2
   strategic_value: 5
@@ -15,227 +15,225 @@ scoring:
   execution_risk: 2
   dependency_burden: 2
   readiness: 5
+description: 'Deliver one operator-facing operational layer that reuses governed runtime
+  and control-window truth to run a unified intake->analysis->decision->evidence path
+  spanning home intents, intelligence watch recommendations, and inventory/procurement
+  decision support.
 
-description: >
-  Deliver one operator-facing operational layer that reuses governed runtime and control-window
-  truth to run a unified intake->analysis->decision->evidence path spanning home intents,
-  intelligence watch recommendations, and inventory/procurement decision support.
+  '
+why_it_matters: 'This prevents feature-island drift by centralizing next-tier operations
+  in one governed execution surface instead of separate runtime paths.
 
-why_it_matters: >
-  This prevents feature-island drift by centralizing next-tier operations in one governed
-  execution surface instead of separate runtime paths.
-
+  '
 scope:
-  objective: >
-    Implement a single integrated operational path tied to runtime session semantics,
-    control-window truth, and machine-readable evidence.
-  in_scope:
-    - "integrated ops runtime helper module"
-    - "single run command producing one machine-readable artifact"
-    - "policy-governed home/intel/inventory semantics"
-    - "validator proving integrated evidence and item linkage"
-  out_of_scope:
-    - "parallel home runtime"
-    - "ungoverned external automations"
-    - "multi-system speculative refactor"
+  objective: 'Implement a single integrated operational path tied to runtime session
+    semantics, control-window truth, and machine-readable evidence.
 
+    '
+  in_scope:
+  - integrated ops runtime helper module
+  - single run command producing one machine-readable artifact
+  - policy-governed home/intel/inventory semantics
+  - validator proving integrated evidence and item linkage
+  out_of_scope:
+  - parallel home runtime
+  - ungoverned external automations
+  - multi-system speculative refactor
 dependencies:
   blocked_by: []
   depends_on:
-    - "RM-OPS-005"
-    - "RM-UI-005"
-    - "RM-AUTO-001"
+  - RM-OPS-005
+  - RM-UI-005
+  - RM-AUTO-001
   enables:
-    - "RM-HOME-005"
-    - "RM-INTEL-003"
+  - RM-HOME-005
+  - RM-INTEL-003
   related_items:
-    - "RM-INV-003"
-
+  - RM-INV-003
 impact:
   affected_systems:
-    - "operations"
-    - "control_window"
-    - "runtime"
-    - "inventory"
-    - "intelligence"
+  - operations
+  - control_window
+  - runtime
+  - inventory
+  - intelligence
   expected_file_families:
-    - "framework/integrated_ops_home_intel_inventory.py"
-    - "bin/run_integrated_ops_expansion.py"
-    - "bin/validate_integrated_ops_expansion.py"
-    - "governance/integrated_ops_home_intel_inventory_policy.v1.yaml"
-    - "artifacts/operations/integrated_ops_expansion_run.json"
-
+  - framework/integrated_ops_home_intel_inventory.py
+  - bin/run_integrated_ops_expansion.py
+  - bin/validate_integrated_ops_expansion.py
+  - governance/integrated_ops_home_intel_inventory_policy.v1.yaml
+  - artifacts/operations/integrated_ops_expansion_run.json
 execution:
   execution_package_refs:
-    - "framework/integrated_ops_home_intel_inventory.py"
-    - "bin/run_integrated_ops_expansion.py"
-    - "bin/validate_integrated_ops_expansion.py"
-  execution_status: "complete"
-  last_execution_commit: "working-tree"
-
+  - framework/integrated_ops_home_intel_inventory.py
+  - bin/run_integrated_ops_expansion.py
+  - bin/validate_integrated_ops_expansion.py
+  execution_status: complete
+  last_execution_commit: working-tree
 validation:
   validation_artifact_refs:
-    - "artifacts/operations/integrated_ops_expansion_run.json"
-    - "artifacts/validation/integrated_ops_expansion_validation.json"
-    - "tests/test_integrated_ops_home_intel_inventory.py"
-  validation_status: "passed"
+  - artifacts/operations/integrated_ops_expansion_run.json
+  - artifacts/validation/integrated_ops_expansion_validation.json
+  - tests/test_integrated_ops_home_intel_inventory.py
+  validation_status: passed
   item_complete_evidence: true
-  definition_of_done_ref: "docs/roadmap/STANDARDS.md"
-
+  definition_of_done_ref: docs/roadmap/STANDARDS.md
 governance:
-  phase_target: "post_substrate_operational_expansion"
-  architectural_lane: "operations"
-  risk_tier: "medium"
-  allowed_change_scope: "bounded"
+  phase_target: post_substrate_operational_expansion
+  architectural_lane: operations
+  risk_tier: medium
+  allowed_change_scope: bounded
   requires_explicit_escalation: false
-
 ai_operability:
-  canonical_summary: >
-    Integrated governed operational layer using one runtime path and one artifact model for
-    ops/home/intel/inventory expansion.
-  developer_intent: >
-    Extend local autonomy utility without creating parallel operational systems.
-  allowed_files:
-    - "framework/**"
-    - "bin/**"
-    - "governance/**"
-    - "docs/roadmap/**"
-    - "artifacts/**"
-    - "tests/**"
-  forbidden_files:
-    - ".github/**"
-    - "node_modules/**"
-    - "venv/**"
-  validation_order:
-    - "python3 bin/run_integrated_ops_expansion.py"
-    - "python3 bin/validate_integrated_ops_expansion.py"
-    - "python3 -m pytest -q tests/test_integrated_ops_home_intel_inventory.py"
-    - "python3 bin/compute_next_pull.py"
-    - "python3 bin/validate_roadmap_consistency.py"
-    - "python3 bin/validate_roadmap_execution_contracts.py"
-    - "make check"
-    - "make quick"
-    - "make test-offline"
-  rollback_rule: >
-    Revert only integrated ops/home/intel/inventory pipeline surfaces and associated roadmap
-    truth-sync updates.
-  artifact_outputs:
-    - "artifacts/operations/integrated_ops_expansion_run.json"
-    - "artifacts/validation/integrated_ops_expansion_validation.json"
-    - "artifacts/planning/next_pull.json"
-    - "artifacts/planning/blocker_registry.json"
-    - "governance/roadmap_dependency_graph.v1.yaml"
+  canonical_summary: 'Integrated governed operational layer using one runtime path
+    and one artifact model for ops/home/intel/inventory expansion.
 
+    '
+  developer_intent: 'Extend local autonomy utility without creating parallel operational
+    systems.
+
+    '
+  allowed_files:
+  - framework/**
+  - bin/**
+  - governance/**
+  - docs/roadmap/**
+  - artifacts/**
+  - tests/**
+  forbidden_files:
+  - .github/**
+  - node_modules/**
+  - venv/**
+  validation_order:
+  - python3 bin/run_integrated_ops_expansion.py
+  - python3 bin/validate_integrated_ops_expansion.py
+  - python3 -m pytest -q tests/test_integrated_ops_home_intel_inventory.py
+  - python3 bin/compute_next_pull.py
+  - python3 bin/validate_roadmap_consistency.py
+  - python3 bin/validate_roadmap_execution_contracts.py
+  - make check
+  - make quick
+  - make test-offline
+  rollback_rule: 'Revert only integrated ops/home/intel/inventory pipeline surfaces
+    and associated roadmap truth-sync updates.
+
+    '
+  artifact_outputs:
+  - artifacts/operations/integrated_ops_expansion_run.json
+  - artifacts/validation/integrated_ops_expansion_validation.json
+  - artifacts/planning/next_pull.json
+  - artifacts/planning/blocker_registry.json
+  - governance/roadmap_dependency_graph.v1.yaml
 execution_contract:
-  contract_version: "1.0"
-  autonomous_execution_status: "eligible_with_guardrails"
-  next_bounded_slice: >
-    Keep integrated operational queue and policy aligned while preserving single-path governance
-    and control-window truth linkage.
+  contract_version: '1.0'
+  autonomous_execution_status: eligible_with_guardrails
+  next_bounded_slice: 'Keep integrated operational queue and policy aligned while
+    preserving single-path governance and control-window truth linkage.
+
+    '
   max_autonomous_scope:
     max_files_touched: 20
     max_loc_delta: 1400
     allowed_change_kinds:
-      - "integrated_ops_surface"
-      - "policy_contract"
-      - "validator_extension"
-      - "roadmap_truth_sync"
+    - integrated_ops_surface
+    - policy_contract
+    - validator_extension
+    - roadmap_truth_sync
   validation_contract:
     required_validations:
-      - id: "run_integrated_ops_expansion"
-        command: "python3 bin/run_integrated_ops_expansion.py"
-        pass_when: "exit_code=0"
-      - id: "validate_integrated_ops_expansion"
-        command: "python3 bin/validate_integrated_ops_expansion.py"
-        pass_when: "exit_code=0"
-      - id: "targeted_pytest"
-        command: "python3 -m pytest -q tests/test_integrated_ops_home_intel_inventory.py"
-        pass_when: "exit_code=0"
-      - id: "compute_next_pull"
-        command: "python3 bin/compute_next_pull.py"
-        pass_when: "exit_code=0"
-      - id: "validate_roadmap_consistency"
-        command: "python3 bin/validate_roadmap_consistency.py"
-        pass_when: "exit_code=0"
-      - id: "validate_roadmap_execution_contracts"
-        command: "python3 bin/validate_roadmap_execution_contracts.py"
-        pass_when: "exit_code=0"
-      - id: "make_check"
-        command: "make check"
-        pass_when: "exit_code=0"
-      - id: "make_quick"
-        command: "make quick"
-        pass_when: "exit_code=0"
-      - id: "make_test_offline"
-        command: "make test-offline"
-        pass_when: "exit_code=0"
+    - id: run_integrated_ops_expansion
+      command: python3 bin/run_integrated_ops_expansion.py
+      pass_when: exit_code=0
+    - id: validate_integrated_ops_expansion
+      command: python3 bin/validate_integrated_ops_expansion.py
+      pass_when: exit_code=0
+    - id: targeted_pytest
+      command: python3 -m pytest -q tests/test_integrated_ops_home_intel_inventory.py
+      pass_when: exit_code=0
+    - id: compute_next_pull
+      command: python3 bin/compute_next_pull.py
+      pass_when: exit_code=0
+    - id: validate_roadmap_consistency
+      command: python3 bin/validate_roadmap_consistency.py
+      pass_when: exit_code=0
+    - id: validate_roadmap_execution_contracts
+      command: python3 bin/validate_roadmap_execution_contracts.py
+      pass_when: exit_code=0
+    - id: make_check
+      command: make check
+      pass_when: exit_code=0
+    - id: make_quick
+      command: make quick
+      pass_when: exit_code=0
+    - id: make_test_offline
+      command: make test-offline
+      pass_when: exit_code=0
     pass_criteria:
-      - "Integrated artifact contains home/intel/inventory/ops sections in one payload."
-      - "Runtime session linkage and control-window truth linkage are present."
+    - Integrated artifact contains home/intel/inventory/ops sections in one payload.
+    - Runtime session linkage and control-window truth linkage are present.
   artifact_contract:
     required_artifacts:
-      - "artifacts/operations/integrated_ops_expansion_run.json"
-      - "artifacts/validation/integrated_ops_expansion_validation.json"
+    - artifacts/operations/integrated_ops_expansion_run.json
+    - artifacts/validation/integrated_ops_expansion_validation.json
     evidence_outputs:
-      - "Unified queue and evidence are generated in one run."
-      - "Validator confirms all four roadmap IDs are linked in output."
+    - Unified queue and evidence are generated in one run.
+    - Validator confirms all four roadmap IDs are linked in output.
     machine_readable_outputs:
-      - "artifacts/operations/integrated_ops_expansion_run.json"
-      - "artifacts/validation/integrated_ops_expansion_validation.json"
+    - artifacts/operations/integrated_ops_expansion_run.json
+    - artifacts/validation/integrated_ops_expansion_validation.json
   completion_contract:
     substep_complete_when:
-      - "Single-path integrated run and validator are implemented."
+    - Single-path integrated run and validator are implemented.
     bounded_slice_complete_when:
-      - "All validations in validation_contract pass."
-      - "Required artifacts exist."
+    - All validations in validation_contract pass.
+    - Required artifacts exist.
     item_complete_when:
-      - "Operational expansion path is operator-usable, governed, and evidence-backed."
+    - Operational expansion path is operator-usable, governed, and evidence-backed.
     blocker_chain_cleared_when:
-      - "No direct blocker remains for integrated ops/home/intel/inventory execution path."
+    - No direct blocker remains for integrated ops/home/intel/inventory execution
+      path.
     small_patch_is_not_completion: true
   truth_surface_updates_required:
-    - "docs/roadmap/items/RM-OPS-006.yaml"
-    - "docs/roadmap/items/RM-HOME-005.yaml"
-    - "docs/roadmap/items/RM-INTEL-003.yaml"
-    - "docs/roadmap/items/RM-INV-003.yaml"
-    - "docs/roadmap/data/roadmap_registry.yaml"
-    - "docs/roadmap/data/sync_state.yaml"
-    - "docs/roadmap/ROADMAP_STATUS_SYNC.md"
-    - "docs/roadmap/ROADMAP_MASTER.md"
-    - "docs/roadmap/ROADMAP_INDEX.md"
-    - "artifacts/planning/next_pull.json"
-    - "artifacts/planning/blocker_registry.json"
-    - "governance/roadmap_dependency_graph.v1.yaml"
+  - docs/roadmap/items/RM-OPS-006.yaml
+  - docs/roadmap/items/RM-HOME-005.yaml
+  - docs/roadmap/items/RM-INTEL-003.yaml
+  - docs/roadmap/items/RM-INV-003.yaml
+  - docs/roadmap/data/roadmap_registry.yaml
+  - docs/roadmap/data/sync_state.yaml
+  - docs/roadmap/ROADMAP_STATUS_SYNC.md
+  - docs/roadmap/ROADMAP_MASTER.md
+  - docs/roadmap/ROADMAP_INDEX.md
+  - artifacts/planning/next_pull.json
+  - artifacts/planning/blocker_registry.json
+  - governance/roadmap_dependency_graph.v1.yaml
   external_dependency_readiness:
     required: false
-    readiness_status: "not_applicable"
+    readiness_status: not_applicable
     blocks_autonomous_execution: false
     blocking_dependencies: []
-    notes: "Integrated slice is fully repo-local."
-
+    notes: Integrated slice is fully repo-local.
 sync:
   plane:
     sync_enabled: true
-    sync_mode: "repo_to_plane_authoritative"
-    workspace: "Integrated AI Platform"
-    project: "Roadmap Ops"
+    sync_mode: repo_to_plane_authoritative
+    workspace: Integrated AI Platform
+    project: Roadmap Ops
     plane_item_id: null
     last_synced_at: null
     writeback_fields_allowed:
-      - "operational_state"
-      - "assignee"
-      - "cycle"
-      - "module"
-      - "labels"
-
+    - operational_state
+    - assignee
+    - cycle
+    - module
+    - labels
 metadata:
-  owner: "operations"
-  created_at: "2026-04-23"
-  updated_at: "2026-04-23"
-  completed_at: "2026-04-23T04:00:00Z"
+  owner: operations
+  created_at: '2026-04-23'
+  updated_at: '2026-04-23'
+  completed_at: '2026-04-23T04:00:00Z'
   tags:
-    - "ops"
-    - "integrated"
-    - "home"
-    - "intel"
-    - "inventory"
+  - ops
+  - integrated
+  - home
+  - intel
+  - inventory

@@ -1,13 +1,14 @@
-schema_version: "1.0"
-kind: "roadmap_item"
-id: "RM-UI-005"
-slug: "local-execution-control-dashboard-routing-aider-openhands"
-title: "Local execution control dashboard, routing layer, Aider orchestration, and OpenHands interface"
-category: "UI"
-type: "capability_surface"
-status: "completed"
-archive_status: "ready_for_archive"
-priority: "P1"
+schema_version: '1.0'
+kind: roadmap_item
+id: RM-UI-005
+slug: local-execution-control-dashboard-routing-aider-openhands
+title: Local execution control dashboard, routing layer, Aider orchestration, and
+  OpenHands interface
+category: UI
+type: capability_surface
+status: completed
+archive_status: archived
+priority: P1
 scoring:
   loe: 4
   strategic_value: 5
@@ -15,267 +16,269 @@ scoring:
   execution_risk: 2
   dependency_burden: 2
   readiness: 4
+description: 'Establish a real local execution control window that reduces terminal-only
+  ambiguity by surfacing objective/lane/branch state, deterministic route decisions,
+  Aider run-packet contracts, blocker and next-target visibility, validation/artifact
+  evidence state, completion ladder state, and a subordinate OpenHands local execution
+  path.
 
-description: >
-  Establish a real local execution control window that reduces terminal-only ambiguity by
-  surfacing objective/lane/branch state, deterministic route decisions, Aider run-packet
-  contracts, blocker and next-target visibility, validation/artifact evidence state,
-  completion ladder state, and a subordinate OpenHands local execution path.
+  '
+why_it_matters: 'Without a unified control window and deterministic routing/orchestration
+  surface, local execution remains ambiguous and difficult to validate. This item
+  hardens local-first execution truth, governed target visibility, and bounded completion
+  correctness.
 
-why_it_matters: >
-  Without a unified control window and deterministic routing/orchestration surface, local
-  execution remains ambiguous and difficult to validate. This item hardens local-first
-  execution truth, governed target visibility, and bounded completion correctness.
-
+  '
 scope:
-  objective: >
-    Deliver and ratify a usable first local slice of execution control, routing,
-    Aider workload packetization, and OpenHands execution interfacing under one
-    shared truth and completion model.
-  in_scope:
-    - "local web control shell"
-    - "deterministic task-lane routing"
-    - "Aider run-packet generation"
-    - "context and token pressure visibility"
-    - "validation/artifact/completion ladder panels"
-    - "blocker chain and next governed target surfaces"
-    - "OpenHands local launch path subordinate to control model"
-    - "tests for route/packet/state/launcher"
-  out_of_scope:
-    - "full visual polish redesign"
-    - "broad roadmap backlog normalization"
-    - "tactical unlock expansion work"
-    - "making OpenHands a second planning authority"
+  objective: 'Deliver and ratify a usable first local slice of execution control,
+    routing, Aider workload packetization, and OpenHands execution interfacing under
+    one shared truth and completion model.
 
+    '
+  in_scope:
+  - local web control shell
+  - deterministic task-lane routing
+  - Aider run-packet generation
+  - context and token pressure visibility
+  - validation/artifact/completion ladder panels
+  - blocker chain and next governed target surfaces
+  - OpenHands local launch path subordinate to control model
+  - tests for route/packet/state/launcher
+  out_of_scope:
+  - full visual polish redesign
+  - broad roadmap backlog normalization
+  - tactical unlock expansion work
+  - making OpenHands a second planning authority
 dependencies:
   blocked_by: []
   depends_on:
-    - "RM-UI-001"
-    - "RM-GOV-001"
-    - "RM-AUTO-001"
+  - RM-UI-001
+  - RM-GOV-001
+  - RM-AUTO-001
   enables: []
   related_items:
-    - "RM-GOV-009"
-    - "RM-OPS-005"
-    - "RM-OPS-004"
-
+  - RM-GOV-009
+  - RM-OPS-005
+  - RM-OPS-004
 impact:
   affected_systems:
-    - "control_window"
-    - "roadmap_ops"
-    - "developer_assistant"
-    - "agent_runtime"
+  - control_window
+  - roadmap_ops
+  - developer_assistant
+  - agent_runtime
   expected_file_families:
-    - "framework/rm_ui005_*.py"
-    - "bin/rm_ui005_*.py"
-    - "tests/test_rm_ui005_*.py"
-    - "artifacts/rm_ui005/**"
-    - "docs/roadmap/**"
-  impact_summary: >
-    Introduces a runnable local execution control surface and machine-usable routing/
-    orchestration/state artifacts for bounded governed execution.
+  - framework/rm_ui005_*.py
+  - bin/rm_ui005_*.py
+  - tests/test_rm_ui005_*.py
+  - artifacts/rm_ui005/**
+  - docs/roadmap/**
+  impact_summary: 'Introduces a runnable local execution control surface and machine-usable
+    routing/ orchestration/state artifacts for bounded governed execution.
 
+    '
 cmdb:
   refs:
-    - "subsystem:control_window"
-    - "subsystem:roadmap_ops"
+  - subsystem:control_window
+  - subsystem:roadmap_ops
   asset_links: []
   service_links: []
-
 grouping:
   feature_block_candidates:
-    - "FB-UI-CONTROL-WINDOW"
-  package_group: "PKG-UI-EXEC-CONTROL"
+  - FB-UI-CONTROL-WINDOW
+  package_group: PKG-UI-EXEC-CONTROL
   shared_touch_surfaces:
-    - "control window"
-    - "routing and execution packets"
-    - "completion and blocker visibility"
-
+  - control window
+  - routing and execution packets
+  - completion and blocker visibility
 milestones:
-  recommended_first_milestone: "ship-runnable-first-slice"
+  recommended_first_milestone: ship-runnable-first-slice
   downstream_milestones:
-    - "close-canonical-roadmap-sync-gap"
-    - "expand-lane-contracts-and-validation-automation"
-
+  - close-canonical-roadmap-sync-gap
+  - expand-lane-contracts-and-validation-automation
 planning:
   planning_packet_ref: null
-  planning_status: "complete"
-  planning_notes: "First runnable slice completed and canonical item-complete evidence now satisfied."
-
+  planning_status: complete
+  planning_notes: First runnable slice completed and canonical item-complete evidence
+    now satisfied.
 execution:
   execution_package_refs:
-    - "framework/rm_ui005_control_window.py"
-    - "framework/rm_ui005_openhands.py"
-    - "bin/rm_ui005_control_window.py"
-    - "bin/rm_ui005_emit_state.py"
-  execution_status: "complete"
-  last_execution_commit: "working-tree"
-
+  - framework/rm_ui005_control_window.py
+  - framework/rm_ui005_openhands.py
+  - bin/rm_ui005_control_window.py
+  - bin/rm_ui005_emit_state.py
+  execution_status: complete
+  last_execution_commit: working-tree
 validation:
   validation_artifact_refs:
-    - "artifacts/rm_ui005/control_window_state.json"
-    - "tests/test_rm_ui005_router_packet.py"
-    - "tests/test_rm_ui005_state_panels.py"
-    - "tests/test_rm_ui005_openhands.py"
-  validation_status: "passed"
+  - artifacts/rm_ui005/control_window_state.json
+  - tests/test_rm_ui005_router_packet.py
+  - tests/test_rm_ui005_state_panels.py
+  - tests/test_rm_ui005_openhands.py
+  validation_status: passed
   item_complete_evidence: true
-  definition_of_done_ref: "docs/roadmap/STANDARDS.md"
+  definition_of_done_ref: docs/roadmap/STANDARDS.md
 archive_readiness:
   ready: true
-  reason: "item_complete_contract_satisfied"
-  validation_artifact: "artifacts/rm_ui005/control_window_state.json"
-
+  reason: item_complete_contract_satisfied
+  validation_artifact: artifacts/rm_ui005/control_window_state.json
 governance:
-  phase_target: "Execution Control Window"
-  architectural_lane: "control_window"
-  risk_tier: "medium"
-  allowed_change_scope: "bounded"
+  phase_target: Execution Control Window
+  architectural_lane: control_window
+  risk_tier: medium
+  allowed_change_scope: bounded
   requires_explicit_escalation: false
-
 ai_operability:
-  canonical_summary: >
-    RM-UI-005 control-window implementation and canonicalization item for a local-first
-    execution dashboard, deterministic routing, Aider packet orchestration, and OpenHands path.
-  developer_intent: >
-    Keep execution authority repo-native with truthful machine-usable state and completion logic.
+  canonical_summary: 'RM-UI-005 control-window implementation and canonicalization
+    item for a local-first execution dashboard, deterministic routing, Aider packet
+    orchestration, and OpenHands path.
+
+    '
+  developer_intent: 'Keep execution authority repo-native with truthful machine-usable
+    state and completion logic.
+
+    '
   non_goals:
-    - "Do not turn OpenHands into planning authority"
-    - "Do not claim full item completion from first-slice implementation alone"
+  - Do not turn OpenHands into planning authority
+  - Do not claim full item completion from first-slice implementation alone
   allowed_files:
-    - "framework/**"
-    - "bin/**"
-    - "tests/**"
-    - "docs/roadmap/**"
-    - "artifacts/**"
-    - "governance/**"
+  - framework/**
+  - bin/**
+  - tests/**
+  - docs/roadmap/**
+  - artifacts/**
+  - governance/**
   forbidden_files:
-    - ".github/**"
-    - "node_modules/**"
-    - "venv/**"
+  - .github/**
+  - node_modules/**
+  - venv/**
   validation_order:
-    - "python3 -m pytest -q tests/test_rm_ui005_router_packet.py tests/test_rm_ui005_state_panels.py tests/test_rm_ui005_openhands.py"
-    - "python3 bin/compute_next_pull.py"
-    - "python3 bin/validate_roadmap_consistency.py"
-    - "make check"
-    - "make quick"
-    - "make test-offline"
-  rollback_rule: >
-    Revert only RM-UI-005 canonicalization and directly related synchronization updates.
-    Preserve unrelated working-tree modifications.
+  - python3 -m pytest -q tests/test_rm_ui005_router_packet.py tests/test_rm_ui005_state_panels.py
+    tests/test_rm_ui005_openhands.py
+  - python3 bin/compute_next_pull.py
+  - python3 bin/validate_roadmap_consistency.py
+  - make check
+  - make quick
+  - make test-offline
+  rollback_rule: 'Revert only RM-UI-005 canonicalization and directly related synchronization
+    updates. Preserve unrelated working-tree modifications.
+
+    '
   artifact_outputs:
-    - "artifacts/rm_ui005/control_window_state.json"
-    - "artifacts/planning/next_pull.json"
-    - "artifacts/planning/blocker_registry.json"
-    - "governance/roadmap_dependency_graph.v1.yaml"
+  - artifacts/rm_ui005/control_window_state.json
+  - artifacts/planning/next_pull.json
+  - artifacts/planning/blocker_registry.json
+  - governance/roadmap_dependency_graph.v1.yaml
   promotion_linkage:
     required: false
     manifest_refs: []
-
 execution_contract:
-  contract_version: "1.0"
-  autonomous_execution_status: "eligible_with_guardrails"
-  next_bounded_slice: >
-    Maintain and extend the control-window first slice while preserving deterministic
-    route contracts, truthful completion ladder semantics, and roadmap truth-surface sync.
+  contract_version: '1.0'
+  autonomous_execution_status: eligible_with_guardrails
+  next_bounded_slice: 'Maintain and extend the control-window first slice while preserving
+    deterministic route contracts, truthful completion ladder semantics, and roadmap
+    truth-surface sync.
+
+    '
   max_autonomous_scope:
     max_files_touched: 14
     max_loc_delta: 900
     allowed_change_kinds:
-      - "control_window_surface"
-      - "routing_contract"
-      - "aider_packet_contract"
-      - "openhands_adapter"
-      - "roadmap_truth_sync"
+    - control_window_surface
+    - routing_contract
+    - aider_packet_contract
+    - openhands_adapter
+    - roadmap_truth_sync
   validation_contract:
     required_validations:
-      - id: "compute_next_pull"
-        command: "python3 bin/compute_next_pull.py"
-        pass_when: "exit_code=0"
-      - id: "validate_roadmap_consistency"
-        command: "python3 bin/validate_roadmap_consistency.py"
-        pass_when: "exit_code=0"
-      - id: "rm_ui005_tests"
-        command: "python3 -m pytest -q tests/test_rm_ui005_router_packet.py tests/test_rm_ui005_state_panels.py tests/test_rm_ui005_openhands.py"
-        pass_when: "exit_code=0"
-      - id: "make_check"
-        command: "make check"
-        pass_when: "exit_code=0"
-      - id: "make_quick"
-        command: "make quick"
-        pass_when: "exit_code=0"
-      - id: "make_test_offline"
-        command: "make test-offline"
-        pass_when: "exit_code=0"
+    - id: compute_next_pull
+      command: python3 bin/compute_next_pull.py
+      pass_when: exit_code=0
+    - id: validate_roadmap_consistency
+      command: python3 bin/validate_roadmap_consistency.py
+      pass_when: exit_code=0
+    - id: rm_ui005_tests
+      command: python3 -m pytest -q tests/test_rm_ui005_router_packet.py tests/test_rm_ui005_state_panels.py
+        tests/test_rm_ui005_openhands.py
+      pass_when: exit_code=0
+    - id: make_check
+      command: make check
+      pass_when: exit_code=0
+    - id: make_quick
+      command: make quick
+      pass_when: exit_code=0
+    - id: make_test_offline
+      command: make test-offline
+      pass_when: exit_code=0
     pass_criteria:
-      - "Canonical RM-UI-005 item file exists and is included in derived planning surfaces."
-      - "Validation and blocker surfaces are regenerated and consistent."
-      - "RM-UI-005 first slice remains runnable and test-covered."
+    - Canonical RM-UI-005 item file exists and is included in derived planning surfaces.
+    - Validation and blocker surfaces are regenerated and consistent.
+    - RM-UI-005 first slice remains runnable and test-covered.
   artifact_contract:
     required_artifacts:
-      - "artifacts/rm_ui005/control_window_state.json"
-      - "artifacts/planning/next_pull.json"
-      - "artifacts/planning/blocker_registry.json"
+    - artifacts/rm_ui005/control_window_state.json
+    - artifacts/planning/next_pull.json
+    - artifacts/planning/blocker_registry.json
     evidence_outputs:
-      - "Control-window state artifact is emitted from implemented RM-UI-005 code path."
-      - "Governed planning outputs include RM-UI-005 canonical node state."
+    - Control-window state artifact is emitted from implemented RM-UI-005 code path.
+    - Governed planning outputs include RM-UI-005 canonical node state.
     machine_readable_outputs:
-      - "artifacts/rm_ui005/control_window_state.json"
-      - "artifacts/planning/next_pull.json"
-      - "artifacts/planning/blocker_registry.json"
+    - artifacts/rm_ui005/control_window_state.json
+    - artifacts/planning/next_pull.json
+    - artifacts/planning/blocker_registry.json
   completion_contract:
     substep_complete_when:
-      - "runnable first slice exists with routing, packet, blocker, validation, artifact, and OpenHands panels"
+    - runnable first slice exists with routing, packet, blocker, validation, artifact,
+      and OpenHands panels
     bounded_slice_complete_when:
-      - "validation contract checks pass"
-      - "artifact contract outputs exist"
+    - validation contract checks pass
+    - artifact contract outputs exist
     item_complete_when:
-      - "all planned RM-UI-005 slices and DoD evidence are complete"
+    - all planned RM-UI-005 slices and DoD evidence are complete
     blocker_chain_cleared_when:
-      - "no directly adjacent RM-UI-005 blocker remains in canonical planning surfaces"
+    - no directly adjacent RM-UI-005 blocker remains in canonical planning surfaces
     small_patch_is_not_completion: true
   truth_surface_updates_required:
-    - "docs/roadmap/items/RM-UI-005.yaml"
-    - "docs/roadmap/ROADMAP_STATUS_SYNC.md"
-    - "docs/roadmap/ROADMAP_MASTER.md"
-    - "docs/roadmap/ROADMAP_INDEX.md"
-    - "docs/roadmap/data/roadmap_registry.yaml"
-    - "docs/roadmap/data/sync_state.yaml"
-    - "artifacts/planning/next_pull.json"
-    - "artifacts/planning/blocker_registry.json"
-    - "governance/roadmap_dependency_graph.v1.yaml"
+  - docs/roadmap/items/RM-UI-005.yaml
+  - docs/roadmap/ROADMAP_STATUS_SYNC.md
+  - docs/roadmap/ROADMAP_MASTER.md
+  - docs/roadmap/ROADMAP_INDEX.md
+  - docs/roadmap/data/roadmap_registry.yaml
+  - docs/roadmap/data/sync_state.yaml
+  - artifacts/planning/next_pull.json
+  - artifacts/planning/blocker_registry.json
+  - governance/roadmap_dependency_graph.v1.yaml
   external_dependency_readiness:
     required: false
-    readiness_status: "not_applicable"
+    readiness_status: not_applicable
     blocks_autonomous_execution: false
     blocking_dependencies: []
-    notes: "OpenHands local path is optional execution surface; canonicalization is repo-local."
-
+    notes: OpenHands local path is optional execution surface; canonicalization is
+      repo-local.
 sync:
   plane:
     sync_enabled: true
-    sync_mode: "repo_to_plane_authoritative"
-    workspace: "Integrated AI Platform"
-    project: "Roadmap Ops"
+    sync_mode: repo_to_plane_authoritative
+    workspace: Integrated AI Platform
+    project: Roadmap Ops
     plane_item_id: null
     last_synced_at: null
     writeback_fields_allowed:
-      - "operational_state"
-      - "assignee"
-      - "cycle"
-      - "module"
-      - "labels"
+    - operational_state
+    - assignee
+    - cycle
+    - module
+    - labels
   github:
     issue_ref: null
     pr_refs: []
-
 metadata:
-  owner: "control_window"
-  created_at: "2026-04-22"
-  updated_at: "2026-04-22"
-  completed_at: "2026-04-22T20:10:00Z"
+  owner: control_window
+  created_at: '2026-04-22'
+  updated_at: '2026-04-23'
+  completed_at: '2026-04-22T20:10:00Z'
   tags:
-    - "ui"
-    - "control-window"
-    - "aider"
-    - "openhands"
-    - "completed"
+  - ui
+  - control-window
+  - aider
+  - openhands
+  - completed
