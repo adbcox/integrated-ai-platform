@@ -11,6 +11,7 @@ Use it to determine:
 - which tool/mode should be used
 - what acceptance rules apply
 - where hardware capability and constraint truth lives
+- where local AI stack and OSS reuse truth lives
 
 This document is intentionally short.
 It is not a replacement for canonical item truth.
@@ -63,6 +64,18 @@ Default model:
 - external coding systems only when the local path proves insufficient or tool/environment constraints require them
 
 This execution posture exists to support the broader platform mission, not to redefine the platform as only a coding system.
+
+## Local AI stack and OSS reuse posture
+
+Before proposing new local AI tooling or rebuilding a capability, use these first:
+- `docs/architecture/LOCAL_AI_STACK_ROLE_MATRIX.md`
+- `docs/architecture/OSS_REUSE_AND_ADOPTION_REGISTER.md`
+- `docs/roadmap/EXTERNAL_APPLICATIONS_AND_INTEGRATIONS.md`
+
+Default rules:
+- do not install multiple overlapping tools for the same role without explicit justification
+- prefer mature OSS products, SDKs, CLIs, and modules before rebuilding a weaker in-repo first pass
+- prefer thin adapters/wrappers over large forks
 
 ## Hardware truth posture
 
