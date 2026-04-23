@@ -24,20 +24,34 @@ Interpretation:
 - future work should extend the governed platform rather than re-litigate its foundation by default
 - bounded execution, artifact evidence, validation, and truth-surface sync remain mandatory
 
+## Mission posture
+
+The system’s mission is broader than coding autonomy.
+
+The platform should be understood as:
+- a governed AI operating system and control plane
+- for autonomous and semi-autonomous business, personal, operational, and development workflows
+- with local coding autonomy as a **foundational enabling capability**, not the sole mission
+
+Use these first when mission or identity is in question:
+- `docs/architecture/SYSTEM_MISSION_AND_SCOPE.md`
+- `docs/architecture/MASTER_SYSTEM_ARCHITECTURE.md`
+
 ## Canonical truth order
 
 Read in this order:
 
-1. `docs/architecture/MASTER_SYSTEM_ARCHITECTURE.md`
-2. `docs/roadmap/ROADMAP_AUTHORITY.md`
-3. `docs/governance/DOCUMENT_STATE_INDEX.md`
-4. canonical item YAML under `docs/roadmap/items/`
-5. derived planning/dependency/data surfaces
-6. `docs/roadmap/ROADMAP_STATUS_SYNC.md`
-7. `docs/roadmap/ROADMAP_MASTER.md`
-8. `docs/roadmap/ROADMAP_INDEX.md`
-9. `docs/roadmap/POST_CONVERGENCE_OPERATING_MODE.md`
-10. execution-mode docs under `docs/execution_modes/`
+1. `docs/architecture/SYSTEM_MISSION_AND_SCOPE.md`
+2. `docs/architecture/MASTER_SYSTEM_ARCHITECTURE.md`
+3. `docs/roadmap/ROADMAP_AUTHORITY.md`
+4. `docs/governance/DOCUMENT_STATE_INDEX.md`
+5. canonical item YAML under `docs/roadmap/items/`
+6. derived planning/dependency/data surfaces
+7. `docs/roadmap/ROADMAP_STATUS_SYNC.md`
+8. `docs/roadmap/ROADMAP_MASTER.md`
+9. `docs/roadmap/ROADMAP_INDEX.md`
+10. `docs/roadmap/POST_CONVERGENCE_OPERATING_MODE.md`
+11. execution-mode docs under `docs/execution_modes/`
 
 ## Current execution posture
 
@@ -47,6 +61,8 @@ Default model:
 - Aider as tactical executor where applicable
 - control-window truth checks for acceptance
 - external coding systems only when the local path proves insufficient or tool/environment constraints require them
+
+This execution posture exists to support the broader platform mission, not to redefine the platform as only a coding system.
 
 ## Hardware truth posture
 
@@ -84,6 +100,7 @@ Do not treat the autonomy substrate as the default active build queue.
 Future work should generally be selected from:
 - governed platform extensions
 - ingress/connector/workflow expansion
+- business and operational workflows
 - domain expansions on top of the governed runtime
 - governance-preservation and anti-drift work
 
