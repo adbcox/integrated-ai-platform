@@ -83,6 +83,20 @@ Default rules:
 - prefer mature OSS products, SDKs, CLIs, and modules before rebuilding a weaker in-repo first pass
 - prefer thin adapters/wrappers over large forks
 
+## Company knowledge base branch
+
+When work relates to ingesting company documents or building the company source-of-truth knowledge base, use these first:
+- `docs/roadmap/ITEMS/RM-KB-001.md`
+- `docs/architecture/COMPANY_KNOWLEDGE_BASE_OPERATING_MODEL.md`
+- `docs/architecture/KNOWLEDGE_INGESTION_REUSE_REGISTER.md`
+- `docs/roadmap/KNOWLEDGE_INGESTION_IMPLEMENTATION_WAVE.md`
+- `docs/runbooks/COMPANY_KB_TOOLCHAIN_RUNBOOK.md`
+
+Interpretation:
+- this branch is separate from DOCAPP, media acquisition, and media enhancement
+- this branch exists to ingest company documents into a governed local knowledge base
+- this branch should produce one searchable, source-ranked internal truth layer for the wider system
+
 ## Hardware truth posture
 
 When work depends on hardware realities such as:
@@ -122,6 +136,7 @@ Future work should generally be selected from:
 - business and operational workflows
 - domain expansions on top of the governed runtime
 - governance-preservation and anti-drift work
+- company-document truth-layer construction where that branch is the active scope
 
 ## Current tool posture
 
