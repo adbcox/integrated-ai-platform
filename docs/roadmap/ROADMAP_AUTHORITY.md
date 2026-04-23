@@ -4,7 +4,7 @@
 
 This document defines where roadmap truth lives, which roadmap files are derived views, and how closeout is accepted after post-convergence transition.
 
-It exists to prevent split authority, stale status displays, and local-only closeout claims.
+It exists to prevent split authority, stale status displays, local-only closeout claims, and unnecessary document-search overhead for humans and coding assistants.
 
 ## Current authority model on `main`
 
@@ -31,7 +31,7 @@ If any other roadmap surface conflicts with canonical item YAML, the YAML wins.
 These surfaces must mirror canonical item truth and be regenerated through repo mechanisms.
 They are not independently authoritative.
 
-### Layer 3 — human-readable summary views
+### Layer 3 — synchronized human-readable summary views
 - `docs/roadmap/ROADMAP_STATUS_SYNC.md`
 - `docs/roadmap/ROADMAP_MASTER.md`
 - `docs/roadmap/ROADMAP_INDEX.md`
@@ -40,15 +40,26 @@ These files are summary, status-rollup, and inventory views.
 They must agree with canonical item YAML and derived planning surfaces.
 They must not override canonical item state.
 
-### Layer 4 — planning and operating guidance
+### Layer 4 — current operating and execution governance
+- `docs/governance/CURRENT_OPERATING_CONTEXT.md`
+- `docs/governance/DOCUMENT_STATE_INDEX.md`
+- `docs/execution_modes/EXECUTION_ROUTER.md`
+- tool-specific mode docs under `docs/execution_modes/`
+- `docs/governance/PROMPT_PACKET_STANDARD.md`
+- `docs/governance/DOCUMENT_RETENTION_POLICY.md`
+- `docs/roadmap/POST_CONVERGENCE_OPERATING_MODE.md`
+
+These files define how work should be discovered, routed, prompted, retained, and operated in the current phase.
+They do not independently control item completion state.
+
+### Layer 5 — planning and historical support
 - `docs/roadmap/STANDARDS.md`
 - `docs/roadmap/EXECUTION_PACK_INDEX.md`
 - execution packs under `docs/roadmap/*_EXECUTION_PACK.md`
 - `docs/roadmap/EXTERNAL_APPLICATIONS_AND_INTEGRATIONS.md`
-- `docs/roadmap/POST_CONVERGENCE_OPERATING_MODE.md`
 - `docs/roadmap/LOCAL_AUTONOMY_CRITICAL_PATH.md` (historical reference only after convergence)
 
-These files guide planning and operation.
+These files guide planning or preserve transition history.
 They do not independently control item completion state.
 
 ## Post-convergence rule
@@ -79,21 +90,27 @@ Local-only state is not accepted closeout.
 6. Execution packs make an item execution-ready; they do not by themselves mean the item is completed.
 7. Patch success is not item completion; completion requires the item’s own canonical closeout condition to be truthfully satisfied.
 8. Historical planning docs must be archived or clearly marked historical once superseded.
+9. Use governance discovery docs before broad repo searching when choosing operating posture or tool/mode.
 
 ## Reader order
 
-Read roadmap materials in this order:
+Read roadmap and operating materials in this order:
 
 1. `docs/architecture/MASTER_SYSTEM_ARCHITECTURE.md`
 2. `docs/roadmap/ROADMAP_AUTHORITY.md`
-3. canonical item YAML under `docs/roadmap/items/`
-4. derived planning/dependency/data surfaces
-5. `docs/roadmap/ROADMAP_STATUS_SYNC.md`
-6. `docs/roadmap/ROADMAP_MASTER.md`
-7. `docs/roadmap/ROADMAP_INDEX.md`
-8. `docs/roadmap/POST_CONVERGENCE_OPERATING_MODE.md`
-9. planning/supporting docs as needed
+3. `docs/governance/CURRENT_OPERATING_CONTEXT.md`
+4. `docs/governance/DOCUMENT_STATE_INDEX.md`
+5. canonical item YAML under `docs/roadmap/items/`
+6. derived planning/dependency/data surfaces
+7. `docs/roadmap/ROADMAP_STATUS_SYNC.md`
+8. `docs/roadmap/ROADMAP_MASTER.md`
+9. `docs/roadmap/ROADMAP_INDEX.md`
+10. `docs/roadmap/POST_CONVERGENCE_OPERATING_MODE.md`
+11. `docs/execution_modes/EXECUTION_ROUTER.md`
+12. relevant tool-specific mode doc
+13. `docs/governance/PROMPT_PACKET_STANDARD.md`
+14. planning/supporting docs as needed
 
 ## Repair note
 
-This authority model replaces an earlier visible-status-first model that was useful during recovery but is no longer correct after convergence to canonical per-item YAML.
+This authority model replaces an earlier visible-status-first model that was useful during recovery but is no longer correct after convergence to canonical per-item YAML and explicit operating/execution governance.
