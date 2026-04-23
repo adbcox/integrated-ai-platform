@@ -31,6 +31,8 @@ These are not side notes. They are priority examples of why the control plane ex
 
 This item also now owns the **local AI platform adoption matrix** that decides which local AI systems are part of the preferred stack, which are selective additions, and which are deferred or rejected as current core-stack choices.
 
+It also now owns the **reference-implementation and public-template reuse posture** for connector and tool surfaces, so assistants install, wrap, or lightly modify existing systems instead of re-creating broad categories of tooling from scratch.
+
 ## Why it matters
 
 The platform already depends on or plans to depend on a growing set of external systems such as Home Assistant, Plex, Sonarr, Radarr, Plane, Strava, ChatGPT/OpenAI surfaces, GitHub, Google Calendar, Gmail, and future adopted tools. Without one governing connectivity layer, integrations will drift into one-off adapters, duplicate auth handling, inconsistent polling/sync behavior, and weak operational visibility. A control plane for external connections reduces that drift and makes future autonomous work safer.
@@ -42,6 +44,8 @@ GitHub, Google Calendar, and Gmail deserve explicit emphasis because they unlock
 - Gmail for inbox/context awareness, communication surfaces, and future assistant workflows
 
 The same governance discipline is needed for local AI systems. Without one clear role matrix, the platform will drift into overlapping runtime, UI, RAG, workflow, and agent tools that waste time and token budget.
+
+The same governance discipline is also needed for public repos and templates. Without one clear reuse posture, assistants will keep rebuilding weaker versions of mature OSS products, CLIs, MCP servers, workflow tools, and document-ingestion utilities.
 
 ## Key requirements
 
@@ -104,6 +108,31 @@ The control plane must preserve one explicit adoption posture for local AI syste
 - **BrowserOS** — overlapping browser/agent surface already better treated under computer-use branches
 - **ADeus** — too specialized for the current core stack
 
+### Reference implementation and public-template reuse posture now in scope
+
+Assistants must prefer **install vs wrap vs targeted module reuse** before rebuilding.
+
+#### High-value first-wave references
+- **OpenHands** — selective installed dev-agent surface and sandbox model
+- **OpenCode** — terminal-agent/TUI design and code reference, not current backbone
+- **MCP reference servers** — official tool reference implementations for filesystem, fetch, git, memory, sequential-thinking, and related tool boundaries
+- **PR-Agent** — PR review automation instead of first-pass custom PR reviewer logic
+- **n8n** — workflow automation platform instead of first-pass visual workflow builder
+- **MarkItDown** — document conversion utility instead of bespoke broad document-to-markdown conversion
+- **Plandex concepts** — context slicing and change-set / rollback posture for context-safe and revert-safe execution
+
+#### Reuse rules
+- install the whole system when it already cleanly owns the role
+- wrap and integrate when the system is strong but must remain subordinate to platform governance
+- reuse targeted modules or templates when only a subsystem is needed
+- do not vendor or fork large codebases casually when a thin adapter is sufficient
+- do not rebuild broad categories of workflow, document-ingest, MCP-tool, or PR-review capability without checking the registered references first
+
+The authoritative sources for this posture are:
+- `docs/architecture/LOCAL_AI_STACK_ROLE_MATRIX.md`
+- `docs/architecture/OSS_REUSE_AND_ADOPTION_REGISTER.md`
+- `docs/architecture/REFERENCE_IMPLEMENTATIONS_AND_PUBLIC_TEMPLATES.md`
+
 ## Affected systems
 
 - roadmap governance layer
@@ -114,17 +143,21 @@ The control plane must preserve one explicit adoption posture for local AI syste
 - future dashboard and control-center surfaces that consume external integrations
 - coding assistant / repo operations workflows
 - future athlete/coach and personal-assistant branches
+- OSS adoption and reference-implementation decision surfaces
 
 ## Expected file families
 
 - `docs/roadmap/*`
 - `docs/architecture/LOCAL_AI_STACK_ROLE_MATRIX.md`
+- `docs/architecture/OSS_REUSE_AND_ADOPTION_REGISTER.md`
+- `docs/architecture/REFERENCE_IMPLEMENTATIONS_AND_PUBLIC_TEMPLATES.md`
 - future integration-control-plane architecture docs
 - future adapter registry/config files
 - future auth/connector policy files
 - future sync/event handling surfaces
 - future GitHub / Google connector binding/config docs
 - future local AI stack deployment notes and configuration surfaces
+- future wrapper/adapter files around adopted reference implementations
 
 ## Dependencies
 
@@ -141,6 +174,7 @@ The control plane must preserve one explicit adoption posture for local AI syste
 - could accidentally become a second backbone if it tries to own platform logic instead of external connectivity concerns
 - privacy/auth posture could drift if Gmail/Calendar are consumed directly by multiple branches without one governing control plane
 - local AI tool sprawl could create duplicated runtime, UI, and workflow surfaces without a clear role matrix
+- assistants could still rebuild subsystems unnecessarily if reference-implementation posture is not carried into execution packets
 
 ### Known issues / blockers
 
@@ -148,6 +182,7 @@ The control plane must preserve one explicit adoption posture for local AI syste
 - auth posture must remain consistent with local-first and governance rules
 - GitHub / Google connectors should be implemented through the control plane, not as branch-specific one-offs
 - local AI platform roles must remain synchronized with `LOCAL_AI_STACK_ROLE_MATRIX.md` and `EXTERNAL_APPLICATIONS_AND_INTEGRATIONS.md`
+- reuse posture must remain synchronized with the OSS reuse register and reference-implementation register
 
 ## CMDB / asset linkage
 
@@ -180,6 +215,9 @@ In parallel, define the first stable local AI platform role set and deployment p
 - which RAG/document system is primary
 - which tools are selective additions only
 - which tools are explicitly deferred or rejected for the current core stack
+- which public implementations should be installed whole
+- which should be wrapped
+- which should be reused as targeted modules/templates
 
 The highest-value first concrete connector set should now strongly consider:
 
@@ -192,9 +230,9 @@ because those connectors will be reusable across the largest number of future as
 ## Status transition notes
 
 - Expected next status: `Planned`
-- Transition condition: first connector model, adapter boundary, auth/sync policy, and local AI stack role matrix are explicitly defined
-- Validation / closeout condition: one bounded external connectivity slice exists and becomes the standard pattern for later integrations, and the local AI platform stack is documented clearly enough that future assistants do not need to re-derive adoption decisions
+- Transition condition: first connector model, adapter boundary, auth/sync policy, local AI stack role matrix, and reference-implementation reuse posture are explicitly defined
+- Validation / closeout condition: one bounded external connectivity slice exists and becomes the standard pattern for later integrations, and the local AI platform stack plus reference-implementation posture are documented clearly enough that future assistants do not need to re-derive adoption decisions
 
 ## Notes
 
-This item should produce one governing connection model for external systems and one explicit role matrix for local AI platform tools. It should reduce one-off integrations and local AI tool sprawl, not multiply them.
+This item should produce one governing connection model for external systems, one explicit role matrix for local AI platform tools, and one reuse-first posture for public implementations and templates. It should reduce one-off integrations, local AI tool sprawl, and unnecessary greenfield implementation.
