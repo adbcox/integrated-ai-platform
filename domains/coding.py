@@ -132,17 +132,17 @@ class CodingDomain:
         import re
 
         model = model or self.model
+        repo_root = os.path.dirname(os.path.dirname(__file__))
 
-        # Build aider command
+        # Build command with all non-interactive flags
         cmd = [
             "aider",
             "--model",
             f"ollama/{model}",
+            "--yes",  # Auto-accept all prompts
+            "--no-auto-commits",  # We handle commits ourselves
             "--message",
             task_description,
-            "--auto-commits",
-            "--auto-test",
-            "--no-show-model-warnings",
         ]
 
         # Add files
@@ -150,18 +150,19 @@ class CodingDomain:
             cmd.extend(["--file", file_path])
 
         try:
-            # Set up environment for Ollama
+            # Set up environment
             env = os.environ.copy()
-            env.setdefault("OLLAMA_API_BASE", "http://127.0.0.1:11434")
+            env["OLLAMA_API_BASE"] = "http://127.0.0.1:11434"
+            env["AIDER_AUTO_COMMITS"] = "0"  # Disable auto-commits via env
 
-            # Run aider with timeout, no stdin to prevent hanging
+            # Execute with no stdin to prevent terminal attachment
             result = subprocess.run(
                 cmd,
                 capture_output=True,
                 text=True,
                 stdin=subprocess.DEVNULL,
                 timeout=timeout_seconds,
-                cwd=os.path.dirname(os.path.dirname(__file__)),
+                cwd=repo_root,
                 env=env,
             )
 
@@ -175,7 +176,7 @@ class CodingDomain:
                         capture_output=True,
                         text=True,
                         timeout=10,
-                        cwd=os.path.dirname(os.path.dirname(__file__)),
+                        cwd=repo_root,
                     )
                     commit_hash = commit_result.stdout.strip()
                     return {
