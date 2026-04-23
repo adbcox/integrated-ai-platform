@@ -9,6 +9,7 @@ Canonical authority remains `docs/roadmap/items/RM-*.yaml`.
 - Verdict: `YES` (routine roadmap execution is sovereign on current live state)
 - Machine-readable status: `governance/local_execution_sovereignty_status.v1.yaml`
 - Evidence: `artifacts/autonomy/local_execution_sovereignty_verdict.json`
+- Critical path authority: `docs/roadmap/LOCAL_AUTONOMY_CRITICAL_PATH.md`
 
 ## Execution-Governance Contract Hardening
 
@@ -174,7 +175,7 @@ Integrated into runtime_executor with comprehensive validation.
 **Execution**: Full integration chain operational end-to-end (hardware → procurement → edition → website → UI)  
 **Integration point**: `governance/system_integration_manifest.v1.yaml` + `bin/run_integration_demo.py` full orchestration  
 **Item files**: `docs/roadmap/items/RM-{ED-001,INV-003,UI-001,DOCAPP-002,HW-001}.yaml`  
-**Artifacts**: `artifacts/integration_demo/{01,02,03,04}_*.json`, `site/` directory, `INTEGRATION_SUMMARY.json`  
+**Artifacts**: `artifacts/integration_demo/{01,02,03,04}_*.json`, `artifacts/integration_demo/INTEGRATION_SUMMARY.json`  
 **Execution report**: `artifacts/integration_phase1_execution_report.md`
 
 ## Archived in this pass (phase0 global gate closure)

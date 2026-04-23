@@ -67,7 +67,7 @@ This document is the human-visible status sync surface. Item files are authorita
   - `bin/rm_ui005_control_window.py`
   - `bin/rm_ui005_emit_state.py`
   - `artifacts/rm_ui005/control_window_state.json`
-- Scope truth: canonical item-complete evidence is satisfied; item is complete and ready for archive.
+- Scope truth: canonical item-complete evidence is satisfied; item is complete and archived.
 
 ## Execution-Governance Hardening (Latest)
 
@@ -92,7 +92,7 @@ This document is the human-visible status sync surface. Item files are authorita
 ## Tactical Unlock Human Decision (Pending)
 
 - Request id: `TACTICAL-UNLOCK-REQ-001`
-- Request surface: `governance/tactical_family_unlock_request.v1.json`
+- Request surface: no canonical governance request file present in current repo snapshot; pending state is represented by substantive evidence artifacts below
 - Decision required: scoped unlock of `tactical_family_extension` for families `mc`, `ort`, `pgs`
 - Still blocked even if approved: `eo`, `ed`, `live_bridge`, and package classes `feature_expansion` / `canonical_phase_advancement`
 - Candidate evidence: `artifacts/substantive/tactical_unlock_candidate_pack.json`, `artifacts/substantive/tactical_unlock_human_gate_packet.json`

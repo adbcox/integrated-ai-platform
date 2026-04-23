@@ -9,16 +9,16 @@ The roadmap system is deliberately structured into three layers, each with expli
 **Location**: `docs/roadmap/items/RM-*.yaml`  
 **Authority**: This is the source of truth. All status, archive status, and operational state must be tracked here.  
 **Content**: Each roadmap item as a machine-readable YAML file with:
-- Status (complete/completed/archived)
-- Archive status (not_archived/ready_for_archive/archived)
-- Archive readiness block with archived_at timestamp
+- Status (for example `proposed`, `in_progress`, `complete`/`completed`)
+- Archive status (`ready_for_archive`/`archived` when applicable)
+- Optional archive readiness metadata when explicitly modeled by the item
 - AI-operability fields (objective, scope, allowed_files, forbidden_files, validation_order, rollback_rule, artifact_outputs)
 - Execution evidence and validation artifacts
 
 **Responsibility**: Engineers and AI agents update item files directly when:
 - Item work begins (status → in_progress if tracked)
 - Item work completes (status → completed)
-- Item is archived (archive_status → archived, archive_readiness.archived_at timestamp added)
+- Item is archived (archive_status → archived, with metadata/readiness fields updated when present)
 
 ### Layer 2: Derived Planning and Dependency Layer (Secondary)
 
@@ -43,6 +43,7 @@ The roadmap system is deliberately structured into three layers, each with expli
 **Location**:
 - `docs/roadmap/ROADMAP_MASTER.md` (human-readable execution summary)
 - `docs/roadmap/ROADMAP_INDEX.md` (human-readable item catalog)
+- `docs/roadmap/ROADMAP_STATUS_SYNC.md` (human-visible sync and execution snapshot)
 
 **Authority**: Derived from Layer 1. Must reflect canonical state.  
 **Content**: 
@@ -62,7 +63,7 @@ The roadmap system is deliberately structured into three layers, each with expli
 
 2. **Sync Discipline**: When an item file status or archive status changes:
    - Update Layer 2 files (dependency graph, next_pull.json) within the same session or explicitly track drift
-   - Update Layer 3 files (ROADMAP_MASTER.md, ROADMAP_INDEX.md) to reflect the new status
+   - Update Layer 3 files (ROADMAP_MASTER.md, ROADMAP_INDEX.md, ROADMAP_STATUS_SYNC.md) to reflect the new status
    - Do not allow completed/archived items to appear in "active" sections
 
 3. **No Split Authority**: Never create contradictions where:
@@ -110,11 +111,11 @@ Use `bin/validate_roadmap_consistency.py` to detect these automatically.
 
 When updating roadmap status:
 
-1. Update the item file (Layer 1): Change status and archive_status fields, add archived_at timestamp if archiving
+1. Update the item file (Layer 1): Change status and archive_status fields, and update archive-readiness/metadata fields when present
 2. Update the dependency graph (Layer 2): Move item from eligible_items to archived_items if applicable
 3. Update next_pull.json (Layer 2): Remove item from candidates/nodes, add to archived_items if applicable
 4. Update summary docs (Layer 3): Move item from active sections to archived sections
-5. Run validation: `python bin/validate_roadmap_consistency.py` to confirm no drift
+5. Run validation: `python3 bin/validate_roadmap_consistency.py` to confirm no drift
 6. Commit all changes together with clear message: "Archive RM-XXXX: move to archived state across all layers"
 
 ## Governed Autonomous Pull Eligibility
@@ -135,6 +136,12 @@ It computes candidates directly from Layer 1 item files and enforces:
 - placeholder state conflicts are blocked (`status` plannable while execution + validation are terminal)
 
 Blocked placeholder items must remain ineligible until canonical item status is reconciled.
+
+## Local Autonomy Critical Path Surface
+
+Current critical-path authority for local-first execution posture is tracked in:
+
+- `docs/roadmap/LOCAL_AUTONOMY_CRITICAL_PATH.md`
 
 ## Operational Sovereignty Truth Surface
 

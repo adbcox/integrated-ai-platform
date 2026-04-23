@@ -8,6 +8,7 @@ Derived index of roadmap state. Canonical status is in `docs/roadmap/items/RM-*.
 - Verdict: `YES`
 - Status surface: `governance/local_execution_sovereignty_status.v1.yaml`
 - Evidence artifact: `artifacts/autonomy/local_execution_sovereignty_verdict.json`
+- Critical path authority: `docs/roadmap/LOCAL_AUTONOMY_CRITICAL_PATH.md`
 
 ## Execution-Governance Hardening Index
 

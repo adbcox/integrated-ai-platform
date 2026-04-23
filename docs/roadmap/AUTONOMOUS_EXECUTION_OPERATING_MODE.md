@@ -6,6 +6,7 @@ This repository runs autonomous pull in governed mode:
 - queue surface: `artifacts/planning/next_pull.json`
 - consistency gate: `bin/validate_roadmap_consistency.py`
 - runtime sovereignty gate: `bin/run_local_execution_sovereignty_check.py`
+- critical path authority: `docs/roadmap/LOCAL_AUTONOMY_CRITICAL_PATH.md`
 
 ## Loop contract
 
