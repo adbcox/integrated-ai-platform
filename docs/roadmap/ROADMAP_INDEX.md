@@ -9,6 +9,21 @@ Derived index of roadmap state. Canonical status is in `docs/roadmap/items/RM-*.
 - Status surface: `governance/local_execution_sovereignty_status.v1.yaml`
 - Evidence artifact: `artifacts/autonomy/local_execution_sovereignty_verdict.json`
 
+## Execution-Governance Hardening Index
+
+- Canonical contract: `governance/roadmap_execution_contract.v1.yaml`
+- Schema: `schemas/roadmap_execution_contract.v1.json`
+- Validator: `bin/validate_roadmap_execution_contracts.py`
+- Pull and blocker artifacts:
+  - `artifacts/planning/next_pull.json`
+  - `artifacts/planning/blocker_registry.json`
+
+## Completed Canonical Item
+
+- `RM-UI-005` — Local execution control dashboard, routing layer, Aider orchestration, and OpenHands interface (`completed`, `ready_for_archive`)
+  - canonical file: `docs/roadmap/items/RM-UI-005.yaml`
+  - first-slice artifact: `artifacts/rm_ui005/control_window_state.json`
+
 ## Completed Bundles
 
 **Phase 1 Runtime Foundation** (1 item, completed):
@@ -103,11 +118,11 @@ Phase 1 runtime foundation evidence:
 
 **Phase 0 Closure Bundle** (6 items, all completed):
 - `RM-AUTO-001` — Goal-to-agent baseline (completed)
-- `RM-GOV-001` — Canonical roadmap authority registry (completed)
-- `RM-OPS-005` — Telemetry and audit pipeline (completed)
-- `RM-OPS-004` — Backup and disaster recovery (completed)
+- `RM-GOV-001` — Canonical roadmap authority registry (completed; ready_for_archive)
+- `RM-OPS-005` — Telemetry and audit pipeline (completed; ready_for_archive)
+- `RM-OPS-004` — Backup and disaster recovery (completed; ready_for_archive)
 - `RM-INV-002` — Inventory and capability mapping (completed)
-- `RM-DEV-001` — Xcode and Apple-platform capability (completed)
+- `RM-DEV-001` — Xcode and Apple-platform capability (completed; archived)
 
 Governance foundation evidence:
 - 6 comprehensive governance schemas (`governance/*.v1.yaml`)

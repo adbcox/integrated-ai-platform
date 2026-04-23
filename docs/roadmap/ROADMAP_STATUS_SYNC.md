@@ -16,9 +16,45 @@ This document is the human-visible status sync surface. Item files are authorita
 
 - Selector: `bin/compute_next_pull.py`
 - Queue artifact: `artifacts/planning/next_pull.json`
-- `RM-GOV-007` advanced to `completed` and `ready_for_archive` in this pass
+- `RM-UI-005` canonical item promoted to `completed` with `archive_status=ready_for_archive`
+- `RM-GOV-001` canonical item synchronized to `completed` with `archive_status=ready_for_archive`
+- `RM-OPS-005` and `RM-OPS-004` canonical closeout metadata synchronized with `archive_status=ready_for_archive`
 - Chosen next eligible target: `none` (ready queue empty)
 - Blocked placeholder items (explicitly ineligible): `none`
+- Blocker registry surface: `artifacts/planning/blocker_registry.json`
+
+## RM-UI-005 Canonical Execution State (Latest)
+
+- Item id: `RM-UI-005`
+- Canonical item file: `docs/roadmap/items/RM-UI-005.yaml`
+- Canonical status: `completed`
+- Canonical archive status: `ready_for_archive`
+- First-slice implementation surfaces:
+  - `framework/rm_ui005_control_window.py`
+  - `framework/rm_ui005_openhands.py`
+  - `bin/rm_ui005_control_window.py`
+  - `bin/rm_ui005_emit_state.py`
+  - `artifacts/rm_ui005/control_window_state.json`
+- Scope truth: canonical item-complete evidence is satisfied; item is complete and ready for archive.
+
+## Execution-Governance Hardening (Latest)
+
+- Canonical execution-contract model published: `governance/roadmap_execution_contract.v1.yaml`
+- Contract schema published: `schemas/roadmap_execution_contract.v1.json`
+- Contract validator published: `bin/validate_roadmap_execution_contracts.py`
+- Selector upgraded to enforce execution-contract eligibility and emit blocker truth:
+  - `artifacts/planning/next_pull.json`
+  - `artifacts/planning/blocker_registry.json`
+- Required normalized items upgraded to use `execution_contract`:
+  - `RM-GOV-001`, `RM-OPS-004`, `RM-OPS-005`, `RM-AUTO-001`, `RM-GOV-009`
+
+## Tactical Unlock Human Decision (Pending)
+
+- Request id: `TACTICAL-UNLOCK-REQ-001`
+- Request surface: `governance/tactical_family_unlock_request.v1.json`
+- Decision required: scoped unlock of `tactical_family_extension` for families `mc`, `ort`, `pgs`
+- Still blocked even if approved: `eo`, `ed`, `live_bridge`, and package classes `feature_expansion` / `canonical_phase_advancement`
+- Candidate evidence: `artifacts/substantive/tactical_unlock_candidate_pack.json`, `artifacts/substantive/tactical_unlock_human_gate_packet.json`
 
 ## Phase 0 Closure Bundle (Completed)
 
@@ -39,11 +75,11 @@ Phase 0 closure evidence:
 ## Completed (Phase 0 Closure Bundle)
 
 - `RM-AUTO-001` — Goal-to-agent baseline capability (completed)
-- `RM-GOV-001` — Canonical roadmap authority registry (completed)
-- `RM-OPS-005` — End-to-end telemetry and audit pipeline (completed)
-- `RM-OPS-004` — Backup, restore, and disaster recovery (completed)
+- `RM-GOV-001` — Canonical roadmap authority registry (completed; ready_for_archive)
+- `RM-OPS-005` — End-to-end telemetry and audit pipeline (completed; ready_for_archive)
+- `RM-OPS-004` — Backup, restore, and disaster recovery (completed; ready_for_archive)
 - `RM-INV-002` — Photo-driven inventory and capability mapping (completed)
-- `RM-DEV-001` — Xcode and Apple-platform capability (completed)
+- `RM-DEV-001` — Xcode and Apple-platform capability (completed; now archived)
 
 ## Phase 1 Runtime Foundation (Completed)
 
@@ -177,6 +213,7 @@ Integration evidence:
 - `RM-CORE-005` — archived
 - `RM-GOV-005` — archived
 - `RM-INV-005` — archived
+- `RM-DEV-001` — archived
 
 Archive evidence:
 - `artifacts/governance/rm_bundle_6_archive_validation.json`

@@ -6,6 +6,7 @@ title: "Backup, restore, disaster-recovery, and configuration export verificatio
 category: "OPS"
 type: "capability_foundation"
 status: "completed"
+archive_status: "ready_for_archive"
 priority: "P1"
 
 scoring:
@@ -89,20 +90,24 @@ milestones:
 
 planning:
   planning_packet_ref: null
-  planning_status: "not_started"
-  planning_notes: ""
+  planning_status: "complete"
+  planning_notes: "Backup/restore baseline and DR verification posture are validated and linked to canonical evidence."
 
 execution:
   execution_package_refs:
     - "governance/backup_restore_schema.v1.yaml"
-  execution_status: "proposed"
+    - "artifacts/validation/phase0_closure_validation.json"
+  execution_status: "completed"
   last_execution_commit: null
 
 validation:
   validation_artifact_refs:
     - "governance/backup_restore_schema.v1.yaml"
     - "artifacts/bundle_2_integration_demo/goal_to_execution_flow.json"
-  validation_status: "proposed"
+    - "artifacts/validation/phase0_closure_validation.json"
+    - "artifacts/validation/roadmap_execution_contract_validation.json"
+  validation_status: "passed"
+  item_complete_evidence: true
   definition_of_done_ref: "docs/roadmap/STANDARDS.md"
 
 governance:
@@ -143,6 +148,61 @@ ai_operability:
   promotion_linkage:
     required: false
     manifest_refs: []
+execution_contract:
+  contract_version: "1.0"
+  autonomous_execution_status: "eligible_with_guardrails"
+  next_bounded_slice: >
+    Enforce completion criteria that require backup/restore truth-surface updates
+    and evidence artifacts before operational closeout is considered complete.
+  max_autonomous_scope:
+    max_files_touched: 10
+    max_loc_delta: 500
+    allowed_change_kinds:
+      - "governance_contract"
+      - "validation_artifact"
+      - "roadmap_item_contract"
+  validation_contract:
+    required_validations:
+      - id: "validate_execution_contracts"
+        command: "python3 bin/validate_roadmap_execution_contracts.py"
+        pass_when: "status=PASS"
+      - id: "validate_roadmap_consistency"
+        command: "python3 bin/validate_roadmap_consistency.py"
+        pass_when: "exit_code=0"
+    pass_criteria:
+      - "Execution contract validator passes for required item set."
+      - "Roadmap consistency validation remains green."
+  artifact_contract:
+    required_artifacts:
+      - "governance/backup_restore_schema.v1.yaml"
+      - "artifacts/validation/roadmap_execution_contract_validation.json"
+    evidence_outputs:
+      - "Backup/restore governance schema remains declared in execution package refs."
+      - "Validation artifact proves completion contract fields are populated."
+    machine_readable_outputs:
+      - "artifacts/validation/roadmap_execution_contract_validation.json"
+  completion_contract:
+    substep_complete_when:
+      - "Operational-truth update requirements are explicitly listed."
+    bounded_slice_complete_when:
+      - "Validation contract passes."
+      - "Artifact contract outputs are present."
+    item_complete_when:
+      - "Backup/restore work is not treated complete without required truth updates and evidence."
+    blocker_chain_cleared_when:
+      - "No missing completion-contract requirement remains for operational-state changes."
+    small_patch_is_not_completion: true
+  truth_surface_updates_required:
+    - "docs/roadmap/items/RM-OPS-004.yaml"
+    - "artifacts/planning/next_pull.json"
+    - "artifacts/planning/blocker_registry.json"
+    - "governance/roadmap_dependency_graph.v1.yaml"
+  external_dependency_readiness:
+    required: false
+    readiness_status: "not_applicable"
+    blocks_autonomous_execution: false
+    blocking_dependencies: []
+    notes: "Baseline governance hardening for this item is repo-local."
 
 sync:
   plane:
@@ -165,8 +225,12 @@ sync:
 metadata:
   owner: "system"
   created_at: "2026-04-22"
-  updated_at: "2026-04-22"
+  updated_at: "2026-04-23"
   tags:
     - "backup"
     - "disaster-recovery"
     - "operations"
+archive_readiness:
+  ready: true
+  reason: "backup_restore_baseline_validated"
+  validation_artifact: "governance/backup_restore_schema.v1.yaml"

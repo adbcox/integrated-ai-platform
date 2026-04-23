@@ -10,16 +10,40 @@ Canonical authority remains `docs/roadmap/items/RM-*.yaml`.
 - Machine-readable status: `governance/local_execution_sovereignty_status.v1.yaml`
 - Evidence: `artifacts/autonomy/local_execution_sovereignty_verdict.json`
 
+## Execution-Governance Contract Hardening
+
+Governed autonomous pull now enforces canonical execution contracts at item level.
+
+- Contract definition: `governance/roadmap_execution_contract.v1.yaml`
+- Contract schema: `schemas/roadmap_execution_contract.v1.json`
+- Contract validator: `bin/validate_roadmap_execution_contracts.py`
+- Selector enforcement + blocker truth:
+  - `bin/compute_next_pull.py`
+  - `artifacts/planning/next_pull.json`
+  - `artifacts/planning/blocker_registry.json`
+
+## Completed: RM-UI-005 Local Execution Control Window
+
+- `RM-UI-005` — Local execution control dashboard, deterministic routing layer, Aider
+  workload packetization, and OpenHands execution interface (canonical item-complete evidence satisfied; ready for archive)
+- Canonical item file: `docs/roadmap/items/RM-UI-005.yaml`
+- Implemented first-slice surfaces:
+  - `framework/rm_ui005_control_window.py`
+  - `framework/rm_ui005_openhands.py`
+  - `bin/rm_ui005_control_window.py`
+  - `bin/rm_ui005_emit_state.py`
+  - `artifacts/rm_ui005/control_window_state.json`
+
 ## Completed: Phase 0 Closure Bundle
 
 6-item governance foundations bundle establishing authority, execution control, telemetry/audit, backup/DR, inventory, and Apple-platform capability — completed with comprehensive artifact set and validation proof.
 
 - `RM-AUTO-001` — Goal-to-agent baseline (goal intake schema, task decomposition, bundle packaging, approval workflow) ✓
-- `RM-GOV-001` — Canonical roadmap authority (machine-readable registry and sync surfaces) ✓
-- `RM-OPS-005` — Telemetry and audit pipeline (event schema, trace model, audit evidence, validation proof) ✓
-- `RM-OPS-004` — Backup and disaster recovery (backup model, restore procedures, DR playbooks, rollback rules) ✓
+- `RM-GOV-001` — Canonical roadmap authority (machine-readable registry and sync surfaces) ✓ (ready_for_archive)
+- `RM-OPS-005` — Telemetry and audit pipeline (event schema, trace model, audit evidence, validation proof) ✓ (ready_for_archive)
+- `RM-OPS-004` — Backup and disaster recovery (backup model, restore procedures, DR playbooks, rollback rules) ✓ (ready_for_archive)
 - `RM-INV-002` — Inventory and capability mapping (asset inventory schema, photo metadata linkage, capability classification) ✓
-- `RM-DEV-001` — Xcode and Apple platform (Swift/ObjC support, build system, testing framework, code signing, AppStore deployment) ✓
+- `RM-DEV-001` — Xcode and Apple platform (Swift/ObjC support, build system, testing framework, code signing, AppStore deployment) ✓ (archived)
 
 **Status**: All 6 items completed (P1 priority), Phase 0 governance foundation established  
 **Validation**: All artifacts exist on disk and are valid; validation script passes with 100% success  

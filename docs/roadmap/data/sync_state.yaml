@@ -11,11 +11,56 @@ items:
   last_push_at: null
   last_pull_at: null
   last_sync_result: not_synced
+  status: completed
+  archive_status: ready_for_archive
   writeback_fields_allowed:
   - operational_state
   - assignee
   - cycle
   - module
+  autonomous_execution_status: eligible_with_guardrails
+  external_dependency_readiness_status: not_applicable
+  external_dependency_blocks_autonomous_execution: false
+- id: RM-OPS-005
+  sync_enabled: true
+  sync_mode: repo_to_plane_authoritative
+  plane_workspace: Integrated AI Platform
+  plane_project: Roadmap Ops
+  plane_item_id: null
+  plane_url: null
+  last_push_at: null
+  last_pull_at: null
+  last_sync_result: not_synced
+  status: completed
+  archive_status: ready_for_archive
+  writeback_fields_allowed:
+  - operational_state
+  - assignee
+  - cycle
+  - module
+  autonomous_execution_status: eligible_with_guardrails
+  external_dependency_readiness_status: not_applicable
+  external_dependency_blocks_autonomous_execution: false
+- id: RM-OPS-004
+  sync_enabled: true
+  sync_mode: repo_to_plane_authoritative
+  plane_workspace: Integrated AI Platform
+  plane_project: Roadmap Ops
+  plane_item_id: null
+  plane_url: null
+  last_push_at: null
+  last_pull_at: null
+  last_sync_result: not_synced
+  status: completed
+  archive_status: ready_for_archive
+  writeback_fields_allowed:
+  - operational_state
+  - assignee
+  - cycle
+  - module
+  autonomous_execution_status: eligible_with_guardrails
+  external_dependency_readiness_status: not_applicable
+  external_dependency_blocks_autonomous_execution: false
 - id: RM-GOV-002
   sync_enabled: true
   sync_mode: repo_to_plane_authoritative
@@ -97,6 +142,9 @@ items:
   - assignee
   - cycle
   - module
+  autonomous_execution_status: eligible_with_guardrails
+  external_dependency_readiness_status: not_applicable
+  external_dependency_blocks_autonomous_execution: false
 - id: RM-GOV-007
   sync_enabled: true
   sync_mode: repo_to_plane_authoritative
@@ -114,6 +162,47 @@ items:
   - assignee
   - cycle
   - module
+  autonomous_execution_status: eligible_with_guardrails
+  external_dependency_readiness_status: not_applicable
+  external_dependency_blocks_autonomous_execution: false
+- id: RM-GOV-008
+  sync_enabled: true
+  sync_mode: repo_to_plane_authoritative
+  plane_workspace: Integrated AI Platform
+  plane_project: Roadmap Ops
+  plane_item_id: null
+  plane_url: null
+  last_push_at: null
+  last_pull_at: null
+  last_sync_result: not_synced
+  status: completed
+  writeback_fields_allowed:
+  - operational_state
+  - assignee
+  - cycle
+  - module
+  autonomous_execution_status: eligible_with_guardrails
+  external_dependency_readiness_status: not_applicable
+  external_dependency_blocks_autonomous_execution: false
+- id: RM-GOV-009
+  sync_enabled: true
+  sync_mode: repo_to_plane_authoritative
+  plane_workspace: Integrated AI Platform
+  plane_project: Roadmap Ops
+  plane_item_id: null
+  plane_url: null
+  last_push_at: null
+  last_pull_at: null
+  last_sync_result: not_synced
+  status: completed
+  writeback_fields_allowed:
+  - operational_state
+  - assignee
+  - cycle
+  - module
+  autonomous_execution_status: eligible_with_guardrails
+  external_dependency_readiness_status: not_applicable
+  external_dependency_blocks_autonomous_execution: false
 - id: RM-CORE-001
   sync_enabled: true
   sync_mode: repo_to_plane_authoritative
@@ -208,6 +297,24 @@ items:
   - assignee
   - cycle
   - module
+- id: RM-DEV-001
+  sync_enabled: true
+  sync_mode: repo_to_plane_authoritative
+  plane_workspace: Integrated AI Platform
+  plane_project: Roadmap Ops
+  plane_item_id: null
+  plane_url: null
+  last_push_at: null
+  last_pull_at: null
+  last_sync_result: not_synced
+  status: completed
+  archive_status: archived
+  writeback_fields_allowed:
+  - operational_state
+  - assignee
+  - cycle
+  - module
+  - labels
 - id: RM-DEV-005
   sync_enabled: true
   sync_mode: repo_to_plane_authoritative
@@ -453,3 +560,246 @@ items:
   - assignee
   - cycle
   - module
+- id: RM-PHASE2-CTRL-001
+  sync_enabled: true
+  sync_mode: repo_to_plane_authoritative
+  plane_workspace: Integrated AI Platform
+  plane_project: Roadmap Ops
+  plane_item_id: null
+  plane_url: null
+  last_push_at: null
+  last_pull_at: null
+  last_sync_result: not_synced
+  status: completed
+  writeback_fields_allowed:
+  - operational_state
+  - assignee
+  - cycle
+  - module
+- id: RM-PHASE2-RUNTIME-001
+  sync_enabled: true
+  sync_mode: repo_to_plane_authoritative
+  plane_workspace: Integrated AI Platform
+  plane_project: Roadmap Ops
+  plane_item_id: null
+  plane_url: null
+  last_push_at: null
+  last_pull_at: null
+  last_sync_result: not_synced
+  status: completed
+  writeback_fields_allowed:
+  - operational_state
+  - assignee
+  - cycle
+  - module
+- id: RM-PHASE2-INF-001
+  sync_enabled: true
+  sync_mode: repo_to_plane_authoritative
+  plane_workspace: Integrated AI Platform
+  plane_project: Roadmap Ops
+  plane_item_id: null
+  plane_url: null
+  last_push_at: null
+  last_pull_at: null
+  last_sync_result: not_synced
+  status: completed
+  writeback_fields_allowed:
+  - operational_state
+  - assignee
+  - cycle
+  - module
+- id: RM-PHASE2-EVAL-001
+  sync_enabled: true
+  sync_mode: repo_to_plane_authoritative
+  plane_workspace: Integrated AI Platform
+  plane_project: Roadmap Ops
+  plane_item_id: null
+  plane_url: null
+  last_push_at: null
+  last_pull_at: null
+  last_sync_result: not_synced
+  status: completed
+  writeback_fields_allowed:
+  - operational_state
+  - assignee
+  - cycle
+  - module
+- id: RM-PHASE2-ARTIFACT-001
+  sync_enabled: true
+  sync_mode: repo_to_plane_authoritative
+  plane_workspace: Integrated AI Platform
+  plane_project: Roadmap Ops
+  plane_item_id: null
+  plane_url: null
+  last_push_at: null
+  last_pull_at: null
+  last_sync_result: not_synced
+  status: completed
+  writeback_fields_allowed:
+  - operational_state
+  - assignee
+  - cycle
+  - module
+- id: RM-PHASE2-GOVERNANCE-001
+  sync_enabled: true
+  sync_mode: repo_to_plane_authoritative
+  plane_workspace: Integrated AI Platform
+  plane_project: Roadmap Ops
+  plane_item_id: null
+  plane_url: null
+  last_push_at: null
+  last_pull_at: null
+  last_sync_result: not_synced
+  status: completed
+  writeback_fields_allowed:
+  - operational_state
+  - assignee
+  - cycle
+  - module
+- id: RM-PHASE2-ROADMAP-001
+  sync_enabled: true
+  sync_mode: repo_to_plane_authoritative
+  plane_workspace: Integrated AI Platform
+  plane_project: Roadmap Ops
+  plane_item_id: null
+  plane_url: null
+  last_push_at: null
+  last_pull_at: null
+  last_sync_result: not_synced
+  status: completed
+  writeback_fields_allowed:
+  - operational_state
+  - assignee
+  - cycle
+  - module
+- id: RM-TACT-001
+  sync_enabled: true
+  sync_mode: repo_to_plane_authoritative
+  plane_workspace: Integrated AI Platform
+  plane_project: Roadmap Ops
+  plane_item_id: null
+  plane_url: null
+  last_push_at: null
+  last_pull_at: null
+  last_sync_result: not_synced
+  writeback_fields_allowed:
+  - operational_state
+  - assignee
+  - cycle
+  - module
+  status: completed
+- id: RM-DEV-010
+  sync_enabled: true
+  sync_mode: repo_to_plane_authoritative
+  plane_workspace: Integrated AI Platform
+  plane_project: Roadmap Ops
+  plane_item_id: null
+  plane_url: null
+  last_push_at: null
+  last_pull_at: null
+  last_sync_result: not_synced
+  writeback_fields_allowed:
+  - operational_state
+  - assignee
+  - cycle
+  - module
+  status: completed
+- id: RM-V15-001
+  sync_enabled: true
+  sync_mode: repo_to_plane_authoritative
+  plane_workspace: Integrated AI Platform
+  plane_project: Roadmap Ops
+  plane_item_id: null
+  plane_url: null
+  last_push_at: null
+  last_pull_at: null
+  last_sync_result: not_synced
+  writeback_fields_allowed:
+  - operational_state
+  - assignee
+  - cycle
+  - module
+  status: completed
+- id: RM-TACT-002
+  sync_enabled: true
+  sync_mode: repo_to_plane_authoritative
+  plane_workspace: Integrated AI Platform
+  plane_project: Roadmap Ops
+  plane_item_id: null
+  plane_url: null
+  last_push_at: null
+  last_pull_at: null
+  last_sync_result: not_synced
+  writeback_fields_allowed:
+  - operational_state
+  - assignee
+  - cycle
+  - module
+  status: completed
+- id: RM-DEV-011
+  sync_enabled: true
+  sync_mode: repo_to_plane_authoritative
+  plane_workspace: Integrated AI Platform
+  plane_project: Roadmap Ops
+  plane_item_id: null
+  plane_url: null
+  last_push_at: null
+  last_pull_at: null
+  last_sync_result: not_synced
+  writeback_fields_allowed:
+  - operational_state
+  - assignee
+  - cycle
+  - module
+  status: completed
+- id: RM-V15-002
+  sync_enabled: true
+  sync_mode: repo_to_plane_authoritative
+  plane_workspace: Integrated AI Platform
+  plane_project: Roadmap Ops
+  plane_item_id: null
+  plane_url: null
+  last_push_at: null
+  last_pull_at: null
+  last_sync_result: not_synced
+  writeback_fields_allowed:
+  - operational_state
+  - assignee
+  - cycle
+  - module
+  status: completed
+- id: RM-TACT-003
+  sync_enabled: true
+  sync_mode: repo_to_plane_authoritative
+  plane_workspace: Integrated AI Platform
+  plane_project: Roadmap Ops
+  plane_item_id: null
+  plane_url: null
+  last_push_at: null
+  last_pull_at: null
+  last_sync_result: not_synced
+  writeback_fields_allowed:
+  - operational_state
+  - assignee
+  - cycle
+  - module
+  status: completed
+- id: RM-UI-005
+  sync_enabled: true
+  sync_mode: repo_to_plane_authoritative
+  plane_workspace: Integrated AI Platform
+  plane_project: Roadmap Ops
+  plane_item_id: null
+  plane_url: null
+  last_push_at: null
+  last_pull_at: null
+  last_sync_result: not_synced
+  status: completed
+  writeback_fields_allowed:
+  - operational_state
+  - assignee
+  - cycle
+  - module
+  autonomous_execution_status: eligible_with_guardrails
+  external_dependency_readiness_status: not_applicable
+  external_dependency_blocks_autonomous_execution: false

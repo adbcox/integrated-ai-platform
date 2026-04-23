@@ -6,6 +6,7 @@ title: "Create canonical machine-readable roadmap registry"
 category: "GOV"
 type: "platform_foundation"
 status: "completed"
+archive_status: "ready_for_archive"
 priority: "P1"
 scoring:
   loe: 3
@@ -82,15 +83,24 @@ milestones:
     - "validation-artifact-linkage"
 planning:
   planning_packet_ref: null
-  planning_status: "not_started"
-  planning_notes: ""
+  planning_status: "complete"
+  planning_notes: "Canonical authority surfaces and execution-contract governance are synchronized and validated."
 execution:
-  execution_package_refs: []
-  execution_status: "not_started"
+  execution_package_refs:
+    - "docs/roadmap/data/enums.yaml"
+    - "docs/roadmap/data/roadmap_registry.yaml"
+    - "docs/roadmap/data/sync_state.yaml"
+    - "governance/roadmap_dependency_graph.v1.yaml"
+  execution_status: "completed"
   last_execution_commit: "c0461d4ea445a28dfb16649efcb63fb256e3cd48"
 validation:
-  validation_artifact_refs: []
-  validation_status: "not_started"
+  validation_artifact_refs:
+    - "artifacts/validation/phase0_closure_validation.json"
+    - "artifacts/validation/roadmap_execution_contract_validation.json"
+    - "artifacts/planning/next_pull.json"
+    - "artifacts/planning/blocker_registry.json"
+  validation_status: "passed"
+  item_complete_evidence: true
   definition_of_done_ref: "docs/roadmap/STANDARDS.md"
 governance:
   phase_target: "Phase 0.7"
@@ -133,6 +143,74 @@ ai_operability:
   promotion_linkage:
     required: false
     manifest_refs: []
+execution_contract:
+  contract_version: "1.0"
+  autonomous_execution_status: "eligible_with_guardrails"
+  next_bounded_slice: >
+    Validate and enforce execution_contract coverage across active governance/ops/auto
+    items, then regenerate queue and blocker artifacts.
+  max_autonomous_scope:
+    max_files_touched: 12
+    max_loc_delta: 700
+    allowed_change_kinds:
+      - "governance_schema"
+      - "roadmap_item_contract"
+      - "selector_logic"
+      - "documentation_sync"
+  validation_contract:
+    required_validations:
+      - id: "compute_next_pull"
+        command: "python3 bin/compute_next_pull.py"
+        pass_when: "exit_code=0"
+      - id: "validate_execution_contracts"
+        command: "python3 bin/validate_roadmap_execution_contracts.py"
+        pass_when: "status=PASS"
+      - id: "validate_roadmap_consistency"
+        command: "python3 bin/validate_roadmap_consistency.py"
+        pass_when: "exit_code=0"
+    pass_criteria:
+      - "Queue and blocker artifacts are regenerated."
+      - "Execution contract validation reports PASS."
+  artifact_contract:
+    required_artifacts:
+      - "artifacts/planning/next_pull.json"
+      - "artifacts/planning/blocker_registry.json"
+      - "artifacts/validation/roadmap_execution_contract_validation.json"
+    evidence_outputs:
+      - "Machine-readable queue and blocker outputs reflect current item contracts."
+      - "Validation artifact indicates execution-contract schema compliance."
+    machine_readable_outputs:
+      - "artifacts/planning/next_pull.json"
+      - "artifacts/planning/blocker_registry.json"
+      - "artifacts/validation/roadmap_execution_contract_validation.json"
+  completion_contract:
+    substep_complete_when:
+      - "Canonical execution-contract schema and validator exist."
+      - "Required normalized items contain execution_contract blocks."
+    bounded_slice_complete_when:
+      - "All validation_contract checks pass."
+      - "artifact_contract required outputs are emitted."
+    item_complete_when:
+      - "Execution governance model is canonical in template + standards + item files."
+      - "Selector and blocker surfaces enforce contract fields for autonomous pull."
+    blocker_chain_cleared_when:
+      - "No directly adjacent execution-governance contract gap remains in required items."
+    small_patch_is_not_completion: true
+  truth_surface_updates_required:
+    - "docs/roadmap/items/RM-GOV-001.yaml"
+    - "docs/roadmap/TEMPLATES/ROADMAP_ITEM_TEMPLATE.md"
+    - "docs/roadmap/STANDARDS.md"
+    - "docs/roadmap/TARGET_SELECTION_POLICY.md"
+    - "docs/roadmap/AUTONOMOUS_EXECUTION_OPERATING_MODE.md"
+    - "artifacts/planning/next_pull.json"
+    - "artifacts/planning/blocker_registry.json"
+    - "governance/roadmap_dependency_graph.v1.yaml"
+  external_dependency_readiness:
+    required: false
+    readiness_status: "not_applicable"
+    blocks_autonomous_execution: false
+    blocking_dependencies: []
+    notes: "Governance contract hardening is repo-local."
 sync:
   plane:
     sync_enabled: true
@@ -153,8 +231,12 @@ sync:
 metadata:
   owner: "adrian"
   created_at: "2026-04-20"
-  updated_at: "2026-04-20"
+  updated_at: "2026-04-23"
   tags:
     - "canonical"
     - "roadmap"
     - "ai-readable"
+archive_readiness:
+  ready: true
+  reason: "canonical_authority_and_contract_validation_passed"
+  validation_artifact: "artifacts/validation/roadmap_execution_contract_validation.json"

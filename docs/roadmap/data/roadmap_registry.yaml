@@ -7,7 +7,8 @@ items:
   path: docs/roadmap/items/RM-GOV-001.yaml
   title: Create canonical machine-readable roadmap registry
   category: GOV
-  status: proposed
+  status: completed
+  archive_status: ready_for_archive
   priority: P1
   package_group: PKG-GOV-AUTHORITY
   affected_systems:
@@ -19,6 +20,47 @@ items:
   - docs/architecture/cmdb-lite/**
   plane_sync_enabled: true
   plane_item_id: null
+  autonomous_execution_status: eligible_with_guardrails
+  external_dependency_blocks_autonomous_execution: false
+  external_dependency_readiness_status: not_applicable
+- id: RM-OPS-005
+  path: docs/roadmap/items/RM-OPS-005.yaml
+  title: End-to-end telemetry, tracing, and audit evidence pipeline
+  category: OPS
+  status: completed
+  archive_status: ready_for_archive
+  priority: P1
+  package_group: PKG-INTEGRATION-BUNDLE-2
+  affected_systems:
+  - observability
+  - audit
+  - compliance
+  expected_file_families:
+  - governance/telemetry_event_schema.v1.yaml
+  plane_sync_enabled: true
+  plane_item_id: null
+  autonomous_execution_status: eligible_with_guardrails
+  external_dependency_blocks_autonomous_execution: false
+  external_dependency_readiness_status: not_applicable
+- id: RM-OPS-004
+  path: docs/roadmap/items/RM-OPS-004.yaml
+  title: Backup, restore, disaster-recovery, and configuration export verification baseline
+  category: OPS
+  status: completed
+  archive_status: ready_for_archive
+  priority: P1
+  package_group: PKG-INTEGRATION-BUNDLE-2
+  affected_systems:
+  - operations
+  - disaster_recovery
+  - configuration_management
+  expected_file_families:
+  - governance/backup_restore_schema.v1.yaml
+  plane_sync_enabled: true
+  plane_item_id: null
+  autonomous_execution_status: eligible_with_guardrails
+  external_dependency_blocks_autonomous_execution: false
+  external_dependency_readiness_status: not_applicable
 - id: RM-GOV-002
   path: docs/roadmap/items/RM-GOV-002.yaml
   title: Reconcile source-of-truth surfaces
@@ -105,6 +147,9 @@ items:
   - docs/execution/**
   plane_sync_enabled: true
   plane_item_id: null
+  autonomous_execution_status: eligible_with_guardrails
+  external_dependency_blocks_autonomous_execution: false
+  external_dependency_readiness_status: not_applicable
 - id: RM-GOV-007
   path: docs/roadmap/items/RM-GOV-007.yaml
   title: Lock autonomy scorecard
@@ -123,6 +168,49 @@ items:
   - docs/execution/**
   plane_sync_enabled: true
   plane_item_id: null
+  autonomous_execution_status: eligible_with_guardrails
+  external_dependency_blocks_autonomous_execution: false
+  external_dependency_readiness_status: not_applicable
+- id: RM-GOV-008
+  path: docs/roadmap/items/RM-GOV-008.yaml
+  title: Phase 7 closeout ratification and package-class reconciliation
+  category: GOV
+  status: completed
+  priority: P1
+  package_group: PKG-GOV-POST-PHASE7
+  affected_systems:
+  - governance
+  - roadmap_ops
+  expected_file_families:
+  - governance/**
+  - artifacts/governance/**
+  - bin/**
+  - docs/roadmap/**
+  plane_sync_enabled: true
+  plane_item_id: null
+  autonomous_execution_status: eligible_with_guardrails
+  external_dependency_blocks_autonomous_execution: false
+  external_dependency_readiness_status: not_applicable
+- id: RM-GOV-009
+  path: docs/roadmap/items/RM-GOV-009.yaml
+  title: Autonomous canonical item intake activation
+  category: GOV
+  status: completed
+  priority: P1
+  package_group: PKG-GOV-POST-PHASE7
+  affected_systems:
+  - governance
+  - roadmap_ops
+  expected_file_families:
+  - governance/**
+  - artifacts/governance/**
+  - bin/**
+  - docs/roadmap/**
+  plane_sync_enabled: true
+  plane_item_id: null
+  autonomous_execution_status: eligible_with_guardrails
+  external_dependency_blocks_autonomous_execution: false
+  external_dependency_readiness_status: not_applicable
 - id: RM-CORE-001
   path: docs/roadmap/items/RM-CORE-001.yaml
   title: Introduce internal inference gateway
@@ -225,6 +313,22 @@ items:
   expected_file_families:
   - artifacts/**
   - docs/execution/**
+  plane_sync_enabled: true
+  plane_item_id: null
+- id: RM-DEV-001
+  path: docs/roadmap/items/RM-DEV-001.yaml
+  title: Add Xcode and Apple-platform coding capability to developer assistant
+  category: DEV
+  status: completed
+  archive_status: archived
+  priority: P1
+  package_group: PKG-INTEGRATION-BUNDLE-2
+  affected_systems:
+  - developer_assistant
+  - apple_platforms
+  - multi_platform_development
+  expected_file_families:
+  - governance/apple_xcode_workflow.v1.yaml
   plane_sync_enabled: true
   plane_item_id: null
 - id: RM-DEV-005
@@ -471,3 +575,264 @@ items:
   - governance/hardware_design_schema.v1.yaml
   plane_sync_enabled: true
   plane_item_id: null
+- id: RM-PHASE2-CTRL-001
+  path: docs/roadmap/items/RM-PHASE2-CTRL-001.yaml
+  title: Control Plane Formalization
+  category: PHASE2
+  status: completed
+  priority: P1
+  package_group: PKG-PHASE2-SUBSTRATE
+  affected_systems:
+  - control_plane
+  - agent_runtime
+  - evaluation_pipeline
+  - roadmap_ops
+  expected_file_families:
+  - framework/**
+  - bin/**
+  - governance/**
+  plane_sync_enabled: true
+  plane_item_id: null
+- id: RM-PHASE2-RUNTIME-001
+  path: docs/roadmap/items/RM-PHASE2-RUNTIME-001.yaml
+  title: Agent Runtime Substrate
+  category: PHASE2
+  status: completed
+  priority: P1
+  package_group: PKG-PHASE2-SUBSTRATE
+  affected_systems:
+  - agent_runtime
+  - control_plane
+  - inference_gateway
+  - artifact_persistence
+  expected_file_families:
+  - framework/**
+  - bin/**
+  - governance/**
+  plane_sync_enabled: true
+  plane_item_id: null
+- id: RM-PHASE2-INF-001
+  path: docs/roadmap/items/RM-PHASE2-INF-001.yaml
+  title: Inference Gateway Integration
+  category: PHASE2
+  status: completed
+  priority: P1
+  package_group: PKG-PHASE2-SUBSTRATE
+  affected_systems:
+  - inference_gateway
+  - agent_runtime
+  - model_policy_engine
+  expected_file_families:
+  - framework/**
+  - bin/**
+  - governance/**
+  plane_sync_enabled: true
+  plane_item_id: null
+- id: RM-PHASE2-EVAL-001
+  path: docs/roadmap/items/RM-PHASE2-EVAL-001.yaml
+  title: Execution Evaluation Pipeline
+  category: PHASE2
+  status: completed
+  priority: P1
+  package_group: PKG-PHASE2-SUBSTRATE
+  affected_systems:
+  - evaluation_pipeline
+  - artifact_persistence
+  - governance
+  expected_file_families:
+  - framework/**
+  - bin/**
+  - governance/**
+  plane_sync_enabled: true
+  plane_item_id: null
+- id: RM-PHASE2-ARTIFACT-001
+  path: docs/roadmap/items/RM-PHASE2-ARTIFACT-001.yaml
+  title: Artifact Persistence Layer
+  category: PHASE2
+  status: completed
+  priority: P1
+  package_group: PKG-PHASE2-SUBSTRATE
+  affected_systems:
+  - artifact_persistence
+  - agent_runtime
+  - evaluation_pipeline
+  - governance
+  expected_file_families:
+  - framework/**
+  - bin/**
+  - artifacts/**
+  - governance/**
+  plane_sync_enabled: true
+  plane_item_id: null
+- id: RM-PHASE2-GOVERNANCE-001
+  path: docs/roadmap/items/RM-PHASE2-GOVERNANCE-001.yaml
+  title: Governance Dispatch & Authority Integration
+  category: PHASE2
+  status: completed
+  priority: P1
+  package_group: PKG-PHASE2-SUBSTRATE
+  affected_systems:
+  - governance
+  - control_plane
+  - roadmap_ops
+  - artifact_persistence
+  expected_file_families:
+  - framework/**
+  - bin/**
+  - governance/**
+  plane_sync_enabled: true
+  plane_item_id: null
+- id: RM-PHASE2-ROADMAP-001
+  path: docs/roadmap/items/RM-PHASE2-ROADMAP-001.yaml
+  title: Roadmap Operations & Queue Management
+  category: PHASE2
+  status: completed
+  priority: P1
+  package_group: PKG-PHASE2-SUBSTRATE
+  affected_systems:
+  - roadmap_ops
+  - control_plane
+  - governance
+  - artifact_persistence
+  expected_file_families:
+  - framework/**
+  - bin/**
+  - governance/**
+  - docs/roadmap/**
+  plane_sync_enabled: true
+  plane_item_id: null
+- id: RM-TACT-001
+  path: docs/roadmap/items/RM-TACT-001.yaml
+  title: Tactical family expansion readiness tracks
+  category: TACT
+  status: completed
+  priority: P1
+  package_group: PKG-SUBSTANTIVE-POST-PHASE7
+  affected_systems:
+  - governance
+  - framework
+  - roadmap_ops
+  expected_file_families:
+  - bin/**
+  - artifacts/substantive/**
+  - docs/roadmap/items/**
+  plane_sync_enabled: true
+  plane_item_id: null
+- id: RM-DEV-010
+  path: docs/roadmap/items/RM-DEV-010.yaml
+  title: Bounded retry autonomy depth for local execution
+  category: DEV
+  status: completed
+  priority: P1
+  package_group: PKG-SUBSTANTIVE-POST-PHASE7
+  affected_systems:
+  - runtime
+  - validation_pipeline
+  expected_file_families:
+  - runtime/**
+  - bin/**
+  - artifacts/validation/**
+  plane_sync_enabled: true
+  plane_item_id: null
+- id: RM-V15-001
+  path: docs/roadmap/items/RM-V15-001.yaml
+  title: Version-15 subsystem progression baseline
+  category: V15
+  status: completed
+  priority: P1
+  package_group: PKG-SUBSTANTIVE-POST-PHASE7
+  affected_systems:
+  - governance
+  - validation_pipeline
+  expected_file_families:
+  - bin/**
+  - artifacts/validation/**
+  plane_sync_enabled: true
+  plane_item_id: null
+- id: RM-TACT-002
+  path: docs/roadmap/items/RM-TACT-002.yaml
+  title: Tactical family unlock candidate pack
+  category: TACT
+  status: completed
+  priority: P1
+  package_group: PKG-SUBSTANTIVE-POST-PHASE7
+  affected_systems:
+  - governance
+  - roadmap_ops
+  expected_file_families:
+  - bin/**
+  - artifacts/substantive/**
+  - docs/roadmap/items/**
+  plane_sync_enabled: true
+  plane_item_id: null
+- id: RM-DEV-011
+  path: docs/roadmap/items/RM-DEV-011.yaml
+  title: Retry-budget exhaustion classification
+  category: DEV
+  status: completed
+  priority: P1
+  package_group: PKG-SUBSTANTIVE-POST-PHASE7
+  affected_systems:
+  - runtime
+  - validation_pipeline
+  expected_file_families:
+  - runtime/**
+  - bin/**
+  - artifacts/validation/**
+  plane_sync_enabled: true
+  plane_item_id: null
+- id: RM-V15-002
+  path: docs/roadmap/items/RM-V15-002.yaml
+  title: Version-15 progression task seed
+  category: V15
+  status: completed
+  priority: P1
+  package_group: PKG-SUBSTANTIVE-POST-PHASE7
+  affected_systems:
+  - governance
+  - validation_pipeline
+  expected_file_families:
+  - bin/**
+  - artifacts/validation/**
+  plane_sync_enabled: true
+  plane_item_id: null
+- id: RM-TACT-003
+  path: docs/roadmap/items/RM-TACT-003.yaml
+  title: Tactical unlock human-gate packet
+  category: TACT
+  status: completed
+  priority: P1
+  package_group: PKG-SUBSTANTIVE-POST-PHASE7
+  affected_systems:
+  - governance
+  - roadmap_ops
+  expected_file_families:
+  - bin/**
+  - artifacts/substantive/**
+  - docs/roadmap/items/**
+  plane_sync_enabled: true
+  plane_item_id: null
+- id: RM-UI-005
+  path: docs/roadmap/items/RM-UI-005.yaml
+  title: Local execution control dashboard, routing layer, Aider orchestration, and
+    OpenHands interface
+  category: UI
+  status: completed
+  priority: P1
+  package_group: PKG-UI-EXEC-CONTROL
+  affected_systems:
+  - control_window
+  - roadmap_ops
+  - developer_assistant
+  - agent_runtime
+  expected_file_families:
+  - framework/rm_ui005_*.py
+  - bin/rm_ui005_*.py
+  - tests/test_rm_ui005_*.py
+  - artifacts/rm_ui005/**
+  - docs/roadmap/**
+  plane_sync_enabled: true
+  plane_item_id: null
+  autonomous_execution_status: eligible_with_guardrails
+  external_dependency_blocks_autonomous_execution: false
+  external_dependency_readiness_status: not_applicable
