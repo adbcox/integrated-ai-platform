@@ -61,6 +61,7 @@ This item should be treated as the next implementation target because it directl
 - optional immediate usability uplift through OpenHands CLI / Web GUI / GUI server paths
 - future macOS companion / overlay interaction for contextual operator help
 - explicit local model runtime selection and framework-to-Aider handoff discipline
+- explicit local AI stack role visibility so assistants do not re-derive runtime/UI/RAG/workflow choices repeatedly
 
 It also leverages work that is already present:
 
@@ -71,6 +72,7 @@ It also leverages work that is already present:
 - telemetry/evidence direction from RM-OPS-005
 - completion and operational-truth expectations from RM-OPS-004
 - local run/evidence bundle outputs already present in the repo
+- the local AI stack role matrix and external integration catalog
 
 This means it has unusually high leverage relative to effort. It does not require waiting for broad branch expansion. It helps the local system perform better immediately.
 
@@ -91,6 +93,7 @@ The following concepts are now merged into RM-UI-005:
 - a future macOS companion/overlay mode for contextual operator assistance
 - explicit local model tier runbook and startup policy
 - framework-first complex-task handling with Aider as bounded tactical executor
+- explicit local AI stack role awareness across runtime, UI, RAG, workflow, and dev-agent surfaces
 
 ## OpenHands merge rule
 
@@ -125,6 +128,18 @@ Do not let OpenHands create a parallel roadmap or parallel completion standard.
   - objective achieved
 - show next best governed target from the roadmap queue
 - show why the next target is eligible or blocked
+
+### Local AI stack role visibility now in scope
+The control surface must make the preferred local AI stack legible.
+
+At minimum it should show:
+- active local runtime (`Ollama`, or an explicitly justified alternative such as `LM Studio` or `LocalAI`)
+- active coding executor (`Aider` by default, `OpenHands` only when selected as bounded dev surface)
+- active chat UI / operator surface (`Open WebUI` when relevant)
+- active document/RAG workspace (`AnythingLLM` by default, `RAGFlow` only when specifically justified)
+- active workflow/app layer (`Dify` only when selected)
+- warnings when overlapping tools are being treated as simultaneous primaries for the same role
+- references back to `docs/architecture/LOCAL_AI_STACK_ROLE_MATRIX.md` when the operator needs the authoritative stack-role decision
 
 ### Task-detection and routing requirements
 - infer the likely task type from operator input and repo state
@@ -299,6 +314,7 @@ Do not escalate because a task merely looks hard.
 - display blocked placeholders as ineligible work
 - surface missing docs / missing validation / missing artifact requirements as blockers
 - preserve the architecture rule that local autonomy may only operate through the canonical governance and roadmap system
+- preserve the local AI stack role matrix so overlapping tools are not adopted ad hoc
 
 ### Validation and completion requirements
 - show required validations for the current slice
@@ -490,6 +506,19 @@ Required system behavior:
 - validation/control-window truth checks closure third
 - external escalation occurs only after the local path proves insufficient
 
+### Example 8 — local AI stack role preservation
+Current desired target mode:
+- the operator wants the system to use the right local AI components without rethinking the whole stack every time
+
+Required system behavior:
+- default runtime is `Ollama`
+- default coding executor is `Aider`
+- `OpenHands` is visible as bounded dev surface, not equal co-primary by default
+- `Open WebUI` is treated as the general local chat UI when that role is needed
+- `AnythingLLM` is treated as the practical default document/RAG workspace
+- `Dify`, `RAGFlow`, `LM Studio`, and `LocalAI` are surfaced only when the use case specifically justifies them
+- overlapping tools in the same role trigger a warning or explicit justification requirement
+
 ## Affected systems
 
 - UI/control surfaces
@@ -503,6 +532,7 @@ Required system behavior:
 - OpenHands local execution interface layer
 - future macOS companion/overlay interface layer
 - local model runtime/runbook surfaces
+- local AI stack role matrix surfaces
 
 ## Expected file families
 
@@ -517,6 +547,7 @@ Required system behavior:
 - future local deployment/config files for OpenHands integration
 - future companion/overlay interaction files
 - future local model/runbook configs and health-check surfaces
+- future local AI stack selection and warning surfaces
 
 ## Dependencies
 
@@ -539,6 +570,7 @@ Required system behavior:
 - letting OpenHands become a parallel execution authority instead of a governed execution surface
 - letting companion/overlay behavior bypass the same governance model as the main dashboard
 - letting local model selection become ad hoc rather than runbook-driven
+- letting local AI stack choices drift into overlapping defaults without role clarity
 
 ### Known issues / blockers
 - exact first slice must remain bounded so this can land in one aggressive pass
@@ -547,6 +579,7 @@ Required system behavior:
 - must keep OpenHands integrated under the same local-first and completion-contract rules as other execution surfaces
 - companion/overlay mode should be added only as a governed extension, not as a freeform assistant surface
 - framework-first handoff must remain bounded so it does not become a vague planning loop
+- local AI stack role choices must stay synchronized with `LOCAL_AI_STACK_ROLE_MATRIX.md`
 
 ## CMDB / asset linkage
 
@@ -565,7 +598,7 @@ Required system behavior:
 - **Workspace posture:** support mounting the working repo into OpenHands for bounded tasks
 - **Configuration capture:** record model/backend configuration, port bindings, sandbox mode, and repo mount behavior
 - **Known caveats / integration constraints:** OpenHands must not become a parallel planning authority or bypass the canonical completion and blocker model
-- **Adoption note:** `adopt-now`
+- **Adoption note:** `adopt-selective`
 
 ### Aider
 - **Official docs home:** https://aider.chat/
@@ -581,6 +614,14 @@ Required system behavior:
 - **Known caveats / integration constraints:** model context size and startup behavior must be explicit, not assumed
 - **Adoption note:** `adopt-now`
 
+### Open WebUI
+- **Primary role in this item:** general local conversational UI when a chat/operator surface is needed
+- **Adoption note:** `adopt-now`
+
+### AnythingLLM
+- **Primary role in this item:** practical local document/RAG workspace
+- **Adoption note:** `adopt-now`
+
 ## Grouping candidates
 
 - `RM-UI-001`
@@ -593,8 +634,8 @@ Required system behavior:
 
 ## Grouped execution notes
 
-- Shared-touch rationale: this item intersects directly with the active strategic cluster and the active governance cluster. It consumes status truth, blocker truth, validation truth, autonomous targeting truth, and execution-run truth, and presents them through a single operator surface.
-- Repeated-touch reduction estimate: very high if done now, because it prevents repeated terminal-only diagnosis and repeated rework caused by hidden completion/validation/context failures.
+- Shared-touch rationale: this item intersects directly with the active strategic cluster and the active governance cluster. It consumes status truth, blocker truth, validation truth, autonomous targeting truth, execution-run truth, and the preferred local AI stack posture, and presents them through a single operator surface.
+- Repeated-touch reduction estimate: very high if done now, because it prevents repeated terminal-only diagnosis and repeated rework caused by hidden completion/validation/context failures and repeated stack-choice re-derivation.
 - Grouping recommendation: `Bundle now` with adjacent execution-governance hardening surfaces, but keep the implementation slice bounded to the execution control and routing system itself.
 
 ## Recommended first milestone
@@ -610,13 +651,14 @@ Deliver a minimum viable local execution control and routing system that:
 7. uses Aider as the default editing engine for bounded code work
 8. supports an immediately usable local OpenHands execution surface for operator monitoring and bounded execution handoff
 9. records and surfaces the canonical local model runtime/startup policy used for each lane
+10. records and surfaces the local AI stack role matrix so assistants know what is primary, selective, deferred, or rejected
 
 ## Status transition notes
 
 - Expected next status: `Planned`
-- Transition condition: implementation boundary, first slice, required repo truth sources, initial Aider/OpenHands integration posture, and local model runbook policy are explicitly accepted
-- Validation / closeout condition: a working local execution control and routing slice exists, reads canonical repo truth, supports Aider task-specific routing, provides an OpenHands local execution path, uses an explicit local model tier policy, and materially reduces false-complete / missed-context / hidden-blocker failures in real local runs
+- Transition condition: implementation boundary, first slice, required repo truth sources, initial Aider/OpenHands integration posture, local model runbook policy, and local AI stack role posture are explicitly accepted
+- Validation / closeout condition: a working local execution control and routing slice exists, reads canonical repo truth, supports Aider task-specific routing, provides an OpenHands local execution path, uses an explicit local model tier policy, and materially reduces false-complete / missed-context / hidden-blocker failures and unnecessary stack re-derivation in real local runs
 
 ## Notes
 
-This item is intentionally the most important next implementation target. It is not merely a dashboard improvement. It is the missing operator, routing, runtime-selection, and execution surface that turns the current local coding workflow from terminal-heavy and ambiguity-prone into a governed local execution system.
+This item is intentionally the most important next implementation target. It is not merely a dashboard improvement. It is the missing operator, routing, runtime-selection, stack-role-preservation, and execution surface that turns the current local coding workflow from terminal-heavy and ambiguity-prone into a governed local execution system.
