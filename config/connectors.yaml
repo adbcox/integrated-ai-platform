@@ -1,0 +1,21 @@
+# Connector Configuration
+# Defines external service connections (APIs, databases, systems)
+
+connectors:
+  arr_stack:
+    enabled: false
+    module: "connectors.arr_stack"
+    class: "ArrStackConnector"
+    description: "Sonarr/Radarr/Prowlarr integration on QNAP"
+    endpoints:
+      sonarr:
+        base_url: "http://192.168.10.114:8989"
+        api_key_env: "SONARR_API_KEY"
+      radarr:
+        base_url: "http://192.168.10.114:7878"
+        api_key_env: "RADARR_API_KEY"
+      prowlarr:
+        base_url: "http://192.168.10.114:9696"
+        api_key_env: "PROWLARR_API_KEY"
+    timeout_seconds: 30
+    retry_policy: "exponential_backoff"

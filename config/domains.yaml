@@ -1,0 +1,22 @@
+# Domain Configuration
+# Defines task types that can be submitted to the job framework
+
+domains:
+  coding:
+    enabled: true
+    module: "domains.coding"
+    class: "CodingDomain"
+    description: "Code modification and automation via Aider"
+    job_class: "CODING_TASK"
+    parameters:
+      model: "qwen2.5-coder:14b"
+      executor: "aider"
+
+  media:
+    enabled: false
+    module: "domains.media"
+    class: "MediaDomain"
+    description: "Media acquisition and metadata management"
+    job_class: "MEDIA_TASK"
+    parameters:
+      default_connector: "arr_stack"

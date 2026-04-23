@@ -1,0 +1,31 @@
+# System Truth: Global configuration and runtime state
+# This file defines which domains and connectors are enabled,
+# system parameters, and external service endpoints.
+
+# Framework integration
+framework:
+  job_scheduler:
+    max_workers: 4
+    job_timeout_seconds: 3600
+
+# Enabled domains - which task types can submit jobs
+domains:
+  coding:
+    enabled: true
+    description: "Aider-based code automation"
+
+  media:
+    enabled: false
+    description: "Media acquisition and management (future)"
+
+# Enabled connectors - which external services are available
+connectors:
+  arr_stack:
+    enabled: false
+    description: "Sonarr/Radarr/Prowlarr integration"
+    base_url: "http://192.168.10.114"
+
+# Job routing and permissions
+jobs:
+  default_escalation_policy: "deterministic_fallback"
+  validation_required: true
