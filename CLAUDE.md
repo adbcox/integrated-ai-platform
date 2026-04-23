@@ -2,6 +2,45 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Quick Start
+
+### First-time setup
+
+```sh
+# 1. Install Python dependencies
+pip install -r requirements.txt
+
+# 2. Verify the environment
+make check
+
+# 3. Read these documents IN ORDER:
+# - AGENTS.md (session discipline and governance rules)
+# - docs/progress-contract.md (what constitutes a complete session)
+# - docs/codex51-replacement-gate.md (primary milestone and success criteria)
+```
+
+### For Aider (local-first execution)
+
+**Prerequisites**: Ollama running locally
+```sh
+# Install Ollama: https://ollama.ai
+# Pull default model:
+ollama pull qwen2.5-coder:14b
+
+# Verify connection (optional):
+make aider-smart-status
+# Or check manually:
+curl http://127.0.0.1:11434/api/tags
+```
+
+### First real task
+
+Run a simple offline scenario to understand the system:
+```sh
+make test-offline 2>&1 | head -50
+make micro-lane-stage6
+```
+
 ## Repository Overview
 
 This is an integrated AI platform advancing toward the **Codex 5.1 replacement milestone**. It combines local-first execution, progressive retrieval-augmented generation (RAG), and orchestrated planning to enable bounded complex AI coding tasks.
@@ -229,6 +268,27 @@ policies/            # Local model routing rules
 regressions/         # Regression test packs for micro lane
 ```
 
+## Debugging & Artifacts
+
+During development, inspect these artifacts to understand system behavior:
+
+```sh
+# Recent retrieval decisions (stage_rag4)
+cat artifacts/stage_rag4/usage.jsonl | tail -5 | python3 -m json.tool
+
+# View recent manager plans
+ls -ltr artifacts/stage6_manager/ | tail -5
+
+# Check what stage_rag4 is selecting for a query
+python3 bin/stage_rag4_plan_probe.py --top 6 --max-targets 4 improve ExecutorFactory
+
+# Inspect escal escalation/failure patterns
+tail -20 artifacts/escalations/index.jsonl
+
+# Monitor aider performance trends
+make aider-bench-report
+```
+
 ## Useful Commands for Investigation
 
 ```sh
@@ -275,3 +335,14 @@ Output includes:
 6. **Final Report**: Document blockers_resolved, real_paths_rerun, final_remaining_blocker_or_stop_reason
 
 See `/tmp/final_session_report.md` for an example of the expected 12-section format.
+
+## Documentation Guide
+
+Key documents to consult at different points:
+
+- **AGENTS.md** — Read first. Session governance rules, capability-first orientation, real-path requirements
+- **docs/progress-contract.md** — Session completeness checklist
+- **docs/codex51-replacement-gate.md** — Success criteria for the primary milestone
+- **docs/version15-master-roadmap.md** — Long-term roadmap and subsystem priorities
+- **docs/promotion-engine.md** — How code moves through qualification stages
+- **docs/local-routing-rules.md** — Model routing configuration and override patterns
