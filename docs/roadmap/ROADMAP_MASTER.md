@@ -10,11 +10,16 @@ Canonical item truth lives in:
 
 The roadmap is downstream of the master architecture.
 
-Read `docs/architecture/MASTER_SYSTEM_ARCHITECTURE.md` first when you need to understand:
+Read these first when you need to understand:
 - what the system is trying to become
+- what the broader platform mission is
 - what the shared runtime architecture is
 - what the non-negotiable platform rules are
 - why the roadmap is sequenced the way it is
+
+Start with:
+- `docs/architecture/SYSTEM_MISSION_AND_SCOPE.md`
+- `docs/architecture/MASTER_SYSTEM_ARCHITECTURE.md`
 
 Then use the roadmap files to understand planning, status, execution sequence, and grouped delivery.
 
@@ -22,20 +27,21 @@ Then use the roadmap files to understand planning, status, execution sequence, a
 
 Read planning and roadmap files in this order:
 
-1. `docs/architecture/MASTER_SYSTEM_ARCHITECTURE.md`
-2. `docs/roadmap/ROADMAP_AUTHORITY.md`
-3. `docs/governance/CURRENT_OPERATING_CONTEXT.md`
-4. `docs/governance/DOCUMENT_STATE_INDEX.md`
-5. canonical item YAML under `docs/roadmap/items/`
-6. derived planning/dependency/data surfaces
-7. `docs/roadmap/ROADMAP_STATUS_SYNC.md`
-8. `docs/roadmap/ROADMAP_MASTER.md`
-9. `docs/roadmap/ROADMAP_INDEX.md`
-10. `docs/roadmap/POST_CONVERGENCE_OPERATING_MODE.md`
-11. `docs/execution_modes/EXECUTION_ROUTER.md`
-12. relevant tool-specific mode doc
-13. `docs/governance/PROMPT_PACKET_STANDARD.md`
-14. planning/supporting docs as needed
+1. `docs/architecture/SYSTEM_MISSION_AND_SCOPE.md`
+2. `docs/architecture/MASTER_SYSTEM_ARCHITECTURE.md`
+3. `docs/roadmap/ROADMAP_AUTHORITY.md`
+4. `docs/governance/CURRENT_OPERATING_CONTEXT.md`
+5. `docs/governance/DOCUMENT_STATE_INDEX.md`
+6. canonical item YAML under `docs/roadmap/items/`
+7. derived planning/dependency/data surfaces
+8. `docs/roadmap/ROADMAP_STATUS_SYNC.md`
+9. `docs/roadmap/ROADMAP_MASTER.md`
+10. `docs/roadmap/ROADMAP_INDEX.md`
+11. `docs/roadmap/POST_CONVERGENCE_OPERATING_MODE.md`
+12. `docs/execution_modes/EXECUTION_ROUTER.md`
+13. relevant tool-specific mode doc
+14. `docs/governance/PROMPT_PACKET_STANDARD.md`
+15. planning/supporting docs as needed
 
 ## What this file does
 
@@ -46,6 +52,17 @@ This file explains:
 - what kinds of work should be emphasized next
 
 This file does **not** control item completion or archive truth.
+
+## System mission reminder
+
+The platform’s mission is broader than coding autonomy.
+
+It should be understood as:
+- a governed AI operating system and control plane
+- for autonomous and semi-autonomous business, personal, operational, and development workflows
+- with local coding autonomy as a **foundational enabling capability**, not the sole purpose of the system
+
+The roadmap must therefore be read as the execution plan for a broader autonomous-function platform, not as only a coding-assistant backlog.
 
 ## Current operating posture
 
@@ -105,6 +122,7 @@ That means future work should prioritize:
 2. preserving bounded execution, artifact evidence, and validator-driven closeout
 3. extending the platform through reusable connectors, ingress channels, workflows, and domain branches
 4. avoiding summary-doc drift, local-only closeout, and narrative completion claims
+5. continuing to align the repo with the broader autonomous-function mission rather than narrowing identity back to only coding work
 
 ## Immediate strategic implication
 
@@ -150,6 +168,7 @@ Examples:
 - procurement intelligence
 - communication workflows
 - business operations workflows
+- specialized decision-support functions
 
 ### Governance preservation
 Examples:
@@ -157,6 +176,7 @@ Examples:
 - archive convergence
 - execution/validation discipline
 - acceptance-gate hardening
+- mission/identity alignment across repo-facing docs
 
 ## Closeout acceptance rule
 
@@ -191,18 +211,19 @@ To prevent roadmap drift or split authority:
 - do not use this file as direct status truth
 - keep this file aligned with canonical item YAML and synchronized status views
 - use execution packs for detailed execution context, not completion truth
-- keep this file aligned with `MASTER_SYSTEM_ARCHITECTURE.md` and `POST_CONVERGENCE_OPERATING_MODE.md` when platform direction changes
+- keep this file aligned with `SYSTEM_MISSION_AND_SCOPE.md`, `MASTER_SYSTEM_ARCHITECTURE.md`, and `POST_CONVERGENCE_OPERATING_MODE.md` when platform direction changes
 
 ## Reader rule
 
 When in doubt:
-1. use `docs/architecture/MASTER_SYSTEM_ARCHITECTURE.md` for architecture truth
-2. use `ROADMAP_AUTHORITY.md` for authority rules
-3. use `CURRENT_OPERATING_CONTEXT.md` for the short start-here posture
-4. use `DOCUMENT_STATE_INDEX.md` to identify document role and authority
-5. use canonical item YAML for item truth
-6. use derived planning surfaces for machine-generated queue/dependency state
-7. use `ROADMAP_STATUS_SYNC.md` for synchronized human-readable status rollup
-8. use this file for strategic interpretation
-9. use `POST_CONVERGENCE_OPERATING_MODE.md` for operating posture
-10. use the execution router and relevant tool-mode doc when selecting an implementer
+1. use `docs/architecture/SYSTEM_MISSION_AND_SCOPE.md` for mission truth
+2. use `docs/architecture/MASTER_SYSTEM_ARCHITECTURE.md` for architecture truth
+3. use `ROADMAP_AUTHORITY.md` for authority rules
+4. use `CURRENT_OPERATING_CONTEXT.md` for the short start-here posture
+5. use `DOCUMENT_STATE_INDEX.md` to identify document role and authority
+6. use canonical item YAML for item truth
+7. use derived planning surfaces for machine-generated queue/dependency state
+8. use `ROADMAP_STATUS_SYNC.md` for synchronized human-readable status rollup
+9. use this file for strategic interpretation
+10. use `POST_CONVERGENCE_OPERATING_MODE.md` for operating posture
+11. use the execution router and relevant tool-mode doc when selecting an implementer
