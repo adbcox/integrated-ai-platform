@@ -47,6 +47,13 @@ It has high leverage because it:
 - ambient response surfaces for tablets/displays
 - clear distinction between deterministic home control and broader conversational AI
 
+### Explicit voice-stack adoption posture now in scope
+- **Home Assistant Assist** is the preferred home/voice anchor
+- use Home Assistant voice pipelines and entity/device bridge posture before building custom broad voice infrastructure
+- **Whisper** may be adopted later as a branch-specific transcription substrate where a specific local transcription need justifies it
+- do not add overlapping voice-assistant stacks as co-primaries without explicit bounded justification
+- treat broader local AI chat UIs as secondary to the dedicated home/voice path for this item
+
 ### Home Assistant bridge posture
 - use Home Assistant for entity/device bridging
 - use Home Assistant for supported low-level automation and device control
@@ -71,6 +78,7 @@ It has high leverage because it:
 - Home Assistant integration boundary
 - future voice endpoint / microphone / speaker surfaces
 - control-center and reporting surfaces
+- local voice stack adoption posture
 
 ## Expected file families
 
@@ -78,6 +86,7 @@ It has high leverage because it:
 - future Home Assistant adapter or capability-binding files
 - future room/assistant policy files
 - future dashboard widgets and room-role UI surfaces
+- future local transcription integration notes if later justified
 
 ## Dependencies
 
@@ -85,6 +94,7 @@ It has high leverage because it:
 - `RM-UI-003` — tablet-specialized ambient control dashboards to replace Alexa-type devices
 - `RM-UI-004` — ambient tablet display themes for kitchen, entertainment, and hallway use
 - `RM-UI-005` — local execution control and routing system where local assistant execution patterns may later be routed/governed
+- `RM-GOV-009` — external application connectivity and integration control plane
 - external Home Assistant voice / device bridge posture where applicable
 
 ## Risks and issues
@@ -93,10 +103,12 @@ It has high leverage because it:
 - over-expanding from deterministic smart-home control into a vague general assistant before the home-control base is solid
 - weak privacy/mute posture for always-available voice endpoints
 - creating overlapping UX between Home Assistant and this platform
+- introducing multiple overlapping voice stacks without one clear primary anchor
 
 ### Known issues / blockers
 - exact first voice endpoint and room-role implementation path still needs bounding
 - should not outrun the underlying ambient display and Home Assistant bridge work
+- voice-stack adoption posture should remain synchronized with the local AI stack role matrix and external integrations catalog
 
 ## CMDB / asset linkage
 
@@ -130,10 +142,12 @@ It has high leverage because it:
 
 Define and implement one bounded room-level voice/ambient control slice using Home Assistant as the device bridge and this platform as the visible assistant/control surface.
 
+That first slice should explicitly use the preferred home/voice stack posture rather than introducing overlapping voice systems.
+
 ## Status transition notes
 
 - Expected next status: `Planned`
-- Transition condition: first room, first supported voice/ambient command set, and Home Assistant bridge boundary are explicitly defined
+- Transition condition: first room, first supported voice/ambient command set, Home Assistant bridge boundary, and preferred voice-stack posture are explicitly defined
 - Validation / closeout condition: one room-level voice/ambient assistant slice works end to end with visible status/history and clear privacy/control rules
 
 ## Notes
