@@ -30,6 +30,7 @@ Read planning and roadmap files in this order:
 7. `docs/roadmap/EXECUTION_PACK_INDEX.md`
 8. `docs/roadmap/EXTERNAL_APPLICATIONS_AND_INTEGRATIONS.md`
 9. `docs/roadmap/LOCAL_AUTONOMY_CRITICAL_PATH.md`
+10. `docs/roadmap/POST_CONVERGENCE_OPERATING_MODE.md`
 
 ## What this file does
 
@@ -262,3 +263,4 @@ When in doubt:
 5. use execution packs for implementation depth
 6. use `EXTERNAL_APPLICATIONS_AND_INTEGRATIONS.md` for external dependency and interface posture
 7. use `LOCAL_AUTONOMY_CRITICAL_PATH.md` for the now/next/later autonomy sequencing rule
+8. use `POST_CONVERGENCE_OPERATING_MODE.md` for post-substrate operating posture
