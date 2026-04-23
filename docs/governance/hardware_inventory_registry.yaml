@@ -1,0 +1,317 @@
+metadata:
+  purpose: "Machine-readable hardware inventory and capability registry for the governed local-execution platform"
+  status: "active_incomplete"
+  canonical_companion_doc: "docs/governance/HARDWARE_CAPABILITY_AND_CONSTRAINTS.md"
+  update_rules:
+    - "Use explicit unknown/to_capture/needs_validation values when facts are not yet confirmed"
+    - "Do not silently infer hardware specifications"
+    - "Update registry when hardware is added, repurposed, upgraded, retired, or materially reconfigured"
+  validation_states:
+    - confirmed
+    - partial
+    - unknown
+  asset_statuses:
+    - active
+    - standby
+    - degraded
+    - lab_only
+    - retired
+    - unknown
+  role_tags:
+    - primary_local_inference_host
+    - primary_local_dev_host
+    - apple_dev_host
+    - automation_orchestrator_host
+    - storage_or_dataset_host
+    - remote_access_entrypoint
+    - dashboard_or_voice_endpoint
+    - spare_or_lab_system
+  capability_tags:
+    - can_run_tier_s_local_models
+    - can_run_tier_m_local_models
+    - can_run_tier_h_local_models
+    - suitable_for_aider_default_host
+    - suitable_for_remote_terminal_anchor
+    - suitable_for_xcode_primary
+    - suitable_for_docker_openhands
+    - suitable_for_storage_and_artifacts
+    - suitable_for_dashboard_endpoint
+    - not_suitable_for_sustained_local_inference
+    - not_suitable_for_gpu_accelerated_models
+
+assets:
+  - asset_id: HW-001
+    friendly_name: to_capture
+    asset_type: workstation
+    primary_role: primary_local_inference_host
+    secondary_roles: []
+    owner_or_location: to_capture
+    current_status: unknown
+    operating_system:
+      name: unknown
+      version: unknown
+      notes: to_capture
+    cpu:
+      model: unknown
+      cores_threads: unknown
+      notes: to_capture
+    ram:
+      total: unknown
+      type: unknown
+      notes: to_capture
+    gpu:
+      model: unknown
+      vram: unknown
+      notes: to_capture
+    motherboard:
+      model: unknown
+      chipset: unknown
+      notes: to_capture
+    storage_devices: []
+    networking_notes: to_capture
+    firmware_bios_state:
+      version: unknown
+      update_status: needs_validation
+      notes: to_capture
+    driver_runtime_state:
+      graphics_driver: unknown
+      ai_runtime_notes: to_capture
+      update_status: needs_validation
+    local_ai_relevance:
+      role: to_capture
+      supported_workloads: []
+      blocked_workloads: []
+    coding_relevance:
+      role: to_capture
+      supported_workloads: []
+      blocked_workloads: []
+    limits_and_risks: []
+    preferred_future_use: []
+    capability_tags: []
+    validation_status: unknown
+    last_verified: unknown
+
+  - asset_id: HW-002
+    friendly_name: to_capture
+    asset_type: workstation
+    primary_role: primary_local_dev_host
+    secondary_roles: []
+    owner_or_location: to_capture
+    current_status: unknown
+    operating_system:
+      name: unknown
+      version: unknown
+      notes: to_capture
+    cpu:
+      model: unknown
+      cores_threads: unknown
+      notes: to_capture
+    ram:
+      total: unknown
+      type: unknown
+      notes: to_capture
+    gpu:
+      model: unknown
+      vram: unknown
+      notes: to_capture
+    motherboard:
+      model: unknown
+      chipset: unknown
+      notes: to_capture
+    storage_devices: []
+    networking_notes: to_capture
+    firmware_bios_state:
+      version: unknown
+      update_status: needs_validation
+      notes: to_capture
+    driver_runtime_state:
+      graphics_driver: unknown
+      ai_runtime_notes: to_capture
+      update_status: needs_validation
+    local_ai_relevance:
+      role: to_capture
+      supported_workloads: []
+      blocked_workloads: []
+    coding_relevance:
+      role: to_capture
+      supported_workloads: []
+      blocked_workloads: []
+    limits_and_risks: []
+    preferred_future_use: []
+    capability_tags: []
+    validation_status: unknown
+    last_verified: unknown
+
+  - asset_id: HW-003
+    friendly_name: to_capture
+    asset_type: workstation
+    primary_role: apple_dev_host
+    secondary_roles: []
+    owner_or_location: to_capture
+    current_status: unknown
+    operating_system:
+      name: macOS
+      version: unknown
+      notes: to_capture
+    cpu:
+      model: unknown
+      cores_threads: unknown
+      notes: to_capture
+    ram:
+      total: unknown
+      type: unknown
+      notes: to_capture
+    gpu:
+      model: integrated_or_unknown
+      vram: unified_or_unknown
+      notes: to_capture
+    motherboard:
+      model: apple_integrated_platform
+      chipset: apple_soc_or_unknown
+      notes: to_capture
+    storage_devices: []
+    networking_notes: to_capture
+    firmware_bios_state:
+      version: unknown
+      update_status: needs_validation
+      notes: "Track macOS/Xcode/toolchain readiness here"
+    driver_runtime_state:
+      graphics_driver: system_managed
+      ai_runtime_notes: to_capture
+      update_status: needs_validation
+    local_ai_relevance:
+      role: to_capture
+      supported_workloads: []
+      blocked_workloads: []
+    coding_relevance:
+      role: xcode_and_apple_build_host
+      supported_workloads: []
+      blocked_workloads: []
+    limits_and_risks: []
+    preferred_future_use: []
+    capability_tags: []
+    validation_status: unknown
+    last_verified: unknown
+
+  - asset_id: HW-004
+    friendly_name: to_capture
+    asset_type: nas
+    primary_role: storage_or_dataset_host
+    secondary_roles: []
+    owner_or_location: to_capture
+    current_status: unknown
+    operating_system:
+      name: unknown
+      version: unknown
+      notes: to_capture
+    cpu:
+      model: unknown
+      cores_threads: unknown
+      notes: to_capture
+    ram:
+      total: unknown
+      type: unknown
+      notes: to_capture
+    gpu:
+      model: none_or_unknown
+      vram: none_or_unknown
+      notes: to_capture
+    motherboard:
+      model: unknown
+      chipset: unknown
+      notes: to_capture
+    storage_devices: []
+    networking_notes: to_capture
+    firmware_bios_state:
+      version: unknown
+      update_status: needs_validation
+      notes: to_capture
+    driver_runtime_state:
+      graphics_driver: not_applicable
+      ai_runtime_notes: not_primary_ai_host
+      update_status: unknown
+    local_ai_relevance:
+      role: storage_only_or_support
+      supported_workloads: []
+      blocked_workloads: []
+    coding_relevance:
+      role: artifact_backup_and_data_support
+      supported_workloads: []
+      blocked_workloads: []
+    limits_and_risks: []
+    preferred_future_use: []
+    capability_tags: []
+    validation_status: unknown
+    last_verified: unknown
+
+  - asset_id: HW-005
+    friendly_name: to_capture
+    asset_type: network_device
+    primary_role: remote_access_entrypoint
+    secondary_roles: []
+    owner_or_location: to_capture
+    current_status: unknown
+    operating_system:
+      name: unknown
+      version: unknown
+      notes: to_capture
+    cpu:
+      model: unknown
+      cores_threads: unknown
+      notes: to_capture
+    ram:
+      total: unknown
+      type: unknown
+      notes: to_capture
+    gpu:
+      model: none_or_unknown
+      vram: none_or_unknown
+      notes: not_applicable
+    motherboard:
+      model: unknown
+      chipset: unknown
+      notes: to_capture
+    storage_devices: []
+    networking_notes: "Capture VPN/Tailscale/reverse-proxy posture and remote operator path"
+    firmware_bios_state:
+      version: unknown
+      update_status: needs_validation
+      notes: to_capture
+    driver_runtime_state:
+      graphics_driver: not_applicable
+      ai_runtime_notes: not_applicable
+      update_status: unknown
+    local_ai_relevance:
+      role: remote_access_support
+      supported_workloads: []
+      blocked_workloads: []
+    coding_relevance:
+      role: remote_terminal_and_workspace_access_support
+      supported_workloads: []
+      blocked_workloads: []
+    limits_and_risks: []
+    preferred_future_use: []
+    capability_tags: []
+    validation_status: unknown
+    last_verified: unknown
+
+gap_register:
+  immediate_questions:
+    - "Which exact machine is the canonical local AI host?"
+    - "Which exact machine is the canonical primary development host?"
+    - "Which exact machine is the canonical Apple/Xcode host?"
+    - "What exact GPU(s) and VRAM capacities are available now?"
+    - "What motherboard, chipset, and BIOS versions matter for upgrade and stability planning?"
+    - "What current firmware, driver, or OS issues could block local AI or coding execution?"
+    - "Which systems are suitable for remote operator continuity away from home?"
+    - "Which spare systems can be repurposed before new purchases are made?"
+  risk_categories:
+    - capacity_gap
+    - firmware_unknown
+    - driver_unknown
+    - thermal_or_power_risk
+    - storage_insufficient
+    - network_remote_access_risk
+    - apple_toolchain_gap
+    - gpu_vram_gap
+    - single_point_of_failure
