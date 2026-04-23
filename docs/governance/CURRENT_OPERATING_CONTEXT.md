@@ -10,6 +10,7 @@ Use it to determine:
 - what execution posture is currently active
 - which tool/mode should be used
 - what acceptance rules apply
+- where hardware capability and constraint truth lives
 
 This document is intentionally short.
 It is not a replacement for canonical item truth.
@@ -29,13 +30,13 @@ Read in this order:
 
 1. `docs/architecture/MASTER_SYSTEM_ARCHITECTURE.md`
 2. `docs/roadmap/ROADMAP_AUTHORITY.md`
-3. canonical item YAML under `docs/roadmap/items/`
-4. derived planning/dependency/data surfaces
-5. `docs/roadmap/ROADMAP_STATUS_SYNC.md`
-6. `docs/roadmap/ROADMAP_MASTER.md`
-7. `docs/roadmap/ROADMAP_INDEX.md`
-8. `docs/roadmap/POST_CONVERGENCE_OPERATING_MODE.md`
-9. `docs/governance/DOCUMENT_STATE_INDEX.md`
+3. `docs/governance/DOCUMENT_STATE_INDEX.md`
+4. canonical item YAML under `docs/roadmap/items/`
+5. derived planning/dependency/data surfaces
+6. `docs/roadmap/ROADMAP_STATUS_SYNC.md`
+7. `docs/roadmap/ROADMAP_MASTER.md`
+8. `docs/roadmap/ROADMAP_INDEX.md`
+9. `docs/roadmap/POST_CONVERGENCE_OPERATING_MODE.md`
 10. execution-mode docs under `docs/execution_modes/`
 
 ## Current execution posture
@@ -46,6 +47,23 @@ Default model:
 - Aider as tactical executor where applicable
 - control-window truth checks for acceptance
 - external coding systems only when the local path proves insufficient or tool/environment constraints require them
+
+## Hardware truth posture
+
+When work depends on hardware realities such as:
+- GPU/VRAM fit
+- local model hosting capacity
+- Apple/Xcode host readiness
+- firmware, BIOS, or driver state
+- storage and backup posture
+- remote operator continuity
+
+use these first:
+- `docs/governance/HARDWARE_CAPABILITY_AND_CONSTRAINTS.md`
+- `docs/governance/hardware_inventory_registry.yaml`
+- `docs/governance/HARDWARE_CAPTURE_AND_VALIDATION_RUNBOOK.md`
+
+Do not silently assume hardware capacity when those sources are incomplete.
 
 ## Current acceptance rules
 
