@@ -1,0 +1,141 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "schemas/roadmap_execution_contract.v1.json",
+  "title": "Roadmap Execution Contract v1",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "autonomous_execution_status",
+    "next_bounded_slice",
+    "max_autonomous_scope",
+    "validation_contract",
+    "artifact_contract",
+    "completion_contract",
+    "truth_surface_updates_required",
+    "external_dependency_readiness"
+  ],
+  "properties": {
+    "autonomous_execution_status": {
+      "type": "string",
+      "enum": ["eligible", "eligible_with_guardrails", "blocked"]
+    },
+    "next_bounded_slice": {"type": "string", "minLength": 1},
+    "max_autonomous_scope": {
+      "type": "object",
+      "required": ["max_files_touched", "max_loc_delta", "allowed_change_kinds"],
+      "properties": {
+        "max_files_touched": {"type": "integer", "minimum": 1},
+        "max_loc_delta": {"type": "integer", "minimum": 1},
+        "allowed_change_kinds": {
+          "type": "array",
+          "items": {"type": "string", "minLength": 1},
+          "minItems": 1
+        }
+      }
+    },
+    "validation_contract": {
+      "type": "object",
+      "required": ["required_validations", "pass_criteria"],
+      "properties": {
+        "required_validations": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id", "command", "pass_when"],
+            "properties": {
+              "id": {"type": "string", "minLength": 1},
+              "command": {"type": "string", "minLength": 1},
+              "pass_when": {"type": "string", "minLength": 1}
+            }
+          },
+          "minItems": 1
+        },
+        "pass_criteria": {
+          "type": "array",
+          "items": {"type": "string", "minLength": 1},
+          "minItems": 1
+        }
+      }
+    },
+    "artifact_contract": {
+      "type": "object",
+      "required": ["required_artifacts", "evidence_outputs"],
+      "properties": {
+        "required_artifacts": {
+          "type": "array",
+          "items": {"type": "string", "minLength": 1},
+          "minItems": 1
+        },
+        "evidence_outputs": {
+          "type": "array",
+          "items": {"type": "string", "minLength": 1},
+          "minItems": 1
+        },
+        "machine_readable_outputs": {
+          "type": "array",
+          "items": {"type": "string", "minLength": 1}
+        }
+      }
+    },
+    "completion_contract": {
+      "type": "object",
+      "required": [
+        "substep_complete_when",
+        "bounded_slice_complete_when",
+        "item_complete_when",
+        "blocker_chain_cleared_when",
+        "small_patch_is_not_completion"
+      ],
+      "properties": {
+        "substep_complete_when": {
+          "type": "array",
+          "items": {"type": "string", "minLength": 1},
+          "minItems": 1
+        },
+        "bounded_slice_complete_when": {
+          "type": "array",
+          "items": {"type": "string", "minLength": 1},
+          "minItems": 1
+        },
+        "item_complete_when": {
+          "type": "array",
+          "items": {"type": "string", "minLength": 1},
+          "minItems": 1
+        },
+        "blocker_chain_cleared_when": {
+          "type": "array",
+          "items": {"type": "string", "minLength": 1},
+          "minItems": 1
+        },
+        "small_patch_is_not_completion": {"type": "boolean", "const": true}
+      }
+    },
+    "truth_surface_updates_required": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1},
+      "minItems": 1
+    },
+    "external_dependency_readiness": {
+      "type": "object",
+      "required": [
+        "required",
+        "readiness_status",
+        "blocks_autonomous_execution",
+        "blocking_dependencies"
+      ],
+      "properties": {
+        "required": {"type": "boolean"},
+        "readiness_status": {
+          "type": "string",
+          "enum": ["ready", "not_ready", "unknown", "not_applicable"]
+        },
+        "blocks_autonomous_execution": {"type": "boolean"},
+        "blocking_dependencies": {
+          "type": "array",
+          "items": {"type": "string", "minLength": 1}
+        },
+        "notes": {"type": "string"}
+      }
+    }
+  }
+}

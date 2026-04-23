@@ -1,0 +1,33 @@
+schema_version: "1.0"
+contract_id: "apple_xcode_runtime_contract_v1"
+purpose: "Governed Apple/Xcode development under local runtime authority"
+platform_targets:
+  - "ios"
+  - "macos"
+  - "watchos"
+  - "tvos"
+language_support:
+  - "swift"
+  - "objective_c"
+build_stack:
+  package_managers:
+    - "swift_package_manager"
+    - "cocoapods"
+  signing:
+    required_policy: "governed_signing_and_provisioning"
+    unmanaged_signing_path_allowed: false
+runtime_integration:
+  execution_authority: "runtime/runtime_executor.py"
+  control_window_authority: "framework/rm_ui005_control_window.py"
+  packet_requirements:
+    - "allowed_files"
+    - "forbidden_files"
+    - "validation_order"
+    - "expected_artifacts"
+  unmanaged_parallel_apple_flow_allowed: false
+validation_readiness:
+  required_checks:
+    - "xcode_workflow_schema_present"
+    - "runtime_execution_authority_linked"
+    - "control_window_authority_linked"
+    - "unmanaged_parallel_flow_disabled"

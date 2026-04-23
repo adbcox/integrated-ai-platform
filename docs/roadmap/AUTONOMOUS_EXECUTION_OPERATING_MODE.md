@@ -21,5 +21,21 @@ The governed loop is:
 
 - archived or ready-for-archive items cannot be pulled
 - blocked placeholder items cannot be pulled
+- items blocked by `execution_contract.external_dependency_readiness` cannot be pulled
+- items missing execution-contract requirements cannot be pulled
 - local-first runtime remains the routine path
 - roadmap item files remain canonical authority for status
+
+## Required machine-readable governance outputs
+
+- Queue artifact: `artifacts/planning/next_pull.json`
+- Blocker artifact: `artifacts/planning/blocker_registry.json`
+
+Autonomous execution is allowed only for items with:
+
+- normalized canonical item file
+- explicit `execution_contract.autonomous_execution_status`
+- bounded `next_bounded_slice` and `max_autonomous_scope`
+- explicit `validation_contract`
+- explicit `artifact_contract`
+- explicit `completion_contract`

@@ -1,6 +1,6 @@
 schema_version: '1.1'
 kind: roadmap_dependency_graph
-generated_at: '2026-04-23T02:43:19+00:00'
+generated_at: '2026-04-23T02:59:19+00:00'
 source_of_truth: docs/roadmap/items/RM-*.yaml
 nodes:
 - id: RM-AUTO-001
@@ -8,7 +8,7 @@ nodes:
   category: AUTO
   priority: P1
   status: completed
-  archive_status: null
+  archive_status: ready_for_archive
 - id: RM-AUTO-002
   title: Roadmap-to-execution compiler baseline
   category: AUTO
@@ -178,11 +178,11 @@ nodes:
   status: completed
   archive_status: null
 - id: RM-GOV-009
-  title: Autonomous canonical item intake activation
+  title: Governed connector control-plane and canonical intake activation
   category: GOV
   priority: P1
   status: completed
-  archive_status: null
+  archive_status: ready_for_archive
 - id: RM-HW-001
   title: Electrical design baseline system
   category: HW
@@ -700,6 +700,7 @@ blocking_analysis:
   blocked_items: []
   conditionally_eligible: []
   completed_ready_for_archive:
+  - RM-AUTO-001
   - RM-CORE-003
   - RM-CORE-006
   - RM-DEV-005
@@ -710,6 +711,7 @@ blocking_analysis:
   - RM-GOV-001
   - RM-GOV-006
   - RM-GOV-007
+  - RM-GOV-009
   - RM-HW-001
   - RM-INV-003
   - RM-OPS-004

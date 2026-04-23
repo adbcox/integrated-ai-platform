@@ -73,3 +73,12 @@ sync_modes:
   - repo_to_plane_authoritative
   - repo_authoritative_with_operational_writeback
   - sync_disabled
+autonomous_execution_statuses:
+  - eligible
+  - eligible_with_guardrails
+  - blocked
+external_dependency_readiness_statuses:
+  - ready
+  - not_ready
+  - unknown
+  - not_applicable

@@ -3,6 +3,25 @@ kind: roadmap_registry
 generated_at: '2026-04-20T12:00:00Z'
 source_of_truth: repo
 items:
+- id: RM-AUTO-001
+  path: docs/roadmap/items/RM-AUTO-001.yaml
+  title: Plain-English goal-to-agent baseline system
+  category: AUTO
+  status: completed
+  archive_status: ready_for_archive
+  priority: P1
+  package_group: PKG-INTEGRATION-BUNDLE-2
+  affected_systems:
+  - orchestration
+  - goal_management
+  - task_execution
+  expected_file_families:
+  - governance/goal_intake_schema.v1.yaml
+  plane_sync_enabled: true
+  plane_item_id: null
+  autonomous_execution_status: eligible_with_guardrails
+  external_dependency_blocks_autonomous_execution: false
+  external_dependency_readiness_status: not_applicable
 - id: RM-GOV-001
   path: docs/roadmap/items/RM-GOV-001.yaml
   title: Create canonical machine-readable roadmap registry
@@ -193,12 +212,14 @@ items:
   external_dependency_readiness_status: not_applicable
 - id: RM-GOV-009
   path: docs/roadmap/items/RM-GOV-009.yaml
-  title: Autonomous canonical item intake activation
+  title: Governed connector control-plane and canonical intake activation
   category: GOV
   status: completed
+  archive_status: ready_for_archive
   priority: P1
   package_group: PKG-GOV-POST-PHASE7
   affected_systems:
+  - connector_control_plane
   - governance
   - roadmap_ops
   expected_file_families:

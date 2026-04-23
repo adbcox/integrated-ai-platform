@@ -1,0 +1,57 @@
+schema_version: "1.0"
+policy_id: "connector_control_plane_policy_v1"
+purpose: "Governed connector authority for autonomy execution"
+local_first_enforcement:
+  control_plane: "framework/control_plane.py"
+  execution_router: "framework/rm_ui005_control_window.py"
+  planning_authority: "docs/roadmap/items/RM-*.yaml"
+approved_connectors:
+  - id: "github"
+    role: "code_and_repo_governance"
+    allowed_operations:
+      - "read_repository_metadata"
+      - "read_pull_requests"
+      - "read_issues"
+      - "create_branch"
+      - "open_draft_pr"
+    disallowed_operations:
+      - "merge_without_human_gate"
+      - "delete_repository"
+      - "force_push_default_branch"
+    runtime_route: "local_exec_with_governance_gate"
+  - id: "gmail"
+    role: "human_signal_and_task_ingest"
+    allowed_operations:
+      - "search_messages"
+      - "summarize_threads"
+      - "draft_reply"
+      - "draft_forward"
+    disallowed_operations:
+      - "send_without_explicit_approval"
+      - "bulk_delete"
+      - "auto_label_without_packet_scope"
+    runtime_route: "local_exec_with_governance_gate"
+  - id: "google_calendar"
+    role: "schedule_context_and_commitment_sync"
+    allowed_operations:
+      - "read_events"
+      - "propose_event_changes"
+      - "draft_invites"
+    disallowed_operations:
+      - "create_or_modify_events_without_approval"
+      - "bulk_calendar_rewrite"
+    runtime_route: "local_exec_with_governance_gate"
+connector_boundary_rules:
+  default_mode: "deny_unlisted"
+  cross_connector_side_effects:
+    require_explicit_packet_allowance: true
+    require_validation_evidence: true
+  anti_sprawl:
+    reject_unknown_connectors: true
+    reject_unscoped_mutations: true
+validation:
+  required_checks:
+    - "approved_connector_set_exact"
+    - "allowed_disallowed_operations_present"
+    - "runtime_route_defined_per_connector"
+    - "deny_unlisted_enforced"

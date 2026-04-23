@@ -6,6 +6,7 @@ title: "Plain-English goal-to-agent baseline system"
 category: "AUTO"
 type: "capability_foundation"
 status: "completed"
+archive_status: "ready_for_archive"
 priority: "P1"
 
 scoring:
@@ -89,20 +90,27 @@ milestones:
 
 planning:
   planning_packet_ref: null
-  planning_status: "not_started"
-  planning_notes: ""
+  planning_status: "complete"
+  planning_notes: "Post-substrate goal intake to bounded packet contract and governed routing posture synchronized."
 
 execution:
   execution_package_refs:
     - "governance/goal_intake_schema.v1.yaml"
-  execution_status: "proposed"
-  last_execution_commit: null
+    - "governance/autonomy_goal_execution_contract.v1.yaml"
+    - "framework/rm_ui005_control_window.py"
+  execution_status: "completed"
+  last_execution_commit: "6b4011326a8f766417ad01508e4adc9dea4a406d"
 
 validation:
   validation_artifact_refs:
     - "governance/goal_intake_schema.v1.yaml"
     - "artifacts/bundle_2_integration_demo/goal_to_execution_flow.json"
-  validation_status: "proposed"
+    - "bin/validate_next_tier_autonomy_expansion.py"
+    - "artifacts/validation/next_tier_autonomy_expansion_validation.json"
+    - "artifacts/planning/next_pull.json"
+    - "artifacts/planning/blocker_registry.json"
+  validation_status: "passed"
+  item_complete_evidence: true
   definition_of_done_ref: "docs/roadmap/STANDARDS.md"
 
 governance:
@@ -144,6 +152,65 @@ ai_operability:
   promotion_linkage:
     required: false
     manifest_refs: []
+execution_contract:
+  contract_version: "1.0"
+  autonomous_execution_status: "eligible_with_guardrails"
+  next_bounded_slice: >
+    Enforce governed pull gating so autonomous intake cannot select items unless
+    execution_contract eligibility, bounded scope, validation, artifact, and
+    completion contracts are present.
+  max_autonomous_scope:
+    max_files_touched: 10
+    max_loc_delta: 500
+    allowed_change_kinds:
+      - "selector_policy"
+      - "governance_validation"
+      - "roadmap_item_contract"
+      - "artifact_generation"
+  validation_contract:
+    required_validations:
+      - id: "compute_next_pull"
+        command: "python3 bin/compute_next_pull.py"
+        pass_when: "exit_code=0"
+      - id: "validate_execution_contracts"
+        command: "python3 bin/validate_roadmap_execution_contracts.py"
+        pass_when: "status=PASS"
+    pass_criteria:
+      - "Autonomous pull selector excludes items lacking execution contracts."
+      - "Contract validator confirms required item coverage."
+  artifact_contract:
+    required_artifacts:
+      - "artifacts/planning/next_pull.json"
+      - "artifacts/planning/blocker_registry.json"
+      - "artifacts/validation/roadmap_execution_contract_validation.json"
+    evidence_outputs:
+      - "Queue output includes only contract-eligible candidates."
+      - "Blocker output classifies missing contract and external dependency blockers."
+    machine_readable_outputs:
+      - "artifacts/planning/next_pull.json"
+      - "artifacts/planning/blocker_registry.json"
+  completion_contract:
+    substep_complete_when:
+      - "Autonomous eligibility fields are explicit in item execution contracts."
+    bounded_slice_complete_when:
+      - "Selector and validator artifacts regenerate successfully."
+    item_complete_when:
+      - "Autonomous pull cannot proceed without full execution contract requirements."
+    blocker_chain_cleared_when:
+      - "No directly adjacent autonomous-eligibility gap remains in required items."
+    small_patch_is_not_completion: true
+  truth_surface_updates_required:
+    - "docs/roadmap/items/RM-AUTO-001.yaml"
+    - "docs/roadmap/AUTONOMOUS_EXECUTION_OPERATING_MODE.md"
+    - "docs/roadmap/TARGET_SELECTION_POLICY.md"
+    - "artifacts/planning/next_pull.json"
+    - "artifacts/planning/blocker_registry.json"
+  external_dependency_readiness:
+    required: false
+    readiness_status: "not_applicable"
+    blocks_autonomous_execution: false
+    blocking_dependencies: []
+    notes: "Autonomous eligibility governance is fully local."
 
 sync:
   plane:
@@ -166,7 +233,7 @@ sync:
 metadata:
   owner: "system"
   created_at: "2026-04-22"
-  updated_at: "2026-04-22"
+  updated_at: "2026-04-23"
   tags:
     - "goal-management"
     - "orchestration"

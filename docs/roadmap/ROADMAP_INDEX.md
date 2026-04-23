@@ -24,6 +24,18 @@ Derived index of roadmap state. Canonical status is in `docs/roadmap/items/RM-*.
   - canonical file: `docs/roadmap/items/RM-UI-005.yaml`
   - first-slice artifact: `artifacts/rm_ui005/control_window_state.json`
 
+## Completed NEXT-Tier Expansion
+
+- `RM-GOV-009` — Connector control-plane + canonical intake activation (`completed`, `ready_for_archive`)
+- `RM-AUTO-001` — Plain-English goal to bounded execution contract (`completed`, `ready_for_archive`)
+- `RM-DEV-001` — Apple/Xcode governed runtime capability (`completed`, `archived`)
+
+NEXT-tier evidence:
+- `governance/connector_control_plane_policy.v1.yaml`
+- `governance/autonomy_goal_execution_contract.v1.yaml`
+- `governance/apple_xcode_runtime_contract.v1.yaml`
+- `artifacts/validation/next_tier_autonomy_expansion_validation.json`
+
 ## Completed Bundles
 
 **Phase 1 Runtime Foundation** (1 item, completed):
@@ -117,7 +129,7 @@ Phase 1 runtime foundation evidence:
   * `artifacts/examples/phase1_runtime_execution_example.json` (execution with session linkage)
 
 **Phase 0 Closure Bundle** (6 items, all completed):
-- `RM-AUTO-001` — Goal-to-agent baseline (completed)
+- `RM-AUTO-001` — Goal-to-agent baseline (completed; ready_for_archive)
 - `RM-GOV-001` — Canonical roadmap authority registry (completed; ready_for_archive)
 - `RM-OPS-005` — Telemetry and audit pipeline (completed; ready_for_archive)
 - `RM-OPS-004` — Backup and disaster recovery (completed; ready_for_archive)

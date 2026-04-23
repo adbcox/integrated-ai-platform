@@ -1,0 +1,70 @@
+schema_version: "1.0"
+kind: "roadmap_execution_contract"
+id: "roadmap_execution_contract_v1"
+name: "Roadmap Execution Contract"
+description: >
+  Canonical contract for autonomous-governed roadmap execution. Item-level
+  autonomous pull eligibility requires this structure.
+
+autonomous_execution_status:
+  allowed_values:
+    - "eligible"
+    - "eligible_with_guardrails"
+    - "blocked"
+  semantics:
+    eligible: "Autonomous execution may proceed within max_autonomous_scope."
+    eligible_with_guardrails: "Autonomous execution may proceed with stricter bounds and checks."
+    blocked: "Autonomous execution must not pull this item until blockers are cleared."
+
+required_fields:
+  - autonomous_execution_status
+  - next_bounded_slice
+  - max_autonomous_scope
+  - validation_contract
+  - artifact_contract
+  - completion_contract
+  - truth_surface_updates_required
+  - external_dependency_readiness
+
+max_autonomous_scope_required_fields:
+  - max_files_touched
+  - max_loc_delta
+  - allowed_change_kinds
+
+validation_contract_required_fields:
+  - required_validations
+  - pass_criteria
+
+artifact_contract_required_fields:
+  - required_artifacts
+  - evidence_outputs
+
+completion_contract_required_fields:
+  - substep_complete_when
+  - bounded_slice_complete_when
+  - item_complete_when
+  - blocker_chain_cleared_when
+  - small_patch_is_not_completion
+
+completion_contract_policy:
+  small_patch_is_not_completion_must_be_true: true
+  notes:
+    - "One-file patch, single test pass, or one regenerated artifact cannot independently imply item completion."
+    - "Completion requires validation + artifact + truth-surface updates in the same bounded slice."
+
+external_dependency_readiness_required_fields:
+  - required
+  - readiness_status
+  - blocks_autonomous_execution
+  - blocking_dependencies
+
+truth_surface_defaults:
+  - "docs/roadmap/items/<item-id>.yaml"
+  - "artifacts/planning/next_pull.json"
+  - "artifacts/planning/blocker_registry.json"
+  - "governance/roadmap_dependency_graph.v1.yaml"
+
+metadata:
+  owner: "control_window"
+  created_at: "2026-04-22"
+  updated_at: "2026-04-22"

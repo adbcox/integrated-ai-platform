@@ -1,0 +1,51 @@
+schema_version: "1.0"
+contract_id: "autonomy_goal_execution_contract_v1"
+purpose: "Post-substrate plain-English goal to governed bounded execution"
+intake:
+  input_type: "plain_english_goal"
+  required_fields:
+    - "goal"
+    - "constraints"
+    - "success_criteria"
+packet_shaping:
+  required_packet_fields:
+    - "objective"
+    - "allowed_files"
+    - "forbidden_files"
+    - "validation_order"
+    - "rollback_rule"
+    - "expected_artifacts"
+    - "route_selection"
+  boundedness_rules:
+    max_files_touched_required: true
+    max_loc_delta_required: true
+    small_patch_is_not_completion: true
+route_selection:
+  authority: "framework/rm_ui005_control_window.py"
+  allowed_routes:
+    - "aider_local"
+    - "openhands_local"
+    - "codex_exec"
+  route_gate_rules:
+    - "must_respect_allowed_files"
+    - "must_emit_artifact_evidence"
+    - "must_fail_closed_when_readiness_false"
+completion_discipline:
+  stop_conditions:
+    - "validation_failure"
+    - "forbidden_file_touch"
+    - "unbounded_scope_detected"
+  escalation_conditions:
+    - "external_dependency_blocks"
+    - "human_gate_required_for_side_effect"
+  completion_conditions:
+    - "objective_level_contract_satisfied"
+    - "required_artifacts_present"
+    - "truth_surfaces_synchronized"
+control_window_semantics:
+  runtime_state_fields:
+    - "item_complete"
+    - "objective_achieved"
+    - "selected_route"
+    - "blockers"
+  truth_rule: "item_complete/objective_achieved only when canonical completion contract is satisfied"

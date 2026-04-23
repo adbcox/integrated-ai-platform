@@ -1,0 +1,27 @@
+schema_version: "1.0"
+kind: "autonomous_intake_policy"
+policy_id: "AIP-POST-P7-001"
+generated_at: "2026-04-22T15:45:00Z"
+authority_owner: "governance/current_phase.json"
+activation_source:
+  - "governance/current_phase.json"
+  - "governance/next_package_class.json"
+  - "governance/phase_gate_status.json"
+rules:
+  allowed_package_class: "autonomous_roadmap_item_creation"
+  required_authority_state:
+    - "phase0_status == closed_ratified"
+    - "phase1_status == closed_ratified"
+    - "phase2_status == closed_ratified"
+    - "phase3_status == closed_ratified"
+  intake_constraints:
+    - "items_must_have_ai_operability_bounds"
+    - "items_must_reference_canonical_authority_basis"
+    - "items_must_sync_registry_and_sync_state_in_same_pass"
+    - "queue_must_be_recomputed_after_intake"
+  blocked_classes:
+    - "feature_expansion"
+    - "tactical_family_extension"
+notes: >
+  This policy activates bounded autonomous canonical roadmap item intake after
+  post-Phase7 closeout ratification reconciliation.

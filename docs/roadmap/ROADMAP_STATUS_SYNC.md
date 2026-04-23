@@ -19,6 +19,9 @@ This document is the human-visible status sync surface. Item files are authorita
 - `RM-UI-005` canonical item promoted to `completed` with `archive_status=ready_for_archive`
 - `RM-GOV-001` canonical item synchronized to `completed` with `archive_status=ready_for_archive`
 - `RM-OPS-005` and `RM-OPS-004` canonical closeout metadata synchronized with `archive_status=ready_for_archive`
+- `RM-GOV-009` synchronized to connector-governance scope with `archive_status=ready_for_archive`
+- `RM-AUTO-001` synchronized to post-substrate autonomy contract with `archive_status=ready_for_archive`
+- `RM-DEV-001` synchronized to governed Apple/Xcode runtime linkage while remaining `archive_status=archived`
 - Chosen next eligible target: `none` (ready queue empty)
 - Blocked placeholder items (explicitly ineligible): `none`
 - Blocker registry surface: `artifacts/planning/blocker_registry.json`
@@ -48,6 +51,15 @@ This document is the human-visible status sync surface. Item files are authorita
 - Required normalized items upgraded to use `execution_contract`:
   - `RM-GOV-001`, `RM-OPS-004`, `RM-OPS-005`, `RM-AUTO-001`, `RM-GOV-009`
 
+## NEXT-Tier Autonomy Expansion (Latest)
+
+- Connector governance policy: `governance/connector_control_plane_policy.v1.yaml`
+- Goal-to-bounded-packet autonomy contract: `governance/autonomy_goal_execution_contract.v1.yaml`
+- Apple/Xcode runtime integration contract: `governance/apple_xcode_runtime_contract.v1.yaml`
+- Validator and evidence:
+  - `bin/validate_next_tier_autonomy_expansion.py`
+  - `artifacts/validation/next_tier_autonomy_expansion_validation.json`
+
 ## Tactical Unlock Human Decision (Pending)
 
 - Request id: `TACTICAL-UNLOCK-REQ-001`
@@ -74,7 +86,7 @@ Phase 0 closure evidence:
 
 ## Completed (Phase 0 Closure Bundle)
 
-- `RM-AUTO-001` — Goal-to-agent baseline capability (completed)
+- `RM-AUTO-001` — Goal-to-agent baseline capability (completed; ready_for_archive)
 - `RM-GOV-001` — Canonical roadmap authority registry (completed; ready_for_archive)
 - `RM-OPS-005` — End-to-end telemetry and audit pipeline (completed; ready_for_archive)
 - `RM-OPS-004` — Backup, restore, and disaster recovery (completed; ready_for_archive)

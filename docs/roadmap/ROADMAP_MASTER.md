@@ -22,6 +22,19 @@ Governed autonomous pull now enforces canonical execution contracts at item leve
   - `artifacts/planning/next_pull.json`
   - `artifacts/planning/blocker_registry.json`
 
+## Completed: NEXT-Tier Autonomy Expansion Slice
+
+- `RM-GOV-009` — Governed connector control-plane and canonical intake activation (github/gmail/google_calendar boundaries, deny-unlisted posture, runtime route constraints) ✓ (ready_for_archive)
+- `RM-AUTO-001` — Post-substrate plain-English goal to bounded execution contract (packet shaping, route gates, completion/escalation discipline, evidence gates) ✓ (ready_for_archive)
+- `RM-DEV-001` — Apple/Xcode capability aligned to governed local runtime execution authority (control-window and runtime linkage preserved) ✓ (archived)
+
+Evidence:
+- `governance/connector_control_plane_policy.v1.yaml`
+- `governance/autonomy_goal_execution_contract.v1.yaml`
+- `governance/apple_xcode_runtime_contract.v1.yaml`
+- `bin/validate_next_tier_autonomy_expansion.py`
+- `artifacts/validation/next_tier_autonomy_expansion_validation.json`
+
 ## Completed: RM-UI-005 Local Execution Control Window
 
 - `RM-UI-005` — Local execution control dashboard, deterministic routing layer, Aider
@@ -38,7 +51,7 @@ Governed autonomous pull now enforces canonical execution contracts at item leve
 
 6-item governance foundations bundle establishing authority, execution control, telemetry/audit, backup/DR, inventory, and Apple-platform capability — completed with comprehensive artifact set and validation proof.
 
-- `RM-AUTO-001` — Goal-to-agent baseline (goal intake schema, task decomposition, bundle packaging, approval workflow) ✓
+- `RM-AUTO-001` — Goal-to-agent baseline (goal intake schema, task decomposition, bundle packaging, approval workflow) ✓ (ready_for_archive)
 - `RM-GOV-001` — Canonical roadmap authority (machine-readable registry and sync surfaces) ✓ (ready_for_archive)
 - `RM-OPS-005` — Telemetry and audit pipeline (event schema, trace model, audit evidence, validation proof) ✓ (ready_for_archive)
 - `RM-OPS-004` — Backup and disaster recovery (backup model, restore procedures, DR playbooks, rollback rules) ✓ (ready_for_archive)
