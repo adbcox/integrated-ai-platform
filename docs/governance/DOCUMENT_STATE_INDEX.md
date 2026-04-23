@@ -38,6 +38,8 @@ Should not be read by default.
 |---|---|---:|---|---|---|---|
 | `docs/architecture/SYSTEM_MISSION_AND_SCOPE.md` | Canonical/Operating | 1 | active | human + machine | first when system identity or mission is in question | explicit mission and scope statement |
 | `docs/architecture/MASTER_SYSTEM_ARCHITECTURE.md` | Canonical | 1 | active | human + machine | always for architecture truth | core architecture anchor |
+| `docs/architecture/LOCAL_AI_STACK_ROLE_MATRIX.md` | Operating/Architecture | 2 | active | human + machine | when choosing runtime/UI/RAG/workflow/dev-surface roles for local AI stack | preferred local AI stack roles and adoption posture |
+| `docs/architecture/OSS_REUSE_AND_ADOPTION_REGISTER.md` | Operating/Architecture | 2 | active | human + machine | when deciding install vs wrap vs reuse vs defer for OSS repos | reuse-first OSS adoption policy |
 | `docs/roadmap/ROADMAP_AUTHORITY.md` | Canonical/Operating | 1 | active | human + machine | always for roadmap truth model | defines authority layers |
 | `docs/roadmap/items/RM-*.yaml` | Canonical | 1 | active | human + machine | always for item truth | canonical item-state layer |
 | `artifacts/planning/next_pull.json` | Derived | 2 | active | machine + human | when queue/selection matters | regenerate from canonical truth |
