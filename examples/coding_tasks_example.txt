@@ -1,0 +1,16 @@
+# Example batch coding tasks file
+# Format: DESCRIPTION|FILE1,FILE2,...
+# Lines starting with # are comments and ignored
+# Empty lines are skipped
+
+# Docstring tasks - add module and function docstrings
+Add a module-level docstring explaining QnapRunner's purpose|qnap_runner.py
+
+# Type hints - add type annotations to functions
+Add comprehensive type hints to BrowserOperator class methods|browser_operator.py
+
+# Error handling - add try/except blocks and validation
+Add error handling and validation to file I/O operations|qnap_runner.py,browser_operator.py
+
+# Documentation - add inline comments for complex logic
+Add inline comments explaining the QNAP REST API interactions|qnap_runner.py
