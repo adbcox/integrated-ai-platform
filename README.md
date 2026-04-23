@@ -1,14 +1,66 @@
-# platform-browser-operator
+# Integrated AI Platform
 
-Local browser-automation and health-check tooling for platform operations.
+Governed local-first AI operating system and control plane for autonomous business, personal, operational, and development workflows.
 
-## Maintenance
+## What this repository is
 
-Run shell validation after script changes:
+This repository is the implementation and governance home for a platform whose broader mission is **not only AI coding**.
 
-```sh
-./validate_shell.sh
-```
+Its purpose is to provide:
+- a central governed AI brain / control plane
+- reusable connector and workflow infrastructure
+- bounded local execution with evidence and validation
+- multiple ingress channels for commands, ideas, and automation
+- domain-specific autonomous functions built on one shared substrate
+
+## Role of local coding autonomy
+
+Local coding autonomy is a **foundational enabling capability** of the platform.
+It is important because it lets the system improve, extend, and govern itself locally.
+
+It is **not** the sole purpose of the platform.
+The broader mission is autonomous and semi-autonomous execution across business, personal, operational, and development domains.
+
+For the explicit mission/scope statement, read:
+- `docs/architecture/SYSTEM_MISSION_AND_SCOPE.md`
+
+For the full architecture source of truth, read:
+- `docs/architecture/MASTER_SYSTEM_ARCHITECTURE.md`
+
+For roadmap authority and current operating posture, read:
+- `docs/roadmap/ROADMAP_AUTHORITY.md`
+- `docs/governance/CURRENT_OPERATING_CONTEXT.md`
+- `docs/roadmap/POST_CONVERGENCE_OPERATING_MODE.md`
+
+## Current operating posture
+
+The repository is operating in **post-convergence governed local-execution mode**.
+
+That means:
+- the local-autonomy substrate is treated as materially closed unless canonical repo truth shows regression
+- future work should extend the governed platform instead of re-litigating the foundation by default
+- bounded execution, artifact evidence, validation, and truth-surface sync remain mandatory
+- roadmap closeout is not accepted until committed, pushed, and remote-visible
+
+## Key operating layers
+
+The platform is built around these layers:
+- architecture and mission truth
+- canonical roadmap item truth
+- derived planning and dependency surfaces
+- governed execution modes
+- local-first implementation and validation substrate
+- domain workflows and autonomous functions on top of the shared substrate
+
+## Repo governance entry points
+
+Start here when working in the repo:
+- `docs/governance/CURRENT_OPERATING_CONTEXT.md`
+- `docs/governance/DOCUMENT_STATE_INDEX.md`
+- `docs/execution_modes/EXECUTION_ROUTER.md`
+- `docs/governance/PROMPT_PACKET_STANDARD.md`
+
+## Maintenance and validation
 
 Run combined shell + Python syntax checks:
 
@@ -34,41 +86,18 @@ Run only offline scenarios affected by current file changes:
 make test-changed-offline
 ```
 
-Prepare a remote-safe Codex task bundle:
-
-```sh
-./bin/remote_prepare.sh --task-file tmp/task.md --name small-task --include browser_operator_open_app.sh --include AGENTS.md
-```
-
-Run post-remote local validation:
-
-```sh
-./bin/remote_finalize.sh --offline changed
-```
-
-Task wrappers for frequent small tasks (Codex stays planner, Aider executes):
-
-```sh
-make aider-bugfix-small AIDER_NAME="login-fix" AIDER_OBJECTIVE="Stop nil panic" AIDER_FILES="browser_operator_login_flow.sh tests/mock_login_flow.sh"
-make aider-docs-micro AIDER_NAME="docs" AIDER_OBJECTIVE="Sync runbook" AIDER_FILES="docs/runbook.md"
-make aider-test-micro AIDER_NAME="tests" AIDER_OBJECTIVE="Stabilize failing tests" AIDER_FILES="tests/foo_test.sh tests/bar_test.sh"
-make aider-shell-micro AIDER_NAME="shell" AIDER_OBJECTIVE="Patch helper" AIDER_FILES="shell/common.sh"
-make aider-lint-micro AIDER_NAME="lint" AIDER_OBJECTIVE="Fix lint" AIDER_FILES="browser_operator.py"
-make aider-auto AIDER_NAME="auto" AIDER_OBJECTIVE="Docs sync" AIDER_AUTO_FILES="docs/runbook.md docs/AGENTS.md"
-```
+## Local Aider tactical entry points
 
 Fast local tactical Aider entry points:
 
 ```sh
 make aider-fast
 make aider-hard
-make aider-smart   # 32B path (requires OLLAMA_API_BASE_32B)
-make aider-smart-status  # ping the configured 32B endpoint before smart runs
+make aider-smart
+make aider-smart-status
+```
 
-# Opt-in Stage 3 micro profile:
-# make aider-fast AIDER_ARGS="--micro-profile"
-
-# Micro lane (tiny autonomous edits)
+Micro lane:
 
 ```sh
 make aider-micro-help
@@ -77,69 +106,15 @@ make aider-micro-safe \
   AIDER_MICRO_FILES="shell/common.sh"
 ```
 
-- rejects vague prompts and doc edits before launching aider
-- message must anchor each file using `<basename>::<token>` syntax
-- enforces clean tree, ≤2 code-adjacent files, automatic quick checks
-- classifies failures (`dirty_tree`, `weak_prompt`, `scope_violation`, etc.) for faster triage
-```
+## Tooling references
 
-- `aider-fast` is the default tactical profile on CPU Ollama (`127.0.0.1:11535`) using `qwen2.5-coder:1.5b`, `--map-tokens 0`, and `--timeout 60`.
-- `aider-fast` now pings `OLLAMA_API_BASE` (default `http://127.0.0.1:11535`) before launching; export `AIDER_LOCAL_SKIP_PING=1` only if you already manage connectivity.
-- `aider-hard` is explicit opt-in for heavier tasks (`qwen2.5-coder:7b`, higher map/timeout).
-- `aider-smart` routes to the 32B endpoint (set `OLLAMA_API_BASE_32B` or pass `--api-base`). Always run `make aider-smart-status` first so you know the endpoint is reachable.
-- Optional pass-through flags via `AIDER_ARGS`, for example:
-  - `make aider-fast AIDER_ARGS="--message 'reply exactly READY'"`
-  - `make aider-hard AIDER_ARGS='path/to/file.py'`
-  - `make aider-smart AIDER_ARGS='--message "audit README" docs/aider-performance-guide.md'`
+- `docs/execution_modes/LOCAL_AIDER_EXEC_MODE.md`
+- `docs/execution_modes/CODEX_CONTROL_MODE.md`
+- `docs/execution_modes/CODEX_EXEC_MODE.md`
+- `docs/execution_modes/CLAUDE_CODE_EXEC_MODE.md`
+- `docs/execution_modes/LOCAL_CONTROL_WINDOW_MODE.md`
 
-### Micro lane (tiny autonomous edits)
+## Notes
 
-Use the new helper when you want the local model to attempt a very small patch (one or two files) with strict guard rails:
-
-```sh
-make aider-micro-safe \
-  AIDER_MICRO_MESSAGE="Add a docstring to foo()" \
-  AIDER_MICRO_FILES="src/foo.py"
-```
-
-Constraints:
-- Requires a clean working tree (no staged or unstaged changes).
-- Supports at most two repo-relative files.
-- Automatically runs `make quick`.
-- Fails if aider touches any file outside the provided list or if nothing changes.
-- Message must explicitly name the file(s) and give a concrete action (e.g., "In shell/common.sh, add docstring to run_cmd" instead of "document run_cmd").
-- Code-centric files only (`shell/`, `src/`, `tests/`, `bin/`, `config/`, `Makefile`). Markdown/README/doc changes must use the normal docs workflows.
-
-Good micro tasks:
-- `make aider-micro-safe AIDER_MICRO_MESSAGE="In shell/common.sh, add a guard that returns early when cmd is empty." AIDER_MICRO_FILES="shell/common.sh"`
-- `make aider-micro-safe AIDER_MICRO_MESSAGE="In tests/mock_login_flow.sh, replace literal 'SUCCESS' with 'PASS' in the final echo." AIDER_MICRO_FILES="tests/mock_login_flow.sh"`
-
-Verify the Stage 3 lane at any time with:
-
-```
-make micro-lane-regression
-```
-
-Bad (rejected) micro tasks:
-- `make aider-micro-safe AIDER_MICRO_MESSAGE="Clarify README wording." AIDER_MICRO_FILES="README.md"`
-- `make aider-micro-safe AIDER_MICRO_MESSAGE="Touch docs to mention benchmarking." AIDER_MICRO_FILES="docs/aider-performance-guide.md"`
-
-Benchmark/report helpers:
-
-```sh
-make aider-bench-report      # table of recent runs with model/profile info
-make aider-bench-compare SCENARIO=single-file-edit
-make aider-bench-models      # show fast/hard/smart defaults
-```
-
-Recommended daily loop:
-
-```sh
-make local-task-intake TASK_NAME="login fix" TASK_GOAL="Stop nil session panic" TASK_CLASS="bugfix | auth" TASK_ID="login-fix" --auto-route --files browser_operator_login_flow.sh --files tests/mock_login_flow.sh
-make aider-bugfix-small AIDER_NAME="login-fix" AIDER_OBJECTIVE="Stop nil session panic" AIDER_FILES="browser_operator_login_flow.sh tests/mock_login_flow.sh"
-```
-
-Agent-specific guardrails and workflow are documented in [AGENTS.md](/srv/platform/repos/platform-browser-operator/AGENTS.md).
-Remote delegation workflow is documented in [docs/remote-codex-workflow.md](/srv/platform/repos/platform-browser-operator/docs/remote-codex-workflow.md).
-Codex operator workflow details live in [docs/codex-operator-workflow.md](/srv/platform/repos/platform-browser-operator/docs/codex-operator-workflow.md).
-High-throughput Aider usage rules live in [docs/aider-performance-guide.md](/srv/platform/repos/platform-browser-operator/docs/aider-performance-guide.md).
+This repository contains implementation, governance, and operating surfaces for a broader AI operating platform.
+Do not treat it as only a coding-assistant repo or only a browser-automation repo.
