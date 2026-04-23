@@ -3,47 +3,55 @@
 This file is the human-readable backlog inventory for the integrated AI platform.
 
 It is not the canonical status source.
+Canonical item truth lives in:
+- `docs/roadmap/items/RM-*.yaml`
 
-For completion and archive truth, use:
+For authority and synchronized status interpretation, use:
 - `docs/roadmap/ROADMAP_AUTHORITY.md`
 - `docs/roadmap/ROADMAP_STATUS_SYNC.md`
+- `docs/roadmap/POST_CONVERGENCE_OPERATING_MODE.md`
 
-## Closed items removed from active backlog interpretation
+## Post-convergence note
 
-### Archived and completed
-- `RM-AUTO-002`
-- `RM-CORE-004`
-- `RM-DEV-002`
-- `RM-DEV-003`
-- `RM-DEV-004`
-- `RM-DEV-006`
-- `RM-DEV-007`
-- `RM-GOV-004`
-- `RM-GOV-005`
-- `RM-INTEL-001`
-- `RM-INTEL-002`
-- `RM-INV-004`
-- `RM-INV-005`
-- `RM-CORE-005`
+The repository is now operating in **post-convergence mode**.
 
-### Completed and closed
-- `RM-CORE-003`
-- `RM-DEV-005`
+That means:
+- the local-autonomy substrate closure chain is no longer the default active build focus
+- this file should be read as backlog inventory, not as evidence that listed items are actively selected now
+- item YAML and synchronized status views control what is actually closed, archived, or ready for future selection
+
+## Closed platform-foundation chain now treated as materially converged
+
+These items should be treated as closed platform-foundation work unless future canonical repo truth contradicts that state:
+
+### Substrate / control layer
+- `RM-UI-005`
+- `RM-GOV-001`
+- `RM-OPS-004`
+- `RM-OPS-005`
+
+### NEXT-tier autonomy expansion
+- `RM-GOV-009`
+- `RM-AUTO-001`
+- `RM-DEV-001`
+
+### Integrated post-substrate expansion
+- `RM-OPS-006`
+- `RM-HOME-005`
+- `RM-INTEL-003`
+- `RM-INV-003`
+
+### Operational convergence / terminal-state hardening
+- `RM-OPS-007`
+
+### Final held-item resolution
 - `RM-DEV-008`
 - `RM-DEV-009`
 
-## Current active focus bundle
+## Current work-selection posture
 
-- `RM-UI-005`
-- `RM-AUTO-001`
-- `RM-GOV-001`
-- `RM-OPS-005`
-- `RM-OPS-004`
-- `RM-INV-002`
-
-## Next implementation priority
-
-- `RM-UI-005` — treat as the critical next implementation target because it directly improves local execution control, truthful completion gating, context-limit visibility, blocker visibility, governed next-task pull behavior, Aider task routing, and OpenHands local execution usability.
+There is no default autonomy-substrate pull target.
+The repo should now select future work from post-convergence extensions, connector/workflow expansion, and business/domain additions under governed execution rules.
 
 ## Recently added / expanded roadmap coverage
 
@@ -55,9 +63,13 @@ For completion and archive truth, use:
 - `RM-OPS-010` — lawful tenant and worker screening workflow using public-record and approved verification sources
 - `RM-GOV-009` — expanded to explicitly prioritize GitHub, Google Calendar, and Gmail connector posture
 - `RM-INV-003` — expanded to include hardware upgrade-value and cost-performance justification logic
-- `RM-UI-005` — expanded to include future macOS companion/overlay mode alongside task-routing, Aider, OpenHands, and local model runtime policy
+- `RM-UI-005` — expanded to include future macOS companion/overlay mode, task-routing, Aider, OpenHands, and local model runtime policy
 
-## Remaining active backlog by family
+## Historical / archived planning note
+
+`LOCAL_AUTONOMY_CRITICAL_PATH.md` should now be treated as a historical transition document rather than the default current-state planning surface.
+
+## Remaining backlog by family
 
 ### Governance
 - `RM-GOV-001`
@@ -121,4 +133,5 @@ For completion and archive truth, use:
 
 ## Rule
 
-Use this file as an inventory view only. If an item appears here but is closed in `ROADMAP_STATUS_SYNC.md`, the status sync controls.
+Use this file as an inventory view only.
+If this file conflicts with canonical item YAML or synchronized status surfaces, canonical item YAML wins.
