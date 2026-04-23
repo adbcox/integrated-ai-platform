@@ -49,6 +49,7 @@ Should not be read by default.
 | `docs/roadmap/ROADMAP_INDEX.md` | Summary/Inventory | 3 | active | human | for backlog inventory | must not override item YAML |
 | `docs/roadmap/POST_CONVERGENCE_OPERATING_MODE.md` | Operating | 2 | active | human + machine | to understand current repo posture | current default operating-mode doc |
 | `docs/governance/CURRENT_OPERATING_CONTEXT.md` | Operating | 2 | active | human + machine | first short start-here brief | concise current-state entry point |
+| `docs/governance/HARDWARE_CAPABILITY_AND_CONSTRAINTS.md` | Operating/Reference | 2 | active | human + machine | when work depends on hardware capacity, limits, firmware, or host roles | hardware source of truth for capability and constraints |
 | `docs/execution_modes/EXECUTION_ROUTER.md` | Operating/Execution | 2 | active | human + machine | when choosing tool/mode | maps task types to implementers |
 | `docs/execution_modes/CODEX_CONTROL_MODE.md` | Execution | 2 | active | human + machine | when using Codex for review/control | tool-specific mode doc |
 | `docs/execution_modes/CODEX_EXEC_MODE.md` | Execution | 2 | active | human + machine | when using Codex for implementation | tool-specific mode doc |
