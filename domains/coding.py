@@ -2,8 +2,8 @@
 # Translates user coding requests into framework JobClass CODING_TASK
 
 from typing import Dict, List, Optional, Any
-import yaml
 import os
+import yaml
 from framework.job_schema import Job, JobClass, JobLifecycle
 
 
@@ -103,3 +103,106 @@ class CodingDomain:
             target_files=files,
             context={"model": model or self.model},
         )
+
+    def execute_task(
+        self,
+        task_description: str,
+        files: List[str],
+        model: Optional[str] = None,
+        timeout_seconds: int = 300,
+    ) -> Dict[str, Any]:
+        """
+        Execute a coding task directly via Aider.
+
+        Args:
+            task_description: Instruction for what to do
+            files: Target files to modify
+            model: Override default model (qwen2.5-coder:14b)
+            timeout_seconds: Max execution time (default 300s)
+
+        Returns:
+            {
+                'success': bool,
+                'commit_hash': str (if successful),
+                'output': str,
+                'error': str (if failed)
+            }
+        """
+        import subprocess
+        import re
+
+        model = model or self.model
+
+        # Build aider command
+        cmd = [
+            "aider",
+            "--model",
+            f"ollama/{model}",
+            "--message",
+            task_description,
+            "--auto-commits",
+            "--auto-test",
+            "--no-show-model-warnings",
+        ]
+
+        # Add files
+        for file_path in files:
+            cmd.extend(["--file", file_path])
+
+        try:
+            # Set up environment for Ollama
+            env = os.environ.copy()
+            env.setdefault("OLLAMA_API_BASE", "http://127.0.0.1:11434")
+
+            # Run aider with timeout, no stdin to prevent hanging
+            result = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                stdin=subprocess.DEVNULL,
+                timeout=timeout_seconds,
+                cwd=os.path.dirname(os.path.dirname(__file__)),
+                env=env,
+            )
+
+            output = result.stdout + result.stderr
+
+            # Get latest commit hash if successful
+            if result.returncode == 0:
+                try:
+                    commit_result = subprocess.run(
+                        ["git", "rev-parse", "HEAD"],
+                        capture_output=True,
+                        text=True,
+                        timeout=10,
+                        cwd=os.path.dirname(os.path.dirname(__file__)),
+                    )
+                    commit_hash = commit_result.stdout.strip()
+                    return {
+                        "success": True,
+                        "commit_hash": commit_hash,
+                        "output": output,
+                    }
+                except Exception as e:
+                    return {
+                        "success": False,
+                        "error": f"Could not get commit hash: {str(e)}",
+                        "output": output,
+                    }
+            else:
+                return {
+                    "success": False,
+                    "error": f"Aider exited with code {result.returncode}",
+                    "output": output,
+                }
+
+        except subprocess.TimeoutExpired:
+            return {
+                "success": False,
+                "error": f"Aider timeout after {timeout_seconds} seconds",
+            }
+        except Exception as e:
+            return {
+                "success": False,
+                "error": str(e),
+            }
