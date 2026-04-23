@@ -1,6 +1,6 @@
 schema_version: '1.1'
 kind: roadmap_dependency_graph
-generated_at: '2026-04-23T02:59:19+00:00'
+generated_at: '2026-04-23T03:05:36+00:00'
 source_of_truth: docs/roadmap/items/RM-*.yaml
 nodes:
 - id: RM-AUTO-001
@@ -105,18 +105,6 @@ nodes:
   priority: P1
   status: complete
   archive_status: ready_for_archive
-- id: RM-DEV-010
-  title: Bounded retry autonomy depth for local execution
-  category: DEV
-  priority: P1
-  status: completed
-  archive_status: null
-- id: RM-DEV-011
-  title: Retry-budget exhaustion classification
-  category: DEV
-  priority: P1
-  status: completed
-  archive_status: null
 - id: RM-DOCAPP-002
   title: Website generation baseline system
   category: DOCAPP
@@ -171,12 +159,6 @@ nodes:
   priority: P1
   status: completed
   archive_status: ready_for_archive
-- id: RM-GOV-008
-  title: Phase 7 closeout ratification and package-class reconciliation
-  category: GOV
-  priority: P1
-  status: completed
-  archive_status: null
 - id: RM-GOV-009
   title: Governed connector control-plane and canonical intake activation
   category: GOV
@@ -263,66 +245,6 @@ nodes:
   priority: P1
   status: completed
   archive_status: null
-- id: RM-PHASE2-ARTIFACT-001
-  title: Artifact Persistence Layer
-  category: PHASE2
-  priority: P1
-  status: completed
-  archive_status: null
-- id: RM-PHASE2-CTRL-001
-  title: Control Plane Formalization
-  category: PHASE2
-  priority: P1
-  status: completed
-  archive_status: null
-- id: RM-PHASE2-EVAL-001
-  title: Execution Evaluation Pipeline
-  category: PHASE2
-  priority: P1
-  status: completed
-  archive_status: null
-- id: RM-PHASE2-GOVERNANCE-001
-  title: Governance Dispatch & Authority Integration
-  category: PHASE2
-  priority: P1
-  status: completed
-  archive_status: null
-- id: RM-PHASE2-INF-001
-  title: Inference Gateway Integration
-  category: PHASE2
-  priority: P1
-  status: completed
-  archive_status: null
-- id: RM-PHASE2-ROADMAP-001
-  title: Roadmap Operations & Queue Management
-  category: PHASE2
-  priority: P1
-  status: completed
-  archive_status: null
-- id: RM-PHASE2-RUNTIME-001
-  title: Agent Runtime Substrate
-  category: PHASE2
-  priority: P1
-  status: completed
-  archive_status: null
-- id: RM-TACT-001
-  title: Tactical family expansion readiness tracks
-  category: TACT
-  priority: P1
-  status: completed
-  archive_status: null
-- id: RM-TACT-002
-  title: Tactical family unlock candidate pack
-  category: TACT
-  priority: P1
-  status: completed
-  archive_status: null
-- id: RM-TACT-003
-  title: Tactical unlock human-gate packet
-  category: TACT
-  priority: P1
-  status: completed
-  archive_status: null
 - id: RM-UI-001
   title: Master control center baseline system
   category: UI
@@ -354,18 +276,6 @@ nodes:
   priority: P1
   status: completed
   archive_status: ready_for_archive
-- id: RM-V15-001
-  title: Version-15 subsystem progression baseline
-  category: V15
-  priority: P1
-  status: completed
-  archive_status: null
-- id: RM-V15-002
-  title: Version-15 progression task seed
-  category: V15
-  priority: P1
-  status: completed
-  archive_status: null
 edges:
 - from: RM-GOV-004
   to: RM-AUTO-002
@@ -455,22 +365,6 @@ edges:
   to: RM-DEV-009
   type: hard
   description: RM-DEV-009 depends on RM-AUTO-002
-- from: RM-TACT-001
-  to: RM-DEV-010
-  type: hard
-  description: RM-DEV-010 depends on RM-TACT-001
-- from: RM-CORE-006
-  to: RM-DEV-010
-  type: hard
-  description: RM-DEV-010 depends on RM-CORE-006
-- from: RM-DEV-010
-  to: RM-DEV-011
-  type: hard
-  description: RM-DEV-011 depends on RM-DEV-010
-- from: RM-TACT-002
-  to: RM-DEV-011
-  type: hard
-  description: RM-DEV-011 depends on RM-TACT-002
 - from: RM-UI-001
   to: RM-DOCAPP-002
   type: hard
@@ -567,86 +461,6 @@ edges:
   to: RM-PHASE1-001
   type: hard
   description: RM-PHASE1-001 depends on RM-DEV-001
-- from: RM-CORE-001
-  to: RM-PHASE2-CTRL-001
-  type: hard
-  description: RM-PHASE2-CTRL-001 depends on RM-CORE-001
-- from: RM-CORE-002
-  to: RM-PHASE2-CTRL-001
-  type: hard
-  description: RM-PHASE2-CTRL-001 depends on RM-CORE-002
-- from: RM-CORE-003
-  to: RM-PHASE2-CTRL-001
-  type: hard
-  description: RM-PHASE2-CTRL-001 depends on RM-CORE-003
-- from: RM-CORE-004
-  to: RM-PHASE2-CTRL-001
-  type: hard
-  description: RM-PHASE2-CTRL-001 depends on RM-CORE-004
-- from: RM-CORE-005
-  to: RM-PHASE2-CTRL-001
-  type: hard
-  description: RM-PHASE2-CTRL-001 depends on RM-CORE-005
-- from: RM-CORE-006
-  to: RM-PHASE2-CTRL-001
-  type: hard
-  description: RM-PHASE2-CTRL-001 depends on RM-CORE-006
-- from: RM-PHASE2-RUNTIME-001
-  to: RM-PHASE2-EVAL-001
-  type: hard
-  description: RM-PHASE2-EVAL-001 depends on RM-PHASE2-RUNTIME-001
-- from: RM-PHASE2-ARTIFACT-001
-  to: RM-PHASE2-EVAL-001
-  type: hard
-  description: RM-PHASE2-EVAL-001 depends on RM-PHASE2-ARTIFACT-001
-- from: RM-PHASE2-ARTIFACT-001
-  to: RM-PHASE2-GOVERNANCE-001
-  type: hard
-  description: RM-PHASE2-GOVERNANCE-001 depends on RM-PHASE2-ARTIFACT-001
-- from: RM-PHASE2-EVAL-001
-  to: RM-PHASE2-GOVERNANCE-001
-  type: hard
-  description: RM-PHASE2-GOVERNANCE-001 depends on RM-PHASE2-EVAL-001
-- from: RM-PHASE2-ROADMAP-001
-  to: RM-PHASE2-GOVERNANCE-001
-  type: hard
-  description: RM-PHASE2-GOVERNANCE-001 depends on RM-PHASE2-ROADMAP-001
-- from: RM-CORE-001
-  to: RM-PHASE2-INF-001
-  type: hard
-  description: RM-PHASE2-INF-001 depends on RM-CORE-001
-- from: RM-CORE-002
-  to: RM-PHASE2-INF-001
-  type: hard
-  description: RM-PHASE2-INF-001 depends on RM-CORE-002
-- from: RM-PHASE2-ARTIFACT-001
-  to: RM-PHASE2-ROADMAP-001
-  type: hard
-  description: RM-PHASE2-ROADMAP-001 depends on RM-PHASE2-ARTIFACT-001
-- from: RM-PHASE2-CTRL-001
-  to: RM-PHASE2-RUNTIME-001
-  type: hard
-  description: RM-PHASE2-RUNTIME-001 depends on RM-PHASE2-CTRL-001
-- from: RM-PHASE2-INF-001
-  to: RM-PHASE2-RUNTIME-001
-  type: hard
-  description: RM-PHASE2-RUNTIME-001 depends on RM-PHASE2-INF-001
-- from: RM-PHASE2-ARTIFACT-001
-  to: RM-PHASE2-RUNTIME-001
-  type: hard
-  description: RM-PHASE2-RUNTIME-001 depends on RM-PHASE2-ARTIFACT-001
-- from: RM-GOV-009
-  to: RM-TACT-001
-  type: hard
-  description: RM-TACT-001 depends on RM-GOV-009
-- from: RM-TACT-001
-  to: RM-TACT-002
-  type: hard
-  description: RM-TACT-002 depends on RM-TACT-001
-- from: RM-TACT-002
-  to: RM-TACT-003
-  type: hard
-  description: RM-TACT-003 depends on RM-TACT-002
 - from: RM-ED-001
   to: RM-UI-001
   type: hard
@@ -683,18 +497,6 @@ edges:
   to: RM-UI-005
   type: hard
   description: RM-UI-005 depends on RM-AUTO-001
-- from: RM-DEV-010
-  to: RM-V15-001
-  type: hard
-  description: RM-V15-001 depends on RM-DEV-010
-- from: RM-V15-001
-  to: RM-V15-002
-  type: hard
-  description: RM-V15-002 depends on RM-V15-001
-- from: RM-DEV-011
-  to: RM-V15-002
-  type: hard
-  description: RM-V15-002 depends on RM-DEV-011
 blocking_analysis:
   eligible_items: []
   blocked_items: []
