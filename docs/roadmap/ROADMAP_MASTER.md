@@ -24,13 +24,18 @@ Read planning and roadmap files in this order:
 
 1. `docs/architecture/MASTER_SYSTEM_ARCHITECTURE.md`
 2. `docs/roadmap/ROADMAP_AUTHORITY.md`
-3. canonical item YAML under `docs/roadmap/items/`
-4. derived planning/dependency/data surfaces
-5. `docs/roadmap/ROADMAP_STATUS_SYNC.md`
-6. `docs/roadmap/ROADMAP_MASTER.md`
-7. `docs/roadmap/ROADMAP_INDEX.md`
-8. `docs/roadmap/POST_CONVERGENCE_OPERATING_MODE.md`
-9. planning/supporting docs as needed
+3. `docs/governance/CURRENT_OPERATING_CONTEXT.md`
+4. `docs/governance/DOCUMENT_STATE_INDEX.md`
+5. canonical item YAML under `docs/roadmap/items/`
+6. derived planning/dependency/data surfaces
+7. `docs/roadmap/ROADMAP_STATUS_SYNC.md`
+8. `docs/roadmap/ROADMAP_MASTER.md`
+9. `docs/roadmap/ROADMAP_INDEX.md`
+10. `docs/roadmap/POST_CONVERGENCE_OPERATING_MODE.md`
+11. `docs/execution_modes/EXECUTION_ROUTER.md`
+12. relevant tool-specific mode doc
+13. `docs/governance/PROMPT_PACKET_STANDARD.md`
+14. planning/supporting docs as needed
 
 ## What this file does
 
@@ -193,8 +198,11 @@ To prevent roadmap drift or split authority:
 When in doubt:
 1. use `docs/architecture/MASTER_SYSTEM_ARCHITECTURE.md` for architecture truth
 2. use `ROADMAP_AUTHORITY.md` for authority rules
-3. use canonical item YAML for item truth
-4. use derived planning surfaces for machine-generated queue/dependency state
-5. use `ROADMAP_STATUS_SYNC.md` for synchronized human-readable status rollup
-6. use this file for strategic interpretation
-7. use `POST_CONVERGENCE_OPERATING_MODE.md` for operating posture
+3. use `CURRENT_OPERATING_CONTEXT.md` for the short start-here posture
+4. use `DOCUMENT_STATE_INDEX.md` to identify document role and authority
+5. use canonical item YAML for item truth
+6. use derived planning surfaces for machine-generated queue/dependency state
+7. use `ROADMAP_STATUS_SYNC.md` for synchronized human-readable status rollup
+8. use this file for strategic interpretation
+9. use `POST_CONVERGENCE_OPERATING_MODE.md` for operating posture
+10. use the execution router and relevant tool-mode doc when selecting an implementer
