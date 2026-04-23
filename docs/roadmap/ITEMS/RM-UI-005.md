@@ -62,6 +62,7 @@ This item should be treated as the next implementation target because it directl
 - future macOS companion / overlay interaction for contextual operator help
 - explicit local model runtime selection and framework-to-Aider handoff discipline
 - explicit local AI stack role visibility so assistants do not re-derive runtime/UI/RAG/workflow choices repeatedly
+- explicit reuse of mature coding-agent and subsystem implementations instead of rebuilding weak first-pass versions
 
 It also leverages work that is already present:
 
@@ -73,6 +74,7 @@ It also leverages work that is already present:
 - completion and operational-truth expectations from RM-OPS-004
 - local run/evidence bundle outputs already present in the repo
 - the local AI stack role matrix and external integration catalog
+- the OSS reuse and reference-implementation registers
 
 This means it has unusually high leverage relative to effort. It does not require waiting for broad branch expansion. It helps the local system perform better immediately.
 
@@ -106,6 +108,30 @@ OpenHands must be integrated as:
 - an optional operator-facing execution surface, not a replacement planning authority
 
 Do not let OpenHands create a parallel roadmap or parallel completion standard.
+
+## Reference implementation and public-template rule
+
+This item must not default to greenfield implementation when mature coding-agent and subsystem references already exist.
+
+Before writing new code, assistants should check:
+- `docs/architecture/OSS_REUSE_AND_ADOPTION_REGISTER.md`
+- `docs/architecture/REFERENCE_IMPLEMENTATIONS_AND_PUBLIC_TEMPLATES.md`
+
+### High-value references now relevant to this item
+- **OpenHands** — bounded dev-agent execution surface and sandbox/UI model
+- **OpenCode** — terminal-agent/TUI/session/tool integration reference
+- **Plandex** — context trimming and change-set/rollback concepts
+- **Aider** — editblock, diff, repo-map, commit, and auto-test logic
+- **PR-Agent** — PR review automation surface
+- **MCP reference servers** — official filesystem/fetch/git/memory/sequential-thinking tool examples
+- **MarkItDown** — document conversion module where document ingest is needed for assistant context or RAG workflows
+- **n8n** — visual workflow automation layer if workflow breadth grows beyond hand-authored packets
+
+### Reuse posture
+- install or wrap mature systems where they already solve the role well
+- port or reuse focused modules where a subsystem is needed
+- do not recreate a generic terminal agent, patch engine, PR reviewer, or workflow builder if a strong public implementation already exists and can be adapted with light modification
+- keep all reused systems subordinate to canonical roadmap, validation, and completion truth
 
 ## Key requirements
 
@@ -174,6 +200,7 @@ At minimum it should show:
 - support task-specific context minimization so Aider does not over-consume context on bounded tasks
 - support task-specific repo-map / file-load behavior where feasible
 - support lane-specific model/profile selection if the local system uses more than one model class
+- prefer reuse of proven editblock/patch, auto-test, and repo-map logic before building weaker custom variants
 
 ### Local model runtime policy now in scope
 - explicitly support local model tier selection and display it in the control surface
@@ -292,6 +319,7 @@ Do not escalate because a task merely looks hard.
 - allow OpenHands runs to consume the same repo truth and execution contracts as Aider-driven runs
 - surface OpenHands run status, selected task, validation state, artifacts, and completion state back into the dashboard
 - keep OpenHands subordinate to the same completion contract and blocker logic
+- prefer reuse of existing OpenHands deployment/runtime patterns before inventing a weaker custom dev-agent shell
 
 ### Companion / overlay mode requirements now in scope
 - support a future macOS companion or overlay interaction mode that can be summoned contextually
@@ -307,6 +335,7 @@ Do not escalate because a task merely looks hard.
 - recommend which files to drop first
 - distinguish must-retain context from safe-to-drop context
 - make performance optimization an explicit design goal, not a byproduct
+- reuse proven context slicing and trimming patterns before inventing brittle local heuristics
 
 ### Governance integration requirements
 - read roadmap truth from canonical repo surfaces rather than from chat memory
@@ -519,6 +548,18 @@ Required system behavior:
 - `Dify`, `RAGFlow`, `LM Studio`, and `LocalAI` are surfaced only when the use case specifically justifies them
 - overlapping tools in the same role trigger a warning or explicit justification requirement
 
+### Example 9 — reuse-first implementation selection
+Current desired target mode:
+- the operator wants future assistants to install, wrap, or lightly modify mature public systems instead of re-creating generic subsystems
+
+Required system behavior:
+- OpenHands is treated as the primary substantial dev-agent surface to integrate, not a cue to build a new broad dev-agent shell
+- OpenCode is treated as a TUI/design reference rather than a new second backbone
+- Aider patch, repo-map, and auto-test logic are reused before writing fragile local replacements
+- Plandex-style context slicing and rollback concepts are reused before building bespoke context and revert systems
+- PR-Agent, MarkItDown, MCP reference servers, and n8n are considered before building new PR-review, document-conversion, tool-server, or workflow-builder logic
+- the control surface can point back to the authoritative reuse registers so assistants do not re-derive these choices
+
 ## Affected systems
 
 - UI/control surfaces
@@ -533,6 +574,7 @@ Required system behavior:
 - future macOS companion/overlay interface layer
 - local model runtime/runbook surfaces
 - local AI stack role matrix surfaces
+- OSS reuse/reference-implementation selection surfaces
 
 ## Expected file families
 
@@ -548,6 +590,7 @@ Required system behavior:
 - future companion/overlay interaction files
 - future local model/runbook configs and health-check surfaces
 - future local AI stack selection and warning surfaces
+- future thin wrappers/adapters around selected public implementations
 
 ## Dependencies
 
@@ -571,6 +614,7 @@ Required system behavior:
 - letting companion/overlay behavior bypass the same governance model as the main dashboard
 - letting local model selection become ad hoc rather than runbook-driven
 - letting local AI stack choices drift into overlapping defaults without role clarity
+- rebuilding mature coding-agent and workflow subsystems unnecessarily
 
 ### Known issues / blockers
 - exact first slice must remain bounded so this can land in one aggressive pass
@@ -580,6 +624,7 @@ Required system behavior:
 - companion/overlay mode should be added only as a governed extension, not as a freeform assistant surface
 - framework-first handoff must remain bounded so it does not become a vague planning loop
 - local AI stack role choices must stay synchronized with `LOCAL_AI_STACK_ROLE_MATRIX.md`
+- reference-implementation posture must remain synchronized with the OSS reuse and template registers
 
 ## CMDB / asset linkage
 
@@ -599,6 +644,11 @@ Required system behavior:
 - **Configuration capture:** record model/backend configuration, port bindings, sandbox mode, and repo mount behavior
 - **Known caveats / integration constraints:** OpenHands must not become a parallel planning authority or bypass the canonical completion and blocker model
 - **Adoption note:** `adopt-selective`
+
+### OpenCode
+- **Primary role in this item:** terminal-agent/TUI reference and design/code source
+- **Adoption note:** `reference-only-selective`
+- **Integration constraint:** do not let it become a second backbone; use as reference for TUI/session/tool ideas only
 
 ### Aider
 - **Official docs home:** https://aider.chat/
@@ -622,6 +672,11 @@ Required system behavior:
 - **Primary role in this item:** practical local document/RAG workspace
 - **Adoption note:** `adopt-now`
 
+### PR-Agent / n8n / MarkItDown / MCP reference servers
+- **Primary role in this item:** selectively reused supporting subsystems for PR review, workflows, doc conversion, and tool servers
+- **Adoption note:** `selective-reuse`
+- **Integration constraint:** prefer thin wrappers or installation over bespoke first-pass replacements
+
 ## Grouping candidates
 
 - `RM-UI-001`
@@ -634,8 +689,8 @@ Required system behavior:
 
 ## Grouped execution notes
 
-- Shared-touch rationale: this item intersects directly with the active strategic cluster and the active governance cluster. It consumes status truth, blocker truth, validation truth, autonomous targeting truth, execution-run truth, and the preferred local AI stack posture, and presents them through a single operator surface.
-- Repeated-touch reduction estimate: very high if done now, because it prevents repeated terminal-only diagnosis and repeated rework caused by hidden completion/validation/context failures and repeated stack-choice re-derivation.
+- Shared-touch rationale: this item intersects directly with the active strategic cluster and the active governance cluster. It consumes status truth, blocker truth, validation truth, autonomous targeting truth, execution-run truth, the preferred local AI stack posture, and the reuse-first implementation posture, and presents them through a single operator surface.
+- Repeated-touch reduction estimate: very high if done now, because it prevents repeated terminal-only diagnosis and repeated rework caused by hidden completion/validation/context failures, unnecessary greenfield subsystem work, and repeated stack-choice re-derivation.
 - Grouping recommendation: `Bundle now` with adjacent execution-governance hardening surfaces, but keep the implementation slice bounded to the execution control and routing system itself.
 
 ## Recommended first milestone
@@ -652,13 +707,14 @@ Deliver a minimum viable local execution control and routing system that:
 8. supports an immediately usable local OpenHands execution surface for operator monitoring and bounded execution handoff
 9. records and surfaces the canonical local model runtime/startup policy used for each lane
 10. records and surfaces the local AI stack role matrix so assistants know what is primary, selective, deferred, or rejected
+11. records and surfaces the reuse-first implementation posture so assistants know what to install, wrap, or reuse before writing new generic subsystem code
 
 ## Status transition notes
 
 - Expected next status: `Planned`
-- Transition condition: implementation boundary, first slice, required repo truth sources, initial Aider/OpenHands integration posture, local model runbook policy, and local AI stack role posture are explicitly accepted
-- Validation / closeout condition: a working local execution control and routing slice exists, reads canonical repo truth, supports Aider task-specific routing, provides an OpenHands local execution path, uses an explicit local model tier policy, and materially reduces false-complete / missed-context / hidden-blocker failures and unnecessary stack re-derivation in real local runs
+- Transition condition: implementation boundary, first slice, required repo truth sources, initial Aider/OpenHands integration posture, local model runbook policy, local AI stack role posture, and reference-implementation reuse posture are explicitly accepted
+- Validation / closeout condition: a working local execution control and routing slice exists, reads canonical repo truth, supports Aider task-specific routing, provides an OpenHands local execution path, uses an explicit local model tier policy, and materially reduces false-complete / missed-context / hidden-blocker failures, unnecessary subsystem re-creation, and stack re-derivation in real local runs
 
 ## Notes
 
-This item is intentionally the most important next implementation target. It is not merely a dashboard improvement. It is the missing operator, routing, runtime-selection, stack-role-preservation, and execution surface that turns the current local coding workflow from terminal-heavy and ambiguity-prone into a governed local execution system.
+This item is intentionally the most important next implementation target. It is not merely a dashboard improvement. It is the missing operator, routing, runtime-selection, stack-role-preservation, reuse-first, and execution surface that turns the current local coding workflow from terminal-heavy and ambiguity-prone into a governed local execution system.
