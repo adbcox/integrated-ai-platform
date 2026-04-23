@@ -132,6 +132,7 @@ The authoritative sources for this posture are:
 - `docs/architecture/LOCAL_AI_STACK_ROLE_MATRIX.md`
 - `docs/architecture/OSS_REUSE_AND_ADOPTION_REGISTER.md`
 - `docs/architecture/REFERENCE_IMPLEMENTATIONS_AND_PUBLIC_TEMPLATES.md`
+- `docs/roadmap/REUSE_FIRST_IMPLEMENTATION_WAVE.md`
 
 ## Affected systems
 
@@ -182,7 +183,7 @@ The authoritative sources for this posture are:
 - auth posture must remain consistent with local-first and governance rules
 - GitHub / Google connectors should be implemented through the control plane, not as branch-specific one-offs
 - local AI platform roles must remain synchronized with `LOCAL_AI_STACK_ROLE_MATRIX.md` and `EXTERNAL_APPLICATIONS_AND_INTEGRATIONS.md`
-- reuse posture must remain synchronized with the OSS reuse register and reference-implementation register
+- reuse posture must remain synchronized with the OSS reuse register, reference-implementation register, and first-wave implementation packet
 
 ## CMDB / asset linkage
 
@@ -226,6 +227,9 @@ The highest-value first concrete connector set should now strongly consider:
 - Gmail
 
 because those connectors will be reusable across the largest number of future assistant and execution workflows.
+
+The first concrete reuse-first execution packet is now:
+- `docs/roadmap/REUSE_FIRST_IMPLEMENTATION_WAVE.md`
 
 ## Status transition notes
 
