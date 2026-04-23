@@ -19,8 +19,27 @@ Governed autonomous pull now enforces canonical execution contracts at item leve
 - Contract validator: `bin/validate_roadmap_execution_contracts.py`
 - Selector enforcement + blocker truth:
   - `bin/compute_next_pull.py`
-  - `artifacts/planning/next_pull.json`
-  - `artifacts/planning/blocker_registry.json`
+- `artifacts/planning/next_pull.json`
+- `artifacts/planning/blocker_registry.json`
+
+## Completed: Integrated Ops/Home/Intel/Inventory Expansion Slice
+
+One bounded shared substrate slice now extends the closed autonomy baseline with a single
+governed runtime path and evidence model across operations, home intents, intelligence watch,
+and inventory decision support.
+
+- `RM-OPS-006` — Integrated operational expansion layer (single intake/analysis/decision/evidence path) ✓ (ready_for_archive)
+- `RM-HOME-005` — Governed home/local-environment intents through unified runtime path ✓ (ready_for_archive)
+- `RM-INTEL-003` — Governed intelligence watch analysis integrated into operator queue ✓ (ready_for_archive)
+- `RM-INV-003` — Procurement baseline remains complete and is reused by integrated slice ✓ (ready_for_archive)
+
+Evidence:
+- `governance/integrated_ops_home_intel_inventory_policy.v1.yaml`
+- `framework/integrated_ops_home_intel_inventory.py`
+- `bin/run_integrated_ops_expansion.py`
+- `bin/validate_integrated_ops_expansion.py`
+- `artifacts/operations/integrated_ops_expansion_run.json`
+- `artifacts/validation/integrated_ops_expansion_validation.json`
 
 ## Completed: NEXT-Tier Autonomy Expansion Slice
 

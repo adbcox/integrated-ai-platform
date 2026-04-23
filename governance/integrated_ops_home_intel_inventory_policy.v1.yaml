@@ -1,0 +1,59 @@
+schema_version: "1.0"
+kind: "integrated_ops_home_intel_inventory_policy"
+policy_id: "OPS-HOME-INTEL-INV-001"
+updated_at: "2026-04-23T00:00:00Z"
+
+runtime_authority:
+  control_window_truth_surface: "artifacts/rm_ui005/control_window_state.json"
+  runtime_execution_authority: "runtime/runtime_executor.py"
+  session_job_builder: "runtime.runtime_executor.build_session_job"
+
+roadmap_scope:
+  integrated_items:
+    - "RM-OPS-006"
+    - "RM-HOME-005"
+    - "RM-INTEL-003"
+    - "RM-INV-003"
+  objective: "Single governed intake->analysis->decision->evidence path for ops/home/intel/inventory"
+
+home_operating_semantics:
+  bounded_actions:
+    lighting:
+      max_actions_per_run: 3
+      required_confirmation: false
+    climate:
+      max_actions_per_run: 2
+      required_confirmation: true
+    safety:
+      max_actions_per_run: 2
+      required_confirmation: true
+  default_safety_mode: "recommendation_only"
+
+intel_operating_semantics:
+  recommendation_class_priority:
+    adopt-now: 4
+    evaluate: 3
+    watch: 2
+    reject: 1
+  max_recommendations_per_run: 5
+  exclude_classes:
+    - "reject"
+
+inventory_decision_support:
+  budget_policy:
+    max_total_procurement_cost_usd: 5000.0
+    budget_warning_threshold_ratio: 0.85
+  scoring_policy:
+    prioritize:
+      - "availability"
+      - "lead_time"
+      - "cost"
+
+ops_execution_surface:
+  operator_queue_fields:
+    - "queue_id"
+    - "task_type"
+    - "priority"
+    - "linked_item"
+    - "evidence_ref"
+  evidence_artifact: "artifacts/operations/integrated_ops_expansion_run.json"

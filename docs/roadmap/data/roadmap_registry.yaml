@@ -61,6 +61,29 @@ items:
   autonomous_execution_status: eligible_with_guardrails
   external_dependency_blocks_autonomous_execution: false
   external_dependency_readiness_status: not_applicable
+- id: RM-OPS-006
+  path: docs/roadmap/items/RM-OPS-006.yaml
+  title: Integrated operational expansion layer for governed ops/home/intel/inventory
+  category: OPS
+  status: completed
+  archive_status: ready_for_archive
+  priority: P1
+  package_group: PKG-OPS-POST-SUBSTRATE
+  affected_systems:
+  - operations
+  - control_window
+  - runtime
+  - inventory
+  - intelligence
+  expected_file_families:
+  - framework/integrated_ops_home_intel_inventory.py
+  - bin/run_integrated_ops_expansion.py
+  - governance/integrated_ops_home_intel_inventory_policy.v1.yaml
+  plane_sync_enabled: true
+  plane_item_id: null
+  autonomous_execution_status: eligible_with_guardrails
+  external_dependency_blocks_autonomous_execution: false
+  external_dependency_readiness_status: not_applicable
 - id: RM-OPS-004
   path: docs/roadmap/items/RM-OPS-004.yaml
   title: Backup, restore, disaster-recovery, and configuration export verification baseline
@@ -425,6 +448,27 @@ items:
   - artifacts/**
   plane_sync_enabled: true
   plane_item_id: null
+- id: RM-INTEL-003
+  path: docs/roadmap/items/RM-INTEL-003.yaml
+  title: Governed intelligence watch and operator analysis surface integrated with runtime
+  category: INTEL
+  status: completed
+  archive_status: ready_for_archive
+  priority: P1
+  package_group: PKG-OPS-POST-SUBSTRATE
+  affected_systems:
+  - intelligence
+  - operations
+  - governance
+  expected_file_families:
+  - governance/integrated_ops_home_intel_inventory_policy.v1.yaml
+  - bin/run_integrated_ops_expansion.py
+  - artifacts/operations/integrated_ops_expansion_run.json
+  plane_sync_enabled: true
+  plane_item_id: null
+  autonomous_execution_status: eligible_with_guardrails
+  external_dependency_blocks_autonomous_execution: false
+  external_dependency_readiness_status: not_applicable
 - id: RM-DEV-002
   path: docs/roadmap/items/RM-DEV-002.yaml
   title: Dual-model inline QC coding loop for the developer assistant
@@ -550,6 +594,27 @@ items:
   - governance/product_search_schema.v1.yaml
   plane_sync_enabled: true
   plane_item_id: null
+- id: RM-HOME-005
+  path: docs/roadmap/items/RM-HOME-005.yaml
+  title: Governed home/local-environment operation intents through the unified runtime
+  category: HOME
+  status: completed
+  archive_status: ready_for_archive
+  priority: P1
+  package_group: PKG-OPS-POST-SUBSTRATE
+  affected_systems:
+  - home_runtime
+  - control_window
+  - operations
+  expected_file_families:
+  - governance/integrated_ops_home_intel_inventory_policy.v1.yaml
+  - framework/integrated_ops_home_intel_inventory.py
+  - artifacts/operations/integrated_ops_expansion_run.json
+  plane_sync_enabled: true
+  plane_item_id: null
+  autonomous_execution_status: eligible_with_guardrails
+  external_dependency_blocks_autonomous_execution: false
+  external_dependency_readiness_status: not_applicable
 - id: RM-ED-001
   path: docs/roadmap/items/RM-ED-001.yaml
   title: Edition builder baseline system

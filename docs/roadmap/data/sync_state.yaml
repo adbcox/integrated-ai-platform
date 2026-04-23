@@ -61,6 +61,26 @@ items:
   autonomous_execution_status: eligible_with_guardrails
   external_dependency_readiness_status: not_applicable
   external_dependency_blocks_autonomous_execution: false
+- id: RM-OPS-006
+  sync_enabled: true
+  sync_mode: repo_to_plane_authoritative
+  plane_workspace: Integrated AI Platform
+  plane_project: Roadmap Ops
+  plane_item_id: null
+  plane_url: null
+  last_push_at: null
+  last_pull_at: null
+  last_sync_result: not_synced
+  status: completed
+  archive_status: ready_for_archive
+  writeback_fields_allowed:
+  - operational_state
+  - assignee
+  - cycle
+  - module
+  autonomous_execution_status: eligible_with_guardrails
+  external_dependency_readiness_status: not_applicable
+  external_dependency_blocks_autonomous_execution: false
 - id: RM-OPS-004
   sync_enabled: true
   sync_mode: repo_to_plane_authoritative
@@ -401,6 +421,26 @@ items:
   - assignee
   - cycle
   - module
+- id: RM-INTEL-003
+  sync_enabled: true
+  sync_mode: repo_to_plane_authoritative
+  plane_workspace: Integrated AI Platform
+  plane_project: Roadmap Ops
+  plane_item_id: null
+  plane_url: null
+  last_push_at: null
+  last_pull_at: null
+  last_sync_result: not_synced
+  status: completed
+  archive_status: ready_for_archive
+  writeback_fields_allowed:
+  - operational_state
+  - assignee
+  - cycle
+  - module
+  autonomous_execution_status: eligible_with_guardrails
+  external_dependency_readiness_status: not_applicable
+  external_dependency_blocks_autonomous_execution: false
 - id: RM-DEV-002
   sync_enabled: true
   sync_mode: repo_to_plane_authoritative
@@ -530,6 +570,26 @@ items:
   - assignee
   - cycle
   - module
+- id: RM-HOME-005
+  sync_enabled: true
+  sync_mode: repo_to_plane_authoritative
+  plane_workspace: Integrated AI Platform
+  plane_project: Roadmap Ops
+  plane_item_id: null
+  plane_url: null
+  last_push_at: null
+  last_pull_at: null
+  last_sync_result: not_synced
+  status: completed
+  archive_status: ready_for_archive
+  writeback_fields_allowed:
+  - operational_state
+  - assignee
+  - cycle
+  - module
+  autonomous_execution_status: eligible_with_guardrails
+  external_dependency_readiness_status: not_applicable
+  external_dependency_blocks_autonomous_execution: false
 - id: RM-ED-001
   sync_enabled: true
   sync_mode: repo_to_plane_authoritative

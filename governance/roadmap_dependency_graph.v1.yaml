@@ -1,6 +1,6 @@
 schema_version: '1.1'
 kind: roadmap_dependency_graph
-generated_at: '2026-04-23T03:06:20+00:00'
+generated_at: '2026-04-23T03:25:33+00:00'
 source_of_truth: docs/roadmap/items/RM-*.yaml
 nodes:
 - id: RM-AUTO-001
@@ -165,6 +165,12 @@ nodes:
   priority: P1
   status: completed
   archive_status: ready_for_archive
+- id: RM-HOME-005
+  title: Governed home/local-environment operation intents through the unified runtime
+  category: HOME
+  priority: P1
+  status: completed
+  archive_status: ready_for_archive
 - id: RM-HW-001
   title: Electrical design baseline system
   category: HW
@@ -184,6 +190,13 @@ nodes:
   priority: P1
   status: completed
   archive_status: archived
+- id: RM-INTEL-003
+  title: Governed intelligence watch and operator analysis surface integrated with
+    runtime
+  category: INTEL
+  priority: P1
+  status: completed
+  archive_status: ready_for_archive
 - id: RM-INV-002
   title: Photo-driven inventory capture and capability mapping system
   category: INV
@@ -235,6 +248,12 @@ nodes:
   archive_status: ready_for_archive
 - id: RM-OPS-005
   title: End-to-end telemetry, tracing, and audit evidence pipeline
+  category: OPS
+  priority: P1
+  status: completed
+  archive_status: ready_for_archive
+- id: RM-OPS-006
+  title: Integrated operational expansion layer for governed ops/home/intel/inventory
   category: OPS
   priority: P1
   status: completed
@@ -397,10 +416,34 @@ edges:
   to: RM-GOV-009
   type: hard
   description: RM-GOV-009 depends on RM-GOV-008
+- from: RM-OPS-006
+  to: RM-HOME-005
+  type: hard
+  description: RM-HOME-005 depends on RM-OPS-006
+- from: RM-UI-005
+  to: RM-HOME-005
+  type: hard
+  description: RM-HOME-005 depends on RM-UI-005
+- from: RM-GOV-009
+  to: RM-HOME-005
+  type: hard
+  description: RM-HOME-005 depends on RM-GOV-009
 - from: RM-INV-003
   to: RM-HW-001
   type: hard
   description: RM-HW-001 depends on RM-INV-003
+- from: RM-OPS-006
+  to: RM-INTEL-003
+  type: hard
+  description: RM-INTEL-003 depends on RM-OPS-006
+- from: RM-INTEL-002
+  to: RM-INTEL-003
+  type: hard
+  description: RM-INTEL-003 depends on RM-INTEL-002
+- from: RM-GOV-009
+  to: RM-INTEL-003
+  type: hard
+  description: RM-INTEL-003 depends on RM-GOV-009
 - from: RM-OPS-005
   to: RM-INV-002
   type: hard
@@ -437,6 +480,18 @@ edges:
   to: RM-OPS-005
   type: hard
   description: RM-OPS-005 depends on RM-GOV-001
+- from: RM-OPS-005
+  to: RM-OPS-006
+  type: hard
+  description: RM-OPS-006 depends on RM-OPS-005
+- from: RM-UI-005
+  to: RM-OPS-006
+  type: hard
+  description: RM-OPS-006 depends on RM-UI-005
+- from: RM-AUTO-001
+  to: RM-OPS-006
+  type: hard
+  description: RM-OPS-006 depends on RM-AUTO-001
 - from: RM-AUTO-001
   to: RM-PHASE1-001
   type: hard
@@ -514,10 +569,13 @@ blocking_analysis:
   - RM-GOV-006
   - RM-GOV-007
   - RM-GOV-009
+  - RM-HOME-005
   - RM-HW-001
+  - RM-INTEL-003
   - RM-INV-003
   - RM-OPS-004
   - RM-OPS-005
+  - RM-OPS-006
   - RM-UI-005
   archived_items:
   - RM-AUTO-002

@@ -49,6 +49,9 @@ dependencies:
   related_items:
     - "RM-ED-001"
     - "RM-UI-001"
+    - "RM-OPS-006"
+    - "RM-HOME-005"
+    - "RM-INTEL-003"
 
 impact:
   affected_systems:
@@ -90,12 +93,15 @@ planning:
 execution:
   execution_package_refs:
     - "bin/procurement_evaluator.py"
+    - "bin/run_integrated_ops_expansion.py"
   execution_status: "completed"
   last_execution_commit: null
 
 validation:
   validation_artifact_refs:
     - "artifacts/integration_demo/02_procurement_evaluation.json"
+    - "artifacts/operations/integrated_ops_expansion_run.json"
+    - "artifacts/validation/integrated_ops_expansion_validation.json"
     - "tests/test_procurement_evaluator.py"
     - "tests/test_integration_chain.py"
   validation_status: "passed"
@@ -158,7 +164,7 @@ sync:
 metadata:
   owner: "system"
   created_at: "2026-04-22"
-  updated_at: "2026-04-22"
+  updated_at: "2026-04-23"
   tags:
     - "integration"
     - "procurement"

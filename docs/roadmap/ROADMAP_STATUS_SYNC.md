@@ -26,6 +26,21 @@ This document is the human-visible status sync surface. Item files are authorita
 - Blocked placeholder items (explicitly ineligible): `none`
 - Blocker registry surface: `artifacts/planning/blocker_registry.json`
 
+## Integrated Expansion Snapshot (Latest)
+
+- Integrated runtime/policy path activated for operations + home + intelligence + inventory:
+  - `governance/integrated_ops_home_intel_inventory_policy.v1.yaml`
+  - `framework/integrated_ops_home_intel_inventory.py`
+  - `bin/run_integrated_ops_expansion.py`
+  - `bin/validate_integrated_ops_expansion.py`
+  - `artifacts/operations/integrated_ops_expansion_run.json`
+  - `artifacts/validation/integrated_ops_expansion_validation.json`
+- Canonical item outcomes:
+  - `RM-OPS-006` — completed, ready_for_archive
+  - `RM-HOME-005` — completed, ready_for_archive
+  - `RM-INTEL-003` — completed, ready_for_archive
+  - `RM-INV-003` — completed, ready_for_archive (reused as integrated inventory decision-support core)
+
 ## RM-UI-005 Canonical Execution State (Latest)
 
 - Item id: `RM-UI-005`

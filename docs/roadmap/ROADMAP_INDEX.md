@@ -18,6 +18,21 @@ Derived index of roadmap state. Canonical status is in `docs/roadmap/items/RM-*.
   - `artifacts/planning/next_pull.json`
   - `artifacts/planning/blocker_registry.json`
 
+## Completed Integrated Expansion Index
+
+- `RM-OPS-006` — Integrated operational expansion layer for governed ops/home/intel/inventory (`completed`, `ready_for_archive`)
+- `RM-HOME-005` — Governed home/local-environment intents through unified runtime (`completed`, `ready_for_archive`)
+- `RM-INTEL-003` — Governed intelligence watch and operator analysis surface (`completed`, `ready_for_archive`)
+- `RM-INV-003` — Procurement and search baseline reused as inventory decision-support core (`completed`, `ready_for_archive`)
+
+Integrated expansion evidence:
+- `governance/integrated_ops_home_intel_inventory_policy.v1.yaml`
+- `framework/integrated_ops_home_intel_inventory.py`
+- `bin/run_integrated_ops_expansion.py`
+- `bin/validate_integrated_ops_expansion.py`
+- `artifacts/operations/integrated_ops_expansion_run.json`
+- `artifacts/validation/integrated_ops_expansion_validation.json`
+
 ## Completed Canonical Item
 
 - `RM-UI-005` — Local execution control dashboard, routing layer, Aider orchestration, and OpenHands interface (`completed`, `ready_for_archive`)
