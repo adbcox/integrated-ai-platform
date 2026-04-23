@@ -36,7 +36,8 @@ Should not be read by default.
 
 | Path | Type | Authority level | Current state | Audience | Read when | Superseded by / notes |
 |---|---|---:|---|---|---|---|
-| `docs/architecture/MASTER_SYSTEM_ARCHITECTURE.md` | Canonical | 1 | active | human + machine | always first for architecture truth | core architecture anchor |
+| `docs/architecture/SYSTEM_MISSION_AND_SCOPE.md` | Canonical/Operating | 1 | active | human + machine | first when system identity or mission is in question | explicit mission and scope statement |
+| `docs/architecture/MASTER_SYSTEM_ARCHITECTURE.md` | Canonical | 1 | active | human + machine | always for architecture truth | core architecture anchor |
 | `docs/roadmap/ROADMAP_AUTHORITY.md` | Canonical/Operating | 1 | active | human + machine | always for roadmap truth model | defines authority layers |
 | `docs/roadmap/items/RM-*.yaml` | Canonical | 1 | active | human + machine | always for item truth | canonical item-state layer |
 | `artifacts/planning/next_pull.json` | Derived | 2 | active | machine + human | when queue/selection matters | regenerate from canonical truth |
@@ -50,6 +51,8 @@ Should not be read by default.
 | `docs/roadmap/POST_CONVERGENCE_OPERATING_MODE.md` | Operating | 2 | active | human + machine | to understand current repo posture | current default operating-mode doc |
 | `docs/governance/CURRENT_OPERATING_CONTEXT.md` | Operating | 2 | active | human + machine | first short start-here brief | concise current-state entry point |
 | `docs/governance/HARDWARE_CAPABILITY_AND_CONSTRAINTS.md` | Operating/Reference | 2 | active | human + machine | when work depends on hardware capacity, limits, firmware, or host roles | hardware source of truth for capability and constraints |
+| `docs/governance/hardware_inventory_registry.yaml` | Derived/Operating | 2 | active | machine + human | when machine-readable hardware state is needed | registry companion to hardware capability doc |
+| `docs/governance/HARDWARE_CAPTURE_AND_VALIDATION_RUNBOOK.md` | Operating | 2 | active | human + machine | when updating or validating hardware facts | hardware capture and maintenance process |
 | `docs/execution_modes/EXECUTION_ROUTER.md` | Operating/Execution | 2 | active | human + machine | when choosing tool/mode | maps task types to implementers |
 | `docs/execution_modes/CODEX_CONTROL_MODE.md` | Execution | 2 | active | human + machine | when using Codex for review/control | tool-specific mode doc |
 | `docs/execution_modes/CODEX_EXEC_MODE.md` | Execution | 2 | active | human + machine | when using Codex for implementation | tool-specific mode doc |
@@ -74,7 +77,7 @@ Should not be read by default.
 ## Retention note
 
 This index should be updated whenever:
-- a new canonical operating doc is created
+- a new canonical or operating doc is created
 - a historical transition doc is demoted
 - a redundant doc is archived or retired
 - an execution-mode doc is added or removed
