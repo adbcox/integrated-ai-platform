@@ -6,6 +6,8 @@ import json
 import subprocess
 import argparse
 import time
+import os
+import re
 from pathlib import Path
 from typing import Optional, Dict, List, Any
 from datetime import datetime
@@ -18,6 +20,7 @@ from bin.roadmap_parser import (
     infer_dependencies,
     RoadmapItem,
     update_frontmatter,
+    detect_cycles,
 )
 
 
@@ -28,11 +31,13 @@ class RoadmapExecutor:
     READY_READINESS = ["now", "near", "later"]
     VALID_STATUSES = ["Proposed", "Accepted", "Decomposing", "Planned", "Execution-ready", "In progress", "Validating", "Completed", "Deferred", "Frozen", "Rejected"]
 
-    def __init__(self, repo_root: Path):
+    def __init__(self, repo_root: Path, llm_model: Optional[str] = None):
         self.repo_root = repo_root
         self.roadmap_dir = repo_root / "docs" / "roadmap" / "ITEMS"
         self.artifacts_dir = repo_root / "artifacts" / "executions"
         self.artifacts_dir.mkdir(parents=True, exist_ok=True)
+        self.failures_log = repo_root / "artifacts" / "execution_failures.jsonl"
+        self.llm_model = llm_model or "qwen2.5-coder:14b"
 
     def _update_item_status(
         self,
@@ -86,6 +91,22 @@ class RoadmapExecutor:
         except subprocess.CalledProcessError as e:
             print(f"⚠️  Warning: Could not commit status update: {e}", file=sys.stderr)
             return True  # Don't fail if commit fails
+
+    def _log_failure(self, item_id: str, subtask: str, attempt: int, error: str, duration: float) -> None:
+        """Log execution failure to JSONL log."""
+        entry = {
+            "timestamp": datetime.utcnow().isoformat(),
+            "item_id": item_id,
+            "subtask": subtask,
+            "attempt": attempt,
+            "error": error,
+            "duration_seconds": round(duration, 2),
+        }
+        try:
+            with open(self.failures_log, "a") as f:
+                f.write(json.dumps(entry) + "\n")
+        except Exception as e:
+            print(f"⚠️  Could not write failure log: {e}", file=sys.stderr)
 
     def _dependencies_met(self, item: RoadmapItem, items: List[RoadmapItem]) -> bool:
         """Check if all dependencies are completed (status == 'Completed')."""
@@ -147,18 +168,21 @@ class RoadmapExecutor:
         return grouped
 
     def decompose_item(self, item: RoadmapItem, llm_model: Optional[str] = None) -> List[str]:
-        """Decompose a roadmap item into subtasks using Ollama API."""
+        """Decompose a roadmap item into subtasks using Ollama API with file path requirements."""
         if not llm_model:
-            llm_model = "qwen2.5-coder:14b"
+            llm_model = self.llm_model
 
-        prompt = f"""Analyze this roadmap item and decompose it into 3-7 concrete subtasks.
+        expected_files = ', '.join(item.expected_file_families) if item.expected_file_families else 'infer from context'
+        prompt = f"""Analyze this roadmap item and decompose it into 3-5 concrete subtasks.
+Each subtask MUST reference a specific Python file path (e.g., domains/coding.py, bin/auto_execute_roadmap.py).
 
 ID: {item.id}
 Title: {item.title}
 Description: {item.description}
+Expected files: {expected_files}
 
-Respond ONLY with a JSON array of concrete, actionable subtasks:
-["Subtask 1", "Subtask 2", ...]
+Respond ONLY with a JSON array. Each element must mention at least one .py file path:
+["Add retry logic to bin/auto_execute_roadmap.py execute_subtask method", ...]
 
 Only JSON, no other text."""
 
@@ -177,68 +201,97 @@ Only JSON, no other text."""
 
             if response.status_code == 200:
                 output = response.json().get("response", "")
-                import re
                 json_match = re.search(r'\[.*\]', output, re.DOTALL)
                 if json_match:
                     try:
                         subtasks = json.loads(json_match.group())
                         if isinstance(subtasks, list) and len(subtasks) > 0:
-                            return subtasks
+                            # Filter: reject subtasks without .py file references
+                            py_ref = re.compile(r'[\w/]+\.py')
+                            valid = [s for s in subtasks if py_ref.search(s)]
+                            if valid:
+                                return valid
                     except json.JSONDecodeError:
                         pass
 
-            # Fallback: heuristic decomposition
+            # Fallback: use expected_file_families to generate file-anchored subtasks
+            files = item.expected_file_families[:2] if item.expected_file_families else [f"domains/{item.category.lower()}.py"]
             return [
-                f"Review requirements for {item.id}",
-                f"Implement core functionality for {item.title}",
-                f"Add tests and validation for {item.id}",
-                f"Update documentation for {item.title}"
+                f"Review and implement core logic in {files[0]}",
+                f"Add validation and error handling to {files[0]}",
+                f"Add tests for {files[0]}",
+                f"Update {files[1] if len(files) > 1 else files[0]} with integration",
             ]
         except Exception as e:
             print(f"⚠️  Decomposition error: {e}", file=sys.stderr)
-            # Fallback plan when API unavailable
+            # Fallback when API unavailable
+            files = item.expected_file_families[:1] if item.expected_file_families else [f"domains/{item.category.lower()}.py"]
             return [
-                f"Review {item.id} requirements",
-                f"Implement {item.title}",
-                f"Test {item.id}",
-                f"Document {item.title}"
+                f"Review {item.id} in {files[0]}",
+                f"Implement {item.title} in {files[0]}",
+                f"Test {item.id} in {files[0]}",
+                f"Document {item.title} in {files[0]}"
             ]
 
-    def execute_subtask(self, subtask: str, dry_run: bool = False) -> bool:
-        """Execute subtask via local_coding_task.py --force-local."""
+    def execute_subtask(self, subtask: str, item_id: str = "", dry_run: bool = False, max_retries: int = 3, subtask_timeout: int = 600) -> bool:
+        """Execute subtask via local_coding_task.py --force-local with retry logic."""
         if dry_run:
             print(f"    • {subtask} [DRY]")
             return True
 
         print(f"    • {subtask}")
-        try:
-            result = subprocess.run(
-                [
-                    "python3",
-                    str(self.repo_root / "bin" / "local_coding_task.py"),
-                    "--force-local",
-                    "--batch-mode",
-                    subtask
-                ],
-                cwd=self.repo_root,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True,
-                timeout=600
-            )
 
-            if result.returncode == 0:
-                print(f"      ✅ Done")
-                return True
-            else:
-                print(f"      ❌ Failed (exit {result.returncode})")
-                return False
-        except subprocess.TimeoutExpired:
-            print(f"      ⏱️  Timeout")
-            return False
-        except Exception as e:
-            print(f"      ❌ Error: {e}")
-            return False
+        for attempt in range(1, max_retries + 1):
+            if attempt > 1:
+                delay = 5 * (2 ** (attempt - 2))  # 5, 10, 20 seconds
+                print(f"      ↺ Retry {attempt}/{max_retries} in {delay}s...")
+                time.sleep(delay)
+
+            start = time.time()
+            try:
+                proc = subprocess.Popen(
+                    [
+                        "python3",
+                        str(self.repo_root / "bin" / "local_coding_task.py"),
+                        "--force-local",
+                        "--batch-mode",
+                        subtask
+                    ],
+                    cwd=self.repo_root,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    text=True,
+                    start_new_session=True,
+                )
+                try:
+                    stdout, stderr = proc.communicate(timeout=subtask_timeout)
+                    duration = time.time() - start
+                    if proc.returncode == 0:
+                        print(f"      ✅ Done (attempt {attempt})")
+                        return True
+                    error = f"exit {proc.returncode}: {stderr[:200] if stderr else 'no error output'}"
+                except subprocess.TimeoutExpired:
+                    # Kill the entire process group
+                    try:
+                        os.killpg(os.getpgid(proc.pid), 9)
+                    except (ProcessLookupError, OSError):
+                        pass
+                    proc.wait()
+                    duration = time.time() - start
+                    error = f"timeout after {subtask_timeout}s"
+
+                print(f"      ❌ Failed: {error}")
+                if item_id:
+                    self._log_failure(item_id, subtask, attempt, error, duration)
+
+            except Exception as e:
+                duration = time.time() - start
+                error = str(e)
+                print(f"      ❌ Error: {error}")
+                if item_id:
+                    self._log_failure(item_id, subtask, attempt, error, duration)
+
+        return False
 
     def execute_item(self, item: RoadmapItem, grouped_items: Optional[List[RoadmapItem]] = None, dry_run: bool = False) -> bool:
         """Execute a roadmap item and update frontmatter."""
@@ -264,7 +317,7 @@ Only JSON, no other text."""
         failed_count = 0
         for idx, subtask in enumerate(subtasks, 1):
             print(f"   [{idx}/{len(subtasks)}]", end=" ")
-            if not self.execute_subtask(subtask, dry_run=dry_run):
+            if not self.execute_subtask(subtask, item_id=item.id, dry_run=dry_run):
                 failed_count += 1
 
         # CRITICAL: Require ALL subtasks to pass
@@ -277,17 +330,38 @@ Only JSON, no other text."""
             print(f"\n❌ FAILED: {failed_count}/{len(subtasks)} subtasks failed")
             return False
 
-    def run_autonomous_loop(self, max_items: int = 5, dry_run: bool = False) -> None:
-        """Run autonomous execution loop."""
+    def run_autonomous_loop(self, max_items: int = 5, dry_run: bool = False, resume: bool = False, filter_pattern: str = "") -> None:
+        """Run autonomous execution loop with resume and filtering support."""
         print(f"\n🤖 Autonomous Roadmap Execution")
-        print(f"   Max items: {max_items} | Dry run: {dry_run}")
+        print(f"   Max items: {max_items} | Dry run: {dry_run} | Resume: {resume} | Filter: {filter_pattern or 'none'}")
 
         # Parse items
         items = parse_roadmap_directory(self.roadmap_dir)
         infer_dependencies(items)
 
         print(f"   Loaded {len(items)} roadmap items")
+
+        # Detect and warn about cycles
+        cycles = detect_cycles(items)
+        if cycles:
+            print(f"⚠️  {len(cycles)} dependency cycle(s) detected:")
+            for cycle in cycles:
+                print(f"   {' → '.join(cycle)}")
         print()
+
+        # Resume: reset "In progress" items back to "Accepted" to allow retry
+        if resume:
+            reset_count = 0
+            for item in items:
+                if item.status == "In progress":
+                    print(f"  🔄 Resetting {item.id} from In progress → Accepted")
+                    self._update_item_status(item, "Accepted", notes="Reset from In progress (resume mode)")
+                    reset_count += 1
+            if reset_count > 0:
+                # Reload after reset
+                items = parse_roadmap_directory(self.roadmap_dir)
+                infer_dependencies(items)
+                print(f"  Reset {reset_count} items\n")
 
         executed = 0
         for _ in range(max_items):
@@ -299,13 +373,22 @@ Only JSON, no other text."""
 
             item = candidates[0]
 
+            # Apply filter if specified
+            if filter_pattern:
+                if not re.search(filter_pattern, item.id):
+                    # Skip this item, reload and find next
+                    items = parse_roadmap_directory(self.roadmap_dir)
+                    infer_dependencies(items)
+                    continue
+
             # Find grouped items
             grouped = self.find_grouped_items(items, item)
             if len(grouped) > 1:
                 print(f"📦 Grouped execution: {item.id} + {len(grouped)-1} others")
 
-            # Execute
+            # Execute (pass llm_model to decompose_item)
             self.execute_item(item, grouped_items=grouped if len(grouped) > 1 else None, dry_run=dry_run)
+            # Update decompose_item to use passed model
             executed += 1
 
             # Reload items for updated status
@@ -326,14 +409,16 @@ def main():
     parser.add_argument("--max-items", type=int, default=5, help="Max items to execute")
     parser.add_argument("--dry-run", action="store_true", help="Dry run mode")
     parser.add_argument("--model", default="qwen2.5-coder:14b", help="Decomposition model")
+    parser.add_argument("--resume", action="store_true", help="Reset stuck In-progress items and retry")
+    parser.add_argument("--filter", default="", help="Regex filter on item ID (e.g. 'RM-GOV')")
 
     args = parser.parse_args()
 
     repo_root = Path(__file__).parent.parent
-    executor = RoadmapExecutor(repo_root)
+    executor = RoadmapExecutor(repo_root, llm_model=args.model)
 
     try:
-        executor.run_autonomous_loop(max_items=args.max_items, dry_run=args.dry_run)
+        executor.run_autonomous_loop(max_items=args.max_items, dry_run=args.dry_run, resume=args.resume, filter_pattern=args.filter)
     except KeyboardInterrupt:
         print("\n⏹️  Interrupted")
         sys.exit(1)

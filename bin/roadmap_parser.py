@@ -277,6 +277,40 @@ def print_item_summary(item: RoadmapItem) -> None:
         print(f"   Affected systems: {', '.join(item.affected_systems)}")
 
 
+def detect_cycles(items: List[RoadmapItem]) -> List[List[str]]:
+    """Detect circular dependencies using DFS. Returns list of cycles."""
+    id_to_item = {item.id: item for item in items}
+    visited = set()
+    path = []
+    path_set = set()
+    cycles = []
+
+    def dfs(node_id: str) -> None:
+        if node_id in path_set:
+            # Found a cycle — extract the cycle portion
+            cycle_start = path.index(node_id)
+            cycles.append(path[cycle_start:] + [node_id])
+            return
+        if node_id in visited:
+            return
+        visited.add(node_id)
+        path.append(node_id)
+        path_set.add(node_id)
+        item = id_to_item.get(node_id)
+        if item:
+            for dep_id in item.dependencies:
+                if dep_id in id_to_item:
+                    dfs(dep_id)
+        path.pop()
+        path_set.discard(node_id)
+
+    for item in items:
+        if item.id not in visited:
+            dfs(item.id)
+
+    return cycles
+
+
 if __name__ == "__main__":
     repo_root = Path(__file__).parent.parent
     roadmap_dir = repo_root / "docs" / "roadmap" / "ITEMS"
