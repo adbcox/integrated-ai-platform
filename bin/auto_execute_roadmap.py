@@ -173,18 +173,41 @@ class RoadmapExecutor:
             llm_model = self.llm_model
 
         expected_files = ', '.join(item.expected_file_families) if item.expected_file_families else 'infer from context'
-        prompt = f"""Analyze this roadmap item and decompose it into 3-5 concrete subtasks.
-Each subtask MUST reference a specific Python file path (e.g., domains/coding.py, bin/auto_execute_roadmap.py).
+        prompt = f"""Break down this task into 3-7 EXECUTABLE subtasks.
+CRITICAL: Each subtask MUST mention specific Python file(s) to modify.
 
 ID: {item.id}
 Title: {item.title}
 Description: {item.description}
+Category: {item.category}
 Expected files: {expected_files}
 
-Respond ONLY with a JSON array. Each element must mention at least one .py file path:
-["Add retry logic to bin/auto_execute_roadmap.py execute_subtask method", ...]
+RULES:
+1. Every subtask MUST include a .py file path (e.g., "Update domains/media.py...")
+2. Subtasks without file paths will FAIL - be specific!
+3. Use existing project structure:
+   - bin/ for scripts and executors
+   - domains/ for business logic (coding, media, operations, etc.)
+   - web/ for web interfaces
+   - framework/ for core runtime
+   - tests/ for test files
+   - config/ for configuration
 
-Only JSON, no other text."""
+GOOD EXAMPLES:
+✅ "Add health_check() method to domains/media.py"
+✅ "Create bin/inventory_manager.py with asset tagging functions"
+✅ "Update web/dashboard/app.py to add click-tile navigation"
+✅ "Add validation logic to framework/code_executor.py"
+
+BAD EXAMPLES (will fail):
+❌ "Design the user interface layout" (no file!)
+❌ "Implement drag-and-drop functionality" (no file!)
+❌ "Ensure compatibility with devices" (no file!)
+
+Generate subtasks as a JSON array following these rules. MUST be valid JSON with file paths:
+["Update domains/xxx.py to add yyy", "Create bin/zzz.py with aaa functionality", ...]
+
+Only JSON array, no other text."""
 
         try:
             import requests
@@ -238,6 +261,30 @@ Only JSON, no other text."""
         if dry_run:
             print(f"    • {subtask} [DRY]")
             return True
+
+        # Validate subtask has file reference; add fallback if missing
+        if not re.search(r'\b\w+(?:/\w+)*\.py\b', subtask):
+            file_map = {
+                'UI': 'web/dashboard/app.py',
+                'MEDIA': 'domains/media.py',
+                'OPS': 'domains/operations.py',
+                'GOV': 'bin/governance.py',
+                'AUTO': 'bin/auto_execute_roadmap.py',
+                'CORE': 'framework/worker_runtime.py',
+                'DEV': 'bin/aider_executor.py',
+                'HW': 'domains/hardware.py',
+                'HOME': 'domains/home.py',
+                'INTEL': 'framework/inference_adapter.py',
+                'INV': 'domains/inventory.py',
+                'KB': 'framework/state_store.py',
+                'LANG': 'domains/language.py',
+                'SHOP': 'domains/shop.py',
+            }
+            # Extract category from item_id if possible
+            category = item_id.split('-')[1] if '-' in item_id else 'CORE'
+            inferred_file = file_map.get(category, 'domains/coding.py')
+            subtask = f"{subtask} (modify {inferred_file})"
+            print(f"      [AUTO-FIX] Added inferred file: {inferred_file}")
 
         print(f"    • {subtask}")
 
