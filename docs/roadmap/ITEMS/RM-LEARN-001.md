@@ -4,7 +4,7 @@
 - **Title:** Learning metrics collection and analysis infrastructure
 - **Category:** `LEARN`
 - **Type:** `Enhancement`
-- **Status:** `In progress`
+- **Status:** `Accepted`
 - **Maturity:** `M0`
 - **Priority:** `High`
 - **Priority class:** `P2`
