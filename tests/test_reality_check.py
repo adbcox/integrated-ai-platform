@@ -94,18 +94,24 @@ def test_ollama_api_responds():
 @pytest.mark.slow
 def test_aider_can_modify_file():
     """
-    Run real aider against a real git-tracked file. Verify the file changes.
+    Run real aider against a tiny canary file. Verify the file changes.
 
-    Uses --no-auto-commits so we control cleanup (git checkout after).
+    Uses a 1-line canary file (tests/_aider_canary.py) so the model's required
+    response is exactly 2 lines — impossible to truncate mid-block. Under concurrent
+    Ollama load, larger files cause the model to truncate SEARCH/REPLACE blocks,
+    making aider exit 0 without writing. The canary sidesteps this.
+
+    Uses --no-auto-commits so we control cleanup (delete canary file after).
     Uses --map-tokens 0 to skip repo-map (saves ~140s per run).
+    Uses --edit-format whole: model returns complete file (2 lines), reliable at any size.
 
     Timeout: 900s — handles Ollama queue contention. With 3 concurrent aider processes,
     each waits in queue: 3 × 217s = 651s. 900s gives a 249s margin.
 
-    Cleanup: git checkout domains/media.py reverts the change.
+    Cleanup: delete tests/_aider_canary.py.
     """
-    target = "domains/media.py"
     marker = "# reality-check-test-marker"
+    canary = REPO_ROOT / "tests" / "_aider_canary.py"
 
     # Report concurrent Ollama competition (key signal for timeout root cause)
     aider_procs = subprocess.run(
@@ -119,14 +125,12 @@ def test_aider_can_modify_file():
     else:
         print(f"\nNo competing aider processes found — expect ~217s for 7b model")
 
-    # Baseline: marker must NOT be in the file before we run
-    before = (REPO_ROOT / target).read_text()
-    if marker in before:
-        # Previous run didn't clean up — revert first
-        subprocess.run(["git", "checkout", target], cwd=REPO_ROOT)
-        before = (REPO_ROOT / target).read_text()
-
-    assert marker not in before, f"Marker already in file before test — cleanup failed"
+    # Create a fresh 1-line canary file (tiny so model can't truncate the response)
+    if canary.exists():
+        canary.unlink()
+    canary.write_text("x = 1\n")
+    before = canary.read_text()
+    print(f"\nCanary file created: {canary.relative_to(REPO_ROOT)} — content: {before!r}")
 
     cmd = [
         "aider",
@@ -136,12 +140,13 @@ def test_aider_can_modify_file():
         "--no-show-model-warnings",
         "--no-auto-lint",
         "--map-tokens", "0",
+        "--edit-format", "whole",
         "--message",
-        f"Add the comment '{marker}' as the very first line of the file, above all imports.",
-        target,
+        f"Add the comment '{marker}' as the very first line of the file.",
+        str(canary.relative_to(REPO_ROOT)),
     ]
 
-    print(f"\nRunning aider (--map-tokens 0, timeout=900s)...")
+    print(f"\nRunning aider (--edit-format whole, --map-tokens 0, timeout=900s)...")
     start = time.time()
 
     try:
@@ -152,11 +157,9 @@ def test_aider_can_modify_file():
             cwd=REPO_ROOT,
         )
         elapsed = time.time() - start
-        timed_out = False
     except subprocess.TimeoutExpired as e:
         elapsed = time.time() - start
-        timed_out = True
-        # decode bytes from TimeoutExpired
+        canary.unlink(missing_ok=True)
         stdout = e.stdout.decode("utf-8", errors="replace") if isinstance(e.stdout, bytes) else (e.stdout or "")
         stderr = e.stderr.decode("utf-8", errors="replace") if isinstance(e.stderr, bytes) else (e.stderr or "")
         competing = subprocess.run(
@@ -174,9 +177,16 @@ def test_aider_can_modify_file():
         )
 
     print(f"\nAider exit code: {proc.returncode} (elapsed {elapsed:.1f}s, timeout=900s)")
-    print(f"stdout:\n{proc.stdout[:800]}")
+    print(f"stdout:\n{proc.stdout[:1200]}")
     if proc.stderr:
         print(f"stderr:\n{proc.stderr[:400]}")
+
+    # Verify the file actually changed
+    after = canary.read_text() if canary.exists() else ""
+
+    # Cleanup before asserting (so dirty state is never left behind)
+    canary.unlink(missing_ok=True)
+    print(f"\nCleanup: deleted {canary.relative_to(REPO_ROOT)}")
 
     assert proc.returncode == 0, (
         f"Aider exited {proc.returncode} after {elapsed:.1f}s.\n"
@@ -184,24 +194,18 @@ def test_aider_can_modify_file():
         f"stderr: {proc.stderr}"
     )
 
-    # Verify the file actually changed
-    after = (REPO_ROOT / target).read_text()
-
-    # Cleanup first (before asserting, so we don't leave dirty state on failure)
-    cleanup = subprocess.run(["git", "checkout", target], cwd=REPO_ROOT,
-                              capture_output=True, text=True)
-    print(f"\nCleanup: git checkout {target} → {cleanup.returncode}")
-
     assert after != before, (
-        f"Aider exited 0 in {elapsed:.1f}s but {target} was NOT modified.\n"
+        f"Aider exited 0 in {elapsed:.1f}s but canary file was NOT modified.\n"
+        f"before: {before!r}\n"
+        f"after:  {after!r}\n"
         "Aider may have decided no changes were needed (check stdout above)."
     )
     assert marker in after, (
-        f"Aider ran successfully but the marker '{marker}' is not in the file.\n"
-        f"File starts with: {after[:200]!r}"
+        f"Aider ran and file changed, but the marker '{marker}' is not in the file.\n"
+        f"File content: {after!r}"
     )
 
-    print(f"✓ Aider modified {target} in {elapsed:.1f}s — marker present")
+    print(f"✓ Aider modified canary file in {elapsed:.1f}s — marker present")
 
 
 # ─────────────────────────────────────────────────────────────────────────────
