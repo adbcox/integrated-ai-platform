@@ -615,6 +615,7 @@ Make sure to address all issues and test edge cases."""
             "aider",
             "--no-auto-commits",
             f"--model={model}",
+            "--yes",
         ]
 
         # Inject repo context if available
@@ -622,8 +623,12 @@ Make sure to address all issues and test edge cases."""
         if context_file.exists():
             cmd.append(f"--read={context_file}")
 
-        cmd.append(task_description)
+        # Add files first
         cmd.extend(files)
+
+        # Add task as message argument
+        cmd.append("--message")
+        cmd.append(task_description)
 
         return cmd
 
