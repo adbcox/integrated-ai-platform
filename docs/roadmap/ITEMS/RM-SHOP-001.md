@@ -4,7 +4,7 @@
 - **Title:** Woodworking design and project-planning app
 - **Category:** `SHOP`
 - **Type:** `Feature`
-- **Status:** `In progress`
+- **Status:** `Completed`
 - **Maturity:** `M1`
 - **Priority:** `Medium`
 - **Priority class:** `P3`
