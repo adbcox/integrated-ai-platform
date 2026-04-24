@@ -4,7 +4,7 @@
 - **Title:** Integration test automation for stage pipeline
 - **Category:** `TESTING`
 - **Type:** `Enhancement`
-- **Status:** `Accepted`
+- **Status:** `In progress`
 - **Maturity:** `M0`
 - **Priority:** `High`
 - **Priority class:** `P2`
