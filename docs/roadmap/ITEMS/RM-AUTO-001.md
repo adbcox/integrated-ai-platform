@@ -4,7 +4,7 @@
 - **Title:** Plain-English goal-to-agent system
 - **Category:** `AUTO`
 - **Type:** `Program`
-- **Status:** `Accepted`
+- **Status:** `Completed`
 - **Maturity:** `M2`
 - **Priority:** `Critical`
 - **Priority class:** `P1`
