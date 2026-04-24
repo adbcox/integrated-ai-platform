@@ -4,7 +4,7 @@
 - **Title:** Automotive repair and maintenance assistant with broad general knowledge for all cars and deep classic Mercedes specialization
 - **Category:** `AUTO-MECH`
 - **Type:** `Feature`
-- **Status:** `Accepted`
+- **Status:** `Completed`
 - **Maturity:** `M2`
 - **Priority:** `High`
 - **Priority class:** `P3`
