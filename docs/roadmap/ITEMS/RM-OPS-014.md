@@ -4,7 +4,7 @@
 - **Title:** Secrets management (Vault integration)
 - **Category:** `OPS`
 - **Type:** `Enhancement`
-- **Status:** `In progress`
+- **Status:** `Completed`
 - **Maturity:** `M0`
 - **Priority:** `High`
 - **Priority class:** `P2`
