@@ -4,7 +4,7 @@
 - **Title:** Optimization targets and prioritization framework
 - **Category:** `PERF`
 - **Type:** `Enhancement`
-- **Status:** `In progress`
+- **Status:** `Completed`
 - **Maturity:** `M0`
 - **Priority:** `High`
 - **Priority class:** `P2`
