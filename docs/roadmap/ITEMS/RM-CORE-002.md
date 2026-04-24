@@ -4,7 +4,7 @@
 - **Title:** Installable edition-builder for the AI system with selectable feature sets for macOS and Windows
 - **Category:** `CORE`
 - **Type:** `Program`
-- **Status:** `Accepted`
+- **Status:** `In progress`
 - **Maturity:** `M2`
 - **Priority:** `High`
 - **Priority class:** `P2`
