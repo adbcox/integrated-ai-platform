@@ -553,27 +553,31 @@ Make sure to address all issues and test edge cases."""
 
             try:
                 stdout, stderr = proc.communicate(timeout=timeout_seconds)
+                # Combine stdout + stderr so errors are never silently swallowed
                 output = stdout
-                output_lines = stdout.split('\n')
-                for line in output_lines:
+                combined = stdout + ("\n[STDERR]\n" + stderr if stderr.strip() else "")
+                for line in stdout.split('\n'):
                     if line.strip():
                         print(line)
-            except subprocess.TimeoutExpired as e:
+                if stderr.strip():
+                    print(f"[AIDER STDERR] {stderr[:500]}", flush=True)
+            except subprocess.TimeoutExpired:
                 try:
                     proc.kill()
-                    proc.wait(timeout=5)
+                    stdout_partial, stderr_partial = proc.communicate(timeout=5)
                 except Exception:
-                    pass
-                # Re-raise with more context
+                    stdout_partial, stderr_partial = "", ""
+                partial_output = stdout_partial or ""
+                partial_stderr = stderr_partial or ""
+                combined = partial_output + ("\n[STDERR]\n" + partial_stderr if partial_stderr else "")
+                result_data["output"] = combined
                 raise subprocess.TimeoutExpired(
                     cmd=' '.join(cmd),
                     timeout=timeout_seconds,
-                    output=e.stdout or "",
-                    stderr=e.stderr or ""
                 )
-            result_data["output"] = output
+            result_data["output"] = combined
             result_data["failure_signatures"] = self._detect_failure_signatures(
-                output, proc.returncode
+                combined, proc.returncode
             )
 
             if proc.returncode == 0:
@@ -600,10 +604,19 @@ Make sure to address all issues and test edge cases."""
                         }
                     )
             else:
-                result_data["error"] = f"Aider exited with code {proc.returncode}"
+                # Include stderr in the error message so callers see the real failure
+                error_detail = stderr.strip() if stderr.strip() else output.strip()[:200]
+                result_data["error"] = (
+                    f"Aider exited with code {proc.returncode}"
+                    + (f": {error_detail}" if error_detail else "")
+                )
 
         except subprocess.TimeoutExpired:
-            result_data["error"] = f"Aider timeout after {timeout_seconds} seconds"
+            result_data["error"] = (
+                f"Aider timeout after {timeout_seconds}s — "
+                f"model inference is too slow for this timeout. "
+                f"Partial output: {result_data.get('output', '')[:300]}"
+            )
             result_data["failure_signatures"] = self._detect_failure_signatures(
                 result_data["output"], None, timed_out=True
             )
@@ -632,6 +645,10 @@ Make sure to address all issues and test edge cases."""
             f"--model=ollama/{model}",
             "--yes",
             "--no-show-model-warnings",
+            "--no-auto-lint",
+            # Disable repo-map: saves one full LLM call per run (~140s for 14b model).
+            # With 5 files max, explicit file list is sufficient context.
+            "--map-tokens", "0",
         ]
 
         # Inject repo context if available

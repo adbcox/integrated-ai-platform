@@ -103,8 +103,8 @@ def main() -> int:
     parser.add_argument(
         "--timeout",
         type=int,
-        default=300,
-        help="Timeout in seconds (default: 300)",
+        default=900,
+        help="Timeout in seconds (default: 900 — local 14b model takes ~140s per API call)",
     )
     parser.add_argument(
         "--model",
