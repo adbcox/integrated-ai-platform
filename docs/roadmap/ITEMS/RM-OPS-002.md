@@ -4,7 +4,7 @@
 - **Title:** TP-Link Deco BE95 mesh system integration for monitoring, alerting, and control-surface visibility
 - **Category:** `OPS`
 - **Type:** `Feature`
-- **Status:** `In progress`
+- **Status:** `Completed`
 - **Maturity:** `M1`
 - **Priority:** `Medium`
 - **Priority class:** `P3`
