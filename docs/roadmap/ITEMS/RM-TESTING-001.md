@@ -87,4 +87,4 @@ Establish isolated fixture definitions for framework and domain modules.
 
 ## Notes
 
-High foundational value. Blocks effective execution of `RM-TESTING-002` and `RM-TESTING-005`.
+High foundational value. Foundational item for testing infrastructure.

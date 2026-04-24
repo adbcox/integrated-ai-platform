@@ -87,4 +87,4 @@ Establish benchmark framework with 3 core metrics (latency, throughput, memory).
 
 ## Notes
 
-Enables data-driven optimization decisions. Should be executed alongside `RM-PERF-001` and `RM-PERF-002`.
+Enables data-driven optimization decisions.

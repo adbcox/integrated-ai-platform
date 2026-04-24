@@ -88,4 +88,4 @@ Implement E2E test framework with 5 realistic code modification scenarios.
 
 ## Notes
 
-Blocked by `RM-TESTING-002`. Critical for validating system reliability and user experience.
+Critical for validating system reliability and user experience.

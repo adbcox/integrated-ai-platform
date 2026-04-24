@@ -87,4 +87,4 @@ Implement coverage measurement and per-module reporting.
 
 ## Notes
 
-Low priority but high value. Provides visibility that enables other testing improvements.
+Provides visibility that enables other testing improvements.

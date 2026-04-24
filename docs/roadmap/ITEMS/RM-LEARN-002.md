@@ -90,4 +90,4 @@ Implement signal extraction for 3 key failure modes and generate improvement rec
 
 ## Notes
 
-Blocked by `RM-LEARN-001`. Completes the learning infrastructure foundation.
+Completes the learning infrastructure foundation.

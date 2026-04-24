@@ -92,4 +92,4 @@ Implement function-level CPU profiling with integration into execution pipeline.
 
 ## Notes
 
-Foundation for all performance optimization work. High strategic value.
+Foundation for all performance optimization work.

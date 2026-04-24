@@ -88,4 +88,4 @@ Identify top 3 bottlenecks and develop optimization proposals for each.
 
 ## Notes
 
-Blocked by `RM-PERF-001`. Enables strategic optimization investments.
+Enables strategic optimization investments.

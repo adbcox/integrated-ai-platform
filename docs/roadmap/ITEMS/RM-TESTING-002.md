@@ -90,4 +90,4 @@ Implement end-to-end pipeline execution tests covering happy path and error case
 
 ## Notes
 
-Blocked by `RM-TESTING-001`. Critical for confidence in autonomy system reliability.
+Critical for confidence in autonomy system reliability.

@@ -89,4 +89,4 @@ Implement in-memory query cache with TTL and basic statistics.
 
 ## Notes
 
-High ROI optimization candidate. Can be implemented incrementally.
+High ROI optimization candidate.
