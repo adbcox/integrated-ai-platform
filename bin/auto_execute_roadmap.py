@@ -404,26 +404,45 @@ Only JSON array, no other text."""
 
     def run_autonomous_loop(self, max_items: int = 5, target_completions: Optional[int] = None, dry_run: bool = False, resume: bool = False, filter_pattern: str = "") -> None:
         """Run autonomous execution loop tracking completions until target is reached."""
+        # Early print to verify startup
+        print("🤖 [STARTUP] Initializing autonomous executor...", flush=True)
+        sys.stdout.flush()
+
         # Use target_completions if specified, otherwise fall back to max_items
         if target_completions is None:
             target_completions = max_items
 
-        print(f"\n🤖 Autonomous Roadmap Execution")
-        print(f"   Target completions: {target_completions} | Dry run: {dry_run} | Resume: {resume} | Filter: {filter_pattern or 'none'}")
+        print(f"\n🤖 Autonomous Roadmap Execution", flush=True)
+        print(f"   Target completions: {target_completions} | Dry run: {dry_run} | Resume: {resume} | Filter: {filter_pattern or 'none'}", flush=True)
+        sys.stdout.flush()
 
         # Parse items
+        print(f"[DEBUG] Parsing roadmap directory: {self.roadmap_dir}", flush=True)
+        sys.stdout.flush()
         items = parse_roadmap_directory(self.roadmap_dir)
-        infer_dependencies(items)
+        print(f"[DEBUG] parse_roadmap_directory() returned {len(items)} items", flush=True)
+        sys.stdout.flush()
 
-        print(f"   Loaded {len(items)} roadmap items")
+        infer_dependencies(items)
+        print(f"[DEBUG] Dependencies inferred", flush=True)
+        sys.stdout.flush()
+
+        print(f"   Loaded {len(items)} roadmap items", flush=True)
+        sys.stdout.flush()
+
+        if not items:
+            print("⚠️  WARNING: No items found in roadmap directory!", flush=True)
+            sys.stdout.flush()
 
         # Detect and warn about cycles
+        print("[DEBUG] Detecting cycles", flush=True)
         cycles = detect_cycles(items)
         if cycles:
-            print(f"⚠️  {len(cycles)} dependency cycle(s) detected:")
+            print(f"⚠️  {len(cycles)} dependency cycle(s) detected:", flush=True)
             for cycle in cycles:
-                print(f"   {' → '.join(cycle)}")
-        print()
+                print(f"   {' → '.join(cycle)}", flush=True)
+        print("", flush=True)
+        sys.stdout.flush()
 
         # Resume: reset "In progress" items back to "Accepted" to allow retry
         if resume:
@@ -504,20 +523,38 @@ Only JSON array, no other text."""
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Autonomous roadmap execution (RM-GOV-001 compliant)")
-    parser.add_argument("--max-items", type=int, default=5, help="Max items to execute (deprecated, use --target-completions)")
-    parser.add_argument("--target-completions", type=int, default=None, help="Target number of successful completions (default: same as --max-items)")
-    parser.add_argument("--dry-run", action="store_true", help="Dry run mode")
-    parser.add_argument("--model", default="qwen2.5-coder:14b", help="Decomposition model")
-    parser.add_argument("--resume", action="store_true", help="Reset stuck In-progress items and retry")
-    parser.add_argument("--filter", default="", help="Regex filter on item ID (e.g. 'RM-GOV')")
-
-    args = parser.parse_args()
-
-    repo_root = Path(__file__).parent.parent
-    executor = RoadmapExecutor(repo_root, llm_model=args.model)
+    # Verify output is not buffered
+    print("[STARTUP] Python process started", flush=True)
+    sys.stdout.flush()
+    sys.stderr.flush()
 
     try:
+        print("[STARTUP] Parsing arguments", flush=True)
+        sys.stdout.flush()
+
+        parser = argparse.ArgumentParser(description="Autonomous roadmap execution (RM-GOV-001 compliant)")
+        parser.add_argument("--max-items", type=int, default=5, help="Max items to execute (deprecated, use --target-completions)")
+        parser.add_argument("--target-completions", type=int, default=None, help="Target number of successful completions (default: same as --max-items)")
+        parser.add_argument("--dry-run", action="store_true", help="Dry run mode")
+        parser.add_argument("--model", default="qwen2.5-coder:14b", help="Decomposition model")
+        parser.add_argument("--resume", action="store_true", help="Reset stuck In-progress items and retry")
+        parser.add_argument("--filter", default="", help="Regex filter on item ID (e.g. 'RM-GOV')")
+
+        args = parser.parse_args()
+        print(f"[STARTUP] Arguments parsed: {args}", flush=True)
+        sys.stdout.flush()
+
+        print("[STARTUP] Creating executor instance", flush=True)
+        repo_root = Path(__file__).parent.parent
+        print(f"[STARTUP] Repo root: {repo_root}", flush=True)
+        sys.stdout.flush()
+        executor = RoadmapExecutor(repo_root, llm_model=args.model)
+        print(f"[STARTUP] Executor created with roadmap_dir={executor.roadmap_dir}", flush=True)
+        sys.stdout.flush()
+
+        print("[STARTUP] Starting autonomous loop", flush=True)
+        sys.stdout.flush()
+
         executor.run_autonomous_loop(
             max_items=args.max_items,
             target_completions=args.target_completions,
@@ -525,8 +562,21 @@ def main():
             resume=args.resume,
             filter_pattern=args.filter
         )
+        print("[SHUTDOWN] Execution completed successfully", flush=True)
+        sys.stdout.flush()
+
     except KeyboardInterrupt:
-        print("\n⏹️  Interrupted")
+        print("\n⏹️  Interrupted by user", flush=True)
+        sys.stderr.flush()
+        sys.exit(1)
+
+    except Exception as e:
+        print(f"\n❌ FATAL ERROR: {type(e).__name__}: {e}", file=sys.stderr, flush=True)
+        sys.stderr.flush()
+        print("\n🐛 Full traceback:", file=sys.stderr, flush=True)
+        import traceback
+        traceback.print_exc(file=sys.stderr)
+        sys.stderr.flush()
         sys.exit(1)
 
 
