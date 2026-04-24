@@ -4,7 +4,7 @@
 - **Title:** No-code primary user interface with click-tile navigation for apps and functions
 - **Category:** `UI`
 - **Type:** `Feature`
-- **Status:** `In progress`
+- **Status:** `Completed`
 - **Maturity:** `M2`
 - **Priority:** `High`
 - **Priority class:** `P2`
