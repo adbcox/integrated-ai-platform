@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Autonomous Executor Monitor</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #0f0f23 0%, #1a1a3e 100%);
+            color: #e0e0e0;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #333;
+        }
+
+        h1 {
+            font-size: 28px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #4CAF50;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .time {
+            font-size: 14px;
+            color: #999;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 20px;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .card-title {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #999;
+            margin-bottom: 8px;
+        }
+
+        .card-value {
+            font-size: 32px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .card-subtitle {
+            font-size: 13px;
+            color: #777;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            overflow: hidden;
+            margin-top: 12px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4CAF50, #45a049);
+            border-radius: 3px;
+            transition: width 0.3s ease;
+        }
+
+        .section {
+            margin-bottom: 30px;
+        }
+
+        .section-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .section-title::before {
+            content: '';
+            width: 4px;
+            height: 20px;
+            background: #4CAF50;
+            border-radius: 2px;
+        }
+
+        .log-container {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 15px;
+            max-height: 400px;
+            overflow-y: auto;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 12px;
+        }
+
+        .log-entry {
+            margin-bottom: 8px;
+            padding: 5px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .log-entry:last-child {
+            border-bottom: none;
+        }
+
+        .log-timestamp {
+            color: #666;
+        }
+
+        .log-level {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 3px;
+            margin-right: 8px;
+            font-weight: 600;
+            font-size: 10px;
+        }
+
+        .log-level.debug {
+            background: rgba(100, 150, 200, 0.3);
+            color: #64b3ff;
+        }
+
+        .log-level.info {
+            background: rgba(76, 175, 80, 0.3);
+            color: #4CAF50;
+        }
+
+        .log-level.error {
+            background: rgba(244, 67, 54, 0.3);
+            color: #ff5252;
+        }
+
+        .log-level.emergency {
+            background: rgba(255, 152, 0, 0.3);
+            color: #ffb74d;
+        }
+
+        .commits-list {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .commit-item {
+            padding: 12px 15px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .commit-item:last-child {
+            border-bottom: none;
+        }
+
+        .commit-message {
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 12px;
+            flex: 1;
+        }
+
+        .commit-sha {
+            color: #666;
+            font-size: 11px;
+            margin-right: 12px;
+        }
+
+        .commit-time {
+            color: #777;
+            font-size: 12px;
+        }
+
+        .error-item {
+            padding: 12px 15px;
+            background: rgba(244, 67, 54, 0.1);
+            border-left: 3px solid #f44336;
+            margin-bottom: 8px;
+            border-radius: 4px;
+        }
+
+        .error-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .error-title {
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .error-details {
+            font-size: 12px;
+            color: #aaa;
+        }
+
+        .refresh-info {
+            font-size: 11px;
+            color: #666;
+            text-align: right;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            font-size: 13px;
+        }
+
+        .stat-label {
+            color: #999;
+        }
+
+        .stat-value {
+            font-weight: 600;
+        }
+
+        @media (max-width: 768px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+
+            h1 {
+                font-size: 20px;
+            }
+
+            .card-value {
+                font-size: 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>
+                <div class="status-indicator"></div>
+                Autonomous Executor Monitor
+            </h1>
+            <div class="time" id="current-time">Loading...</div>
+        </header>
+
+        <!-- Metrics Cards -->
+        <div class="grid">
+            <div class="card">
+                <div class="card-title">Completion Progress</div>
+                <div class="card-value" id="completion-count">57</div>
+                <div class="card-subtitle">of 223 items (25.6%)</div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="completion-bar" style="width: 25.6%"></div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">Current Item</div>
+                <div class="card-value" id="current-item" style="font-size: 20px;">-</div>
+                <div class="card-subtitle" id="current-item-status">No execution in progress</div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">Execution Stats</div>
+                <div class="stat-row">
+                    <div class="stat-label">Success Rate:</div>
+                    <div class="stat-value" id="success-rate">-</div>
+                </div>
+                <div class="stat-row">
+                    <div class="stat-label">Errors:</div>
+                    <div class="stat-value" id="error-count">0</div>
+                </div>
+                <div class="stat-row">
+                    <div class="stat-label">Last Update:</div>
+                    <div class="stat-value" id="last-update">-</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">Cycles Detected</div>
+                <div class="card-value" id="cycle-count">0</div>
+                <div class="card-subtitle">dependency cycles remaining</div>
+            </div>
+        </div>
+
+        <!-- Recent Commits -->
+        <div class="section">
+            <div class="section-title">Recent Commits</div>
+            <div class="commits-list" id="commits-list">
+                <div class="commit-item" style="color: #666;">Loading git history...</div>
+            </div>
+        </div>
+
+        <!-- Execution Log -->
+        <div class="section">
+            <div class="section-title">Execution Log (Last 10 entries)</div>
+            <div class="log-container" id="log-container">
+                <div class="log-entry" style="color: #666;">Waiting for log data...</div>
+            </div>
+        </div>
+
+        <!-- Error Log -->
+        <div class="section">
+            <div class="section-title">Errors & Escalations</div>
+            <div id="error-list" style="color: #999;">No errors detected</div>
+        </div>
+
+        <div class="refresh-info">
+            Auto-refreshing every 10 seconds | Last refresh: <span id="refresh-time">never</span>
+        </div>
+    </div>
+
+    <script>
+        const REFRESH_INTERVAL = 10000; // 10 seconds
+
+        async function fetchExecutionLog() {
+            try {
+                const response = await fetch('../../../execution.log');
+                if (!response.ok) return null;
+                const text = await response.text();
+                return text.split('\n').reverse().slice(0, 10).reverse();
+            } catch (e) {
+                console.error('Error fetching log:', e);
+                return null;
+            }
+        }
+
+        async function fetchGitLog() {
+            try {
+                // This requires a backend endpoint that returns git log as JSON
+                // For now, return mock data
+                return [
+                    { sha: '7845d0f', message: 'docs: Create comprehensive handoff and architecture guides', time: 'now' },
+                    { sha: '46a3472', message: 'fix: Break all 45 circular dependencies', time: '5 min ago' },
+                    { sha: '980018b', message: 'status: RM-OPS-015 → In progress', time: '1 hour ago' },
+                    { sha: '0b35e7c', message: 'Add emergency diagnostic logging to executor', time: '2 hours ago' },
+                    { sha: 'c9f5c52', message: 'status: RM-TESTING-014 → In progress', time: '3 hours ago' }
+                ];
+            } catch (e) {
+                console.error('Error fetching git log:', e);
+                return [];
+            }
+        }
+
+        async function parseExecutionLog(logLines) {
+            if (!logLines) return [];
+
+            const entries = [];
+            for (const line of logLines) {
+                const match = line.match(/\[(.*?)\]\s+(.*)/);
+                if (match) {
+                    const level = match[1].toLowerCase();
+                    const message = match[2];
+                    entries.push({ level, message, timestamp: new Date().toLocaleTimeString() });
+                }
+            }
+            return entries;
+        }
+
+        async function updateDashboard() {
+            // Update time
+            const now = new Date();
+            document.getElementById('current-time').textContent = now.toLocaleTimeString();
+            document.getElementById('refresh-time').textContent = now.toLocaleTimeString();
+
+            // Fetch and parse logs
+            const logLines = await fetchExecutionLog();
+            if (logLines) {
+                const entries = await parseExecutionLog(logLines);
+                const logContainer = document.getElementById('log-container');
+                logContainer.innerHTML = entries.map(e =>
+                    `<div class="log-entry">
+                        <span class="log-timestamp">${e.timestamp}</span>
+                        <span class="log-level ${e.level}">${e.level.toUpperCase()}</span>
+                        ${e.message}
+                    </div>`
+                ).join('');
+            }
+
+            // Fetch git log
+            const commits = await fetchGitLog();
+            if (commits.length > 0) {
+                const commitsList = document.getElementById('commits-list');
+                commitsList.innerHTML = commits.map(c =>
+                    `<div class="commit-item">
+                        <div style="flex: 1;">
+                            <div class="commit-message">${c.message}</div>
+                        </div>
+                        <div class="commit-sha">${c.sha}</div>
+                        <div class="commit-time">${c.time}</div>
+                    </div>`
+                ).join('');
+            }
+
+            // Parse current metrics from log
+            if (logLines) {
+                const lastLine = logLines[logLines.length - 1] || '';
+
+                // Look for current item in log
+                if (lastLine.includes('RM-')) {
+                    const match = lastLine.match(/(RM-[A-Z]+-\d+)/);
+                    if (match) {
+                        document.getElementById('current-item').textContent = match[1];
+                        document.getElementById('current-item-status').textContent = 'Executing...';
+                    }
+                }
+
+                // Count errors
+                const errorCount = logLines.filter(l => l.includes('[ERROR]') || l.includes('[EMERGENCY]')).length;
+                document.getElementById('error-count').textContent = errorCount;
+
+                // Show recent errors
+                if (errorCount > 0) {
+                    const recentErrors = logLines
+                        .filter(l => l.includes('[ERROR]') || l.includes('[EMERGENCY]'))
+                        .slice(-3);
+
+                    const errorList = document.getElementById('error-list');
+                    errorList.innerHTML = recentErrors.map(e =>
+                        `<div class="error-item">
+                            <div class="error-title">Error detected</div>
+                            <div class="error-details">${e.substring(0, 100)}...</div>
+                        </div>`
+                    ).join('');
+                }
+            }
+        }
+
+        // Initial load
+        updateDashboard();
+
+        // Auto-refresh every 10 seconds
+        setInterval(updateDashboard, REFRESH_INTERVAL);
+
+        // Update time every second
+        setInterval(() => {
+            const now = new Date();
+            document.getElementById('current-time').textContent = now.toLocaleTimeString();
+        }, 1000);
+    </script>
+</body>
+</html>
