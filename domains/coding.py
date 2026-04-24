@@ -299,7 +299,7 @@ class CodingDomain:
         try:
             diff_result = subprocess.run(
                 ["git", "diff", f"{commit_hash}^..{commit_hash}"],
-                stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                capture_output=True,
                 text=True,
                 timeout=10,
                 cwd=self.repo_root,
@@ -349,7 +349,7 @@ Respond with JSON:
             proc = subprocess.run(
                 cmd,
                 input=review_prompt,
-                stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                capture_output=True,
                 text=True,
                 timeout=timeout_seconds,
                 cwd=self.repo_root,
@@ -541,7 +541,7 @@ Make sure to address all issues and test edge cases."""
 
             proc = subprocess.Popen(
                 cmd,
-                stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                capture_output=True,
                 text=True,
                 stdin=subprocess.DEVNULL,
                 timeout=timeout_seconds,
@@ -566,7 +566,7 @@ Make sure to address all issues and test edge cases."""
                 try:
                     commit_result = subprocess.run(
                         ["git", "rev-parse", "HEAD"],
-                        stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                        capture_output=True,
                         text=True,
                         timeout=10,
                         cwd=self.repo_root,
@@ -633,7 +633,7 @@ Make sure to address all issues and test edge cases."""
         try:
             result = subprocess.run(
                 ["git", "status", "--porcelain"],
-                stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                capture_output=True,
                 text=True,
                 timeout=5,
                 cwd=self.repo_root,
