@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from typing import Any, Dict, List
-
 import requests
+import logging
+from typing import List, Dict, Any
 
 from .base import BaseConnector
 
@@ -24,7 +24,8 @@ class ArrStackConnector(BaseConnector):
         try:
             response = self.session.get(f"{self.base_url}/api/v3/system/status", timeout=5)
             return response.status_code == 200
-        except Exception:
+        except Exception as e:
+            logging.error(f"Error checking health: {e}")
             return False
 
     def get_queue(self) -> List[Dict[str, Any]]:
@@ -33,7 +34,8 @@ class ArrStackConnector(BaseConnector):
             response = self.session.get(f"{self.base_url}/api/v3/queue", timeout=10)
             response.raise_for_status()
             return response.json().get("records", [])
-        except Exception:
+        except Exception as e:
+            logging.error(f"Error getting queue: {e}")
             return []
 
     def get_calendar(self, days: int = 7) -> List[Dict[str, Any]]:
@@ -46,7 +48,8 @@ class ArrStackConnector(BaseConnector):
             )
             response.raise_for_status()
             return response.json()
-        except Exception:
+        except Exception as e:
+            logging.error(f"Error getting calendar: {e}")
             return []
 
     def execute(self, action: str, params: Dict[str, Any]) -> Dict[str, Any]:
@@ -65,4 +68,5 @@ class ArrStackConnector(BaseConnector):
             result = handler()
             return {"success": True, **result}
         except Exception as e:
+            logging.error(f"Error executing action '{action}': {e}")
             return {"success": False, "error": str(e)}
