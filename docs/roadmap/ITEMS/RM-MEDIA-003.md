@@ -4,7 +4,7 @@
 - **Title:** Media inventory hygiene, duplicate detection, and cleanup advisory
 - **Category:** `MEDIA`
 - **Type:** `Enhancement`
-- **Status:** `Accepted`
+- **Status:** `In progress`
 - **Maturity:** `M1`
 - **Priority:** `Medium`
 - **Priority class:** `P3`
