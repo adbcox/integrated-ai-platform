@@ -269,7 +269,8 @@ Only JSON array, no other text."""
 
     def execute_subtask(self, subtask: str, item_id: str = "", dry_run: bool = False, max_retries: int = 3, subtask_timeout: int = 600) -> bool:
         """Execute subtask via local_coding_task.py --force-local with retry logic."""
-        print(f"[DEBUG] execute_subtask called with: dry_run={dry_run}, subtask='{subtask}'")
+        print(f"[DEBUG] execute_subtask called with: dry_run={dry_run}, subtask='{subtask}'", flush=True)
+        sys.stdout.flush()
         if dry_run:
             print(f"    • {subtask} [DRY]")
             return True
@@ -320,7 +321,8 @@ Only JSON array, no other text."""
                     "--batch-mode",
                     subtask
                 ]
-                print(f"[DEBUG] Running subprocess: {' '.join(cmd)}")
+                print(f"[DEBUG] Running subprocess: {' '.join(cmd)}", flush=True)
+                sys.stdout.flush()
                 proc = subprocess.Popen(
                     cmd,
                     cwd=self.repo_root,
@@ -329,22 +331,31 @@ Only JSON array, no other text."""
                     text=True,
                     start_new_session=True,
                 )
-                print(f"[DEBUG] Process started with PID {proc.pid}, waiting for completion with timeout={subtask_timeout}s")
+                print(f"[DEBUG] Process started with PID {proc.pid}, waiting for completion with timeout={subtask_timeout}s", flush=True)
+                sys.stdout.flush()
                 try:
                     stdout, stderr = proc.communicate(timeout=subtask_timeout)
                     duration = time.time() - start
-                    print(f"[DEBUG] Process completed with returncode={proc.returncode}, duration={duration:.1f}s")
+                    print(f"[DEBUG] Process completed with returncode={proc.returncode}, duration={duration:.1f}s", flush=True)
+                    sys.stdout.flush()
                     if proc.returncode == 0:
-                        print(f"      ✅ Done (attempt {attempt})")
+                        print(f"      ✅ Done (attempt {attempt})", flush=True)
+                        sys.stdout.flush()
                         return True
                     error = f"exit {proc.returncode}: {stderr[:200] if stderr else 'no error output'}"
                 except subprocess.TimeoutExpired:
-                    # Kill the entire process group
+                    # Kill the entire process group with timeout protection
                     try:
                         os.killpg(os.getpgid(proc.pid), 9)
                     except (ProcessLookupError, OSError):
                         pass
-                    proc.wait()
+                    # Wait with short timeout in case process doesn't respond to SIGKILL
+                    try:
+                        proc.wait(timeout=5)
+                    except subprocess.TimeoutExpired:
+                        # Process still not dead, log and continue
+                        print(f"      ⚠️  Process did not respond to SIGKILL after 5s", flush=True)
+                        sys.stdout.flush()
                     duration = time.time() - start
                     error = f"timeout after {subtask_timeout}s"
 
@@ -363,43 +374,53 @@ Only JSON array, no other text."""
 
     def execute_item(self, item: RoadmapItem, grouped_items: Optional[List[RoadmapItem]] = None, dry_run: bool = False) -> bool:
         """Execute a roadmap item and update frontmatter."""
-        print(f"\n{'='*70}")
-        print(f"🚀 {item.id} — {item.title}")
-        print(f"{'='*70}")
+        print(f"\n{'='*70}", flush=True)
+        print(f"🚀 {item.id} — {item.title}", flush=True)
+        print(f"{'='*70}", flush=True)
+        sys.stdout.flush()
 
         self._update_item_status(item, "In progress", notes="Execution started")
 
         # Decompose into subtasks
-        print(f"\n📋 Decomposing into subtasks...")
+        print(f"\n📋 Decomposing into subtasks...", flush=True)
+        sys.stdout.flush()
         subtasks = self.decompose_item(item)
-        print(f"[DEBUG] decompose_item returned: {subtasks}")
+        print(f"[DEBUG] decompose_item returned: {subtasks}", flush=True)
+        sys.stdout.flush()
 
         # CRITICAL: If no subtasks, FAIL - don't mark complete
         if not subtasks or len(subtasks) == 0:
-            print(f"❌ FAILED: No subtasks generated for {item.id}")
+            print(f"❌ FAILED: No subtasks generated for {item.id}", flush=True)
+            sys.stdout.flush()
             self._update_item_status(item, "Accepted", notes="Decomposition failed - reverted")
             return False
 
-        print(f"   Generated {len(subtasks)} subtasks:")
+        print(f"   Generated {len(subtasks)} subtasks:", flush=True)
+        sys.stdout.flush()
 
         # Execute subtasks
         failed_count = 0
         for idx, subtask in enumerate(subtasks, 1):
-            print(f"   [{idx}/{len(subtasks)}]", end=" ")
-            print(f"\n[DEBUG] Calling execute_subtask with: {subtask}")
+            print(f"   [{idx}/{len(subtasks)}]", end=" ", flush=True)
+            sys.stdout.flush()
+            print(f"\n[DEBUG] Calling execute_subtask with: {subtask}", flush=True)
+            sys.stdout.flush()
             result = self.execute_subtask(subtask, item_id=item.id, dry_run=dry_run)
-            print(f"[DEBUG] execute_subtask returned: {result}")
+            print(f"[DEBUG] execute_subtask returned: {result}", flush=True)
+            sys.stdout.flush()
             if not result:
                 failed_count += 1
 
         # CRITICAL: Require ALL subtasks to pass
         if failed_count == 0:
             self._update_item_status(item, "Completed", notes=f"All {len(subtasks)} subtasks completed")
-            print(f"\n✅ Completed: {item.id}")
+            print(f"\n✅ Completed: {item.id}", flush=True)
+            sys.stdout.flush()
             return True
         else:
             self._update_item_status(item, "Accepted", notes=f"{failed_count}/{len(subtasks)} subtasks failed - reverted")
-            print(f"\n❌ FAILED: {failed_count}/{len(subtasks)} subtasks failed")
+            print(f"\n❌ FAILED: {failed_count}/{len(subtasks)} subtasks failed", flush=True)
+            sys.stdout.flush()
             return False
 
     def run_autonomous_loop(self, max_items: int = 5, target_completions: Optional[int] = None, dry_run: bool = False, resume: bool = False, filter_pattern: str = "") -> None:
@@ -449,14 +470,16 @@ Only JSON array, no other text."""
             reset_count = 0
             for item in items:
                 if item.status == "In progress":
-                    print(f"  🔄 Resetting {item.id} from In progress → Accepted")
+                    print(f"  🔄 Resetting {item.id} from In progress → Accepted", flush=True)
+                    sys.stdout.flush()
                     self._update_item_status(item, "Accepted", notes="Reset from In progress (resume mode)")
                     reset_count += 1
             if reset_count > 0:
                 # Reload after reset
                 items = parse_roadmap_directory(self.roadmap_dir)
                 infer_dependencies(items)
-                print(f"  Reset {reset_count} items\n")
+                print(f"  Reset {reset_count} items\n", flush=True)
+                sys.stdout.flush()
 
         # Track completions and failures
         completed_count = 0
@@ -465,11 +488,13 @@ Only JSON array, no other text."""
         attempt = 0
 
         # Run until target completions reached or too many consecutive failures
+        skipped_without_match = 0
         while completed_count < target_completions:
             # Find next executable item
             candidates = self.find_executable_items(items, max_count=1)
             if not candidates:
-                print(f"✅ No more executable items (completed: {completed_count}/{target_completions})")
+                print(f"✅ No more executable items (completed: {completed_count}/{target_completions})", flush=True)
+                sys.stdout.flush()
                 break
 
             item = candidates[0]
@@ -478,14 +503,23 @@ Only JSON array, no other text."""
             if filter_pattern:
                 if not re.search(filter_pattern, item.id):
                     # Skip this item, reload and find next
+                    skipped_without_match += 1
+                    if skipped_without_match > 10:
+                        print(f"❌ No items matching filter '{filter_pattern}' found after 10 attempts", flush=True)
+                        sys.stdout.flush()
+                        break
                     items = parse_roadmap_directory(self.roadmap_dir)
                     infer_dependencies(items)
                     continue
 
+            # Reset skipped counter when we find a match
+            skipped_without_match = 0
+
             # Find grouped items
             grouped = self.find_grouped_items(items, item)
             if len(grouped) > 1:
-                print(f"📦 Grouped execution: {item.id} + {len(grouped)-1} others")
+                print(f"📦 Grouped execution: {item.id} + {len(grouped)-1} others", flush=True)
+                sys.stdout.flush()
 
             # Execute and track result
             attempt += 1
@@ -494,15 +528,18 @@ Only JSON array, no other text."""
             if success:
                 completed_count += 1
                 consecutive_failures = 0
-                print(f"\n📊 Progress: {completed_count}/{target_completions} completions ({failed_count} failed)")
+                print(f"\n📊 Progress: {completed_count}/{target_completions} completions ({failed_count} failed)", flush=True)
+                sys.stdout.flush()
             else:
                 failed_count += 1
                 consecutive_failures += 1
-                print(f"\n📊 Progress: {completed_count}/{target_completions} completions ({failed_count} failed, {consecutive_failures} consecutive)")
+                print(f"\n📊 Progress: {completed_count}/{target_completions} completions ({failed_count} failed, {consecutive_failures} consecutive)", flush=True)
+                sys.stdout.flush()
 
                 # Stop if too many consecutive failures
                 if consecutive_failures >= 3:
-                    print(f"\n⚠️  Stopping: {consecutive_failures} consecutive failures indicate system issue")
+                    print(f"\n⚠️  Stopping: {consecutive_failures} consecutive failures indicate system issue", flush=True)
+                    sys.stdout.flush()
                     break
 
             # Reload items for updated status
@@ -511,15 +548,17 @@ Only JSON array, no other text."""
 
             # Checkpoint logging
             if attempt % 3 == 0:
-                print(f"\n⏸️  Checkpoint: {attempt} attempts, {completed_count}/{target_completions} completions")
+                print(f"\n⏸️  Checkpoint: {attempt} attempts, {completed_count}/{target_completions} completions", flush=True)
+                sys.stdout.flush()
                 time.sleep(1)
 
-        print(f"\n{'='*70}")
-        print(f"🏁 Execution complete:")
-        print(f"   Completions: {completed_count}/{target_completions}")
-        print(f"   Failures: {failed_count}")
-        print(f"   Attempts: {attempt}")
-        print(f"{'='*70}\n")
+        print(f"\n{'='*70}", flush=True)
+        print(f"🏁 Execution complete:", flush=True)
+        print(f"   Completions: {completed_count}/{target_completions}", flush=True)
+        print(f"   Failures: {failed_count}", flush=True)
+        print(f"   Attempts: {attempt}", flush=True)
+        print(f"{'='*70}\n", flush=True)
+        sys.stdout.flush()
 
 
 def main():
