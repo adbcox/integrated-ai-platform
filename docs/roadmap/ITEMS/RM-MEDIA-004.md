@@ -4,7 +4,7 @@
 - **Title:** Media stack configuration optimization and sports-event acquisition
 - **Category:** `MEDIA`
 - **Type:** `Enhancement`
-- **Status:** `In progress`
+- **Status:** `Completed`
 - **Maturity:** `M1`
 - **Priority:** `High`
 - **Priority class:** `P3`
