@@ -205,7 +205,7 @@ def parse_roadmap_file(file_path: Path) -> Optional[RoadmapItem]:
 def parse_roadmap_directory(roadmap_dir: Path) -> List[RoadmapItem]:
     """Parse all roadmap files from items directory."""
     items = []
-    items_dir = roadmap_dir / "items"
+    items_dir = roadmap_dir
 
     if not items_dir.exists():
         print(f"⚠️  Items directory not found: {items_dir}", file=sys.stderr)
@@ -279,7 +279,7 @@ def print_item_summary(item: RoadmapItem) -> None:
 
 if __name__ == "__main__":
     repo_root = Path(__file__).parent.parent
-    roadmap_dir = repo_root / "docs" / "roadmap"
+    roadmap_dir = repo_root / "docs" / "roadmap" / "ITEMS"
 
     if len(sys.argv) > 1 and sys.argv[1] == "--all":
         items = parse_roadmap_directory(roadmap_dir)
@@ -295,7 +295,7 @@ if __name__ == "__main__":
 
         target = Path(sys.argv[1])
         if not target.is_absolute():
-            target = roadmap_dir / "items" / target
+            target = roadmap_dir / target
 
         item = parse_roadmap_file(target)
         if item:

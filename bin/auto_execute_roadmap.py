@@ -30,7 +30,7 @@ class RoadmapExecutor:
 
     def __init__(self, repo_root: Path):
         self.repo_root = repo_root
-        self.roadmap_dir = repo_root / "docs" / "roadmap"
+        self.roadmap_dir = repo_root / "docs" / "roadmap" / "ITEMS"
         self.artifacts_dir = repo_root / "artifacts" / "executions"
         self.artifacts_dir.mkdir(parents=True, exist_ok=True)
 
@@ -42,36 +42,28 @@ class RoadmapExecutor:
         commit_hash: Optional[str] = None,
         validation_update: Optional[Dict[str, str]] = None,
     ) -> bool:
-        """Update item status in frontmatter and commit."""
+        """Update item status in markdown and commit."""
         if new_status not in self.VALID_STATUSES:
             print(f"❌ Invalid status '{new_status}'", file=sys.stderr)
             return False
 
-        # Update execution tracking in frontmatter
-        exec_update = {
-            "execution": {
-                "status": new_status,
-                "last_updated": datetime.utcnow().isoformat(),
-            }
-        }
+        # Update status in markdown file (bullet-list format)
+        try:
+            file_path = Path(item.file_path)
+            content = file_path.read_text()
 
-        if new_status == "In progress":
-            exec_update["execution"]["started_at"] = datetime.utcnow().isoformat()
-        elif new_status == "Completed":
-            exec_update["execution"]["completed_at"] = datetime.utcnow().isoformat()
+            # Replace status in markdown (- **Status:** `Accepted` → - **Status:** `Completed`)
+            for status in self.VALID_STATUSES:
+                old_status = f'- **Status:** `{status}`'
+                if old_status in content:
+                    new_status_line = f'- **Status:** `{new_status}`'
+                    content = content.replace(old_status, new_status_line)
+                    break
 
-        if notes:
-            exec_update["execution"]["notes"] = notes
-
-        if commit_hash:
-            exec_update["execution"]["commits"] = [commit_hash]
-
-        if validation_update:
-            exec_update["execution"]["validation_status"] = validation_update
-
-        # Update frontmatter in file
-        if not update_frontmatter(Path(item.file_path), exec_update):
-            return False
+            file_path.write_text(content)
+        except Exception as e:
+            print(f"⚠️  Warning: Could not update file: {e}", file=sys.stderr)
+            return True  # Don't fail if file update fails
 
         # Git commit this status change
         try:

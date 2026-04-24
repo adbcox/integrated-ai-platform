@@ -25,7 +25,7 @@ class RoadmapDashboard:
 
     def __init__(self, repo_root: Path):
         self.repo_root = repo_root
-        self.roadmap_dir = repo_root / "docs" / "roadmap"
+        self.roadmap_dir = repo_root / "docs" / "roadmap" / "ITEMS"
 
     def calculate_metrics(self, items: List[RoadmapItem]) -> Dict[str, Any]:
         """Calculate governance metrics."""
