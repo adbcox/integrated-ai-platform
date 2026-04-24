@@ -4,7 +4,7 @@
 - **Title:** Local translation service with offline-first architecture
 - **Category:** `AI`
 - **Type:** `System`
-- **Status:** `Planned`
+- **Status:** `In progress`
 - **Maturity:** `M0`
 - **Priority:** `High`
 - **Priority class:** `P2`
