@@ -4,7 +4,7 @@
 - **Title:** Add Xcode and Apple-platform coding capability to the developer assistant
 - **Category:** `DEV`
 - **Type:** `Feature`
-- **Status:** `In progress`
+- **Status:** `Completed`
 - **Maturity:** `M2`
 - **Priority:** `Medium`
 - **Priority class:** `P2`
