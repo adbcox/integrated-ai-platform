@@ -4,7 +4,7 @@
 - **Title:** Privacy-focused Tor access app for browsing, research, and controlled anonymous network use
 - **Category:** `CORE`
 - **Type:** `Feature`
-- **Status:** `In progress`
+- **Status:** `Completed`
 - **Maturity:** `M1`
 - **Priority:** `Medium`
 - **Priority class:** `P3`
