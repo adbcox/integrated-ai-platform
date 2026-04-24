@@ -14,7 +14,7 @@
 ├─────────────────────────────────────────────────────────────────────┤
 │                                                                       │
 │  Roadmap Items (RM-*.md)  ──> Parse & Infer Dependencies           │
-│  (223 total, 57 completed)       ↓                                  │
+│  (253 total, 59 completed)       ↓                                  │
 │                            Detect Cycles (0 remaining)             │
 │                                 ↓                                   │
 │                          Auto Executor Loop                         │
@@ -118,7 +118,7 @@ Step 1: LOAD ROADMAP
   ├─ Parse metadata: status, dependencies, priority
   ├─ Infer dependencies from description references
   ├─ Detect cycles (should be 0)
-  └─ Load 223 items into memory
+  └─ Load 253 items into memory
 
 Step 2: SELECT NEXT ITEM
   ├─ Filter by status (Accepted items go into queue)
@@ -145,10 +145,10 @@ Step 4: DECOMPOSE INTO SUBTASKS
   └─ Store subtasks for execution
 
 Step 5: EXECUTE SUBTASK (via Aider)
-  ├─ For each subtask:
-  │   ├─ Call aider with subtask description
-  │   ├─ Aider uses qwen2.5-coder:14b to generate code
-  │   ├─ Accept changes (create/modify files in subprocess)
+  ├─ For each subtask (dual-model workflow):
+  │   ├─ Phase 1 (writer): aider + qwen2.5-coder:7b generates code (~217s)
+  │   ├─ Phase 2 (reviewer): aider + qwen2.5-coder:32b reviews changes (~200s)
+  │   ├─ Accept or auto-fix based on review severity
   │   └─ Retry up to 3 times on failure
   │
   └─ Subprocess isolation:
@@ -205,12 +205,14 @@ Step 8: REPEAT
 ### Local Code Generation
 
 - **Backend:** Ollama (http://127.0.0.1:11434)
-- **Default Model:** qwen2.5-coder:14b (~14 billion parameters)
-  - Fast, reliable, good at code generation
-  - Average inference: 5-30s per subtask
-- **Fallback Model:** deepseek-coder-v2 (~236 billion parameters, if available)
-  - Handles harder problems (complex refactoring, architectural changes)
-  - Slower but more capable
+- **Decomposition Model:** qwen2.5-coder:14b — breaks roadmap item into subtasks (~140s/call)
+- **Writer Model:** qwen2.5-coder:7b — generates code changes per subtask (~217s/call)
+- **Reviewer Model:** qwen2.5-coder:32b — reviews writer output for bugs (~200s/call)
+- **Available Models (measured):**
+  - 7b: 4.7GB, ~217s per Ollama API call
+  - 14b: 9.0GB, ~140s per Ollama API call
+  - 32b: 19.9GB, ~200s per Ollama API call (estimated)
+  - deepseek-coder-v2: 8.9GB (balanced pair reviewer)
 - **Integration:** aider (CLI wrapper around Ollama)
   - Code-aware chat interface
   - Automatic file modification parsing
@@ -253,18 +255,18 @@ Step 8: REPEAT
 
 ### 2. Why Dual-Model Approach?
 
-**Decision:** Default to qwen2.5-coder:14b, fallback to deepseek-coder-v2 on timeout
+**Decision:** Default pair is 7b writer + 32b reviewer; decomposition uses 14b
 
 **Why:**
-- **Speed:** Small model (14B) completes 95% of tasks in <30s
-- **Fallback:** Larger model (236B) handles edge cases reliably
-- **Cost:** Local execution, zero API costs, deterministic outputs
-- **Privacy:** No code leaves the machine
+- **Writer (7b):** Fast iteration — 217s per call, handles most code generation tasks
+- **Reviewer (32b):** Catches bugs the 7b writer introduces; prevents bad commits
+- **Decomposer (14b):** Balanced speed/quality for planning (~140s per decomposition)
+- **Cost:** Local execution, zero API costs, no data leaves the machine
 
 **Trade-offs:**
-- Requires local GPU/CPU resources
-- Fallback model may not always be available
-- Smaller model has limitations on complex architectures
+- Dual-model means 2× LLM calls per subtask (~420s vs ~217s for single-model)
+- 32b reviewer requires 19.9GB RAM — may swap on machines with <32GB
+- If reviewer is not available, falls back to single-model (writer only)
 
 ### 3. Why Subprocess Isolation?
 
@@ -321,11 +323,12 @@ Step 8: REPEAT
 python3 bin/auto_execute_roadmap.py --target-completions 1 --dry-run
 ```
 
-- Decomposes and executes subtasks normally
-- Validates code (syntax, tests)
+- **Still calls Ollama** for decomposition (~140s with 14b model)
+- Skips aider execution (subtasks print `[DRY]` and return immediately)
 - **Does NOT commit** changes to git
 - **Does NOT update** roadmap status
-- Safe for testing new items or validating changes
+- Requires Ollama running — not safe to run when Ollama is down
+- Use `--max-items 0` to skip everything including decomposition
 
 ### Real Mode (no `--dry-run`)
 
@@ -376,17 +379,16 @@ python3 bin/auto_execute_roadmap.py --resume --target-completions 10
    - Switch to larger model
    - Return deterministic template on final timeout
 
-### Escalation Index
+### Failure Log (`artifacts/execution_failures.jsonl`)
 
 ```json
 {
-  "timestamp": "2026-04-24T17:53:00Z",
-  "item_id": "RM-DEV-005",
-  "subtask": "Create tests/api_contracts.py with contract definitions",
-  "error_type": "validation_failed",
-  "details": "pytest failed: 2 test cases did not pass",
-  "retries": 3,
-  "action": "escalated_for_manual_review"
+  "timestamp": "2026-04-24T15:09:10.335021",
+  "item_id": "RM-DOCS-001",
+  "subtask": "Create docs/sdk/guides/media_integration.md ...",
+  "attempt": 1,
+  "error": "timeout after 600s",
+  "duration_seconds": 600.01
 }
 ```
 
@@ -402,18 +404,18 @@ python3 bin/auto_execute_roadmap.py --resume --target-completions 10
 | Select next | <1s | Check prerequisites, sort |
 | Stage RAG4 | 5-10s | Search codebase, rank files |
 | Decompose | 10-30s | LLM planning via Ollama |
-| Execute (per subtask) | 30-120s | aider subprocess, code generation |
+| Execute (per subtask) | 420-420s | writer(~217s) + reviewer(~200s) per subtask |
 | Validate | 10-30s | Syntax check, test suite |
 | Commit & update | 5-10s | Git operations |
-| **Total per item** | **3-15 min** | Varies by complexity |
+| **Total per item** | **15-45 min** | 1-3 subtasks × ~7min each |
 
 ### Throughput
 
-- **Simple items (RM-DOCS-*, RM-CI-*):** 15-30 min each
-- **Medium items (RM-DEV-*):** 30-60 min each
-- **Complex items (RM-OBS-*, RM-SEC-*):** 60-120+ min each
-- **Average:** ~45-60 min per item
-- **Daily throughput:** 12-20 items/day (24h execution)
+- **Simple items (1 subtask):** ~14 min (decompose 140s + write 217s + review 200s)
+- **Medium items (2-3 subtasks):** 25-45 min each
+- **Complex items (3+ subtasks with retries):** 45-120+ min each
+- **Average:** ~30-45 min per item
+- **Daily throughput:** 8-15 items/day (24h execution)
 
 ### Resource Usage
 
@@ -440,11 +442,12 @@ docs/roadmap/ITEMS/RM-*.md
 
 ```
 artifacts/
-├─ stage_rag4/usage.jsonl          # Retrieval decisions
-├─ stage6_manager/*.json            # Orchestration plans
-├─ escalations/index.jsonl          # Failures and issues
-├─ aider_bench/metrics.json         # Performance data
-└─ <date>/execution.log             # Detailed traces
+├─ stage_rag4/usage.jsonl          # Retrieval decisions (entity reranking)
+├─ stage_rag6/                     # Stage 6 orchestration plans
+├─ stage3_manager/                 # Stage 3 execution plans
+├─ aider_runs/                     # Per-run aider output and metrics
+├─ execution_failures.jsonl        # Failed subtask log (timeouts, errors)
+└─ execution.log (repo root)       # Live executor output
 ```
 
 ### Git History
@@ -483,7 +486,9 @@ All commits require:
 - `--target-completions N`: Stop after N items
 - `--dry-run`: No git commits
 - `--max-items 0`: Just validate, don't execute
-- Timeout: 600 seconds per subtask (prevents hangs)
+- Outer timeout: 600s per subtask (`subtask_timeout` in execute_subtask)
+- Inner timeout: 900s for the aider call inside local_coding_task.py (but never reached if outer fires first)
+- Dual-model typical runtime: writer ~217s + reviewer ~224s = ~441s total — fits within 600s outer limit
 
 ---
 
@@ -513,8 +518,11 @@ tail -f execution.log
 tmux attach -t roadmap
 tmux capture-pane -t roadmap -p
 
-# Metrics dashboard (future)
-# web/monitor/dashboard.html (polling execution.log)
+# Real-time web dashboard (standalone, no backend)
+open web/monitor/dashboard.html  # polls execution.log every 10s
+
+# Failed subtask log
+tail -20 artifacts/execution_failures.jsonl | python3 -m json.tool
 ```
 
 ---
@@ -523,7 +531,7 @@ tmux capture-pane -t roadmap -p
 
 - [ ] Multi-item orchestration (Stage 7): Break down items for concurrent execution
 - [ ] Learning loop: Attribution + strategy updates based on success/failure patterns
-- [ ] Real-time monitoring dashboard: Web UI polling execution.log
+- [x] Real-time monitoring dashboard: `web/monitor/dashboard.html` (polls execution.log every 10s)
 - [ ] Automated code review: Claude review integration before commit
 - [ ] Expanded model routing: Per-category model selection (easier tasks → faster model)
 - [ ] Semantic caching: Retrieve and reuse previous successful solutions

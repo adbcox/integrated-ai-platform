@@ -1,7 +1,7 @@
 # Handoff Guide: Integrated AI Platform
 
 **Last Updated:** 2026-04-24  
-**Current Status:** 223 roadmap items, 57 completed (25.6%), 0 circular dependencies  
+**Current Status:** 253 roadmap items, 59 completed (23.3%), 0 circular dependencies  
 **Execution Mode:** Autonomous executor on tmux (mac-mini)
 
 ---
@@ -52,8 +52,11 @@ print(f'{len(cycles)} cycles detected')
 ### 3. Run the executor
 
 ```bash
-# Dry-run mode (no git commits, safe to test)
+# Dry-run mode (no git commits, but still calls Ollama for decomposition ~140s)
 python3 bin/auto_execute_roadmap.py --target-completions 1 --dry-run
+
+# True no-op (just roadmap load + cycle check, no Ollama call)
+python3 bin/auto_execute_roadmap.py --dry-run --max-items 0
 
 # Real mode (will commit status changes)
 python3 bin/auto_execute_roadmap.py --target-completions 5
@@ -68,8 +71,11 @@ python3 bin/auto_execute_roadmap.py --resume --target-completions 10
 # Tail the execution log
 tmux attach -t roadmap
 
-# View latest artifacts
-ls -lrt artifacts/stage6_manager/ | tail -5
+# View recent failed subtasks
+tail -10 artifacts/execution_failures.jsonl | python3 -m json.tool
+
+# View retrieval decisions (stage RAG4)
+tail -5 artifacts/stage_rag4/usage.jsonl | python3 -m json.tool
 
 # Run validation suite
 make test-offline
@@ -104,11 +110,12 @@ Application-layer workflows and bounded execution contexts.
 
 ### tests/ — Validation and regression tests
 
-- `test_autonomous_executor.py`: Integration tests
+- `test_autonomous_executor.py`: Unit tests (mostly mocked), 3 real subprocess tests in `TestExecutorIntegration`
+- `test_reality_check.py`: Zero-mock reality checks (Ollama generate, aider file edit, executor commit)
 - `run_offline_scenarios.sh`: 7 deterministic offline behavior tests
 - `scenarios/`: Environment fixture files
 
-### docs/roadmap/ITEMS/ — Canonical roadmap truth (223 items)
+### docs/roadmap/ITEMS/ — Canonical roadmap truth (253 items)
 
 Markdown files (RM-*.md) organized by category:
 - RM-DEV-*, RM-OBS-*, RM-SEC-*, RM-DATA-*, RM-DEPLOY-*, etc.
