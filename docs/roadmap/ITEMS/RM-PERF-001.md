@@ -4,7 +4,7 @@
 - **Title:** Profiling infrastructure for local execution
 - **Category:** `PERF`
 - **Type:** `Enhancement`
-- **Status:** `In progress`
+- **Status:** `Completed`
 - **Maturity:** `M0`
 - **Priority:** `High`
 - **Priority class:** `P2`
