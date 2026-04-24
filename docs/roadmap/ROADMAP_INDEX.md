@@ -136,6 +136,42 @@ The repo should now select future work from post-convergence extensions, connect
 - `RM-QA-004`
 - `RM-QA-005`
 
+### Monitoring and observability
+- `RM-MON-001`
+- `RM-MON-002`
+- `RM-MON-003`
+- `RM-MON-004`
+- `RM-MON-005`
+- `RM-MON-006`
+- `RM-MON-007`
+- `RM-MON-008`
+- `RM-MON-009`
+- `RM-MON-010`
+
+### Deployment and release management
+- `RM-DEPLOY-001`
+- `RM-DEPLOY-002`
+- `RM-DEPLOY-003`
+- `RM-DEPLOY-004`
+- `RM-DEPLOY-005`
+- `RM-DEPLOY-006`
+- `RM-DEPLOY-007`
+- `RM-DEPLOY-008`
+- `RM-DEPLOY-009`
+- `RM-DEPLOY-010`
+
+### CI/CD and build automation
+- `RM-CI-001`
+- `RM-CI-002`
+- `RM-CI-003`
+- `RM-CI-004`
+- `RM-CI-005`
+- `RM-CI-006`
+- `RM-CI-007`
+- `RM-CI-008`
+- `RM-CI-009`
+- `RM-CI-010`
+
 ### Domain expansion
 - `RM-DOCAPP-001`
 - `RM-DOCAPP-002`

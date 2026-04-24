@@ -32,6 +32,64 @@ For roadmap authority and current operating posture, read:
 - `docs/governance/CURRENT_OPERATING_CONTEXT.md`
 - `docs/roadmap/POST_CONVERGENCE_OPERATING_MODE.md`
 
+## Quick Start
+
+### New to this project?
+
+1. **Read the handoff guide:** [`docs/HANDOFF_GUIDE.md`](docs/HANDOFF_GUIDE.md)
+   - Repository structure and what each folder does
+   - How to check progress and resume execution
+   - Common issues and how to fix them
+   - SSH connection details
+
+2. **Understand the architecture:** [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)
+   - System overview and component responsibilities
+   - Data flow from roadmap items to executed code
+   - Technology stack and design decisions
+
+3. **Run the autonomous executor:**
+   ```bash
+   # Check that dependencies are installed
+   pip install -r requirements.txt
+   
+   # Verify Ollama is running
+   curl http://127.0.0.1:11434/api/tags
+   
+   # Run executor in dry-run mode (no git commits)
+   python3 bin/auto_execute_roadmap.py --target-completions 1 --dry-run
+   
+   # Run executor for real (will commit status changes to git)
+   python3 bin/auto_execute_roadmap.py --target-completions 10
+   ```
+
+4. **Run the test suite:**
+   ```bash
+   # Run all tests
+   python3 -m pytest tests/test_autonomous_executor.py -v
+   
+   # Run offline validation suite
+   make test-offline
+   ```
+
+## Current Roadmap Status
+
+- **Total Items:** 194 roadmap items created
+- **Completed:** 54 items completed
+- **In Progress:** ~5 items actively executing
+- **Planned:** 135 items waiting for execution
+- **Execution Rate:** ~1-2 items/hour (varies by complexity)
+- **Primary Executor:** Autonomous executor running via tmux on mac-mini
+
+### Recent Completions
+
+See `git log --oneline | head -20` for the 20 most recent status changes.
+
+Key families with progress:
+- **Developer Tooling (RM-DEV-*):** Multiple items in execution
+- **Workflow Automation (RM-FLOW-*):** Foundational items completed
+- **Quality Assurance (RM-QA-*):** Gate system being established
+- **New:** Monitoring, Deployment, CI/CD families added (30 items)
+
 ## Current operating posture
 
 The repository is operating in **post-convergence governed local-execution mode**.
