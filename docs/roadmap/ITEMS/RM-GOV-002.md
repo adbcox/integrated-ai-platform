@@ -4,7 +4,7 @@
 - **Title:** Recurring full-system integrity review for naming consistency, duplicates, mismatches, and synchronization hygiene
 - **Category:** `GOV`
 - **Type:** `System`
-- **Status:** `Accepted`
+- **Status:** `Completed`
 - **Maturity:** `M3`
 - **Priority:** `High`
 - **Priority class:** `P2`
