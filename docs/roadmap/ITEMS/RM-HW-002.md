@@ -4,7 +4,7 @@
 - **Title:** Flipper-style embedded shell for ESP32 and Nordic devices
 - **Category:** `HW`
 - **Type:** `Feature`
-- **Status:** `Accepted`
+- **Status:** `In progress`
 - **Maturity:** `M2`
 - **Priority:** `Medium`
 - **Priority class:** `P3`
