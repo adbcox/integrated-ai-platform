@@ -4,7 +4,7 @@
 - **Title:** Emulator and governed BlueStacks automation lab for bounded computer-use experiments
 - **Category:** `OPS`
 - **Type:** `Lab`
-- **Status:** `In progress`
+- **Status:** `Completed`
 - **Maturity:** `M1`
 - **Priority:** `Medium`
 - **Priority class:** `P4`
