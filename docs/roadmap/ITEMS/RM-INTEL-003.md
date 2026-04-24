@@ -4,7 +4,7 @@
 - **Title:** Personalized real-news briefing with interest-aware ranking, source-quality controls, and anti-clickbait summarization
 - **Category:** `INTEL`
 - **Type:** `System`
-- **Status:** `In progress`
+- **Status:** `Completed`
 - **Maturity:** `M2`
 - **Priority:** `High`
 - **Priority class:** `P2`
