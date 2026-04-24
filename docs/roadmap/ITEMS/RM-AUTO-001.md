@@ -83,7 +83,6 @@ The exact reuse posture is governed by:
 - `RM-UI-005` — local execution control dashboard, task-detection routing layer, Aider workload orchestration system, and OpenHands execution interface
 - `RM-GOV-001` — integrated roadmap-to-development tracking system
 - `RM-OPS-004` — backup, restore, disaster-recovery, and configuration export verification
-- `RM-OPS-005` — end-to-end telemetry, tracing, and audit evidence pipeline
 
 ## Risks and issues
 

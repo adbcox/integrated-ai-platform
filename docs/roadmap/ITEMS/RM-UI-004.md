@@ -37,7 +37,6 @@ Creates a room-appropriate UX layer that makes the platform feel embedded in the
 - future theme/layout files and dashboard widgets
 
 ## Dependencies
-- `RM-UI-003`
 - `RM-UI-001`
 
 ## Risks and issues
