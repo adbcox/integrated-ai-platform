@@ -132,6 +132,21 @@ def main() -> int:
         help="Frictionless automation: implies --force --skip-analysis --auto-commit",
     )
 
+    # Dual-model workflow flags
+    dual_group = parser.add_mutually_exclusive_group()
+    dual_group.add_argument(
+        "--dual-model",
+        action="store_true",
+        default=True,
+        help="Use dual-model workflow: writer + reviewer (default)",
+    )
+    dual_group.add_argument(
+        "--single-model",
+        action="store_false",
+        dest="dual_model",
+        help="Use single model only (no review phase)",
+    )
+
     args = parser.parse_args()
 
     # Batch mode convenience
@@ -245,6 +260,7 @@ def main() -> int:
             model=args.model,
             timeout_seconds=args.timeout,
             allow_dirty=args.force,
+            dual_model=args.dual_model,
         )
 
         print("-" * 70)

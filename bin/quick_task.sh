@@ -1,13 +1,34 @@
 #!/bin/bash
-# Quick task runner with conversation state management
+# Quick task runner with conversation state and dual-model workflow
 # Stores last 3 tasks in /tmp/task_history.json
 # Supports keywords: "continue" (resume last), "fix that" (same files), "also" (extend)
-# Usage: ./bin/quick_task.sh 'Task description' [file1.py file2.py ...]
+# Dual-model: writer (fast) + reviewer (thorough) - enabled by default
+# Usage: ./bin/quick_task.sh [--single-model] 'Task description' [file1.py file2.py ...]
 
 set -e
 
+# Parse flags
+DUAL_MODEL=${DUAL_MODEL:-true}
+EXTRA_FLAGS=""
+
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --single-model)
+            DUAL_MODEL=false
+            shift
+            ;;
+        --dual-model)
+            DUAL_MODEL=true
+            shift
+            ;;
+        *)
+            break
+            ;;
+    esac
+done
+
 if [ $# -lt 1 ]; then
-    echo "Usage: $0 'description' [file1.py file2.py ...]"
+    echo "Usage: $0 [--single-model|--dual-model] 'description' [file1.py file2.py ...]"
     exit 1
 fi
 
@@ -18,6 +39,13 @@ EXPLICIT_FILES="$@"
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 HISTORY_FILE="/tmp/task_history.json"
 cd "$REPO_ROOT"
+
+# Build execution flags
+if [ "$DUAL_MODEL" = "true" ]; then
+    EXTRA_FLAGS="--dual-model"
+else
+    EXTRA_FLAGS="--single-model"
+fi
 
 # Initialize history file if missing
 if [ ! -f "$HISTORY_FILE" ]; then
@@ -119,8 +147,8 @@ fi
 BEFORE_SHA=$(git rev-parse HEAD)
 
 # Run task with batch mode
-echo "🚀 Running task..."
-python3 bin/local_coding_task.py --batch-mode "$DESCRIPTION" $FINAL_FILES
+echo "🚀 Running task ($EXTRA_FLAGS)..."
+python3 bin/local_coding_task.py --batch-mode $EXTRA_FLAGS "$DESCRIPTION" $FINAL_FILES
 TASK_EXIT=$?
 
 # Extract modified files and commits after task

@@ -1,0 +1,34 @@
+# Dual-model workflow configuration
+# Writer model generates code, reviewer model analyzes for issues
+
+pairs:
+  fast_accurate:
+    writer: qwen2.5-coder:7b
+    reviewer: qwen2.5-coder:32b
+    use_for: [simple, medium]
+    description: "Fast 7b writer with thorough 32b review - best for most tasks"
+
+  balanced:
+    writer: qwen2.5-coder:14b
+    reviewer: deepseek-coder-v2:latest
+    use_for: [medium, complex]
+    description: "14b writer with deepseek review - good for harder logic"
+
+  thorough:
+    writer: qwen2.5-coder:32b
+    reviewer: qwen2.5-coder:32b
+    use_for: [complex, critical]
+    description: "32b writer with 32b review - most thorough, slowest"
+
+default_pair: fast_accurate
+
+# Review severity thresholds
+review:
+  low_severity: ["style", "minor formatting", "docstring improvement"]
+  medium_severity: ["potential bug", "missing edge case", "incomplete error handling"]
+  high_severity: ["logic error", "security issue", "data corruption risk", "infinite loop"]
+
+  # Auto-fix behavior by severity
+  auto_fix_low: true
+  auto_fix_medium: ask_user
+  auto_fix_high: escalate
