@@ -39,16 +39,33 @@ class ModelRecommendation:
 
 
 class LearningDomain:
-    """Track execution metrics and recommend model selection."""
+    """
+    Track execution metrics and recommend model selection.
+
+    This class provides methods to record task executions, retrieve performance metrics,
+    and recommend the best model for a given task type and executor.
+    """
 
     def __init__(self, repo_root: Optional[Path] = None):
+        """
+        Initialize the LearningDomain with an optional repository root.
+
+        Args:
+            repo_root (Optional[Path]): The path to the repository root. If not provided,
+                defaults to the current working directory.
+        """
         self.repo_root = repo_root or Path.cwd()
         self.db_path = self.repo_root / "artifacts" / "execution_metrics.jsonl"
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
         self.records: List[ExecutionRecord] = self._load_records()
 
     def _load_records(self) -> List[ExecutionRecord]:
-        """Load execution records from disk."""
+        """
+        Load execution records from disk.
+
+        Returns:
+            List[ExecutionRecord]: A list of ExecutionRecord objects.
+        """
         records = []
         if self.db_path.exists():
             with open(self.db_path) as f:
@@ -73,7 +90,20 @@ class LearningDomain:
         tokens_used: int = 0,
         exit_code: int = 0,
     ) -> None:
-        """Record a task execution."""
+        """
+        Record a task execution.
+
+        Args:
+            task_type (str): The type of the task.
+            description (str): A brief description of the task.
+            model (str): The language model used for the task.
+            executor (str): The executor used to run the task.
+            success (bool): Whether the task was successful.
+            duration_seconds (float): The duration of the task execution in seconds.
+            error_type (Optional[str]): The type of error encountered, if any.
+            tokens_used (int): The number of tokens used during the task execution.
+            exit_code (int): The exit code of the task execution.
+        """
         record = ExecutionRecord(
             timestamp=datetime.utcnow().isoformat(),
             task_type=task_type,
@@ -96,7 +126,17 @@ class LearningDomain:
     def get_success_rate(
         self, task_type: str, model: Optional[str] = None
     ) -> float:
-        """Get success rate for a task type (optionally filtered by model)."""
+        """
+        Get success rate for a task type (optionally filtered by model).
+
+        Args:
+            task_type (str): The type of the task.
+            model (Optional[str]): The language model to filter by. If not provided,
+                returns the success rate for all models.
+
+        Returns:
+            float: The success rate as a percentage.
+        """
         filtered = [
             r
             for r in self.records
@@ -112,7 +152,16 @@ class LearningDomain:
     def get_failure_patterns(
         self, task_type: str, limit: int = 5
     ) -> Dict[str, int]:
-        """Get most common failure patterns for a task type."""
+        """
+        Get most common failure patterns for a task type.
+
+        Args:
+            task_type (str): The type of the task.
+            limit (int): The number of top failure patterns to return.
+
+        Returns:
+            Dict[str, int]: A dictionary mapping error types to their counts.
+        """
         failures = [
             r
             for r in self.records
@@ -130,7 +179,15 @@ class LearningDomain:
         )
 
     def get_average_time(self, task_type: str) -> float:
-        """Get average execution time for a task type."""
+        """
+        Get average execution time for a task type.
+
+        Args:
+            task_type (str): The type of the task.
+
+        Returns:
+            float: The average execution time in seconds.
+        """
         filtered = [r for r in self.records if r.task_type == task_type]
 
         if not filtered:
@@ -141,9 +198,15 @@ class LearningDomain:
     def recommend_model(
         self, task_type: str, executor: str
     ) -> ModelRecommendation:
-        """Recommend best model for a task type + executor.
+        """
+        Recommend best model for a task type + executor.
 
-        Returns: ModelRecommendation with model, executor, confidence, reason
+        Args:
+            task_type (str): The type of the task.
+            executor (str): The executor used to run the task.
+
+        Returns:
+            ModelRecommendation: A recommendation with model, executor, confidence, reason
         """
         # Get all models used for this task type + executor
         relevant = [
@@ -196,9 +259,14 @@ class LearningDomain:
         )
 
     def should_escalate(self, task_type: str) -> Tuple[bool, str]:
-        """Determine if a task type should be escalated to higher-tier executor.
+        """
+        Determine if a task type should be escalated to higher-tier executor.
 
-        Returns: (should_escalate, reason)
+        Args:
+            task_type (str): The type of the task.
+
+        Returns:
+            Tuple[bool, str]: A tuple containing whether escalation is needed and the reason.
         """
         # Get recent records for this task type
         recent = [r for r in self.records if r.task_type == task_type]
@@ -226,7 +294,15 @@ class LearningDomain:
         return False, "Performing well"
 
     def get_model_comparison(self, task_type: str) -> Dict[str, Dict]:
-        """Compare performance of models for a task type."""
+        """
+        Compare performance of models for a task type.
+
+        Args:
+            task_type (str): The type of the task.
+
+        Returns:
+            Dict[str, Dict]: A dictionary mapping model names to their comparison metrics.
+        """
         relevant = [r for r in self.records if r.task_type == task_type]
 
         if not relevant:
@@ -250,7 +326,16 @@ class LearningDomain:
         return comparison
 
     def get_metrics_summary(self, task_type: Optional[str] = None) -> Dict:
-        """Get performance summary."""
+        """
+        Get performance summary.
+
+        Args:
+            task_type (Optional[str]): The type of the task to summarize. If not provided,
+                returns a summary for all tasks.
+
+        Returns:
+            Dict: A dictionary containing the summary metrics.
+        """
         if task_type:
             filtered = [r for r in self.records if r.task_type == task_type]
             label = task_type
@@ -280,13 +365,20 @@ class LearningDomain:
         }
 
     def get_all_task_types(self) -> List[str]:
-        """Get all task types in history."""
+        """
+        Get all task types in history.
+
+        Returns:
+            List[str]: A list of unique task types.
+        """
         return sorted(set(r.task_type for r in self.records))
 
     def get_escalation_report(self) -> List[Tuple[str, bool, str]]:
-        """Get escalation recommendations for all task types.
+        """
+        Get escalation recommendations for all task types.
 
-        Returns: [(task_type, should_escalate, reason), ...]
+        Returns:
+            List[Tuple[str, bool, str]]: A list of tuples containing task type, should_escalate flag, and reason.
         """
         report = []
         for task_type in self.get_all_task_types():
@@ -297,12 +389,28 @@ class LearningDomain:
         return sorted(report, key=lambda x: not x[1])
 
     def recent_failures(self, limit: int = 10) -> List[ExecutionRecord]:
-        """Get recent failures for analysis."""
+        """
+        Get recent failures for analysis.
+
+        Args:
+            limit (int): The number of recent failures to retrieve.
+
+        Returns:
+            List[ExecutionRecord]: A list of the most recent failure records.
+        """
         failures = [r for r in self.records if not r.success]
         return failures[-limit:]
 
     def prune_old_records(self, days: int = 90) -> int:
-        """Remove records older than N days, return count removed."""
+        """
+        Remove records older than N days, return count removed.
+
+        Args:
+            days (int): The number of days to retain records. Defaults to 90 days.
+
+        Returns:
+            int: The number of records removed.
+        """
         cutoff = datetime.utcnow() - timedelta(days=days)
         old_records = [
             r

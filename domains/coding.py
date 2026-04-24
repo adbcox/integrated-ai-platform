@@ -20,6 +20,7 @@ DEFAULT_MODEL_CASCADE = [
 ]
 
 ARTIFACT_ROOT = Path(__file__).resolve().parent.parent / "artifacts" / "aider_runs"
+SNIPPET_ROOT = Path(__file__).resolve().parent.parent / "snippets"
 
 
 class CodingDomain:
@@ -151,6 +152,52 @@ class CodingDomain:
 
         return sorted(related)
 
+    def _find_relevant_snippets(self, task_description: str, files: list[str]) -> list[str]:
+        """Find reusable snippet patterns that match the task."""
+        if not SNIPPET_ROOT.exists():
+            return []
+
+        lowered = task_description.lower()
+        snippet_rules = [
+            (
+                "snippets/error_handling.py",
+                ["error handling", "try", "except", "exception", "fail", "failure", "catch", "retry"],
+            ),
+            (
+                "snippets/async_pattern.py",
+                ["async", "await", "connection pooling", "pooling", "concurrency", "parallel"],
+            ),
+            (
+                "snippets/connector_template.py",
+                ["connector", "api client", "integration", "service client"],
+            ),
+            (
+                "snippets/domain_template.py",
+                ["domain", "subsystem", "config-driven", "configuration"],
+            ),
+            (
+                "snippets/test_template.py",
+                ["test", "pytest", "unit test", "fixture", "coverage"],
+            ),
+        ]
+
+        snippets: list[str] = []
+        for rel_path, keywords in snippet_rules:
+            path = Path(rel_path)
+            if not (SNIPPET_ROOT / path.name).exists():
+                continue
+
+            match = any(kw in lowered for kw in keywords)
+            if not match and any(file_path.endswith(".py") for file_path in files):
+                # Basic file-type hinting: keep test patterns available for code edits.
+                if path.name == "test_template.py" and any(kw in lowered for kw in ["pytest", "test", "spec"]):
+                    match = True
+
+            if match:
+                snippets.append(str((SNIPPET_ROOT / path.name).resolve()))
+
+        return snippets
+
     @staticmethod
     def _module_prefix_for_path(path: Path, repo_root: Path) -> str:
         try:
@@ -205,15 +252,57 @@ class CodingDomain:
 
         return [path for path in candidates if path.exists()]
 
+    def _ensure_context_fresh(self) -> None:
+        """Ensure repo context exists and is reasonably fresh."""
+        context_file = Path(__file__).resolve().parent.parent / "artifacts" / "repo_context.txt"
+
+        # Generate if missing or older than 1 hour
+        should_generate = False
+        if not context_file.exists():
+            should_generate = True
+        else:
+            import time
+            age_seconds = time.time() - context_file.stat().st_mtime
+            if age_seconds > 3600:  # 1 hour
+                should_generate = True
+
+        if should_generate:
+            try:
+                repo_root = Path(__file__).resolve().parent.parent
+                subprocess.run(
+                    ["python3", str(repo_root / "bin" / "build_context.py")],
+                    cwd=repo_root,
+                    capture_output=True,
+                    timeout=30,
+                )
+            except Exception:
+                # Context generation is optional - don't break task execution
+                pass
+
     def _build_aider_command(self, model: str, task: str, files: list[str]) -> list[str]:
         cmd = ["aider", "--model", f"ollama/{model}", "--yes", "--no-auto-commits"]
 
         for f in files:
             cmd.extend(["--file", f])
 
+        snippet_context = self._find_relevant_snippets(task, files)
+        # Inject repo context for whole-repo awareness
+        self._ensure_context_fresh()
+        context_file = Path(__file__).resolve().parent.parent / "artifacts" / "repo_context.txt"
+        context_paths = []
+        if context_file.exists():
+            context_paths.append(str(context_file))
+        context_paths.extend(snippet_context)
+
         related = self._find_related_files(files)
-        for r in related[:3]:
-            cmd.extend(["--read", r])
+        context_paths.extend(related[:3])
+
+        seen: set[str] = set()
+        for path in context_paths:
+            if path in seen:
+                continue
+            seen.add(path)
+            cmd.extend(["--read", path])
 
         cmd.extend(["--message", task])
         return cmd
