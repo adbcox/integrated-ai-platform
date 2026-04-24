@@ -4,7 +4,7 @@
 - **Title:** Feature-block package planner for grouped roadmap execution and shared-touch LOE optimization
 - **Category:** `GOV`
 - **Type:** `Enhancement`
-- **Status:** `Accepted`
+- **Status:** `Completed`
 - **Maturity:** `M3`
 - **Priority:** `High`
 - **Priority class:** `P2`
