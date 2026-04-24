@@ -39,7 +39,6 @@ This makes the roadmap materially smarter and better suited for autonomous pull 
 - future planning/sync tooling
 
 ## Dependencies
-- `RM-GOV-001`
 - canonical impact and grouping fields
 
 ## Risks and issues
@@ -52,8 +51,6 @@ This makes the roadmap materially smarter and better suited for autonomous pull 
 - shared-subsystem and shared-asset analysis should later leverage CMDB-linked data
 
 ## Grouping candidates
-- `RM-GOV-001`
-- `RM-GOV-002`
 
 ## Grouped execution notes
 - Shared-touch rationale: belongs to the governance core.

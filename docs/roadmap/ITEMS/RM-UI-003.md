@@ -51,7 +51,6 @@ Creates a practical household-facing interface family built on the same platform
 
 ## Grouping candidates
 - `RM-UI-004`
-- `RM-OPS-003`
 
 ## Grouped execution notes
 - Shared-touch rationale: ambient dashboards, environment cards, and room displays overlap.

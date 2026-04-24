@@ -84,7 +84,6 @@ The exact reuse posture is governed by:
 - `RM-GOV-001` — integrated roadmap-to-development tracking system
 - `RM-OPS-004` — backup, restore, disaster-recovery, and configuration export verification
 - `RM-OPS-005` — end-to-end telemetry, tracing, and audit evidence pipeline
-- `RM-GOV-009` — external application connectivity and integration control plane
 
 ## Risks and issues
 
@@ -112,7 +111,6 @@ The exact reuse posture is governed by:
 - `RM-GOV-001`
 - `RM-OPS-004`
 - `RM-OPS-005`
-- `RM-GOV-009`
 
 ## Grouped execution notes
 

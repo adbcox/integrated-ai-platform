@@ -76,7 +76,6 @@ This item turns physical assets into actionable system intelligence. It improves
 
 ## Grouping candidates
 
-- `RM-INV-003`
 - `RM-GOV-001`
 
 ## Grouped execution notes

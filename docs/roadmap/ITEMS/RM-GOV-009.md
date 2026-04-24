@@ -197,7 +197,6 @@ The authoritative sources for this posture are:
 - `RM-GOV-006`
 - `RM-GOV-007`
 - `RM-GOV-001`
-- `RM-UI-005`
 
 ## Grouped execution notes
 
