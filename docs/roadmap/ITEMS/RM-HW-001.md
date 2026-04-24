@@ -4,7 +4,7 @@
 - **Title:** AI-assisted electrical design workflow for ESP32 and Nordic hardware
 - **Category:** `HW`
 - **Type:** `Feature`
-- **Status:** `Accepted`
+- **Status:** `In progress`
 - **Maturity:** `M2`
 - **Priority:** `High`
 - **Priority class:** `P3`
