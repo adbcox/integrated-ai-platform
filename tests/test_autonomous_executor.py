@@ -532,5 +532,52 @@ class TestEdgeCases:
             assert "[AUTO-FIX]" in output_text or "bin/aider_executor.py" in output_text
 
 
+class TestExecutorIntegration:
+    """Integration tests - actually run the executor script."""
+
+    def test_executor_actually_runs(self):
+        """Integration test - runs real executor with --help.
+
+        This test catches import failures and startup crashes that mocks hide.
+        Reproduces: "Tests pass but executor crashes on real startup" issue.
+        """
+        repo_root = Path(__file__).parent.parent
+        result = subprocess.run(
+            ["python3", "bin/auto_execute_roadmap.py", "--help"],
+            capture_output=True,
+            text=True,
+            cwd=repo_root
+        )
+
+        # Should succeed
+        assert result.returncode == 0, f"Executor crashed with return code {result.returncode}\nstdout: {result.stdout}\nstderr: {result.stderr}"
+
+        # Should have valid help output
+        assert "usage:" in result.stdout or "autonomous" in result.stdout.lower(), \
+            f"Help output invalid: {result.stdout}"
+
+    def test_executor_dry_run_completes(self):
+        """Integration test - executor should complete a dry run without crashing."""
+        repo_root = Path(__file__).parent.parent
+        result = subprocess.run(
+            ["python3", "bin/auto_execute_roadmap.py", "--dry-run", "--max-items", "1"],
+            capture_output=True,
+            text=True,
+            cwd=repo_root,
+            timeout=30
+        )
+
+        # Should complete successfully
+        assert result.returncode == 0, f"Dry run failed with return code {result.returncode}\nstderr: {result.stderr}"
+
+        # Should have startup output (not crash before printing)
+        assert "[STARTUP]" in result.stdout, \
+            f"Missing [STARTUP] output - executor may have crashed on import. Output: {result.stdout[:500]}"
+
+        # Should have completion status
+        assert "Execution complete" in result.stdout or "No more executable items" in result.stdout, \
+            f"Missing completion status. Output: {result.stdout[-500:]}"
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v", "--tb=short"])
