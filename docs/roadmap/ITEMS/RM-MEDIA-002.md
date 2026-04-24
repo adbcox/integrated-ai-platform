@@ -4,7 +4,7 @@
 - **Title:** Unified media acquisition and watchlist automation system for Sonarr and Radarr
 - **Category:** `MEDIA`
 - **Type:** `Feature`
-- **Status:** `Accepted`
+- **Status:** `In progress`
 - **Maturity:** `M2`
 - **Priority:** `High`
 - **Priority class:** `P3`
