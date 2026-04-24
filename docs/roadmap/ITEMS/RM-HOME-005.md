@@ -4,7 +4,7 @@
 - **Title:** Local voice and ambient assistant layer for Alexa/Google Home replacement using Home Assistant as the device bridge
 - **Category:** `HOME`
 - **Type:** `System`
-- **Status:** `In progress`
+- **Status:** `Completed`
 - **Maturity:** `M2`
 - **Priority:** `High`
 - **Priority class:** `P2`
