@@ -16,9 +16,9 @@ class RoadmapDashboard:
     """Display roadmap governance metrics per RM-GOV-001."""
 
     STATUS_GROUPS = {
-        "active": ["Execution-ready", "In progress", "Validating"],
+        "active": ["In progress", "Validating"],
         "completed": ["Completed"],
-        "planned": ["Planned", "Decomposing"],
+        "planned": ["Planned", "Decomposing", "Execution-ready"],
         "pending": ["Proposed", "Accepted"],
         "deferred": ["Deferred", "Frozen", "Rejected"],
     }
@@ -45,7 +45,7 @@ class RoadmapDashboard:
 
         # Group items by status
         for item in items:
-            status = item.execution.status
+            status = item.status
             metrics["by_status"][status] = metrics["by_status"].get(status, 0) + 1
 
             # Priority distribution
@@ -71,7 +71,7 @@ class RoadmapDashboard:
 
             # Critical path (high strategic value, unmet dependencies)
             if item.strategic_value >= 4 and item.dependencies:
-                unmet = [d for d in item.dependencies if any(i.id == d and i.execution.status != "Completed" for i in items)]
+                unmet = [d for d in item.dependencies if any(i.id == d and i.status != "Completed" for i in items)]
                 if unmet:
                     metrics["critical_path_items"].append((item.id, unmet))
                     metrics["dependencies_unmet"] += len(unmet)
@@ -103,13 +103,12 @@ class RoadmapDashboard:
         print(f"   📋 Planned:   {planned:3d}")
         print(f"   ⏳ Pending:    {pending:3d}")
 
-        # Show recent status transitions
+        # Show status breakdown
         if metrics["by_status"]:
             print(f"\n   Status breakdown:")
-            for status in ["Completed", "In progress", "Validating", "Execution-ready", "Planned", "Proposed"]:
-                count = metrics["by_status"].get(status, 0)
-                if count > 0:
-                    print(f"     • {status}: {count}")
+            for status in sorted(metrics["by_status"].keys()):
+                count = metrics["by_status"][status]
+                print(f"     • {status}: {count}")
 
     def print_priority_distribution(self, metrics: Dict[str, Any]) -> None:
         """Print priority class distribution."""

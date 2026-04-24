@@ -24,7 +24,8 @@ from bin.roadmap_parser import (
 class RoadmapExecutor:
     """Manages autonomous execution with RM-GOV-001 compliance."""
 
-    EXECUTION_READY_STATUSES = ["Execution-ready", "Planned"]
+    EXECUTION_READY_STATUSES = ["Accepted", "Planned"]
+    READY_READINESS = ["now", "near"]
     VALID_STATUSES = ["Proposed", "Accepted", "Decomposing", "Planned", "Execution-ready", "In progress", "Validating", "Completed", "Deferred", "Frozen", "Rejected"]
 
     def __init__(self, repo_root: Path):
@@ -95,14 +96,15 @@ class RoadmapExecutor:
             return True  # Don't fail if commit fails
 
     def _dependencies_met(self, item: RoadmapItem, items: List[RoadmapItem]) -> bool:
-        """Check if all dependencies are completed."""
+        """Check if all dependencies are completed (status == 'Completed')."""
         id_map = {i.id: i for i in items}
 
         for dep_id in item.dependencies:
             if dep_id not in id_map:
                 continue
             dep = id_map[dep_id]
-            if dep.execution.status != "Completed":
+            # Dependencies are met if the dependent item's status is Completed
+            if dep.status != "Completed":
                 return False
         return True
 
@@ -111,12 +113,16 @@ class RoadmapExecutor:
         items: List[RoadmapItem],
         max_count: int = 1,
     ) -> List[RoadmapItem]:
-        """Find items ready for execution (respects dependencies and priorities)."""
+        """Find items ready for execution (respects dependencies, readiness, and priorities)."""
         candidates = []
 
         for item in items:
-            # Skip non-execution-ready items
-            if item.execution.status not in self.EXECUTION_READY_STATUSES:
+            # Skip non-execution-ready items (status must be Accepted or Planned)
+            if item.status not in self.EXECUTION_READY_STATUSES:
+                continue
+
+            # Check readiness (must be 'now' or 'near')
+            if item.readiness not in self.READY_READINESS:
                 continue
 
             # Check dependencies

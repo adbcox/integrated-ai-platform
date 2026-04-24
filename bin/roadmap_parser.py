@@ -72,59 +72,70 @@ class RoadmapItem:
     frontmatter: Dict[str, Any] = field(default_factory=dict)
 
 
-def extract_frontmatter_and_content(content: str) -> tuple[Optional[Dict[str, Any]], str]:
-    """Extract YAML frontmatter and remaining markdown."""
-    if not content.startswith("---"):
-        return None, content
+def extract_bullet_list_metadata(content: str) -> Dict[str, Any]:
+    """Extract metadata from bullet-list format (- **Field:** `value`)."""
+    metadata = {}
 
-    try:
-        # Find closing --- (must be on its own line)
-        lines = content.split('\n')
-        end_idx = None
-        for i in range(1, len(lines)):
-            if lines[i].strip() == "---":
-                end_idx = i
-                break
+    patterns = {
+        'id': r'- \*\*ID:\*\*\s*`([^`]+)`',
+        'title': r'- \*\*Title:\*\*\s*(.+?)(?:\n|$)',
+        'category': r'- \*\*Category:\*\*\s*`([^`]+)`',
+        'item_type': r'- \*\*Type:\*\*\s*`([^`]+)`',
+        'status': r'- \*\*Status:\*\*\s*`([^`]+)`',
+        'maturity': r'- \*\*Maturity:\*\*\s*`([^`]+)`',
+        'priority': r'- \*\*Priority:\*\*\s*`([^`]+)`',
+        'priority_class': r'- \*\*Priority class:\*\*\s*`([^`]+)`',
+        'queue_rank': r'- \*\*Queue rank:\*\*\s*`?(\d+)`?',
+        'target_horizon': r'- \*\*Target horizon:\*\*\s*`([^`]+)`',
+        'loe': r'- \*\*LOE:\*\*\s*`([^`]+)`',
+        'strategic_value': r'- \*\*Strategic value:\*\*\s*`?(\d+)`?',
+        'architecture_fit': r'- \*\*Architecture fit:\*\*\s*`?(\d+)`?',
+        'execution_risk': r'- \*\*Execution risk:\*\*\s*`?(\d+)`?',
+        'dependency_burden': r'- \*\*Dependency burden:\*\*\s*`?(\d+)`?',
+        'readiness': r'- \*\*Readiness:\*\*\s*`([^`]+)`',
+    }
 
-        if end_idx is None:
-            return None, content
+    for field, pattern in patterns.items():
+        match = re.search(pattern, content)
+        if match:
+            value = match.group(1).strip()
+            metadata[field] = value
 
-        frontmatter_str = '\n'.join(lines[1:end_idx])
-        markdown = '\n'.join(lines[end_idx+1:])
-
-        # Parse YAML
-        try:
-            frontmatter = yaml.safe_load(frontmatter_str) if frontmatter_str.strip() else {}
-            return frontmatter or {}, markdown.lstrip('\n')
-        except yaml.YAMLError as e:
-            print(f"⚠️  YAML parse error: {e}", file=sys.stderr)
-            return {}, markdown.lstrip('\n')
-    except Exception as e:
-        print(f"⚠️  Frontmatter extraction error: {e}", file=sys.stderr)
-        return None, content
+    return metadata
 
 
-def parse_markdown_metadata(content: str, item_id: str) -> Dict[str, Any]:
-    """Extract metadata from markdown sections."""
-    meta = {}
+def parse_markdown_sections(content: str, item_id: str) -> Dict[str, str]:
+    """Extract Description, Key requirements, Affected systems sections."""
+    sections = {}
 
-    # Extract title from first # header or bold section
-    title_match = re.search(r'\*\*(.+?)\*\*|^#\s+(.+?)$', content, re.MULTILINE)
-    if title_match:
-        meta['title'] = title_match.group(1) or title_match.group(2)
-    else:
-        meta['title'] = item_id
-
-    # Extract description (from first non-header section)
-    desc_match = re.search(r'^## (?:Objective|Description)\s*\n+(.+?)(?:^##|$)', content, re.MULTILINE | re.DOTALL)
+    desc_match = re.search(r'^## Description\s*\n+(.+?)(?=\n^##|$)', content, re.MULTILINE | re.DOTALL)
     if desc_match:
-        meta['description'] = desc_match.group(1).strip()[:200]
+        sections['description'] = desc_match.group(1).strip()[:500]
 
-    return meta
+    req_match = re.search(r'^## Key requirements\s*\n+(.+?)(?=\n^##|$)', content, re.MULTILINE | re.DOTALL)
+    if req_match:
+        sections['requirements'] = req_match.group(1).strip()
+
+    affected_match = re.search(r'^## Affected systems\s*\n+(.+?)(?=\n^##|$)', content, re.MULTILINE | re.DOTALL)
+    if affected_match:
+        affected_text = affected_match.group(1).strip()
+        systems = re.findall(r'- (.+?)(?:\n|$)', affected_text)
+        sections['affected_systems'] = systems
+
+    # Extract dependencies from content (exclude self-reference)
+    dep_ids = set()
+    for match in re.finditer(r'(RM-[A-Z]+-\d+)', content):
+        dep_id = match.group(1)
+        if dep_id != item_id:  # Exclude self-reference
+            dep_ids.add(dep_id)
+    if dep_ids:
+        sections['dependencies'] = sorted(list(dep_ids))
+
+    return sections
 
 
 def parse_roadmap_file(file_path: Path) -> Optional[RoadmapItem]:
-    """Parse a roadmap markdown file into a RoadmapItem."""
+    """Parse a roadmap markdown file (bullet-list format) into a RoadmapItem."""
     try:
         content = file_path.read_text()
     except Exception as e:
@@ -137,75 +148,70 @@ def parse_roadmap_file(file_path: Path) -> Optional[RoadmapItem]:
         return None
     item_id = item_id.group(1)
 
-    # Extract frontmatter and markdown
-    frontmatter, markdown = extract_frontmatter_and_content(content)
+    # Extract bullet-list metadata
+    bullet_meta = extract_bullet_list_metadata(content)
 
-    # Extract metadata from markdown if not in frontmatter
-    markdown_meta = parse_markdown_metadata(markdown, item_id)
+    # Extract markdown sections
+    sections = parse_markdown_sections(content, item_id)
 
-    # Build item with frontmatter as primary source
-    fm = frontmatter or {}
-
-    # Parse execution status from frontmatter
-    exec_data = fm.get('execution', {})
+    # Parse execution status (from bullet list if present, else defaults)
     execution = ExecutionStatus(
-        status=exec_data.get('status', 'Accepted'),
-        started_at=exec_data.get('started_at'),
-        completed_at=exec_data.get('completed_at'),
-        blocker=exec_data.get('blocker'),
-        assigned_executor=exec_data.get('assigned_executor'),
-        model_used=exec_data.get('model_used'),
-        commits=exec_data.get('commits', []),
-        validation_status=exec_data.get('validation_status', {}),
+        status=bullet_meta.get('status', 'Accepted'),
     )
 
+    # Build RoadmapItem
     item = RoadmapItem(
         id=item_id,
-        title=fm.get('title') or markdown_meta.get('title', item_id),
-        category=fm.get('category', 'CORE'),
-        item_type=fm.get('type', 'Feature'),
-        description=fm.get('description') or markdown_meta.get('description', ''),
+        title=bullet_meta.get('title', item_id),
+        category=bullet_meta.get('category', 'CORE'),
+        item_type=bullet_meta.get('item_type', 'Feature'),
+        description=sections.get('description', ''),
 
-        # Status fields
-        status=fm.get('status', 'Accepted'),
-        priority=fm.get('priority', 'Medium'),
-        priority_class=fm.get('priority_class', 'P2'),
-        queue_rank=int(fm.get('queue_rank', 999)),
-        target_horizon=fm.get('target_horizon', 'later'),
-        loe=fm.get('loe', 'M'),
+        # Status fields from bullet list
+        status=bullet_meta.get('status', 'Accepted'),
+        priority=bullet_meta.get('priority', 'Medium'),
+        priority_class=bullet_meta.get('priority_class', 'P2'),
+        queue_rank=int(bullet_meta.get('queue_rank', 999)),
+        target_horizon=bullet_meta.get('target_horizon', 'later'),
+        loe=bullet_meta.get('loe', 'M'),
 
-        # Scoring
-        strategic_value=int(fm.get('strategic_value', 3)),
-        architecture_fit=int(fm.get('architecture_fit', 3)),
-        execution_risk=int(fm.get('execution_risk', 3)),
-        dependency_burden=int(fm.get('dependency_burden', 3)),
-        readiness=fm.get('readiness', 'blocked'),
+        # Scoring from bullet list
+        strategic_value=int(bullet_meta.get('strategic_value', 3)),
+        architecture_fit=int(bullet_meta.get('architecture_fit', 3)),
+        execution_risk=int(bullet_meta.get('execution_risk', 3)),
+        dependency_burden=int(bullet_meta.get('dependency_burden', 3)),
+        readiness=bullet_meta.get('readiness', 'blocked'),
 
-        # Impact
-        affected_systems=fm.get('affected_systems', []),
-        affected_subsystems=fm.get('affected_subsystems', []),
-        expected_file_families=fm.get('expected_file_families', []),
-        cmdb_links=fm.get('cmdb_links', []),
-        dependencies=fm.get('dependencies', []),
-        grouping_candidates=fm.get('grouping_candidates', []),
+        # Impact from sections
+        affected_systems=sections.get('affected_systems', []),
+        affected_subsystems=[],
+        expected_file_families=[],
+        cmdb_links=[],
+        dependencies=sections.get('dependencies', []),
+        grouping_candidates=[],
 
         # Execution tracking
         execution=execution,
 
         # Content
         file_path=str(file_path),
-        markdown_content=markdown,
-        frontmatter=fm,
+        markdown_content=content,
+        frontmatter=bullet_meta,
     )
 
     return item
 
 
 def parse_roadmap_directory(roadmap_dir: Path) -> List[RoadmapItem]:
-    """Parse all roadmap files from a directory."""
+    """Parse all roadmap files from items directory."""
     items = []
+    items_dir = roadmap_dir / "items"
 
-    for md_file in sorted(roadmap_dir.glob('RM-*.md')):
+    if not items_dir.exists():
+        print(f"⚠️  Items directory not found: {items_dir}", file=sys.stderr)
+        return items
+
+    for md_file in sorted(items_dir.glob('RM-*.md')):
         item = parse_roadmap_file(md_file)
         if item:
             items.append(item)
@@ -289,7 +295,7 @@ if __name__ == "__main__":
 
         target = Path(sys.argv[1])
         if not target.is_absolute():
-            target = roadmap_dir / target
+            target = roadmap_dir / "items" / target
 
         item = parse_roadmap_file(target)
         if item:
