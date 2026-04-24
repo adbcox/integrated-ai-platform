@@ -4,7 +4,7 @@
 - **Title:** Ambient tablet display themes for kitchen, entertainment, and hallway use
 - **Category:** `UI`
 - **Type:** `Feature`
-- **Status:** `In progress`
+- **Status:** `Completed`
 - **Maturity:** `M2`
 - **Priority:** `High`
 - **Priority class:** `P3`
