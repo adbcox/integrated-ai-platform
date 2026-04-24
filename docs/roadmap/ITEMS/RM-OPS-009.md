@@ -4,7 +4,7 @@
 - **Title:** Caller identity, reverse phone lookup, and communication screening layer
 - **Category:** `OPS`
 - **Type:** `System`
-- **Status:** `In progress`
+- **Status:** `Accepted`
 - **Maturity:** `M2`
 - **Priority:** `Medium`
 - **Priority class:** `P3`
