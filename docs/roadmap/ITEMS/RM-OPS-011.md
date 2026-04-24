@@ -4,7 +4,7 @@
 - **Title:** Kubernetes deployment manifests and Helm charts
 - **Category:** `OPS`
 - **Type:** `Enhancement`
-- **Status:** `Accepted`
+- **Status:** `In progress`
 - **Maturity:** `M0`
 - **Priority:** `High`
 - **Priority class:** `P2`
