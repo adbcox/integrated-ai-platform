@@ -4,7 +4,7 @@
 - **Title:** AI-generated full hardware inventory for all project systems and equipment
 - **Category:** `INV`
 - **Type:** `Feature`
-- **Status:** `Accepted`
+- **Status:** `In progress`
 - **Maturity:** `M2`
 - **Priority:** `High`
 - **Priority class:** `P2`
