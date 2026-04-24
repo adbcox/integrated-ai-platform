@@ -4,7 +4,7 @@
 - **Title:** Photo-driven inventory capture and capability mapping system for assets, components, consumables, and tools
 - **Category:** `INV`
 - **Type:** `System`
-- **Status:** `Accepted`
+- **Status:** `In progress`
 - **Maturity:** `M2`
 - **Priority:** `High`
 - **Priority class:** `P1`
