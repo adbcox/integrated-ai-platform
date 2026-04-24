@@ -4,7 +4,7 @@
 - **Title:** AI-assisted website generation, SEO, and analytics delivery stack
 - **Category:** `DOCAPP`
 - **Type:** `Program`
-- **Status:** `Accepted`
+- **Status:** `In progress`
 - **Maturity:** `M2`
 - **Priority:** `High`
 - **Priority class:** `P3`
