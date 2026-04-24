@@ -156,6 +156,11 @@ def main() -> int:
 
     # Batch mode convenience
     if args.batch_mode:
+
+    # Force-local mode: allow tasks without files (research/planning)
+    if hasattr(args, "force_local") and args.force_local:
+        args.skip_analysis = True
+        args.force = True
         args.force = True
         args.skip_analysis = True
 
@@ -195,10 +200,18 @@ def main() -> int:
     # Extract files and focused symbol from the description if needed.
     inferred_files = extract_files_from_description(args.description, repo_root)
     task_files = list(dict.fromkeys([*(args.files or []), *inferred_files]))
+
+    # Force-local mode without files: create README for documentation tasks
+    if hasattr(args, "force_local") and args.force_local and not task_files:
+        readme_path = repo_root / "README.md"
+        if readme_path.exists():
+            task_files = ["README.md"]
+        else:
+            task_files = ["docs/README.md"]
     focus_symbol = extract_focus_symbol(args.description)
     task_description = augment_description(args.description, task_files, focus_symbol)
 
-    if not task_files:
+    if not task_files and not (hasattr(args, "force_local") and args.force_local):
         print("❌ Error: No files provided or inferred from description.", file=sys.stderr)
         return 1
 
