@@ -80,8 +80,18 @@ The repo should now select future work from post-convergence extensions, connect
 - `RM-GOV-008`
 - `RM-GOV-009`
 
-### Developer assistant / execution
+### Developer experience / tooling
 - `RM-DEV-001`
+- `RM-DEV-002`
+- `RM-DEV-003`
+- `RM-DEV-004`
+- `RM-DEV-005`
+- `RM-DEV-006`
+- `RM-DEV-007`
+- `RM-DEV-008`
+- `RM-DEV-009`
+- `RM-DEV-010`
+- `RM-DEV-011`
 - `RM-AUTO-001`
 
 ### Core / ops / UI
@@ -106,6 +116,25 @@ The repo should now select future work from post-convergence extensions, connect
 - `RM-INV-001`
 - `RM-INV-002`
 - `RM-INV-003`
+
+### Workflow automation
+- `RM-FLOW-001`
+- `RM-FLOW-002`
+- `RM-FLOW-003`
+- `RM-FLOW-004`
+- `RM-FLOW-005`
+- `RM-FLOW-006`
+- `RM-FLOW-007`
+- `RM-FLOW-008`
+- `RM-FLOW-009`
+- `RM-FLOW-010`
+
+### Quality assurance
+- `RM-QA-001`
+- `RM-QA-002`
+- `RM-QA-003`
+- `RM-QA-004`
+- `RM-QA-005`
 
 ### Domain expansion
 - `RM-DOCAPP-001`
