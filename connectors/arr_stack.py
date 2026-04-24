@@ -1,6 +1,8 @@
 from __future__ import annotations
 
-from typing import Any, Dict
+from typing import Any, Dict, List
+
+import requests
 
 from .base import BaseConnector
 
@@ -13,13 +15,54 @@ class ArrStackConnector(BaseConnector):
         self.service_name = service_name
         self.base_url = base_url.rstrip("/")
         self.api_key = api_key
+        self.session = requests.Session()
+        if api_key:
+            self.session.headers.update({"X-Api-Key": api_key})
 
     def health_check(self) -> bool:
         """Check if service is reachable."""
-        # Stub - will implement with requests
-        return False
+        try:
+            response = self.session.get(f"{self.base_url}/api/v3/system/status", timeout=5)
+            return response.status_code == 200
+        except Exception:
+            return False
+
+    def get_queue(self) -> List[Dict[str, Any]]:
+        """Get current download queue."""
+        try:
+            response = self.session.get(f"{self.base_url}/api/v3/queue", timeout=10)
+            response.raise_for_status()
+            return response.json().get("records", [])
+        except Exception:
+            return []
+
+    def get_calendar(self, days: int = 7) -> List[Dict[str, Any]]:
+        """Get upcoming releases/episodes."""
+        try:
+            response = self.session.get(
+                f"{self.base_url}/api/v3/calendar",
+                params={"start": "today", "end": f"{days}d"},
+                timeout=10,
+            )
+            response.raise_for_status()
+            return response.json()
+        except Exception:
+            return []
 
     def execute(self, action: str, params: Dict[str, Any]) -> Dict[str, Any]:
-        """Execute action on *Arr service."""
-        # Stub - actions: get_queue, get_calendar, add_series, etc.
-        return {"success": False, "error": "Not implemented"}
+        """Execute action on service."""
+        actions = {
+            "health_check": lambda: {"healthy": self.health_check()},
+            "get_queue": lambda: {"queue": self.get_queue()},
+            "get_calendar": lambda: {"calendar": self.get_calendar(params.get("days", 7))},
+        }
+
+        handler = actions.get(action)
+        if not handler:
+            return {"success": False, "error": f"Unknown action: {action}"}
+
+        try:
+            result = handler()
+            return {"success": True, **result}
+        except Exception as e:
+            return {"success": False, "error": str(e)}

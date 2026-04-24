@@ -36,23 +36,15 @@ class MediaDomain:
 
     def health_check(self) -> Dict[str, bool]:
         """Check health of all *Arr services."""
+        from connectors.arr_stack import ArrStackConnector
+
+        # API keys can be wired from config or environment later; keep this read-only.
+        sonarr = ArrStackConnector("sonarr", self.sonarr_url)
+        radarr = ArrStackConnector("radarr", self.radarr_url)
+        prowlarr = ArrStackConnector("prowlarr", self.prowlarr_url)
+
         return {
-            "sonarr": self._check_sonarr_health(),
-            "radarr": self._check_radarr_health(),
-            "prowlarr": self._check_prowlarr_health(),
+            "sonarr": sonarr.health_check(),
+            "radarr": radarr.health_check(),
+            "prowlarr": prowlarr.health_check(),
         }
-
-    def _check_sonarr_health(self) -> bool:
-        """Check health of Sonarr service."""
-        # Implement health check logic for Sonarr
-        return False
-
-    def _check_radarr_health(self) -> bool:
-        """Check health of Radarr service."""
-        # Implement health check logic for Radarr
-        return False
-
-    def _check_prowlarr_health(self) -> bool:
-        """Check health of Prowlarr service."""
-        # Implement health check logic for Prowlarr
-        return False

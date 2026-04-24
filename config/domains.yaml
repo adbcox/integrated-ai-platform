@@ -28,3 +28,9 @@ MediaDomain:
     radarr_url: "http://192.168.10.114:7878"
     prowlarr_url: "http://192.168.10.114:9696"
     # API keys added when user enables
+
+HomeDomain:
+  enabled: false
+  parameters:
+    ha_url: "http://homeassistant.local:8123"
+    ha_token: ""  # Add when user enables
