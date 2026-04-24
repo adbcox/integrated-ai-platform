@@ -269,6 +269,7 @@ Only JSON array, no other text."""
 
     def execute_subtask(self, subtask: str, item_id: str = "", dry_run: bool = False, max_retries: int = 3, subtask_timeout: int = 600) -> bool:
         """Execute subtask via local_coding_task.py --force-local with retry logic."""
+        print(f"[DEBUG] execute_subtask called with: dry_run={dry_run}, subtask='{subtask}'")
         if dry_run:
             print(f"    • {subtask} [DRY]")
             return True
@@ -312,23 +313,27 @@ Only JSON array, no other text."""
 
             start = time.time()
             try:
+                cmd = [
+                    "python3",
+                    str(self.repo_root / "bin" / "local_coding_task.py"),
+                    "--force-local",
+                    "--batch-mode",
+                    subtask
+                ]
+                print(f"[DEBUG] Running subprocess: {' '.join(cmd)}")
                 proc = subprocess.Popen(
-                    [
-                        "python3",
-                        str(self.repo_root / "bin" / "local_coding_task.py"),
-                        "--force-local",
-                        "--batch-mode",
-                        subtask
-                    ],
+                    cmd,
                     cwd=self.repo_root,
                     stdout=subprocess.PIPE,
                     stderr=subprocess.PIPE,
                     text=True,
                     start_new_session=True,
                 )
+                print(f"[DEBUG] Process started with PID {proc.pid}, waiting for completion with timeout={subtask_timeout}s")
                 try:
                     stdout, stderr = proc.communicate(timeout=subtask_timeout)
                     duration = time.time() - start
+                    print(f"[DEBUG] Process completed with returncode={proc.returncode}, duration={duration:.1f}s")
                     if proc.returncode == 0:
                         print(f"      ✅ Done (attempt {attempt})")
                         return True
@@ -367,6 +372,7 @@ Only JSON array, no other text."""
         # Decompose into subtasks
         print(f"\n📋 Decomposing into subtasks...")
         subtasks = self.decompose_item(item)
+        print(f"[DEBUG] decompose_item returned: {subtasks}")
 
         # CRITICAL: If no subtasks, FAIL - don't mark complete
         if not subtasks or len(subtasks) == 0:
@@ -380,7 +386,10 @@ Only JSON array, no other text."""
         failed_count = 0
         for idx, subtask in enumerate(subtasks, 1):
             print(f"   [{idx}/{len(subtasks)}]", end=" ")
-            if not self.execute_subtask(subtask, item_id=item.id, dry_run=dry_run):
+            print(f"\n[DEBUG] Calling execute_subtask with: {subtask}")
+            result = self.execute_subtask(subtask, item_id=item.id, dry_run=dry_run)
+            print(f"[DEBUG] execute_subtask returned: {result}")
+            if not result:
                 failed_count += 1
 
         # CRITICAL: Require ALL subtasks to pass
