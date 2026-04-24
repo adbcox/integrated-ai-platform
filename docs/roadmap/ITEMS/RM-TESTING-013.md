@@ -4,7 +4,7 @@
 - **Title:** Test data generation and fixtures
 - **Category:** `TESTING`
 - **Type:** `Enhancement`
-- **Status:** `Accepted`
+- **Status:** `In progress`
 - **Maturity:** `M0`
 - **Priority:** `Medium`
 - **Priority class:** `P2`
