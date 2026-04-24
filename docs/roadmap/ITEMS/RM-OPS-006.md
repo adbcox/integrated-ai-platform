@@ -4,7 +4,7 @@
 - **Title:** Governed desktop computer-use and non-API automation layer for local operator tasks
 - **Category:** `OPS`
 - **Type:** `System`
-- **Status:** `Accepted`
+- **Status:** `Completed`
 - **Maturity:** `M2`
 - **Priority:** `High`
 - **Priority class:** `P2`
