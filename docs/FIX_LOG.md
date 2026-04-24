@@ -6,44 +6,53 @@
 
 ---
 
-## Issue #1: GitHub Authentication (HTTPS vs SSH)
+## Issue #1: GitHub Authentication & Credential Storage
 
-### Status: DIAGNOSTIC COMPLETE
+### Status: ⏸️ REQUIRES TOKEN CREATION
 
-**Before State (Broken)**:
-- Remote URL: `https://github.com/adbcox/integrated-ai-platform.git`
-- Local commits ahead: 68
-- Attempting to push triggers credential prompt (HTTPS authentication required)
-- SSH key exists: `~/.ssh/id_ed25519` (ED25519 key)
-- GitHub host key: Missing from known_hosts
+**Current State** (2026-04-24 10:35):
+- Remote URL: `https://github.com/adbcox/integrated-ai-platform.git` ✓
+- Local commits ready to push: 69 (68 existing + 1 repair)
+- Credential helper: osxkeychain ✓ (properly configured)
+- Saved credentials: NONE ✗ (need token)
 
 **Diagnostics**:
-```
-$ git remote -v
-origin  https://github.com/adbcox/integrated-ai-platform.git (fetch)
-origin  https://github.com/adbcox/integrated-ai-platform.git (push)
+```bash
+$ git config --list | grep credential
+credential.helper=osxkeychain
 
-$ ssh -T git@github.com
-Permission denied (publickey).
+$ security find-internet-password -s github.com -w
+# Result: The specified item could not be found in the keychain
 ```
 
 **Root Cause**:
-1. SSH key (`id_ed25519`) is not registered in GitHub account
-2. GitHub host key not in `known_hosts` (now added: ssh-keyscan done)
-3. Remote URL configured for HTTPS, not SSH
+- osxkeychain is configured but empty (no credentials stored)
+- SSH key not registered in GitHub account (not viable)
+- HTTPS requires Personal Access Token (PAT) or GitHub password
+- No token created or lost previous token
 
-**Fix Applied**:
-1. ✅ Added GitHub host key to `~/.ssh/known_hosts` via `ssh-keyscan`
-2. ⏸️  SSH authentication still fails (public key not in GitHub account)
-3. ⏸️  Must authenticate GitHub CLI as workaround
+**Fix Required - Two Options**:
 
-**Workaround (Pending User Action)**:
+**Option 1: GitHub CLI (RECOMMENDED)**
 ```bash
 gh auth login
-# Follow interactive prompt to authenticate with GitHub token
+# Automatically creates & stores token in Keychain
 ```
 
-**Next Step**: Configure gh CLI as credential helper or manually register SSH key in GitHub.
+**Option 2: Manual Token Creation**
+1. Go to: https://github.com/settings/tokens/new
+2. Generate new token (classic)
+3. Scopes: ☑ repo, ☑ gist
+4. Run: `git push origin main`
+5. When prompted for password, paste the token
+6. Token automatically saved in Keychain
+
+**Test Command**:
+```bash
+git push origin main
+# Expected: Prompts for username/token if not in Keychain
+#           After entry, saves credentials and completes push
+```
 
 ---
 
