@@ -4,7 +4,7 @@
 - **Title:** Media endpoint health and Plex/app compliance system for network players
 - **Category:** `MEDIA`
 - **Type:** `Feature`
-- **Status:** `Accepted`
+- **Status:** `In progress`
 - **Maturity:** `M2`
 - **Priority:** `High`
 - **Priority class:** `P3`
