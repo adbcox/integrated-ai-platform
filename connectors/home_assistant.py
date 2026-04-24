@@ -18,6 +18,15 @@ class HomeAssistantConnector(BaseConnector):
         return False
 
     def execute(self, action: str, params: Dict[str, Any]) -> Dict[str, Any]:
-        """Execute HA action."""
+        """
+        Execute a Home Assistant action.
+
+        Args:
+            action (str): The action to perform (e.g., 'get_state', 'call_service').
+            params (Dict[str, Any]): Parameters for the action.
+
+        Returns:
+            Dict[str, Any]: Result of the action execution.
+        """
         # Stub - actions: get_state, call_service, etc.
         return {"success": False, "error": "Not implemented"}
