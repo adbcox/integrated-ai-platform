@@ -4,7 +4,7 @@
 - **Title:** E2E test automation with real code scenarios
 - **Category:** `TESTING`
 - **Type:** `Enhancement`
-- **Status:** `In progress`
+- **Status:** `Completed`
 - **Maturity:** `M0`
 - **Priority:** `High`
 - **Priority class:** `P2`
