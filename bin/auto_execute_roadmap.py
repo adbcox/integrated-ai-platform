@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Autonomous roadmap execution loop."""
+"""Autonomous roadmap execution with RM-GOV-001 compliance (frontmatter-based tracking)."""
 
 import sys
 import json
@@ -9,7 +9,7 @@ import time
 from pathlib import Path
 from typing import Optional, Dict, List, Any
 from datetime import datetime
-import yaml
+from collections import defaultdict
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
@@ -17,105 +17,136 @@ from bin.roadmap_parser import (
     parse_roadmap_directory,
     infer_dependencies,
     RoadmapItem,
-    parse_roadmap_file,
+    update_frontmatter,
 )
 
 
 class RoadmapExecutor:
-    """Manages autonomous execution of roadmap items."""
+    """Manages autonomous execution with RM-GOV-001 compliance."""
 
-    def __init__(self, repo_root: Path, status_file: Optional[Path] = None):
+    EXECUTION_READY_STATUSES = ["Execution-ready", "Planned"]
+    VALID_STATUSES = ["Proposed", "Accepted", "Decomposing", "Planned", "Execution-ready", "In progress", "Validating", "Completed", "Deferred", "Frozen", "Rejected"]
+
+    def __init__(self, repo_root: Path):
         self.repo_root = repo_root
         self.roadmap_dir = repo_root / "docs" / "roadmap"
-        self.status_file = status_file or (self.roadmap_dir / "STATUS.yaml")
-        self.artifacts_dir = repo_root / "artifacts" / "roadmap_execution"
+        self.artifacts_dir = repo_root / "artifacts" / "executions"
         self.artifacts_dir.mkdir(parents=True, exist_ok=True)
-
-        # Load execution state
-        self.state = self._load_state()
-
-    def _load_state(self) -> Dict[str, Any]:
-        """Load execution state from STATUS.yaml."""
-        if self.status_file.exists():
-            try:
-                with open(self.status_file) as f:
-                    state = yaml.safe_load(f) or {}
-                    return state
-            except Exception as e:
-                print(f"⚠️  Error loading state: {e}", file=sys.stderr)
-                return {}
-        return {"items": {}, "execution_log": []}
-
-    def _save_state(self) -> None:
-        """Save execution state to STATUS.yaml."""
-        try:
-            self.status_file.parent.mkdir(parents=True, exist_ok=True)
-            with open(self.status_file, 'w') as f:
-                yaml.dump(self.state, f, default_flow_style=False, sort_keys=False)
-        except Exception as e:
-            print(f"❌ Error saving state: {e}", file=sys.stderr)
 
     def _update_item_status(
         self,
-        item_id: str,
-        status: str,
+        item: RoadmapItem,
+        new_status: str,
         notes: str = "",
         commit_hash: Optional[str] = None,
-    ) -> None:
-        """Update status of a roadmap item."""
-        if item_id not in self.state["items"]:
-            self.state["items"][item_id] = {}
+        validation_update: Optional[Dict[str, str]] = None,
+    ) -> bool:
+        """Update item status in frontmatter and commit."""
+        if new_status not in self.VALID_STATUSES:
+            print(f"❌ Invalid status '{new_status}'", file=sys.stderr)
+            return False
 
-        self.state["items"][item_id].update({
-            "status": status,
-            "last_updated": datetime.utcnow().isoformat(),
-            "notes": notes,
-        })
+        # Update execution tracking in frontmatter
+        exec_update = {
+            "execution": {
+                "status": new_status,
+                "last_updated": datetime.utcnow().isoformat(),
+            }
+        }
+
+        if new_status == "In progress":
+            exec_update["execution"]["started_at"] = datetime.utcnow().isoformat()
+        elif new_status == "Completed":
+            exec_update["execution"]["completed_at"] = datetime.utcnow().isoformat()
+
+        if notes:
+            exec_update["execution"]["notes"] = notes
 
         if commit_hash:
-            self.state["items"][item_id]["commit_hash"] = commit_hash
+            exec_update["execution"]["commits"] = [commit_hash]
 
-        # Log to execution log
-        self.state["execution_log"].append({
-            "timestamp": datetime.utcnow().isoformat(),
-            "item_id": item_id,
-            "status": status,
-            "notes": notes,
-        })
+        if validation_update:
+            exec_update["execution"]["validation_status"] = validation_update
 
-    def _dependencies_met(self, item: RoadmapItem) -> bool:
+        # Update frontmatter in file
+        if not update_frontmatter(Path(item.file_path), exec_update):
+            return False
+
+        # Git commit this status change
+        try:
+            subprocess.run(
+                ["git", "add", item.file_path],
+                cwd=self.repo_root,
+                capture_output=True,
+                check=True,
+            )
+
+            msg = f"status: {item.id} → {new_status}\n\n{notes}" if notes else f"status: {item.id} → {new_status}"
+            subprocess.run(
+                ["git", "commit", "-m", msg],
+                cwd=self.repo_root,
+                capture_output=True,
+                check=True,
+            )
+
+            return True
+        except subprocess.CalledProcessError as e:
+            print(f"⚠️  Warning: Could not commit status update: {e}", file=sys.stderr)
+            return True  # Don't fail if commit fails
+
+    def _dependencies_met(self, item: RoadmapItem, items: List[RoadmapItem]) -> bool:
         """Check if all dependencies are completed."""
+        id_map = {i.id: i for i in items}
+
         for dep_id in item.dependencies:
-            dep_status = self.state.get("items", {}).get(dep_id, {}).get("status")
-            if dep_status != "completed":
+            if dep_id not in id_map:
+                continue
+            dep = id_map[dep_id]
+            if dep.execution.status != "Completed":
                 return False
         return True
 
-    def find_next_executable_item(
+    def find_executable_items(
         self,
         items: List[RoadmapItem],
-    ) -> Optional[RoadmapItem]:
-        """Find the next item to execute (highest priority, dependencies met)."""
+        max_count: int = 1,
+    ) -> List[RoadmapItem]:
+        """Find items ready for execution (respects dependencies and priorities)."""
         candidates = []
 
         for item in items:
-            current_status = self.state.get("items", {}).get(item.id, {}).get("status", "planned")
-
-            # Skip non-planned items
-            if current_status != "planned":
+            # Skip non-execution-ready items
+            if item.execution.status not in self.EXECUTION_READY_STATUSES:
                 continue
 
             # Check dependencies
-            if not self._dependencies_met(item):
+            if not self._dependencies_met(item, items):
                 continue
 
-            # Add to candidates
             candidates.append(item)
 
-        # Sort by priority (lower number = higher priority), then by ID
-        candidates.sort(key=lambda x: (x.priority, x.id))
+        # Sort by: priority class, queue rank, ID
+        priority_order = {"P0": 0, "P1": 1, "P2": 2, "P3": 3, "P4": 4}
+        candidates.sort(key=lambda x: (
+            priority_order.get(x.priority_class, 999),
+            x.queue_rank,
+            x.id,
+        ))
 
-        return candidates[0] if candidates else None
+        return candidates[:max_count]
+
+    def find_grouped_items(self, items: List[RoadmapItem], root_item: RoadmapItem) -> List[RoadmapItem]:
+        """Find items that can be grouped with root_item."""
+        grouped = [root_item]
+        candidates = [i for i in items if i.id in root_item.grouping_candidates]
+
+        for candidate in candidates:
+            # Check if dependencies are met
+            if self._dependencies_met(candidate, items):
+                if candidate.execution.status in self.EXECUTION_READY_STATUSES:
+                    grouped.append(candidate)
+
+        return grouped
 
     def decompose_item(self, item: RoadmapItem, llm_model: Optional[str] = None) -> List[str]:
         """Decompose a roadmap item into subtasks using LLM."""
@@ -126,36 +157,29 @@ class RoadmapExecutor:
 
 ID: {item.id}
 Title: {item.title}
+Type: {item.item_type}
+LOE: {item.loe}
 
-Objective: {item.objective}
+Description: {item.description}
 
-Required Outcomes:
-{chr(10).join(f'- {o}' for o in item.required_outcome)}
+Affected systems: {', '.join(item.affected_systems) if item.affected_systems else 'None specified'}
+Dependencies: {', '.join(item.dependencies) if item.dependencies else 'None'}
 
-Required Artifacts:
-{chr(10).join(f'- {a}' for a in item.required_artifacts)}
+Priority: {item.priority} ({item.priority_class})
+Target horizon: {item.target_horizon}
 
-First Milestone: {item.first_milestone}
-
-Respond ONLY with a JSON array of subtasks, each 1-2 sentences:
+Respond ONLY with a JSON array of concrete, actionable subtasks:
 [
-  "Subtask 1: concrete action here",
-  "Subtask 2: concrete action here",
+  "Subtask 1: specific action here",
+  "Subtask 2: specific action here",
   ...
 ]
 
 Only JSON, no other text."""
 
         try:
-            cmd = [
-                "aider",
-                "--no-auto-commits",
-                f"--model={llm_model}",
-                "--read=/dev/stdin",
-            ]
-
             proc = subprocess.run(
-                cmd,
+                ["aider", "--no-auto-commits", f"--model={llm_model}", "--read=/dev/stdin"],
                 input=prompt,
                 capture_output=True,
                 text=True,
@@ -165,7 +189,7 @@ Only JSON, no other text."""
 
             output = proc.stdout + (proc.stderr or "")
 
-            # Extract JSON from output
+            # Extract JSON
             import re
             json_match = re.search(r'\[.*\]', output, re.DOTALL)
             if json_match:
@@ -175,29 +199,22 @@ Only JSON, no other text."""
                 except json.JSONDecodeError:
                     pass
 
-            # Fallback: return first milestone as a single task
-            return [item.first_milestone]
-
+            return []
         except Exception as e:
-            print(f"⚠️  Error decomposing item: {e}", file=sys.stderr)
-            return [item.first_milestone]
+            print(f"⚠️  Decomposition error: {e}", file=sys.stderr)
+            return []
 
-    def execute_subtask(self, subtask: str, item_id: str, dry_run: bool = False) -> bool:
+    def execute_subtask(self, subtask: str, dry_run: bool = False) -> bool:
         """Execute a single subtask via quick_task.sh."""
-        print(f"\n  🎯 Subtask: {subtask}")
+        print(f"    • {subtask}")
 
         if dry_run:
-            print(f"  [DRY RUN] Would execute: ./bin/quick_task.sh --dual-model '{subtask}'")
+            print(f"      [DRY] Would execute via quick_task.sh")
             return True
 
         try:
-            # Run quick_task.sh with dual-model enabled
             result = subprocess.run(
-                [
-                    str(self.repo_root / "bin" / "quick_task.sh"),
-                    "--dual-model",
-                    subtask,
-                ],
+                [str(self.repo_root / "bin" / "quick_task.sh"), "--dual-model", subtask],
                 cwd=self.repo_root,
                 capture_output=True,
                 text=True,
@@ -205,109 +222,101 @@ Only JSON, no other text."""
             )
 
             if result.returncode == 0:
-                print(f"  ✅ Completed")
+                print(f"      ✅ Done")
                 return True
             else:
-                print(f"  ❌ Failed (exit code {result.returncode})")
-                if result.stderr:
-                    print(f"     {result.stderr[:200]}")
+                print(f"      ❌ Failed (exit {result.returncode})")
                 return False
-
         except subprocess.TimeoutExpired:
-            print(f"  ⏱️  Timeout")
+            print(f"      ⏱️  Timeout")
             return False
         except Exception as e:
-            print(f"  ❌ Error: {e}")
+            print(f"      ❌ Error: {e}")
             return False
 
-    def execute_item(self, item: RoadmapItem, dry_run: bool = False) -> bool:
-        """Execute a roadmap item and its subtasks."""
+    def execute_item(self, item: RoadmapItem, grouped_items: Optional[List[RoadmapItem]] = None, dry_run: bool = False) -> bool:
+        """Execute a roadmap item and update frontmatter."""
         print(f"\n{'='*70}")
-        print(f"🚀 Executing: {item.id} — {item.title}")
+        print(f"🚀 {item.id} — {item.title} ({item.item_type})")
+        print(f"   LOE: {item.loe} | Priority: {item.priority} ({item.priority_class})")
+        if grouped_items and len(grouped_items) > 1:
+            print(f"   Grouped with: {', '.join(i.id for i in grouped_items[1:])}")
         print(f"{'='*70}")
 
-        self._update_item_status(item.id, "in_progress")
-        self._save_state()
+        # Mark as In progress
+        self._update_item_status(item, "In progress", notes="Execution started")
 
         # Decompose into subtasks
         print(f"\n📋 Decomposing into subtasks...")
         subtasks = self.decompose_item(item)
-        print(f"   Generated {len(subtasks)} subtasks")
+        print(f"   Generated {len(subtasks)} subtasks:")
 
-        # Execute each subtask
+        # Execute subtasks
         failed_count = 0
         for idx, subtask in enumerate(subtasks, 1):
-            print(f"\n   [{idx}/{len(subtasks)}]", end="")
-            if not self.execute_subtask(subtask, item.id, dry_run=dry_run):
+            print(f"   [{idx}/{len(subtasks)}]", end=" ")
+            if not self.execute_subtask(subtask, dry_run=dry_run):
                 failed_count += 1
 
-        # Update status
+        # Update status based on results
         if failed_count == 0:
-            self._update_item_status(item.id, "completed", notes=f"Executed {len(subtasks)} subtasks")
+            self._update_item_status(item, "Completed", notes=f"All {len(subtasks)} subtasks completed")
             print(f"\n✅ Completed: {item.id}")
+            return True
         else:
-            self._update_item_status(
-                item.id,
-                "blocked",
-                notes=f"{failed_count}/{len(subtasks)} subtasks failed"
-            )
-            print(f"\n⚠️  Blocked: {item.id} ({failed_count} failures)")
-
-        self._save_state()
-        return failed_count == 0
+            self._update_item_status(item, "Validating", notes=f"{failed_count}/{len(subtasks)} subtasks failed")
+            print(f"\n⚠️  {failed_count} subtasks failed: {item.id}")
+            return False
 
     def run_autonomous_loop(self, max_items: int = 5, dry_run: bool = False) -> None:
-        """Run the autonomous execution loop."""
-        print(f"🤖 Starting autonomous roadmap execution loop")
-        print(f"   Max items: {max_items}")
-        print(f"   Dry run: {dry_run}")
-        print()
+        """Run autonomous execution loop."""
+        print(f"\n🤖 Autonomous Roadmap Execution")
+        print(f"   Max items: {max_items} | Dry run: {dry_run}")
 
-        # Parse all items
+        # Parse items
         items = parse_roadmap_directory(self.roadmap_dir)
         infer_dependencies(items)
 
-        print(f"📦 Loaded {len(items)} roadmap items")
+        print(f"   Loaded {len(items)} roadmap items")
+        print()
 
-        # Execute loop
-        executed_count = 0
+        executed = 0
         for _ in range(max_items):
-            item = self.find_next_executable_item(items)
-            if not item:
-                print(f"\n✅ No more executable items (all completed or blocked)")
+            # Find next executable item
+            candidates = self.find_executable_items(items, max_count=1)
+            if not candidates:
+                print(f"✅ No more executable items")
                 break
 
-            self.execute_item(item, dry_run=dry_run)
-            executed_count += 1
+            item = candidates[0]
 
-            # Check for unmet dependencies after execution
-            if executed_count % 3 == 0:
-                print(f"\n⏸️  Checkpoint: {executed_count} items executed")
+            # Find grouped items
+            grouped = self.find_grouped_items(items, item)
+            if len(grouped) > 1:
+                print(f"📦 Grouped execution: {item.id} + {len(grouped)-1} others")
+
+            # Execute
+            self.execute_item(item, grouped_items=grouped if len(grouped) > 1 else None, dry_run=dry_run)
+            executed += 1
+
+            # Reload items for updated status
+            items = parse_roadmap_directory(self.roadmap_dir)
+            infer_dependencies(items)
+
+            if executed % 3 == 0:
+                print(f"\n⏸️  Checkpoint: {executed} items executed")
                 time.sleep(1)
 
         print(f"\n{'='*70}")
-        print(f"🏁 Loop complete: {executed_count} items executed")
-        print(f"{'='*70}")
+        print(f"🏁 Execution complete: {executed} items")
+        print(f"{'='*70}\n")
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Autonomous roadmap execution loop")
-    parser.add_argument(
-        "--max-items",
-        type=int,
-        default=5,
-        help="Maximum items to execute (default: 5)",
-    )
-    parser.add_argument(
-        "--dry-run",
-        action="store_true",
-        help="Show what would be executed without running tasks",
-    )
-    parser.add_argument(
-        "--model",
-        default="qwen2.5-coder:14b",
-        help="Model for decomposition (default: qwen2.5-coder:14b)",
-    )
+    parser = argparse.ArgumentParser(description="Autonomous roadmap execution (RM-GOV-001 compliant)")
+    parser.add_argument("--max-items", type=int, default=5, help="Max items to execute")
+    parser.add_argument("--dry-run", action="store_true", help="Dry run mode")
+    parser.add_argument("--model", default="qwen2.5-coder:14b", help="Decomposition model")
 
     args = parser.parse_args()
 
@@ -317,7 +326,7 @@ def main():
     try:
         executor.run_autonomous_loop(max_items=args.max_items, dry_run=args.dry_run)
     except KeyboardInterrupt:
-        print("\n\n⏹️  Execution interrupted by user")
+        print("\n⏹️  Interrupted")
         sys.exit(1)
 
 

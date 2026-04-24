@@ -1,232 +1,245 @@
 #!/usr/bin/env python3
-"""Dashboard for roadmap execution progress."""
+"""Roadmap status dashboard (RM-GOV-001 governance metrics)."""
 
 import sys
 import json
 from pathlib import Path
 from typing import Dict, Any, List
 from datetime import datetime
-import yaml
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from bin.roadmap_parser import parse_roadmap_directory, infer_dependencies
+from bin.roadmap_parser import parse_roadmap_directory, infer_dependencies, RoadmapItem
 
 
-class RoadmapStatusDashboard:
-    """Display roadmap execution progress."""
+class RoadmapDashboard:
+    """Display roadmap governance metrics per RM-GOV-001."""
+
+    STATUS_GROUPS = {
+        "active": ["Execution-ready", "In progress", "Validating"],
+        "completed": ["Completed"],
+        "planned": ["Planned", "Decomposing"],
+        "pending": ["Proposed", "Accepted"],
+        "deferred": ["Deferred", "Frozen", "Rejected"],
+    }
 
     def __init__(self, repo_root: Path):
         self.repo_root = repo_root
         self.roadmap_dir = repo_root / "docs" / "roadmap"
-        self.status_file = self.roadmap_dir / "STATUS.yaml"
 
-    def load_status(self) -> Dict[str, Any]:
-        """Load execution status."""
-        if self.status_file.exists():
-            try:
-                with open(self.status_file) as f:
-                    return yaml.safe_load(f) or {"items": {}, "execution_log": []}
-            except Exception as e:
-                print(f"⚠️  Error loading status: {e}", file=sys.stderr)
-                return {"items": {}, "execution_log": []}
-        return {"items": {}, "execution_log": []}
-
-    def calculate_metrics(self, items: List[Any], status: Dict[str, Any]) -> Dict[str, Any]:
-        """Calculate progress metrics."""
-        total = len(items)
-        completed = sum(1 for item in items if status.get("items", {}).get(item.id, {}).get("status") == "completed")
-        in_progress = sum(1 for item in items if status.get("items", {}).get(item.id, {}).get("status") == "in_progress")
-        blocked = sum(1 for item in items if status.get("items", {}).get(item.id, {}).get("status") == "blocked")
-        planned = total - completed - in_progress - blocked
-
-        return {
-            "total": total,
-            "completed": completed,
-            "in_progress": in_progress,
-            "blocked": blocked,
-            "planned": planned,
-            "completion_percent": (completed / total * 100) if total > 0 else 0,
+    def calculate_metrics(self, items: List[RoadmapItem]) -> Dict[str, Any]:
+        """Calculate governance metrics."""
+        metrics = {
+            "total": len(items),
+            "by_status": {},
+            "by_priority": {},
+            "by_category": {},
+            "strategic_value_distribution": [0] * 6,  # 0-5 scores
+            "architecture_fit_distribution": [0] * 6,
+            "execution_risk_distribution": [0] * 6,
+            "readiness_distribution": {},
+            "grouped_bundles": 0,
+            "dependencies_unmet": 0,
+            "critical_path_items": [],
         }
+
+        # Group items by status
+        for item in items:
+            status = item.execution.status
+            metrics["by_status"][status] = metrics["by_status"].get(status, 0) + 1
+
+            # Priority distribution
+            priority = item.priority_class
+            metrics["by_priority"][priority] = metrics["by_priority"].get(priority, 0) + 1
+
+            # Category distribution
+            cat = item.category
+            metrics["by_category"][cat] = metrics["by_category"].get(cat, 0) + 1
+
+            # Scoring distributions
+            metrics["strategic_value_distribution"][item.strategic_value] += 1
+            metrics["architecture_fit_distribution"][item.architecture_fit] += 1
+            metrics["execution_risk_distribution"][item.execution_risk] += 1
+
+            # Readiness
+            readiness = item.readiness
+            metrics["readiness_distribution"][readiness] = metrics["readiness_distribution"].get(readiness, 0) + 1
+
+            # Grouped bundles
+            if item.grouping_candidates:
+                metrics["grouped_bundles"] += 1
+
+            # Critical path (high strategic value, unmet dependencies)
+            if item.strategic_value >= 4 and item.dependencies:
+                unmet = [d for d in item.dependencies if any(i.id == d and i.execution.status != "Completed" for i in items)]
+                if unmet:
+                    metrics["critical_path_items"].append((item.id, unmet))
+                    metrics["dependencies_unmet"] += len(unmet)
+
+        return metrics
 
     def print_header(self) -> None:
         """Print dashboard header."""
-        print("\n" + "=" * 80)
-        print("📊 ROADMAP EXECUTION DASHBOARD")
-        print("=" * 80)
+        print("\n" + "="*80)
+        print("📊 ROADMAP GOVERNANCE DASHBOARD (RM-GOV-001)")
+        print("="*80)
 
-    def print_metrics(self, metrics: Dict[str, Any]) -> None:
-        """Print progress metrics."""
-        print(f"\n📈 Overall Progress")
-        print(f"   Total Items: {metrics['total']}")
-        print(f"   ✅ Completed:  {metrics['completed']:3d} ({metrics['completion_percent']:5.1f}%)")
-        print(f"   🔄 In Progress: {metrics['in_progress']:3d}")
-        print(f"   ⏸️  Blocked:    {metrics['blocked']:3d}")
-        print(f"   📋 Planned:    {metrics['planned']:3d}")
+    def print_execution_status(self, metrics: Dict[str, Any]) -> None:
+        """Print execution status breakdown."""
+        print("\n📈 Execution Status")
+        print("-"*80)
 
-    def print_status_by_item(
-        self,
-        items: List[Any],
-        status: Dict[str, Any],
-    ) -> None:
-        """Print detailed status for each item."""
-        print(f"\n📋 Item Status")
-        print("-" * 80)
+        active = sum(metrics["by_status"].get(s, 0) for s in self.STATUS_GROUPS["active"])
+        completed = metrics["by_status"].get("Completed", 0)
+        planned = sum(metrics["by_status"].get(s, 0) for s in self.STATUS_GROUPS["planned"])
+        pending = sum(metrics["by_status"].get(s, 0) for s in self.STATUS_GROUPS["pending"])
 
-        # Group by status
-        by_status = {"completed": [], "in_progress": [], "blocked": [], "planned": []}
-        for item in items:
-            item_status = status.get("items", {}).get(item.id, {}).get("status", "planned")
-            by_status[item_status].append(item)
+        total = metrics["total"]
+        active_pct = (active / total * 100) if total else 0
+        completed_pct = (completed / total * 100) if total else 0
 
-        # Print by status with emojis
-        status_icons = {
-            "completed": "✅",
-            "in_progress": "🔄",
-            "blocked": "⏸️",
-            "planned": "📋",
-        }
+        print(f"   🔄 Active:    {active:3d} ({active_pct:5.1f}%)")
+        print(f"   ✅ Completed: {completed:3d} ({completed_pct:5.1f}%)")
+        print(f"   📋 Planned:   {planned:3d}")
+        print(f"   ⏳ Pending:    {pending:3d}")
 
-        for stat_key in ["in_progress", "completed", "blocked", "planned"]:
-            items_list = by_status[stat_key]
-            if items_list:
-                icon = status_icons[stat_key]
-                print(f"\n{icon} {stat_key.upper()} ({len(items_list)})")
-                for item in items_list[:10]:  # Show first 10 per status
-                    item_meta = status.get("items", {}).get(item.id, {})
-                    deps_str = f" [deps: {', '.join(item.dependencies)}]" if item.dependencies else ""
-                    notes = item_meta.get("notes", "")
-                    notes_str = f" — {notes}" if notes else ""
-                    print(f"   • {item.id}: {item.title[:50]}{deps_str}{notes_str}")
+        # Show recent status transitions
+        if metrics["by_status"]:
+            print(f"\n   Status breakdown:")
+            for status in ["Completed", "In progress", "Validating", "Execution-ready", "Planned", "Proposed"]:
+                count = metrics["by_status"].get(status, 0)
+                if count > 0:
+                    print(f"     • {status}: {count}")
 
-                if len(items_list) > 10:
-                    print(f"   ... and {len(items_list) - 10} more")
+    def print_priority_distribution(self, metrics: Dict[str, Any]) -> None:
+        """Print priority class distribution."""
+        print("\n🎯 Priority Distribution (per STANDARDS.md §5A)")
+        print("-"*80)
 
-    def print_recent_activity(self, status: Dict[str, Any]) -> None:
-        """Print recent execution activity."""
-        log = status.get("execution_log", [])
-        if not log:
+        for pclass in ["P0", "P1", "P2", "P3", "P4"]:
+            count = metrics["by_priority"].get(pclass, 0)
+            bar = "█" * (count // 2) if count > 0 else ""
+            print(f"   {pclass}: {count:3d} {bar}")
+
+    def print_governance_scores(self, metrics: Dict[str, Any]) -> None:
+        """Print governance scoring metrics."""
+        print("\n🏆 Governance Scoring (1-5 scale, per STANDARDS.md §7)")
+        print("-"*80)
+
+        def score_dist(dist: List[int]) -> str:
+            total = sum(dist)
+            if total == 0:
+                return "No items"
+            # Calculate weighted average
+            avg = sum(i * v for i, v in enumerate(dist)) / total if total else 0
+            return f"Avg: {avg:.1f} | Distribution: {dist[1:]}"
+
+        print(f"   Strategic value:    {score_dist(metrics['strategic_value_distribution'])}")
+        print(f"   Architecture fit:   {score_dist(metrics['architecture_fit_distribution'])}")
+        print(f"   Execution risk:     {score_dist(metrics['execution_risk_distribution'])}")
+
+    def print_readiness(self, metrics: Dict[str, Any]) -> None:
+        """Print readiness analysis."""
+        print("\n📊 Readiness Status (per STANDARDS.md §7)")
+        print("-"*80)
+
+        readiness_icons = {"now": "⚡", "near": "→", "later": "⏳", "blocked": "🚫"}
+        for readiness in ["now", "near", "later", "blocked"]:
+            count = metrics["readiness_distribution"].get(readiness, 0)
+            icon = readiness_icons.get(readiness, "?")
+            print(f"   {icon} {readiness:8s}: {count:3d}")
+
+    def print_category_breakdown(self, metrics: Dict[str, Any]) -> None:
+        """Print breakdown by category."""
+        print("\n📂 Items by Category (STANDARDS.md §2)")
+        print("-"*80)
+
+        for cat in sorted(metrics["by_category"].keys()):
+            count = metrics["by_category"][cat]
+            print(f"   {cat:12s}: {count:3d}")
+
+    def print_critical_path(self, metrics: Dict[str, Any]) -> None:
+        """Print critical path analysis."""
+        if not metrics["critical_path_items"]:
             return
 
-        print(f"\n📝 Recent Activity (last 10 entries)")
-        print("-" * 80)
+        print("\n⚠️  Critical Path Blockers (P3+ with unmet deps)")
+        print("-"*80)
 
-        for entry in log[-10:]:
-            timestamp = entry.get("timestamp", "")
-            item_id = entry.get("item_id", "")
-            stat = entry.get("status", "")
-            notes = entry.get("notes", "")
+        for item_id, unmet_deps in metrics["critical_path_items"][:10]:
+            print(f"   {item_id}: Blocked by {', '.join(unmet_deps)}")
 
-            # Extract time from ISO timestamp
-            try:
-                dt = datetime.fromisoformat(timestamp)
-                time_str = dt.strftime("%Y-%m-%d %H:%M:%S")
-            except:
-                time_str = timestamp[:19]
+        if len(metrics["critical_path_items"]) > 10:
+            print(f"   ... and {len(metrics['critical_path_items']) - 10} more")
 
-            status_icon = "✅" if stat == "completed" else "🔄" if stat == "in_progress" else "⏸️" if stat == "blocked" else "📋"
-
-            details = f"{notes}" if notes else ""
-            print(f"   {time_str} | {status_icon} {item_id:15s} → {stat:12s} {details}")
-
-    def print_blocked_items_with_reasons(
-        self,
-        items: List[Any],
-        status: Dict[str, Any],
-    ) -> None:
-        """Print blocked items and their blocking reasons."""
-        blocked = [
-            item for item in items
-            if status.get("items", {}).get(item.id, {}).get("status") == "blocked"
-        ]
-
-        if not blocked:
+    def print_grouped_bundles(self, metrics: Dict[str, Any]) -> None:
+        """Print grouped execution opportunities."""
+        if metrics["grouped_bundles"] == 0:
             return
 
-        print(f"\n🚫 Blocked Items ({len(blocked)})")
-        print("-" * 80)
-
-        for item in blocked:
-            item_meta = status.get("items", {}).get(item.id, {})
-            reason = item_meta.get("notes", "Unknown reason")
-            print(f"   • {item.id}: {reason}")
-            if item.dependencies:
-                print(f"      Dependencies: {', '.join(item.dependencies)}")
+        print("\n📦 Grouped Execution Opportunities")
+        print("-"*80)
+        print(f"   {metrics['grouped_bundles']} items have grouping candidates")
+        print(f"   (Can reduce shared-touch via coordinated execution)")
 
     def show_dashboard(self) -> None:
-        """Display the full dashboard."""
-        # Load data
+        """Display complete dashboard."""
         items = parse_roadmap_directory(self.roadmap_dir)
         infer_dependencies(items)
-        status = self.load_status()
+        metrics = self.calculate_metrics(items)
 
-        # Calculate metrics
-        metrics = self.calculate_metrics(items, status)
-
-        # Print dashboard
         self.print_header()
-        self.print_metrics(metrics)
-        self.print_status_by_item(items, status)
-        self.print_blocked_items_with_reasons(items, status)
-        self.print_recent_activity(status)
+        self.print_execution_status(metrics)
+        self.print_priority_distribution(metrics)
+        self.print_governance_scores(metrics)
+        self.print_readiness(metrics)
+        self.print_category_breakdown(metrics)
+        self.print_grouped_bundles(metrics)
+        self.print_critical_path(metrics)
 
-        print("\n" + "=" * 80)
+        print("\n" + "="*80)
         print(f"Last updated: {datetime.utcnow().isoformat()}")
-        print("=" * 80 + "\n")
+        print("Reference: docs/roadmap/STANDARDS.md for governance rules")
+        print("="*80 + "\n")
 
-    def export_json(self, output_path: Path) -> None:
-        """Export dashboard data as JSON."""
+    def export_metrics(self, output_path: Path) -> None:
+        """Export metrics to JSON."""
         items = parse_roadmap_directory(self.roadmap_dir)
         infer_dependencies(items)
-        status = self.load_status()
-        metrics = self.calculate_metrics(items, status)
+        metrics = self.calculate_metrics(items)
 
-        # Build export structure
         export_data = {
             "timestamp": datetime.utcnow().isoformat(),
             "metrics": {
-                "total": metrics["total"],
-                "completed": metrics["completed"],
-                "in_progress": metrics["in_progress"],
-                "blocked": metrics["blocked"],
-                "planned": metrics["planned"],
-                "completion_percent": metrics["completion_percent"],
+                "total_items": metrics["total"],
+                "execution_status": metrics["by_status"],
+                "priority_distribution": metrics["by_priority"],
+                "category_distribution": metrics["by_category"],
+                "readiness_distribution": metrics["readiness_distribution"],
+                "grouped_bundles": metrics["grouped_bundles"],
+                "unmet_dependencies": metrics["dependencies_unmet"],
             },
-            "items": [
-                {
-                    "id": item.id,
-                    "title": item.title,
-                    "status": status.get("items", {}).get(item.id, {}).get("status", "planned"),
-                    "dependencies": item.dependencies,
-                    "priority": item.priority,
-                }
-                for item in items
-            ],
         }
 
         with open(output_path, 'w') as f:
             json.dump(export_data, f, indent=2)
 
-        print(f"✅ Exported dashboard data to {output_path}")
+        print(f"✅ Exported to {output_path}")
 
 
 def main():
     import argparse
 
-    parser = argparse.ArgumentParser(description="Roadmap execution status dashboard")
-    parser.add_argument(
-        "--export",
-        type=Path,
-        help="Export data to JSON file",
-    )
+    parser = argparse.ArgumentParser(description="Roadmap governance dashboard")
+    parser.add_argument("--export", type=Path, help="Export metrics to JSON")
 
     args = parser.parse_args()
 
     repo_root = Path(__file__).parent.parent
-    dashboard = RoadmapStatusDashboard(repo_root)
+    dashboard = RoadmapDashboard(repo_root)
 
     if args.export:
-        dashboard.export_json(args.export)
+        dashboard.export_metrics(args.export)
     else:
         dashboard.show_dashboard()
 
