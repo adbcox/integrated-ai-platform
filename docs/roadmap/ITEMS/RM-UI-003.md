@@ -51,7 +51,6 @@ Creates a practical household-facing interface family built on the same platform
 
 ## Grouping candidates
 - `RM-UI-004`
-- `RM-HOME-001`
 - `RM-OPS-003`
 
 ## Grouped execution notes

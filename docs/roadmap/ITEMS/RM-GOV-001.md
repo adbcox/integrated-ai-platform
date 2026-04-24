@@ -75,11 +75,7 @@ This item is one of the central governance systems of the platform. It reduces p
 
 ## Grouping candidates
 
-- `RM-GOV-002`
 - `RM-GOV-003`
-- `RM-GOV-006`
-- `RM-GOV-007`
-- `RM-GOV-008`
 
 ## Grouped execution notes
 

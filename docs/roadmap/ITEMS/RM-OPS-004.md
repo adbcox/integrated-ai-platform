@@ -71,7 +71,6 @@ A local-first AI platform with growing automation and stateful services cannot b
 
 ## Grouping candidates
 
-- `RM-OPS-005`
 - `RM-GOV-001`
 - `RM-INV-002`
 

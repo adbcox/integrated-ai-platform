@@ -65,7 +65,6 @@ This is a core anti-drift system. It makes future autonomous work safer by reduc
 ## Grouping candidates
 
 - `RM-GOV-001`
-- `RM-GOV-003`
 
 ## Grouped execution notes
 

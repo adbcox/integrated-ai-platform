@@ -38,9 +38,6 @@ Creates a practical concept-to-handoff workflow for outdoor structure planning w
 - future handoff-output schemas or templates
 
 ## Dependencies
-- `RM-SHOP-001`
-- `RM-SHOP-002`
-- `RM-SHOP-003`
 
 ## Risks and issues
 ### Key risks
@@ -52,9 +49,6 @@ Creates a practical concept-to-handoff workflow for outdoor structure planning w
 - may later link to owned site/project records and tool/material inventories where relevant
 
 ## Grouping candidates
-- `RM-SHOP-001`
-- `RM-SHOP-002`
-- `RM-SHOP-003`
 
 ## Grouped execution notes
 - Shared-touch rationale: concept design, 3D capture, and model-library reuse overlap.

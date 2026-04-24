@@ -71,7 +71,6 @@ It also leverages work that is already present:
 - target-selection policy
 - blocker and status surfaces
 - telemetry/evidence direction from RM-OPS-005
-- completion and operational-truth expectations from RM-OPS-004
 - local run/evidence bundle outputs already present in the repo
 - the local AI stack role matrix and external integration catalog
 - the OSS reuse and reference-implementation registers
@@ -595,12 +594,8 @@ Required system behavior:
 ## Dependencies
 
 - `RM-GOV-001` — integrated roadmap-to-development tracking system with CMDB linkage, standardized metrics, enforced naming, and impact transparency
-- `RM-OPS-004` — backup, restore, disaster-recovery, and configuration export verification
 - `RM-OPS-005` — end-to-end telemetry, tracing, and audit evidence pipeline
-- `RM-AUTO-001` — plain-English goal-to-agent system
 - `RM-UI-001` — master control center for the system with web-first UI, tablet support, and later app-based surfaces
-- `RM-GOV-009` — external application connectivity and integration control plane
-- `RM-OPS-006` — governed desktop computer-use and non-API automation layer for local operator tasks
 
 ## Risks and issues
 
@@ -681,11 +676,7 @@ Required system behavior:
 
 - `RM-UI-001`
 - `RM-GOV-001`
-- `RM-OPS-004`
 - `RM-OPS-005`
-- `RM-AUTO-001`
-- `RM-GOV-009`
-- `RM-OPS-006`
 
 ## Grouped execution notes
 

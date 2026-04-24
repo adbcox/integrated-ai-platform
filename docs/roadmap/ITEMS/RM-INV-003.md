@@ -81,7 +81,6 @@ This metric should be adapted per hardware class rather than treated as one univ
 
 ## Dependencies
 
-- `RM-INV-001`
 - `RM-INV-002`
 - future external product/price connector posture through governance surfaces
 
@@ -103,7 +102,6 @@ This metric should be adapted per hardware class rather than treated as one univ
 
 ## Grouping candidates
 
-- `RM-INV-001`
 - `RM-INV-002`
 - `RM-GOV-009`
 

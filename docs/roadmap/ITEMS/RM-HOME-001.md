@@ -52,7 +52,6 @@ Creates a practical environment-control capability and demonstrates the preferre
 - should remain linkable to sensor, purifier, and room/device inventory over time
 
 ## Grouping candidates
-- `RM-OPS-003`
 - `RM-UI-003`
 
 ## Grouped execution notes

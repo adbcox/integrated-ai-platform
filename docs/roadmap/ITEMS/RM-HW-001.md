@@ -51,7 +51,6 @@ Extends the platform into a high-value hardware-support branch while remaining c
 - should later link to owned boards, components, and tool inventory
 
 ## Grouping candidates
-- `RM-HW-002`
 - `RM-INV-002`
 
 ## Grouped execution notes

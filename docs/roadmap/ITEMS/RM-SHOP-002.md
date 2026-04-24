@@ -38,7 +38,6 @@ Provides a meaningful workshop/design capability with reuse across physical proj
 
 ## Dependencies
 - owned scanning hardware context
-- `RM-SHOP-003`
 
 ## Risks and issues
 ### Key risks
@@ -50,7 +49,6 @@ Provides a meaningful workshop/design capability with reuse across physical proj
 - should link to scanner hardware and related 3D asset inventories
 
 ## Grouping candidates
-- `RM-SHOP-003`
 - `RM-SHOP-004`
 
 ## Grouped execution notes

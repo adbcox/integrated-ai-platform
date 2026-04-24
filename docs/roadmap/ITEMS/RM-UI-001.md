@@ -38,7 +38,6 @@ It is the main human-facing control surface for operations, monitoring, governan
 - future UI/layout components and supporting docs
 
 ## Dependencies
-- `RM-OPS-001`
 - `RM-OPS-004`
 - `RM-OPS-005`
 
@@ -52,8 +51,6 @@ It is the main human-facing control surface for operations, monitoring, governan
 - should expose system, service, and asset summaries over time
 
 ## Grouping candidates
-- `RM-UI-002`
-- `RM-OPS-001`
 
 ## Grouped execution notes
 - Shared-touch rationale: control surfaces and ops summaries overlap.

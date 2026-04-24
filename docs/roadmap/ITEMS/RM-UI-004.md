@@ -51,8 +51,6 @@ Creates a room-appropriate UX layer that makes the platform feel embedded in the
 
 ## Grouping candidates
 - `RM-UI-003`
-- `RM-HOME-001`
-- `RM-OPS-003`
 
 ## Grouped execution notes
 - Shared-touch rationale: ambient dashboards and environment displays overlap.

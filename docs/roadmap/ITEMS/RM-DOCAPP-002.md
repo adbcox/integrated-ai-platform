@@ -50,7 +50,6 @@ Creates a practical delivery stack for website generation while following the pl
 - may later link generated sites/apps to owned project/service inventory
 
 ## Grouping candidates
-- `RM-DOCAPP-001`
 
 ## Grouped execution notes
 - Shared-touch rationale: website delivery and document-to-app conversion share generation and deployability surfaces.

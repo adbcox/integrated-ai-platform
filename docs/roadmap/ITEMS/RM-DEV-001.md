@@ -53,7 +53,6 @@ This extends the local developer assistant into an important platform domain wit
 
 ## Grouping candidates
 - `RM-AUTO-001`
-- `RM-HW-001`
 
 ## Grouped execution notes
 - Shared-touch rationale: code runtime and developer-assistant surfaces overlap.

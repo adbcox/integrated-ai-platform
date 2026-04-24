@@ -50,7 +50,6 @@ Turns the media environment into a managed subsystem rather than ad hoc endpoint
 - should link to endpoint inventory and room/device identity surfaces
 
 ## Grouping candidates
-- `RM-MEDIA-002`
 
 ## Grouped execution notes
 - Shared-touch rationale: media integration and dashboard surfaces overlap.
