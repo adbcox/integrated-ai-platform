@@ -156,13 +156,13 @@ def main() -> int:
 
     # Batch mode convenience
     if args.batch_mode:
+        args.force = True
+        args.skip_analysis = True
 
     # Force-local mode: allow tasks without files (research/planning)
-    if hasattr(args, "force_local") and args.force_local:
+    if args.force_local:
         args.skip_analysis = True
         args.force = True
-        args.force = True
-        args.skip_analysis = True
 
     # Get repo root
     repo_root = Path(__file__).parent.parent
@@ -257,7 +257,8 @@ def main() -> int:
             return 2  # Exit code 2 = wrong executor
     else:
         # Force-local mode: create fake route
-        route = TaskRouter.TaskRoute(ExecutorType.LOCAL_AIDER, "qwen2.5-coder:14b", 1.0, "Forced local execution")
+        from domains.router import TaskRoute
+        route = TaskRoute(ExecutorType.LOCAL_AIDER, "qwen2.5-coder:14b", 1.0, "Forced local execution")
 
     # Import and execute
     try:
