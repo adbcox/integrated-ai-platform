@@ -21,6 +21,7 @@ Options:
 
 import sys
 import argparse
+import subprocess
 from pathlib import Path
 
 # Add repo root to Python path for imports
@@ -62,6 +63,11 @@ def main() -> int:
         action="store_true",
         help="Skip pre-flight analysis",
     )
+    parser.add_argument(
+        "--auto-test",
+        action="store_true",
+        help="Generate and run tests after successful execution",
+    )
 
     args = parser.parse_args()
 
@@ -95,7 +101,7 @@ def main() -> int:
         return 1
 
     # Route task to optimal executor
-    router = TaskRouter()
+    router = TaskRouter(repo_root)
     route = router.classify(args.description, args.files)
 
     # If not local, inform user and exit
@@ -144,6 +150,37 @@ def main() -> int:
             output = result.get("output", "")
             if "@@" in output:  # Shows there were code changes
                 print(f"   Output: {len(output)} chars captured")
+
+            # Review the current changes before continuing.
+            print()
+            print("=" * 70)
+            from bin.review_changes import review_current_changes
+
+            review_result = review_current_changes(repo_root=repo_root)
+            print("=" * 70)
+
+            if not review_result.get("proceed", True):
+                print("❌ Review requested fixes. Stop here and address the suggestions.")
+                return 1
+
+            # Auto-generate tests if requested
+            if args.auto_test:
+                print()
+                print("=" * 70)
+                test_result = subprocess.run(
+                    [
+                        sys.executable,
+                        str(Path(__file__).parent / "generate_tests.py"),
+                        "--commit",
+                        commit_hash if commit_hash else "HEAD",
+                    ],
+                    cwd=repo_root,
+                )
+                print("=" * 70)
+                if test_result.returncode != 0:
+                    print("⚠️  Test generation failed")
+                    return 1
+
             return 0
         else:
             error = result.get("error", "Unknown error")

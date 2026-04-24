@@ -88,6 +88,7 @@ def main() -> int:
     )
 
     args = parser.parse_args()
+    repo_root = Path.cwd()
 
     # Check task file exists
     if not Path(args.task_file).exists():
@@ -113,7 +114,7 @@ def main() -> int:
         from domains.coding import CodingDomain
 
         domain = CodingDomain()
-        router = TaskRouter()
+        router = TaskRouter(repo_root)
         results = []
         successful = 0
         skipped = 0

@@ -12,7 +12,7 @@ def main():
         print("Usage: route_task.py 'description' [file1 file2...]")
         return 1
 
-    router = TaskRouter()
+    router = TaskRouter(Path.cwd())
     route = router.classify(sys.argv[1], sys.argv[2:] if len(sys.argv) > 2 else None)
 
     print(f"Executor: {route.executor.value}")

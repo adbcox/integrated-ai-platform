@@ -99,7 +99,7 @@ def main():
     repo_root = Path(__file__).parent.parent
 
     # Route check
-    router = TaskRouter()
+    router = TaskRouter(repo_root)
     route = router.classify(description, files)
 
     print(f"📊 Task Analysis")
