@@ -205,17 +205,21 @@ Only JSON, no other text."""
             ]
 
     def execute_subtask(self, subtask: str, dry_run: bool = False) -> bool:
-        """Execute a single subtask via quick_task.sh."""
+        """Execute subtask via local_coding_task.py --force-local."""
         if dry_run:
             print(f"    • {subtask} [DRY]")
             return True
 
         print(f"    • {subtask}")
         try:
-            cmd = f"{self.repo_root}/bin/quick_task.sh --dual-model '{subtask}'"
             result = subprocess.run(
-                cmd,
-                shell=True,
+                [
+                    "python3",
+                    str(self.repo_root / "bin" / "local_coding_task.py"),
+                    "--force-local",
+                    "--batch-mode",
+                    subtask
+                ],
                 cwd=self.repo_root,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,

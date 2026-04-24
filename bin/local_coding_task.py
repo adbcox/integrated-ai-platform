@@ -131,6 +131,11 @@ def main() -> int:
         action="store_true",
         help="Frictionless automation: implies --force --skip-analysis --auto-commit",
     )
+    parser.add_argument(
+        "--force-local",
+        action="store_true",
+        help="Force local execution, bypass router (for autonomous execution)",
+    )
 
     # Dual-model workflow flags
     dual_group = parser.add_mutually_exclusive_group()
@@ -223,19 +228,23 @@ def main() -> int:
             print(f"   - {f}", file=sys.stderr)
         return 1
 
-    # Route task to optimal executor
-    router = TaskRouter(repo_root)
-    route = router.classify(args.description, task_files)
+    # Route task to optimal executor (unless --force-local)
+    if not args.force_local:
+        router = TaskRouter(repo_root)
+        route = router.classify(args.description, task_files)
 
-    # If not local, inform user and exit
-    if route.executor != ExecutorType.LOCAL_AIDER:
-        print(f"🔀 Task routed to: {route.executor.value}")
-        print(f"📊 Confidence: {route.confidence:.0%}")
-        print(f"💡 Reasoning: {route.reasoning}")
-        print()
-        print(f"💬 This task should use {route.executor.value} instead of local Aider.")
-        print(f"   Please run it manually via Claude.ai or Claude Code.")
-        return 2  # Exit code 2 = wrong executor
+        # If not local, inform user and exit
+        if route.executor != ExecutorType.LOCAL_AIDER:
+            print(f"🔀 Task routed to: {route.executor.value}")
+            print(f"📊 Confidence: {route.confidence:.0%}")
+            print(f"💡 Reasoning: {route.reasoning}")
+            print()
+            print(f"💬 This task should use {route.executor.value} instead of local Aider.")
+            print(f"   Please run it manually via Claude.ai or Claude Code.")
+            return 2  # Exit code 2 = wrong executor
+    else:
+        # Force-local mode: create fake route
+        route = TaskRouter.TaskRoute(ExecutorType.LOCAL_AIDER, "qwen2.5-coder:14b", 1.0, "Forced local execution")
 
     # Import and execute
     try:
