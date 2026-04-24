@@ -1,0 +1,10 @@
+{
+  "security.workspace.trust.enabled": false,
+  "terminal.integrated.enableBell": false,
+  "terminal.integrated.experimentalLinkProvider": false,
+  "workbench.enableExperiments": false,
+  "extensions.ignoreRecommendations": true,
+  "update.mode": "none",
+  "telemetry.telemetryLevel": "off",
+  "redhat.telemetry.enabled": false
+}

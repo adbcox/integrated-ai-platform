@@ -545,7 +545,7 @@ Make sure to address all issues and test edge cases."""
             proc = subprocess.Popen(
                 cmd,
                 stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT,
+                stderr=subprocess.DEVNULL,
                 text=True,
                 cwd=self.repo_root,
                 env=env,
