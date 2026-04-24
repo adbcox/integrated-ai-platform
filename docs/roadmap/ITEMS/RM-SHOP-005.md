@@ -4,7 +4,7 @@
 - **Title:** Active backlog placeholder — canonical title recovery required
 - **Category:** `SHOP`
 - **Type:** `Enhancement`
-- **Status:** `Frozen`
+- **Status:** `Retired`
 - **Maturity:** `M0`
 - **Priority:** `Low`
 - **Priority class:** `P4`
