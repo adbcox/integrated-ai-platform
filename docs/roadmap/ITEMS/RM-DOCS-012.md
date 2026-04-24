@@ -74,7 +74,6 @@ Troubleshooting guide enables:
 ## Grouping candidates
 
 - `RM-DOCS-011` (performance tuning)
-- `RM-DOCS-013` (contributing guidelines)
 
 ## Grouped execution notes
 

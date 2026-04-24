@@ -75,7 +75,6 @@ Circuit breakers are essential for:
 
 ## Grouping candidates
 
-- `RM-REL-002` (retry logic)
 - `RM-OBS-002` (metrics)
 
 ## Grouped execution notes

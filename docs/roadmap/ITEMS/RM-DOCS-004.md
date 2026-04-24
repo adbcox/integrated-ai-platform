@@ -71,7 +71,6 @@ ADRs enable:
 
 ## Grouping candidates
 
-- `RM-DOCS-005` (onboarding guide)
 - `RM-DOCS-006` (deployment runbooks)
 
 ## Grouped execution notes

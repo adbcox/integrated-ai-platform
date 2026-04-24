@@ -57,7 +57,6 @@ Metrics collection enables:
 
 ## Dependencies
 
-- `RM-OBS-001` — structured logging
 - None (can be independent)
 
 ## Risks and issues
@@ -77,7 +76,6 @@ Metrics collection enables:
 
 ## Grouping candidates
 
-- `RM-OBS-001` (structured logging)
 - `RM-OBS-003` (distributed tracing)
 
 ## Grouped execution notes

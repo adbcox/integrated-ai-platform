@@ -76,7 +76,6 @@ Structured logging enables:
 ## Grouping candidates
 
 - `RM-OBS-002` (metrics)
-- `RM-OBS-003` (distributed tracing)
 
 ## Grouped execution notes
 

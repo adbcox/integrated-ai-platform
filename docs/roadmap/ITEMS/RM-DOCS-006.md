@@ -74,8 +74,6 @@ Deployment runbooks enable:
 
 ## Grouping candidates
 
-- `RM-DOCS-005` (onboarding)
-- `RM-DOCS-007` (incident response)
 
 ## Grouped execution notes
 

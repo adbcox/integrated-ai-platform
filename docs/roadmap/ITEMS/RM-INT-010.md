@@ -72,7 +72,6 @@ Error tracking enables:
 
 ## Grouping candidates
 
-- `RM-INT-009` (analytics integration)
 - None (final integration item)
 
 ## Grouped execution notes

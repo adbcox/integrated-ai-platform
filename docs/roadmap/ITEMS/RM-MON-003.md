@@ -48,7 +48,6 @@ Proactive issue detection reduces mean-time-to-response (MTTR). Enables operator
 
 ## Dependencies
 
-- RM-MON-001 (Health dashboard)
 - RM-MON-002 (Metrics visualization)
 
 ## Risks and issues

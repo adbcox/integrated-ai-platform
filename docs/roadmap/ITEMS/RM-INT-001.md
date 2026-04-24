@@ -72,8 +72,6 @@ Slack integration enables:
 
 ## Grouping candidates
 
-- `RM-INT-002` (GitHub webhooks)
-- `RM-INT-003` (email integration)
 
 ## Grouped execution notes
 

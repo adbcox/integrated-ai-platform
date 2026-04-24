@@ -74,8 +74,6 @@ Performance guide enables:
 
 ## Grouping candidates
 
-- `RM-DOCS-010` (security guide)
-- `RM-DOCS-012` (troubleshooting guide)
 
 ## Grouped execution notes
 

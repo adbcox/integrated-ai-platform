@@ -77,8 +77,6 @@ Performance benchmarking enables:
 
 ## Grouping candidates
 
-- `RM-TESTING-017` (contract testing)
-- `RM-TESTING-019` (fuzz testing)
 
 ## Grouped execution notes
 

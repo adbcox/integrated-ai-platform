@@ -49,7 +49,6 @@ Eliminates deployment downtime. Reduces risk through instant rollback capability
 ## Dependencies
 
 - RM-DEPLOY-003 (Feature flags)
-- RM-DEPLOY-004 (Deployment verification)
 
 ## Risks and issues
 

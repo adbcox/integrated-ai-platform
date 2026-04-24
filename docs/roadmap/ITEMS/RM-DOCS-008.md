@@ -71,7 +71,6 @@ API documentation enables:
 
 ## Grouping candidates
 
-- `RM-DOCS-009` (database schema docs)
 - `RM-DOCS-010` (security best practices)
 
 ## Grouped execution notes

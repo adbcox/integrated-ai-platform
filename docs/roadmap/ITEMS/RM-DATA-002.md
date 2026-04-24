@@ -56,7 +56,6 @@ Query result caching improves performance by:
 
 ## Dependencies
 
-- `RM-DATA-001` — connection pooling
 - `RM-OBS-002` — metrics for cache statistics
 
 ## Risks and issues
@@ -76,8 +75,6 @@ Query result caching improves performance by:
 
 ## Grouping candidates
 
-- `RM-DATA-001` (connection pooling)
-- `RM-DATA-003` (validation)
 
 ## Grouped execution notes
 

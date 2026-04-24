@@ -78,7 +78,6 @@ E2E testing enables:
 
 ## Grouping candidates
 
-- `RM-TESTING-017` (API contract testing)
 - `RM-TESTING-020` (browser compatibility)
 
 ## Grouped execution notes

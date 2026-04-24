@@ -72,8 +72,6 @@ SMS integration enables:
 
 ## Grouping candidates
 
-- `RM-INT-003` (email service)
-- `RM-INT-005` (calendar integration)
 
 ## Grouped execution notes
 

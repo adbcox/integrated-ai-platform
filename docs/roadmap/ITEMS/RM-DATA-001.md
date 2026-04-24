@@ -76,7 +76,6 @@ Connection pooling is essential for:
 ## Grouping candidates
 
 - `RM-DATA-002` (caching layer)
-- `RM-DATA-003` (validation)
 
 ## Grouped execution notes
 

@@ -73,7 +73,6 @@ Security guide enables:
 
 ## Grouping candidates
 
-- `RM-DOCS-009` (database schema docs)
 - `RM-DOCS-011` (performance tuning)
 
 ## Grouped execution notes

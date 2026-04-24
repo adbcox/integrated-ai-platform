@@ -76,7 +76,6 @@ Mock services enable:
 ## Grouping candidates
 
 - `RM-TESTING-021` (database integration)
-- `RM-TESTING-023` (fixture management)
 
 ## Grouped execution notes
 

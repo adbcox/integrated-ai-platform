@@ -74,8 +74,6 @@ Payment integration enables:
 
 ## Grouping candidates
 
-- `RM-INT-005` (calendar integration)
-- `RM-INT-007` (cloud storage)
 
 ## Grouped execution notes
 

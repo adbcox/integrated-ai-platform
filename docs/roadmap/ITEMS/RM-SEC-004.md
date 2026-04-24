@@ -58,7 +58,6 @@ Rate limiting and abuse prevention are critical for:
 
 ## Dependencies
 
-- `RM-SEC-001` — authentication context for per-user limits
 - `RM-REL-001` — circuit breaker for degradation
 
 ## Risks and issues
@@ -70,7 +69,6 @@ Rate limiting and abuse prevention are critical for:
 - performance overhead of rate limit checks
 
 ### Known issues / blockers
-- none; ready to start after RM-SEC-001
 
 ## CMDB / asset linkage
 
@@ -78,7 +76,6 @@ Rate limiting and abuse prevention are critical for:
 
 ## Grouping candidates
 
-- `RM-SEC-001` (auth context)
 - `RM-OBS-002` (metrics for abuse detection)
 
 ## Grouped execution notes

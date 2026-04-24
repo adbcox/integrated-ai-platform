@@ -57,8 +57,6 @@ Distributed tracing enables:
 
 ## Dependencies
 
-- `RM-OBS-001` — structured logging
-- `RM-OBS-002` — metrics collection
 
 ## Risks and issues
 
@@ -77,8 +75,6 @@ Distributed tracing enables:
 
 ## Grouping candidates
 
-- `RM-OBS-001` (logging)
-- `RM-OBS-002` (metrics)
 
 ## Grouped execution notes
 

@@ -59,7 +59,6 @@ Backup and restore automation is critical for:
 ## Dependencies
 
 - `RM-DATA-001` — connection pooling
-- `RM-DATA-004` — schema migrations
 - `RM-OBS-001` — logging for audit trail
 
 ## Risks and issues
@@ -81,7 +80,6 @@ Backup and restore automation is critical for:
 ## Grouping candidates
 
 - `RM-DATA-001` (connection pooling)
-- `RM-DATA-004` (schema migrations)
 
 ## Grouped execution notes
 

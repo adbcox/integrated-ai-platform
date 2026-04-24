@@ -73,7 +73,6 @@ GitHub integration enables:
 ## Grouping candidates
 
 - `RM-INT-001` (Slack integration)
-- `RM-INT-003` (email integration)
 
 ## Grouped execution notes
 

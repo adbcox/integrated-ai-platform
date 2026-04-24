@@ -68,7 +68,6 @@ Snapshot testing enables:
 
 ## Grouping candidates
 
-- `RM-TESTING-016` (E2E testing)
 - `RM-TESTING-021` (database integration tests)
 
 ## Grouped execution notes

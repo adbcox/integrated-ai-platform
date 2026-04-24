@@ -57,7 +57,6 @@ API key rotation is critical for:
 
 ## Dependencies
 
-- `RM-SEC-001` — requires authentication framework
 - `RM-DATA-004` — schema migrations
 
 ## Risks and issues
@@ -68,7 +67,6 @@ API key rotation is critical for:
 - insufficient grace period causes service interruption
 
 ### Known issues / blockers
-- none; ready to start after RM-SEC-001
 
 ## CMDB / asset linkage
 
@@ -76,12 +74,10 @@ API key rotation is critical for:
 
 ## Grouping candidates
 
-- `RM-SEC-001` (auth framework)
 - `RM-OBS-004` (audit logging)
 
 ## Grouped execution notes
 
-- Depends on RM-SEC-001 authentication framework
 - Works closely with audit logging in RM-OBS-004
 
 ## Recommended first milestone

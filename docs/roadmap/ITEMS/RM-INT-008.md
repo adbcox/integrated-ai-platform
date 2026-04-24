@@ -72,7 +72,6 @@ CDN integration enables:
 ## Grouping candidates
 
 - `RM-INT-007` (cloud storage)
-- `RM-INT-009` (analytics integration)
 
 ## Grouped execution notes
 

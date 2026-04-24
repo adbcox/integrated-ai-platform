@@ -69,7 +69,6 @@ Browser compatibility testing enables:
 
 ## Grouping candidates
 
-- `RM-TESTING-030` (mobile responsiveness)
 - `RM-TESTING-016` (E2E testing)
 
 ## Grouped execution notes

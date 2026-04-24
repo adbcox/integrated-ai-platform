@@ -72,8 +72,6 @@ Regression testing enables:
 
 ## Grouping candidates
 
-- `RM-TESTING-028` (smoke tests)
-- `RM-TESTING-026` (coverage reporting)
 
 ## Grouped execution notes
 

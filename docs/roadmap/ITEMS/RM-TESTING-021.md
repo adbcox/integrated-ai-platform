@@ -76,8 +76,6 @@ Database integration tests enable:
 
 ## Grouping candidates
 
-- `RM-TESTING-022` (mock service infrastructure)
-- `RM-TESTING-023` (test fixture management)
 
 ## Grouped execution notes
 

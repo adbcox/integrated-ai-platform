@@ -72,7 +72,6 @@ Cloud storage enables:
 ## Grouping candidates
 
 - `RM-INT-006` (payment processing)
-- `RM-INT-008` (CDN integration)
 
 ## Grouped execution notes
 

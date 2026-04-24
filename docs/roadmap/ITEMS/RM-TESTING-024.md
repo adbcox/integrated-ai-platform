@@ -73,8 +73,6 @@ Parallel test execution enables:
 
 ## Grouping candidates
 
-- `RM-TESTING-025` (flaky test detection)
-- `RM-TESTING-026` (coverage reporting)
 
 ## Grouped execution notes
 
