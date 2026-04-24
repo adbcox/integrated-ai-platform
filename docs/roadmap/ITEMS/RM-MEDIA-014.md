@@ -4,7 +4,7 @@
 - **Title:** Media metadata extraction and tagging
 - **Category:** `MEDIA`
 - **Type:** `Enhancement`
-- **Status:** `Accepted`
+- **Status:** `In progress`
 - **Maturity:** `M0`
 - **Priority:** `Medium`
 - **Priority class:** `P2`
