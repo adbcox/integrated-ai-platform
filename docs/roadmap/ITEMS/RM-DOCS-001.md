@@ -4,7 +4,7 @@
 - **Title:** API documentation and SDK guides
 - **Category:** `DOCS`
 - **Type:** `Enhancement`
-- **Status:** `Accepted`
+- **Status:** `In progress`
 - **Maturity:** `M0`
 - **Priority:** `High`
 - **Priority class:** `P2`
