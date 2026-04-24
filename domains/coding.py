@@ -545,20 +545,32 @@ Make sure to address all issues and test edge cases."""
             proc = subprocess.Popen(
                 cmd,
                 stdout=subprocess.PIPE,
-                stderr=subprocess.DEVNULL,
+                stderr=subprocess.PIPE,
                 text=True,
                 cwd=self.repo_root,
                 env=env,
             )
 
-            output_lines = []
-            for line in iter(proc.stdout.readline, ""):
-                output_lines.append(line)
-                print(line.strip())
-
-            proc.wait()
-
-            output = "".join(output_lines)
+            try:
+                stdout, stderr = proc.communicate(timeout=timeout_seconds)
+                output = stdout
+                output_lines = stdout.split('\n')
+                for line in output_lines:
+                    if line.strip():
+                        print(line)
+            except subprocess.TimeoutExpired as e:
+                try:
+                    proc.kill()
+                    proc.wait(timeout=5)
+                except Exception:
+                    pass
+                # Re-raise with more context
+                raise subprocess.TimeoutExpired(
+                    cmd=' '.join(cmd),
+                    timeout=timeout_seconds,
+                    output=e.stdout or "",
+                    stderr=e.stderr or ""
+                )
             result_data["output"] = output
             result_data["failure_signatures"] = self._detect_failure_signatures(
                 output, proc.returncode
