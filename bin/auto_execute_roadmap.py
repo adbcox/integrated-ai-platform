@@ -269,6 +269,11 @@ Only JSON array, no other text."""
 
     def execute_subtask(self, subtask: str, item_id: str = "", dry_run: bool = False, max_retries: int = 3, subtask_timeout: int = 600) -> bool:
         """Execute subtask via local_coding_task.py --force-local with retry logic."""
+        # EMERGENCY: Log immediately before any other logic
+        print(f"[EMERGENCY] execute_subtask() ENTRY: dry_run={dry_run}, subtask={subtask[:50] if subtask else 'EMPTY'}", flush=True)
+        sys.stdout.flush()
+        sys.stderr.flush()
+
         print(f"[DEBUG] execute_subtask called with: dry_run={dry_run}, subtask='{subtask}'", flush=True)
         sys.stdout.flush()
         if dry_run:
@@ -323,14 +328,27 @@ Only JSON array, no other text."""
                 ]
                 print(f"[DEBUG] Running subprocess: {' '.join(cmd)}", flush=True)
                 sys.stdout.flush()
-                proc = subprocess.Popen(
-                    cmd,
-                    cwd=self.repo_root,
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE,
-                    text=True,
-                    start_new_session=True,
-                )
+
+                # EMERGENCY: Log right before Popen
+                print(f"[EMERGENCY] About to call subprocess.Popen with cwd={self.repo_root}", flush=True)
+                sys.stdout.flush()
+                sys.stderr.flush()
+
+                try:
+                    proc = subprocess.Popen(
+                        cmd,
+                        cwd=self.repo_root,
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.PIPE,
+                        text=True,
+                        start_new_session=True,
+                    )
+                    print(f"[EMERGENCY] subprocess.Popen SUCCESS: PID={proc.pid}", flush=True)
+                except Exception as e:
+                    print(f"[EMERGENCY] subprocess.Popen FAILED: {type(e).__name__}: {e}", flush=True)
+                    sys.stderr.flush()
+                    raise
+
                 print(f"[DEBUG] Process started with PID {proc.pid}, waiting for completion with timeout={subtask_timeout}s", flush=True)
                 sys.stdout.flush()
                 try:
@@ -562,6 +580,12 @@ Only JSON array, no other text."""
 
 
 def main():
+    # EMERGENCY: Print at absolute first line
+    import os
+    print(f"[EMERGENCY] main() ENTRY: PID={os.getpid()}, cwd={os.getcwd()}", flush=True)
+    sys.stdout.flush()
+    sys.stderr.flush()
+
     # Verify output is not buffered
     print("[STARTUP] Python process started", flush=True)
     sys.stdout.flush()
