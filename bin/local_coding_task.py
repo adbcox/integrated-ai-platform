@@ -26,6 +26,8 @@ from pathlib import Path
 # Add repo root to Python path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
+from domains.router import TaskRouter, ExecutorType
+
 
 def main() -> int:
     """Execute a coding task and return exit code."""
@@ -72,6 +74,20 @@ def main() -> int:
             print(f"   - {f}", file=sys.stderr)
         return 1
 
+    # Route task to optimal executor
+    router = TaskRouter()
+    route = router.classify(args.description, args.files)
+
+    # If not local, inform user and exit
+    if route.executor != ExecutorType.LOCAL_AIDER:
+        print(f"🔀 Task routed to: {route.executor.value}")
+        print(f"📊 Confidence: {route.confidence:.0%}")
+        print(f"💡 Reasoning: {route.reasoning}")
+        print()
+        print(f"💬 This task should use {route.executor.value} instead of local Aider.")
+        print(f"   Please run it manually via Claude.ai or Claude Code.")
+        return 2  # Exit code 2 = wrong executor
+
     # Import and execute
     try:
         from domains.coding import CodingDomain
@@ -80,8 +96,9 @@ def main() -> int:
 
         print(f"📝 Task: {args.description}")
         print(f"📄 Files: {', '.join(args.files)}")
-        print(f"🔧 Model: {args.model or domain.model}")
         print(f"⏱️  Timeout: {args.timeout}s")
+        print(f"🎯 Routed to: Local Aider (confidence: {route.confidence:.0%})")
+        print(f"🤖 Model: {route.model}")
         print()
         print("Running Aider...")
         print("-" * 70)
@@ -98,8 +115,10 @@ def main() -> int:
 
         if result["success"]:
             commit_hash = result.get("commit_hash", "")[:12]
+            model_used = result.get("model", "Unknown")
             print(f"✅ Success!")
             print(f"   Commit: {commit_hash}")
+            print(f"   Model Used: {model_used}")
 
             # Show output summary
             output = result.get("output", "")

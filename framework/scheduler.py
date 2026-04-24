@@ -113,6 +113,10 @@ class Scheduler:
         self._persist_queue_snapshot()
         return job
 
+    def get_job(self, job_id: str) -> Job | None:
+        """Retrieve a job by ID from the state store."""
+        return self.store.load_job(job_id)
+
     def wait_for_idle(self, *, timeout_seconds: float | None = None) -> bool:
         """Wait until queued jobs are processed."""
 

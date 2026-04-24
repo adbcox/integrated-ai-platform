@@ -30,6 +30,8 @@ from pathlib import Path
 # Add repo root to Python path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
+from domains.router import TaskRouter, ExecutorType
+
 
 def parse_task_file(file_path: str) -> list:
     """Parse task file and return list of (description, files) tuples."""
@@ -111,8 +113,10 @@ def main() -> int:
         from domains.coding import CodingDomain
 
         domain = CodingDomain()
+        router = TaskRouter()
         results = []
         successful = 0
+        skipped = 0
 
         for i, (description, files) in enumerate(tasks, 1):
             task_num = f"[{i}/{len(tasks)}]"
@@ -127,6 +131,14 @@ def main() -> int:
                     file=sys.stderr,
                 )
                 results.append((description, False, None, f"Files not found: {missing}"))
+                continue
+
+            # Check routing
+            route = router.classify(description, files)
+            if route.executor != ExecutorType.LOCAL_AIDER:
+                print(f"     ⚠️  Skipped - routed to {route.executor.value} (confidence: {route.confidence:.0%})")
+                results.append((description, False, None, f"Routed to {route.executor.value}"))
+                skipped += 1
                 continue
 
             # Execute task
@@ -155,7 +167,7 @@ def main() -> int:
         # Summary
         print()
         print("=" * 70)
-        print(f"Results: {successful}/{len(tasks)} successful")
+        print(f"Results: {successful}/{len(tasks)} successful, {skipped} skipped")
 
         if successful > 0:
             print()

@@ -12,6 +12,7 @@ from .compat import StrEnum, UTC
 
 
 class JobClass(StrEnum):
+    CODING_TASK = "coding_task"
     MULTI_FILE_ORCHESTRATION = "multi_file_orchestration"
     RETRIEVAL_ORCHESTRATION = "retrieval_orchestration"
     RESUMABLE_CHECKPOINTED = "resumable_checkpointed"
