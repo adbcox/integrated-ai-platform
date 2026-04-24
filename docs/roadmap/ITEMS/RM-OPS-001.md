@@ -4,7 +4,7 @@
 - **Title:** Full system monitoring, AI-guided self-healing, and alerting integrated with the control center and master display
 - **Category:** `OPS`
 - **Type:** `System`
-- **Status:** `Accepted`
+- **Status:** `In progress`
 - **Maturity:** `M2`
 - **Priority:** `High`
 - **Priority class:** `P2`
