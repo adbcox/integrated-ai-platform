@@ -4,7 +4,7 @@
 - **Title:** Security testing and vulnerability scanning
 - **Category:** `TESTING`
 - **Type:** `Enhancement`
-- **Status:** `In progress`
+- **Status:** `Completed`
 - **Maturity:** `M0`
 - **Priority:** `High`
 - **Priority class:** `P2`
