@@ -538,6 +538,9 @@ Make sure to address all issues and test edge cases."""
             env = os.environ.copy()
             env["OLLAMA_API_BASE"] = "http://127.0.0.1:11434"
             env["AIDER_AUTO_COMMITS"] = "0"
+            env["AIDER_NO_SHOW_MODEL_WARNINGS"] = "1"
+            env["AIDER_YES"] = "1"
+            env["AIDER_DARK_MODE"] = "1"
 
             proc = subprocess.Popen(
                 cmd,

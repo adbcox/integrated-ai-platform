@@ -256,6 +256,17 @@ Only JSON array, no other text."""
                 f"Document {item.title} in {files[0]}"
             ]
 
+    def _kill_browser_processes(self) -> None:
+        """Kill Chrome and Safari to prevent popup interference."""
+        try:
+            subprocess.run(["pkill", "-9", "Chrome"], stderr=subprocess.DEVNULL)
+        except Exception:
+            pass
+        try:
+            subprocess.run(["pkill", "-9", "Safari"], stderr=subprocess.DEVNULL)
+        except Exception:
+            pass
+
     def execute_subtask(self, subtask: str, item_id: str = "", dry_run: bool = False, max_retries: int = 3, subtask_timeout: int = 600) -> bool:
         """Execute subtask via local_coding_task.py --force-local with retry logic."""
         if dry_run:
@@ -288,11 +299,16 @@ Only JSON array, no other text."""
 
         print(f"    • {subtask}")
 
+        # Kill browsers before starting to prevent popup interference
+        self._kill_browser_processes()
+
         for attempt in range(1, max_retries + 1):
             if attempt > 1:
                 delay = 5 * (2 ** (attempt - 2))  # 5, 10, 20 seconds
                 print(f"      ↺ Retry {attempt}/{max_retries} in {delay}s...")
                 time.sleep(delay)
+                # Kill browsers again before retry
+                self._kill_browser_processes()
 
             start = time.time()
             try:
