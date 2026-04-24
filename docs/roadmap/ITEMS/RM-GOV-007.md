@@ -4,7 +4,7 @@
 - **Title:** Plane deployment, roadmap field mapping, and repo-to-Plane sync implementation
 - **Category:** `GOV`
 - **Type:** `System`
-- **Status:** `In progress`
+- **Status:** `Completed`
 - **Maturity:** `M3`
 - **Priority:** `High`
 - **Priority class:** `P1`
