@@ -4,7 +4,7 @@
 - **Title:** Intelligent code review automation
 - **Category:** `AUTO`
 - **Type:** `Enhancement`
-- **Status:** `Accepted`
+- **Status:** `In progress`
 - **Maturity:** `M0`
 - **Priority:** `Medium`
 - **Priority class:** `P2`
