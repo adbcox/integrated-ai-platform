@@ -541,13 +541,13 @@ Make sure to address all issues and test edge cases."""
 
             proc = subprocess.Popen(
                 cmd,
-                capture_output=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
                 text=True,
                 stdin=subprocess.DEVNULL,
-                timeout=timeout_seconds,
                 cwd=self.repo_root,
                 env=env,
-                stdout=subprocess.PIPE,
+            )
                 stderr=subprocess.STDOUT,
             )
 
