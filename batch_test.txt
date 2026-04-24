@@ -1,0 +1,2 @@
+Add type hints to get_queue|connectors/arr_stack.py
+Add docstring to execute|connectors/home_assistant.py
