@@ -4,7 +4,7 @@
 - **Title:** Outdoor structure concept design and architect handoff
 - **Category:** `SHOP`
 - **Type:** `Enhancement`
-- **Status:** `In progress`
+- **Status:** `Completed`
 - **Maturity:** `M1`
 - **Priority:** `High`
 - **Priority class:** `P3`
