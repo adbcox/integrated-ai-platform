@@ -51,7 +51,8 @@ Test coverage analysis enables:
 
 ## Dependencies
 
-- `RM-TESTING-001` through `RM-TESTING-004` — need complete test suite first
+- `RM-TESTING-001` — unit test framework required
+- `RM-TESTING-002` — integration tests required
 
 ## Risks and issues
 

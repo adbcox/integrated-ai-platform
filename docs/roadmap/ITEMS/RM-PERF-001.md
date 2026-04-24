@@ -57,7 +57,6 @@ Currently, performance issues are identified anecdotally. Structured profiling m
 ## Dependencies
 
 - no external blocking dependencies
-- integrates with `RM-TESTING-004` for benchmark tracking
 
 ## Risks and issues
 
