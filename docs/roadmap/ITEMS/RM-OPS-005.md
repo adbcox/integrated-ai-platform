@@ -4,7 +4,7 @@
 - **Title:** End-to-end telemetry, tracing, and audit evidence pipeline
 - **Category:** `OPS`
 - **Type:** `System`
-- **Status:** `Accepted`
+- **Status:** `Completed`
 - **Maturity:** `M2`
 - **Priority:** `High`
 - **Priority class:** `P1`

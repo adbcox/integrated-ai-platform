@@ -4,7 +4,7 @@
 - **Title:** Master control center for the system with web-first UI, tablet support, and later app-based surfaces
 - **Category:** `UI`
 - **Type:** `Feature`
-- **Status:** `Accepted`
+- **Status:** `Completed`
 - **Maturity:** `M2`
 - **Priority:** `High`
 - **Priority class:** `P2`

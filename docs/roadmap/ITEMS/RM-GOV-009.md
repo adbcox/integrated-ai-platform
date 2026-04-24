@@ -4,7 +4,7 @@
 - **Title:** External application connectivity and integration control plane
 - **Category:** `GOV`
 - **Type:** `System`
-- **Status:** `Accepted`
+- **Status:** `Completed`
 - **Maturity:** `M3`
 - **Priority:** `High`
 - **Priority class:** `P2`

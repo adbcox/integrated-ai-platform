@@ -4,7 +4,7 @@
 - **Title:** Backup, restore, disaster-recovery, and configuration export verification
 - **Category:** `OPS`
 - **Type:** `System`
-- **Status:** `Accepted`
+- **Status:** `Completed`
 - **Maturity:** `M2`
 - **Priority:** `High`
 - **Priority class:** `P1`
