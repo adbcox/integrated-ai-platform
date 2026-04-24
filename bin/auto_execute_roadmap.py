@@ -393,10 +393,14 @@ Only JSON array, no other text."""
             print(f"\n❌ FAILED: {failed_count}/{len(subtasks)} subtasks failed")
             return False
 
-    def run_autonomous_loop(self, max_items: int = 5, dry_run: bool = False, resume: bool = False, filter_pattern: str = "") -> None:
-        """Run autonomous execution loop with resume and filtering support."""
+    def run_autonomous_loop(self, max_items: int = 5, target_completions: Optional[int] = None, dry_run: bool = False, resume: bool = False, filter_pattern: str = "") -> None:
+        """Run autonomous execution loop tracking completions until target is reached."""
+        # Use target_completions if specified, otherwise fall back to max_items
+        if target_completions is None:
+            target_completions = max_items
+
         print(f"\n🤖 Autonomous Roadmap Execution")
-        print(f"   Max items: {max_items} | Dry run: {dry_run} | Resume: {resume} | Filter: {filter_pattern or 'none'}")
+        print(f"   Target completions: {target_completions} | Dry run: {dry_run} | Resume: {resume} | Filter: {filter_pattern or 'none'}")
 
         # Parse items
         items = parse_roadmap_directory(self.roadmap_dir)
@@ -426,12 +430,18 @@ Only JSON array, no other text."""
                 infer_dependencies(items)
                 print(f"  Reset {reset_count} items\n")
 
-        executed = 0
-        for _ in range(max_items):
+        # Track completions and failures
+        completed_count = 0
+        failed_count = 0
+        consecutive_failures = 0
+        attempt = 0
+
+        # Run until target completions reached or too many consecutive failures
+        while completed_count < target_completions:
             # Find next executable item
             candidates = self.find_executable_items(items, max_count=1)
             if not candidates:
-                print(f"✅ No more executable items")
+                print(f"✅ No more executable items (completed: {completed_count}/{target_completions})")
                 break
 
             item = candidates[0]
@@ -449,27 +459,45 @@ Only JSON array, no other text."""
             if len(grouped) > 1:
                 print(f"📦 Grouped execution: {item.id} + {len(grouped)-1} others")
 
-            # Execute (pass llm_model to decompose_item)
-            self.execute_item(item, grouped_items=grouped if len(grouped) > 1 else None, dry_run=dry_run)
-            # Update decompose_item to use passed model
-            executed += 1
+            # Execute and track result
+            attempt += 1
+            success = self.execute_item(item, grouped_items=grouped if len(grouped) > 1 else None, dry_run=dry_run)
+
+            if success:
+                completed_count += 1
+                consecutive_failures = 0
+                print(f"\n📊 Progress: {completed_count}/{target_completions} completions ({failed_count} failed)")
+            else:
+                failed_count += 1
+                consecutive_failures += 1
+                print(f"\n📊 Progress: {completed_count}/{target_completions} completions ({failed_count} failed, {consecutive_failures} consecutive)")
+
+                # Stop if too many consecutive failures
+                if consecutive_failures >= 3:
+                    print(f"\n⚠️  Stopping: {consecutive_failures} consecutive failures indicate system issue")
+                    break
 
             # Reload items for updated status
             items = parse_roadmap_directory(self.roadmap_dir)
             infer_dependencies(items)
 
-            if executed % 3 == 0:
-                print(f"\n⏸️  Checkpoint: {executed} items executed")
+            # Checkpoint logging
+            if attempt % 3 == 0:
+                print(f"\n⏸️  Checkpoint: {attempt} attempts, {completed_count}/{target_completions} completions")
                 time.sleep(1)
 
         print(f"\n{'='*70}")
-        print(f"🏁 Execution complete: {executed} items")
+        print(f"🏁 Execution complete:")
+        print(f"   Completions: {completed_count}/{target_completions}")
+        print(f"   Failures: {failed_count}")
+        print(f"   Attempts: {attempt}")
         print(f"{'='*70}\n")
 
 
 def main():
     parser = argparse.ArgumentParser(description="Autonomous roadmap execution (RM-GOV-001 compliant)")
-    parser.add_argument("--max-items", type=int, default=5, help="Max items to execute")
+    parser.add_argument("--max-items", type=int, default=5, help="Max items to execute (deprecated, use --target-completions)")
+    parser.add_argument("--target-completions", type=int, default=None, help="Target number of successful completions (default: same as --max-items)")
     parser.add_argument("--dry-run", action="store_true", help="Dry run mode")
     parser.add_argument("--model", default="qwen2.5-coder:14b", help="Decomposition model")
     parser.add_argument("--resume", action="store_true", help="Reset stuck In-progress items and retry")
@@ -481,7 +509,13 @@ def main():
     executor = RoadmapExecutor(repo_root, llm_model=args.model)
 
     try:
-        executor.run_autonomous_loop(max_items=args.max_items, dry_run=args.dry_run, resume=args.resume, filter_pattern=args.filter)
+        executor.run_autonomous_loop(
+            max_items=args.max_items,
+            target_completions=args.target_completions,
+            dry_run=args.dry_run,
+            resume=args.resume,
+            filter_pattern=args.filter
+        )
     except KeyboardInterrupt:
         print("\n⏹️  Interrupted")
         sys.exit(1)
