@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import requests
 from .base import BaseConnector
 from typing import Dict, Any
 
@@ -14,8 +15,18 @@ class HomeAssistantConnector(BaseConnector):
 
     def health_check(self) -> bool:
         """Check if HA is reachable."""
-        # Stub - will implement with requests
-        return False
+        url = f"{self.base_url}/api/states"
+        headers = {
+            "Authorization": f"Bearer {self.token}",
+            "Content-Type": "application/json",
+        }
+        try:
+            response = requests.get(url, headers=headers, timeout=5)
+            response.raise_for_status()
+            return True
+        except requests.RequestException as e:
+            print(f"Health check failed: {e}")
+            return False
 
     def execute(self, action: str, params: Dict[str, Any]) -> Dict[str, Any]:
         """
