@@ -4,7 +4,7 @@
 - **Title:** External application and integration registry with phased adoption and interface guidance
 - **Category:** `GOV`
 - **Type:** `System`
-- **Status:** `In progress`
+- **Status:** `Completed`
 - **Maturity:** `M3`
 - **Priority:** `High`
 - **Priority class:** `P1`
