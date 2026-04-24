@@ -4,7 +4,7 @@
 - **Title:** 3D model inventory, reuse, and external sourcing library
 - **Category:** `SHOP`
 - **Type:** `System`
-- **Status:** `Accepted`
+- **Status:** `In progress`
 - **Maturity:** `M1`
 - **Priority:** `High`
 - **Priority class:** `P3`
