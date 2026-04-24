@@ -70,15 +70,11 @@ Optimization is high-impact but easy to misdirect. A prioritization framework en
 
 ## Grouping candidates
 
-- `RM-PERF-001`
-- `RM-PERF-003`
-- `RM-PERF-004`
+- none (depends on `RM-PERF-001`)
 
 ## Grouped execution notes
 
-- Shared-touch rationale: optimization targets inform both cache and query improvements.
-- Repeated-touch reduction estimate: medium.
-- Grouping recommendation: `RM-PERF-001` → `RM-PERF-002` → `RM-PERF-003` and `RM-PERF-004`
+- Blocked by `RM-PERF-001`. Can be executed after profiling data available.
 
 ## Recommended first milestone
 

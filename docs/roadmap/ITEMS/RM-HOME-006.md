@@ -76,13 +76,11 @@ Voice interface enables:
 
 ## Grouping candidates
 
-- `RM-HOME-001` through `RM-HOME-005`
+- none (depends on `RM-HOME-005`)
 
 ## Grouped execution notes
 
-- Shared-touch rationale: voice interface completes home automation capabilities.
-- Repeated-touch reduction estimate: medium.
-- Grouping recommendation: `RM-HOME-005` → `RM-HOME-006` for voice completion
+- Blocked by `RM-HOME-005`. Can be executed after Home Assistant integration ready.
 
 ## Recommended first milestone
 

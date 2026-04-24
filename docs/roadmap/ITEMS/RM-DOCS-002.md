@@ -69,14 +69,11 @@ ADRs enable:
 
 ## Grouping candidates
 
-- `RM-DOCS-001`
-- `RM-DOCS-003`
+- none (independent documentation item)
 
 ## Grouped execution notes
 
-- Shared-touch rationale: ADRs, API docs, and user guides share documentation infrastructure.
-- Repeated-touch reduction estimate: low (one-time recording).
-- Grouping recommendation: `RM-DOCS-001` → `RM-DOCS-002` and `RM-DOCS-003`
+- Can be executed in parallel with other documentation work or after `RM-DOCS-001`.
 
 ## Recommended first milestone
 

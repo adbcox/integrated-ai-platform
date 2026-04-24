@@ -68,13 +68,11 @@ Test coverage analysis enables:
 
 ## Grouping candidates
 
-- `RM-TESTING-001` through `RM-TESTING-004`
+- none (depends on other testing items)
 
 ## Grouped execution notes
 
-- Shared-touch rationale: coverage reporting aggregates results from all test types.
-- Repeated-touch reduction estimate: low (relatively independent).
-- Grouping recommendation: Execute after `RM-TESTING-002` is in progress
+- Can be executed after `RM-TESTING-002` is started. Coverage reporting aggregates results from all test types.
 
 ## Recommended first milestone
 

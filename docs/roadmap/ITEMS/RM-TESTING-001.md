@@ -69,14 +69,11 @@ Unit tests are the first line of defense against regressions. Currently, test fi
 
 ## Grouping candidates
 
-- `RM-TESTING-002`
-- `RM-TESTING-005`
+- none (this is a foundational item that other testing items depend on)
 
 ## Grouped execution notes
 
-- Shared-touch rationale: all testing work benefits from shared fixture definitions and parametric patterns.
-- Repeated-touch reduction estimate: high.
-- Grouping recommendation: Execute `RM-TESTING-001` → `RM-TESTING-002` → `RM-TESTING-005` in sequence.
+- Independent foundational item that unblocks other testing work.
 
 ## Recommended first milestone
 

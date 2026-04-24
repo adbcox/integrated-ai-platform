@@ -75,14 +75,11 @@ Currently, performance issues are identified anecdotally. Structured profiling m
 
 ## Grouping candidates
 
-- `RM-PERF-002`
-- `RM-TESTING-004`
+- none (foundational item)
 
 ## Grouped execution notes
 
-- Shared-touch rationale: profiling enables benchmarking and optimization targeting.
-- Repeated-touch reduction estimate: high.
-- Grouping recommendation: `RM-PERF-001` → `RM-PERF-002` and `RM-TESTING-004`
+- Foundational item that unblocks optimization and testing work.
 
 ## Recommended first milestone
 

@@ -75,14 +75,11 @@ Adaptive systems enable:
 
 ## Grouping candidates
 
-- `RM-LEARN-001`
-- `RM-LEARN-002`
+- none (depends on `RM-LEARN-002`)
 
 ## Grouped execution notes
 
-- Shared-touch rationale: adaptation consumes signals from extraction and metrics.
-- Repeated-touch reduction estimate: high (completes learning loop).
-- Grouping recommendation: `RM-LEARN-001` → `RM-LEARN-002` → `RM-LEARN-003`
+- Blocked by `RM-LEARN-002`. Completes the learning infrastructure loop.
 
 ## Recommended first milestone
 

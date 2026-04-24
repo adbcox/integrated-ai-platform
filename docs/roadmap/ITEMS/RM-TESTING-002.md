@@ -72,14 +72,11 @@ This is critical for the core autonomy system where stage interactions are compl
 
 ## Grouping candidates
 
-- `RM-TESTING-001`
-- `RM-TESTING-005`
+- none (depends on `RM-TESTING-001`)
 
 ## Grouped execution notes
 
-- Shared-touch rationale: integration tests depend on unit fixtures, both feed coverage reporting.
-- Repeated-touch reduction estimate: medium.
-- Grouping recommendation: `RM-TESTING-001` → `RM-TESTING-002` → `RM-TESTING-005`
+- Blocked by `RM-TESTING-001`. Can be executed after fixtures are defined.
 
 ## Recommended first milestone
 

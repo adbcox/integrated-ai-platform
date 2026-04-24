@@ -72,13 +72,11 @@ Learning metrics enable:
 
 ## Grouping candidates
 
-- `RM-LEARN-002`
+- none (foundational item)
 
 ## Grouped execution notes
 
-- Shared-touch rationale: metrics feed both feedback analysis and signal extraction.
-- Repeated-touch reduction estimate: high.
-- Grouping recommendation: `RM-LEARN-001` → `RM-LEARN-002`
+- Foundational item that unblocks signal extraction and adaptation work.
 
 ## Recommended first milestone
 

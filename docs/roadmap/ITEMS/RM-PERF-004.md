@@ -73,15 +73,11 @@ RAG retrieval is a frequent operation and latency-critical. Optimization enables
 
 ## Grouping candidates
 
-- `RM-PERF-002`
-- `RM-PERF-003`
-- `RM-TESTING-002` — integration test patterns
+- none (depends on `RM-PERF-002`)
 
 ## Grouped execution notes
 
-- Shared-touch rationale: retrieval optimization depends on profiling and testing patterns.
-- Repeated-touch reduction estimate: medium.
-- Grouping recommendation: `RM-PERF-002` → `RM-PERF-004` with `RM-TESTING-002` patterns
+- Blocked by `RM-PERF-002`. Can be executed after optimization targets identified.
 
 ## Recommended first milestone
 

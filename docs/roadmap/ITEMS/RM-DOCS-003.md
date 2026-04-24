@@ -71,14 +71,11 @@ User guides enable:
 
 ## Grouping candidates
 
-- `RM-DOCS-001`
-- `RM-DOCS-002`
+- none (depends on `RM-DOCS-001`)
 
 ## Grouped execution notes
 
-- Shared-touch rationale: user guides build on API and architectural documentation.
-- Repeated-touch reduction estimate: medium (ongoing updates needed).
-- Grouping recommendation: `RM-DOCS-001` → `RM-DOCS-003` after initial API docs done
+- Can be executed after API documentation started. User guides benefit from reference material.
 
 ## Recommended first milestone
 

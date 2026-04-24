@@ -71,14 +71,11 @@ Query caching eliminates redundant computation:
 
 ## Grouping candidates
 
-- `RM-PERF-002`
-- `RM-PERF-004`
+- none (depends on `RM-PERF-002`)
 
 ## Grouped execution notes
 
-- Shared-touch rationale: caching and query optimization both improve retrieval performance.
-- Repeated-touch reduction estimate: medium.
-- Grouping recommendation: `RM-PERF-002` → `RM-PERF-003` and `RM-PERF-004` in parallel
+- Blocked by `RM-PERF-002`. Can be executed after optimization targets identified.
 
 ## Recommended first milestone
 

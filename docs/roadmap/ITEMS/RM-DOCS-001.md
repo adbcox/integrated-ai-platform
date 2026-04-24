@@ -73,14 +73,11 @@ Documentation is often the bottleneck for system adoption.
 
 ## Grouping candidates
 
-- `RM-DOCS-002`
-- `RM-DOCS-003`
+- none (foundational item)
 
 ## Grouped execution notes
 
-- Shared-touch rationale: API docs, ADRs, and user guides share documentation infrastructure.
-- Repeated-touch reduction estimate: medium.
-- Grouping recommendation: `RM-DOCS-001` → `RM-DOCS-002` and `RM-DOCS-003`
+- Foundational documentation item that other documentation work builds on.
 
 ## Recommended first milestone
 

@@ -72,13 +72,11 @@ Signal extraction enables:
 
 ## Grouping candidates
 
-- `RM-LEARN-001`
+- none (depends on `RM-LEARN-001`)
 
 ## Grouped execution notes
 
-- Shared-touch rationale: signal extraction consumes metrics from collection infrastructure.
-- Repeated-touch reduction estimate: high (both foundational).
-- Grouping recommendation: `RM-LEARN-001` → `RM-LEARN-002` in sequence
+- Blocked by `RM-LEARN-001`. Can be executed after metrics collection ready.
 
 ## Recommended first milestone
 

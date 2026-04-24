@@ -70,14 +70,11 @@ E2E tests validate the entire system from user request through code generation a
 
 ## Grouping candidates
 
-- `RM-TESTING-002`
-- `RM-PERF-001` — performance monitoring integration
+- none (depends on `RM-TESTING-002`)
 
 ## Grouped execution notes
 
-- Shared-touch rationale: E2E tests require integration patterns and performance instrumentation.
-- Repeated-touch reduction estimate: medium.
-- Grouping recommendation: `RM-TESTING-002` → `RM-TESTING-003` → link with `RM-PERF-001`
+- Blocked by `RM-TESTING-002`. Can be executed after integration patterns are established.
 
 ## Recommended first milestone
 

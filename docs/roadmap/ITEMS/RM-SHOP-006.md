@@ -75,14 +75,11 @@ Shopping automation enables:
 
 ## Grouping candidates
 
-- `RM-SHOP-004`
-- `RM-SHOP-005`
+- none (depends on `RM-GOV-009`)
 
 ## Grouped execution notes
 
-- Shared-touch rationale: shopping automation builds on existing connector infrastructure.
-- Repeated-touch reduction estimate: medium.
-- Grouping recommendation: Build connector infrastructure first, then `RM-SHOP-006`
+- Blocked by `RM-GOV-009`. Can be executed after connector framework ready.
 
 ## Recommended first milestone
 

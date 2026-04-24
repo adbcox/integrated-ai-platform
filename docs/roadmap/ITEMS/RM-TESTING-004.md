@@ -69,14 +69,11 @@ Performance testing enables:
 
 ## Grouping candidates
 
-- `RM-PERF-001`
-- `RM-PERF-002`
+- none (depends on `RM-PERF-001`)
 
 ## Grouped execution notes
 
-- Shared-touch rationale: performance testing depends on profiling infrastructure and optimization targets.
-- Repeated-touch reduction estimate: medium.
-- Grouping recommendation: `RM-PERF-001` → `RM-TESTING-004` and `RM-PERF-002`
+- Blocked by `RM-PERF-001`. Can be executed after profiling infrastructure exists.
 
 ## Recommended first milestone
 
