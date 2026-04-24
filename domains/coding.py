@@ -544,7 +544,6 @@ Make sure to address all issues and test edge cases."""
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
                 text=True,
-                stdin=subprocess.DEVNULL,
                 cwd=self.repo_root,
                 env=env,
             )
