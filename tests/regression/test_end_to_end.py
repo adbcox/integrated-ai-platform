@@ -100,25 +100,25 @@ class TestExecutorInitialization:
         )
         print(f"\n✓ No circular dependencies at startup")
 
-    def test_executor_selects_item_in_dry_run(self):
-        """With --max-items 1 --dry-run, executor must select exactly 1 item."""
-        result = run_executor(
-            ["--dry-run", "--max-items", "1"],
-            timeout=60,  # Selection only — no LLM call in dry-run for item selection
-        )
+    def test_executor_startup_output_is_readable(self):
+        """
+        Executor startup with --max-items 0 must produce readable output.
+        Verifies: loaded count, model info, no crash.
+        Dry-run with --max-items 1 is omitted here because decomposition
+        (the first step after item selection) makes an Ollama API call
+        that takes 200+ seconds on local hardware — covered by slow tests.
+        """
+        result = run_executor(["--dry-run", "--max-items", "0"], timeout=60)
 
-        print(f"\n--- dry-run --max-items 1 ---")
+        print(f"\n--- dry-run --max-items 0 startup check ---")
         print(f"Exit code: {result['returncode']}")
         print(f"Elapsed:   {result['elapsed']:.1f}s")
-        print(f"Stdout:\n{result['stdout'][:2000]}")
+        print(f"Stdout:\n{result['stdout'][:1000]}")
 
-        # Look for a roadmap item being processed
-        rm_match = re.search(r"RM-[A-Z]+-\d+", result["stdout"])
-        if not rm_match:
-            # This is acceptable if all items are in-progress or completed
-            print("Note: No RM item shown — may be all items complete or in-progress")
-        else:
-            print(f"\n✓ Executor selected item: {rm_match.group()}")
+        assert result["returncode"] == 0
+        assert "Loaded" in result["stdout"], "Should report how many items were loaded"
+        assert "roadmap" in result["stdout"].lower(), "Should mention roadmap"
+        print(f"\n✓ Executor startup output is readable and informative")
 
 
 class TestExecutorRealMode:

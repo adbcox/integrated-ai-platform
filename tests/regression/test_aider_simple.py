@@ -58,10 +58,15 @@ def run_aider_direct(message: str, files: list, model: str = "qwen2.5-coder:7b",
             "timed_out": False,
         }
     except subprocess.TimeoutExpired as e:
+        # TimeoutExpired stores bytes even when text=True — decode explicitly
+        def _decode(b) -> str:
+            if isinstance(b, bytes):
+                return b.decode("utf-8", errors="replace")
+            return b or ""
         return {
             "returncode": -1,
-            "stdout": (e.stdout or ""),
-            "stderr": (e.stderr or ""),
+            "stdout": _decode(e.stdout),
+            "stderr": _decode(e.stderr),
             "elapsed": time.time() - start,
             "timed_out": True,
         }
@@ -93,16 +98,19 @@ class TestAiderSimple:
             "Run: ollama pull qwen2.5-coder:7b"
         )
 
+    @pytest.mark.slow
     def test_aider_exits_within_timeout(self):
         """
         With --map-tokens 0, aider makes ONE API call (not two).
-        7b model responds in ~30-60s, so 180s timeout is sufficient.
+        Measured on this machine: qwen2.5-coder:7b takes ~217s per call.
+        Timeout set to 300s to allow completion with margin.
+        Run with: pytest -m slow
         """
         result = run_aider_direct(
             message="Add a one-line comment '# regression-test-marker' at the very top",
             files=["domains/media.py"],
             model="qwen2.5-coder:7b",
-            timeout=180,
+            timeout=300,
         )
 
         print(f"\n--- Test aider_exits_within_timeout ---")
