@@ -68,11 +68,56 @@ def main() -> int:
         action="store_true",
         help="Generate and run tests after successful execution",
     )
+    parser.add_argument(
+        "--force",
+        action="store_true",
+        help="Bypass all validation (git clean, analysis, ambiguity checks)",
+    )
+    parser.add_argument(
+        "--batch-mode",
+        action="store_true",
+        help="Frictionless automation: implies --force --skip-analysis --auto-commit",
+    )
 
     args = parser.parse_args()
 
+    # Batch mode convenience
+    if args.batch_mode:
+        args.force = True
+        args.skip_analysis = True
+
     # Get repo root
     repo_root = Path(__file__).parent.parent
+
+    # Auto-commit if tree is dirty (unless --force skips)
+    if not args.force:
+        is_clean = subprocess.run(
+            ["git", "status", "--porcelain"],
+            capture_output=True,
+            text=True,
+            cwd=repo_root,
+        ).stdout.strip() == ""
+
+        if not is_clean:
+            print("⚠️  Working tree is not clean. Auto-committing...")
+            try:
+                subprocess.run(
+                    ["git", "add", "-A"],
+                    check=True,
+                    cwd=repo_root,
+                    capture_output=True,
+                )
+                msg = f"WIP: {args.description[:60]}"
+                subprocess.run(
+                    ["git", "commit", "-m", msg],
+                    check=True,
+                    cwd=repo_root,
+                    capture_output=True,
+                )
+                print("✅ Auto-committed before task")
+            except subprocess.CalledProcessError as e:
+                print(f"❌ Auto-commit failed: {e}", file=sys.stderr)
+                return 1
 
     # Pre-flight analysis (unless skipped)
     if not args.skip_analysis:
@@ -134,6 +179,7 @@ def main() -> int:
             files=args.files,
             model=args.model,
             timeout_seconds=args.timeout,
+            allow_dirty=args.force,
         )
 
         print("-" * 70)

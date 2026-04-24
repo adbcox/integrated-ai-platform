@@ -10,6 +10,7 @@ import time
 import yaml
 
 from framework.job_schema import Job, JobClass, JobLifecycle
+from domains.learning import LearningDomain
 
 
 DEFAULT_MODEL_CASCADE = [
@@ -419,9 +420,14 @@ class CodingDomain:
         model: Optional[str] = None,
         timeout_seconds: int = 300,
         max_retries: int = 2,
+        allow_dirty: bool = False,
     ) -> Dict[str, Any]:
-        """Execute with model cascade on failure."""
-        if not self._check_git_clean():
+        """Execute with model cascade on failure.
+
+        Args:
+            allow_dirty: If True, skip git clean check (used with --force flag)
+        """
+        if not allow_dirty and not self._check_git_clean():
             return {
                 "success": False,
                 "error": "Task validation failed: working tree is not clean",
@@ -446,16 +452,49 @@ class CodingDomain:
 
         last_error = None
         last_result: Dict[str, Any] = {}
+        start_time = time.time()
+
         for i, current_model in enumerate(models_to_try[: max_retries + 1]):
             result = self._execute_with_model(current_model, task_description, files, timeout_seconds)
             last_result = result
 
             if result["success"]:
+                # Record success in learning domain
+                duration = time.time() - start_time
+                try:
+                    learning = LearningDomain()
+                    learning.record_execution(
+                        task_type="coding",
+                        description=task_description,
+                        model=current_model,
+                        executor="LOCAL_AIDER",
+                        success=True,
+                        duration_seconds=duration,
+                    )
+                except Exception:
+                    pass
                 return result
 
             last_error = result.get("error")
             if i < min(max_retries, len(models_to_try) - 1):
                 print(f"⚠️  {current_model} failed, trying next model...")
+
+        # Record failure in learning domain
+        duration = time.time() - start_time
+        error_type = "timeout" if "timeout" in str(last_error).lower() else "execution_failed"
+        try:
+            learning = LearningDomain()
+            learning.record_execution(
+                task_type="coding",
+                description=task_description,
+                model=last_result.get("model", primary_model),
+                executor="LOCAL_AIDER",
+                success=False,
+                duration_seconds=duration,
+                error_type=error_type,
+            )
+        except Exception:
+            pass
 
         return {
             "success": False,
