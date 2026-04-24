@@ -228,16 +228,32 @@ def main() -> int:
             print("\nOr use --skip-analysis to bypass")
             return 3
 
-    # Validate files exist
+    # Validate files exist and check integrity
     missing_files = []
+    invalid_files = []
     for file_path in task_files:
         full_path = repo_root / file_path  # repo_root already assigned above
         if not full_path.exists():
             missing_files.append(file_path)
+        else:
+            # Validate file is not corrupted (check for directory trees)
+            try:
+                content = full_path.read_text()
+                if content.strip().startswith(("├──", "└──", "tests/", "bin/")) and "\n" in content and len(content) < 500:
+                    if not any(c in content for c in ["#!/usr/bin/env python3", "import ", "def ", "class "]):
+                        invalid_files.append(file_path)
+            except Exception:
+                pass
 
     if missing_files:
         print(f"❌ Error: Files not found:", file=sys.stderr)
         for f in missing_files:
+            print(f"   - {f}", file=sys.stderr)
+        return 1
+
+    if invalid_files:
+        print(f"❌ Error: Files are corrupted (directory tree):", file=sys.stderr)
+        for f in invalid_files:
             print(f"   - {f}", file=sys.stderr)
         return 1
 
@@ -292,6 +308,32 @@ def main() -> int:
         if result["success"]:
             commit_hash = result.get("commit_hash", "")[:12]
             model_used = result.get("model", "Unknown")
+
+            # CRITICAL: Verify actual code changes were made (not just status flips)
+            changes_verified = False
+            if commit_hash:
+                try:
+                    # Check if commit has real file changes (not just markdown)
+                    diff_result = subprocess.run(
+                        ["git", "diff-tree", "--numstat", commit_hash],
+                        capture_output=True,
+                        text=True,
+                        cwd=repo_root,
+                    )
+                    # Parse numstat: lines are "additions\tdeletions\tfile"
+                    if diff_result.stdout.strip():
+                        lines = diff_result.stdout.strip().split('\n')
+                        py_files_changed = sum(1 for line in lines if '.py' in line)
+                        if py_files_changed > 0:
+                            changes_verified = True
+                except Exception:
+                    pass
+
+            if not changes_verified and commit_hash:
+                print(f"⚠️  Warning: Commit {commit_hash} may not contain actual code changes")
+                print(f"   (Only status/docs may have changed)")
+                return 1
+
             print(f"✅ Success!")
             print(f"   Commit: {commit_hash}")
             print(f"   Model Used: {model_used}")
