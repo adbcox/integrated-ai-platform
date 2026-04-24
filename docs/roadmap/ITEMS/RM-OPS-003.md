@@ -4,7 +4,7 @@
 - **Title:** Outdoor activity readiness display with air quality, humidity, temperature, and combined suitability score
 - **Category:** `OPS`
 - **Type:** `Feature`
-- **Status:** `Accepted`
+- **Status:** `In progress`
 - **Maturity:** `M1`
 - **Priority:** `High`
 - **Priority class:** `P3`
