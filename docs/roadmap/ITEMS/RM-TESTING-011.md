@@ -4,7 +4,7 @@
 - **Title:** Contract testing for APIs
 - **Category:** `TESTING`
 - **Type:** `Enhancement`
-- **Status:** `Accepted`
+- **Status:** `In progress`
 - **Maturity:** `M0`
 - **Priority:** `High`
 - **Priority class:** `P2`
