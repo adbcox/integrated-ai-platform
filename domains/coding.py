@@ -549,12 +549,14 @@ Make sure to address all issues and test edge cases."""
                 env=env,
             )
 
+            output_lines = []
             for line in iter(proc.stdout.readline, ""):
+                output_lines.append(line)
                 print(line.strip())
 
             proc.wait()
 
-            output = (proc.stdout or "") + (proc.stderr or "")
+            output = "".join(output_lines)
             result_data["output"] = output
             result_data["failure_signatures"] = self._detect_failure_signatures(
                 output, proc.returncode
