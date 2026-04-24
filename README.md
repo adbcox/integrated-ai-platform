@@ -52,14 +52,20 @@ For roadmap authority and current operating posture, read:
    # Check that dependencies are installed
    pip install -r requirements.txt
    
-   # Verify Ollama is running
+   # Verify Ollama is running (local code generation backend)
    curl http://127.0.0.1:11434/api/tags
+   
+   # Check current progress
+   python3 -c "from bin.roadmap_parser import parse_roadmap_directory; from pathlib import Path; items = parse_roadmap_directory(Path('docs/roadmap/ITEMS')); completed = sum(1 for i in items if i.status == 'Completed'); print(f'{completed}/{len(items)} items completed ({100*completed/len(items):.1f}%)')"
    
    # Run executor in dry-run mode (no git commits)
    python3 bin/auto_execute_roadmap.py --target-completions 1 --dry-run
    
    # Run executor for real (will commit status changes to git)
-   python3 bin/auto_execute_roadmap.py --target-completions 10
+   python3 bin/auto_execute_roadmap.py --target-completions 5
+   
+   # Resume from where you left off
+   python3 bin/auto_execute_roadmap.py --resume --target-completions 10
    ```
 
 4. **Run the test suite:**
@@ -73,22 +79,23 @@ For roadmap authority and current operating posture, read:
 
 ## Current Roadmap Status
 
-- **Total Items:** 194 roadmap items created
-- **Completed:** 54 items completed
-- **In Progress:** ~5 items actively executing
-- **Planned:** 135 items waiting for execution
-- **Execution Rate:** ~1-2 items/hour (varies by complexity)
-- **Primary Executor:** Autonomous executor running via tmux on mac-mini
+- **Total Items:** 223 roadmap items (up from 194, +30 Monitoring/Deployment/CI-CD)
+- **Completed:** 57 items (25.6% completion rate)
+- **In Progress:** Selected items executing via autonomous executor
+- **Remaining:** 166 items in planned backlog
+- **Execution Rate:** ~45-60 minutes per item (varies by complexity)
+- **Circular Dependencies:** 0 detected (all 45 cycles broken and committed)
+- **Primary Executor:** Autonomous executor with local Ollama (qwen2.5-coder:14b)
 
-### Recent Completions
+### Recent Progress
 
-See `git log --oneline | head -20` for the 20 most recent status changes.
+Check progress with: `git log --oneline | head -20`
 
-Key families with progress:
-- **Developer Tooling (RM-DEV-*):** Multiple items in execution
-- **Workflow Automation (RM-FLOW-*):** Foundational items completed
-- **Quality Assurance (RM-QA-*):** Gate system being established
-- **New:** Monitoring, Deployment, CI/CD families added (30 items)
+Newly added families (post-convergence expansion):
+- **RM-MON-001 through RM-MON-010** — Monitoring infrastructure
+- **RM-DEPLOY-001 through RM-DEPLOY-010** — Blue-green deployment, feature flags
+- **RM-CI-001 through RM-CI-010** — CI/CD pipelines, artifact management
+- **Plus** — Security, Reliability, Observability, Data, Integration, Testing improvements
 
 ## Current operating posture
 

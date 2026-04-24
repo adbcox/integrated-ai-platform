@@ -1,439 +1,529 @@
-# System Architecture: Integrated AI Platform
+# Architecture: Integrated AI Platform
 
-## High-Level System Overview
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                    INTEGRATED AI PLATFORM                        │
-│                                                                   │
-│  ┌─────────────────┐         ┌──────────────────┐               │
-│  │  Roadmap Items  │         │  Autonomous      │               │
-│  │  (YAML + MD)    │────────→│  Executor        │               │
-│  │  194 items      │         │  (auto_execute)  │               │
-│  │  54 complete    │         │                  │               │
-│  └─────────────────┘         └────────┬─────────┘               │
-│                                       │                          │
-│                                       ▼                          │
-│                          ┌──────────────────────┐               │
-│                          │ Task Decomposition   │               │
-│                          │ (stage_rag pipeline) │               │
-│                          └──────────┬───────────┘               │
-│                                     │                           │
-│                    ┌────────────────┼────────────────┐          │
-│                    │                │                │          │
-│                    ▼                ▼                ▼          │
-│        ┌─────────────────┐ ┌──────────────┐ ┌──────────────┐  │
-│        │ Local Ollama    │ │ GitHub API   │ │ Git Commit   │  │
-│        │ qwen2.5-coder   │ │ + Aider      │ │ Status Track │  │
-│        │ (code gen)      │ │ (execution)  │ │ (versioning) │  │
-│        └─────────────────┘ └──────────────┘ └──────────────┘  │
-│                                                                   │
-│  ┌───────────────────────────────────────────────────────────┐ │
-│  │              Framework Runtime Layer                       │ │
-│  │  • WorkerPool & Job Scheduling                            │ │
-│  │  • Code Executor Abstraction (ClaudeCode, Aider)         │ │
-│  │  • State Store & Artifact Management                      │ │
-│  │  • Permission Engine & Safety Gates                       │ │
-│  │  • Learning Hooks & Attribution                          │ │
-│  └───────────────────────────────────────────────────────────┘ │
-│                                                                   │
-└─────────────────────────────────────────────────────────────────┘
-```
-
-## Component Responsibilities
-
-### Roadmap Management (`bin/roadmap_parser.py`)
-
-**Purpose:** Parse, validate, and track roadmap items across their lifecycle.
-
-**Key Functions:**
-- `parse_roadmap_directory()` — Reads all YAML files, parses metadata, builds dependency graph
-- `infer_dependencies()` — Extracts dependency relationships between items
-- `detect_cycles()` — Identifies circular dependencies that block execution
-- `update_frontmatter()` — Updates item status in version control (git commits)
-
-**Data Structure:**
-```python
-RoadmapItem:
-  - Metadata: id, title, category, type, status, priority
-  - Governance: priority_class, queue_rank, target_horizon, LOE
-  - Scoring: strategic_value, architecture_fit, execution_risk
-  - Tracking: readiness, dependencies, execution status
-  - Files: file_path, markdown_content, frontmatter
-```
-
-**Dependencies:** YAML parsing, git integration, markdown extraction
+**System Version:** Post-convergence local-first execution  
+**Last Updated:** 2026-04-24  
+**Primary Goal:** Autonomous code generation and infrastructure task execution via local LLM
 
 ---
 
-### Autonomous Executor (`bin/auto_execute_roadmap.py`)
+## System Diagram
 
-**Purpose:** Run indefinitely, finding executable items, decomposing them, and executing subtasks.
-
-**Execution Loop:**
 ```
-1. Load all roadmap items from YAML
-2. Detect and reject any cycles
-3. Find executable items (status=Accepted/Planned, readiness=now/near, deps met)
-4. Sort by priority (P0 → P4, then queue_rank)
-5. For each item:
-   a. Decompose into subtasks (using stage_rag pipeline or fallback)
-   b. Execute each subtask (aider subprocess with timeout)
-   c. Retry on failure (3 attempts, exponential backoff)
-   d. Update status in git on completion/failure
-6. Stop after target_completions or on consecutive failures
+┌─────────────────────────────────────────────────────────────────────┐
+│                     ROADMAP & ORCHESTRATION LAYER                     │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                       │
+│  Roadmap Items (RM-*.md)  ──> Parse & Infer Dependencies           │
+│  (223 total, 57 completed)       ↓                                  │
+│                            Detect Cycles (0 remaining)             │
+│                                 ↓                                   │
+│                          Auto Executor Loop                         │
+│                    (auto_execute_roadmap.py)                        │
+│                                                                       │
+└─────────────────────────────────────────────────────────────────────┘
+                                  ↓
+┌─────────────────────────────────────────────────────────────────────┐
+│                      PLANNING & CONTEXT LAYER                         │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                       │
+│  Stage RAG4 (Entity-Aware Reranking)                                │
+│  ├─ Extract entities (CamelCase identifiers)                        │
+│  ├─ BM25 token matching on codebase files                          │
+│  └─ Entity definition scoring (boost "class X" definitions)        │
+│                                                                       │
+│  Stage RAG6 (Multi-Target Orchestration Planning)                  │
+│  ├─ Select multiple target files for modification                  │
+│  ├─ Order modifications by dependency and impact                   │
+│  └─ Generate execution plan                                         │
+│                                                                       │
+│  Decomposition (task_decomposer.py)                                │
+│  ├─ Break roadmap item into subtasks                               │
+│  ├─ Use local LLM (qwen2.5-coder:14b)                             │
+│  └─ Return list of concrete implementation steps                   │
+│                                                                       │
+└─────────────────────────────────────────────────────────────────────┘
+                                  ↓
+┌─────────────────────────────────────────────────────────────────────┐
+│                     EXECUTION & CODE GENERATION                       │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                       │
+│  Executor Abstraction (code_executor.py)                           │
+│  ├─ ClaudeCodeExecutor (primary)                                   │
+│  └─ AiderExecutor (fallback for complex edits)                     │
+│                                                                       │
+│  Aider Integration (local-first code generation)                   │
+│  ├─ Local Ollama backend (http://127.0.0.1:11434)                 │
+│  ├─ Model: qwen2.5-coder:14b (default, ~14B params)              │
+│  ├─ Model: deepseek-coder-v2 (fallback, harder tasks)            │
+│  └─ Subprocess isolation (clean git state between runs)           │
+│                                                                       │
+│  Inference Adapter (inference_adapter.py)                          │
+│  ├─ Abstract backend (local vs remote)                             │
+│  ├─ Token counting and rate limiting                               │
+│  ├─ Retry logic with exponential backoff                           │
+│  └─ Fallback to deterministic mode on timeout                      │
+│                                                                       │
+└─────────────────────────────────────────────────────────────────────┘
+                                  ↓
+┌─────────────────────────────────────────────────────────────────────┐
+│                   VALIDATION & GIT INTEGRATION                        │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                       │
+│  Verification (validate.py)                                         │
+│  ├─ Python syntax check (ast.parse)                                │
+│  ├─ Shell syntax check (shellcheck)                                │
+│  ├─ Test suite execution (pytest)                                  │
+│  └─ Git diff review (reject unsafe changes)                        │
+│                                                                       │
+│  Git Commit & Status Update                                         │
+│  ├─ Mark roadmap item as "Completed"                               │
+│  ├─ Commit code changes                                             │
+│  ├─ Update roadmap markdown with status                            │
+│  └─ Push to origin/main                                             │
+│                                                                       │
+└─────────────────────────────────────────────────────────────────────┘
+                                  ↓
+┌─────────────────────────────────────────────────────────────────────┐
+│                   MONITORING & STATE PERSISTENCE                      │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                       │
+│  State Store (state_store.py)                                       │
+│  ├─ Artifact caching (retrieved context)                           │
+│  ├─ Plan history (stage6 orchestration output)                     │
+│  ├─ Execution logs (detailed task traces)                          │
+│  └─ Escalation index (failures and errors)                         │
+│                                                                       │
+│  Metrics & Learning (learning_hooks.py)                            │
+│  ├─ Attribution: Which components contributed to success           │
+│  ├─ Outcome tracking: Semantic vs deterministic success            │
+│  ├─ Signal generation: Identify weak points                        │
+│  └─ Policy recommendations: Next improvements                      │
+│                                                                       │
+│  Artifacts Directory Structure                                      │
+│  ├─ artifacts/stage_rag4/: Retrieval decisions & rankings          │
+│  ├─ artifacts/stage6_manager/: Orchestration plans                │
+│  ├─ artifacts/escalations/: Failures and issues                    │
+│  └─ artifacts/aider_bench/: Local LLM performance metrics         │
+│                                                                       │
+└─────────────────────────────────────────────────────────────────────┘
 ```
-
-**Key Features:**
-- **Priority Sorting:** P0 items always execute before P4
-- **Dependency Enforcement:** Items with unmet dependencies are skipped
-- **Retry Logic:** 3 attempts per subtask (5s, 5s, 10s delays)
-- **Timeout Protection:** SIGKILL after 600s (configurable), proc.wait() timeout guards
-- **Output Flushing:** All debug output includes `flush=True` to prevent buffering on hang
-- **Failure Tracking:** JSONL log in `artifacts/execution_failures.jsonl`
-- **Filter Support:** `--filter "RM-DEV"` executes only matching items
-- **Dry-Run Mode:** `--dry-run` shows what would execute without git commits
-
-**Exit Conditions:**
-- Reached `target_completions` (success)
-- 3 consecutive item failures (graceful stop)
-- 10 consecutive filter mismatches without progress (prevent infinite loop)
-- No more executable items (graceful exit)
 
 ---
 
-### Task Decomposition (`bin/stage_rag*.py`)
+## Component Flow: End-to-End Execution
 
-**Purpose:** Convert a single high-level roadmap item into executable subtasks with file targets.
-
-**Two-Stage Pipeline:**
-
-1. **API-First (If Available):**
-   - Send item description + requirements to local Ollama
-   - Receive structured JSON list of subtasks
-   - Filter subtasks to only those targeting .py files (no docs edits)
-
-2. **Fallback (If API Unavailable):**
-   - Use `expected_file_families` from item metadata
-   - Generate subtasks directly from file paths
-   - Example: "Add function to domains/coding.py" → subtask
-
-**Entity-Aware Reranking (`stage_rag4.py`):**
-- Extracts CamelCase entities from queries (ExecutorFactory, RoadmapItem)
-- Boosts retrieval scores for files that *define* those entities
-- Penalizes docs files for code-intent queries
-- Result: 28.5 percentage point improvement in context selection
-
----
-
-### Code Execution Layer (`framework/code_executor.py`, `domains/coding.py`)
-
-**Purpose:** Execute a single subtask by invoking local Ollama or aider.
-
-**ExecutorFactory Pattern:**
-```python
-executor = ExecutorFactory.get_executor(task)
-success = executor.execute(task_description, file_paths)
 ```
+Step 1: LOAD ROADMAP
+  ├─ Read docs/roadmap/ITEMS/*.md (glob: RM-*.md only)
+  ├─ Parse metadata: status, dependencies, priority
+  ├─ Infer dependencies from description references
+  ├─ Detect cycles (should be 0)
+  └─ Load 223 items into memory
 
-**Two Executor Types:**
+Step 2: SELECT NEXT ITEM
+  ├─ Filter by status (Accepted items go into queue)
+  ├─ Sort by priority, strategic value, queue rank
+  ├─ Check dependencies (all must be Completed)
+  └─ Select item with lowest queue rank
 
-1. **ClaudeCodeExecutor** (Primary)
-   - Routes through Claude API if available
-   - Falls back to local Ollama via Aider
+Step 3: RETRIEVE CONTEXT (Stage RAG4 + RAG6)
+  ├─ Extract entities from item title/description
+  │   └─ CamelCase: "ExecutorFactory" → boost files defining ExecutorFactory
+  ├─ Search codebase for related files
+  │   └─ BM25 token matching + entity definition scoring
+  ├─ Select top 4-6 most relevant target files
+  │   └─ Remove docs files for code-intent queries
+  └─ Aggregate code context for LLM
 
-2. **AiderExecutor** (Fallback)
-   - Direct invocation of aider CLI
-   - Subprocess management with timeout
-   - Real-time output capture
+Step 4: DECOMPOSE INTO SUBTASKS
+  ├─ Call local LLM (qwen2.5-coder:14b via Ollama)
+  ├─ Prompt: "Break this task into concrete implementation steps"
+  ├─ Parse response into 3-5 subtasks
+  │   ├─ "Create tests/api_contracts.py with contract definitions"
+  │   ├─ "Update framework/http_client.py to include validation"
+  │   └─ "Modify domains/service_a.py to adhere to contracts"
+  └─ Store subtasks for execution
 
-**Execution Flow:**
-```
-Input: "Add authentication to domains/auth.py"
-  ↓
-Aider subprocess: aider --auto --model qwen2.5-coder:14b domains/auth.py
-  ↓
-Local LLM generates code modifications
-  ↓
-Aider writes changes to file
-  ↓
-Git detects modified files
-  ↓
-Executor captures subprocess output (stdout, stderr, returncode)
-  ↓
-Success if returncode == 0
-  ↓
-On success: Stage next subtask
-On failure: Retry or log failure
-```
+Step 5: EXECUTE SUBTASK (via Aider)
+  ├─ For each subtask:
+  │   ├─ Call aider with subtask description
+  │   ├─ Aider uses qwen2.5-coder:14b to generate code
+  │   ├─ Accept changes (create/modify files in subprocess)
+  │   └─ Retry up to 3 times on failure
+  │
+  └─ Subprocess isolation:
+      ├─ Clean git state before execution
+      ├─ start_new_session=True (process group isolation)
+      └─ Timeout: 600 seconds per subtask
 
-**Subprocess Safety:**
-- Timeout: 600 seconds (default, configurable)
-- Process group management: Kill entire group on timeout (os.killpg)
-- Timeout protection: proc.wait(timeout=5) prevents indefinite blocking
-- Retry backoff: 5s, 5s, 10s between attempts
+Step 6: VERIFY & VALIDATE
+  ├─ Syntax checks:
+  │   ├─ Python: ast.parse on all .py files
+  │   └─ Shell: shellcheck on all .sh files
+  ├─ Run test suite:
+  │   ├─ pytest tests/test_autonomous_executor.py
+  │   └─ make test-offline (7 offline scenarios)
+  ├─ Review git diff:
+  │   ├─ Reject if unsafe patterns detected
+  │   └─ Accept if all validations pass
+  └─ Return: Pass/Fail for this item
 
----
+Step 7: UPDATE STATUS & COMMIT
+  ├─ On success:
+  │   ├─ Mark roadmap item status: "Completed"
+  │   ├─ Record completion timestamp
+  │   ├─ Git add + commit all changes
+  │   ├─ Push to origin/main
+  │   └─ Log metrics: time, subtask count, success/failure
+  │
+  └─ On failure (after retries):
+      ├─ Log error details to escalations/index.jsonl
+      ├─ Skip to next item (don't update status)
+      ├─ Generate learning signal (what went wrong)
+      └─ Continue loop
 
-### Job Scheduling & State Management (`framework/job_schema.py`, `framework/state_store.py`)
-
-**Purpose:** Track execution state and lifecycle of items and subtasks.
-
-**JobLifecycle:**
-```
-Proposed → Accepted → Planned → Execution-ready → In progress → Validating → Completed
-                    ↓
-                  Frozen (blocked)
-                    ↓
-                  Deferred (low priority)
-```
-
-**ValidationRequirement:**
-- Custom tests per item (if any)
-- Artifact preservation rules
-- Escalation criteria
-
-**State Store:**
-- Persists execution records to `artifacts/`
-- Tracks completion status per item
-- Stores failure logs (JSONL format)
-- Maintains git commit references
-
----
-
-### Permission Engine & Safety (`framework/permission_engine.py`)
-
-**Purpose:** Guard against unsafe operations.
-
-**Safety Gates:**
-- File modification whitelist (allow .py, .md, .yaml; reject .git, secrets)
-- Subprocess timeout enforcement
-- Git command validation (no force-push)
-- Artifact access restrictions
-
----
-
-### Learning & Attribution (`framework/learning_hooks.py`)
-
-**Purpose:** Record what worked and what failed for continuous improvement.
-
-**Attribution Data:**
-- Which model generated successful code
-- Which executor type worked best
-- Which tasks took longest
-- Which failure patterns emerge
-
-**Learning Signals:**
-- Semantic success rate (code compiles and runs)
-- Actual test pass rate (if tests exist)
-- Iteration count (how many retries needed)
-- Execution time per task type
-
----
-
-## Data Flow: From Roadmap to Git
-
-### 1. Item Selection
-```
-parse_roadmap_directory()
-  ↓
-Load 194 items from YAML
-  ↓
-Filter by status (Accepted/Planned only)
-  ↓
-Filter by readiness (now/near only, skip "blocked")
-  ↓
-Check dependencies (skip if any dependency not Completed)
-  ↓
-Sort by priority_class, queue_rank, id
-  ↓
-Return top N candidates
-```
-
-### 2. Decomposition
-```
-Item: "RM-DEV-001: Add hot reload"
-  ↓
-stage_rag pipeline extracts requirements
-  ↓
-Local Ollama generates subtasks:
-  - "Add file watcher to domains/dev.py"
-  - "Create reload trigger in bin/hot_reload.py"
-  - "Test reload with sample file"
-  ↓
-Filter to subtasks with .py file targets
-  ↓
-Return list of subtasks
-```
-
-### 3. Execution
-```
-Subtask: "Add file watcher to domains/dev.py"
-  ↓
-Execute via aider:
-  subprocess.Popen([
-    "python3", "bin/local_coding_task.py",
-    "--force-local", "--batch-mode",
-    "Add file watcher to domains/dev.py"
-  ])
-  ↓
-Wait for completion (timeout=600s)
-  ↓
-On timeout: SIGKILL process, retry (up to 3 times)
-  ↓
-On success: Capture stdout/stderr, return True
-  ↓
-On failure: Log to execution_failures.jsonl, return False
-```
-
-### 4. Status Tracking
-```
-All subtasks succeeded:
-  ↓
-Update item status in YAML file
-  ↓
-Git add item file
-  ↓
-Git commit: "status: RM-DEV-001 → Completed"
-  ↓
-Push (if remote configured)
-  ↓
-Move to next item
-
-Any subtask failed:
-  ↓
-Log to artifacts/execution_failures.jsonl
-  ↓
-Update item status to "In progress" (partially done)
-  ↓
-Git commit: "status: RM-DEV-001 → In progress"
-  ↓
-Retry same item next loop (max 3 consecutive failures)
+Step 8: REPEAT
+  ├─ Loop back to Step 2
+  ├─ Continue until:
+  │   ├─ Target completions reached (--target-completions N)
+  │   ├─ All items completed
+  │   └─ Unrecoverable error occurs
+  └─ Output summary metrics
 ```
 
 ---
 
 ## Technology Stack
 
-| Layer | Technology | Purpose |
-|-------|-----------|---------|
-| **Code Generation** | Ollama + qwen2.5-coder:14b | Local-first LLM inference |
-| **Code Execution** | Aider | Interactive code editing with LLM |
-| **Orchestration** | Python 3.9+ subprocess | Job management, process control |
-| **Version Control** | Git + GitHub | Item tracking, commit history, collaboration |
-| **Configuration** | YAML + Markdown | Item definitions, human-readable format |
-| **Logging** | JSONL + plain text | Structured failure logs, execution transcripts |
-| **Testing** | pytest + unittest.mock | Unit & integration test validation |
-| **State Management** | File-based artifacts | Persistent job state and learning data |
+### Infrastructure
+
+- **Language:** Python 3.9
+- **Runtime:** Subprocess isolation, tmux session management
+- **VCS:** Git, GitHub
+- **File Format:** Markdown (roadmap), JSON (artifacts, metrics)
+
+### Local Code Generation
+
+- **Backend:** Ollama (http://127.0.0.1:11434)
+- **Default Model:** qwen2.5-coder:14b (~14 billion parameters)
+  - Fast, reliable, good at code generation
+  - Average inference: 5-30s per subtask
+- **Fallback Model:** deepseek-coder-v2 (~236 billion parameters, if available)
+  - Handles harder problems (complex refactoring, architectural changes)
+  - Slower but more capable
+- **Integration:** aider (CLI wrapper around Ollama)
+  - Code-aware chat interface
+  - Automatic file modification parsing
+  - Syntax validation
+
+### Testing & Validation
+
+- **Python syntax:** ast.parse (built-in)
+- **Shell syntax:** shellcheck (external tool)
+- **Unit/Integration:** pytest
+- **Regression:** 7 offline deterministic scenarios (no external APIs)
+
+### Orchestration & Planning
+
+- **RAG (Retrieval-Augmented Generation):**
+  - Stage 4: Entity-aware reranking (BM25 + entity definition scoring)
+  - Stage 6: Multi-target orchestration (select 4-6 files, order modifications)
+- **Task Decomposition:** LLM planning (qwen2.5-coder:14b)
+- **Dependency Resolution:** Topological sort + cycle detection
 
 ---
 
-## Key Design Decisions & Rationale
+## Key Design Decisions
 
-### Decision 1: Local-First Execution (Ollama)
+### 1. Why Markdown Roadmap?
 
-**Why:** Eliminates cloud dependency, enables offline work, reduces latency.
+**Decision:** Store roadmap as `RM-*.md` files in `docs/roadmap/ITEMS/`
 
-**Trade-off:** Smaller model size (14B) vs. larger remote models (but still effective for bounded tasks).
+**Why:**
+- Human-readable source of truth
+- Git history tracks changes to status, priorities, dependencies
+- Easy to manually adjust without breaking parsing
+- Portable: works offline, no database required
+- Supports both explicit Dependencies sections and inferred references in descriptions
 
-**Validation:** 88.9% semantic-primary success rate on 18-task benchmark.
+**Trade-offs:**
+- Parsing is simple but requires careful regex
+- No schema validation (must trust human input)
+- File-per-item creates large directory (223 files)
+
+### 2. Why Dual-Model Approach?
+
+**Decision:** Default to qwen2.5-coder:14b, fallback to deepseek-coder-v2 on timeout
+
+**Why:**
+- **Speed:** Small model (14B) completes 95% of tasks in <30s
+- **Fallback:** Larger model (236B) handles edge cases reliably
+- **Cost:** Local execution, zero API costs, deterministic outputs
+- **Privacy:** No code leaves the machine
+
+**Trade-offs:**
+- Requires local GPU/CPU resources
+- Fallback model may not always be available
+- Smaller model has limitations on complex architectures
+
+### 3. Why Subprocess Isolation?
+
+**Decision:** Each aider invocation runs in a subprocess with `start_new_session=True`
+
+**Why:**
+- **Crash isolation:** LLM failure doesn't crash main executor
+- **Git state:** Clean slate for each subtask (no accumulated git state)
+- **Resource limits:** Can timeout without hanging parent process
+- **Logging:** Separate stdout/stderr streams per subtask
+
+**Trade-offs:**
+- Process startup overhead (~1-2s per subtask)
+- Can't share Python state between subtasks
+- Requires git checkout between runs
+
+### 4. Why Circular Dependency Breaking?
+
+**Decision:** Remove weakest links in dependency cycles (heuristic: item with most other dependencies)
+
+**Why:**
+- Prevents topological sort failures
+- Identifies which dependencies are actually critical
+- Removes "nice-to-have" edges in the dependency graph
+- Allows executor to make progress on cyclic families
+
+**Trade-offs:**
+- May remove some meaningful dependencies
+- Strategy is heuristic (not optimal)
+- Requires manual review of removed edges
+
+### 5. Why Stage RAG4 Entity-Aware Reranking?
+
+**Decision:** Boost files that *define* entities mentioned in the query, not just mention them
+
+**Why:**
+- BM25 alone ranks files that mention "ExecutorFactory" higher than files that define it
+- Entity definition scoring (regex: "class ExecutorFactory") fixes retrieval accuracy
+- Improves bounded task coverage by 28.5 percentage points
+- Reduces context bloat by filtering to actual implementations
+
+**Trade-offs:**
+- Requires parsing entity names from queries (CamelCase extraction)
+- Regex pattern matching can miss some definitions
+- Needs periodic revalidation as codebase evolves
 
 ---
 
-### Decision 2: Aider for Code Modification
+## Execution Modes
 
-**Why:** Direct file interaction, error recovery, iterative improvement.
+### Dry-Run Mode (`--dry-run`)
 
-**Trade-off:** Requires local environment setup vs. cloud-only convenience.
+```bash
+python3 bin/auto_execute_roadmap.py --target-completions 1 --dry-run
+```
 
-**Validation:** 100% total success (primary + fallback) on 24-task benchmark.
+- Decomposes and executes subtasks normally
+- Validates code (syntax, tests)
+- **Does NOT commit** changes to git
+- **Does NOT update** roadmap status
+- Safe for testing new items or validating changes
+
+### Real Mode (no `--dry-run`)
+
+```bash
+python3 bin/auto_execute_roadmap.py --target-completions 5
+```
+
+- Full execution: decompose → execute → validate → commit
+- Updates roadmap item status to "Completed"
+- Commits changes to git
+- Pushes to origin/main
+- Updates execution metrics
+
+### Resume Mode (`--resume`)
+
+```bash
+python3 bin/auto_execute_roadmap.py --resume --target-completions 10
+```
+
+- Reads state from last execution
+- Continues from where it left off
+- Skips already-completed items
+- Useful for recovering from crashes
 
 ---
 
-### Decision 3: Autonomous Item Selection
+## Failure Handling
 
-**Why:** No manual queue management, continuous progress, respects dependencies.
+### Graceful Degradation
 
-**Trade-off:** Requires robust priority system and cycle detection.
+1. **Semantic Generation Fails:** Fall back to deterministic mode
+   - Return safe, syntactically-valid boilerplate
+   - Avoids crash, allows executor to continue
 
-**Validation:** 54 items completed autonomously, no deadlocks in 194-item set.
+2. **Subtask Fails:** Retry up to 3 times
+   - Different seed/temperature on each retry
+   - Log to escalation index after 3 failures
+   - Skip to next item
 
----
+3. **Validation Fails:** Reject changes, mark escalation
+   - Syntax error: Don't commit
+   - Test failure: Don't commit
+   - Unsafe patterns: Don't commit
+   - Log for manual review
 
-### Decision 4: Git-Based Status Tracking
+4. **LLM Timeout:** Use fallback strategy
+   - Increase timeout
+   - Switch to larger model
+   - Return deterministic template on final timeout
 
-**Why:** Immutable history, single source of truth, audit trail.
+### Escalation Index
 
-**Trade-off:** Overhead of git commits per item (acceptable for 194-item scale).
-
-**Validation:** `git log` shows 54 status commits, 100% reliable tracking.
-
----
-
-### Decision 5: YAML + Markdown Hybrid Format
-
-**Why:** Structured metadata (YAML) + human-readable docs (Markdown).
-
-**Trade-off:** Two formats to maintain (but clear separation).
-
-**Validation:** Parser handles both, ~100% parse success rate.
-
----
-
-## Failure Modes & Recovery
-
-| Failure | Root Cause | Recovery |
-|---------|-----------|----------|
-| **Silent startup crash** | Exception in parse_roadmap_directory() before first print | Add [STARTUP] print with flush=True at entry point |
-| **Buffered output on hang** | Missing flush=True in debug statements | Add flush=True to all prints before code that might hang |
-| **Infinite loop on filter** | Reload returns same unmatched item repeatedly | Add skipped_without_match counter, break after 10 attempts |
-| **proc.wait() hangs** | No timeout on wait() after SIGKILL | Add proc.wait(timeout=5) with exception handler |
-| **Cycle in dependencies** | Item A depends on B, B depends on A | detect_cycles() in startup, reject cycles before execution |
-| **Missing dependency** | Item tries to execute but dep not Completed | find_executable_items() checks _dependencies_met() |
-| **Subtask without file** | Decomposition generates task with no target file | Filter subtasks, require .py file in task description |
+```json
+{
+  "timestamp": "2026-04-24T17:53:00Z",
+  "item_id": "RM-DEV-005",
+  "subtask": "Create tests/api_contracts.py with contract definitions",
+  "error_type": "validation_failed",
+  "details": "pytest failed: 2 test cases did not pass",
+  "retries": 3,
+  "action": "escalated_for_manual_review"
+}
+```
 
 ---
 
 ## Performance Characteristics
 
-- **Item Startup:** ~2s (parse + dependency check)
-- **Decomposition:** ~5s (API call or fallback)
-- **Subtask Execution:** ~30-60s (aider + LLM)
-- **Retry Overhead:** 3 attempts × (5 + 5 + 10)s = 20s per failed subtask
-- **Status Commit:** ~1s (git add + commit)
-- **Overall Throughput:** ~1-2 items/hour (varies by complexity)
+### Typical Execution Timeline (per item)
+
+| Phase | Time | Notes |
+|-------|------|-------|
+| Load roadmap | 2-3s | Parse 223 items, infer dependencies |
+| Select next | <1s | Check prerequisites, sort |
+| Stage RAG4 | 5-10s | Search codebase, rank files |
+| Decompose | 10-30s | LLM planning via Ollama |
+| Execute (per subtask) | 30-120s | aider subprocess, code generation |
+| Validate | 10-30s | Syntax check, test suite |
+| Commit & update | 5-10s | Git operations |
+| **Total per item** | **3-15 min** | Varies by complexity |
+
+### Throughput
+
+- **Simple items (RM-DOCS-*, RM-CI-*):** 15-30 min each
+- **Medium items (RM-DEV-*):** 30-60 min each
+- **Complex items (RM-OBS-*, RM-SEC-*):** 60-120+ min each
+- **Average:** ~45-60 min per item
+- **Daily throughput:** 12-20 items/day (24h execution)
+
+### Resource Usage
+
+- **CPU:** 2-4 cores (qwen2.5-coder:14b inference)
+- **Memory:** 14-20 GB (model weight loading)
+- **Disk:** 50-100 MB per execution (artifacts)
+- **Network:** None (local Ollama)
 
 ---
 
-## Monitoring & Observability
+## State Persistence & Artifacts
 
-### Real-Time Monitoring
-- `execution.log` — [DEBUG] markers, [STARTUP] diagnostics, progress updates
-- `tail -f execution.log` — Live execution transcript
+### Roadmap State
 
-### Post-Execution Analysis
-- `git log --oneline | grep "status:"` — Completed items
-- `artifacts/execution_failures.jsonl` — Failures with duration, attempt count
-- `artifacts/stage_rag4/usage.jsonl` — Retrieval ranking decisions
+```
+docs/roadmap/ITEMS/RM-*.md
+├─ Status: Accepted | In progress | Completed | Blocked
+├─ Dependencies: [RM-ID, RM-ID, ...]
+├─ Metrics: Priority, queue_rank, strategic_value, LOE
+└─ Expected files & implementation notes
+```
 
-### Health Checks
+### Execution Artifacts
+
+```
+artifacts/
+├─ stage_rag4/usage.jsonl          # Retrieval decisions
+├─ stage6_manager/*.json            # Orchestration plans
+├─ escalations/index.jsonl          # Failures and issues
+├─ aider_bench/metrics.json         # Performance data
+└─ <date>/execution.log             # Detailed traces
+```
+
+### Git History
+
 ```bash
-make test-offline          # Deterministic validation
-make micro-lane-regression # Executor integrity checks
-python3 -m pytest tests/test_autonomous_executor.py -v  # Unit tests (19 tests)
+git log --oneline | head -20
+# Each commit:
+# - Updates roadmap item status
+# - Includes code changes
+# - References RM-ID in message
+# - Commit author: Adrian Cox <adbcox@gmail.com>
 ```
 
 ---
 
-## Future Improvements (Roadmap)
+## Safety & Governance
 
-- **RM-MON-001-010:** System health dashboard, real-time metrics, SLA tracking
-- **RM-DEPLOY-001-010:** Blue/green deployment, canary releases, feature flags
-- **RM-CI-001-010:** GitHub Actions optimization, multi-stage builds, security scanning
-- **Semantic-to-Code Bridging:** Move from 88.9% semantic to 100% real code generation
-- **Generalization:** Expand from 24-task benchmark to 100+ diverse real-world tasks
+### Permission Gates
+
+- No destructive git operations without manual confirmation
+- Shell commands sandboxed (no system-level changes)
+- File writes limited to project directory
+- API calls logged and rate-limited
+
+### Validation Requirements
+
+All commits require:
+1. ✓ Python syntax (ast.parse)
+2. ✓ Shell syntax (shellcheck)
+3. ✓ Test suite pass (pytest)
+4. ✓ Git diff review (reject unsafe patterns)
+5. ✓ No uncommitted dependencies
+
+### Bounded Execution
+
+- `--target-completions N`: Stop after N items
+- `--dry-run`: No git commits
+- `--max-items 0`: Just validate, don't execute
+- Timeout: 600 seconds per subtask (prevents hangs)
 
 ---
 
-**Last Updated:** 2026-04-24
-**Version:** 1.0
+## Integration Points
+
+### Local Aider Entry
+
+```bash
+make aider-fast       # qwen2.5-coder:14b
+make aider-hard       # deepseek-coder-v2
+make aider-smart      # 32B model via OLLAMA_API_BASE_32B
+```
+
+### Remote Codex Integration
+
+```bash
+python3 bin/codex51_benchmark.py  # Benchmark against Claude
+```
+
+### Monitoring & Observability
+
+```bash
+# Real-time executor logs
+tail -f execution.log
+
+# Tmux session
+tmux attach -t roadmap
+tmux capture-pane -t roadmap -p
+
+# Metrics dashboard (future)
+# web/monitor/dashboard.html (polling execution.log)
+```
+
+---
+
+## Future Improvements (Planned)
+
+- [ ] Multi-item orchestration (Stage 7): Break down items for concurrent execution
+- [ ] Learning loop: Attribution + strategy updates based on success/failure patterns
+- [ ] Real-time monitoring dashboard: Web UI polling execution.log
+- [ ] Automated code review: Claude review integration before commit
+- [ ] Expanded model routing: Per-category model selection (easier tasks → faster model)
+- [ ] Semantic caching: Retrieve and reuse previous successful solutions
