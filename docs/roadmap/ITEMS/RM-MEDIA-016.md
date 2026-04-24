@@ -4,7 +4,7 @@
 - **Title:** Video quality analysis and encoding presets
 - **Category:** `MEDIA`
 - **Type:** `Enhancement`
-- **Status:** `Accepted`
+- **Status:** `In progress`
 - **Maturity:** `M0`
 - **Priority:** `Medium`
 - **Priority class:** `P2`
