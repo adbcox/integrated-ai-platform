@@ -15,7 +15,7 @@
 - **Architecture fit:** `5`
 - **Execution risk:** `4`
 - **Dependency burden:** `3`
-- **Readiness:** `ready`
+- **Readiness:** `now`
 
 ## Description
 
