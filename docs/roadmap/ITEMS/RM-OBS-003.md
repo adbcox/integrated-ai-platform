@@ -4,7 +4,7 @@
 - **Title:** Distributed request tracing
 - **Category:** `OBS`
 - **Type:** `Feature`
-- **Status:** `Accepted`
+- **Status:** `In progress`
 - **Maturity:** `M0`
 - **Priority:** `High`
 - **Priority class:** `P2`
