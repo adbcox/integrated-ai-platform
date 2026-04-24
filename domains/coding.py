@@ -548,8 +548,6 @@ Make sure to address all issues and test edge cases."""
                 cwd=self.repo_root,
                 env=env,
             )
-                stderr=subprocess.STDOUT,
-            )
 
             for line in iter(proc.stdout.readline, ""):
                 print(line.strip())
