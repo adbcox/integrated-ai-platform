@@ -4,7 +4,7 @@
 - **Title:** Video transcoding pipeline (FFmpeg integration)
 - **Category:** `MEDIA`
 - **Type:** `Enhancement`
-- **Status:** `In progress`
+- **Status:** `Completed`
 - **Maturity:** `M0`
 - **Priority:** `High`
 - **Priority class:** `P2`
