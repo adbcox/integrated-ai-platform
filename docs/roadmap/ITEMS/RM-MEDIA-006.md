@@ -4,7 +4,7 @@
 - **Title:** Reuse-first media enhancement, restoration, tagging, and searchable media layer
 - **Category:** `MEDIA`
 - **Type:** `System`
-- **Status:** `Accepted`
+- **Status:** `In progress`
 - **Maturity:** `M2`
 - **Priority:** `High`
 - **Priority class:** `P3`
