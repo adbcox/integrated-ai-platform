@@ -616,6 +616,7 @@ Make sure to address all issues and test edge cases."""
             "--no-auto-commits",
             f"--model={model}",
             "--yes",
+            "--no-show-model-warnings",
         ]
 
         # Inject repo context if available
