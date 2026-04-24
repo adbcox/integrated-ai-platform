@@ -25,7 +25,7 @@ class RoadmapExecutor:
     """Manages autonomous execution with RM-GOV-001 compliance."""
 
     EXECUTION_READY_STATUSES = ["Accepted", "Planned"]
-    READY_READINESS = ["now", "near"]
+    READY_READINESS = ["now", "near", "later"]
     VALID_STATUSES = ["Proposed", "Accepted", "Decomposing", "Planned", "Execution-ready", "In progress", "Validating", "Completed", "Deferred", "Frozen", "Rejected"]
 
     def __init__(self, repo_root: Path):
@@ -70,7 +70,7 @@ class RoadmapExecutor:
             subprocess.run(
                 ["git", "add", item.file_path],
                 cwd=self.repo_root,
-                capture_output=True,
+                stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                 check=True,
             )
 
@@ -78,7 +78,7 @@ class RoadmapExecutor:
             subprocess.run(
                 ["git", "commit", "-m", msg],
                 cwd=self.repo_root,
-                capture_output=True,
+                stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                 check=True,
             )
 
