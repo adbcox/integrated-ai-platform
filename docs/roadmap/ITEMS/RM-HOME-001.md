@@ -4,7 +4,7 @@
 - **Title:** Indoor air quality monitoring and purifier automation app with Home Assistant integration
 - **Category:** `HOME`
 - **Type:** `Feature`
-- **Status:** `In progress`
+- **Status:** `Completed`
 - **Maturity:** `M2`
 - **Priority:** `High`
 - **Priority class:** `P2`
