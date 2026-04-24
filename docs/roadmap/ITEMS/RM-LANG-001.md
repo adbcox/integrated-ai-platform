@@ -4,7 +4,7 @@
 - **Title:** Strong multilingual translation app for written and spoken language, with Chinese as a priority language
 - **Category:** `LANG`
 - **Type:** `Feature`
-- **Status:** `In progress`
+- **Status:** `Completed`
 - **Maturity:** `M1`
 - **Priority:** `Medium`
 - **Priority class:** `P3`
