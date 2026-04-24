@@ -3,6 +3,7 @@ from typing import Any, Dict, List, Optional
 
 import json
 import os
+import re
 import subprocess
 import time
 
@@ -87,19 +88,134 @@ class CodingDomain:
         if len(files) > 5:
             return False, "Task affects >5 files - too broad, split into smaller tasks"
 
+        # Check for ambiguous references in multi-file tasks
+        if len(files) > 1:
+            ambiguous_words = ["this", "that", "it", "the file", "the function", "the class"]
+            desc_lower = task_description.lower()
+
+            for word in ambiguous_words:
+                if word in desc_lower:
+                    return False, f"Ambiguous '{word}' in multi-file task - specify which file/function"
+
+            # Check each file is mentioned
+            for f in files:
+                fname = Path(f).name
+                if fname not in task_description and f not in task_description:
+                    return False, f"Multi-file task must reference each file: '{fname}' not mentioned in description"
+
         dangerous = ["delete all", "remove everything", "rewrite entire", "refactor whole"]
         lowered = task_description.lower()
         for kw in dangerous:
             if kw in lowered:
                 return False, f"Task too broad: contains '{kw}'"
 
-        if len(files) > 1:
-            for f in files:
-                fname = Path(f).name
-                if fname not in task_description and f not in task_description:
-                    return False, f"Multi-file task must reference each file: '{fname}' not mentioned"
-
         return True, ""
+
+    def _find_related_files(self, files: list[str]) -> list[str]:
+        """Find imports/related files for context."""
+        repo_root = Path(__file__).resolve().parent.parent
+        related: set[str] = set()
+        primary = set()
+        for file_path in files:
+            path = Path(file_path)
+            if not path.is_absolute():
+                path = repo_root / path
+            primary.add(str(path.resolve()))
+
+        for file_path in files:
+            path = Path(file_path)
+            if not path.is_absolute():
+                path = repo_root / path
+            if not path.exists() or path.suffix != ".py":
+                continue
+
+            try:
+                source = path.read_text(encoding="utf-8", errors="ignore")
+            except Exception:
+                continue
+
+            module_prefix = self._module_prefix_for_path(path, repo_root)
+            for line in source.splitlines():
+                stripped = line.strip()
+                if not (stripped.startswith("from ") or stripped.startswith("import ")):
+                    continue
+
+                for module_name in self._extract_import_modules(stripped):
+                    for candidate in self._resolve_local_module_paths(module_name, repo_root, module_prefix):
+                        candidate_str = str(candidate.resolve())
+                        if candidate_str in primary or candidate_str in related:
+                            continue
+                        related.add(candidate_str)
+                        break
+
+        return sorted(related)
+
+    @staticmethod
+    def _module_prefix_for_path(path: Path, repo_root: Path) -> str:
+        try:
+            rel = path.relative_to(repo_root)
+        except ValueError:
+            return ""
+        parts = list(rel.with_suffix("").parts)
+        if parts and parts[-1] == "__init__":
+            parts = parts[:-1]
+        return ".".join(parts[:-1])
+
+    @staticmethod
+    def _extract_import_modules(line: str) -> list[str]:
+        modules: list[str] = []
+        if line.startswith("import "):
+            payload = line[len("import ") :]
+            for item in payload.split(","):
+                module = item.strip().split(" as ", 1)[0].strip()
+                if module:
+                    modules.append(module)
+        elif line.startswith("from "):
+            match = re.match(r"^from\s+([.\w]+)\s+import\s+", line)
+            if match:
+                modules.append(match.group(1))
+        return modules
+
+    @staticmethod
+    def _resolve_local_module_paths(module_name: str, repo_root: Path, module_prefix: str) -> list[Path]:
+        candidates: list[Path] = []
+        resolved_name = module_name
+
+        if module_name.startswith("."):
+            base = module_prefix.split(".") if module_prefix else []
+            depth = len(module_name) - len(module_name.lstrip("."))
+            rel_parts = base[: max(0, len(base) - depth + 1)]
+            remainder = module_name.lstrip(".")
+            if remainder:
+                rel_parts.extend(remainder.split("."))
+            resolved_name = ".".join(part for part in rel_parts if part)
+            path_base = repo_root.joinpath(*rel_parts) if rel_parts else None
+        else:
+            path_base = repo_root.joinpath(*module_name.split("."))
+
+        if path_base is not None:
+            candidates.append(path_base.with_suffix(".py"))
+            candidates.append(path_base / "__init__.py")
+
+        if resolved_name and resolved_name != module_name:
+            alt = repo_root.joinpath(*resolved_name.split("."))
+            candidates.append(alt.with_suffix(".py"))
+            candidates.append(alt / "__init__.py")
+
+        return [path for path in candidates if path.exists()]
+
+    def _build_aider_command(self, model: str, task: str, files: list[str]) -> list[str]:
+        cmd = ["aider", "--model", f"ollama/{model}", "--yes", "--no-auto-commits"]
+
+        for f in files:
+            cmd.extend(["--file", f])
+
+        related = self._find_related_files(files)
+        for r in related[:3]:
+            cmd.extend(["--read", r])
+
+        cmd.extend(["--message", task])
+        return cmd
 
     @staticmethod
     def _slugify(value: str) -> str:
@@ -163,18 +279,7 @@ class CodingDomain:
     ) -> Dict[str, Any]:
         """Execute task with specific model (existing subprocess logic)."""
         repo_root = Path(__file__).resolve().parent.parent
-        cmd = [
-            "aider",
-            "--model",
-            f"ollama/{model}",
-            "--yes",
-            "--no-auto-commits",
-            "--message",
-            task_description,
-        ]
-
-        for file_path in files:
-            cmd.extend(["--file", file_path])
+        cmd = self._build_aider_command(model, task_description, files)
 
         result_data: Dict[str, Any] = {
             "success": False,
