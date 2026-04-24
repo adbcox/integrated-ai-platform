@@ -50,7 +50,7 @@ Creates a practical household-facing interface family built on the same platform
 - may later link to room devices and household endpoint inventory
 
 ## Grouping candidates
-- `RM-UI-004`
+- `RM-UI-001`
 
 ## Grouped execution notes
 - Shared-touch rationale: ambient dashboards, environment cards, and room displays overlap.

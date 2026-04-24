@@ -73,7 +73,6 @@ This item is essential for moving the platform from hopeful orchestration to obs
 
 - `RM-OPS-004`
 - `RM-GOV-001`
-- `RM-AUTO-001`
 
 ## Grouped execution notes
 

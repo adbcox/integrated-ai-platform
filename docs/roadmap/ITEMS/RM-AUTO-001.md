@@ -109,7 +109,6 @@ The exact reuse posture is governed by:
 - `RM-UI-005`
 - `RM-GOV-001`
 - `RM-OPS-004`
-- `RM-OPS-005`
 
 ## Grouped execution notes
 

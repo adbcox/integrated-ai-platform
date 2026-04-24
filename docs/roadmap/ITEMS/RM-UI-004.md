@@ -49,7 +49,7 @@ Creates a room-appropriate UX layer that makes the platform feel embedded in the
 - may later link to room devices and ambient endpoint inventory
 
 ## Grouping candidates
-- `RM-UI-003`
+- `RM-UI-001`
 
 ## Grouped execution notes
 - Shared-touch rationale: ambient dashboards and environment displays overlap.
