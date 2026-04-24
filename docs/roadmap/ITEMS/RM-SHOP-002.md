@@ -4,7 +4,7 @@
 - **Title:** 3D capture, guided measurement, and reconstruction stack
 - **Category:** `SHOP`
 - **Type:** `Program`
-- **Status:** `In progress`
+- **Status:** `Completed`
 - **Maturity:** `M1`
 - **Priority:** `High`
 - **Priority class:** `P3`
