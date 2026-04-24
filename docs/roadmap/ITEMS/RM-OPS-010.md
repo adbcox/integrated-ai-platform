@@ -4,7 +4,7 @@
 - **Title:** Lawful tenant and worker screening workflow using public-record and approved verification sources
 - **Category:** `OPS`
 - **Type:** `System`
-- **Status:** `Accepted`
+- **Status:** `In progress`
 - **Maturity:** `M2`
 - **Priority:** `High`
 - **Priority class:** `P3`
