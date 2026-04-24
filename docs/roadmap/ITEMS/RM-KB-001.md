@@ -4,7 +4,7 @@
 - **Title:** Company document ingestion and source-of-truth knowledge base
 - **Category:** `KB`
 - **Type:** `System`
-- **Status:** `In progress`
+- **Status:** `Completed`
 - **Maturity:** `M2`
 - **Priority:** `High`
 - **Priority class:** `P2`
