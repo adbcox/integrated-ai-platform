@@ -1,3 +1,36 @@
+---
+id: RM-AUTO-001
+title: "RM-AUTO-001 \u2014 Plain-English goal-to-agent system"
+category: AUTO
+type: System
+status: Execution-ready
+priority: High
+priority_class: P1
+queue_rank: 1
+target_horizon: now
+loe: L
+strategic_value: 4
+architecture_fit: 4
+execution_risk: 3
+dependency_burden: 2
+readiness: now
+affected_systems:
+- agent-system
+- goal-intake
+dependencies: []
+grouping_candidates: []
+execution:
+  status: In progress
+  started_at: '2026-04-24T02:04:34.767516'
+  completed_at: null
+  blocker: null
+  assigned_executor: LOCAL_AIDER
+  model_used: null
+  validation_status: {}
+  last_updated: '2026-04-24T02:04:34.767403'
+  notes: Execution started
+---
+
 # RM-AUTO-001 — Execution Pack
 
 ## Title
