@@ -4,7 +4,7 @@
 - **Title:** Hybrid roadmap operations layer with Plane on top of repo-doc canonical roadmap
 - **Category:** `GOV`
 - **Type:** `Enhancement`
-- **Status:** `In progress`
+- **Status:** `Completed`
 - **Maturity:** `M3`
 - **Priority:** `High`
 - **Priority class:** `P1`
