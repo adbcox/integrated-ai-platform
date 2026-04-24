@@ -57,14 +57,34 @@ def main() -> int:
         default=None,
         help="Override model (default: qwen2.5-coder:14b)",
     )
+    parser.add_argument(
+        "--skip-analysis",
+        action="store_true",
+        help="Skip pre-flight analysis",
+    )
 
     args = parser.parse_args()
 
-    # Validate files exist
+    # Get repo root
     repo_root = Path(__file__).parent.parent
+
+    # Pre-flight analysis (unless skipped)
+    if not args.skip_analysis:
+        from bin.analyze_task import TaskAnalyzer
+
+        analyzer = TaskAnalyzer(repo_root)
+        can_proceed, questions = analyzer.analyze(args.description, args.files)
+
+        if not can_proceed:
+            print("⚠️  Pre-flight questions detected. Run:")
+            print(f"   ./bin/analyze_task.py '{args.description}' {' '.join(args.files)}")
+            print("\nOr use --skip-analysis to bypass")
+            return 3
+
+    # Validate files exist
     missing_files = []
     for file_path in args.files:
-        full_path = repo_root / file_path
+        full_path = repo_root / file_path  # repo_root already assigned above
         if not full_path.exists():
             missing_files.append(file_path)
 
