@@ -99,7 +99,14 @@ class TaskRouter:
 
         # Coding tasks
         if files:
-            if len(files) <= 2 and len(description) < 100:
+            if len(files) == 1 and len(description) < 50:
+                return TaskRoute(
+                    ExecutorType.LOCAL_AIDER,
+                    "qwen2.5-coder:1.5b",
+                    0.95,
+                    "Ultra-fast coding (1 file, <50 chars)",
+                )
+            elif len(files) <= 2 and len(description) < 100:
                 return TaskRoute(
                     ExecutorType.LOCAL_AIDER,
                     "qwen2.5-coder:7b",

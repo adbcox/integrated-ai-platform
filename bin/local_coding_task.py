@@ -6,12 +6,13 @@ executing individual coding modification tasks directly on the local repository.
 
 Usage:
     ./bin/local_coding_task.py 'Add docstring to main function' myfile.py
+    ./bin/local_coding_task.py 'Add error handling to domains/media.py health_check method'
     ./bin/local_coding_task.py 'Add type hints' file1.py file2.py file3.py
     ./bin/local_coding_task.py 'Fix error handling' --timeout 600 handler.py
 
 Arguments:
     DESCRIPTION     Task description/instruction for Aider
-    FILES           One or more files to modify (must exist in repo)
+    FILES           Optional files to modify; extracted from description if omitted
 
 Options:
     --timeout SEC   Timeout in seconds (default: 300 = 5 minutes)
@@ -22,12 +23,64 @@ Options:
 import sys
 import argparse
 import subprocess
+import re
 from pathlib import Path
 
 # Add repo root to Python path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from domains.router import TaskRouter, ExecutorType
+
+
+FILE_PATTERN = re.compile(r"\b([A-Za-z0-9_./-]+\.py)\b")
+SYMBOL_HINT_PATTERN = re.compile(r"\b([A-Za-z_][A-Za-z0-9_]*)\s+(?:method|function|class|symbol)\b", re.IGNORECASE)
+REVERSE_SYMBOL_HINT_PATTERN = re.compile(r"\b(?:method|function|class|symbol)\s+([A-Za-z_][A-Za-z0-9_]*)\b", re.IGNORECASE)
+
+
+def extract_files_from_description(description: str, repo_root: Path) -> list[str]:
+    """Extract repo-local Python file paths from a task description."""
+    seen: set[str] = set()
+    files: list[str] = []
+    for match in FILE_PATTERN.finditer(description):
+        raw_path = match.group(1)
+        candidate = (repo_root / raw_path).resolve() if not Path(raw_path).is_absolute() else Path(raw_path).resolve()
+        try:
+            candidate.relative_to(repo_root.resolve())
+        except ValueError:
+            continue
+        rel_path = str(candidate.relative_to(repo_root.resolve()))
+        if candidate.exists() and rel_path not in seen:
+            seen.add(rel_path)
+            files.append(rel_path)
+    return files
+
+
+def extract_focus_symbol(description: str) -> str:
+    """Extract a method/function/class hint from a task description."""
+    match = SYMBOL_HINT_PATTERN.search(description)
+    if match:
+        return match.group(1)
+
+    match = REVERSE_SYMBOL_HINT_PATTERN.search(description)
+    if match:
+        return match.group(1)
+
+    return ""
+
+
+def augment_description(description: str, files: list[str], symbol: str) -> str:
+    """Add focused context to the task description for Aider."""
+    lines = [description.strip()]
+    context_lines = []
+    if files:
+        context_lines.append("Focus files:")
+        context_lines.extend(f"- {path}" for path in files)
+    if symbol:
+        context_lines.append(f"Focus symbol: {symbol}")
+    if context_lines:
+        lines.append("")
+        lines.extend(context_lines)
+    return "\n".join(lines).strip()
 
 
 def main() -> int:
@@ -44,8 +97,8 @@ def main() -> int:
     )
     parser.add_argument(
         "files",
-        nargs="+",
-        help="Files to modify (relative to repo root)",
+        nargs="*",
+        help="Optional files to modify (relative to repo root). If omitted, they are extracted from the description.",
     )
     parser.add_argument(
         "--timeout",
@@ -119,22 +172,32 @@ def main() -> int:
                 print(f"❌ Auto-commit failed: {e}", file=sys.stderr)
                 return 1
 
+    # Extract files and focused symbol from the description if needed.
+    inferred_files = extract_files_from_description(args.description, repo_root)
+    task_files = list(dict.fromkeys([*(args.files or []), *inferred_files]))
+    focus_symbol = extract_focus_symbol(args.description)
+    task_description = augment_description(args.description, task_files, focus_symbol)
+
+    if not task_files:
+        print("❌ Error: No files provided or inferred from description.", file=sys.stderr)
+        return 1
+
     # Pre-flight analysis (unless skipped)
     if not args.skip_analysis:
         from bin.analyze_task import TaskAnalyzer
 
         analyzer = TaskAnalyzer(repo_root)
-        can_proceed, questions = analyzer.analyze(args.description, args.files)
+        can_proceed, questions = analyzer.analyze(args.description, task_files)
 
         if not can_proceed:
             print("⚠️  Pre-flight questions detected. Run:")
-            print(f"   ./bin/analyze_task.py '{args.description}' {' '.join(args.files)}")
+            print(f"   ./bin/analyze_task.py '{args.description}' {' '.join(task_files)}")
             print("\nOr use --skip-analysis to bypass")
             return 3
 
     # Validate files exist
     missing_files = []
-    for file_path in args.files:
+    for file_path in task_files:
         full_path = repo_root / file_path  # repo_root already assigned above
         if not full_path.exists():
             missing_files.append(file_path)
@@ -147,7 +210,7 @@ def main() -> int:
 
     # Route task to optimal executor
     router = TaskRouter(repo_root)
-    route = router.classify(args.description, args.files)
+    route = router.classify(args.description, task_files)
 
     # If not local, inform user and exit
     if route.executor != ExecutorType.LOCAL_AIDER:
@@ -166,7 +229,9 @@ def main() -> int:
         domain = CodingDomain()
 
         print(f"📝 Task: {args.description}")
-        print(f"📄 Files: {', '.join(args.files)}")
+        print(f"📄 Files: {', '.join(task_files)}")
+        if focus_symbol:
+            print(f"🎯 Symbol: {focus_symbol}")
         print(f"⏱️  Timeout: {args.timeout}s")
         print(f"🎯 Routed to: Local Aider (confidence: {route.confidence:.0%})")
         print(f"🤖 Model: {route.model}")
@@ -175,8 +240,8 @@ def main() -> int:
         print("-" * 70)
 
         result = domain.execute_task(
-            task_description=args.description,
-            files=args.files,
+            task_description=task_description,
+            files=task_files,
             model=args.model,
             timeout_seconds=args.timeout,
             allow_dirty=args.force,
