@@ -341,7 +341,7 @@ Respond with JSON:
         cmd = [
             "aider",
             "--no-auto-commits",
-            f"--model={reviewer_model}",
+            f"--model=ollama/{reviewer_model}",
             "--read=/dev/stdin",
         ]
 
@@ -617,7 +617,7 @@ Make sure to address all issues and test edge cases."""
         cmd = [
             "aider",
             "--no-auto-commits",
-            f"--model={model}",
+            f"--model=ollama/{model}",
             "--yes",
             "--no-show-model-warnings",
         ]
