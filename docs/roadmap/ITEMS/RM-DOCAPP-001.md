@@ -4,7 +4,7 @@
 - **Title:** Excel-to-web-app migration system
 - **Category:** `DOCAPP`
 - **Type:** `Program`
-- **Status:** `In progress`
+- **Status:** `Completed`
 - **Maturity:** `M2`
 - **Priority:** `Medium`
 - **Priority class:** `P3`
