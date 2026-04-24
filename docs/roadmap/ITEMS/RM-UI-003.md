@@ -4,7 +4,7 @@
 - **Title:** Tablet-specialized ambient control dashboards to replace Alexa-type devices
 - **Category:** `UI`
 - **Type:** `Feature`
-- **Status:** `Accepted`
+- **Status:** `Completed`
 - **Maturity:** `M2`
 - **Priority:** `High`
 - **Priority class:** `P3`

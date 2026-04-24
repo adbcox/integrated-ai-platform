@@ -4,7 +4,7 @@
 - **Title:** Live product search, pricing history, and inventory-aware procurement workflow
 - **Category:** `INV`
 - **Type:** `System`
-- **Status:** `Accepted`
+- **Status:** `Completed`
 - **Maturity:** `M2`
 - **Priority:** `High`
 - **Priority class:** `P3`
