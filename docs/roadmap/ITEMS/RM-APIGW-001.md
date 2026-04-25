@@ -4,7 +4,7 @@
 - **Title:** API gateway core routing and request handling
 - **Category:** `APIGW`
 - **Type:** `Feature`
-- **Status:** `Accepted`
+- **Status:** `In progress`
 - **Maturity:** `M0`
 - **Priority:** `Critical`
 - **Priority class:** `P1`
