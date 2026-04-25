@@ -1,0 +1,50 @@
+# Mac Studio — Compute Node Profile
+# Primary role: AI inference and heavy batch workloads
+
+host:
+  name: mac-studio
+  role: compute
+  ip_static: 192.168.10.202      # assign this in OPNsense DHCP reservation
+  mac_address: ""                 # fill in after first boot
+  os: macOS
+  chip: Apple M2 Ultra
+  ram_gb: 192
+  storage_gb: 4000
+
+services:
+  ollama:
+    enabled: true
+    port: 11434
+    models:
+      default: qwen2.5-coder:14b
+      heavy: qwen2.5-coder:32b
+      vision: llava:34b
+    start_on_boot: true
+    launchd_plist: ~/Library/LaunchAgents/com.ollama.server.plist
+
+  aider_worker:
+    enabled: true
+    model: ollama/qwen2.5-coder:32b
+    run_hour: 2                   # 02:00 local time
+    max_tasks_per_run: 10         # higher than Mac Mini; more RAM
+    managed_by: integrated-ai-platform
+
+  ssh:
+    enabled: true
+    port: 22
+    allow_from: 192.168.10.0/24
+
+  metrics_exporter:
+    enabled: true
+    port: 9100                    # node_exporter for VictoriaMetrics
+
+connectivity:
+  platform_base_url: http://192.168.10.201:8080   # QNAP (this Mac Mini)
+  victoria_metrics: http://192.168.10.201:8428
+  plane_api: http://192.168.10.201:8000
+
+env_vars:
+  OLLAMA_HOST: "0.0.0.0"         # listen on LAN, not just localhost
+  OLLAMA_ORIGINS: "*"
+  AIDER_WORKER_MODEL: "ollama/qwen2.5-coder:32b"
+  PLATFORM_API_BASE: "http://192.168.10.201:8080"

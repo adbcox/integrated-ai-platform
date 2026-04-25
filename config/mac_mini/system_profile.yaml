@@ -1,0 +1,46 @@
+# Mac Mini — Dashboard & Orchestration Node Profile
+# Primary role: Always-on dashboard, Docker services, Plane CE, monitoring stack
+
+host:
+  name: mac-mini
+  role: orchestration
+  ip_static: 192.168.10.201      # confirmed; set in OPNsense DHCP reservation
+  os: macOS
+  chip: Apple M1 Pro
+  ram_gb: 32
+  storage_gb: 2000
+
+services:
+  dashboard_server:
+    enabled: true
+    port: 8080
+    path: ~/repos/integrated-ai-platform/web/dashboard/server.py
+    start_on_boot: true
+
+  docker_compose_stacks:
+    - name: plane-ce
+      path: ~/repos/integrated-ai-platform/docker/docker-compose.yml
+      services: [plane-api, plane-web, plane-beat, plane-db, plane-redis]
+    - name: monitoring
+      path: ~/repos/integrated-ai-platform/docker/monitoring-stack.yml
+      services: [victoria-metrics, grafana, uptime-kuma]
+    - name: zabbix
+      path: ~/repos/integrated-ai-platform/docker/zabbix-stack.yml
+      services: [zabbix-server, zabbix-web, zabbix-db, zabbix-agent]
+
+  ollama:
+    enabled: true
+    port: 11434
+    models:
+      default: qwen2.5-coder:14b
+    note: "Fallback only — Mac Studio is primary inference node"
+
+  ssh:
+    enabled: true
+    port: 22
+    allow_from: 192.168.10.0/24
+
+connectivity:
+  mac_studio_ollama: http://192.168.10.202:11434
+  victoria_metrics: http://localhost:8428
+  plane_api: http://localhost:8000

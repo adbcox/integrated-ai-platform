@@ -18,6 +18,7 @@ import sys
 import threading
 import time
 from http.server import BaseHTTPRequestHandler, HTTPServer
+from socketserver import ThreadingMixIn
 from pathlib import Path
 from urllib.parse import urlparse
 
@@ -26,6 +27,17 @@ REPO_ROOT = Path(_env_repo) if _env_repo else Path(__file__).parent.parent.paren
 _env_items = os.environ.get("ITEMS_DIR", "")
 ITEMS_DIR = Path(_env_items) if _env_items else REPO_ROOT / "docs" / "roadmap" / "ITEMS"
 DASHBOARD_DIR = Path(__file__).parent
+
+# ── Load docker/.env into environment (only sets vars not already set) ─────────
+_dotenv = REPO_ROOT / "docker" / ".env"
+if _dotenv.exists():
+    for _line in _dotenv.read_text(errors="replace").splitlines():
+        _line = _line.strip()
+        if _line and not _line.startswith("#") and "=" in _line:
+            _k, _, _v = _line.partition("=")
+            _k = _k.strip()
+            if _k and _k not in os.environ:
+                os.environ[_k] = _v.strip()
 
 _LOG_DIR = Path(os.environ.get("LOG_DIR", "/tmp"))
 EXECUTOR_HOST = os.environ.get("EXECUTOR_HOST", "")
@@ -68,12 +80,22 @@ _CACHE_TTL = {
     "media_rclone":     20,
     "media_missing":    300,
     "media_downloads":  20,
+    "seedbox_status":   25,
+    "seedbox_queue":    15,
     "media_recent":     60,
     "media_upcoming":   120,
     "infra_status":     10,
     "system_stats":     5,
     "roadmap_stats":    60,
     "selfheal_status":  30,
+    "plane_stats":       30,
+    "analytics_deps":    120,
+    "analytics_effort":  300,
+    "analytics_priorities": 120,
+    "analytics_progress": 60,
+    "media_quality":     300,
+    "media_recs_ai":     600,
+    "training_viz":      30,
 }
 
 # ── Self-healing daemon integration ──────────────────────────────────────────
@@ -1152,6 +1174,40 @@ def _media_downloads() -> dict:
         return {"status": "error", "error": str(exc), "files": []}
 
 
+def _seedbox_status() -> dict:
+    """Rich seedbox status: active, completed, blackhole, rclone log, Flood."""
+    try:
+        sys.path.insert(0, str(REPO_ROOT))
+        from domains.media import MediaDomain
+        return MediaDomain().get_seedbox_status()
+    except Exception as exc:
+        return {"status": "error", "error": str(exc)[:200]}
+
+
+def _seedbox_queue() -> dict:
+    """Active torrent list from Flood (if installed), falls back to SFTP file list."""
+    try:
+        sys.path.insert(0, str(REPO_ROOT))
+        from connectors.flood_api import FloodAPI
+        import os as _os
+        flood = FloodAPI(url=_os.environ.get("FLOOD_URL", "http://193.163.71.22:3000"))
+        if flood.health_check():
+            return flood.get_all_status()
+        # Flood not available — return active files from SFTP
+        from connectors.seedbox import SeedboxConnector
+        sb = SeedboxConnector()
+        data = sb.get_active_downloads()
+        return {
+            "status":       data.get("status", "unknown"),
+            "source":       "sftp",
+            "active_count": data.get("active_count", 0),
+            "active":       data.get("active", []),
+            "flood_available": False,
+        }
+    except Exception as exc:
+        return {"status": "error", "error": str(exc)[:200]}
+
+
 def _get_arr_connectors():
     from connectors.arr_stack import ArrStackConnector
     sonarr   = ArrStackConnector("sonarr",   os.environ.get("SONARR_URL",   "http://192.168.10.201:8989"), os.environ.get("SONARR_API_KEY",   ""))
@@ -1463,6 +1519,429 @@ def _roadmap_move(item_id: str, new_status: str) -> dict:
             "message": f"{item_id}: {old_status} to {new_status}"}
 
 
+def _dev_generate(data: dict) -> dict:
+    """Generate code (+ optional tests/docs) via Ollama."""
+    import urllib.request as _req
+    import json as _json
+
+    prompt = data.get("prompt", "").strip()
+    if not prompt:
+        return {"error": "No prompt provided", "code": "", "tests": "", "docs": ""}
+
+    engine     = data.get("engine", "claude")
+    do_tests   = data.get("create_tests", True)
+    do_docs    = data.get("add_docs", True)
+    ollama_url = os.environ.get("OLLAMA_URL", "http://127.0.0.1:11434")
+    model      = os.environ.get("OLLAMA_CODE_MODEL", os.environ.get("OLLAMA_MODEL", "qwen2.5-coder:14b"))
+
+    system = (
+        "You are an expert Python developer. "
+        "Return ONLY valid JSON with keys: code (string), tests (string or null), docs (string or null). "
+        "No markdown fences, no commentary outside the JSON object."
+    )
+    parts = [f"Task: {prompt}"]
+    if do_tests:
+        parts.append("Include pytest unit tests in the 'tests' field.")
+    if do_docs:
+        parts.append("Include a module docstring and usage example in the 'docs' field.")
+
+    payload = {
+        "model": model,
+        "messages": [
+            {"role": "system", "content": system},
+            {"role": "user", "content": "\n".join(parts)},
+        ],
+        "stream": False,
+        "format": "json",
+        "options": {"temperature": 0.2, "num_predict": 2048},
+    }
+    try:
+        req = _req.Request(
+            f"{ollama_url}/api/chat",
+            data=_json.dumps(payload).encode(),
+            headers={"Content-Type": "application/json"},
+        )
+        with _req.urlopen(req, timeout=90) as resp:
+            raw = _json.loads(resp.read())
+        content = raw.get("message", {}).get("content", "")
+        try:
+            result = _json.loads(content)
+        except Exception:
+            result = {"code": content, "tests": None, "docs": None}
+        return {
+            "engine": engine,
+            "code":  result.get("code",  "") or "",
+            "tests": result.get("tests", "") if do_tests else "",
+            "docs":  result.get("docs",  "") if do_docs  else "",
+        }
+    except Exception as exc:
+        return {"error": str(exc)[:200], "code": "", "tests": "", "docs": ""}
+
+
+def _dev_apply(data: dict) -> dict:
+    """Save generated code to artifacts/dev_generated/ for review."""
+    import time as _time
+    code  = data.get("code",  "").strip()
+    tests = data.get("tests", "").strip()
+    docs  = data.get("docs",  "").strip()
+    if not code:
+        return {"error": "No code to apply", "message": ""}
+
+    out_dir = Path(__file__).parent.parent / "artifacts" / "dev_generated"
+    out_dir.mkdir(parents=True, exist_ok=True)
+    ts = _time.strftime("%Y%m%d_%H%M%S")
+    (out_dir / f"generated_{ts}.py").write_text(code)
+    if tests:
+        (out_dir / f"test_generated_{ts}.py").write_text(tests)
+    if docs:
+        (out_dir / f"docs_generated_{ts}.md").write_text(docs)
+    return {"message": f"Saved to artifacts/dev_generated/generated_{ts}.py"}
+
+
+def _dev_status() -> dict:
+    """Quick status check for AI coding engines."""
+    import shutil as _shutil
+    import urllib.request as _req
+    import json as _json
+
+    ollama_url = os.environ.get("OLLAMA_URL", "http://127.0.0.1:11434")
+    ollama_ok = False
+    try:
+        with _req.urlopen(f"{ollama_url}/api/tags", timeout=3) as r:
+            d = _json.loads(r.read())
+            ollama_ok = isinstance(d.get("models"), list)
+    except Exception:
+        pass
+
+    aider_ok  = bool(_shutil.which("aider"))
+    codex_ok  = bool(_shutil.which("codex"))
+    return {
+        "engines": {
+            "aider":  {"available": aider_ok,  "note": "local CLI" if aider_ok else "not installed"},
+            "codex":  {"available": codex_ok,  "note": "local CLI" if codex_ok else "not installed"},
+            "claude": {"available": ollama_ok, "note": "via Ollama" if ollama_ok else "Ollama not reachable"},
+        },
+        "ollama_url": ollama_url,
+    }
+
+
+def _roadmap_ai_generate(data: dict) -> dict:
+    """Translate natural language into a structured roadmap item via Ollama."""
+    description = data.get("description", "").strip()
+    if not description:
+        return {"error": "No description provided"}
+    try:
+        sys.path.insert(0, str(REPO_ROOT / "bin"))
+        from ai_requirement_translator import translate_requirement, _next_id  # type: ignore
+        item = translate_requirement(description)
+        item["id"] = _next_id(item.get("category", "UTIL"))
+        # Normalise field names for the frontend
+        if "success_criteria" in item and "acceptance_criteria" not in item:
+            item["acceptance_criteria"] = item.pop("success_criteria")
+        item.setdefault("acceptance_criteria", [])
+        item.setdefault("dependencies", [])
+        return item
+    except Exception as exc:
+        return {"error": str(exc)[:200]}
+
+
+def _roadmap_create_in_plane(data: dict) -> dict:
+    """Create a roadmap item in Plane and write a markdown backup."""
+    try:
+        from framework.plane_connector import PlaneAPI
+        api = PlaneAPI()
+        if not api.health_check():
+            return {"success": False, "error": "Plane not reachable"}
+        title    = data.get("title", "Untitled")
+        desc     = data.get("description", "")
+        category = data.get("category", "UTIL")
+        loe      = data.get("loe", "M")
+        criteria = data.get("acceptance_criteria", [])
+        full_desc = desc
+        if criteria:
+            crit_lines = "\n".join(f"- {c}" for c in criteria if c)
+            full_desc += f"\n\n## Acceptance Criteria\n{crit_lines}"
+        priority_map = {
+            "urgent": "urgent", "high": "high", "medium": "medium", "low": "low",
+            "P0-Critical": "urgent", "P1-High": "high", "P2-Medium": "medium", "P3-Low": "low",
+        }
+        priority = priority_map.get(data.get("priority", "medium"), "medium")
+        issue, created = api.upsert_issue(
+            external_id=data.get("id", ""),
+            title=title,
+            description=full_desc,
+            state_name="Backlog",
+            category=category,
+            priority=priority,
+        )
+        plane_id = issue.get("id", "") if isinstance(issue, dict) else ""
+        _roadmap_create(data)
+        return {"success": True, "plane_id": plane_id, "id": data.get("id", ""), "created": created}
+    except Exception as exc:
+        return {"success": False, "error": str(exc)[:200]}
+
+
+# ── Network monitoring helpers ────────────────────────────────────────────────
+
+def _network_topology(force: bool = False) -> dict:
+    """Return cached network topology (runs nmap or ping sweep)."""
+    try:
+        from framework.network_scanner import get_scanner
+        return get_scanner().scan(force=force)
+    except Exception as exc:
+        return {"error": str(exc)[:200], "nodes": [], "edges": []}
+
+
+def _network_opnsense() -> dict:
+    """OPNsense firewall summary — returns empty dict if not configured."""
+    try:
+        from framework.opnsense_client import OPNsenseClient
+        api_key = os.environ.get("OPNSENSE_API_KEY", "")
+        if not api_key:
+            return {"configured": False}
+        return {**OPNsenseClient.from_env().summary(), "configured": True}
+    except Exception as exc:
+        return {"configured": True, "error": str(exc)[:200]}
+
+
+def _network_qnap() -> dict:
+    """QNAP NAS summary — returns empty dict if not configured."""
+    try:
+        from framework.qnap_client import QNAPClient
+        if not os.environ.get("QNAP_PASSWORD"):
+            return {"configured": False}
+        return {**QNAPClient.from_env().summary(), "configured": True}
+    except Exception as exc:
+        return {"configured": True, "error": str(exc)[:200]}
+
+
+def _network_isp() -> dict:
+    """ISP / latency monitor status."""
+    try:
+        from domains.isp_monitor import get_monitor
+        mon = get_monitor()
+        if not mon._running:
+            mon.start()
+        return mon.status()
+    except Exception as exc:
+        return {"error": str(exc)[:200]}
+
+
+def _network_isp_history() -> dict:
+    """Recent ISP latency history (last 60 samples)."""
+    try:
+        from domains.isp_monitor import get_monitor
+        return {"history": get_monitor().recent_history(60)}
+    except Exception as exc:
+        return {"error": str(exc)[:200], "history": []}
+
+
+def _network_overview() -> dict:
+    """Fast aggregated network status for the tab header."""
+    topo = _cached("net_topo", _network_topology, 300)[0]
+    isp  = _cached("net_isp",  _network_isp,      60)[0]
+    return {
+        "hosts_alive": topo.get("alive", 0),
+        "hosts_total": topo.get("total", 0),
+        "internet_up": isp.get("internet_up", None),
+        "gateway_rtt": isp.get("gateway_rtt_ms"),
+        "external_rtt": isp.get("external_rtt_ms"),
+        "subnet": topo.get("subnet", "192.168.10.0/24"),
+    }
+
+
+def _roadmap_scan() -> dict:
+    """Scan all RM-*.md files in the repo and return deduplication report."""
+    try:
+        sys.path.insert(0, str(REPO_ROOT / "bin"))
+        from scan_all_roadmap_docs import scan_roadmap_docs_api  # type: ignore
+        return scan_roadmap_docs_api()
+    except Exception as exc:
+        return {"error": str(exc)[:200]}
+
+
+def _roadmap_import(data: dict) -> dict:
+    """Bulk-import a list of roadmap items into Plane, skipping already-existing IDs."""
+    items = data.get("items", [])
+    if not items:
+        return {"error": "No items provided", "imported": 0, "skipped": 0}
+    try:
+        from framework.plane_connector import PlaneAPI
+        api = PlaneAPI()
+        if not api.health_check():
+            return {"error": "Plane not reachable", "imported": 0, "skipped": 0}
+
+        # Build set of already-known external IDs (from name prefix [RM-XXX])
+        known: set[str] = set()
+        cursor: str | None = None
+        while True:
+            batch, cursor = api.list_issues(cursor=cursor, page_size=100)
+            for iss in batch:
+                name = iss.get("name", "")
+                import re as _re
+                m = _re.match(r"^\[(RM-[A-Z][A-Z0-9-]*-\d+)\]", name)
+                if m:
+                    known.add(m.group(1))
+            if not cursor:
+                break
+
+        imported = skipped = errors = 0
+        for item in items:
+            item_id = item.get("id", "")
+            if item_id in known:
+                skipped += 1
+                continue
+            try:
+                priority_map = {
+                    "urgent": "urgent", "high": "high", "medium": "medium",
+                    "low": "low", "p0": "urgent", "p1": "high", "p2": "medium", "p3": "low",
+                }
+                priority = priority_map.get(item.get("priority", "medium").lower(), "medium")
+                api.upsert_issue(
+                    external_id=item_id,
+                    title=item.get("title", item_id),
+                    description=item.get("description", ""),
+                    state_name=item.get("status", "Backlog"),
+                    category=item.get("category", "UTIL"),
+                    priority=priority,
+                )
+                imported += 1
+                known.add(item_id)
+                time.sleep(0.25)
+            except Exception as exc:
+                errors += 1
+                if errors > 10:
+                    break  # stop hammering on repeated failures
+
+        fast = api.get_stats_fast()
+        return {
+            "imported":       imported,
+            "skipped":        skipped,
+            "errors":         errors,
+            "total_in_plane": fast.get("total", 0),
+        }
+    except Exception as exc:
+        return {"error": str(exc)[:200], "imported": 0, "skipped": 0}
+
+
+def _roadmap_decompose(data: dict) -> dict:
+    """Decompose a roadmap item into subtasks and enqueue the plan."""
+    item = data.get("item")
+    if not item:
+        return {"error": "No item provided"}
+    enqueue = data.get("enqueue", False)
+    try:
+        from domains.task_decomposer import TaskDecomposer
+        td = TaskDecomposer()
+        plan = td.create_execution_plan(item)
+        result: dict = {"plan": plan, "enqueued": False, "task_ids": []}
+        if enqueue:
+            from framework.execution_queue import get_queue
+            q = get_queue()
+            task_ids = q.enqueue_plan(plan, priority=item.get("priority", "medium"))
+            result["enqueued"] = True
+            result["task_ids"] = task_ids
+        return result
+    except Exception as exc:
+        return {"error": str(exc)[:300]}
+
+
+def _execution_claim_next(data: dict) -> dict:
+    """Claim the next pending task from the execution queue."""
+    engine = data.get("engine", "claude")
+    try:
+        from framework.execution_queue import get_queue
+        task = get_queue().claim_next_task(engine)
+        return {"task": task}
+    except Exception as exc:
+        return {"error": str(exc)[:200]}
+
+
+def _execution_complete(data: dict) -> dict:
+    """Mark a claimed task as complete or failed."""
+    task_id = data.get("task_id")
+    if not task_id:
+        return {"error": "task_id required"}
+    success = bool(data.get("success", True))
+    try:
+        from framework.execution_queue import get_queue
+        updated = get_queue().complete_task(
+            task_id,
+            success=success,
+            result=data.get("result"),
+            error=data.get("error"),
+        )
+        return {"updated": updated}
+    except Exception as exc:
+        return {"error": str(exc)[:200]}
+
+
+def _execution_queue_status() -> dict:
+    """Return current queue counts and recent task list."""
+    try:
+        from framework.execution_queue import get_queue
+        return get_queue().get_queue_status()
+    except Exception as exc:
+        return {"error": str(exc)[:200], "pending": 0, "claimed": 0, "done": 0, "failed": 0}
+
+
+def _aider_worker_status() -> dict:
+    try:
+        from bin.aider_worker import get_status
+        return get_status()
+    except Exception as exc:
+        return {"error": str(exc)[:200]}
+
+
+def _docker_containers() -> list:
+    try:
+        from domains.docker_monitor import get_monitor
+        return get_monitor().get_all_containers()
+    except Exception as exc:
+        return [{"error": str(exc)[:200]}]
+
+
+def _docker_security() -> dict:
+    try:
+        from domains.docker_monitor import get_monitor
+        return get_monitor().get_security_posture()
+    except Exception as exc:
+        return {"error": str(exc)[:200], "score": 0, "issues": []}
+
+
+def _docker_snapshot() -> dict:
+    try:
+        from domains.docker_monitor import get_monitor
+        return get_monitor().get_snapshot()
+    except Exception as exc:
+        return {"error": str(exc)[:200], "containers": [], "summary": {}}
+
+
+def _zabbix_status() -> dict:
+    """Check if Zabbix web UI is reachable on :10080."""
+    import urllib.request as _urllib_req
+    try:
+        req = _urllib_req.Request(
+            "http://localhost:10080/",
+            headers={"User-Agent": "dashboard-healthcheck/1.0"},
+            method="GET",
+        )
+        with _urllib_req.urlopen(req, timeout=4) as r:
+            reachable = r.status in (200, 302, 301)
+        return {"reachable": reachable, "url": "http://localhost:10080"}
+    except Exception as exc:
+        return {"reachable": False, "url": "http://localhost:10080", "error": str(exc)[:120]}
+
+
+def _aider_worker_trigger() -> dict:
+    try:
+        from bin.aider_worker import get_worker
+        msg = get_worker().trigger_now()
+        return {"ok": True, "message": msg}
+    except Exception as exc:
+        return {"ok": False, "error": str(exc)[:200]}
+
+
 def _roadmap_create(data: dict) -> dict:
     """Create a new roadmap item markdown file."""
     if not ITEMS_DIR.exists():
@@ -1654,6 +2133,129 @@ def _embed_widget() -> dict:
     }
 
 
+# ── Analytics / metrics endpoints ────────────────────────────────────────────
+
+def _analytics_dependencies() -> dict:
+    """Dependency graph data from dependency_analyzer."""
+    try:
+        from domains.dependency_analyzer import DependencyAnalyzer
+        da = DependencyAnalyzer(str(ITEMS_DIR))
+        da.load_items()
+        da.build_graph()
+        return {
+            "graph": da.to_d3_json(),
+            "unblocked": da.get_unblocked_items(),
+            "critical_path": da.find_critical_path(),
+            "bottlenecks": da.find_bottlenecks(),
+            "stats": {"total": len(da._nodes), "with_deps": sum(1 for n in da._nodes.values() if n.dependencies)}
+        }
+    except Exception as e:
+        return {"error": str(e), "graph": {"nodes": [], "links": []}}
+
+def _analytics_effort() -> dict:
+    """Effort velocity and sprint forecast from effort_predictor."""
+    try:
+        from domains.effort_predictor import EffortPredictor
+        ep = EffortPredictor()
+        return {
+            "velocity_trend": ep.get_velocity_trend(),
+            "sprint_capacity": ep.get_sprint_capacity("current").to_dict() if hasattr(ep.get_sprint_capacity("current"), "to_dict") else {},
+        }
+    except Exception as e:
+        return {"error": str(e)}
+
+def _analytics_priorities() -> dict:
+    """Priority rankings from priority_engine."""
+    try:
+        from domains.priority_engine import PriorityEngine, PriorityScore
+        import dataclasses
+        pe = PriorityEngine(items_dir=str(ITEMS_DIR))
+        pe.load_items()
+        ranked = pe.rank_all()[:100]
+        quick_wins = pe.get_quick_wins(limit=20)
+        return {
+            "ranked": [dataclasses.asdict(s) for s in ranked],
+            "quick_wins": [dataclasses.asdict(s) for s in quick_wins],
+        }
+    except Exception as e:
+        return {"error": str(e)}
+
+def _analytics_progress() -> dict:
+    """Progress analytics and burndown from progress_analytics."""
+    try:
+        from domains.progress_analytics import ProgressAnalytics
+        pa = ProgressAnalytics(str(ITEMS_DIR))
+        pa.load_completion_history()
+        return {
+            "dashboard": pa.to_dashboard_data(),
+            "burndown": pa.get_burndown(),
+            "velocity_trend": pa.get_velocity_trend(),
+            "forecast": pa.forecast_completion(),
+        }
+    except Exception as e:
+        return {"error": str(e)}
+
+def _media_quality_scores() -> dict:
+    """Quality scores from quality_analyzer."""
+    try:
+        from domains.quality_analyzer import QualityAnalyzer
+        qa = QualityAnalyzer()
+        return qa.get_library_summary()
+    except Exception as e:
+        return {"error": str(e), "profiles": []}
+
+def _media_bandwidth_data() -> dict:
+    """Bandwidth stats from bandwidth_manager."""
+    try:
+        from domains.bandwidth_manager import BandwidthManager
+        bm = BandwidthManager()
+        return {
+            "current_mbps": bm.get_current_usage_mbps(),
+            "limit_mbps": bm.get_current_limit(),
+            "throttle_params": bm.get_throttle_params(),
+            "should_throttle": bm.should_throttle(),
+            "is_business_hours": bm.is_business_hours(),
+        }
+    except Exception as e:
+        return {"error": str(e)}
+
+def _media_recommendations_ai() -> dict:
+    """AI-powered content recommendations from content_recommender."""
+    try:
+        from domains.content_recommender import ContentRecommender
+        cr = ContentRecommender()
+        return {"recommendations": cr.get_recommendations(limit=20)}
+    except Exception as e:
+        return {"error": str(e), "recommendations": []}
+
+def _training_viz_data() -> dict:
+    """Training visualization data from training_viz."""
+    try:
+        from domains.training_viz import TrainingViz
+        tv = TrainingViz()
+        return tv.get_dashboard_payload()
+    except Exception as e:
+        return {"error": str(e)}
+
+def _system_metrics_data() -> dict:
+    """Prometheus-format metrics from metrics_system."""
+    try:
+        from framework.metrics_system import MetricsRegistry
+        reg = MetricsRegistry.instance()
+        metrics_out = {}
+        for name, m in reg._metrics.items():
+            if hasattr(m, 'get'):
+                metrics_out[name] = m.get()
+            elif hasattr(m, '_value'):
+                metrics_out[name] = m._value
+        return {
+            "metrics": metrics_out,
+            "prometheus": reg.to_prometheus_text(),
+        }
+    except Exception as e:
+        return {"error": str(e), "metrics": {}}
+
+
 # ── HTTP handler ──────────────────────────────────────────────────────────────
 
 class Handler(BaseHTTPRequestHandler):
@@ -1736,6 +2338,14 @@ class Handler(BaseHTTPRequestHandler):
             d, from_cache, age = _cached("media_downloads", _media_downloads)
             if from_cache: d = dict(d); d["_cached"] = True; d["_cache_age"] = age
             self._serve_json(d)
+        elif path == "/api/seedbox/status":
+            d, from_cache, age = _cached("seedbox_status", _seedbox_status)
+            if from_cache: d = dict(d); d["_cached"] = True; d["_cache_age"] = age
+            self._serve_json(d)
+        elif path == "/api/seedbox/queue":
+            d, from_cache, age = _cached("seedbox_queue", _seedbox_queue)
+            if from_cache: d = dict(d); d["_cached"] = True; d["_cache_age"] = age
+            self._serve_json(d)
         elif path == "/api/media/issues":
             d, from_cache, age = _cached("media_issues", _media_issues)
             if from_cache: d = dict(d); d["_cached"] = True; d["_cache_age"] = age
@@ -1776,6 +2386,94 @@ class Handler(BaseHTTPRequestHandler):
             self._serve_json(detail if detail else {"error": "not found"})
         elif path == "/api/plane/status":
             self._serve_json(_plane_status())
+        elif path == "/api/plane/stats":
+            d, from_cache, age = _cached("plane_stats", _plane_stats, ttl=30)
+            if from_cache: d = dict(d); d["_cached"] = True; d["_cache_age"] = age
+            self._serve_json(d)
+        elif path == "/api/analytics/dependencies":
+            d, from_cache, age = _cached("analytics_deps", _analytics_dependencies, ttl=120)
+            if from_cache: d = dict(d); d["_cached"] = True; d["_cache_age"] = age
+            self._serve_json(d)
+        elif path == "/api/analytics/effort":
+            d, from_cache, age = _cached("analytics_effort", _analytics_effort, ttl=300)
+            if from_cache: d = dict(d); d["_cached"] = True; d["_cache_age"] = age
+            self._serve_json(d)
+        elif path == "/api/analytics/priorities":
+            d, from_cache, age = _cached("analytics_priorities", _analytics_priorities, ttl=120)
+            if from_cache: d = dict(d); d["_cached"] = True; d["_cache_age"] = age
+            self._serve_json(d)
+        elif path == "/api/analytics/progress":
+            d, from_cache, age = _cached("analytics_progress", _analytics_progress, ttl=60)
+            if from_cache: d = dict(d); d["_cached"] = True; d["_cache_age"] = age
+            self._serve_json(d)
+        elif path == "/api/media/quality-scores":
+            d, from_cache, age = _cached("media_quality", _media_quality_scores, ttl=300)
+            if from_cache: d = dict(d); d["_cached"] = True; d["_cache_age"] = age
+            self._serve_json(d)
+        elif path == "/api/media/bandwidth":
+            self._serve_json(_media_bandwidth_data())
+        elif path == "/api/media/recommendations-ai":
+            d, from_cache, age = _cached("media_recs_ai", _media_recommendations_ai, ttl=600)
+            if from_cache: d = dict(d); d["_cached"] = True; d["_cache_age"] = age
+            self._serve_json(d)
+        elif path == "/api/training/viz":
+            d, from_cache, age = _cached("training_viz", _training_viz_data, ttl=30)
+            if from_cache: d = dict(d); d["_cached"] = True; d["_cache_age"] = age
+            self._serve_json(d)
+        elif path == "/api/metrics":
+            self._serve_json(_system_metrics_data())
+        elif path == "/api/dev/status":
+            self._serve_json(_dev_status())
+        elif path == "/api/execution/queue-status":
+            self._serve_json(_execution_queue_status())
+        elif path == "/api/aider/worker-status":
+            self._serve_json(_aider_worker_status())
+        elif path == "/api/zabbix/status":
+            self._serve_json(_zabbix_status())
+        elif path == "/api/docker/containers":
+            self._serve_json(_docker_containers())
+        elif path == "/api/docker/security":
+            self._serve_json(_docker_security())
+        elif path == "/api/docker/status":
+            self._serve_json(_docker_snapshot())
+        elif path == "/api/plane/items":
+            from urllib.parse import parse_qs
+            qs = parse_qs(urlparse(self.path).query)
+            self._serve_json(_plane_items(qs))
+        elif path == "/api/plane/states":
+            with _cache_lock:
+                sm = _resp_cache.get("_plane_state_map")
+            if sm and time.monotonic() < sm[1]:
+                self._serve_json({"states": [{"id": k, "name": v} for k, v in sm[0].items()]})
+            else:
+                # Cache cold — fetch now and cache for next time
+                try:
+                    api = _get_plane_api()
+                    if api and api.api_token and api.project_id:
+                        _sts = api.list_states()
+                        _sm_data = {s["id"]: s["name"] for s in _sts}
+                        with _cache_lock:
+                            _resp_cache["_plane_state_map"] = (_sm_data, time.monotonic() + 3600, time.time())
+                        self._serve_json({"states": [{"id": k, "name": v} for k, v in _sm_data.items()]})
+                    else:
+                        self._serve_json({"states": [], "warming": True})
+                except Exception:
+                    self._serve_json({"states": [], "warming": True})
+        elif path == "/api/network/overview":
+            self._serve_json(_network_overview())
+        elif path == "/api/network/topology":
+            force = urlparse(self.path).query == "force=1"
+            self._serve_json(_cached("net_topo", lambda: _network_topology(force), 300)[0])
+        elif path == "/api/network/opnsense":
+            self._serve_json(_cached("net_opnsense", _network_opnsense, 30)[0])
+        elif path == "/api/network/qnap":
+            self._serve_json(_cached("net_qnap", _network_qnap, 60)[0])
+        elif path == "/api/network/isp":
+            self._serve_json(_network_isp())
+        elif path == "/api/network/isp/history":
+            self._serve_json(_network_isp_history())
+        elif path.startswith("/plane-proxy"):
+            self._do_proxy_plane("GET")
         else:
             self.send_response(404)
             self.end_headers()
@@ -1851,9 +2549,81 @@ class Handler(BaseHTTPRequestHandler):
             result = _plane_sync_from()
             _audit("plane_sync_from", "plane", "ok" if result.get("ok") else "fail", ip)
             self._serve_json(result)
+        elif path == "/api/development/generate":
+            self._serve_json(_dev_generate(body))
+        elif path == "/api/development/apply":
+            self._serve_json(_dev_apply(body))
+        elif path == "/api/roadmap/ai-generate":
+            self._serve_json(_roadmap_ai_generate(body))
+        elif path == "/api/roadmap/create-in-plane":
+            result = _roadmap_create_in_plane(body)
+            if result.get("success"):
+                _audit("roadmap_item_created", body.get("id", ""), "ok", ip)
+            self._serve_json(result)
+        elif path == "/api/roadmap/scan":
+            self._serve_json(_roadmap_scan())
+        elif path == "/api/roadmap/import":
+            self._serve_json(_roadmap_import(body))
+        elif path == "/api/roadmap/decompose":
+            self._serve_json(_roadmap_decompose(body))
+        elif path == "/api/execution/next-task":
+            self._serve_json(_execution_claim_next(body))
+        elif path == "/api/execution/complete":
+            self._serve_json(_execution_complete(body))
+        elif path == "/api/aider/trigger":
+            self._serve_json(_aider_worker_trigger())
+        elif path == "/api/network/scan":
+            self._serve_json(_network_topology(force=True))
+        elif path.startswith("/plane-proxy"):
+            self._do_proxy_plane("POST")
         else:
             self.send_response(404)
             self.end_headers()
+
+    def _do_proxy_plane(self, method: str) -> None:
+        """Proxy any request to Plane on :3001, stripping X-Frame-Options: DENY."""
+        import http.client as _hc
+        parsed    = urlparse(self.path)
+        # Strip "/plane-proxy" prefix but keep the rest (including leading "/")
+        proxy_path = parsed.path[len("/plane-proxy"):]
+        if not proxy_path:
+            proxy_path = "/"
+        if parsed.query:
+            proxy_path += "?" + parsed.query
+
+        body: bytes | None = None
+        length = int(self.headers.get("Content-Length", 0))
+        if length:
+            body = self.rfile.read(length)
+
+        fwd: dict = {"Host": "localhost:3001"}
+        for h in ("Accept", "Accept-Language", "Accept-Encoding", "Content-Type",
+                  "Cookie", "Authorization", "Referer"):
+            v = self.headers.get(h)
+            if v:
+                fwd[h] = v
+
+        try:
+            conn = _hc.HTTPConnection("localhost", 3001, timeout=20)
+            conn.request(method, proxy_path, body, fwd)
+            resp     = conn.getresponse()
+            raw_data = resp.read()
+
+            STRIP = {"x-frame-options", "content-security-policy", "transfer-encoding"}
+            headers  = [(k, v) for k, v in resp.getheaders() if k.lower() not in STRIP]
+
+            self.send_response(resp.status)
+            for k, v in headers:
+                self.send_header(k, v)
+            self.send_header("Content-Security-Policy", "frame-ancestors *")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            self.wfile.write(raw_data)
+        except Exception as exc:
+            self.send_response(502)
+            self.send_header("Content-Type", "application/json")
+            self.end_headers()
+            self.wfile.write(json.dumps({"error": f"Proxy error: {exc}"}).encode())
 
     def do_OPTIONS(self):
         self.send_response(204)
@@ -1939,19 +2709,152 @@ def _selfheal_config() -> dict:
 
 # ── Plane helpers ─────────────────────────────────────────────────────────────
 
+_plane_api_singleton = None
+_plane_api_lock = threading.Lock()
+
+
 def _get_plane_api():
-    """Return a configured PlaneAPI instance (or None if not configured)."""
+    """Return a shared PlaneAPI singleton (reuses session and cache)."""
+    global _plane_api_singleton
+    if _plane_api_singleton is not None:
+        return _plane_api_singleton
+    with _plane_api_lock:
+        if _plane_api_singleton is not None:
+            return _plane_api_singleton
+        try:
+            from framework.plane_connector import PlaneAPI
+            api = PlaneAPI(
+                base_url   = os.environ.get("PLANE_URL",        "http://localhost:8000"),
+                api_token  = os.environ.get("PLANE_API_TOKEN",  ""),
+                workspace  = os.environ.get("PLANE_WORKSPACE",  "iap"),
+                project_id = os.environ.get("PLANE_PROJECT_ID", ""),
+            )
+            _plane_api_singleton = api
+        except Exception:
+            pass
+    return _plane_api_singleton
+
+
+def _plane_fetch_all_issues(api, state_id_to_name: dict) -> list:
+    """Fetch all Plane issues and normalize to display dicts. Cached 5 min."""
+    _key = "_plane_all_issues"
+    with _cache_lock:
+        cached = _resp_cache.get(_key)
+    if cached and time.monotonic() < cached[1]:
+        return cached[0]
+
+    # Fetch all issues in one shot (Plane CE supports per_page up to 1000)
+    data = api._get(api._proj_url("/issues/"), {"per_page": 1000})
+    all_raw: list = data.get("results", []) if isinstance(data, dict) else []
+
+    # Normalize
+    _id_re = re.compile(r"^\[(RM-[A-Z][A-Z0-9-]*-\d+)\]\s*")
+    items: list = []
+    for iss in all_raw:
+        name  = iss.get("name", "")
+        m     = _id_re.match(name)
+        rm_id = m.group(1) if m else ""
+        title = name[m.end():].strip() if m else name
+        sid   = iss.get("state", "")
+        sname = state_id_to_name.get(sid, "Unknown") if state_id_to_name else "Unknown"
+        items.append({
+            "id":       iss.get("id"),
+            "rm_id":    rm_id,
+            "title":    title,
+            "state":    sname,
+            "priority": iss.get("priority", "none"),
+            "_name_lc": name.lower(),  # for search
+        })
+
+    with _cache_lock:
+        _resp_cache[_key] = (items, time.monotonic() + 300, time.time())
+    return items
+
+
+def _plane_items(params: dict) -> dict:
+    """Paginated Plane issue list with state/search filtering done client-side.
+
+    Plane CE API ignores ?state= and ?search= filters, so we cache all issues
+    and filter locally. Full fetch is cached for 5 minutes.
+    """
+    api = _get_plane_api()
+    if not api or not api.api_token or not api.project_id:
+        return {"error": "Plane not configured", "items": [], "total": 0}
     try:
-        from framework.plane_connector import PlaneAPI
-        api = PlaneAPI(
-            base_url   = os.environ.get("PLANE_URL",        "http://localhost:8000"),
-            api_token  = os.environ.get("PLANE_API_TOKEN",  ""),
-            workspace  = os.environ.get("PLANE_WORKSPACE",  "iap"),
-            project_id = os.environ.get("PLANE_PROJECT_ID", ""),
-        )
-        return api
-    except Exception:
-        return None
+        per_page     = min(int(params.get("per_page", ["100"])[0]), 500)
+        page         = max(1, int(params.get("page",     ["1"])[0]))
+        search       = (params.get("q",     [None])[0] or "").strip().lower()
+        state_filter = (params.get("state", [None])[0] or "").strip()
+
+        # Ensure state map is warm
+        with _cache_lock:
+            sm = _resp_cache.get("_plane_state_map")
+        state_id_to_name: dict = sm[0] if (sm and time.monotonic() < sm[1]) else {}
+        if not state_id_to_name:
+            _sts = api.list_states()
+            state_id_to_name = {s["id"]: s["name"] for s in _sts}
+            with _cache_lock:
+                _resp_cache["_plane_state_map"] = (state_id_to_name, time.monotonic() + 3600, time.time())
+
+        all_items = _plane_fetch_all_issues(api, state_id_to_name)
+
+        # Client-side filter
+        filtered = all_items
+        if state_filter and state_filter.lower() not in ("all", ""):
+            filtered = [i for i in filtered if i["state"].lower() == state_filter.lower()]
+        if search:
+            filtered = [i for i in filtered if search in i["_name_lc"]]
+
+        total = len(filtered)
+        start = (page - 1) * per_page
+        page_items = [
+            {k: v for k, v in i.items() if k != "_name_lc"}
+            for i in filtered[start:start + per_page]
+        ]
+
+        return {"items": page_items, "total": total, "page": page, "per_page": per_page}
+    except Exception as exc:
+        return {"error": str(exc)[:200], "items": [], "total": 0}
+
+
+def _plane_stats() -> dict:
+    """Roadmap stats for dashboard cards.
+
+    Fast path: single API call for total, uses cached state_map for breakdown.
+    Background: if by_state cache is cold, kicks off a lightweight paginated
+    count (fetches issues 100 at a time, only reading state field).
+    """
+    api = _get_plane_api()
+    if not api or not api.api_token or not api.project_id:
+        return {"error": "Plane not configured"}
+    try:
+        fast = api.get_stats_fast()
+        total = fast.get("total", 0)
+
+        # Pull state_map from server cache (warmed at startup)
+        with _cache_lock:
+            sm = _resp_cache.get("_plane_state_map")
+        state_id_to_name: dict = sm[0] if (sm and time.monotonic() < sm[1]) else {}
+
+        # Derive by_state from cached all-issues list if available
+        with _cache_lock:
+            _all_cached = _resp_cache.get("_plane_all_issues")
+        by_state: dict = {}
+        if _all_cached and time.monotonic() < _all_cached[1]:
+            for item in _all_cached[0]:
+                sname = item.get("state", "Unknown")
+                by_state[sname] = by_state.get(sname, 0) + 1
+
+        return {
+            "total":             total,
+            "done":              by_state.get("Done", 0),
+            "in_progress":       by_state.get("In Progress", 0),
+            "backlog":           by_state.get("Backlog", 0) + by_state.get("Todo", 0),
+            "velocity_per_week": "—",
+            "by_state":          by_state,
+        }
+    except Exception as exc:
+        return {"error": str(exc)[:120]}
 
 
 def _plane_status() -> dict:
@@ -1968,16 +2871,15 @@ def _plane_status() -> dict:
     try:
         if not api.health_check():
             return {"reachable": False, "plane_url": api.base_url}
-        stats = api.get_stats()
+        fast = api.get_stats_fast()
         return {
             "reachable":    True,
             "configured":   True,
             "plane_url":    api.base_url,
             "workspace":    api.workspace,
             "project_id":   api.project_id,
-            "total_issues": stats["total"],
-            "by_state":     stats["by_state"],
-            "last_sync":    None,  # populated by sync scripts
+            "total_issues": fast["total"],
+            "last_sync":    None,
         }
     except Exception as exc:
         return {"reachable": False, "error": str(exc)[:120]}
@@ -2047,7 +2949,43 @@ def main():
         except Exception as e:
             print(f"Warning: could not start self-healing daemon: {e}")
 
-    server = HTTPServer((args.host, args.port), Handler)
+    # Warm Plane state cache in background so first /api/plane/items is fast
+    def _warm_plane_state_cache():
+        import time as _time
+        _time.sleep(20)  # wait for selfheal and other startup API calls to settle
+        try:
+            api = _get_plane_api()
+            if api and api.api_token and api.project_id:
+                states = api.list_states()
+                with _cache_lock:
+                    _resp_cache["_plane_state_map"] = (
+                        {s["id"]: s["name"] for s in states},
+                        time.monotonic() + 3600,
+                        time.time(),
+                    )
+        except Exception:
+            pass
+    threading.Thread(target=_warm_plane_state_cache, daemon=True).start()
+
+    # Start ISP latency monitor
+    try:
+        from domains.isp_monitor import get_monitor as _get_isp_monitor
+        _get_isp_monitor().start()
+    except Exception:
+        pass
+
+    # Start overnight aider worker
+    try:
+        from bin.aider_worker import get_worker as _get_aider_worker
+        _get_aider_worker().start()
+        print("Aider worker started (runs daily at 02:00)")
+    except Exception as e:
+        print(f"Warning: could not start aider worker: {e}")
+
+    class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
+        daemon_threads = True
+
+    server = ThreadedHTTPServer((args.host, args.port), Handler)
     print(f"Dashboard: http://localhost:{args.port}/")
     print(f"API:       http://localhost:{args.port}/api/status")
     print("Ctrl+C to stop")
