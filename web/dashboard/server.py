@@ -71,7 +71,20 @@ _CACHE_TTL = {
     "infra_status":     10,
     "system_stats":     5,
     "roadmap_stats":    60,
+    "selfheal_status":  30,
 }
+
+# ── Self-healing daemon integration ──────────────────────────────────────────
+from bin.selfheal import (  # noqa: E402
+    run_heal_cycle as _run_heal_cycle,
+    start_daemon_thread as _start_heal_daemon,
+    stop_daemon as _stop_heal_daemon,
+    ai_diagnose as _ai_diagnose,
+    _daemon_state as _heal_state,
+)
+from framework.heal_log import recent_fixes as _recent_fixes, tail as _heal_tail
+
+_heal_thread = None
 
 
 def _cached(key: str, fn, ttl: float | None = None) -> tuple[object, bool, int]:
@@ -968,31 +981,50 @@ def _media_pipeline() -> dict:
     prowlarr, cb_p = _breakers["prowlarr"].call(_fetch_prowlarr, {"up": False})
     qnap,     cb_q = _breakers["qnap"].call(_fetch_qnap,       {"up": False})
 
-    # Seedbox and Plex: keep lightweight health-only checks
-    try:
+    # Seedbox: runs through circuit breaker; MediaDomain._seedbox_safe() enforces
+    # a wall-clock timeout so DNS hangs never block this function.
+    def _fetch_seedbox():
         from domains.media import MediaDomain
-        domain = MediaDomain()
-        full   = domain.get_stats()
-        sb     = full.get("seedbox", {})
-        plex_d = full.get("plex", {})
-        seedbox = {
+        sb = MediaDomain()._seedbox_safe(timeout=10.0)
+        status = sb.get("status", "unknown")
+        if status not in ("connected",):
+            raise ConnectionError(f"seedbox {status}: {sb.get('message', '')}")
+        return {
             "recent_files": sb.get("recent_files", 0),
             "total_files":  sb.get("total_files", 0),
             "total_gb":     sb.get("total_size_gb", 0),
-            "status":       sb.get("status", "unknown"),
-            "up":           full.get("health", {}).get("seedbox", False),
+            "status":       status,
+            "up":           True,
         }
-        plex = {
-            "libraries":      len(plex_d.get("libraries", [])),
-            "active_streams": plex_d.get("active_streams", 0),
-            "up":             full.get("health", {}).get("plex", False),
-        }
-        # Patch sonarr upcoming from domain if circuit is closed
+
+    _seedbox_fallback = {"up": False, "status": "offline"}
+    seedbox, cb_sb = _breakers["seedbox"].call(_fetch_seedbox, _seedbox_fallback)
+    if seedbox is None:
+        seedbox = _seedbox_fallback
+
+    # Plex: lightweight health-only check; isolated so seedbox can't drag it down
+    plex: dict = {"up": False}
+    sonarr_upcoming = 0
+    try:
+        from domains.media import MediaDomain
+        domain = MediaDomain()
+        plex_conn = domain._plex()
+        plex_up   = plex_conn.health_check()
+        if plex_up:
+            sessions  = plex_conn.get_active_sessions()
+            libraries = plex_conn.get_library_stats()
+            plex = {"libraries": len(libraries), "active_streams": len(sessions), "up": True}
+        # Sonarr upcoming (non-critical — ignore if it fails)
         if not cb_s and isinstance(sonarr, dict):
-            sonarr["upcoming"] = full.get("sonarr", {}).get("upcoming", 0)
+            try:
+                sonarr_upcoming = len(domain._sonarr().get_calendar(days=7))
+            except Exception:
+                pass
     except Exception:
-        seedbox = {"up": False}
-        plex    = {"up": False}
+        pass
+
+    if not cb_s and isinstance(sonarr, dict):
+        sonarr["upcoming"] = sonarr_upcoming
 
     return {
         "sonarr":   sonarr   or {"up": False},
@@ -1002,10 +1034,11 @@ def _media_pipeline() -> dict:
         "seedbox":  seedbox,
         "qnap":     qnap     or {"up": False},
         "_circuit": {
-            "sonarr":   "open" if cb_s else "closed",
-            "radarr":   "open" if cb_r else "closed",
-            "prowlarr": "open" if cb_p else "closed",
-            "qnap":     "open" if cb_q else "closed",
+            "sonarr":   "open" if cb_s  else "closed",
+            "radarr":   "open" if cb_r  else "closed",
+            "prowlarr": "open" if cb_p  else "closed",
+            "qnap":     "open" if cb_q  else "closed",
+            "seedbox":  "open" if cb_sb else "closed",
         },
     }
 
@@ -1629,6 +1662,11 @@ class Handler(BaseHTTPRequestHandler):
             d, from_cache, age = _cached("system_stats", _system_stats)
             if from_cache: d = dict(d); d["_cached"] = True; d["_cache_age"] = age
             self._serve_json(d)
+        elif path == "/api/selfheal/status":
+            d, from_cache, age = _cached("selfheal_status", _selfheal_status)
+            self._serve_json(d)
+        elif path == "/api/selfheal/config":
+            self._serve_json(_selfheal_config())
         elif path == "/api/roadmap/search":
             from urllib.parse import parse_qs, urlparse as _up
             qs = parse_qs(_up(self.path).query)
@@ -1688,6 +1726,17 @@ class Handler(BaseHTTPRequestHandler):
                 self._serve_json({"ok": True, "message": f"Reset {svc} circuit breaker"})
             else:
                 self._serve_json({"ok": False, "message": f"Unknown service: {svc}"})
+        elif path == "/api/selfheal/run":
+            apply_fixes = body.get("apply_fixes", True)
+            result = _selfheal_run(apply_fixes=apply_fixes)
+            if result.get("ok"):
+                fixes = len(result.get("report", {}).get("fixes_applied", []))
+                _audit("selfheal_run", "media", "ok", ip, f"fixes={fixes}")
+            self._serve_json(result)
+        elif path == "/api/selfheal/diagnose":
+            result = _selfheal_diagnose(body)
+            _audit("ai_diagnose", body.get("issue", "")[:60], "ok", ip)
+            self._serve_json(result)
         elif path == "/api/chat/message":
             self._serve_json(_chat_message(body.get("message", ""), body.get("context")))
         elif path == "/api/roadmap/move":
@@ -1734,11 +1783,66 @@ class Handler(BaseHTTPRequestHandler):
 
 # ── Entry point ───────────────────────────────────────────────────────────────
 
+def _selfheal_status() -> dict:
+    """Current daemon state + recent fixes + last report summary."""
+    state = dict(_heal_state)
+    if state.get("last_report"):
+        r = state["last_report"]
+        state["last_report"] = {
+            "counts":   r.get("counts", {}),
+            "services": r.get("services", {}),
+            "issues":   r.get("issues", []),
+            "fixes_applied": r.get("fixes_applied", []),
+        }
+    state["recent_fixes"]   = _recent_fixes(10)
+    state["heal_log_tail"]  = _heal_tail(30)
+    return state
+
+
+def _selfheal_run(apply_fixes: bool = True) -> dict:
+    """Trigger one manual heal cycle."""
+    try:
+        report = _run_heal_cycle(apply_fixes=apply_fixes)
+        with _cache_lock:
+            _resp_cache.pop("selfheal_status", None)   # invalidate cache
+        return {"ok": True, "report": report}
+    except Exception as exc:
+        return {"ok": False, "error": str(exc)[:200]}
+
+
+def _selfheal_diagnose(body: dict) -> dict:
+    """AI diagnosis of a specific issue via Ollama."""
+    issue_text = body.get("issue", "")
+    context    = body.get("context", {})
+    if not issue_text:
+        return {"error": "No issue description provided"}
+    return _ai_diagnose(issue_text, context or None)
+
+
+def _selfheal_config() -> dict:
+    """Return *arr configuration summary for the config audit panel."""
+    try:
+        from framework.auto_fixer import AutoFixer
+        fixer = AutoFixer()
+        return {"ok": True, "config": fixer.get_arr_config_summary()}
+    except Exception as exc:
+        return {"ok": False, "error": str(exc)[:200]}
+
+
 def main():
+    global _heal_thread
     parser = argparse.ArgumentParser(description="Execution dashboard server")
-    parser.add_argument("--port", type=int, default=8080)
-    parser.add_argument("--host", default="0.0.0.0")
+    parser.add_argument("--port",        type=int, default=8080)
+    parser.add_argument("--host",        default="0.0.0.0")
+    parser.add_argument("--no-selfheal", action="store_true", help="Disable self-healing daemon")
     args = parser.parse_args()
+
+    if not args.no_selfheal:
+        try:
+            _heal_thread = _start_heal_daemon()
+            print("Self-healing daemon started (5 min interval)")
+        except Exception as e:
+            print(f"Warning: could not start self-healing daemon: {e}")
 
     server = HTTPServer((args.host, args.port), Handler)
     print(f"Dashboard: http://localhost:{args.port}/")
@@ -1748,6 +1852,7 @@ def main():
         server.serve_forever()
     except KeyboardInterrupt:
         print("\nStopped.")
+        _stop_heal_daemon()
 
 
 if __name__ == "__main__":

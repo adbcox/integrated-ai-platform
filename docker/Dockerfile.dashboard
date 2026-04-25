@@ -1,0 +1,44 @@
+FROM python:3.11-slim
+
+LABEL org.opencontainers.image.title="AI Platform Dashboard"
+LABEL org.opencontainers.image.description="Integrated AI Platform control plane dashboard"
+LABEL org.opencontainers.image.source="https://github.com/adbcox/integrated-ai-platform"
+
+# git for git-log endpoint, openssh-client for remote executor SSH, procps for pgrep/pkill
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    git \
+    openssh-client \
+    procps \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Runtime deps for media connectors (paramiko for SFTP/SSH to seedbox + QNAP)
+RUN pip install --no-cache-dir requests pyyaml paramiko
+
+# Dashboard server — no pip deps (stdlib only)
+COPY web/dashboard/server.py  ./web/dashboard/server.py
+COPY web/dashboard/index.html ./web/dashboard/index.html
+
+# Optional: framework and bin for recommendations + training stats
+COPY framework/  ./framework/
+COPY bin/analyze_roadmap.py ./bin/
+# Self-healing daemon (required at import time by server.py)
+COPY bin/selfheal.py ./bin/
+
+# Media stack: connectors + domains (for /api/media/* endpoints)
+COPY connectors/ ./connectors/
+COPY domains/media.py ./domains/media.py
+COPY config/domains.yaml ./config/domains.yaml
+RUN mkdir -p ./domains
+
+ENV PYTHONUNBUFFERED=1
+# Repo root is /app — roadmap ITEMS come from a volume mount at runtime
+ENV REPO_ROOT=/app
+
+EXPOSE 8080
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+    CMD python3 -c "import urllib.request; urllib.request.urlopen('http://localhost:8080/api/health', timeout=3)" || exit 1
+
+CMD ["python3", "web/dashboard/server.py", "--port", "8080", "--host", "0.0.0.0"]
