@@ -648,14 +648,30 @@ tailwind.config = { theme: { extend: { colors: {
     <div class="h-2 bg-[#21262d] rounded-full overflow-hidden mb-2">
       <div id="tm-prog" class="h-full bg-amber-500 rounded-full bar-fill" style="width:0%"></div>
     </div>
-    <div class="flex justify-between text-xs text-gray-500 mb-4">
+    <div class="flex justify-between text-xs text-gray-500 mb-2">
       <span id="tm-step-lbl">Preparing…</span>
       <span id="tm-pct">0%</span>
     </div>
 
+    <!-- Live metrics row -->
+    <div class="flex gap-3 mb-3 text-xs">
+      <div class="bg-[#0d1117] rounded-lg px-3 py-1.5 flex items-center gap-2">
+        <span class="text-gray-500">Loss</span>
+        <span id="tm-loss" class="text-amber-400 font-mono font-semibold">—</span>
+      </div>
+      <div class="bg-[#0d1117] rounded-lg px-3 py-1.5 flex items-center gap-2">
+        <span class="text-gray-500">Step</span>
+        <span id="tm-step-count" class="text-white font-mono font-semibold">—</span>
+      </div>
+      <div class="bg-[#0d1117] rounded-lg px-3 py-1.5 flex items-center gap-2">
+        <span class="text-gray-500">Epoch</span>
+        <span id="tm-epoch" class="text-white font-mono font-semibold">—</span>
+      </div>
+    </div>
+
     <!-- Log output -->
     <div id="tm-log"
-         class="bg-[#0a0e14] border border-[#21262d] rounded-lg p-3 h-48 overflow-y-auto
+         class="bg-[#0a0e14] border border-[#21262d] rounded-lg p-3 h-40 overflow-y-auto
                 font-mono text-xs text-gray-400 whitespace-pre-wrap leading-relaxed">
       Waiting for output…
     </div>
@@ -986,6 +1002,30 @@ tailwind.config = { theme: { extend: { colors: {
      ROADMAP TAB (kanban)
 ════════════════════════════════════════════════════════════════════════════ -->
 <div id="pane-roadmap" class="hidden">
+  <!-- Plane sync status bar -->
+  <div class="bg-[#161b22] border border-[#21262d] rounded-xl p-3 mb-4 flex flex-wrap items-center gap-3">
+    <div class="flex items-center gap-2">
+      <span id="plane-dot" class="w-2 h-2 rounded-full bg-gray-600"></span>
+      <span class="text-xs text-gray-400">Plane</span>
+      <span id="plane-status-lbl" class="text-xs text-gray-500">not configured</span>
+    </div>
+    <div class="flex-1"></div>
+    <span class="text-xs text-gray-600">Last sync: <span id="plane-last-sync">—</span></span>
+    <button onclick="syncToPlane()" id="btn-sync-to-plane"
+            class="text-xs px-2 py-1 rounded bg-blue-900/40 text-blue-300 hover:bg-blue-800/60 border border-blue-800/40">
+      ↑ Push to Plane
+    </button>
+    <button onclick="syncFromPlane()" id="btn-sync-from-plane"
+            class="text-xs px-2 py-1 rounded bg-emerald-900/40 text-emerald-300 hover:bg-emerald-800/60 border border-emerald-800/40">
+      ↓ Pull from Plane
+    </button>
+    <a id="plane-open-btn" href="http://localhost:3001" target="_blank"
+       class="text-xs px-2 py-1 rounded bg-[#21262d] text-gray-400 hover:text-white border border-[#30363d]">
+      Open Plane ↗
+    </a>
+  </div>
+
+  <!-- Kanban header -->
   <div class="flex flex-wrap justify-between items-center gap-2 mb-4">
     <div class="flex items-center gap-2">
       <h2 class="text-sm font-semibold text-white">Roadmap Kanban</h2>
@@ -1394,6 +1434,47 @@ tailwind.config = { theme: { extend: { colors: {
       </div>
     </div>
 
+    <!-- ── Inline Training Progress (full-width, visible without modal) ─── -->
+    <div id="ctrl-train-card" class="bg-[#161b22] border border-[#21262d] rounded-xl p-5 md:col-span-2">
+      <div class="flex items-center justify-between mb-3">
+        <div class="flex items-center gap-2">
+          <div id="ctrl-train-spinner" class="w-4 h-4 border-2 border-amber-500 border-t-transparent rounded-full spin hidden"></div>
+          <h2 class="text-sm font-semibold text-white">LoRA Fine-Tuning</h2>
+          <span id="ctrl-train-badge" class="text-[10px] px-2 py-0.5 rounded-full bg-[#21262d] text-gray-500">Idle</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <button id="ctrl-train-open" onclick="$('train-modal').classList.remove('hidden')"
+            class="text-[11px] text-amber-400 hover:text-amber-300 hidden">View details →</button>
+          <button onclick="startTraining()" id="ctrl-train-btn"
+            class="text-xs px-3 py-1 rounded-lg bg-amber-600 hover:bg-amber-500 text-white transition">Start</button>
+        </div>
+      </div>
+
+      <!-- Progress bar -->
+      <div class="h-1.5 bg-[#21262d] rounded-full overflow-hidden mb-2">
+        <div id="ctrl-train-prog" class="h-full bg-amber-500 rounded-full bar-fill" style="width:0%"></div>
+      </div>
+
+      <!-- Metric pills -->
+      <div class="flex gap-2 mb-3 text-xs">
+        <div class="bg-[#0d1117] rounded px-2 py-1 flex gap-1.5 items-center">
+          <span class="text-gray-500">Loss</span><span id="ctrl-train-loss" class="text-amber-400 font-mono">—</span>
+        </div>
+        <div class="bg-[#0d1117] rounded px-2 py-1 flex gap-1.5 items-center">
+          <span class="text-gray-500">Step</span><span id="ctrl-train-step" class="text-white font-mono">—</span>
+        </div>
+        <div class="bg-[#0d1117] rounded px-2 py-1 flex gap-1.5 items-center">
+          <span class="text-gray-500">Epoch</span><span id="ctrl-train-epoch" class="text-white font-mono">—</span>
+        </div>
+        <div class="bg-[#0d1117] rounded px-2 py-1 flex gap-1.5 items-center">
+          <span class="text-gray-500">ETA</span><span id="ctrl-train-eta" class="text-white font-mono">—</span>
+        </div>
+      </div>
+
+      <!-- Last log line -->
+      <div id="ctrl-train-lastline" class="text-[11px] font-mono text-gray-500 truncate">Idle — start training to see live progress</div>
+    </div>
+
     <div class="bg-[#161b22] border border-[#21262d] rounded-xl p-5 md:col-span-2">
       <div class="flex justify-between items-center mb-3">
         <h2 class="text-sm font-semibold text-white">Keyboard Shortcuts</h2>
@@ -1486,6 +1567,87 @@ tailwind.config = { theme: { extend: { colors: {
   <div class="flex justify-between items-center">
     <h2 class="text-sm font-semibold text-white">Security &amp; Reliability</h2>
     <button onclick="loadSecurity()" class="text-xs text-gray-500 hover:text-white transition">↻ refresh</button>
+  </div>
+
+  <!-- Self-healing status -->
+  <div class="bg-[#161b22] border border-[#21262d] rounded-xl p-4">
+    <div class="flex items-center justify-between mb-3">
+      <div class="flex items-center gap-2">
+        <h3 class="text-sm font-semibold text-white">Self-Healing Daemon</h3>
+        <span id="heal-daemon-badge" class="text-[10px] px-1.5 py-0.5 rounded-full bg-gray-800 text-gray-400">idle</span>
+      </div>
+      <div class="flex items-center gap-2">
+        <button onclick="runHealCycle(false)"
+                class="text-[11px] px-2 py-1 rounded bg-[#21262d] hover:bg-[#2d333b] text-gray-400 hover:text-gray-200 transition">
+          Check Only
+        </button>
+        <button onclick="runHealCycle(true)"
+                class="text-[11px] px-2 py-1 rounded bg-blue-800 hover:bg-blue-700 text-blue-200 transition">
+          Check &amp; Fix
+        </button>
+      </div>
+    </div>
+    <!-- Daemon stats row -->
+    <div class="grid grid-cols-4 gap-3 text-xs mb-3">
+      <div class="bg-[#0d1117] rounded-lg p-2 text-center">
+        <div class="text-gray-600 text-[10px]">Last Run</div>
+        <div id="heal-last-run" class="text-gray-400 font-medium mt-0.5">—</div>
+      </div>
+      <div class="bg-[#0d1117] rounded-lg p-2 text-center">
+        <div class="text-gray-600 text-[10px]">Cycles</div>
+        <div id="heal-cycles" class="text-gray-400 font-medium mt-0.5">—</div>
+      </div>
+      <div class="bg-[#0d1117] rounded-lg p-2 text-center">
+        <div class="text-gray-600 text-[10px]">Issues Found</div>
+        <div id="heal-issues" class="text-white font-bold mt-0.5">—</div>
+      </div>
+      <div class="bg-[#0d1117] rounded-lg p-2 text-center">
+        <div class="text-gray-600 text-[10px]">Fixes Applied</div>
+        <div id="heal-fixes" class="text-emerald-400 font-bold mt-0.5">—</div>
+      </div>
+    </div>
+    <!-- Current issues from last check -->
+    <div id="heal-issues-list" class="space-y-1 text-xs mb-3"></div>
+    <!-- Recent auto-fixes feed -->
+    <div id="heal-recent-fixes" class="space-y-1 text-xs"></div>
+  </div>
+
+  <!-- AI Diagnostic Chat -->
+  <div class="bg-[#161b22] border border-[#21262d] rounded-xl p-4">
+    <div class="flex items-center justify-between mb-3">
+      <h3 class="text-sm font-semibold text-white">AI Diagnosis</h3>
+      <span class="text-[10px] text-gray-600">Powered by Ollama</span>
+    </div>
+    <div class="flex gap-2 mb-3">
+      <input id="diagnose-input" type="text" placeholder="Describe an issue (e.g. 'downloads not completing')"
+             class="flex-1 bg-[#0d1117] border border-[#21262d] rounded-lg px-3 py-1.5 text-xs text-gray-300 placeholder-gray-700 focus:outline-none focus:border-blue-700"
+             onkeydown="if(event.key==='Enter') runDiagnosis()">
+      <button onclick="runDiagnosis()"
+              class="px-3 py-1.5 rounded-lg bg-purple-800 hover:bg-purple-700 text-purple-200 text-xs font-medium transition">
+        Diagnose
+      </button>
+    </div>
+    <!-- Quick issue buttons -->
+    <div class="flex flex-wrap gap-1.5 mb-3">
+      <button onclick="diagnoseQuick('downloads not completing, queue stuck')"
+              class="text-[10px] px-2 py-0.5 rounded-full bg-[#21262d] text-gray-500 hover:text-gray-300 transition">downloads stuck</button>
+      <button onclick="diagnoseQuick('rclone not syncing from seedbox to QNAP')"
+              class="text-[10px] px-2 py-0.5 rounded-full bg-[#21262d] text-gray-500 hover:text-gray-300 transition">rclone stalled</button>
+      <button onclick="diagnoseQuick('Radarr movie collections showing wrong root folder path')"
+              class="text-[10px] px-2 py-0.5 rounded-full bg-[#21262d] text-gray-500 hover:text-gray-300 transition">wrong root folder</button>
+      <button onclick="diagnoseQuick('Plex not seeing newly downloaded media files')"
+              class="text-[10px] px-2 py-0.5 rounded-full bg-[#21262d] text-gray-500 hover:text-gray-300 transition">Plex not scanning</button>
+    </div>
+    <div id="diagnose-result" class="hidden bg-[#0d1117] rounded-lg p-3 text-xs space-y-2"></div>
+  </div>
+
+  <!-- Config audit -->
+  <div class="bg-[#161b22] border border-[#21262d] rounded-xl p-4">
+    <div class="flex items-center justify-between mb-3">
+      <h3 class="text-sm font-semibold text-white">Configuration Audit</h3>
+      <button onclick="loadConfigAudit()" class="text-[11px] text-gray-500 hover:text-gray-300 transition">↻ load</button>
+    </div>
+    <div id="config-audit-body" class="text-xs text-gray-600 text-center py-3">Click "load" to fetch *arr configuration</div>
   </div>
 
   <!-- Circuit breakers -->
@@ -1844,6 +2006,7 @@ function setTab(name) {
   if (name === 'home'     && !homeLoaded)     loadHome();
   if (name === 'tools'    && !toolsLoaded)    loadTools();
   if (name === 'security' && !securityLoaded) loadSecurity();
+  if (name === 'controls')                   loadControls();
 }
 
 // ── Training lifecycle ────────────────────────────────────────────────────────
@@ -1905,7 +2068,7 @@ async function startTraining() {
       $('tm-title').textContent = `Training (PID ${data.pid}) — est. ${data.estimated_minutes || '~45'} min`;
       toast('Fine-tuning started', 'ok');
       setTrainState('running');
-      trainingPollTimer = setInterval(pollTraining, 5000);
+      trainingPollTimer = setInterval(pollTraining, 2000);
     } else {
       $('tm-title').textContent = 'Cannot start training';
       $('tm-status').textContent = data.message;
@@ -1935,13 +2098,19 @@ function _openTrainingModal(d) {
   const lines = (d.log_tail || d.lines || []).join('\n');
   $('tm-log').textContent = lines || 'Waiting for output…';
   $('tm-log').scrollTop = $('tm-log').scrollHeight;
+  if ($('tm-loss'))       $('tm-loss').textContent       = d.loss != null ? d.loss.toFixed(4) : '—';
+  if ($('tm-step-count')) $('tm-step-count').textContent = d.step > 0 ? (d.total_steps > 0 ? `${d.step}/${d.total_steps}` : String(d.step)) : '—';
+  if ($('tm-epoch'))      $('tm-epoch').textContent      = d.epoch != null ? `${d.epoch.toFixed(2)}/${d.num_epochs||3}` : '—';
+  const p = d.progress_percent || (d.total_steps > 0 ? pct(d.step, d.total_steps) : 0);
+  setBar('tm-prog', p);
+  $('tm-pct').textContent = p + '%';
   if (d.total_steps > 0) {
-    setBar('tm-prog', d.progress_percent || 0);
-    $('tm-pct').textContent = (d.progress_percent || 0) + '%';
     $('tm-step-lbl').textContent = `${d.current_step || 'Training'} — step ${d.step}/${d.total_steps}`;
+  } else {
+    $('tm-step-lbl').textContent = d.current_step || 'Preparing…';
   }
   setTrainState('running');
-  if (!trainingPollTimer) trainingPollTimer = setInterval(pollTraining, 5000);
+  if (!trainingPollTimer) trainingPollTimer = setInterval(pollTraining, 2000);
 }
 
 async function forceStopTraining() {
@@ -1971,12 +2140,19 @@ async function pollTraining() {
     const res = await fetch('/api/training/status');
     const d   = await res.json();
 
-    // Log tail
+    // Log tail — auto-scroll only when near bottom
+    const logEl = $('tm-log');
+    const atBottom = logEl.scrollHeight - logEl.scrollTop - logEl.clientHeight < 40;
     const lines = (d.log_tail || d.lines || []).join('\n');
-    $('tm-log').textContent = lines || 'Waiting for output…';
-    $('tm-log').scrollTop = $('tm-log').scrollHeight;
+    logEl.textContent = lines || 'Waiting for output…';
+    if (atBottom) logEl.scrollTop = logEl.scrollHeight;
 
-    // Stuck warning
+    // Live metrics
+    if ($('tm-loss'))       $('tm-loss').textContent       = d.loss != null ? d.loss.toFixed(4) : '—';
+    if ($('tm-step-count')) $('tm-step-count').textContent = d.step > 0 ? (d.total_steps > 0 ? `${d.step}/${d.total_steps}` : String(d.step)) : '—';
+    if ($('tm-epoch'))      $('tm-epoch').textContent      = d.epoch != null ? `${d.epoch.toFixed(2)}/${d.num_epochs||3}` : '—';
+
+    // Status title
     if (d.stuck) {
       $('tm-title').textContent = `⚠️ Training may be stuck (PID ${(d.pids||[]).join(', ')})`;
       $('tm-status').textContent = 'No log output for >10 min — process may be frozen on MPS.';
@@ -1987,16 +2163,21 @@ async function pollTraining() {
       $('tm-force-stop').classList.remove('hidden');
     }
 
-    // Progress
-    if (d.total_steps > 0) {
-      const p = d.progress_percent || pct(d.step, d.total_steps);
+    // Progress bar + step label
+    const p = d.progress_percent || (d.total_steps > 0 ? pct(d.step, d.total_steps) : 0);
+    if (p > 0) {
       setBar('tm-prog', p);
       $('tm-pct').textContent = p + '%';
+    }
+    if (d.total_steps > 0) {
       $('tm-step-lbl').textContent = `${d.current_step || 'Training'} — step ${d.step}/${d.total_steps}`;
       if (d.eta_minutes) $('tm-status').textContent = `~${d.eta_minutes} min remaining`;
     } else if (d.is_running) {
       $('tm-step-lbl').textContent = d.current_step || 'Preparing…';
     }
+
+    // Update the inline Controls-pane training card (visible without modal)
+    _updateInlineTraining(d);
 
     if (!d.is_running) {
       clearInterval(trainingPollTimer);
@@ -2038,6 +2219,66 @@ async function deployModel() {
 
 function closeTrainModal() {
   $('train-modal').classList.add('hidden');
+}
+
+// ── Inline training card (Controls pane) ─────────────────────────────────────
+function _updateInlineTraining(d) {
+  const badge   = $('ctrl-train-badge');
+  const spinner = $('ctrl-train-spinner');
+  const btn     = $('ctrl-train-btn');
+  const openBtn = $('ctrl-train-open');
+  if (!badge) return; // Controls pane not in DOM yet
+
+  const p = d.progress_percent || (d.total_steps > 0 ? pct(d.step, d.total_steps) : 0);
+  setBar('ctrl-train-prog', p);
+
+  $('ctrl-train-loss').textContent  = d.loss != null ? d.loss.toFixed(4) : '—';
+  $('ctrl-train-step').textContent  = d.step > 0 ? (d.total_steps > 0 ? `${d.step}/${d.total_steps}` : String(d.step)) : '—';
+  $('ctrl-train-epoch').textContent = d.epoch != null ? `${d.epoch.toFixed(2)}/${d.num_epochs||3}` : '—';
+  $('ctrl-train-eta').textContent   = d.eta_minutes ? `~${d.eta_minutes}m` : '—';
+
+  const lastLine = (d.log_tail || []).filter(l => l.trim()).pop() || '';
+  $('ctrl-train-lastline').textContent = lastLine || (d.is_running ? 'Starting…' : 'Idle');
+
+  if (d.is_running) {
+    badge.textContent = d.stuck ? 'STUCK' : `${p}%`;
+    badge.className   = d.stuck
+      ? 'text-[10px] px-2 py-0.5 rounded-full bg-red-900/50 text-red-400'
+      : 'text-[10px] px-2 py-0.5 rounded-full bg-amber-900/50 text-amber-400';
+    spinner.classList.remove('hidden');
+    btn.textContent = 'Stop';
+    btn.onclick = forceStopTraining;
+    btn.className = 'text-xs px-3 py-1 rounded-lg bg-red-700 hover:bg-red-600 text-white transition';
+    openBtn.classList.remove('hidden');
+  } else if (d.done) {
+    badge.textContent = 'Done';
+    badge.className   = 'text-[10px] px-2 py-0.5 rounded-full bg-emerald-900/50 text-emerald-400';
+    spinner.classList.add('hidden');
+    btn.textContent = '🚀 Deploy';
+    btn.onclick = deployModel;
+    btn.className = 'text-xs px-3 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white transition';
+    openBtn.classList.remove('hidden');
+  } else {
+    badge.textContent = 'Idle';
+    badge.className   = 'text-[10px] px-2 py-0.5 rounded-full bg-[#21262d] text-gray-500';
+    spinner.classList.add('hidden');
+    btn.textContent = 'Start';
+    btn.onclick = startTraining;
+    btn.className = 'text-xs px-3 py-1 rounded-lg bg-amber-600 hover:bg-amber-500 text-white transition';
+    openBtn.classList.add('hidden');
+  }
+}
+
+async function loadControls() {
+  // Check training status immediately when Controls tab opens
+  try {
+    const res = await fetch('/api/training/status');
+    const d   = await res.json();
+    _updateInlineTraining(d);
+    if (d.is_running && !trainingPollTimer) {
+      trainingPollTimer = setInterval(pollTraining, 2000);
+    }
+  } catch(e) { /* ignore */ }
 }
 
 // ── Executor live status (2-second poll) ──────────────────────────────────────
@@ -2670,6 +2911,10 @@ function render(d) {
 
   // Refresh charts if open
   if (currentTab === 'analytics') renderCharts();
+
+  // Chat dot + tools tab side effects
+  _updateChatDot(d.system?.ollama_available);
+  if (currentTab === 'tools') loadTools();
 }
 
 // ── Kanban ────────────────────────────────────────────────────────────────────
@@ -3353,12 +3598,203 @@ async function refreshMediaOverview() {
     $('ov-plex-streams').textContent = d.plex.active_streams > 0 ? `${d.plex.active_streams} streaming` : '';
 }
 
+// ── Self-healing ─────────────────────────────────────────────────────────────
+async function loadHealStatus() {
+  const res = await fetch('/api/selfheal/status').catch(()=>null);
+  if (!res?.ok) return;
+  const d = await res.json();
+
+  // Daemon badge
+  const badge = $('heal-daemon-badge');
+  if (badge) {
+    const running = d.running;
+    badge.textContent = running ? 'running' : 'idle';
+    badge.className = `text-[10px] px-1.5 py-0.5 rounded-full ${running
+      ? 'bg-emerald-900/40 text-emerald-400 border border-emerald-800/40'
+      : 'bg-gray-800 text-gray-500'}`;
+  }
+
+  // Stats
+  const lastRun = d.last_run_at;
+  if (lastRun) {
+    const ago = Math.round((Date.now()/1000 - lastRun) / 60);
+    setText('heal-last-run', ago < 60 ? `${ago}m ago` : `${Math.round(ago/60)}h ago`);
+  }
+  setText('heal-cycles', d.cycle_count ?? '—');
+
+  const report = d.last_report;
+  if (report) {
+    const counts = report.counts || {};
+    const issuesEl = $('heal-issues');
+    if (issuesEl) {
+      issuesEl.textContent = counts.total ?? '—';
+      issuesEl.className = `font-bold mt-0.5 ${counts.critical > 0 ? 'text-red-400' : counts.total > 0 ? 'text-amber-400' : 'text-emerald-400'}`;
+    }
+    setText('heal-fixes', report.fixes_applied?.length ?? '—');
+
+    // Issues list
+    const issuesList = $('heal-issues-list');
+    if (issuesList && report.issues?.length) {
+      issuesList.innerHTML = `<div class="text-gray-600 mb-1">From last check:</div>` +
+        report.issues.map(iss => {
+          const sev = iss.severity;
+          const col = sev === 'critical' ? 'text-red-400' : sev === 'warning' ? 'text-amber-400' : 'text-gray-600';
+          const fixBadge = iss.fixable ? `<span class="ml-1 text-[9px] px-1 py-0.5 rounded bg-blue-900/40 text-blue-400">auto-fix</span>` : '';
+          return `<div class="flex items-start gap-1.5">
+            <span class="${col} flex-shrink-0">${sev === 'critical' ? '●' : sev === 'warning' ? '◐' : '○'}</span>
+            <span class="text-gray-400">[${esc(iss.service)}]</span>
+            <span class="text-gray-500 flex-1">${esc(iss.message.substring(0,80))}</span>
+            ${fixBadge}
+          </div>`;
+        }).join('');
+    } else if (issuesList) {
+      issuesList.innerHTML = '<div class="text-emerald-600 text-center py-1">No issues detected</div>';
+    }
+  }
+
+  // Recent fixes feed
+  const fixesEl = $('heal-recent-fixes');
+  if (fixesEl && d.recent_fixes?.length) {
+    fixesEl.innerHTML = `<div class="text-gray-600 mb-1 mt-2 border-t border-[#21262d] pt-2">Recent auto-fixes:</div>` +
+      d.recent_fixes.map(f => {
+        const icon = f.ok ? '✓' : '✗';
+        const col  = f.ok ? 'text-emerald-500' : 'text-red-400';
+        const ts   = (f.ts || '').slice(11,16);
+        return `<div class="flex items-center gap-2">
+          <span class="${col} text-[10px] font-bold">${icon}</span>
+          <span class="text-gray-600 text-[10px] font-mono">${esc(ts)}</span>
+          <span class="text-gray-400">${esc(f.action || '')}</span>
+          <span class="text-gray-600 truncate text-[10px]">${esc((f.detail || '').substring(0,60))}</span>
+        </div>`;
+      }).join('');
+  }
+}
+
+async function runHealCycle(applyFixes) {
+  const btn = event?.target;
+  if (btn) { btn.disabled = true; btn.textContent = 'Running…'; }
+  const res = await fetch('/api/selfheal/run', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({apply_fixes: applyFixes}),
+  }).catch(()=>null);
+  if (btn) { btn.disabled = false; btn.textContent = applyFixes ? 'Check & Fix' : 'Check Only'; }
+  if (!res) { toast('Server unreachable', 'err'); return; }
+  const d = await res.json();
+  if (d.ok) {
+    const r = d.report || {};
+    const n = (r.counts || {}).total || 0;
+    const f = (r.fixes_applied || []).length;
+    toast(`${n} issues found, ${f} fixed`, n > 0 && f < n ? 'err' : 'ok');
+    loadHealStatus();
+    loadCircuitBreakers();
+  } else {
+    toast(d.error || 'Heal cycle failed', 'err');
+  }
+}
+
+// AI diagnosis
+async function runDiagnosis() {
+  const input = $('diagnose-input');
+  const issue = input?.value?.trim();
+  if (!issue) return;
+  await _doRunDiagnosis(issue);
+}
+
+async function diagnoseQuick(issue) {
+  const input = $('diagnose-input');
+  if (input) input.value = issue;
+  await _doRunDiagnosis(issue);
+}
+
+async function _doRunDiagnosis(issue) {
+  const resultEl = $('diagnose-result');
+  if (!resultEl) return;
+  resultEl.classList.remove('hidden');
+  resultEl.innerHTML = '<div class="text-gray-600 text-center py-2">Asking Ollama…</div>';
+
+  const res = await fetch('/api/selfheal/diagnose', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({issue}),
+  }).catch(()=>null);
+
+  if (!res?.ok) {
+    resultEl.innerHTML = '<div class="text-red-500">Server unreachable</div>';
+    return;
+  }
+  const d = await res.json();
+  if (d.error) {
+    resultEl.innerHTML = `<div class="text-red-400">${esc(d.error)}</div>`;
+    return;
+  }
+
+  const steps = (d.fix_steps || []).map((s, i) =>
+    `<div class="flex gap-2"><span class="text-blue-500 flex-shrink-0">${i+1}.</span><span class="text-gray-300">${esc(s)}</span></div>`
+  ).join('');
+
+  resultEl.innerHTML = `
+    <div class="mb-2">
+      <span class="text-gray-600 text-[10px] uppercase tracking-wider">Root Cause</span>
+      <div class="text-gray-300 mt-1">${esc(d.root_cause || '—')}</div>
+    </div>
+    ${steps ? `<div class="mb-2">
+      <span class="text-gray-600 text-[10px] uppercase tracking-wider">Fix Steps</span>
+      <div class="mt-1 space-y-1">${steps}</div>
+    </div>` : ''}
+    ${d.verify ? `<div class="mb-1">
+      <span class="text-gray-600 text-[10px] uppercase tracking-wider">Verify</span>
+      <div class="text-gray-400 mt-1">${esc(d.verify)}</div>
+    </div>` : ''}
+    <div class="flex items-center gap-2 mt-1 pt-1 border-t border-[#21262d]">
+      <span class="text-gray-700 text-[10px]">Auto-fixable:</span>
+      <span class="${d.auto_fixable ? 'text-emerald-500' : 'text-gray-600'} text-[10px] font-medium">
+        ${d.auto_fixable ? 'Yes' : 'No — manual action required'}
+      </span>
+      ${d.model ? `<span class="text-gray-800 text-[10px] ml-auto">${esc(d.model)}</span>` : ''}
+    </div>`;
+}
+
+async function loadConfigAudit() {
+  const el = $('config-audit-body');
+  if (!el) return;
+  el.innerHTML = '<div class="text-gray-600 text-center py-3">Loading…</div>';
+  const res = await fetch('/api/selfheal/config').catch(()=>null);
+  if (!res?.ok) { el.innerHTML = '<div class="text-red-500 text-center py-3">Failed to load</div>'; return; }
+  const d = await res.json();
+  if (!d.ok) { el.innerHTML = `<div class="text-red-500 text-center py-3">${esc(d.error || 'Error')}</div>`; return; }
+  const cfg = d.config || {};
+  el.innerHTML = Object.entries(cfg).map(([svc, info]) => {
+    if (!info.reachable) return `<div class="mb-2 text-red-400">${esc(svc)}: unreachable</div>`;
+    const folders = (info.root_folders || []).map(f =>
+      `<div class="flex justify-between gap-2">
+        <span class="text-gray-500 truncate">${esc(f.path)}</span>
+        <span class="${f.accessible ? 'text-emerald-600' : 'text-red-500'} flex-shrink-0">
+          ${f.accessible ? `✓ ${f.free_gb}GB free` : '✗ inaccessible'}
+        </span>
+      </div>`).join('');
+    const mappings = (info.path_mappings || []).map(m =>
+      `<div class="text-gray-700 truncate">${esc(m.host)}: ${esc(m.remote)} → ${esc(m.local)}</div>`).join('');
+    const clients = (info.download_clients || []).map(c =>
+      `<span class="text-gray-600">${esc(c.name)} (${esc(c.protocol)})</span>`).join(', ');
+    return `<div class="mb-3">
+      <div class="text-gray-300 font-semibold mb-1 capitalize">${esc(svc)}</div>
+      <div class="pl-2 space-y-0.5">
+        ${folders || '<div class="text-gray-700">No root folders</div>'}
+        ${mappings ? `<div class="mt-1 text-[10px] font-mono">${mappings}</div>` : ''}
+        ${clients ? `<div class="mt-0.5">Clients: ${clients}</div>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
 // ── Security tab ─────────────────────────────────────────────────────────────
 let securityLoaded = false;
 
 function loadSecurity() {
   if (!securityLoaded) {
     securityLoaded = true;
+    loadHealStatus();
     loadCircuitBreakers();
     loadAuditLog();
   }
@@ -4155,13 +4591,76 @@ function _updateChatDot(available) {
   dot.style.boxShadow  = available ? '0 0 6px var(--clr-success)' : 'none';
 }
 
-// Hook into render() to update chat dot and tools tab
-const _origRender = render;
-function render(d) {
-  _origRender(d);
-  _updateChatDot(d.system?.ollama_available);
-  if (currentTab === 'tools') loadTools();
+// ── Plane integration ─────────────────────────────────────────────────────────
+
+let _planeStatus = null;
+
+async function loadPlaneStatus() {
+  try {
+    const res = await fetch('/api/plane/status').catch(() => null);
+    if (!res?.ok) { _setPlaneIndicator(false, 'not reachable'); return; }
+    const d = await res.json();
+    _planeStatus = d;
+    _setPlaneIndicator(d.reachable, d.reachable ? `${d.total_issues ?? '?'} issues` : 'offline');
+    if (d.last_sync) {
+      const ago = Math.round((Date.now()/1000 - d.last_sync) / 60);
+      $('plane-last-sync').textContent = ago < 2 ? 'just now' : `${ago}m ago`;
+    }
+  } catch(e) {
+    _setPlaneIndicator(false, 'error');
+  }
 }
+
+function _setPlaneIndicator(ok, label) {
+  const dot = $('plane-dot');
+  const lbl = $('plane-status-lbl');
+  if (dot) { dot.style.background = ok ? '#10b981' : '#6b7280'; dot.style.boxShadow = ok ? '0 0 6px #10b981' : 'none'; }
+  if (lbl) lbl.textContent = label;
+}
+
+async function syncToPlane() {
+  const btn = $('btn-sync-to-plane');
+  const orig = btn.textContent;
+  btn.textContent = '⏳ Syncing…'; btn.disabled = true;
+  try {
+    const res = await fetch('/api/plane/sync-to', {method:'POST', headers:{'Content-Type':'application/json'}, body:'{}'});
+    const d = await res.json();
+    if (d.ok) {
+      toast(`Pushed to Plane: +${d.created} created, ${d.updated} updated`, 'ok');
+      $('plane-last-sync').textContent = 'just now';
+      loadPlaneStatus();
+    } else {
+      toast(d.error || 'Sync failed', 'err');
+    }
+  } catch(e) { toast('Plane not reachable', 'err'); }
+  finally { btn.textContent = orig; btn.disabled = false; }
+}
+
+async function syncFromPlane() {
+  const btn = $('btn-sync-from-plane');
+  const orig = btn.textContent;
+  btn.textContent = '⏳ Pulling…'; btn.disabled = true;
+  try {
+    const res = await fetch('/api/plane/sync-from', {method:'POST', headers:{'Content-Type':'application/json'}, body:'{}'});
+    const d = await res.json();
+    if (d.ok) {
+      toast(`Pulled from Plane: ${d.changed} markdown file(s) updated`, 'ok');
+      $('plane-last-sync').textContent = 'just now';
+      loadKanban(); // refresh kanban to show new statuses
+    } else {
+      toast(d.error || 'Sync failed', 'err');
+    }
+  } catch(e) { toast('Plane not reachable', 'err'); }
+  finally { btn.textContent = orig; btn.disabled = false; }
+}
+
+// Load Plane status when roadmap tab opens
+const _origSetTab = setTab;
+function setTab(name) {
+  _origSetTab(name);
+  if (name === 'roadmap') loadPlaneStatus();
+}
+
 </script>
 </body>
 </html>

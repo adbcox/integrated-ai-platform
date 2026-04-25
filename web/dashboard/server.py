@@ -687,49 +687,106 @@ def _start_training() -> dict:
 
 
 def _training_cycle_status() -> dict:
-    """Parse TRAINING_LOG_PATH for step progress and status."""
+    """Parse TRAINING_LOG_PATH for step progress and status.
+
+    HuggingFace Trainer disables tqdm when stdout is redirected (not a TTY),
+    so step counts come from the per-step JSON dicts it emits instead:
+        {'loss': 2.66, 'learning_rate': 0.0001, 'epoch': 0.14}
+    We count these lines as the current step and parse epoch for percentage.
+    tqdm lines are still tried as a fallback for scripts that force progress.
+    """
     import time as _time
     log = Path(TRAINING_LOG_PATH)
     if not log.exists():
         return {"is_running": False, "stuck": False, "pids": [], "lines": [],
                 "step": 0, "total_steps": 0, "progress_percent": 0,
-                "current_step": "", "eta_minutes": 0, "log_tail": []}
-    text  = log.read_text(errors="replace")
-    lines = text.splitlines()
+                "current_step": "", "eta_minutes": 0, "loss": None, "log_tail": []}
+    raw   = log.read_text(errors="replace")
+    # Split on \r and \n — tqdm uses \r for in-place updates in some modes
+    lines = [l for l in re.split(r"[\r\n]+", raw) if l.strip()]
 
     r = subprocess.run(["pgrep", "-f", "run_training_cycle"], capture_output=True, text=True)
     pids = [p for p in r.stdout.strip().splitlines() if p]
     running = bool(pids)
 
-    # Stuck: process alive but log file not updated for >10 min
     stuck = False
     if running:
         stuck = (_time.time() - log.stat().st_mtime) > 600
 
     step = total = 0
+    loss: float | None = None
+    current_epoch: float | None = None
+    num_epochs = 3  # matches TrainingConfig default in framework/model_trainer.py
+
+    # ── Primary: parse HuggingFace Trainer JSON-dict log lines ──────────────
+    # Two formats: {'loss': 2.66, 'epoch': 0.14}  OR  {"loss": 2.66, "epoch": 0.14}
+    _metric_re = re.compile(r"""['""]loss['"]\s*:\s*([\d.eE+\-]+)""")
+    _epoch_re  = re.compile(r"""['""]epoch['"]\s*:\s*([\d.]+)""")
+    metric_count = 0
+    for line in lines:
+        if _metric_re.search(line) and _epoch_re.search(line):
+            metric_count += 1
+            loss_m  = _metric_re.search(line)
+            epoch_m = _epoch_re.search(line)
+            if loss_m:
+                try:
+                    loss = round(float(loss_m.group(1)), 4)
+                except ValueError:
+                    pass
+            if epoch_m:
+                try:
+                    current_epoch = float(epoch_m.group(1))
+                except ValueError:
+                    pass
+
+    if metric_count > 0:
+        step = metric_count
+        # Estimate total steps from epoch if we have it
+        if current_epoch and current_epoch > 0 and num_epochs > 0:
+            steps_per_epoch = step / current_epoch if current_epoch < num_epochs else step
+            total = max(step, round(steps_per_epoch * num_epochs))
+
+    # ── Fallback: tqdm progress bar lines (when tqdm not disabled) ───────────
+    # Exclude model/weight loading lines (Loading weights, Loading model, etc.)
+    _SKIP_TQDM = re.compile(r"(?i)(loading\s+weight|loading\s+model|loading\s+check|download|fetching|shard)")
+    if total == 0:
+        for line in reversed(lines):
+            if _SKIP_TQDM.search(line):
+                continue
+            m = re.search(r"(\d+)/(\d+)\s+\[", line)  # tqdm: "1/62 [14:34<..."
+            if not m:
+                m = re.search(r"[Ss]tep[s]?\s+(\d+)\s*[/of]+\s*(\d+)", line)
+            if m:
+                step  = max(step, int(m.group(1)))
+                total = int(m.group(2))
+                break
+
+    # ── Phase label from recent log lines ─────────────────────────────────────
     current_step = "Preparing"
-    for line in reversed(lines):
-        m = re.search(r"(\d+)/(\d+)\s+\[", line)          # tqdm: "1/9 [14:34<..."
-        if not m:
-            m = re.search(r"[Ss]tep[s]?\s+(\d+)\s*[/of]+\s*(\d+)", line)
-        if m:
-            step, total = int(m.group(1)), int(m.group(2))
-            break
-    for line in reversed(lines[-20:]):
+    for line in reversed(lines[-30:]):
         ll = line.lower()
         if "collect" in ll or "gathering" in ll:
-            current_step = "Collecting training data"
+            current_step = "Collecting training data"; break
         elif "tokeniz" in ll or "preprocess" in ll:
-            current_step = "Preprocessing data"
-        elif "train" in ll and ("lora" in ll or "step" in ll):
-            current_step = "Training LoRA adapter"
-        elif "save" in ll or "export" in ll:
-            current_step = "Saving adapter"
+            current_step = "Preprocessing data"; break
+        elif metric_count > 0 or ("train" in ll and ("lora" in ll or "step" in ll)):
+            current_step = "Training LoRA adapter"; break
+        elif "save" in ll or "export" in ll or "adapter" in ll:
+            current_step = "Saving adapter"; break
         elif "gguf" in ll:
-            current_step = "Exporting GGUF"
+            current_step = "Exporting GGUF"; break
+    if metric_count > 0:
+        current_step = "Training LoRA adapter"
 
-    pct = round(step / total * 100) if total > 0 else 0
-    done = not running and any(kw in text for kw in ("Training complete", "Saved adapter", "Done", "adapter_model"))
+    # ── Progress percentage ────────────────────────────────────────────────────
+    if total > 0 and step > 0:
+        pct_val = round(step / total * 100)
+    elif current_epoch is not None and num_epochs > 0:
+        pct_val = round(min(99, current_epoch / num_epochs * 100))
+    else:
+        pct_val = 0
+
+    done = not running and any(kw in raw for kw in ("Training complete", "Saved adapter", "Done", "adapter_model"))
     eta_minutes = 0
     if running and total > 0 and step > 0:
         eta_minutes = max(1, round((total - step) * 0.5))
@@ -741,10 +798,13 @@ def _training_cycle_status() -> dict:
         "done":             done,
         "step":             step,
         "total_steps":      total,
-        "progress_percent": pct,
+        "progress_percent": pct_val,
         "current_step":     current_step,
         "eta_minutes":      eta_minutes,
-        "log_tail":         lines[-20:],
+        "loss":             loss,
+        "epoch":            current_epoch,
+        "num_epochs":       num_epochs,
+        "log_tail":         lines[-25:],
         "log_file":         TRAINING_LOG_PATH,
     }
 
@@ -1676,6 +1736,8 @@ class Handler(BaseHTTPRequestHandler):
             item_id = path[len("/api/roadmap/item/"):]
             detail = _roadmap_item_detail(item_id)
             self._serve_json(detail if detail else {"error": "not found"})
+        elif path == "/api/plane/status":
+            self._serve_json(_plane_status())
         else:
             self.send_response(404)
             self.end_headers()
@@ -1743,6 +1805,14 @@ class Handler(BaseHTTPRequestHandler):
             self._serve_json(_roadmap_move(body.get("id", ""), body.get("status", "")))
         elif path == "/api/roadmap/create":
             self._serve_json(_roadmap_create(body))
+        elif path == "/api/plane/sync-to":
+            result = _plane_sync_to()
+            _audit("plane_sync_to", "plane", "ok" if result.get("ok") else "fail", ip)
+            self._serve_json(result)
+        elif path == "/api/plane/sync-from":
+            result = _plane_sync_from()
+            _audit("plane_sync_from", "plane", "ok" if result.get("ok") else "fail", ip)
+            self._serve_json(result)
         else:
             self.send_response(404)
             self.end_headers()
@@ -1825,6 +1895,101 @@ def _selfheal_config() -> dict:
         from framework.auto_fixer import AutoFixer
         fixer = AutoFixer()
         return {"ok": True, "config": fixer.get_arr_config_summary()}
+    except Exception as exc:
+        return {"ok": False, "error": str(exc)[:200]}
+
+
+# ── Plane helpers ─────────────────────────────────────────────────────────────
+
+def _get_plane_api():
+    """Return a configured PlaneAPI instance (or None if not configured)."""
+    try:
+        from framework.plane_connector import PlaneAPI
+        api = PlaneAPI(
+            base_url   = os.environ.get("PLANE_URL",        "http://localhost:8000"),
+            api_token  = os.environ.get("PLANE_API_TOKEN",  ""),
+            workspace  = os.environ.get("PLANE_WORKSPACE",  "iap"),
+            project_id = os.environ.get("PLANE_PROJECT_ID", ""),
+        )
+        return api
+    except Exception:
+        return None
+
+
+def _plane_status() -> dict:
+    api = _get_plane_api()
+    if not api:
+        return {"reachable": False, "error": "plane_connector not available"}
+    if not api.api_token or not api.project_id:
+        return {
+            "reachable": False,
+            "configured": False,
+            "message": "Set PLANE_API_TOKEN and PLANE_PROJECT_ID in docker/.env",
+            "plane_url": api.base_url,
+        }
+    try:
+        if not api.health_check():
+            return {"reachable": False, "plane_url": api.base_url}
+        stats = api.get_stats()
+        return {
+            "reachable":    True,
+            "configured":   True,
+            "plane_url":    api.base_url,
+            "workspace":    api.workspace,
+            "project_id":   api.project_id,
+            "total_issues": stats["total"],
+            "by_state":     stats["by_state"],
+            "last_sync":    None,  # populated by sync scripts
+        }
+    except Exception as exc:
+        return {"reachable": False, "error": str(exc)[:120]}
+
+
+def _plane_sync_to() -> dict:
+    """Trigger markdown → Plane sync in a subprocess to avoid blocking."""
+    api = _get_plane_api()
+    if not api or not api.api_token or not api.project_id:
+        return {"ok": False, "error": "Plane not configured — set PLANE_API_TOKEN and PLANE_PROJECT_ID"}
+    if not api.health_check():
+        return {"ok": False, "error": "Plane not reachable"}
+    try:
+        import subprocess
+        env = {**os.environ}
+        result = subprocess.run(
+            ["python3", str(REPO_ROOT / "bin" / "sync_roadmap_to_plane.py")],
+            capture_output=True, text=True, timeout=120, env=env,
+        )
+        output = result.stdout + result.stderr
+        created = output.count(" created")
+        updated = output.count(" updated")
+        return {"ok": result.returncode == 0, "created": created, "updated": updated, "log": output[-500:]}
+    except subprocess.TimeoutExpired:
+        return {"ok": False, "error": "Sync timed out (>120s)"}
+    except Exception as exc:
+        return {"ok": False, "error": str(exc)[:200]}
+
+
+def _plane_sync_from() -> dict:
+    """Trigger Plane → markdown sync in a subprocess."""
+    api = _get_plane_api()
+    if not api or not api.api_token or not api.project_id:
+        return {"ok": False, "error": "Plane not configured — set PLANE_API_TOKEN and PLANE_PROJECT_ID"}
+    if not api.health_check():
+        return {"ok": False, "error": "Plane not reachable"}
+    try:
+        import subprocess
+        env = {**os.environ}
+        result = subprocess.run(
+            ["python3", str(REPO_ROOT / "bin" / "sync_plane_to_markdown.py")],
+            capture_output=True, text=True, timeout=60, env=env,
+        )
+        output = result.stdout + result.stderr
+        # Count "→" occurrences as changed files
+        import re as _re
+        changed = len(_re.findall(r"RM-\S+: .+ → .+", output))
+        return {"ok": result.returncode == 0, "changed": changed, "log": output[-500:]}
+    except subprocess.TimeoutExpired:
+        return {"ok": False, "error": "Sync timed out (>60s)"}
     except Exception as exc:
         return {"ok": False, "error": str(exc)[:200]}
 
