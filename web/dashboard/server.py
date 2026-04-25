@@ -2474,6 +2474,8 @@ class Handler(BaseHTTPRequestHandler):
             self._serve_json(_network_isp_history())
         elif path.startswith("/plane-proxy"):
             self._do_proxy_plane("GET")
+        elif path == "/metrics":
+            self._serve_prometheus_metrics()
         else:
             self.send_response(404)
             self.end_headers()
@@ -2657,6 +2659,19 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header("Cache-Control", "no-cache")
         self.end_headers()
         self.wfile.write(data)
+
+    def _serve_prometheus_metrics(self):
+        try:
+            from framework.metrics_system import MetricsRegistry
+            body = MetricsRegistry.instance().to_prometheus_text().encode()
+        except Exception as exc:
+            body = f"# metrics error: {exc}\n".encode()
+        self.send_response(200)
+        self.send_header("Content-Type", "text/plain; version=0.0.4; charset=utf-8")
+        self.send_header("Content-Length", str(len(body)))
+        self.send_header("Cache-Control", "no-cache")
+        self.end_headers()
+        self.wfile.write(body)
 
 
 # ── Entry point ───────────────────────────────────────────────────────────────

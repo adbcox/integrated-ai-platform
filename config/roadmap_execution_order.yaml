@@ -1,0 +1,241 @@
+# Roadmap Execution Order — 2026-04-25
+# Source: Plane CE — 603 total issues
+# Execution tier: IN_PROGRESS (complete first) → URGENT_BACKLOG → HIGH_BACKLOG
+
+stats:
+  total: 603
+  in_progress: 15
+  urgent_backlog: 15
+  done: 66
+  cancelled: 5
+
+in_progress:
+  - id: RM-833
+    name: "[RM-AI-001] Local translation service with offline-first architecture"
+    priority: high
+    state: In Progress
+
+  - id: RM-968
+    name: "[RM-DATA-006] OCR and document intelligence pipeline for vision models and batch processing"
+    priority: high
+    state: In Progress
+
+  - id: RM-1022
+    name: "[RM-DOCS-001] API documentation and SDK guides"
+    priority: high
+    state: In Progress
+
+  - id: RM-1111
+    name: "[RM-LEARN-001] Learning metrics collection and analysis infrastructure"
+    priority: high
+    state: In Progress
+
+  - id: RM-1122
+    name: "[RM-MEDIA-012] Image optimization and CDN integration"
+    priority: high
+    state: In Progress
+
+  - id: RM-1123
+    name: "[RM-MEDIA-013] Streaming infrastructure (HLS/DASH)"
+    priority: high
+    state: In Progress
+
+  - id: RM-1181
+    name: "[RM-OBS-002] Metrics collection (Prometheus format)"
+    priority: high
+    state: In Progress
+
+  - id: RM-1194
+    name: "[RM-OPS-011] Kubernetes deployment manifests and Helm charts"
+    priority: high
+    state: In Progress
+
+  - id: RM-1198
+    name: "[RM-OPS-015] Log aggregation and analysis (ELK/Loki)"
+    priority: high
+    state: In Progress
+
+  - id: RM-1320
+    name: "[RM-TESTING-011] Contract testing for APIs"
+    priority: high
+    state: In Progress
+
+  - id: RM-1323
+    name: "[RM-TESTING-014] Continuous test execution pipeline"
+    priority: high
+    state: In Progress
+
+  - id: RM-877
+    name: "[RM-AUTO-012] Intelligent code review automation"
+    priority: medium
+    state: In Progress
+
+  - id: RM-1124
+    name: "[RM-MEDIA-014] Media metadata extraction and tagging"
+    priority: medium
+    state: In Progress
+
+  - id: RM-1126
+    name: "[RM-MEDIA-016] Video quality analysis and encoding presets"
+    priority: medium
+    state: In Progress
+
+  - id: RM-1322
+    name: "[RM-TESTING-013] Test data generation and fixtures"
+    priority: medium
+    state: In Progress
+
+
+urgent_backlog:
+  - id: RM-864
+    name: "[RM-APIGW-001] API gateway core routing and request handling"
+    priority: urgent
+    state: Backlog
+
+  - id: RM-866
+    name: "[RM-APIGW-003] API authentication and authorization"
+    priority: urgent
+    state: Backlog
+
+  - id: RM-881
+    name: "[RM-BACKUP-001] Backup strategy and retention policy"
+    priority: urgent
+    state: Backlog
+
+  - id: RM-884
+    name: "[RM-BACKUP-004] Backup encryption and security"
+    priority: urgent
+    state: Backlog
+
+  - id: RM-963
+    name: "[RM-DATA-001] Database connection pooling"
+    priority: urgent
+    state: Backlog
+
+  - id: RM-967
+    name: "[RM-DATA-005] Backup & restore automation"
+    priority: urgent
+    state: Backlog
+
+  - id: RM-1027
+    name: "[RM-DOCS-006] Deployment runbooks"
+    priority: urgent
+    state: Backlog
+
+  - id: RM-1028
+    name: "[RM-DOCS-007] Incident response playbooks"
+    priority: urgent
+    state: Backlog
+
+  - id: RM-1031
+    name: "[RM-DOCS-010] Security best practices guide"
+    priority: urgent
+    state: Backlog
+
+  - id: RM-1269
+    name: "[RM-SEC-001] Authentication & authorization framework"
+    priority: urgent
+    state: Backlog
+
+  - id: RM-1270
+    name: "[RM-SEC-002] API key rotation system"
+    priority: urgent
+    state: Backlog
+
+  - id: RM-1271
+    name: "[RM-SEC-003] Secrets encryption at rest"
+    priority: urgent
+    state: Backlog
+
+  - id: RM-1378
+    name: "[RM-USERMGMT-001] User provisioning and account creation"
+    priority: urgent
+    state: Backlog
+
+  - id: RM-1380
+    name: "[RM-USERMGMT-003] Multi-factor authentication (MFA)"
+    priority: urgent
+    state: Backlog
+
+  - id: RM-1384
+    name: "[RM-USERMGMT-007] Role-based access control (RBAC)"
+    priority: urgent
+    state: Backlog
+
+
+high_backlog_sample:
+  - id: RM-865
+    name: "[RM-APIGW-002] API rate limiting and throttling"
+    priority: high
+    state: Backlog
+
+  - id: RM-867
+    name: "[RM-APIGW-004] API request/response transformation"
+    priority: high
+    state: Backlog
+
+  - id: RM-868
+    name: "[RM-APIGW-005] API caching and response optimization"
+    priority: high
+    state: Backlog
+
+  - id: RM-869
+    name: "[RM-APIGW-006] API load balancing and service discovery"
+    priority: high
+    state: Backlog
+
+  - id: RM-870
+    name: "[RM-APIGW-007] API circuit breaker and resilience"
+    priority: high
+    state: Backlog
+
+  - id: RM-872
+    name: "[RM-APIGW-009] API monitoring and analytics"
+    priority: high
+    state: Backlog
+
+  - id: RM-876
+    name: "[RM-AUTO-011] Self-healing code (automatic bug fixing)"
+    priority: high
+    state: Backlog
+
+  - id: RM-882
+    name: "[RM-BACKUP-002] Database backup automation"
+    priority: high
+    state: Backlog
+
+  - id: RM-883
+    name: "[RM-BACKUP-003] File system backup and versioning"
+    priority: high
+    state: Backlog
+
+  - id: RM-885
+    name: "[RM-BACKUP-005] Off-site backup replication"
+    priority: high
+    state: Backlog
+
+  - id: RM-886
+    name: "[RM-BACKUP-006] Disaster recovery testing"
+    priority: high
+    state: Backlog
+
+  - id: RM-887
+    name: "[RM-BACKUP-007] Backup monitoring and alerting"
+    priority: high
+    state: Backlog
+
+  - id: RM-888
+    name: "[RM-BACKUP-008] Backup restore operations"
+    priority: high
+    state: Backlog
+
+  - id: RM-889
+    name: "[RM-BACKUP-009] Backup compliance and audit logging"
+    priority: high
+    state: Backlog
+
+  - id: RM-891
+    name: "[RM-CI-001] GitHub Actions workflow optimization"
+    priority: high
+    state: Backlog
+
