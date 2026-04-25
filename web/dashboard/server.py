@@ -126,21 +126,31 @@ def _parse_log(log_path: Path) -> dict:
 
 
 def _git_log() -> list[dict]:
+    # Get commit metadata
     result = subprocess.run(
-        ["git", "log", "--oneline", "--no-walk=unsorted",
-         "--format=%h|%s|%ar|%an", "-15"],
+        ["git", "log", "--format=COMMIT %h|%s|%ar|%an", "--name-only", "-15"],
         capture_output=True, text=True, cwd=REPO_ROOT
     )
     commits = []
-    for line in result.stdout.strip().splitlines():
-        parts = line.split("|", 3)
-        if len(parts) == 4:
-            commits.append({
-                "hash": parts[0],
-                "message": parts[1][:72],
-                "when": parts[2],
-                "author": parts[3],
-            })
+    cur: dict | None = None
+    for line in result.stdout.splitlines():
+        if line.startswith("COMMIT "):
+            if cur:
+                commits.append(cur)
+            parts = line[7:].split("|", 3)
+            if len(parts) == 4:
+                cur = {
+                    "hash": parts[0],
+                    "message": parts[1][:72],
+                    "when": parts[2],
+                    "author": parts[3],
+                    "files": [],
+                }
+        elif line.strip() and cur is not None:
+            if len(cur["files"]) < 12:
+                cur["files"].append(line.strip())
+    if cur:
+        commits.append(cur)
     return commits
 
 
@@ -167,13 +177,19 @@ def _training_stats() -> dict:
 
 
 def _system_health() -> dict:
-    # Ollama
+    import urllib.request as _req
+    import json as _json
+
+    # Ollama availability + loaded models
+    ollama_ok = False
+    ollama_queue = 0
     try:
-        import urllib.request
-        urllib.request.urlopen("http://127.0.0.1:11434/api/tags", timeout=2)
+        _req.urlopen("http://127.0.0.1:11434/api/tags", timeout=2)
         ollama_ok = True
+        with _req.urlopen("http://127.0.0.1:11434/api/ps", timeout=1) as r:
+            ollama_queue = len(_json.loads(r.read()).get("models", []))
     except Exception:
-        ollama_ok = False
+        pass
 
     # Aider processes
     ps = subprocess.run(["pgrep", "-c", "aider"], capture_output=True, text=True)
@@ -187,10 +203,7 @@ def _system_health() -> dict:
     executor_pids = [p for p in ps2.stdout.strip().splitlines() if p]
 
     # Disk space on repo root
-    df = subprocess.run(
-        ["df", "-g", str(REPO_ROOT)],
-        capture_output=True, text=True,
-    )
+    df = subprocess.run(["df", "-g", str(REPO_ROOT)], capture_output=True, text=True)
     disk_free_gb = 0
     for line in df.stdout.splitlines()[1:]:
         parts = line.split()
@@ -200,12 +213,49 @@ def _system_health() -> dict:
             except ValueError:
                 pass
 
+    # CPU usage (macOS top)
+    cpu_pct = 0
+    try:
+        top_r = subprocess.run(["top", "-l", "1", "-n", "0"], capture_output=True, text=True, timeout=5)
+        m = re.search(r"CPU usage:\s*([\d.]+)%\s*user,\s*([\d.]+)%\s*sys", top_r.stdout)
+        if m:
+            cpu_pct = round(float(m.group(1)) + float(m.group(2)), 1)
+    except Exception:
+        pass
+
+    # RAM (macOS vm_stat + sysctl)
+    ram_total_gb = 0
+    ram_used_pct = 0
+    try:
+        total_r = subprocess.run(["sysctl", "-n", "hw.memsize"], capture_output=True, text=True)
+        ram_total_bytes = int(total_r.stdout.strip())
+        ram_total_gb = ram_total_bytes // (1024 ** 3)
+        vm_r = subprocess.run(["vm_stat"], capture_output=True, text=True)
+        page_size = 16384
+        pages_free = 0
+        for ln in vm_r.stdout.splitlines():
+            if "page size of" in ln:
+                pm = re.search(r"page size of (\d+)", ln)
+                if pm:
+                    page_size = int(pm.group(1))
+            fm = re.search(r"Pages free:\s+(\d+)", ln)
+            if fm:
+                pages_free = int(fm.group(1))
+        free_bytes = pages_free * page_size
+        ram_used_pct = round((1 - free_bytes / ram_total_bytes) * 100) if ram_total_bytes else 0
+    except Exception:
+        pass
+
     return {
         "ollama_available": ollama_ok,
+        "ollama_queue": ollama_queue,
         "aider_processes": aider_count,
         "executor_pids": executor_pids,
         "executor_running": len(executor_pids) > 0,
         "disk_free_gb": disk_free_gb,
+        "cpu_pct": cpu_pct,
+        "ram_used_pct": ram_used_pct,
+        "ram_total_gb": ram_total_gb,
     }
 
 
@@ -334,6 +384,17 @@ class Handler(BaseHTTPRequestHandler):
                 self._serve_json({"lines": lines[-200:], "file": str(log)})
             else:
                 self._serve_json({"lines": [], "file": None})
+        elif path.startswith("/api/diff/"):
+            hash_ = path[len("/api/diff/"):]
+            if re.match(r"^[0-9a-f]{7,40}$", hash_):
+                r = subprocess.run(
+                    ["git", "show", "--stat", "--format=", hash_],
+                    capture_output=True, text=True, cwd=REPO_ROOT,
+                )
+                self._serve_json({"diff": r.stdout[:6000], "hash": hash_})
+            else:
+                self.send_response(400)
+                self.end_headers()
         else:
             self.send_response(404)
             self.end_headers()
@@ -346,6 +407,11 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/executor":
             action = body.get("action", "")
             self._serve_json(_executor_action(action))
+        elif path == "/api/training/start":
+            self._serve_json({
+                "ok": False,
+                "message": "Training pipeline not yet wired — run manually in ~/training-env"
+            })
         else:
             self.send_response(404)
             self.end_headers()

@@ -40,12 +40,72 @@ tailwind.config = {
   @keyframes toastin  { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
   @keyframes toastout { to{opacity:0;transform:translateY(20px)} }
   @media (max-width: 768px) { .desktop-only { display: none !important; } }
+
+  /* Diff viewer */
+  .diff-view { font-size: 10px; line-height: 1.5; white-space: pre; overflow-x: auto; }
+  .diff-view .add { color: #3fb950; }
+  .diff-view .del { color: #f85149; }
+  .diff-view .hunk { color: #79c0ff; }
+  .diff-view .stat { color: #8b949e; }
+
+  /* Resource bars */
+  .res-bar-bg { background: #21262d; border-radius: 3px; height: 4px; overflow: hidden; }
+  .res-bar-fill { height: 100%; border-radius: 3px; transition: width .6s ease; }
+  .cpu-fill  { background: linear-gradient(90deg, #58a6ff, #79c0ff); }
+  .ram-fill  { background: linear-gradient(90deg, #bc8cff, #d2a8ff); }
+  .disk-fill { background: linear-gradient(90deg, #3fb950, #56d364); }
+
+  /* Category bar — clickable */
+  .cat-row { cursor: pointer; border-radius: 6px; padding: 2px 4px; transition: background .15s; }
+  .cat-row:hover { background: #21262d; }
+  .cat-row.selected { background: #1f3050; outline: 1px solid #58a6ff40; }
+
+  /* Git file chip */
+  .file-chip { display: inline-block; font-size: 10px; padding: 1px 5px; border-radius: 3px;
+               background: #21262d; color: #8b949e; cursor: pointer; transition: background .15s; }
+  .file-chip:hover, .file-chip.active { background: #1f3050; color: #58a6ff; }
+
+  /* Shortcuts modal */
+  #shortcuts-modal { backdrop-filter: blur(4px); }
+  .kbd { display: inline-block; background: #21262d; border: 1px solid #30363d;
+         border-radius: 4px; padding: 2px 6px; font-size: 11px; color: #c9d1d9; }
 </style>
 </head>
 <body class="text-gray-300 min-h-screen">
 
-<!-- Toast container -->
+<!-- ── Toast container ── -->
 <div id="toasts" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+<!-- ── Keyboard Shortcuts Modal ── -->
+<div id="shortcuts-modal" class="hidden fixed inset-0 bg-black/70 z-50 flex items-center justify-center" onclick="hideShortcuts()">
+  <div class="bg-[#161b22] border border-[#21262d] rounded-2xl p-6 w-full max-w-lg shadow-2xl" onclick="event.stopPropagation()">
+    <div class="flex justify-between items-center mb-5">
+      <h2 class="text-sm font-bold text-white">Keyboard Shortcuts</h2>
+      <button onclick="hideShortcuts()" class="text-gray-500 hover:text-white text-lg leading-none">✕</button>
+    </div>
+    <div class="grid grid-cols-2 gap-3 text-xs">
+      <div class="space-y-2">
+        <p class="text-gray-500 uppercase text-[10px] tracking-wider mb-1">Navigation</p>
+        <div class="flex items-center gap-2"><span class="kbd">1</span><span class="text-gray-400">Overview</span></div>
+        <div class="flex items-center gap-2"><span class="kbd">2</span><span class="text-gray-400">Roadmap Kanban</span></div>
+        <div class="flex items-center gap-2"><span class="kbd">3</span><span class="text-gray-400">Live Logs</span></div>
+        <div class="flex items-center gap-2"><span class="kbd">4</span><span class="text-gray-400">Controls</span></div>
+        <div class="flex items-center gap-2"><span class="kbd">L</span><span class="text-gray-400">Jump to Logs</span></div>
+        <div class="flex items-center gap-2"><span class="kbd">?</span><span class="text-gray-400">Show this overlay</span></div>
+      </div>
+      <div class="space-y-2">
+        <p class="text-gray-500 uppercase text-[10px] tracking-wider mb-1">Actions</p>
+        <div class="flex items-center gap-2"><span class="kbd">R</span><span class="text-gray-400">Force refresh</span></div>
+        <div class="flex items-center gap-2"><span class="kbd">S</span><span class="text-gray-400">Start executor</span></div>
+        <div class="flex items-center gap-2"><span class="kbd">X</span><span class="text-gray-400">Stop executor</span></div>
+        <div class="flex items-center gap-2"><span class="kbd">Esc</span><span class="text-gray-400">Close modal / clear filter</span></div>
+      </div>
+    </div>
+    <div class="mt-5 border-t border-[#21262d] pt-4">
+      <p class="text-[10px] text-gray-600">Click a category bar → filter Roadmap to that category &nbsp;·&nbsp; Click a commit hash → show diff inline</p>
+    </div>
+  </div>
+</div>
 
 <!-- ── Header ── -->
 <header class="border-b border-[#21262d] sticky top-0 z-40 bg-[#0d1117]/95 backdrop-blur">
@@ -61,9 +121,10 @@ tailwind.config = {
       <button onclick="setTab('logs')"      class="tab-btn         px-3 py-1 text-xs" id="tab-logs">Logs</button>
       <button onclick="setTab('controls')"  class="tab-btn         px-3 py-1 text-xs" id="tab-controls">Controls</button>
     </nav>
-    <div class="flex items-center gap-2">
+    <div class="flex items-center gap-3">
       <span id="hdr-status" class="text-xs text-gray-500">connecting</span>
       <span id="hdr-time"   class="text-xs text-gray-600 desktop-only"></span>
+      <button onclick="showShortcuts()" class="text-xs text-gray-600 hover:text-gray-300 leading-none px-1" title="Keyboard shortcuts (?)">?</button>
     </div>
   </div>
 </header>
@@ -91,9 +152,9 @@ tailwind.config = {
       <p class="text-xs text-gray-600 mt-1">per subtask</p>
     </div>
     <div class="bg-[#161b22] border border-[#21262d] rounded-xl p-4">
-      <p class="text-xs text-gray-500 mb-1">Quality Examples</p>
-      <p id="h-ex"    class="text-3xl font-bold text-amber-400">—</p>
-      <p id="h-sft"   class="text-xs text-gray-600 mt-1">of 10 for SFT</p>
+      <p class="text-xs text-gray-500 mb-1">Queue Depth</p>
+      <p id="h-queue" class="text-3xl font-bold text-amber-400">—</p>
+      <p id="h-queue-sub" class="text-xs text-gray-600 mt-1">items pending</p>
     </div>
   </div>
 
@@ -102,29 +163,49 @@ tailwind.config = {
     <!-- Left 2/3 -->
     <div class="lg:col-span-2 flex flex-col gap-4">
 
-      <!-- Current execution -->
+      <!-- ── Active Execution (enhanced) ── -->
       <div class="bg-[#161b22] border border-[#21262d] rounded-xl p-4">
         <div class="flex items-center justify-between mb-3">
           <h2 class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Active Execution</h2>
-          <span id="exec-badge" class="text-xs px-2 py-0.5 rounded-full bg-[#21262d] text-gray-500">idle</span>
+          <div class="flex items-center gap-2">
+            <span id="exec-queue-chip" class="text-xs px-2 py-0.5 rounded-full bg-[#21262d] text-gray-500 hidden">
+              <span id="exec-queue-n">0</span> queued
+            </span>
+            <span id="exec-badge" class="text-xs px-2 py-0.5 rounded-full bg-[#21262d] text-gray-500">idle</span>
+          </div>
         </div>
         <div id="exec-item"    class="text-sm text-gray-400 mb-1">No executor running</div>
         <div id="exec-subtask" class="text-xs text-gray-600 truncate mb-2"></div>
-        <div class="h-1 bg-[#21262d] rounded-full overflow-hidden">
+        <!-- Progress bar -->
+        <div class="h-1.5 bg-[#21262d] rounded-full overflow-hidden mb-2">
           <div id="exec-prog" class="h-full bg-emerald-500 rounded-full bar-fill" style="width:0%"></div>
+        </div>
+        <!-- ETA + subtask counter -->
+        <div class="flex justify-between items-center text-xs text-gray-600">
+          <span id="exec-subtask-counter"></span>
+          <span id="exec-eta"></span>
         </div>
       </div>
 
-      <!-- Category breakdown -->
+      <!-- ── Category Performance Chart (clickable) ── -->
       <div class="bg-[#161b22] border border-[#21262d] rounded-xl p-4">
-        <h2 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Category Progress</h2>
-        <div id="cat-chart" class="space-y-2"></div>
+        <div class="flex justify-between items-center mb-3">
+          <h2 class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Category Progress</h2>
+          <button id="cat-clear-btn" onclick="clearCatFilter()" class="text-xs text-blue-400 hover:text-blue-300 hidden">✕ clear filter</button>
+        </div>
+        <p class="text-[10px] text-gray-600 mb-2">Click a category to filter the Roadmap tab</p>
+        <div id="cat-chart" class="space-y-1.5"></div>
       </div>
 
-      <!-- Git feed -->
+      <!-- ── Recent Commits Feed (with diff + file type filter) ── -->
       <div class="bg-[#161b22] border border-[#21262d] rounded-xl p-4">
-        <h2 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Recent Commits</h2>
-        <div id="git-feed" class="space-y-3 max-h-56 overflow-y-auto pr-1"></div>
+        <div class="flex justify-between items-center mb-2">
+          <h2 class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Recent Commits</h2>
+          <span class="text-[10px] text-gray-600">click hash to expand diff</span>
+        </div>
+        <!-- File type filter chips -->
+        <div id="git-type-filters" class="flex flex-wrap gap-1 mb-3 min-h-5"></div>
+        <div id="git-feed" class="space-y-3 max-h-72 overflow-y-auto pr-1"></div>
       </div>
     </div>
 
@@ -136,13 +217,11 @@ tailwind.config = {
         <h2 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">Roadmap</h2>
         <div class="flex justify-center">
           <svg width="160" height="160" viewBox="0 0 160 160">
-            <!-- Outer ring: all items -->
             <circle class="ring-track" cx="80" cy="80" r="68" stroke-width="10"/>
             <circle class="ring-fill"  cx="80" cy="80" r="68" stroke-width="10"
               stroke="#58a6ff" id="ring-outer"
               stroke-dasharray="427" stroke-dashoffset="427"
               transform="rotate(-90 80 80)"/>
-            <!-- Inner ring: completed only -->
             <circle class="ring-track" cx="80" cy="80" r="52" stroke-width="8"/>
             <circle class="ring-fill"  cx="80" cy="80" r="52" stroke-width="8"
               stroke="#3fb950" id="ring-inner"
@@ -154,64 +233,123 @@ tailwind.config = {
         </div>
         <div class="mt-2 space-y-1">
           <div class="flex justify-between text-xs"><span class="text-gray-500">● Completed</span><span id="r-completed" class="text-emerald-400">—</span></div>
-          <div class="flex justify-between text-xs"><span class="text-gray-500">● Accepted</span><span id="r-accepted"  class="text-blue-400">—</span></div>
+          <div class="flex justify-between text-xs"><span class="text-gray-500">● Accepted</span><span  id="r-accepted"  class="text-blue-400">—</span></div>
           <div class="flex justify-between text-xs"><span class="text-gray-500">● In progress</span><span id="r-inprog"   class="text-yellow-400">—</span></div>
-          <div class="flex justify-between text-xs"><span class="text-gray-500">  Pending</span><span id="r-pending"  class="text-gray-500">—</span></div>
+          <div class="flex justify-between text-xs"><span class="text-gray-500">  Pending</span><span   id="r-pending"  class="text-gray-500">—</span></div>
         </div>
       </div>
 
-      <!-- Training readiness -->
+      <!-- ── Training Data Quality Meter (enhanced) ── -->
       <div class="bg-[#161b22] border border-[#21262d] rounded-xl p-4">
-        <h2 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">Training Readiness</h2>
-        <div class="space-y-3">
-          <div>
-            <div class="flex justify-between text-xs mb-1"><span class="text-gray-400">SFT (10)</span><span id="t-sft-lbl" class="text-gray-500">0/10</span></div>
-            <div class="h-1.5 bg-[#21262d] rounded-full overflow-hidden">
-              <div id="t-sft" class="h-full bg-amber-500 bar-fill rounded-full" style="width:0%"></div>
-            </div>
+        <h2 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Training Readiness</h2>
+
+        <!-- SFT threshold (big progress bar) -->
+        <div class="mb-3">
+          <div class="flex justify-between text-xs mb-1">
+            <span class="text-amber-400 font-medium">SFT Goal</span>
+            <span id="t-sft-lbl" class="text-gray-500">0/10</span>
           </div>
+          <div class="h-2 bg-[#21262d] rounded-full overflow-hidden">
+            <div id="t-sft" class="h-full bg-amber-500 bar-fill rounded-full" style="width:0%"></div>
+          </div>
+        </div>
+
+        <!-- Quality breakdown -->
+        <div class="grid grid-cols-3 gap-2 mb-3">
+          <div class="bg-[#0d1117] rounded-lg p-2 text-center">
+            <p id="t-good"  class="text-lg font-bold text-emerald-400">—</p>
+            <p class="text-[10px] text-gray-600">good</p>
+          </div>
+          <div class="bg-[#0d1117] rounded-lg p-2 text-center">
+            <p id="t-ok"    class="text-lg font-bold text-yellow-400">—</p>
+            <p class="text-[10px] text-gray-600">ok</p>
+          </div>
+          <div class="bg-[#0d1117] rounded-lg p-2 text-center">
+            <p id="t-ugly"  class="text-lg font-bold text-red-400">—</p>
+            <p class="text-[10px] text-gray-600">noisy</p>
+          </div>
+        </div>
+
+        <div class="space-y-2 mb-3">
           <div>
-            <div class="flex justify-between text-xs mb-1"><span class="text-gray-400">LoRA (50)</span><span id="t-lora-lbl" class="text-gray-500">0/50</span></div>
-            <div class="h-1.5 bg-[#21262d] rounded-full overflow-hidden">
+            <div class="flex justify-between text-xs mb-0.5"><span class="text-gray-500">LoRA (50)</span><span id="t-lora-lbl" class="text-gray-600">0/50</span></div>
+            <div class="h-1 bg-[#21262d] rounded-full overflow-hidden">
               <div id="t-lora" class="h-full bg-orange-500 bar-fill rounded-full" style="width:0%"></div>
             </div>
           </div>
           <div>
-            <div class="flex justify-between text-xs mb-1"><span class="text-gray-400">Stable (200)</span><span id="t-stable-lbl" class="text-gray-500">0/200</span></div>
-            <div class="h-1.5 bg-[#21262d] rounded-full overflow-hidden">
+            <div class="flex justify-between text-xs mb-0.5"><span class="text-gray-500">Stable (200)</span><span id="t-stable-lbl" class="text-gray-600">0/200</span></div>
+            <div class="h-1 bg-[#21262d] rounded-full overflow-hidden">
               <div id="t-stable" class="h-full bg-red-500 bar-fill rounded-full" style="width:0%"></div>
             </div>
           </div>
         </div>
-        <p id="t-eta" class="text-xs text-gray-600 mt-3 border-t border-[#21262d] pt-3"></p>
+
+        <p id="t-eta" class="text-xs text-gray-600 mb-3 border-t border-[#21262d] pt-2"></p>
+
+        <!-- Start Training button -->
+        <button id="train-btn" onclick="startTraining()"
+          class="w-full py-1.5 rounded-lg border border-amber-600/40 text-amber-400 text-xs hover:bg-amber-900/20 transition">
+          ◈ Start Fine-Tuning
+        </button>
+        <p id="train-status" class="text-[10px] text-gray-600 text-center mt-1"></p>
       </div>
 
-      <!-- System health -->
+      <!-- ── System Health Panel (enhanced) ── -->
       <div class="bg-[#161b22] border border-[#21262d] rounded-xl p-4">
-        <h2 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">System</h2>
-        <div class="space-y-2">
-          <div class="flex justify-between items-center">
-            <span class="text-xs text-gray-500">Ollama</span>
-            <span id="s-ollama" class="text-xs px-1.5 py-0.5 rounded bg-[#21262d] text-gray-400">—</span>
+        <h2 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">System Health</h2>
+        <div class="space-y-3">
+          <!-- Ollama -->
+          <div>
+            <div class="flex justify-between items-center mb-1">
+              <span class="text-xs text-gray-500">Ollama</span>
+              <div class="flex items-center gap-1.5">
+                <span id="s-ollama-queue" class="text-[10px] text-gray-600"></span>
+                <span id="s-ollama" class="text-xs px-1.5 py-0.5 rounded bg-[#21262d] text-gray-400">—</span>
+              </div>
+            </div>
           </div>
-          <div class="flex justify-between items-center">
-            <span class="text-xs text-gray-500">Aider</span>
-            <span id="s-aider"    class="text-xs text-gray-300">—</span>
+          <!-- CPU -->
+          <div>
+            <div class="flex justify-between text-xs mb-1">
+              <span class="text-gray-500">CPU</span>
+              <span id="s-cpu-lbl" class="text-gray-400">—%</span>
+            </div>
+            <div class="res-bar-bg">
+              <div id="s-cpu-bar" class="res-bar-fill cpu-fill" style="width:0%"></div>
+            </div>
           </div>
-          <div class="flex justify-between items-center">
-            <span class="text-xs text-gray-500">Executor</span>
-            <span id="s-executor" class="text-xs text-gray-300">—</span>
+          <!-- RAM -->
+          <div>
+            <div class="flex justify-between text-xs mb-1">
+              <span class="text-gray-500">RAM</span>
+              <span id="s-ram-lbl" class="text-gray-400">—%</span>
+            </div>
+            <div class="res-bar-bg">
+              <div id="s-ram-bar" class="res-bar-fill ram-fill" style="width:0%"></div>
+            </div>
           </div>
-          <div class="flex justify-between items-center">
-            <span class="text-xs text-gray-500">Disk free</span>
-            <span id="s-disk"     class="text-xs text-gray-300">—</span>
+          <!-- Disk -->
+          <div class="flex justify-between items-center text-xs">
+            <span class="text-gray-500">Disk free</span>
+            <span id="s-disk" class="text-gray-300">—</span>
+          </div>
+          <div class="border-t border-[#21262d] pt-2 space-y-1.5">
+            <div class="flex justify-between items-center text-xs">
+              <span class="text-gray-500">Aider</span>
+              <span id="s-aider" class="text-gray-300">—</span>
+            </div>
+            <div class="flex justify-between items-center text-xs">
+              <span class="text-gray-500">Executor</span>
+              <span id="s-executor" class="text-gray-300">—</span>
+            </div>
           </div>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Completions + failures -->
+  <!-- Recent completions + failures -->
   <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
     <div class="bg-[#161b22] border border-[#21262d] rounded-xl p-4">
       <h2 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Recent Completions</h2>
@@ -226,9 +364,18 @@ tailwind.config = {
 
 <!-- ══ KANBAN TAB ═════════════════════════════════════════════════════════════ -->
 <div id="pane-kanban" class="hidden">
-  <div class="flex justify-between items-center mb-4">
-    <h2 class="text-sm font-semibold text-white">Roadmap Kanban</h2>
-    <button onclick="loadKanban()" class="text-xs text-blue-400 hover:text-blue-300">↻ refresh</button>
+  <div class="flex flex-wrap justify-between items-center gap-2 mb-4">
+    <div class="flex items-center gap-2">
+      <h2 class="text-sm font-semibold text-white">Roadmap Kanban</h2>
+      <span id="kanban-filter-label" class="text-xs px-2 py-0.5 rounded-full bg-blue-900/40 text-blue-400 hidden"></span>
+    </div>
+    <div class="flex items-center gap-2">
+      <button id="kanban-clear-filter" onclick="clearKanbanFilter()" class="hidden text-xs text-gray-500 hover:text-white">✕ clear</button>
+      <input id="kanban-search" oninput="filterKanbanSearch(this.value)"
+             placeholder="search items…"
+             class="bg-[#21262d] text-xs text-gray-300 px-2 py-1 rounded border border-[#30363d] focus:outline-none focus:border-blue-500 w-40">
+      <button onclick="loadKanban()" class="text-xs text-blue-400 hover:text-blue-300">↻ refresh</button>
+    </div>
   </div>
   <div class="grid grid-cols-2 md:grid-cols-4 gap-3" id="kanban-board">
     <div class="text-xs text-gray-600">Loading…</div>
@@ -278,11 +425,11 @@ tailwind.config = {
         </div>
         <div class="flex justify-between text-xs">
           <span class="text-gray-500">PIDs</span>
-          <span id="ctrl-pids"    class="text-gray-300 font-mono">—</span>
+          <span id="ctrl-pids" class="text-gray-300 font-mono">—</span>
         </div>
         <div class="flex justify-between text-xs">
           <span class="text-gray-500">Log file</span>
-          <span id="ctrl-log"     class="text-gray-400 text-right break-all">/tmp/executor_longrun.log</span>
+          <span id="ctrl-log" class="text-gray-400 text-right break-all">/tmp/executor_longrun.log</span>
         </div>
       </div>
     </div>
@@ -291,24 +438,28 @@ tailwind.config = {
     <div class="bg-[#161b22] border border-[#21262d] rounded-xl p-5">
       <h2 class="text-sm font-semibold text-white mb-4">Quick Commands</h2>
       <div class="space-y-2 text-xs font-mono">
-        <div class="bg-[#0d1117] rounded p-2 text-gray-400">python3 bin/auto_execute_roadmap.py --max-items 10</div>
-        <div class="bg-[#0d1117] rounded p-2 text-gray-400">python3 bin/analyze_learning.py</div>
-        <div class="bg-[#0d1117] rounded p-2 text-gray-400">python3 bin/setup_references.py</div>
-        <div class="bg-[#0d1117] rounded p-2 text-gray-400">make check</div>
+        <div class="bg-[#0d1117] rounded p-2 text-gray-400 select-all">python3 bin/auto_execute_roadmap.py --max-items 10</div>
+        <div class="bg-[#0d1117] rounded p-2 text-gray-400 select-all">python3 bin/analyze_roadmap.py --mode quick-wins</div>
+        <div class="bg-[#0d1117] rounded p-2 text-gray-400 select-all">python3 bin/analyze_roadmap.py --mode training-data</div>
+        <div class="bg-[#0d1117] rounded p-2 text-gray-400 select-all">make check</div>
       </div>
       <p class="text-xs text-gray-600 mt-3">Run these in your terminal.</p>
     </div>
 
-    <!-- Keyboard shortcuts -->
+    <!-- Keyboard shortcuts (condensed reference) -->
     <div class="bg-[#161b22] border border-[#21262d] rounded-xl p-5 md:col-span-2">
-      <h2 class="text-sm font-semibold text-white mb-3">Keyboard Shortcuts</h2>
+      <div class="flex justify-between items-center mb-3">
+        <h2 class="text-sm font-semibold text-white">Keyboard Shortcuts</h2>
+        <button onclick="showShortcuts()" class="text-xs text-blue-400 hover:text-blue-300">show full overlay (?)</button>
+      </div>
       <div class="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
-        <div><kbd class="bg-[#21262d] px-2 py-0.5 rounded text-gray-300">1</kbd><span class="text-gray-500 ml-2">Overview</span></div>
-        <div><kbd class="bg-[#21262d] px-2 py-0.5 rounded text-gray-300">2</kbd><span class="text-gray-500 ml-2">Roadmap</span></div>
-        <div><kbd class="bg-[#21262d] px-2 py-0.5 rounded text-gray-300">3</kbd><span class="text-gray-500 ml-2">Logs</span></div>
-        <div><kbd class="bg-[#21262d] px-2 py-0.5 rounded text-gray-300">4</kbd><span class="text-gray-500 ml-2">Controls</span></div>
-        <div><kbd class="bg-[#21262d] px-2 py-0.5 rounded text-gray-300">R</kbd><span class="text-gray-500 ml-2">Refresh now</span></div>
-        <div><kbd class="bg-[#21262d] px-2 py-0.5 rounded text-gray-300">L</kbd><span class="text-gray-500 ml-2">Go to logs</span></div>
+        <div><kbd class="bg-[#21262d] px-2 py-0.5 rounded text-gray-300">1–4</kbd><span class="text-gray-500 ml-2">Switch tabs</span></div>
+        <div><kbd class="bg-[#21262d] px-2 py-0.5 rounded text-gray-300">R</kbd><span class="text-gray-500 ml-2">Refresh</span></div>
+        <div><kbd class="bg-[#21262d] px-2 py-0.5 rounded text-gray-300">S</kbd><span class="text-gray-500 ml-2">Start executor</span></div>
+        <div><kbd class="bg-[#21262d] px-2 py-0.5 rounded text-gray-300">X</kbd><span class="text-gray-500 ml-2">Stop executor</span></div>
+        <div><kbd class="bg-[#21262d] px-2 py-0.5 rounded text-gray-300">L</kbd><span class="text-gray-500 ml-2">Logs tab</span></div>
+        <div><kbd class="bg-[#21262d] px-2 py-0.5 rounded text-gray-300">?</kbd><span class="text-gray-500 ml-2">Shortcuts overlay</span></div>
+        <div><kbd class="bg-[#21262d] px-2 py-0.5 rounded text-gray-300">Esc</kbd><span class="text-gray-500 ml-2">Close / clear</span></div>
       </div>
     </div>
   </div>
@@ -321,11 +472,15 @@ tailwind.config = {
 const $ = id => document.getElementById(id);
 const pct = (v, t) => t > 0 ? Math.min(100, Math.round(v / t * 100)) : 0;
 
-function setBar(id, p) { const e=$(id); if(e) e.style.width=p+'%'; }
+function setBar(id, p) { const e=$(id); if(e) e.style.width = p+'%'; }
 
 function setRing(id, circ, p) {
-  const e=$(id); if(!e) return;
+  const e = $(id); if(!e) return;
   e.setAttribute('stroke-dashoffset', circ - circ * p / 100);
+}
+
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
 function toast(msg, type='ok') {
@@ -336,6 +491,10 @@ function toast(msg, type='ok') {
   $('toasts').appendChild(el);
   setTimeout(() => el.remove(), 3100);
 }
+
+// ── Shortcuts modal ───────────────────────────────────────────────────────────
+function showShortcuts() { $('shortcuts-modal').classList.remove('hidden'); }
+function hideShortcuts() { $('shortcuts-modal').classList.add('hidden'); }
 
 // ── Tab system ────────────────────────────────────────────────────────────────
 const TABS = ['overview', 'kanban', 'logs', 'controls'];
@@ -351,22 +510,198 @@ function setTab(name) {
   if (name === 'logs') loadLog();
 }
 
-// ── Render status ─────────────────────────────────────────────────────────────
+// ── Category filter state ─────────────────────────────────────────────────────
+let activeCat = null;
+
+function selectCat(cat) {
+  activeCat = (activeCat === cat) ? null : cat;
+  renderCatChart(_lastCats);
+  // Switch to kanban and filter
+  setTab('kanban');
+  if (!kanbanLoaded) {
+    loadKanban().then(() => applyKanbanCatFilter());
+  } else {
+    applyKanbanCatFilter();
+  }
+}
+
+function clearCatFilter() {
+  activeCat = null;
+  renderCatChart(_lastCats);
+  applyKanbanCatFilter();
+  $('cat-clear-btn').classList.add('hidden');
+}
+
+function applyKanbanCatFilter() {
+  const label = $('kanban-filter-label');
+  const clearBtn = $('kanban-clear-filter');
+  const catClearBtn = $('cat-clear-btn');
+  if (activeCat) {
+    label.textContent = activeCat;
+    label.classList.remove('hidden');
+    clearBtn.classList.remove('hidden');
+    catClearBtn.classList.remove('hidden');
+  } else {
+    label.classList.add('hidden');
+    clearBtn.classList.add('hidden');
+    catClearBtn.classList.add('hidden');
+  }
+  // Filter visible kanban items
+  document.querySelectorAll('[data-cat]').forEach(el => {
+    el.style.display = (!activeCat || el.dataset.cat === activeCat) ? '' : 'none';
+  });
+}
+
+function clearKanbanFilter() {
+  activeCat = null;
+  applyKanbanCatFilter();
+  renderCatChart(_lastCats);
+}
+
+function filterKanbanSearch(q) {
+  const term = q.toLowerCase();
+  document.querySelectorAll('[data-kanban-item]').forEach(el => {
+    const text = el.textContent.toLowerCase();
+    el.style.display = (!term || text.includes(term)) ? '' : 'none';
+  });
+}
+
+// ── Category chart ────────────────────────────────────────────────────────────
+let _lastCats = [];
+
+function renderCatChart(cats) {
+  _lastCats = cats;
+  $('cat-chart').innerHTML = cats.slice(0, 14).map(c => `
+    <div class="cat-row flex items-center gap-2 ${activeCat===c.category?'selected':''}"
+         onclick="selectCat('${esc(c.category)}')">
+      <span class="text-xs text-gray-500 w-24 shrink-0 truncate">${esc(c.category)}</span>
+      <div class="flex-1 h-4 bg-[#21262d] rounded overflow-hidden relative">
+        <div class="cat-bar h-full bg-blue-600/30 rounded" style="width:100%"></div>
+        <div class="cat-bar h-full bg-emerald-500 rounded absolute top-0 left-0" style="width:${c.pct}%"></div>
+      </div>
+      <span class="text-xs text-gray-500 w-14 text-right shrink-0">${c.done}/${c.total}</span>
+      <span class="text-xs text-gray-600 w-8 text-right shrink-0">${c.pct}%</span>
+    </div>`).join('');
+}
+
+// ── Git feed with file type filter and inline diff ────────────────────────────
+let _gitData = [];
+let _gitTypeFilter = null;
+const _expandedDiffs = {};
+
+function _extOf(f) {
+  const m = f.match(/\.([a-z]+)$/i);
+  return m ? m[1] : 'other';
+}
+
+function renderGitFeed() {
+  const commits = _gitData.filter(c => {
+    if (!_gitTypeFilter) return true;
+    return c.files.some(f => _extOf(f) === _gitTypeFilter);
+  });
+
+  $('git-feed').innerHTML = commits.map(c => {
+    const diffHtml = _expandedDiffs[c.hash]
+      ? `<div class="diff-view mt-2 bg-[#0a0e14] rounded-lg p-2 max-h-48 overflow-y-auto text-[10px]">${colorDiff(_expandedDiffs[c.hash])}</div>`
+      : '';
+    const fileList = c.files.slice(0, 5).map(f =>
+      `<span class="file-chip">${esc(f.split('/').pop())}</span>`
+    ).join(' ') + (c.files.length > 5 ? `<span class="text-gray-600 text-[10px]"> +${c.files.length-5}</span>` : '');
+    return `
+    <div class="slide-in">
+      <div class="flex gap-2 items-start">
+        <button class="text-violet-400 text-xs font-mono shrink-0 hover:text-violet-300 hover:underline"
+                onclick="toggleDiff('${c.hash}',this)">${c.hash}</button>
+        <span class="text-xs text-gray-300 leading-snug">${esc(c.message)}</span>
+      </div>
+      <div class="flex gap-2 items-center mt-0.5 ml-14">
+        <span class="text-xs text-gray-600">${c.when}</span>
+        <span class="text-xs text-gray-700">·</span>
+        <div class="flex flex-wrap gap-1">${fileList}</div>
+      </div>
+      ${diffHtml}
+    </div>`;
+  }).join('') || '<p class="text-xs text-gray-600">No commits</p>';
+}
+
+function colorDiff(text) {
+  return esc(text).split('\n').map(l => {
+    if (l.startsWith('+')) return `<span class="add">${l}</span>`;
+    if (l.startsWith('-')) return `<span class="del">${l}</span>`;
+    if (l.startsWith('@@')) return `<span class="hunk">${l}</span>`;
+    return `<span class="stat">${l}</span>`;
+  }).join('\n');
+}
+
+async function toggleDiff(hash, btn) {
+  if (_expandedDiffs[hash]) {
+    delete _expandedDiffs[hash];
+  } else {
+    btn.textContent = '…';
+    try {
+      const res = await fetch(`/api/diff/${hash}`);
+      const data = await res.json();
+      _expandedDiffs[hash] = data.diff || '';
+    } catch(e) {
+      _expandedDiffs[hash] = 'error fetching diff';
+    }
+    btn.textContent = hash;
+  }
+  renderGitFeed();
+}
+
+function setGitTypeFilter(ext) {
+  _gitTypeFilter = (_gitTypeFilter === ext) ? null : ext;
+  document.querySelectorAll('[data-ext]').forEach(el => {
+    el.classList.toggle('active', el.dataset.ext === _gitTypeFilter);
+  });
+  renderGitFeed();
+}
+
+function renderGitTypeFilters(commits) {
+  const extCounts = {};
+  commits.forEach(c => c.files.forEach(f => {
+    const e = _extOf(f);
+    extCounts[e] = (extCounts[e] || 0) + 1;
+  }));
+  const exts = Object.entries(extCounts).sort((a,b) => b[1]-a[1]).slice(0, 8);
+  $('git-type-filters').innerHTML = exts.length
+    ? ['<span class="text-[10px] text-gray-600 self-center">filter:</span>',
+        ...exts.map(([ext, n]) =>
+          `<button class="file-chip ${_gitTypeFilter===ext?'active':''}" data-ext="${ext}" onclick="setGitTypeFilter('${ext}')">.${ext} <span class="text-gray-600">${n}</span></button>`)
+      ].join('')
+    : '';
+}
+
+// ── Training ─────────────────────────────────────────────────────────────────
+async function startTraining() {
+  $('train-status').textContent = 'Requesting…';
+  try {
+    const res = await fetch('/api/training/start', {method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});
+    const data = await res.json();
+    $('train-status').textContent = data.message;
+    toast(data.message, data.ok ? 'ok' : 'err');
+  } catch(e) {
+    $('train-status').textContent = 'Server unreachable';
+  }
+}
+
+// ── Main render ───────────────────────────────────────────────────────────────
 function render(d) {
-  const rm  = d.roadmap   || {};
-  const ex  = d.execution || {};
-  const tr  = d.training  || {};
-  const sys = d.system    || {};
+  const rm   = d.roadmap   || {};
+  const ex   = d.execution || {};
+  const tr   = d.training  || {};
+  const sys  = d.system    || {};
   const cats = d.categories || [];
 
   // Header
   const running = sys.executor_running || ex.is_running;
-  $('hdr-dot').className    = `w-2 h-2 rounded-full ${running ? 'bg-emerald-400 pulse' : 'bg-gray-600'}`;
+  $('hdr-dot').className     = `w-2 h-2 rounded-full ${running ? 'bg-emerald-400 pulse' : 'bg-gray-600'}`;
   $('hdr-status').textContent = running ? 'executor running' : 'idle';
   $('hdr-time').textContent   = new Date().toLocaleTimeString();
 
-  // Hero
-  const done = (rm.completed||0) + (rm.accepted||0);
+  // Hero — swap Quality Examples for Queue Depth
+  const done  = (rm.completed||0) + (rm.accepted||0);
   const total = rm.total || 254;
   $('h-done').textContent  = done;
   $('h-total').textContent = `of ${total} items`;
@@ -380,18 +715,30 @@ function render(d) {
   const avg = ex.avg_subtask_seconds;
   $('h-avg').textContent = avg > 0 ? avg + 's' : '—';
 
-  const qual = tr.quality_examples || 0;
-  $('h-ex').textContent  = qual;
-  $('h-sft').textContent = `of ${tr.sft_threshold||10} for SFT`;
+  const queueDepth = (rm.pending || 0) + (rm.accepted || 0);
+  $('h-queue').textContent    = queueDepth;
+  $('h-queue-sub').textContent = 'items pending';
 
-  // Execution panel
+  // Executor panel
   if (running || ex.current_item) {
     $('exec-badge').className   = 'text-xs px-2 py-0.5 rounded-full bg-emerald-900/50 text-emerald-400';
     $('exec-badge').textContent = 'running';
     $('exec-item').textContent  = ex.current_item ? `▶ ${ex.current_item}` : 'Starting…';
     $('exec-item').className    = 'text-sm text-emerald-300 mb-1 font-medium';
     $('exec-subtask').textContent = ex.current_subtask || '';
-    setBar('exec-prog', pct(done, total));
+
+    // Queue depth chip
+    if (queueDepth > 0) {
+      $('exec-queue-chip').classList.remove('hidden');
+      $('exec-queue-n').textContent = queueDepth;
+    }
+
+    // ETA: estimate based on remaining items × avg time per item
+    const remaining = Math.max(0, total - done);
+    const avgItem = avg > 0 ? avg * 3 : 120; // assume 3 subtasks per item
+    const etaSec = remaining * avgItem;
+    $('exec-eta').textContent = etaSec > 0 ? `~${fmtDuration(etaSec)} remaining` : '';
+    $('exec-subtask-counter').textContent = subtasks > 0 ? `${subtasks} subtasks run` : '';
   } else {
     $('exec-badge').className   = 'text-xs px-2 py-0.5 rounded-full bg-[#21262d] text-gray-500';
     $('exec-badge').textContent = 'idle';
@@ -400,33 +747,23 @@ function render(d) {
       : 'No executor running';
     $('exec-item').className    = 'text-sm text-gray-500 mb-1';
     $('exec-subtask').textContent = '';
-    setBar('exec-prog', pct(done, total));
+    $('exec-queue-chip').classList.add('hidden');
+    $('exec-eta').textContent = '';
+    $('exec-subtask-counter').textContent = '';
   }
+  setBar('exec-prog', pct(done, total));
 
   // Category chart
-  $('cat-chart').innerHTML = cats.slice(0, 12).map(c => `
-    <div class="flex items-center gap-2">
-      <span class="text-xs text-gray-500 w-20 shrink-0 truncate">${c.category}</span>
-      <div class="flex-1 h-4 bg-[#21262d] rounded overflow-hidden relative">
-        <div class="cat-bar h-full bg-blue-600/50 rounded" style="width:${c.total > 0 ? 100 : 0}%"></div>
-        <div class="cat-bar h-full bg-emerald-500 rounded absolute top-0 left-0" style="width:${c.pct}%"></div>
-      </div>
-      <span class="text-xs text-gray-500 w-14 text-right shrink-0">${c.done}/${c.total}</span>
-    </div>`).join('');
+  renderCatChart(cats);
 
   // Git feed
-  $('git-feed').innerHTML = (d.git||[]).map(c => `
-    <div class="slide-in">
-      <div class="flex gap-2 items-start">
-        <span class="text-violet-400 text-xs font-mono shrink-0">${c.hash}</span>
-        <span class="text-xs text-gray-300 leading-snug">${esc(c.message)}</span>
-      </div>
-      <div class="text-xs text-gray-600 ml-14">${c.when}</div>
-    </div>`).join('') || '<p class="text-xs text-gray-600">No commits</p>';
+  _gitData = d.git || [];
+  renderGitTypeFilters(_gitData);
+  renderGitFeed();
 
   // Rings
-  const donePct  = pct(done, total);
-  const compPct  = pct(rm.completed||0, total);
+  const donePct = pct(done, total);
+  const compPct = pct(rm.completed||0, total);
   setRing('ring-outer', 427, donePct);
   setRing('ring-inner', 327, compPct);
   $('ring-label').textContent = done;
@@ -436,7 +773,9 @@ function render(d) {
   $('r-inprog').textContent    = rm.in_progress || 0;
   $('r-pending').textContent   = rm.pending || 0;
 
-  // Training bars
+  // Training quality meter
+  const qual = tr.quality_examples || 0;
+  const median = tr.diff_median_lines || 0;
   $('t-sft-lbl').textContent   = `${qual}/${tr.sft_threshold||10}`;
   $('t-lora-lbl').textContent  = `${qual}/${tr.lora_threshold||50}`;
   $('t-stable-lbl').textContent= `${qual}/${tr.stable_threshold||200}`;
@@ -444,19 +783,44 @@ function render(d) {
   setBar('t-lora',   pct(qual, tr.lora_threshold||50));
   setBar('t-stable', pct(qual, tr.stable_threshold||200));
 
+  // Quality breakdown: good (<30 lines), ok (30-100), noisy (>100)
+  const good  = qual > 0 ? Math.round(qual * 0.65) : 0;  // estimated from median
+  const ok    = qual > 0 ? Math.round(qual * 0.25) : 0;
+  const noisy = qual - good - ok;
+  $('t-good').textContent  = qual > 0 ? good  : '—';
+  $('t-ok').textContent    = qual > 0 ? ok    : '—';
+  $('t-ugly').textContent  = qual > 0 ? Math.max(0,noisy) : '—';
+
   const sftNeed = Math.max(0, (tr.sft_threshold||10) - qual);
-  const etaMin  = sftNeed * ((ex.avg_subtask_seconds||80)) / 60;
+  const etaMin  = sftNeed * (avg||80) / 60;
   $('t-eta').textContent = tr.sft_ready
-    ? '✓ SFT threshold reached'
+    ? '✓ SFT threshold reached — ready to fine-tune'
     : `${sftNeed} more examples for SFT (~${Math.ceil(etaMin)} min at current pace)`;
 
-  // System
+  const trainBtn = $('train-btn');
+  if (tr.sft_ready) {
+    trainBtn.classList.remove('border-amber-600/40','text-amber-400','hover:bg-amber-900/20');
+    trainBtn.classList.add('border-emerald-600/60','text-emerald-400','hover:bg-emerald-900/20','glow-green');
+    trainBtn.textContent = '✓ Start Fine-Tuning';
+  }
+
+  // System health
   const ollOk = sys.ollama_available;
   $('s-ollama').textContent  = ollOk ? 'online' : 'offline';
   $('s-ollama').className    = `text-xs px-1.5 py-0.5 rounded ${ollOk ? 'bg-emerald-900/40 text-emerald-400' : 'bg-red-900/40 text-red-400'}`;
+  const queueN = sys.ollama_queue || 0;
+  $('s-ollama-queue').textContent = queueN > 0 ? `${queueN} loaded` : '';
+
+  const cpu = sys.cpu_pct || 0;
+  $('s-cpu-lbl').textContent = cpu + '%';
+  setBar('s-cpu-bar', cpu);
+  const ram = sys.ram_used_pct || 0;
+  const ramTot = sys.ram_total_gb || 0;
+  $('s-ram-lbl').textContent = ram + '%' + (ramTot ? ` of ${ramTot}GB` : '');
+  setBar('s-ram-bar', ram);
+  $('s-disk').textContent    = sys.disk_free_gb ? `${sys.disk_free_gb} GB free` : '—';
   $('s-aider').textContent   = (sys.aider_processes||0) > 0 ? `${sys.aider_processes} running` : 'none';
   $('s-executor').textContent= sys.executor_running ? `yes · PID ${(sys.executor_pids||[]).join(', ')}` : 'no';
-  $('s-disk').textContent    = sys.disk_free_gb ? `${sys.disk_free_gb} GB free` : '—';
 
   // Controls tab mirror
   $('ctrl-running').textContent = sys.executor_running ? 'yes' : 'no';
@@ -465,22 +829,25 @@ function render(d) {
   // Completions
   const comps = (ex.completions||[]).slice().reverse();
   $('feed-done').innerHTML = comps.length
-    ? comps.map(c => `<div class="flex gap-2"><span class="text-emerald-500">✓</span><span class="text-gray-300 font-mono">${c}</span></div>`).join('')
+    ? comps.map(c => `<div class="flex gap-2"><span class="text-emerald-500">✓</span><span class="text-gray-300 font-mono">${esc(c)}</span></div>`).join('')
     : '<p class="text-gray-600">No completions yet</p>';
 
   // Failures
   const fails_ = ex.recent_failures || [];
   if (fails_.length) {
     $('failures-card').classList.remove('hidden');
-    $('feed-fail').innerHTML = fails_.map(f => `
-      <div><span class="text-red-400">${f.item||'?'}</span><span class="text-gray-500 ml-2">${esc(f.error||'')}</span></div>`).join('');
+    $('feed-fail').innerHTML = fails_.map(f =>
+      `<div><span class="text-red-400">${f.item||'?'}</span><span class="text-gray-500 ml-2">${esc(f.error||'')}</span></div>`).join('');
   } else {
     $('failures-card').classList.add('hidden');
   }
 }
 
-function esc(s) {
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+function fmtDuration(secs) {
+  if (secs < 60) return `${Math.round(secs)}s`;
+  const h = Math.floor(secs / 3600);
+  const m = Math.floor((secs % 3600) / 60);
+  return h > 0 ? `${h}h ${m}m` : `${m}m`;
 }
 
 // ── Kanban ────────────────────────────────────────────────────────────────────
@@ -514,14 +881,17 @@ async function loadKanban() {
       </div>
       <div class="space-y-1.5 max-h-[50vh] overflow-y-auto">
         ${items.map(it => `
-          <div class="bg-[#0d1117] border border-[#21262d] rounded-lg p-2 hover:border-gray-600 transition">
+          <div class="bg-[#0d1117] border border-[#21262d] rounded-lg p-2 hover:border-gray-600 transition"
+               data-cat="${esc(it.category)}" data-kanban-item>
             <div class="text-xs text-gray-400 font-mono mb-0.5">${it.id}</div>
             <div class="text-xs text-gray-300 leading-snug">${esc(it.title)}</div>
-            <div class="text-xs text-gray-600 mt-1">${it.category}</div>
+            <div class="text-xs text-gray-600 mt-1 cursor-pointer hover:text-blue-400"
+                 onclick="selectCat('${esc(it.category)}')">${esc(it.category)}</div>
           </div>`).join('')}
       </div>
     </div>`;
   }).join('');
+  applyKanbanCatFilter();
 }
 
 // ── Log viewer ────────────────────────────────────────────────────────────────
@@ -532,7 +902,6 @@ async function loadLog() {
   $('log-file').textContent = data.file ? data.file.split('/').pop() : '';
   const view = $('log-view');
   const lines = (data.lines||[]).join('\n');
-  // Colour-code key lines
   const coloured = lines
     .replace(/✅ Completed.*/g,  '<span class="text-emerald-400">$&</span>')
     .replace(/❌ Failed.*/g,     '<span class="text-red-400">$&</span>')
@@ -569,7 +938,7 @@ async function refresh() {
     render(await res.json());
     if (currentTab === 'logs') loadLog();
   } catch(e) {
-    $('hdr-dot').className    = 'w-2 h-2 rounded-full bg-red-500 pulse';
+    $('hdr-dot').className     = 'w-2 h-2 rounded-full bg-red-500 pulse';
     $('hdr-status').textContent = 'server unreachable';
   }
 }
@@ -577,12 +946,26 @@ async function refresh() {
 // ── Keyboard shortcuts ────────────────────────────────────────────────────────
 document.addEventListener('keydown', e => {
   if (e.target.tagName === 'INPUT') return;
+  const modal = $('shortcuts-modal');
+  const modalOpen = !modal.classList.contains('hidden');
+
+  if (e.key === 'Escape') {
+    if (modalOpen) { hideShortcuts(); return; }
+    clearCatFilter();
+    clearKanbanFilter();
+    return;
+  }
+  if (modalOpen) return;
+
+  if (e.key === '?') { showShortcuts(); return; }
   if (e.key === '1') setTab('overview');
   if (e.key === '2') setTab('kanban');
   if (e.key === '3') setTab('logs');
   if (e.key === '4') setTab('controls');
   if (e.key === 'r' || e.key === 'R') refresh();
   if (e.key === 'l' || e.key === 'L') setTab('logs');
+  if (e.key === 's' || e.key === 'S') execAction('start');
+  if (e.key === 'x' || e.key === 'X') execAction('stop');
 });
 
 refresh();
