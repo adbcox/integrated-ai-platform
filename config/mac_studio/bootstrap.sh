@@ -1,12 +1,13 @@
 #!/usr/bin/env bash
 # Mac Studio bootstrap — run once after first login
+# Hardware: Apple M3, 96 GB RAM, target IP 192.168.10.202
 # Sets up Ollama, aider worker env, and platform connectivity
 set -euo pipefail
 
-PLATFORM_URL="http://192.168.10.201:8080"
+PLATFORM_URL="http://192.168.10.113:8080"   # Mac Mini M5 orchestrator
 OLLAMA_PORT=11434
 
-echo "=== Mac Studio Bootstrap ==="
+echo "=== Mac Studio Bootstrap (Apple M3 / 96 GB) ==="
 
 # 1. Homebrew
 if ! command -v brew &>/dev/null; then
@@ -99,11 +100,11 @@ ENV_EOF
 echo "[env] Wrote $ENV_FILE"
 
 # 9. Verify connectivity back to Mac Mini
-echo "[check] Pinging platform at $PLATFORM_URL..."
+echo "[check] Pinging platform at $PLATFORM_URL (Mac Mini M5)..."
 if curl -sf "$PLATFORM_URL/api/status" &>/dev/null; then
   echo "[check] Platform reachable ✓"
 else
-  echo "[check] WARN: platform unreachable — is Mac Mini dashboard running?"
+  echo "[check] WARN: platform unreachable — is Mac Mini M5 (192.168.10.113) dashboard running?"
 fi
 
 echo ""

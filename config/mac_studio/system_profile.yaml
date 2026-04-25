@@ -7,8 +7,8 @@ host:
   ip_static: 192.168.10.202      # assign this in OPNsense DHCP reservation
   mac_address: ""                 # fill in after first boot
   os: macOS
-  chip: Apple M2 Ultra
-  ram_gb: 192
+  chip: Apple M3
+  ram_gb: 96
   storage_gb: 4000
 
 services:
@@ -39,12 +39,12 @@ services:
     port: 9100                    # node_exporter for VictoriaMetrics
 
 connectivity:
-  platform_base_url: http://192.168.10.201:8080   # QNAP (this Mac Mini)
-  victoria_metrics: http://192.168.10.201:8428
-  plane_api: http://192.168.10.201:8000
+  platform_base_url: http://192.168.10.113:8080   # Mac Mini M5 orchestrator
+  victoria_metrics: http://192.168.10.113:8428
+  plane_api: http://192.168.10.113:8000
 
 env_vars:
   OLLAMA_HOST: "0.0.0.0"         # listen on LAN, not just localhost
   OLLAMA_ORIGINS: "*"
   AIDER_WORKER_MODEL: "ollama/qwen2.5-coder:32b"
-  PLATFORM_API_BASE: "http://192.168.10.201:8080"
+  PLATFORM_API_BASE: "http://192.168.10.113:8080"

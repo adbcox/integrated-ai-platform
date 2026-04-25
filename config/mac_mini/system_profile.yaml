@@ -4,10 +4,10 @@
 host:
   name: mac-mini
   role: orchestration
-  ip_static: 192.168.10.201      # confirmed; set in OPNsense DHCP reservation
+  ip_static: 192.168.10.113      # confirmed; set in OPNsense DHCP reservation
   os: macOS
-  chip: Apple M1 Pro
-  ram_gb: 32
+  chip: Apple M5
+  ram_gb: 48
   storage_gb: 2000
 
 services:
