@@ -44,8 +44,8 @@ class TrainingConfig:
     learning_rate: float = 2e-4
     num_epochs: int = 3
     batch_size: int = 1          # 1 for Apple Silicon MPS (low VRAM)
-    grad_accumulation: int = 8   # effective batch = 8
-    max_seq_length: int = 2048
+    grad_accumulation: int = 4   # effective batch = 4 (lower = less memory pressure)
+    max_seq_length: int = 512    # 512 for MPS; 2048 caused silent OOM/hang at step 1
     warmup_ratio: float = 0.03
     # Evaluation
     eval_split: float = 0.1      # hold out 10% for eval
@@ -147,14 +147,18 @@ def train(
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
 
+    # MPS: load in float16 (bfloat16 causes silent hang at first backward pass)
+    # CUDA: bfloat16 preferred; CPU: float32
+    load_dtype = torch.float16 if device == "mps" else (torch.bfloat16 if device == "cuda" else torch.float32)
     model = AutoModelForCausalLM.from_pretrained(
         config.base_model,
-        dtype=torch.bfloat16,
+        dtype=load_dtype,
         device_map="auto" if device != "mps" else None,
         trust_remote_code=True,
     )
     if device == "mps":
         model = model.to("mps")
+    model.gradient_checkpointing_enable()    # save activation memory (~40% reduction)
 
     # Apply LoRA
     lora_config = LoraConfig(
@@ -188,14 +192,14 @@ def train(
         gradient_accumulation_steps=config.grad_accumulation,
         learning_rate=config.learning_rate,
         warmup_ratio=config.warmup_ratio,
-        eval_strategy="epoch",
+        eval_strategy="no",          # skip eval on small datasets — saves memory and time
         save_strategy="epoch",
-        load_best_model_at_end=True,
-        logging_steps=10,
+        logging_steps=1,             # log every step so modal progress is visible
         report_to="none",
         fp16=(device == "cuda"),
-        bf16=(device in ("cpu", "mps")),
+        bf16=(device == "cuda"),     # MPS: bf16 causes silent hang at first backward; use float16 instead
         dataloader_pin_memory=(device == "cuda"),
+        optim="adamw_torch",         # explicit; avoids bitsandbytes dependency on MPS
     )
 
     trainer = Trainer(

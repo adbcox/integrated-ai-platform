@@ -20,17 +20,23 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
 from urllib.parse import urlparse
 
-REPO_ROOT = Path(__file__).parent.parent.parent
-ITEMS_DIR = REPO_ROOT / "docs" / "roadmap" / "ITEMS"
+_env_repo = os.environ.get("REPO_ROOT", "")
+REPO_ROOT = Path(_env_repo) if _env_repo else Path(__file__).parent.parent.parent
+_env_items = os.environ.get("ITEMS_DIR", "")
+ITEMS_DIR = Path(_env_items) if _env_items else REPO_ROOT / "docs" / "roadmap" / "ITEMS"
 DASHBOARD_DIR = Path(__file__).parent
 
+_LOG_DIR = Path(os.environ.get("LOG_DIR", "/tmp"))
+EXECUTOR_HOST = os.environ.get("EXECUTOR_HOST", "")          # SSH host for remote executor
+REMOTE_REPO_ROOT = os.environ.get("REMOTE_REPO_ROOT", "~/repos/integrated-ai-platform")
+
 LOG_CANDIDATES = [
-    "/tmp/executor_longrun.log",
-    "/tmp/executor_overnight.log",
-    "/tmp/executor_clean_run.log",
-    "/tmp/executor_3items.log",
+    str(_LOG_DIR / "executor_longrun.log"),
+    str(_LOG_DIR / "executor_overnight.log"),
+    str(_LOG_DIR / "executor_clean_run.log"),
+    str(_LOG_DIR / "executor_3items.log"),
 ]
-TRAINING_LOG_PATH = "/tmp/training_cycle.log"
+TRAINING_LOG_PATH = str(_LOG_DIR / "training_cycle.log")
 GITHUB_REPO_URL = "https://github.com/adbcox/integrated-ai-platform"
 
 # ── Data collectors ───────────────────────────────────────────────────────────
@@ -205,7 +211,7 @@ def _training_stats() -> dict:
             r = r.__dict__
         return {
             "quality_examples": r.get("example_count", 0),
-            "sft_threshold": 10,
+            "sft_threshold": 5,
             "lora_threshold": 50,
             "stable_threshold": 200,
             "sft_ready": r.get("sft_ready", False),
@@ -214,20 +220,24 @@ def _training_stats() -> dict:
         }
     except Exception as exc:
         return {"error": str(exc), "quality_examples": 0,
-                "sft_threshold": 10, "lora_threshold": 50, "stable_threshold": 200}
+                "sft_threshold": 5, "lora_threshold": 50, "stable_threshold": 200}
 
 
 def _system_health() -> dict:
+    import platform
     import urllib.request as _req
     import json as _json
+
+    is_macos = platform.system() == "Darwin"
+    ollama_host = os.environ.get("OLLAMA_HOST", "127.0.0.1:11434")
 
     # Ollama availability + loaded models
     ollama_ok = False
     ollama_queue = 0
     try:
-        _req.urlopen("http://127.0.0.1:11434/api/tags", timeout=2)
+        _req.urlopen(f"http://{ollama_host}/api/tags", timeout=2)
         ollama_ok = True
-        with _req.urlopen("http://127.0.0.1:11434/api/ps", timeout=1) as r:
+        with _req.urlopen(f"http://{ollama_host}/api/ps", timeout=1) as r:
             ollama_queue = len(_json.loads(r.read()).get("models", []))
     except Exception:
         pass
@@ -244,46 +254,70 @@ def _system_health() -> dict:
     executor_pids = [p for p in ps2.stdout.strip().splitlines() if p]
 
     # Disk space on repo root
-    df = subprocess.run(["df", "-g", str(REPO_ROOT)], capture_output=True, text=True)
     disk_free_gb = 0
-    for line in df.stdout.splitlines()[1:]:
-        parts = line.split()
-        if len(parts) >= 4:
-            try:
-                disk_free_gb = int(parts[3])
-            except ValueError:
-                pass
-
-    # CPU usage (macOS top)
-    cpu_pct = 0
     try:
-        top_r = subprocess.run(["top", "-l", "1", "-n", "0"], capture_output=True, text=True, timeout=5)
-        m = re.search(r"CPU usage:\s*([\d.]+)%\s*user,\s*([\d.]+)%\s*sys", top_r.stdout)
-        if m:
-            cpu_pct = round(float(m.group(1)) + float(m.group(2)), 1)
+        if is_macos:
+            df = subprocess.run(["df", "-g", str(REPO_ROOT)], capture_output=True, text=True)
+            col_idx = 3
+        else:
+            df = subprocess.run(["df", "-BG", str(REPO_ROOT)], capture_output=True, text=True)
+            col_idx = 3
+        for line in df.stdout.splitlines()[1:]:
+            parts = line.split()
+            if len(parts) > col_idx:
+                try:
+                    disk_free_gb = int(parts[col_idx].rstrip("G"))
+                except ValueError:
+                    pass
     except Exception:
         pass
 
-    # RAM (macOS vm_stat + sysctl)
+    # CPU usage
+    cpu_pct = 0
+    try:
+        if is_macos:
+            top_r = subprocess.run(["top", "-l", "1", "-n", "0"], capture_output=True, text=True, timeout=5)
+            m = re.search(r"CPU usage:\s*([\d.]+)%\s*user,\s*([\d.]+)%\s*sys", top_r.stdout)
+            if m:
+                cpu_pct = round(float(m.group(1)) + float(m.group(2)), 1)
+        else:
+            with open("/proc/loadavg") as f:
+                cpu_pct = round(float(f.read().split()[0]) * 10, 1)
+    except Exception:
+        pass
+
+    # RAM
     ram_total_gb = 0
     ram_used_pct = 0
     try:
-        total_r = subprocess.run(["sysctl", "-n", "hw.memsize"], capture_output=True, text=True)
-        ram_total_bytes = int(total_r.stdout.strip())
-        ram_total_gb = ram_total_bytes // (1024 ** 3)
-        vm_r = subprocess.run(["vm_stat"], capture_output=True, text=True)
-        page_size = 16384
-        pages_free = 0
-        for ln in vm_r.stdout.splitlines():
-            if "page size of" in ln:
-                pm = re.search(r"page size of (\d+)", ln)
-                if pm:
-                    page_size = int(pm.group(1))
-            fm = re.search(r"Pages free:\s+(\d+)", ln)
-            if fm:
-                pages_free = int(fm.group(1))
-        free_bytes = pages_free * page_size
-        ram_used_pct = round((1 - free_bytes / ram_total_bytes) * 100) if ram_total_bytes else 0
+        if is_macos:
+            total_r = subprocess.run(["sysctl", "-n", "hw.memsize"], capture_output=True, text=True)
+            ram_total_bytes = int(total_r.stdout.strip())
+            ram_total_gb = ram_total_bytes // (1024 ** 3)
+            vm_r = subprocess.run(["vm_stat"], capture_output=True, text=True)
+            page_size = 16384
+            pages_free = 0
+            for ln in vm_r.stdout.splitlines():
+                if "page size of" in ln:
+                    pm = re.search(r"page size of (\d+)", ln)
+                    if pm:
+                        page_size = int(pm.group(1))
+                fm = re.search(r"Pages free:\s+(\d+)", ln)
+                if fm:
+                    pages_free = int(fm.group(1))
+            free_bytes = pages_free * page_size
+            ram_used_pct = round((1 - free_bytes / ram_total_bytes) * 100) if ram_total_bytes else 0
+        else:
+            mem_info: dict[str, int] = {}
+            with open("/proc/meminfo") as f:
+                for ln in f:
+                    parts = ln.split()
+                    if len(parts) >= 2:
+                        mem_info[parts[0].rstrip(":")] = int(parts[1])
+            ram_total_kb = mem_info.get("MemTotal", 0)
+            ram_avail_kb = mem_info.get("MemAvailable", 0)
+            ram_total_gb = ram_total_kb // (1024 ** 2)
+            ram_used_pct = round((1 - ram_avail_kb / ram_total_kb) * 100) if ram_total_kb else 0
     except Exception:
         pass
 
@@ -352,9 +386,44 @@ def _kanban_items() -> dict:
     return buckets
 
 
+def _executor_action_remote(action: str, body: dict) -> dict:
+    """SSH-based executor control for EXECUTOR_HOST."""
+    max_items = body.get("max_items", 50)
+    log_path = str(_LOG_DIR / "executor_longrun.log")
+    remote_script = f"{REMOTE_REPO_ROOT}/bin/auto_execute_roadmap.py"
+    ssh_base = ["ssh", "-o", "StrictHostKeyChecking=no", "-o", "BatchMode=yes", EXECUTOR_HOST]
+
+    if action == "start":
+        check = subprocess.run(
+            ssh_base + ["pgrep -f auto_execute_roadmap || echo NOTRUNNING"],
+            capture_output=True, text=True, timeout=10,
+        )
+        if "NOTRUNNING" not in check.stdout:
+            return {"ok": False, "message": f"Already running on {EXECUTOR_HOST}"}
+        start_cmd = (
+            f"nohup python3 {remote_script} --max-items {max_items} "
+            f"> {log_path} 2>&1 & echo $!"
+        )
+        r = subprocess.run(ssh_base + [start_cmd], capture_output=True, text=True, timeout=15)
+        if r.returncode != 0:
+            return {"ok": False, "message": f"SSH start failed: {r.stderr[:200]}"}
+        return {"ok": True, "message": f"Remote executor started on {EXECUTOR_HOST} (PID {r.stdout.strip()})"}
+
+    elif action == "stop":
+        r = subprocess.run(
+            ssh_base + ["pkill -TERM -f auto_execute_roadmap && echo stopped || echo not_running"],
+            capture_output=True, text=True, timeout=10,
+        )
+        return {"ok": True, "message": f"Remote stop signal sent to {EXECUTOR_HOST}: {r.stdout.strip()}"}
+
+    return {"ok": False, "message": f"Unknown action: {action}"}
+
+
 def _executor_action(action: str, body: dict | None = None) -> dict:
     """Start or stop the autonomous executor. Returns {ok, message}."""
     body = body or {}
+    if EXECUTOR_HOST:
+        return _executor_action_remote(action, body)
     if action == "start":
         r = subprocess.run(
             ["pgrep", "-f", "auto_execute_roadmap"],
@@ -362,7 +431,7 @@ def _executor_action(action: str, body: dict | None = None) -> dict:
         )
         if r.stdout.strip():
             return {"ok": False, "message": f"Already running (PID {r.stdout.strip().split()[0]})"}
-        log_path = "/tmp/executor_longrun.log"
+        log_path = str(_LOG_DIR / "executor_longrun.log")
         max_items = str(body.get("max_items", 50))
         cmd = [
             sys.executable, str(REPO_ROOT / "bin" / "auto_execute_roadmap.py"),
@@ -528,21 +597,30 @@ def _start_training() -> dict:
 
 def _training_cycle_status() -> dict:
     """Parse TRAINING_LOG_PATH for step progress and status."""
+    import time as _time
     log = Path(TRAINING_LOG_PATH)
     if not log.exists():
-        return {"is_running": False, "lines": [], "step": 0, "total_steps": 0,
-                "progress_percent": 0, "current_step": "", "eta_minutes": 0}
+        return {"is_running": False, "stuck": False, "pids": [], "lines": [],
+                "step": 0, "total_steps": 0, "progress_percent": 0,
+                "current_step": "", "eta_minutes": 0, "log_tail": []}
     text  = log.read_text(errors="replace")
     lines = text.splitlines()
 
     r = subprocess.run(["pgrep", "-f", "run_training_cycle"], capture_output=True, text=True)
-    running = bool(r.stdout.strip())
+    pids = [p for p in r.stdout.strip().splitlines() if p]
+    running = bool(pids)
+
+    # Stuck: process alive but log file not updated for >10 min
+    stuck = False
+    if running:
+        stuck = (_time.time() - log.stat().st_mtime) > 600
 
     step = total = 0
     current_step = "Preparing"
     for line in reversed(lines):
-        # "Step 15/500" or "step 15 of 500"
-        m = re.search(r"[Ss]tep[s]?\s+(\d+)\s*[/of]+\s*(\d+)", line)
+        m = re.search(r"(\d+)/(\d+)\s+\[", line)          # tqdm: "1/9 [14:34<..."
+        if not m:
+            m = re.search(r"[Ss]tep[s]?\s+(\d+)\s*[/of]+\s*(\d+)", line)
         if m:
             step, total = int(m.group(1)), int(m.group(2))
             break
@@ -552,7 +630,7 @@ def _training_cycle_status() -> dict:
             current_step = "Collecting training data"
         elif "tokeniz" in ll or "preprocess" in ll:
             current_step = "Preprocessing data"
-        elif "train" in ll and "lora" in ll:
+        elif "train" in ll and ("lora" in ll or "step" in ll):
             current_step = "Training LoRA adapter"
         elif "save" in ll or "export" in ll:
             current_step = "Saving adapter"
@@ -563,20 +641,60 @@ def _training_cycle_status() -> dict:
     done = not running and any(kw in text for kw in ("Training complete", "Saved adapter", "Done", "adapter_model"))
     eta_minutes = 0
     if running and total > 0 and step > 0:
-        # Estimate from log timestamps if possible, else rough guess
         eta_minutes = max(1, round((total - step) * 0.5))
 
     return {
         "is_running":       running,
+        "stuck":            stuck,
+        "pids":             pids,
         "done":             done,
         "step":             step,
         "total_steps":      total,
         "progress_percent": pct,
         "current_step":     current_step,
         "eta_minutes":      eta_minutes,
-        "log_tail":         lines[-15:],
+        "log_tail":         lines[-20:],
         "log_file":         TRAINING_LOG_PATH,
     }
+
+
+def _stop_training() -> dict:
+    """SIGTERM → 5s wait → SIGKILL all run_training_cycle processes."""
+    import time as _time
+    r = subprocess.run(["pgrep", "-f", "run_training_cycle"], capture_output=True, text=True)
+    pids = [p for p in r.stdout.strip().splitlines() if p]
+    if not pids:
+        return {"ok": True, "message": "No training process running"}
+    for pid in pids:
+        subprocess.run(["kill", "-TERM", pid], capture_output=True)
+    deadline = _time.time() + 5
+    while _time.time() < deadline:
+        still = subprocess.run(["pgrep", "-f", "run_training_cycle"],
+                               capture_output=True, text=True).stdout.strip().splitlines()
+        if not still:
+            break
+        _time.sleep(0.5)
+    still = subprocess.run(["pgrep", "-f", "run_training_cycle"],
+                           capture_output=True, text=True).stdout.strip().splitlines()
+    killed = []
+    for pid in still:
+        subprocess.run(["kill", "-KILL", pid], capture_output=True)
+        killed.append(pid)
+    msg = f"Stopped training PID(s) {', '.join(pids)}"
+    if killed:
+        msg += f" (SIGKILL: {', '.join(killed)})"
+    return {"ok": True, "message": msg}
+
+
+def _media_status() -> dict:
+    """Fetch live stats from the *Arr stack and Plex."""
+    try:
+        sys.path.insert(0, str(REPO_ROOT))
+        from domains.media import MediaDomain
+        domain = MediaDomain()
+        return domain.get_stats()
+    except Exception as exc:
+        return {"error": str(exc), "health": {}}
 
 
 def _deploy_model() -> dict:
@@ -611,6 +729,40 @@ def _build_status() -> dict:
         "training": _training_stats(),
         "system": _system_health(),
         "categories": _category_stats(),
+    }
+
+
+def _health() -> dict:
+    return {
+        "status": "ok",
+        "service": "ai-platform-dashboard",
+        "version": "1.0.0",
+        "ts": time.time(),
+        "repo_root": str(REPO_ROOT),
+        "executor_host": EXECUTOR_HOST or "local",
+    }
+
+
+def _embed_widget() -> dict:
+    """Compact stats payload for Homepage/Homarr widget integration."""
+    roadmap = _roadmap_stats()
+    exec_status = _executor_live_status()
+    system = _system_health()
+    total = roadmap.get("total", 0)
+    done = roadmap.get("completed", 0) + roadmap.get("accepted", 0)
+    success_rate = round(done / total * 100) if total else 0
+    return {
+        "completions": roadmap.get("completed", 0),
+        "accepted": roadmap.get("accepted", 0),
+        "in_progress": roadmap.get("in_progress", 0),
+        "pending": roadmap.get("pending", 0),
+        "total": total,
+        "success_rate": success_rate,
+        "executor_running": exec_status.get("running", False),
+        "current_item": exec_status.get("current_item", ""),
+        "ollama_available": system.get("ollama_available", False),
+        "cpu_pct": system.get("cpu_pct", 0),
+        "ram_used_pct": system.get("ram_used_pct", 0),
     }
 
 
@@ -663,6 +815,12 @@ class Handler(BaseHTTPRequestHandler):
             self._serve_json(_training_cycle_status())
         elif path == "/api/training/status":
             self._serve_json(_training_cycle_status())
+        elif path == "/api/health":
+            self._serve_json(_health())
+        elif path == "/api/embed/widget":
+            self._serve_json(_embed_widget())
+        elif path == "/api/media/status":
+            self._serve_json(_media_status())
         else:
             self.send_response(404)
             self.end_headers()
@@ -677,6 +835,8 @@ class Handler(BaseHTTPRequestHandler):
             self._serve_json(_executor_action(action, body))
         elif path in ("/api/train", "/api/training/start"):
             self._serve_json(_start_training())
+        elif path == "/api/training/stop":
+            self._serve_json(_stop_training())
         elif path == "/api/model/deploy":
             self._serve_json(_deploy_model())
         else:
@@ -700,6 +860,9 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header("Content-Type", content_type)
         self.send_header("Content-Length", str(len(data)))
         self.send_header("Cache-Control", "no-cache")
+        # Allow embedding in iframes (for Homepage/Homarr integration)
+        self.send_header("Content-Security-Policy", "frame-ancestors *")
+        self.send_header("Access-Control-Allow-Origin", "*")
         self.end_headers()
         self.wfile.write(data)
 

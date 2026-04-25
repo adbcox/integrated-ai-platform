@@ -402,6 +402,8 @@ tailwind.config = { theme: { extend: { colors: {
 
     <div class="mt-4 flex justify-between items-center gap-3">
       <p id="tm-status" style="font-size:12px;color:var(--text-muted);flex:1;"></p>
+      <button id="tm-force-stop" onclick="forceStopTraining()"
+              class="btn btn-md btn-danger hidden">⏹ Force Stop</button>
       <button id="tm-deploy" onclick="deployModel()" class="btn btn-md btn-success hidden">
         🚀 Deploy to Ollama
       </button>
@@ -886,9 +888,21 @@ function setTrainState(state, extraNote='') {
 
 async function startTraining() {
   $('train-modal').classList.remove('hidden');
+
+  // First check if already running — don't double-start
+  try {
+    const chk = await fetch('/api/training/status');
+    const st  = await chk.json();
+    if (st.is_running) {
+      _openTrainingModal(st);
+      return;
+    }
+  } catch(e) { /* fall through to start */ }
+
   $('tm-spinner').classList.remove('hidden');
   $('tm-title').textContent = 'Starting Fine-Tuning…';
   $('tm-status').textContent = '';
+  $('tm-force-stop').classList.add('hidden');
   setBar('tm-prog', 0); $('tm-pct').textContent = '0%';
   $('tm-step-lbl').textContent = 'Preparing…';
   $('tm-deploy').classList.add('hidden');
@@ -915,6 +929,53 @@ async function startTraining() {
   }
 }
 
+function _openTrainingModal(d) {
+  $('train-modal').classList.remove('hidden');
+  const pidStr = (d.pids||[]).join(', ') || '?';
+  if (d.stuck) {
+    $('tm-title').textContent = `⚠️ Training may be stuck (PID ${pidStr})`;
+    $('tm-status').textContent = 'No log output for >10 min. Use Force Stop to kill and restart.';
+    $('tm-spinner').classList.add('hidden');
+    $('tm-force-stop').classList.remove('hidden');
+  } else {
+    $('tm-title').textContent = `Training in progress (PID ${pidStr})`;
+    $('tm-spinner').classList.remove('hidden');
+    $('tm-force-stop').classList.remove('hidden');
+  }
+  const lines = (d.log_tail || d.lines || []).join('\n');
+  $('tm-log').textContent = lines || 'Waiting for output…';
+  $('tm-log').scrollTop = $('tm-log').scrollHeight;
+  if (d.total_steps > 0) {
+    setBar('tm-prog', d.progress_percent || 0);
+    $('tm-pct').textContent = (d.progress_percent || 0) + '%';
+    $('tm-step-lbl').textContent = `${d.current_step || 'Training'} — step ${d.step}/${d.total_steps}`;
+  }
+  setTrainState('running');
+  if (!trainingPollTimer) trainingPollTimer = setInterval(pollTraining, 5000);
+}
+
+async function forceStopTraining() {
+  $('tm-force-stop').disabled = true;
+  $('tm-force-stop').textContent = 'Stopping…';
+  try {
+    const res = await fetch('/api/training/stop', {method:'POST', headers:{'Content-Type':'application/json'}, body:'{}'});
+    const d   = await res.json();
+    toast(d.message || 'Training stopped', d.ok ? 'ok' : 'err');
+    clearInterval(trainingPollTimer); trainingPollTimer = null;
+    $('tm-title').textContent = 'Training stopped';
+    $('tm-spinner').classList.add('hidden');
+    $('tm-force-stop').classList.add('hidden');
+    $('tm-force-stop').disabled = false;
+    $('tm-force-stop').textContent = '⏹ Force Stop';
+    $('tm-status').textContent = d.message || '';
+    setTrainState('ready');
+  } catch(e) {
+    toast('Stop request failed', 'err');
+    $('tm-force-stop').disabled = false;
+    $('tm-force-stop').textContent = '⏹ Force Stop';
+  }
+}
+
 async function pollTraining() {
   try {
     const res = await fetch('/api/training/status');
@@ -924,6 +985,17 @@ async function pollTraining() {
     const lines = (d.log_tail || d.lines || []).join('\n');
     $('tm-log').textContent = lines || 'Waiting for output…';
     $('tm-log').scrollTop = $('tm-log').scrollHeight;
+
+    // Stuck warning
+    if (d.stuck) {
+      $('tm-title').textContent = `⚠️ Training may be stuck (PID ${(d.pids||[]).join(', ')})`;
+      $('tm-status').textContent = 'No log output for >10 min — process may be frozen on MPS.';
+      $('tm-force-stop').classList.remove('hidden');
+    } else if (d.is_running) {
+      const pidStr = (d.pids||[]).join(', ');
+      $('tm-title').textContent = pidStr ? `Training in progress (PID ${pidStr})` : 'Training in progress';
+      $('tm-force-stop').classList.remove('hidden');
+    }
 
     // Progress
     if (d.total_steps > 0) {
@@ -940,6 +1012,7 @@ async function pollTraining() {
       clearInterval(trainingPollTimer);
       trainingPollTimer = null;
       $('tm-spinner').classList.add('hidden');
+      $('tm-force-stop').classList.add('hidden');
       if (d.done) {
         _trainingDone = true;
         $('tm-title').textContent = '✅ Fine-Tuning Complete';
@@ -951,6 +1024,7 @@ async function pollTraining() {
         toast('Fine-tuning complete! Ready to deploy.', 'ok');
       } else {
         $('tm-title').textContent = 'Training stopped';
+        $('tm-status').textContent = '';
         setTrainState('ready');
       }
     }
@@ -1394,7 +1468,7 @@ function render(d) {
   $('hdr-time').textContent   = new Date().toLocaleTimeString();
 
   // Hero
-  const done  = (rm.completed||0) + (rm.accepted||0);
+  const done  = rm.completed || 0;
   const total = rm.total || 254;
   $('h-done').textContent  = done;
   $('h-total').textContent = `of ${total} items`;
@@ -1435,23 +1509,33 @@ function render(d) {
   $('t-ok').textContent    = qual>0 ? ok               : '—';
   $('t-noisy').textContent = qual>0 ? Math.max(0,qual-good-ok) : '—';
 
-  const need = Math.max(0,(tr.sft_threshold||10) - qual);
+  const need = Math.max(0,(tr.sft_threshold||5) - qual);
   const etaMin = Math.ceil(need * (ex.avg_subtask_seconds||80) / 60);
   $('t-eta').textContent = tr.sft_ready
     ? '✓ SFT threshold reached — ready to fine-tune!'
-    : `${need} more examples for SFT (~${etaMin} min at current pace)`;
+    : (need > 0 ? `${need} more examples for SFT (~${etaMin} min at current pace)` : '✓ Ready to fine-tune!');
 
-  // Training button state machine
-  if (!trainingPollTimer && !_trainingDone) {
-    if (qual >= (tr.sft_threshold||10)) {
-      setTrainState('ready');
-    } else {
-      setTrainState('disabled', `Need ${need} more examples`);
-    }
-  } else if (_trainingDone) {
+  // Training button state machine — check actual running state before deciding
+  if (_trainingDone) {
     setTrainState('trained');
+  } else if (trainingPollTimer) {
+    // poll already active — stay in running state
+  } else {
+    // Ask the server what's actually happening
+    fetch('/api/training/status').then(r=>r.json()).then(st => {
+      if (st.is_running) {
+        setTrainState('running');
+        _openTrainingModal && trainingPollTimer || (trainingPollTimer = setInterval(pollTraining, 5000));
+      } else if (qual >= (tr.sft_threshold||5)) {
+        setTrainState('ready');
+      } else {
+        setTrainState('disabled', need > 0 ? `Need ${need} more examples` : 'Ready!');
+      }
+    }).catch(()=>{
+      if (qual >= (tr.sft_threshold||5)) setTrainState('ready');
+      else setTrainState('disabled', `Need ${need} more examples`);
+    });
   }
-  // If trainingPollTimer active, stay in 'running' state
 
   // System
   const oll = sys.ollama_available;
