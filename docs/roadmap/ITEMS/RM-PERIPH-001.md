@@ -4,7 +4,7 @@
 - **Title:** Physical label printer integration for Niimbot thermal printers
 - **Category:** `PERIPH`
 - **Type:** `Feature`
-- **Status:** `Planned`
+- **Status:** `In progress`
 - **Maturity:** `M0`
 - **Priority:** `High`
 - **Priority class:** `P2`
