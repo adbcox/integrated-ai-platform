@@ -30,6 +30,8 @@ LOG_CANDIDATES = [
     "/tmp/executor_clean_run.log",
     "/tmp/executor_3items.log",
 ]
+TRAINING_LOG_PATH = "/tmp/training_cycle.log"
+GITHUB_REPO_URL = "https://github.com/adbcox/integrated-ai-platform"
 
 # ── Data collectors ───────────────────────────────────────────────────────────
 
@@ -93,20 +95,54 @@ def _parse_log(log_path: Path) -> dict:
                 current_subtask = m.group(1)[:70]
             break
 
-    # Subtask durations
+    # Subtask durations — keep full history for trend chart
     durations = [float(x) for x in re.findall(r"duration=(\d+\.\d+)s", text)]
     avg_dur = sum(durations) / len(durations) if durations else 0
 
-    # Running PIDs from log
-    pids = re.findall(r"subprocess.Popen SUCCESS: PID=(\d+)", text)
-    active_pids = list(set(pids[-5:])) if pids else []
+    # Subtask N/M: count calls since last item start
+    item_start_idx = 0
+    for i, line in enumerate(lines):
+        if "🚀" in line and "RM-" in line:
+            item_start_idx = i
+    subtask_index = 0
+    subtask_total_guess = 0
+    for line in lines[item_start_idx:]:
+        if "duration=" in line:
+            subtask_index += 1
+        m = re.search(r"decomposed into (\d+) subtask", line, re.I)
+        if m:
+            subtask_total_guess = int(m.group(1))
 
-    is_running = any(
-        re.search(r"waiting for completion", text) and "Process completed" not in text
-        for _ in [1]
-    )
+    # Elapsed time since item start
+    elapsed_seconds = 0
+    for line in lines[item_start_idx:item_start_idx + 3]:
+        tm = re.search(r"(\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2})", line)
+        if tm:
+            try:
+                import datetime
+                ts = datetime.datetime.fromisoformat(tm.group(1).replace(" ", "T"))
+                elapsed_seconds = int((datetime.datetime.now() - ts).total_seconds())
+            except Exception:
+                pass
+            break
 
-    # Simple running check: last line doesn't have SHUTDOWN
+    # Status description from recent log lines
+    live_status = "Running"
+    for line in reversed(lines[-15:]):
+        ll = line.lower()
+        if "aider" in ll and ("running" in ll or "calling" in ll):
+            live_status = "Running aider"
+            break
+        if "decompos" in ll:
+            live_status = "Decomposing"
+            break
+        if "validat" in ll:
+            live_status = "Validating"
+            break
+        if "waiting" in ll:
+            live_status = "Waiting"
+            break
+
     last_lines = "\n".join(lines[-5:])
     is_running = "SHUTDOWN" not in last_lines and "Execution complete" not in last_lines
 
@@ -116,12 +152,17 @@ def _parse_log(log_path: Path) -> dict:
         "is_running": is_running,
         "current_item": current_item,
         "current_subtask": current_subtask,
+        "subtask_index": subtask_index,
+        "subtask_total": subtask_total_guess,
+        "elapsed_seconds": elapsed_seconds,
+        "live_status": live_status,
         "completions": completions[-20:],
         "completion_count": len(completions),
         "failure_count": len(failures),
         "recent_failures": failures[-5:],
         "avg_subtask_seconds": round(avg_dur, 1),
         "subtask_count": len(durations),
+        "subtask_history": durations[-50:],   # for time-trend chart
     }
 
 
@@ -347,6 +388,108 @@ def _executor_action(action: str) -> dict:
     return {"ok": False, "message": f"Unknown action: {action}"}
 
 
+def _executor_live_status() -> dict:
+    """Lightweight status for 2-second polling — reads only what changed."""
+    log_path = _find_active_log()
+    if not log_path:
+        return {"running": False, "current_item": "", "subtask_index": 0,
+                "subtask_total": 0, "elapsed_seconds": 0, "live_status": "Idle",
+                "current_subtask": "", "avg_subtask_seconds": 0}
+    d = _parse_log(log_path)
+    return {
+        "running":            d["is_running"],
+        "current_item":       d["current_item"],
+        "current_subtask":    d["current_subtask"],
+        "subtask_index":      d["subtask_index"],
+        "subtask_total":      d["subtask_total"],
+        "elapsed_seconds":    d["elapsed_seconds"],
+        "live_status":        d["live_status"],
+        "avg_subtask_seconds": d["avg_subtask_seconds"],
+        "completion_count":   d["completion_count"],
+        "failure_count":      d["failure_count"],
+    }
+
+
+def _get_recommendations() -> list:
+    """Top 5 quick-win items from the roadmap analyzer (no pending deps)."""
+    try:
+        import importlib.util
+        spec = importlib.util.spec_from_file_location(
+            "analyze_roadmap", str(REPO_ROOT / "bin" / "analyze_roadmap.py")
+        )
+        ar = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(ar)
+
+        items = ar.load_items()
+        ar.annotate_unlocks(items)
+        pending_ids = {it.id for it in items}
+        no_dep = [it for it in items if not any(d in pending_ids for d in it.deps)]
+        ranked = sorted(no_dep, key=lambda x: x.easiness, reverse=True)[:5]
+        return [
+            {
+                "id":       it.id,
+                "title":    it.title,
+                "category": it.category,
+                "loe":      it.loe,
+                "risk":     it.risk,
+                "easiness": it.easiness,
+                "unlocks":  it.unlocks_count,
+                "filter":   it.id,
+            }
+            for it in ranked
+        ]
+    except Exception as exc:
+        return [{"error": str(exc), "id": "", "title": str(exc), "category": "",
+                 "loe": "?", "risk": 3, "easiness": 0, "unlocks": 0, "filter": ""}]
+
+
+def _start_training() -> dict:
+    """Spawn run_training_cycle.py in ~/training-env context."""
+    r = subprocess.run(["pgrep", "-f", "run_training_cycle"], capture_output=True, text=True)
+    if r.stdout.strip():
+        return {"ok": False, "message": f"Already running (PID {r.stdout.strip().split()[0]})"}
+    script = REPO_ROOT / "bin" / "run_training_cycle.py"
+    if not script.exists():
+        return {"ok": False, "message": "bin/run_training_cycle.py not found"}
+    venv_python = Path.home() / "training-env" / "bin" / "python"
+    py = str(venv_python) if venv_python.exists() else sys.executable
+    with open(TRAINING_LOG_PATH, "w") as lf:
+        proc = subprocess.Popen(
+            [py, str(script), "--collect-only"],
+            cwd=REPO_ROOT, stdout=lf, stderr=subprocess.STDOUT,
+            start_new_session=True,
+        )
+    return {"ok": True, "message": f"Training started (PID {proc.pid})",
+            "pid": proc.pid, "log": TRAINING_LOG_PATH}
+
+
+def _training_cycle_status() -> dict:
+    """Parse /tmp/training_cycle.log for step progress."""
+    log = Path(TRAINING_LOG_PATH)
+    if not log.exists():
+        return {"running": False, "lines": [], "step": 0, "total_steps": 0}
+    text = log.read_text(errors="replace")
+    lines = text.splitlines()
+    # Detect running: pgrep
+    r = subprocess.run(["pgrep", "-f", "run_training_cycle"], capture_output=True, text=True)
+    running = bool(r.stdout.strip())
+    # Parse step progress e.g. "Step 15/100"
+    step = total = 0
+    for line in reversed(lines):
+        m = re.search(r"[Ss]tep\s+(\d+)[/\s]+(\d+)", line)
+        if m:
+            step, total = int(m.group(1)), int(m.group(2))
+            break
+    done = not running and any(kw in text for kw in ("Training complete", "Saved adapter", "Done"))
+    return {
+        "running": running,
+        "done": done,
+        "step": step,
+        "total_steps": total,
+        "lines": lines[-30:],
+    }
+
+
 def _build_status() -> dict:
     log_path = _find_active_log()
     exec_data = _parse_log(log_path) if log_path else {"is_running": False, "completion_count": 0}
@@ -387,14 +530,28 @@ class Handler(BaseHTTPRequestHandler):
         elif path.startswith("/api/diff/"):
             hash_ = path[len("/api/diff/"):]
             if re.match(r"^[0-9a-f]{7,40}$", hash_):
-                r = subprocess.run(
-                    ["git", "show", "--stat", "--format=", hash_],
+                stat_r = subprocess.run(
+                    ["git", "show", "--stat", "--format=format:", hash_],
                     capture_output=True, text=True, cwd=REPO_ROOT,
                 )
-                self._serve_json({"diff": r.stdout[:6000], "hash": hash_})
+                diff_r = subprocess.run(
+                    ["git", "show", "--format=format:", hash_],
+                    capture_output=True, text=True, cwd=REPO_ROOT,
+                )
+                self._serve_json({
+                    "stat": stat_r.stdout[:2000],
+                    "diff": diff_r.stdout[:10000],
+                    "hash": hash_,
+                })
             else:
                 self.send_response(400)
                 self.end_headers()
+        elif path == "/api/executor/status":
+            self._serve_json(_executor_live_status())
+        elif path == "/api/recommendations":
+            self._serve_json({"items": _get_recommendations()})
+        elif path == "/api/train/status":
+            self._serve_json(_training_cycle_status())
         else:
             self.send_response(404)
             self.end_headers()
@@ -407,14 +564,18 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/executor":
             action = body.get("action", "")
             self._serve_json(_executor_action(action))
-        elif path == "/api/training/start":
-            self._serve_json({
-                "ok": False,
-                "message": "Training pipeline not yet wired — run manually in ~/training-env"
-            })
+        elif path in ("/api/train", "/api/training/start"):
+            self._serve_json(_start_training())
         else:
             self.send_response(404)
             self.end_headers()
+
+    def do_OPTIONS(self):
+        self.send_response(204)
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type")
+        self.end_headers()
 
     def _serve_file(self, fpath: Path, content_type: str):
         if not fpath.exists():
