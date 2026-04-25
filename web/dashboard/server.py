@@ -36,6 +36,8 @@ LOG_CANDIDATES = [
     str(_LOG_DIR / "executor_overnight.log"),
     str(_LOG_DIR / "executor_clean_run.log"),
     str(_LOG_DIR / "executor_3items.log"),
+    # repo-root execution.log written by some executor invocations
+    str(Path(__file__).parent.parent.parent / "execution.log"),
 ]
 TRAINING_LOG_PATH = str(_LOG_DIR / "training_cycle.log")
 GITHUB_REPO_URL = "https://github.com/adbcox/integrated-ai-platform"
@@ -130,112 +132,148 @@ def _roadmap_stats() -> dict:
 
 
 def _find_active_log() -> Path | None:
+    """Return the newest non-empty executor log file."""
     newest = None
     newest_mtime = 0.0
     for path_str in LOG_CANDIDATES:
         p = Path(path_str)
-        if p.exists():
-            mtime = p.stat().st_mtime
-            if mtime > newest_mtime:
-                newest_mtime = mtime
-                newest = p
+        try:
+            st = p.stat()
+        except OSError:
+            continue
+        if st.st_size == 0:
+            continue  # skip empty files — they cause false "running" detection
+        if st.st_mtime > newest_mtime:
+            newest_mtime = st.st_mtime
+            newest = p
     return newest
 
 
 def _parse_log(log_path: Path) -> dict:
-    text = log_path.read_text(errors="replace")
+    import datetime as _dt
+    text  = log_path.read_text(errors="replace")
     lines = text.splitlines()
 
-    completions = re.findall(r"✅ Completed: (\S+)", text)
-    failures = [
-        {"item": m.group(1), "error": m.group(2)[:80]}
-        for m in re.finditer(r"❌ Failed.*?(\S+).*?error.*?:\s*(.+)", text, re.IGNORECASE)
-    ]
+    # ── Process existence check (authoritative for is_running) ───────────────
+    r = subprocess.run(
+        ["pgrep", "-f", "auto_execute_roadmap"],
+        capture_output=True, text=True,
+    )
+    proc_running = bool(r.stdout.strip())
+    # Log-based fallback: if pgrep misses it (e.g. subprocess wrapper), check log
+    last5 = "\n".join(lines[-5:])
+    log_done = "SHUTDOWN" in last5 or "Execution complete" in last5 or "🏁" in last5
+    is_running = proc_running or (not log_done and log_path.stat().st_size > 0
+                                  and (_dt.datetime.now().timestamp() - log_path.stat().st_mtime) < 300)
 
+    # ── Current item (most recent 🚀 RM-XXX line) ─────────────────────────────
     current_item = ""
-    current_subtask = ""
-    for line in reversed(lines):
-        if "🚀" in line and "RM-" in line:
-            m = re.search(r"(RM-\S+)", line)
-            if m:
-                current_item = m.group(1)
-                break
-
-    for line in reversed(lines):
-        if "execute_subtask called with:" in line:
-            m = re.search(r"with: (.+)", line)
-            if m:
-                current_subtask = m.group(1)[:70]
-            break
-
-    # Subtask durations — keep full history for trend chart
-    durations = [float(x) for x in re.findall(r"duration=(\d+\.\d+)s", text)]
-    avg_dur = sum(durations) / len(durations) if durations else 0
-
-    # Subtask N/M: count calls since last item start
     item_start_idx = 0
     for i, line in enumerate(lines):
         if "🚀" in line and "RM-" in line:
-            item_start_idx = i
-    subtask_index = 0
-    subtask_total_guess = 0
-    for line in lines[item_start_idx:]:
-        if "duration=" in line:
-            subtask_index += 1
-        m = re.search(r"decomposed into (\d+) subtask", line, re.I)
-        if m:
-            subtask_total_guess = int(m.group(1))
+            m = re.search(r"(RM-[A-Z0-9]+-\d+)", line)
+            if m:
+                current_item = m.group(1)
+                item_start_idx = i
 
-    # Elapsed time since item start
+    # ── Current subtask text ──────────────────────────────────────────────────
+    # Log format: [DEBUG] execute_subtask called with: dry_run=False, subtask='TEXT HERE'
+    current_subtask = ""
+    for line in reversed(lines):
+        if "execute_subtask called with:" in line:
+            # Extract subtask='...' value
+            sm = re.search(r"subtask='([^']+)'", line)
+            if sm:
+                current_subtask = sm.group(1)[:80]
+            else:
+                # Fallback: grab everything after "with: "
+                fm = re.search(r"with:\s*(.+)", line)
+                if fm:
+                    current_subtask = fm.group(1)[:80]
+            break
+        # Also catch: [DEBUG] Calling execute_subtask with: TEXT
+        if "Calling execute_subtask with:" in line:
+            fm = re.search(r"with:\s*(.+)", line)
+            if fm:
+                current_subtask = fm.group(1)[:80]
+            break
+
+    # ── Subtask N/M progress ──────────────────────────────────────────────────
+    # Log format: "   [1/4] " or "   [N/M]" lines, one per subtask start
+    subtask_index = 0
+    subtask_total = 0
+    for line in lines[item_start_idx:]:
+        nm = re.search(r"\[(\d+)/(\d+)\]", line)
+        if nm:
+            subtask_index = int(nm.group(1))
+            subtask_total = int(nm.group(2))
+        # Also accept "Generated N subtasks:" format
+        gm = re.search(r"Generated (\d+) subtask", line, re.I)
+        if gm and subtask_total == 0:
+            subtask_total = int(gm.group(1))
+
+    # Count completed subtasks since item start (duration= lines = subtask finished)
+    durations = [float(x) for x in re.findall(r"duration=([\d.]+)s", text)]
+    item_durations = [float(x) for x in re.findall(r"duration=([\d.]+)s",
+                                                    "\n".join(lines[item_start_idx:]))]
+    avg_dur = sum(durations) / len(durations) if durations else 0
+
+    # ── Elapsed since item start ──────────────────────────────────────────────
     elapsed_seconds = 0
-    for line in lines[item_start_idx:item_start_idx + 3]:
+    for line in lines[item_start_idx:item_start_idx + 5]:
         tm = re.search(r"(\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2})", line)
         if tm:
             try:
-                import datetime
-                ts = datetime.datetime.fromisoformat(tm.group(1).replace(" ", "T"))
-                elapsed_seconds = int((datetime.datetime.now() - ts).total_seconds())
+                ts = _dt.datetime.fromisoformat(tm.group(1).replace(" ", "T"))
+                elapsed_seconds = int((_dt.datetime.now() - ts).total_seconds())
             except Exception:
                 pass
             break
 
-    # Status description from recent log lines
-    live_status = "Running"
-    for line in reversed(lines[-15:]):
-        ll = line.lower()
-        if "aider" in ll and ("running" in ll or "calling" in ll):
-            live_status = "Running aider"
-            break
-        if "decompos" in ll:
-            live_status = "Decomposing"
-            break
-        if "validat" in ll:
-            live_status = "Validating"
-            break
-        if "waiting" in ll:
-            live_status = "Waiting"
-            break
+    # ── Completions and failures ──────────────────────────────────────────────
+    completions = re.findall(r"✅ Completed: (\S+)", text)
+    completions += re.findall(r"✅ DONE: (RM-[A-Z0-9]+-\d+)", text)
+    failures = [
+        {"item": m.group(1), "error": m.group(2)[:80]}
+        for m in re.finditer(
+            r"(?:❌ FAILED|❌ Failed).*?(RM-[A-Z0-9]+-\d+|item\s+\S+)[^\n]*\n?([^\n]*)",
+            text, re.IGNORECASE)
+    ]
 
-    last_lines = "\n".join(lines[-5:])
-    is_running = "SHUTDOWN" not in last_lines and "Execution complete" not in last_lines
+    # ── Live status label ─────────────────────────────────────────────────────
+    live_status = "Running"
+    for line in reversed(lines[-20:]):
+        ll = line.lower()
+        if "aider" in ll and ("run" in ll or "call" in ll or "execut" in ll):
+            live_status = "Running aider"; break
+        if "calling execute_subtask" in ll or "execute_subtask called" in ll:
+            live_status = "Executing subtask"; break
+        if "decompos" in ll:
+            live_status = "Decomposing task"; break
+        if "validat" in ll:
+            live_status = "Validating"; break
+        if "waiting" in ll or "sleep" in ll:
+            live_status = "Waiting"; break
+        if "❌ failed" in ll or "failed:" in ll:
+            live_status = "Retrying"; break
 
     return {
-        "log_file": str(log_path),
-        "log_size_kb": log_path.stat().st_size // 1024,
-        "is_running": is_running,
-        "current_item": current_item,
-        "current_subtask": current_subtask,
-        "subtask_index": subtask_index,
-        "subtask_total": subtask_total_guess,
-        "elapsed_seconds": elapsed_seconds,
-        "live_status": live_status,
-        "completions": completions[-20:],
-        "completion_count": len(completions),
-        "failure_count": len(failures),
-        "recent_failures": failures[-5:],
+        "log_file":           str(log_path),
+        "log_size_kb":        log_path.stat().st_size // 1024,
+        "is_running":         is_running,
+        "current_item":       current_item,
+        "current_subtask":    current_subtask,
+        "subtask_index":      subtask_index,
+        "subtask_total":      subtask_total,
+        "elapsed_seconds":    elapsed_seconds,
+        "live_status":        live_status,
+        "completions":        list(dict.fromkeys(completions))[-20:],
+        "completion_count":   len(set(completions)),
+        "failure_count":      len(failures),
+        "recent_failures":    failures[-5:],
         "avg_subtask_seconds": round(avg_dur, 1),
-        "subtask_count": len(durations),
-        "subtask_history": durations[-50:],   # for time-trend chart
+        "subtask_count":      len(durations),
+        "subtask_history":    durations[-50:],
     }
 
 

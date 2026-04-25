@@ -2282,6 +2282,8 @@ async function loadControls() {
 }
 
 // ── Executor live status (2-second poll) ──────────────────────────────────────
+let _prevCompletionCount = 0;
+
 function renderExec(d) {
   const running = d.running;
   const bi = $('ex-badge');
@@ -2291,35 +2293,60 @@ function renderExec(d) {
   if (running || d.current_item) {
     bi.className   = 'text-xs px-2 py-0.5 rounded-full bg-emerald-900/50 text-emerald-400';
     bi.textContent = d.live_status || 'running';
-    $('ex-item').textContent   = d.current_item ? `▶ ${d.current_item}` : 'Starting…';
-    $('ex-item').className     = 'text-sm text-emerald-300 mb-0.5 font-medium';
-    $('ex-subtask').textContent = d.current_subtask || '';
-    $('ex-live-status').textContent = d.live_status || '';
+
+    if (d.current_item) {
+      $('ex-item').textContent = `▶ ${d.current_item}`;
+      $('ex-item').className   = 'text-sm text-emerald-300 mb-0.5 font-medium';
+    } else {
+      // Running but no item parsed yet — show live_status as a hint
+      $('ex-item').textContent = d.live_status === 'Running' ? 'Initializing…' : (d.live_status || 'Starting…');
+      $('ex-item').className   = 'text-sm text-amber-400/80 mb-0.5';
+    }
 
     const si = d.subtask_index || 0;
     const st = d.subtask_total || 0;
-    nm.textContent = st > 0 ? `${si}/${st}` : (si > 0 ? `${si} done` : '');
-    const prog = st > 0 ? pct(si, st) : 0;
+    // Show "Subtask 2/4: description" or just the description
+    const subtaskLabel = d.current_subtask
+      ? (st > 0 ? `[${si}/${st}] ${d.current_subtask}` : d.current_subtask)
+      : (st > 0 ? `Subtask ${si}/${st}` : '');
+    $('ex-subtask').textContent = subtaskLabel;
+    $('ex-live-status').textContent = d.live_status || '';
+
+    nm.textContent = st > 0 ? `${si}/${st}` : '';
+    const prog = st > 0 ? pct(si, st) : (running ? 5 : 0); // 5% idle bar when running
     setBar('ex-prog', prog);
 
     const el = d.elapsed_seconds || 0;
     $('ex-elapsed').textContent = el > 0 ? `elapsed ${fmtSec(el)}` : '';
 
-    const avgS = d.avg_subtask_seconds || 80;
-    const remaining = Math.max(0, st - si);
-    $('ex-eta').textContent = remaining > 0 ? `~${fmtSec(remaining * avgS)} left` : '';
+    if (d.avg_subtask_seconds > 0 && st > si) {
+      const remaining = Math.max(0, st - si);
+      $('ex-eta').textContent = `~${fmtSec(remaining * d.avg_subtask_seconds)} left`;
+    } else {
+      $('ex-eta').textContent = '';
+    }
 
     qc.classList.remove('hidden');
+
+    // Flash green on new completions
+    const newCount = d.completion_count || 0;
+    if (newCount > _prevCompletionCount && _prevCompletionCount > 0) {
+      const completions = d.completions || [];
+      const lastDone = completions[completions.length - 1] || 'item';
+      toast(`✓ Completed ${lastDone}`, 'ok');
+    }
+    _prevCompletionCount = newCount;
+
   } else {
     bi.className   = 'text-xs px-2 py-0.5 rounded-full bg-[#21262d] text-gray-500';
     bi.textContent = 'idle';
-    $('ex-item').textContent  = 'No executor running';
-    $('ex-item').className    = 'text-sm text-gray-500 mb-0.5';
-    $('ex-subtask').textContent = '';
+    $('ex-item').textContent     = 'No executor running';
+    $('ex-item').className       = 'text-sm text-gray-500 mb-0.5';
+    $('ex-subtask').textContent  = '';
     $('ex-live-status').textContent = '';
-    nm.textContent = '';
-    $('ex-elapsed').textContent = '';
-    $('ex-eta').textContent = '';
+    nm.textContent               = '';
+    $('ex-elapsed').textContent  = '';
+    $('ex-eta').textContent      = '';
     setBar('ex-prog', 0);
     qc.classList.add('hidden');
   }
