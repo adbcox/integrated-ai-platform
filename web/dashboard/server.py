@@ -201,6 +201,30 @@ def _git_log() -> list[dict]:
     return commits
 
 
+def _velocity_stats() -> dict:
+    """Return daily completion counts for the last 30 days from git log."""
+    import datetime as _dt
+    result = subprocess.run(
+        ["git", "log", "--format=%ad %s", "--date=short", "--grep=→ Completed", "-500"],
+        capture_output=True, text=True, cwd=REPO_ROOT,
+    )
+    counts: dict[str, int] = {}
+    for line in result.stdout.splitlines():
+        parts = line.split(" ", 1)
+        if len(parts) == 2:
+            date_str = parts[0]
+            counts[date_str] = counts.get(date_str, 0) + 1
+
+    today = _dt.date.today()
+    days = [(today - _dt.timedelta(days=i)).isoformat() for i in range(29, -1, -1)]
+    series = [{"date": d, "count": counts.get(d, 0)} for d in days]
+    total = sum(counts.get(d, 0) for d in days)
+    active_days = sum(1 for d in days if counts.get(d, 0) > 0)
+    avg = round(total / active_days, 1) if active_days else 0
+
+    return {"daily": series, "total_30d": total, "active_days": active_days, "avg_per_active_day": avg}
+
+
 def _training_stats() -> dict:
     try:
         sys.path.insert(0, str(REPO_ROOT))
@@ -815,6 +839,8 @@ class Handler(BaseHTTPRequestHandler):
             self._serve_json(_training_cycle_status())
         elif path == "/api/training/status":
             self._serve_json(_training_cycle_status())
+        elif path == "/api/velocity":
+            self._serve_json(_velocity_stats())
         elif path == "/api/health":
             self._serve_json(_health())
         elif path == "/api/embed/widget":

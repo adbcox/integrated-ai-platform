@@ -696,39 +696,74 @@ tailwind.config = { theme: { extend: { colors: {
      ANALYTICS TAB — Chart.js
 ════════════════════════════════════════════════════════════════════════════ -->
 <div id="pane-analytics" class="hidden">
+
+  <!-- Loading overlay (spins on top of charts, doesn't wipe them) -->
+  <div id="analytics-loading" class="hidden fixed inset-0 pointer-events-none z-30 flex items-start justify-end p-6">
+    <div class="flex items-center gap-2 bg-[#161b22] border border-[#21262d] rounded-lg px-3 py-1.5 text-xs text-gray-400 shadow-lg">
+      <div class="w-3 h-3 border-2 border-blue-500 border-t-transparent rounded-full spin"></div>
+      Refreshing…
+    </div>
+  </div>
+
+  <!-- Key metrics summary row -->
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+    <div class="bg-[#161b22] border border-[#21262d] rounded-xl p-4 text-center">
+      <p class="text-2xl font-bold text-emerald-400" id="an-completed">—</p>
+      <p class="text-xs text-gray-500 mt-1">Items completed</p>
+    </div>
+    <div class="bg-[#161b22] border border-[#21262d] rounded-xl p-4 text-center">
+      <p class="text-2xl font-bold text-blue-400" id="an-velocity">—</p>
+      <p class="text-xs text-gray-500 mt-1">Completions today</p>
+    </div>
+    <div class="bg-[#161b22] border border-[#21262d] rounded-xl p-4 text-center">
+      <p class="text-2xl font-bold text-amber-400" id="an-success">—</p>
+      <p class="text-xs text-gray-500 mt-1">Subtask success rate</p>
+    </div>
+    <div class="bg-[#161b22] border border-[#21262d] rounded-xl p-4 text-center">
+      <p class="text-2xl font-bold text-purple-400" id="an-best-cat">—</p>
+      <p class="text-xs text-gray-500 mt-1">Best category</p>
+    </div>
+  </div>
+
   <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
 
-    <!-- Category success rate bar chart -->
+    <!-- Category progress stacked bar -->
     <div class="bg-[#161b22] border border-[#21262d] rounded-xl p-4">
-      <h2 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">Category Completion Rate</h2>
-      <div class="relative h-72">
+      <div class="flex justify-between items-center mb-3">
+        <h2 class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Where's the work?</h2>
+        <span class="text-xs text-gray-600">Completed vs remaining</span>
+      </div>
+      <div class="relative" style="height:320px">
         <canvas id="chart-cat"></canvas>
       </div>
     </div>
 
-    <!-- Training quality donut -->
+    <!-- Daily completion velocity -->
     <div class="bg-[#161b22] border border-[#21262d] rounded-xl p-4">
-      <h2 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">Training Data Quality</h2>
-      <div class="relative h-72 flex items-center justify-center">
-        <canvas id="chart-donut"></canvas>
+      <div class="flex justify-between items-center mb-3">
+        <h2 class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Are we getting faster?</h2>
+        <span class="text-xs text-gray-600" id="an-velocity-meta">Last 30 days</span>
       </div>
-    </div>
-
-    <!-- Time trend line chart (full width) -->
-    <div class="lg:col-span-2 bg-[#161b22] border border-[#21262d] rounded-xl p-4">
-      <div class="flex justify-between items-center mb-4">
-        <h2 class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Subtask Duration Trend</h2>
-        <span class="text-xs text-gray-600">Last 50 completions · rolling 5-point avg</span>
-      </div>
-      <div class="relative h-52">
+      <div class="relative" style="height:320px">
         <canvas id="chart-trend"></canvas>
       </div>
     </div>
 
-    <!-- Category breakdown table -->
-    <div class="lg:col-span-2 bg-[#161b22] border border-[#21262d] rounded-xl p-4">
-      <h2 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Category Breakdown</h2>
-      <div id="analytics-cat-table" class="space-y-1.5"></div>
+    <!-- Category distribution donut -->
+    <div class="bg-[#161b22] border border-[#21262d] rounded-xl p-4">
+      <div class="flex justify-between items-center mb-3">
+        <h2 class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Work distribution</h2>
+        <span class="text-xs text-gray-600">By total item count</span>
+      </div>
+      <div class="relative" style="height:280px">
+        <canvas id="chart-donut"></canvas>
+      </div>
+    </div>
+
+    <!-- Category breakdown table (right column) -->
+    <div class="bg-[#161b22] border border-[#21262d] rounded-xl p-4">
+      <h2 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Category breakdown</h2>
+      <div id="analytics-cat-table" class="space-y-1.5 overflow-y-auto" style="max-height:280px"></div>
     </div>
 
   </div>
@@ -1332,120 +1367,216 @@ async function toggleDiff(hash, btn) {
 
 // ── Charts (Chart.js) ─────────────────────────────────────────────────────────
 let charts = {};
+let _velocityData = null;
 
-function chartDefaults() {
+const CHART_GRID  = '#21262d';
+const CHART_TICK  = '#6e7681';
+const CHART_LABEL = '#8b949e';
+const C_GREEN  = '#3fb950'; const C_GREENA  = '#3fb95055';
+const C_BLUE   = '#58a6ff'; const C_BLUEA   = '#58a6ff22';
+const C_AMBER  = '#d29922'; const C_AMBERA  = '#d2992233';
+const C_RED    = '#f85149'; const C_REDA    = '#f8514933';
+const C_PURPLE = '#bc8cff'; const C_PURPLEA = '#bc8cff33';
+
+const PALETTE = [C_GREEN, C_BLUE, C_AMBER, C_RED, C_PURPLE,
+  '#f78166','#79c0ff','#56d364','#ffa657','#db61a2',
+  '#e3b341','#388bfd','#2ea043','#a371f7','#f2cc60'];
+
+function chartBase(extra = {}) {
   return {
-    color: '#8b949e',
-    plugins: { legend: { labels: { color:'#8b949e', font:{ family:'ui-monospace', size:10 } } } },
-    scales: {
-      x: { ticks:{ color:'#6e7681', font:{size:10} }, grid:{ color:'#21262d' } },
-      y: { ticks:{ color:'#6e7681', font:{size:10} }, grid:{ color:'#21262d' } },
+    responsive: true,
+    maintainAspectRatio: false,
+    animation: { duration: 400 },
+    plugins: {
+      legend: { labels: { color: CHART_LABEL, font: { size: 11 }, padding: 12 } },
+      tooltip: { backgroundColor: '#161b22', borderColor: '#30363d', borderWidth: 1,
+                 titleColor: '#e6edf3', bodyColor: CHART_LABEL, padding: 10 },
+      ...extra,
     },
   };
 }
 
-function buildCatChart(cats) {
-  const ctx = $('chart-cat'); if (!ctx) return;
-  if (charts.cat) charts.cat.destroy();
-
-  const labels = cats.slice(0,12).map(c => c.category);
-  const data   = cats.slice(0,12).map(c => c.pct);
-  const bg     = data.map(p => p>=80 ? '#3fb95060' : p>=50 ? '#d2992260' : '#f8514960');
-  const bdr    = data.map(p => p>=80 ? '#3fb950' : p>=50 ? '#d29922' : '#f85149');
-
-  charts.cat = new Chart(ctx, {
-    type: 'bar',
-    data: { labels, datasets: [{ label:'Completion %', data, backgroundColor:bg, borderColor:bdr, borderWidth:1, borderRadius:3 }] },
-    options: {
-      ...chartDefaults(),
-      indexAxis: 'y',
-      responsive: true, maintainAspectRatio: false,
-      plugins: { ...chartDefaults().plugins, tooltip: {
-        callbacks: { label: ctx => ` ${ctx.raw}%` }
-      }},
-      scales: {
-        x: { min:0, max:100, ticks:{ color:'#6e7681', font:{size:10}, callback:v=>v+'%' }, grid:{ color:'#21262d' } },
-        y: { ticks:{ color:'#8b949e', font:{size:10} }, grid:{ color:'#21262d' } },
-      },
-    }
-  });
+// Helper: update existing chart data OR create new chart
+function _setChartData(key, ctx, config) {
+  if (charts[key]) {
+    charts[key].data = config.data;
+    charts[key].update('active');
+  } else {
+    charts[key] = new Chart(ctx, config);
+  }
 }
 
-function buildTrendChart(history) {
-  const ctx = $('chart-trend'); if (!ctx) return;
-  if (charts.trend) charts.trend.destroy();
-  if (!history.length) return;
+// Chart 1: Stacked horizontal bar — completed vs remaining per category
+function buildCatChart(cats) {
+  const el = $('chart-cat'); if (!el) return;
+  const top = cats.slice(0, 14).sort((a,b) => b.total - a.total);
+  const labels   = top.map(c => c.category);
+  const doneData = top.map(c => c.done);
+  const remData  = top.map(c => c.total - c.done);
 
-  // 5-point rolling average
-  const smooth = history.map((_, i) => {
-    const window = history.slice(Math.max(0,i-4), i+1);
-    return Math.round(window.reduce((a,b)=>a+b,0) / window.length * 10) / 10;
-  });
-
-  const labels = history.map((_, i) => i+1);
-  charts.trend = new Chart(ctx, {
-    type: 'line',
+  const config = {
+    type: 'bar',
     data: {
       labels,
       datasets: [
-        { label:'Raw (s)',     data:history, borderColor:'#21262d',  backgroundColor:'transparent', pointRadius:0, borderWidth:1 },
-        { label:'Avg 5 (s)',   data:smooth,  borderColor:'#58a6ff',  backgroundColor:'#58a6ff18',   pointRadius:0, borderWidth:2, fill:true, tension:.4 },
+        { label: 'Completed', data: doneData,
+          backgroundColor: C_GREENA, borderColor: C_GREEN, borderWidth: 1, borderRadius: 3 },
+        { label: 'Remaining', data: remData,
+          backgroundColor: '#21262d', borderColor: '#30363d', borderWidth: 1, borderRadius: 3 },
       ],
     },
     options: {
-      ...chartDefaults(),
-      responsive:true, maintainAspectRatio:false,
-      plugins: { ...chartDefaults().plugins },
+      ...chartBase(),
+      indexAxis: 'y',
       scales: {
-        x: { ticks:{ color:'#6e7681', font:{size:9}, maxTicksLimit:10 }, grid:{ color:'#21262d' } },
-        y: { ticks:{ color:'#6e7681', font:{size:10}, callback:v=>v+'s' }, grid:{ color:'#21262d' } },
+        x: { stacked: true, ticks: { color: CHART_TICK, font: { size: 10 } }, grid: { color: CHART_GRID },
+             title: { display: true, text: 'Items', color: CHART_LABEL, font: { size: 10 } } },
+        y: { stacked: true, ticks: { color: CHART_LABEL, font: { size: 10 } }, grid: { color: 'transparent' } },
       },
-    }
-  });
+      plugins: {
+        ...chartBase().plugins,
+        tooltip: {
+          ...chartBase().plugins.tooltip,
+          callbacks: {
+            label: ctx => {
+              const cat = top[ctx.dataIndex];
+              if (ctx.datasetIndex === 0) return ` Completed: ${cat.done} of ${cat.total} (${cat.pct}%)`;
+              return ` Remaining: ${cat.total - cat.done}`;
+            },
+          },
+        },
+      },
+    },
+  };
+  _setChartData('cat', el, config);
 }
 
-function buildDonutChart(qual) {
-  const ctx = $('chart-donut'); if (!ctx) return;
-  if (charts.donut) charts.donut.destroy();
+// Chart 2: Daily completion velocity — bar chart with 7-day rolling avg
+function buildTrendChart(velocityData) {
+  const el = $('chart-trend'); if (!el) return;
+  if (!velocityData) return;
 
-  const good  = qual > 0 ? Math.round(qual * 0.65) : 0;
-  const ok    = qual > 0 ? Math.round(qual * 0.25) : 0;
-  const noisy = Math.max(0, qual - good - ok);
-  const empty = qual === 0 ? 1 : 0;
+  const days   = velocityData.daily || [];
+  const labels = days.map(d => d.date.slice(5));   // MM-DD
+  const counts = days.map(d => d.count);
+  // 7-day rolling avg
+  const rolling = counts.map((_, i) => {
+    const w = counts.slice(Math.max(0, i-6), i+1);
+    return +(w.reduce((a,b) => a+b, 0) / w.length).toFixed(1);
+  });
 
-  charts.donut = new Chart(ctx, {
+  const meta = `${velocityData.total_30d} completions · ${velocityData.active_days} active days · avg ${velocityData.avg_per_active_day}/day`;
+  const metaEl = $('an-velocity-meta');
+  if (metaEl) metaEl.textContent = meta;
+
+  const config = {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        { label: 'Completions/day', data: counts,
+          backgroundColor: C_BLUEA, borderColor: C_BLUE, borderWidth: 1, borderRadius: 2, order: 2 },
+        { label: '7-day avg', data: rolling, type: 'line',
+          borderColor: C_AMBER, backgroundColor: 'transparent',
+          pointRadius: 0, borderWidth: 2, tension: 0.4, order: 1 },
+      ],
+    },
+    options: {
+      ...chartBase(),
+      scales: {
+        x: { ticks: { color: CHART_TICK, font: { size: 9 }, maxTicksLimit: 10 },
+             grid: { color: CHART_GRID } },
+        y: { ticks: { color: CHART_TICK, font: { size: 10 }, stepSize: 1 },
+             grid: { color: CHART_GRID },
+             title: { display: true, text: 'Items completed', color: CHART_LABEL, font: { size: 10 } } },
+      },
+    },
+  };
+  _setChartData('trend', el, config);
+}
+
+// Chart 3: Donut — work distribution by total items per category
+function buildDonutChart(cats) {
+  const el = $('chart-donut'); if (!el) return;
+  const top = cats.slice(0, 10).filter(c => c.total > 0)
+                  .sort((a,b) => b.total - a.total);
+  if (!top.length) return;
+
+  const config = {
     type: 'doughnut',
     data: {
-      labels: qual > 0 ? ['Good','OK','Noisy'] : ['No data'],
+      labels: top.map(c => c.category),
       datasets: [{
-        data: qual > 0 ? [good, ok, noisy] : [1],
-        backgroundColor: qual > 0 ? ['#3fb95080','#d2992280','#f8514980'] : ['#21262d'],
-        borderColor:     qual > 0 ? ['#3fb950',  '#d29922',  '#f85149']  : ['#21262d'],
+        data: top.map(c => c.total),
+        backgroundColor: PALETTE.slice(0, top.length).map(c => c + '99'),
+        borderColor:     PALETTE.slice(0, top.length),
         borderWidth: 1,
       }],
     },
     options: {
-      responsive:true, maintainAspectRatio:false,
+      ...chartBase(),
+      cutout: '60%',
       plugins: {
-        legend: { position:'bottom', labels:{ color:'#8b949e', font:{size:10}, padding:12 } },
-        tooltip: { callbacks: { label: ctx => ` ${ctx.raw} examples` } },
+        ...chartBase().plugins,
+        legend: { position: 'right',
+                  labels: { color: CHART_LABEL, font: { size: 10 }, padding: 8 } },
+        tooltip: {
+          ...chartBase().plugins.tooltip,
+          callbacks: {
+            label: ctx => {
+              const cat = top[ctx.dataIndex];
+              return ` ${cat.category}: ${cat.total} items (${cat.pct}% done)`;
+            },
+          },
+        },
       },
-      cutout: '65%',
-    }
-  });
+    },
+  };
+  _setChartData('donut', el, config);
 }
 
 let chartsBuilt = false;
-function renderCharts() {
+async function renderCharts() {
   if (!_lastStatus) return;
-  const cats    = _lastStatus.categories || [];
-  const history = (_lastStatus.execution || {}).subtask_history || [];
-  const qual    = ((_lastStatus.training || {}).quality_examples) || 0;
+  const cats = _lastStatus.categories || [];
+  const ex   = _lastStatus.execution  || {};
+  const rm   = _lastStatus.roadmap    || {};
+
+  // Show loading overlay without wiping charts
+  const overlay = $('analytics-loading');
+  if (overlay) overlay.classList.remove('hidden');
+
+  try {
+    // Fetch velocity data (separate endpoint, cache if already loaded)
+    if (!_velocityData) {
+      const vr = await fetch('/api/velocity');
+      _velocityData = await vr.json();
+    } else {
+      // Re-fetch in background for next render
+      fetch('/api/velocity').then(r=>r.json()).then(d=>{ _velocityData = d; }).catch(()=>{});
+    }
+  } catch(e) { /* use cached */ }
+
+  // Summary metrics
+  const today = _velocityData?.daily?.slice(-1)[0]?.count ?? 0;
+  const subtasks = ex.subtask_count || 0, failures = ex.failure_count || 0;
+  const successRate = subtasks > 0 ? Math.round((subtasks-failures)/subtasks*100) : 0;
+  const bestCat = cats.filter(c=>c.total>3).sort((a,b)=>b.pct-a.pct)[0];
+
+  const set = (id, v) => { const e=$(id); if(e) e.textContent=v; };
+  set('an-completed', rm.completed ?? '—');
+  set('an-velocity',  today > 0 ? `+${today}` : '0');
+  set('an-success',   subtasks > 0 ? successRate+'%' : '—');
+  set('an-best-cat',  bestCat ? bestCat.category : '—');
+
+  // Build/update charts
   buildCatChart(cats);
-  buildTrendChart(history);
-  buildDonutChart(qual);
+  buildTrendChart(_velocityData);
+  buildDonutChart(cats);
   renderCatBars(cats);
   chartsBuilt = true;
+
+  if (overlay) overlay.classList.add('hidden');
 }
 
 // ── Main render ───────────────────────────────────────────────────────────────
