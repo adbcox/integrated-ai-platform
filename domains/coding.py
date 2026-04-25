@@ -666,10 +666,37 @@ Make sure to address all issues and test edge cases."""
             "--map-tokens", "0",
         ]
 
-        # Inject repo context if available
-        context_file = self.repo_root / "artifacts" / "repo_context.txt"
-        if context_file.exists():
-            cmd.append(f"--read={context_file}")
+        # Inject repo context — prefer mini summary (~1300 tokens) over full dump (~57k tokens).
+        # Full repo_context.txt exceeds the 7b model's 32k window and causes truncation.
+        context_chars = 0
+        mini_context = self.repo_root / "artifacts" / "repo_context_mini.txt"
+        full_context = self.repo_root / "artifacts" / "repo_context.txt"
+        if mini_context.exists():
+            cmd.append(f"--read={mini_context}")
+            context_chars += mini_context.stat().st_size
+        elif full_context.exists() and full_context.stat().st_size < 32_000:
+            cmd.append(f"--read={full_context}")
+            context_chars += full_context.stat().st_size
+
+        # Inject pattern snippets as reference context (budget-aware).
+        try:
+            from framework.reference_manager import ReferenceManager, CATEGORY_SNIPPETS
+            ref_mgr = ReferenceManager(self.repo_root)
+            if ref_mgr.snippets_available():
+                # Infer category from file paths in the task
+                category = "_default"
+                desc_lower = task_description.lower()
+                for kw, cat in [("media", "MEDIA"), ("api", "API"), ("data", "DATA"),
+                                 ("ui", "UI"), ("ops", "OPS"), ("learn", "LEARN")]:
+                    if kw in desc_lower:
+                        category = cat
+                        break
+                # task_description chars + file chars already in context
+                used = context_chars + sum(len(f) * 40 for f in files)  # rough file estimate
+                for flag in ref_mgr.get_read_flags(category, used_chars=used):
+                    cmd.append(flag)
+        except Exception:
+            pass  # reference system is optional — never block aider
 
         # Add files first
         cmd.extend(files)
