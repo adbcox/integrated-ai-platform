@@ -352,8 +352,9 @@ def _kanban_items() -> dict:
     return buckets
 
 
-def _executor_action(action: str) -> dict:
+def _executor_action(action: str, body: dict | None = None) -> dict:
     """Start or stop the autonomous executor. Returns {ok, message}."""
+    body = body or {}
     if action == "start":
         r = subprocess.run(
             ["pgrep", "-f", "auto_execute_roadmap"],
@@ -362,9 +363,16 @@ def _executor_action(action: str) -> dict:
         if r.stdout.strip():
             return {"ok": False, "message": f"Already running (PID {r.stdout.strip().split()[0]})"}
         log_path = "/tmp/executor_longrun.log"
+        max_items = str(body.get("max_items", 50))
+        cmd = [
+            sys.executable, str(REPO_ROOT / "bin" / "auto_execute_roadmap.py"),
+            "--max-items", max_items,
+        ]
+        filter_arg = body.get("filter", "")
+        if filter_arg:
+            cmd += ["--filter", filter_arg]
         proc = subprocess.Popen(
-            [sys.executable, str(REPO_ROOT / "bin" / "auto_execute_roadmap.py"),
-             "--max-items", "10"],
+            cmd,
             cwd=REPO_ROOT,
             stdout=open(log_path, "w"),
             stderr=subprocess.STDOUT,
@@ -383,7 +391,25 @@ def _executor_action(action: str) -> dict:
             return {"ok": False, "message": "No executor running"}
         for pid in pids:
             subprocess.run(["kill", "-TERM", pid], capture_output=True)
-        return {"ok": True, "message": f"Sent SIGTERM to PID(s) {', '.join(pids)}"}
+        # Wait up to 5 seconds for graceful exit, then SIGKILL
+        import time as _time
+        deadline = _time.time() + 5
+        while _time.time() < deadline:
+            still = subprocess.run(["pgrep", "-f", "auto_execute_roadmap"],
+                                   capture_output=True, text=True).stdout.strip().splitlines()
+            if not still:
+                break
+            _time.sleep(0.5)
+        still = subprocess.run(["pgrep", "-f", "auto_execute_roadmap"],
+                               capture_output=True, text=True).stdout.strip().splitlines()
+        killed = []
+        for pid in still:
+            subprocess.run(["kill", "-KILL", pid], capture_output=True)
+            killed.append(pid)
+        msg = f"Stopped PID(s) {', '.join(pids)}"
+        if killed:
+            msg += f" (SIGKILL used on {', '.join(killed)})"
+        return {"ok": True, "message": msg}
 
     return {"ok": False, "message": f"Unknown action: {action}"}
 
@@ -449,14 +475,14 @@ def _validate_training_prereqs() -> dict | None:
     data_path = REPO_ROOT / "artifacts" / "training_data" / "alpaca.jsonl"
     if not data_path.exists():
         return {"ok": False, "message": "No training data at artifacts/training_data/alpaca.jsonl — run bin/collect_training_data.py first"}
-    # Check quality examples count
+    # Check quality examples count (minimum 5 to start; 10+ is recommended)
     try:
         sys.path.insert(0, str(REPO_ROOT))
         from framework.learning_analytics import analyze_training_data
         r = analyze_training_data()
         count = r.get("example_count", 0) if isinstance(r, dict) else getattr(r, "example_count", 0)
-        if count < 10:
-            return {"ok": False, "message": f"Only {count}/10 quality examples — collect more before training"}
+        if count < 5:
+            return {"ok": False, "message": f"Only {count}/5 quality examples — run the executor to collect more (10+ recommended)"}
     except Exception:
         pass
     # Check venv
@@ -648,7 +674,7 @@ class Handler(BaseHTTPRequestHandler):
 
         if path == "/api/executor":
             action = body.get("action", "")
-            self._serve_json(_executor_action(action))
+            self._serve_json(_executor_action(action, body))
         elif path in ("/api/train", "/api/training/start"):
             self._serve_json(_start_training())
         elif path == "/api/model/deploy":
