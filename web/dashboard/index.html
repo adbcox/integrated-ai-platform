@@ -440,6 +440,126 @@ tailwind.config = { theme: { extend: { colors: {
     content:''; position:absolute; bottom:0; left:0; right:0; height:2px;
     background:linear-gradient(90deg,var(--hs-color,transparent) 0%,transparent 100%);
   }
+
+  /* ── AI Chat Panel ───────────────────────────────────────────────────────── */
+  #ai-chat {
+    position:fixed; bottom:80px; right:24px; z-index:35;
+    width:360px; display:flex; flex-direction:column;
+    background:var(--bg-card); border:1px solid var(--border-default);
+    border-radius:var(--r-xl); box-shadow:0 16px 48px rgba(0,0,0,.55);
+    transition:height var(--t-base),opacity var(--t-base);
+    overflow:hidden;
+  }
+  #ai-chat.chat-collapsed { height:44px; }
+  #ai-chat:not(.chat-collapsed) { height:420px; }
+  .chat-hdr {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:0 14px; height:44px; flex-shrink:0; cursor:pointer;
+    border-bottom:1px solid var(--border-muted);
+    background:rgba(0,82,204,.08);
+  }
+  .chat-hdr-title { font-size:12px; font-weight:600; color:var(--text-primary); display:flex; align-items:center; gap:7px; }
+  .chat-dot { width:7px;height:7px;border-radius:50%;background:var(--clr-success);box-shadow:0 0 6px var(--clr-success); }
+  #chat-messages {
+    flex:1; overflow-y:auto; padding:12px 14px;
+    display:flex; flex-direction:column; gap:10px;
+  }
+  .chat-msg { display:flex; flex-direction:column; gap:3px; }
+  .chat-msg-ai .chat-bubble {
+    background:var(--bg-inset); border:1px solid var(--border-muted);
+    color:var(--text-secondary); border-radius:0 var(--r-lg) var(--r-lg) var(--r-lg);
+    align-self:flex-start; max-width:90%;
+  }
+  .chat-msg-user .chat-bubble {
+    background:var(--clr-accent); color:#fff;
+    border-radius:var(--r-lg) 0 var(--r-lg) var(--r-lg);
+    align-self:flex-end; max-width:85%;
+  }
+  .chat-bubble { padding:8px 12px; font-size:12px; line-height:1.5; word-break:break-word; }
+  .chat-bubble strong { color:var(--text-primary); }
+  .chat-bubble code { font-family:var(--font-mono); font-size:10px; background:rgba(255,255,255,.08); padding:1px 4px; border-radius:3px; }
+  .chat-bubble ul,.chat-bubble ol { padding-left:16px; margin:4px 0; }
+  .chat-bubble li { margin:2px 0; }
+  .chat-result-chips { display:flex; flex-wrap:wrap; gap:4px; margin-top:5px; }
+  .chat-result-chip {
+    font-size:10px; padding:3px 8px; border-radius:var(--r-sm);
+    background:var(--tint-info); color:#60a5fa; cursor:pointer; font-family:var(--font-mono);
+    transition:background var(--t-fast);
+  }
+  .chat-result-chip:hover { background:rgba(0,82,204,.3); }
+  .chat-input-row {
+    display:flex; align-items:flex-end; gap:8px; padding:10px 12px;
+    border-top:1px solid var(--border-muted); flex-shrink:0;
+  }
+  #chat-textarea {
+    flex:1; background:var(--bg-inset); border:1px solid var(--border-default);
+    border-radius:var(--r-md); color:var(--text-primary); font-family:var(--font-ui);
+    font-size:12px; padding:7px 10px; resize:none; outline:none; min-height:34px; max-height:80px;
+    transition:border-color var(--t-fast);
+    overflow-y:auto;
+  }
+  #chat-textarea:focus { border-color:var(--border-focus); }
+  .chat-send-btn {
+    width:34px; height:34px; border-radius:50%; background:var(--clr-accent);
+    color:#fff; border:none; cursor:pointer; font-size:16px; flex-shrink:0;
+    display:flex; align-items:center; justify-content:center;
+    transition:all var(--t-fast);
+  }
+  .chat-send-btn:hover { background:var(--clr-inprog); }
+  .chat-typing { display:flex; gap:3px; align-items:center; padding:6px 10px; }
+  .chat-typing span { width:6px;height:6px;border-radius:50%;background:var(--text-muted);animation:typingDot 1.2s infinite; }
+  .chat-typing span:nth-child(2) { animation-delay:.2s; }
+  .chat-typing span:nth-child(3) { animation-delay:.4s; }
+  @keyframes typingDot { 0%,60%,100%{transform:translateY(0)} 30%{transform:translateY(-5px)} }
+
+  /* ── Item Detail Modal ───────────────────────────────────────────────────── */
+  #item-modal-bg {
+    display:none; position:fixed; inset:0; z-index:60;
+    background:rgba(0,0,0,.65); backdrop-filter:blur(6px);
+  }
+  #item-modal-bg.im-open { display:flex; align-items:center; justify-content:center; }
+  .im-box {
+    background:var(--bg-card); border:1px solid var(--border-default);
+    border-radius:var(--r-xl); box-shadow:var(--shadow-modal);
+    width:100%; max-width:600px; max-height:85vh; overflow-y:auto;
+    padding:24px;
+  }
+  .im-field-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px; }
+  .im-field label { display:block; font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:.06em; color:var(--text-muted); margin-bottom:4px; }
+  .im-field select, .im-field input {
+    width:100%; background:var(--bg-inset); border:1px solid var(--border-default);
+    border-radius:var(--r-sm); color:var(--text-primary); font-family:var(--font-ui);
+    font-size:13px; padding:6px 10px; outline:none;
+    transition:border-color var(--t-fast);
+  }
+  .im-field select:focus, .im-field input:focus { border-color:var(--border-focus); }
+
+  /* ── Create Item Modal ───────────────────────────────────────────────────── */
+  #create-modal-bg {
+    display:none; position:fixed; inset:0; z-index:60;
+    background:rgba(0,0,0,.65); backdrop-filter:blur(6px);
+  }
+  #create-modal-bg.cm-open { display:flex; align-items:center; justify-content:center; }
+
+  /* ── Tools Tab ───────────────────────────────────────────────────────────── */
+  .tool-card {
+    background:var(--bg-card); border:1px solid var(--border-default);
+    border-radius:var(--r-xl); padding:20px; cursor:pointer;
+    transition:all var(--t-base); display:flex; flex-direction:column; gap:10px;
+  }
+  .tool-card:hover { border-color:var(--border-hover); transform:translateY(-2px); box-shadow:var(--shadow-elev); }
+  .tool-card.tool-available::before { content:''; position:absolute; left:0;top:0;bottom:0;width:3px;background:var(--clr-success);border-radius:var(--r-sm) 0 0 var(--r-sm); }
+  .tool-icon { font-size:32px; line-height:1; }
+  .tool-name { font-size:14px; font-weight:600; color:var(--text-primary); }
+  .tool-desc { font-size:12px; color:var(--text-muted); line-height:1.5; }
+  .tool-status-pill {
+    display:inline-flex; align-items:center; gap:4px;
+    font-size:10px; font-weight:600; padding:2px 8px; border-radius:999px;
+    align-self:flex-start;
+  }
+  .tool-status-pill.available { background:var(--tint-success); color:#4ade80; }
+  .tool-status-pill.planned   { background:rgba(255,255,255,.06); color:var(--text-muted); }
+  .tool-status-pill.partial   { background:var(--tint-warn); color:#fb923c; }
 </style>
 </head>
 <body class="text-gray-300 min-h-screen">
@@ -571,7 +691,9 @@ tailwind.config = { theme: { extend: { colors: {
       <button onclick="setTab('media')"     class="tab-btn"        id="tab-media">Media</button>
       <button onclick="setTab('infra')"     class="tab-btn"        id="tab-infra">Infra</button>
       <button onclick="setTab('home')"      class="tab-btn"        id="tab-home">Home</button>
+      <button onclick="setTab('tools')"     class="tab-btn"        id="tab-tools">Tools</button>
       <button onclick="setTab('controls')"  class="tab-btn"        id="tab-controls">Controls</button>
+      <button onclick="setTab('security')"  class="tab-btn"        id="tab-security">Security</button>
     </nav>
     <div class="flex items-center gap-2">
       <span id="hdr-status" style="font-size:12px;color:var(--text-muted);">connecting</span>
@@ -1083,7 +1205,10 @@ tailwind.config = { theme: { extend: { colors: {
     <!-- Pipeline visualization (2/3 width) -->
     <div class="md:col-span-2 bg-[#161b22] border border-[#21262d] rounded-xl p-4">
       <div class="flex items-center justify-between mb-3">
-        <h2 class="text-sm font-semibold text-white">Download Pipeline</h2>
+        <div class="flex items-center gap-2">
+          <h2 class="text-sm font-semibold text-white">Download Pipeline</h2>
+          <span id="pipeline-stale-badge" class="hidden text-[10px] px-1.5 py-0.5 rounded-full bg-amber-900/40 text-amber-400 border border-amber-800/40">cached</span>
+        </div>
         <button onclick="loadMediaPipeline()" class="text-[11px] text-gray-500 hover:text-gray-300 transition">↻ refresh</button>
       </div>
       <div class="flex items-stretch gap-1 overflow-x-auto pb-1">
@@ -1291,15 +1416,56 @@ tailwind.config = { theme: { extend: { colors: {
 <!-- ══════════════════════════════════════════════════════════════════════════
      INFRASTRUCTURE TAB
 ════════════════════════════════════════════════════════════════════════════ -->
-<div id="pane-infra" class="hidden">
-  <div class="flex justify-between items-center mb-4">
+<div id="pane-infra" class="hidden space-y-4">
+  <div class="flex justify-between items-center">
     <h2 class="text-sm font-semibold text-white">Infrastructure</h2>
     <button onclick="loadInfra()" class="text-xs text-gray-500 hover:text-white transition">↻ refresh</button>
   </div>
 
+  <!-- Mac Mini system stats -->
+  <div class="bg-[#161b22] border border-[#21262d] rounded-xl p-4">
+    <div class="flex items-center justify-between mb-3">
+      <h3 class="text-sm font-semibold text-white">Mac Mini — Local System</h3>
+      <button onclick="loadSystemStats()" class="text-[11px] text-gray-500 hover:text-gray-300 transition">↻</button>
+    </div>
+    <div id="system-stats-body">
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+        <div class="bg-[#0d1117] rounded-lg p-3 text-center">
+          <div class="text-gray-500 text-[10px] uppercase tracking-wider mb-1">CPU</div>
+          <div id="sys-cpu" class="text-2xl font-bold text-white">—</div>
+          <div id="sys-cpu-sub" class="text-[10px] text-gray-600 mt-1">—</div>
+        </div>
+        <div class="bg-[#0d1117] rounded-lg p-3 text-center">
+          <div class="text-gray-500 text-[10px] uppercase tracking-wider mb-1">RAM</div>
+          <div id="sys-mem" class="text-2xl font-bold text-white">—</div>
+          <div id="sys-mem-sub" class="text-[10px] text-gray-600 mt-1">—</div>
+        </div>
+        <div class="bg-[#0d1117] rounded-lg p-3 text-center">
+          <div class="text-gray-500 text-[10px] uppercase tracking-wider mb-1">Disk</div>
+          <div id="sys-disk" class="text-2xl font-bold text-white">—</div>
+          <div id="sys-disk-sub" class="text-[10px] text-gray-600 mt-1">—</div>
+        </div>
+        <div class="bg-[#0d1117] rounded-lg p-3 text-center">
+          <div class="text-gray-500 text-[10px] uppercase tracking-wider mb-1">Uptime</div>
+          <div id="sys-uptime" class="text-2xl font-bold text-white">—</div>
+          <div id="sys-load" class="text-[10px] text-gray-600 mt-1">load —</div>
+        </div>
+      </div>
+      <!-- Ollama row -->
+      <div class="mt-3 flex items-center gap-3 text-xs">
+        <span class="text-gray-600">Ollama</span>
+        <span id="sys-ollama-status" class="font-medium text-gray-400">—</span>
+        <span id="sys-ollama-models" class="text-gray-600 text-[11px]"></span>
+        <span class="text-gray-700 ml-1 text-[11px]">·</span>
+        <span class="text-gray-600">Net</span>
+        <span id="sys-net" class="text-gray-400">—</span>
+      </div>
+    </div>
+  </div>
+
   <!-- Service health grid -->
-  <p class="section-hdr mb-3">Service Reachability</p>
-  <div id="infra-services" class="grid grid-cols-2 md:grid-cols-3 gap-3 mb-5">
+  <p class="section-hdr mb-0">Service Reachability</p>
+  <div id="infra-services" class="grid grid-cols-2 md:grid-cols-3 gap-3">
     <div class="text-xs text-gray-600 col-span-full text-center py-6">Checking services…</div>
   </div>
 
@@ -1310,6 +1476,41 @@ tailwind.config = { theme: { extend: { colors: {
       <span id="infra-docker-status" class="text-xs text-gray-600">—</span>
     </div>
     <div id="infra-docker-list" class="text-xs text-gray-600 text-center py-6">Loading…</div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     SECURITY TAB
+════════════════════════════════════════════════════════════════════════════ -->
+<div id="pane-security" class="hidden space-y-4">
+  <div class="flex justify-between items-center">
+    <h2 class="text-sm font-semibold text-white">Security &amp; Reliability</h2>
+    <button onclick="loadSecurity()" class="text-xs text-gray-500 hover:text-white transition">↻ refresh</button>
+  </div>
+
+  <!-- Circuit breakers -->
+  <div class="bg-[#161b22] border border-[#21262d] rounded-xl p-4">
+    <div class="flex items-center justify-between mb-3">
+      <h3 class="text-sm font-semibold text-white">Circuit Breakers</h3>
+      <span id="cb-summary" class="text-xs text-gray-500">—</span>
+    </div>
+    <div id="cb-grid" class="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+      <div class="text-gray-600 col-span-full text-center py-4">Loading…</div>
+    </div>
+  </div>
+
+  <!-- Audit log -->
+  <div class="bg-[#161b22] border border-[#21262d] rounded-xl p-4">
+    <div class="flex items-center justify-between mb-3">
+      <h3 class="text-sm font-semibold text-white">Audit Log</h3>
+      <div class="flex items-center gap-3">
+        <span id="audit-stats" class="text-[11px] text-gray-600"></span>
+        <button onclick="loadAuditLog()" class="text-[11px] text-gray-500 hover:text-gray-300 transition">↻ refresh</button>
+      </div>
+    </div>
+    <div id="audit-log-body" class="text-xs">
+      <div class="text-gray-600 text-center py-4">Loading…</div>
+    </div>
   </div>
 </div>
 
@@ -1326,7 +1527,256 @@ tailwind.config = { theme: { extend: { colors: {
   </div>
 </div>
 
+<!-- ══════════════════════════════════════════════════════════════════════════
+     TOOLS TAB
+════════════════════════════════════════════════════════════════════════════ -->
+<div id="pane-tools" class="hidden">
+  <div class="flex justify-between items-center mb-4">
+    <div>
+      <h2 class="text-sm font-semibold text-white">Tool Hub</h2>
+      <p class="text-xs text-gray-600 mt-0.5">Launch integrated AI tools and services</p>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px">
+
+    <!-- Image Enhancement -->
+    <div class="tool-card" style="position:relative">
+      <div class="tool-icon">&#x1F5BC;&#xFE0F;</div>
+      <div>
+        <div class="tool-name">Image Enhancement</div>
+        <div class="tool-desc">AI upscaling, denoising, colorization via local models</div>
+      </div>
+      <span class="tool-status-pill planned">&#x25CF; Planned</span>
+      <div style="font-size:10px;color:var(--text-muted);margin-top:4px">RM-AI-001, RM-MEDIA-012</div>
+    </div>
+
+    <!-- Video Processing -->
+    <div class="tool-card" style="position:relative">
+      <div class="tool-icon">&#x1F3AC;</div>
+      <div>
+        <div class="tool-name">Video Processing</div>
+        <div class="tool-desc">Transcoding, subtitle extraction, scene detection</div>
+      </div>
+      <span class="tool-status-pill planned">&#x25CF; Planned</span>
+      <div style="font-size:10px;color:var(--text-muted);margin-top:4px">RM-MEDIA-010, RM-MEDIA-011</div>
+    </div>
+
+    <!-- Document Ingestion -->
+    <div class="tool-card" style="position:relative">
+      <div class="tool-icon">&#x1F4C4;</div>
+      <div>
+        <div class="tool-name">Document Ingestion</div>
+        <div class="tool-desc">Parse PDFs, extract structured data, OCR pipeline</div>
+      </div>
+      <span class="tool-status-pill planned">&#x25CF; Planned</span>
+      <div style="font-size:10px;color:var(--text-muted);margin-top:4px">RM-DATA-006, RM-OCR-001</div>
+    </div>
+
+    <!-- Translation -->
+    <div class="tool-card" style="position:relative">
+      <div class="tool-icon">&#x1F310;</div>
+      <div>
+        <div class="tool-name">Translation</div>
+        <div class="tool-desc">Multi-language document translation via local LLM</div>
+      </div>
+      <span class="tool-status-pill planned">&#x25CF; Planned</span>
+      <div style="font-size:10px;color:var(--text-muted);margin-top:4px">RM-AI-001, RM-I18N-001</div>
+    </div>
+
+    <!-- Executor (Available) -->
+    <div class="tool-card" style="position:relative" onclick="setTab('controls')">
+      <div class="tool-icon">&#x2699;&#xFE0F;</div>
+      <div>
+        <div class="tool-name">Autonomous Executor</div>
+        <div class="tool-desc">Run roadmap items autonomously via aider + Claude Code</div>
+      </div>
+      <span class="tool-status-pill available">&#x25CF; Available</span>
+      <div style="font-size:10px;color:var(--text-muted);margin-top:4px">Click &rarr; Controls tab</div>
+    </div>
+
+    <!-- LoRA Training (Available) -->
+    <div class="tool-card" style="position:relative" onclick="startTraining()">
+      <div class="tool-icon">&#x1F393;</div>
+      <div>
+        <div class="tool-name">LoRA Fine-Tuning</div>
+        <div class="tool-desc">Fine-tune qwen2.5-coder on execution history</div>
+      </div>
+      <span class="tool-status-pill available">&#x25CF; Available</span>
+      <div style="font-size:10px;color:var(--text-muted);margin-top:4px">Click &rarr; Start training</div>
+    </div>
+
+    <!-- Media Pipeline (Available) -->
+    <div class="tool-card" style="position:relative" onclick="setTab('media')">
+      <div class="tool-icon">&#x1F4FA;</div>
+      <div>
+        <div class="tool-name">Media Pipeline</div>
+        <div class="tool-desc">Sonarr + Radarr + Plex + Seedbox + QNAP download pipeline</div>
+      </div>
+      <span class="tool-status-pill available">&#x25CF; Available</span>
+      <div style="font-size:10px;color:var(--text-muted);margin-top:4px">Click &rarr; Media tab</div>
+    </div>
+
+    <!-- RAG Pipeline -->
+    <div class="tool-card" style="position:relative">
+      <div class="tool-icon">&#x1F50D;</div>
+      <div>
+        <div class="tool-name">RAG Pipeline</div>
+        <div class="tool-desc">Retrieval-augmented code generation (stage_rag1&ndash;6)</div>
+      </div>
+      <span class="tool-status-pill partial">&#x25D1; Partial</span>
+      <div style="font-size:10px;color:var(--text-muted);margin-top:4px">bin/stage_rag*.py</div>
+    </div>
+
+  </div>
+
+  <!-- Active processes -->
+  <div class="bg-[#161b22] border border-[#21262d] rounded-xl p-4 mt-5">
+    <p class="section-hdr mb-3">Active Processes</p>
+    <div id="tools-active" class="space-y-2 text-xs text-gray-500">
+      <p>Loading&hellip;</p>
+    </div>
+  </div>
+</div>
+
 </main>
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     ITEM DETAIL MODAL
+════════════════════════════════════════════════════════════════════════════ -->
+<div id="item-modal-bg" onclick="closeItemModal()">
+  <div class="im-box modal-box" onclick="event.stopPropagation()">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px">
+      <div>
+        <span id="im-id" style="font-family:var(--font-mono);font-size:12px;color:var(--text-muted)"></span>
+        <h2 id="im-title" style="font-size:16px;font-weight:600;color:var(--text-primary);margin-top:4px;line-height:1.3"></h2>
+      </div>
+      <button onclick="closeItemModal()" style="color:var(--text-muted);font-size:20px;background:none;border:none;cursor:pointer;padding:0 4px;line-height:1">&#x2715;</button>
+    </div>
+
+    <div class="im-field-row">
+      <div class="im-field">
+        <label>Status</label>
+        <select id="im-status">
+          <option value="Pending">Pending</option>
+          <option value="Accepted">Accepted</option>
+          <option value="In progress">In progress</option>
+          <option value="Completed">Completed</option>
+        </select>
+      </div>
+      <div class="im-field">
+        <label>Category</label>
+        <input id="im-cat" readonly style="opacity:.6;cursor:default">
+      </div>
+      <div class="im-field">
+        <label>LOE</label>
+        <input id="im-loe" readonly style="opacity:.6;cursor:default">
+      </div>
+      <div class="im-field">
+        <label>Priority</label>
+        <input id="im-pri" readonly style="opacity:.6;cursor:default">
+      </div>
+    </div>
+
+    <div style="margin-bottom:16px">
+      <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:8px">Description</div>
+      <div id="im-desc" style="font-size:13px;color:var(--text-secondary);line-height:1.6;background:var(--bg-inset);border:1px solid var(--border-muted);border-radius:var(--r-md);padding:12px;max-height:200px;overflow-y:auto;white-space:pre-wrap;font-family:var(--font-mono)"></div>
+    </div>
+
+    <div style="display:flex;gap:10px;justify-content:flex-end">
+      <button onclick="executeItem()" class="btn btn-md btn-subtle">&#x25B6; Execute Now</button>
+      <button onclick="saveItemStatus()" id="im-save-btn" class="btn btn-md btn-primary">Save Status</button>
+    </div>
+    <p id="im-save-msg" style="font-size:11px;color:var(--clr-success);text-align:right;margin-top:6px;min-height:16px"></p>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     CREATE ITEM MODAL
+════════════════════════════════════════════════════════════════════════════ -->
+<div id="create-modal-bg" onclick="closeCreateModal()">
+  <div class="im-box modal-box" onclick="event.stopPropagation()" style="max-width:500px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+      <h2 style="font-size:15px;font-weight:600;color:var(--text-primary)">&#x2795; New Roadmap Item</h2>
+      <button onclick="closeCreateModal()" style="color:var(--text-muted);font-size:20px;background:none;border:none;cursor:pointer">&#x2715;</button>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <div class="im-field">
+        <label>Title *</label>
+        <input id="ci-title" placeholder="What should be built?" style="width:100%">
+      </div>
+      <div class="im-field-row">
+        <div class="im-field">
+          <label>Category *</label>
+          <select id="ci-cat" style="width:100%">
+            <option>UTIL</option><option>TEST</option><option>DOCS</option><option>API</option>
+            <option>CLI</option><option>MEDIA</option><option>AI</option><option>SECURITY</option>
+            <option>MONITOR</option><option>REFACTOR</option><option>CONFIG</option><option>DATA</option>
+            <option>UX</option><option>OPS</option><option>DEV</option>
+          </select>
+        </div>
+        <div class="im-field">
+          <label>LOE</label>
+          <select id="ci-loe" style="width:100%">
+            <option value="S">S -- Small (&lt;4h)</option>
+            <option value="M" selected>M -- Medium (1-2d)</option>
+            <option value="L">L -- Large (3-5d)</option>
+            <option value="XL">XL -- Extra Large (1w+)</option>
+          </select>
+        </div>
+      </div>
+      <div class="im-field">
+        <label>Description</label>
+        <textarea id="ci-desc" rows="4" placeholder="What should be implemented? What are the acceptance criteria?"
+                  style="width:100%;background:var(--bg-inset);border:1px solid var(--border-default);border-radius:var(--r-sm);color:var(--text-primary);font-family:var(--font-ui);font-size:13px;padding:8px 10px;outline:none;resize:vertical;min-height:80px;"></textarea>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px">
+      <button onclick="closeCreateModal()" class="btn btn-md btn-ghost">Cancel</button>
+      <button onclick="submitCreateItem()" id="ci-submit" class="btn btn-md btn-primary">Create Item</button>
+    </div>
+    <p id="ci-msg" style="font-size:11px;text-align:right;margin-top:6px;min-height:16px"></p>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     AI CHAT PANEL
+════════════════════════════════════════════════════════════════════════════ -->
+<div id="ai-chat" class="chat-collapsed">
+  <!-- Header / toggle -->
+  <div class="chat-hdr" onclick="toggleChat()">
+    <div class="chat-hdr-title">
+      <div class="chat-dot" id="chat-ol-dot"></div>
+      <span>AI Assistant</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <span id="chat-toggle-icon" style="font-size:14px;color:var(--text-muted)">&#x25B2;</span>
+      <button onclick="event.stopPropagation();clearChat()"
+              style="font-size:11px;color:var(--text-muted);background:none;border:none;cursor:pointer;"
+              title="Clear chat">&#x2715;</button>
+    </div>
+  </div>
+
+  <!-- Messages -->
+  <div id="chat-messages">
+    <div class="chat-msg chat-msg-ai">
+      <div class="chat-bubble">
+        Hi! I'm your AI assistant. Try:<br>
+        <code>find media items</code> &middot; <code>status</code> &middot; <code>start executor</code>
+      </div>
+    </div>
+  </div>
+
+  <!-- Input -->
+  <div class="chat-input-row">
+    <textarea id="chat-textarea" rows="1" placeholder="Ask anything&hellip;"
+              onkeydown="chatKeydown(event)"
+              oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'"></textarea>
+    <button class="chat-send-btn" onclick="sendChat()" title="Send (Enter)">&#x2191;</button>
+  </div>
+</div>
 
 <!-- ══════════════════════════════════════════════════════════════════════════
      QUICK ACTIONS FAB
@@ -1374,7 +1824,7 @@ function showSC() { $('sc-modal').classList.remove('hidden'); }
 function hideSC() { $('sc-modal').classList.add('hidden'); }
 
 // ── Tab system ────────────────────────────────────────────────────────────────
-const TABS = ['overview','roadmap','analytics','logs','media','infra','home','controls'];
+const TABS = ['overview','roadmap','analytics','logs','media','infra','home','tools','controls','security'];
 let currentTab = 'overview';
 
 function setTab(name) {
@@ -1389,8 +1839,11 @@ function setTab(name) {
   if (name === 'logs')                      loadLog();
   if (name === 'analytics')                 renderCharts();
   if (name === 'media')                     loadMedia();
-  if (name === 'infra'    && !infraLoaded)  loadInfra();
-  if (name === 'home'     && !homeLoaded)   loadHome();
+  if (name === 'infra'    && !infraLoaded)    loadInfra();
+  if (name === 'infra')                       loadSystemStats();
+  if (name === 'home'     && !homeLoaded)     loadHome();
+  if (name === 'tools'    && !toolsLoaded)    loadTools();
+  if (name === 'security' && !securityLoaded) loadSecurity();
 }
 
 // ── Training lifecycle ────────────────────────────────────────────────────────
@@ -2337,6 +2790,7 @@ document.addEventListener('keydown', e => {
     case '6': setTab('controls');   break;
     case '7': setTab('infra');      break;
     case '8': setTab('home');       break;
+    case '9': setTab('tools');      break;
     case 'r': case 'R': refresh();              break;
     case 'l': case 'L': setTab('logs');         break;
     case 's': case 'S': execAction('start');    break;
@@ -2382,12 +2836,29 @@ async function loadMediaPipeline() {
   if (!res?.ok) return;
   const d = await res.json();
 
-  // Service health dots + labels
+  // Stale/cached indicator
+  const staleBadge = $('pipeline-stale-badge');
+  if (staleBadge) {
+    if (d._cached) {
+      staleBadge.textContent = `cached ${d._cache_age}s ago`;
+      staleBadge.classList.remove('hidden');
+    } else {
+      staleBadge.classList.add('hidden');
+    }
+  }
+
+  // Circuit-breaker aware service health dots
+  const circuit = d._circuit || {};
   const services = ['sonarr','radarr','prowlarr','plex','qnap','seedbox'];
   services.forEach(svc => {
     const up = d[svc]?.up;
+    const cbOpen = circuit[svc] === 'open';
     setDotEl(`media-dot-${svc}`, up);
-    setText(`media-lbl-${svc}`, up ? 'online' : (up === false ? 'offline' : '—'));
+    let label = up ? 'online' : (up === false ? 'offline' : '—');
+    if (cbOpen) label = 'circuit open';
+    setText(`media-lbl-${svc}`, label);
+    const lblEl = document.getElementById(`media-lbl-${svc}`);
+    if (lblEl && cbOpen) lblEl.className = 'text-[11px] text-amber-500';
   });
 
   // Sonarr card
@@ -2569,10 +3040,295 @@ async function loadMediaUpcoming() {
     </tbody></table>`;
 }
 
+// ── Issues panel ─────────────────────────────────────────────────────────────
+let _issuesOpen = true;
+function toggleMediaIssues() {
+  _issuesOpen = !_issuesOpen;
+  const body = $('media-issues-body');
+  const chev = $('media-issues-chevron');
+  if (body) body.style.display = _issuesOpen ? '' : 'none';
+  if (chev) chev.textContent = _issuesOpen ? '▼' : '▶';
+}
+
+async function loadMediaIssues() {
+  const el = $('media-issues-body');
+  const badge = $('media-issues-badge');
+  if (!el) return;
+  const res = await fetch('/api/media/issues').catch(()=>null);
+  if (!res?.ok) { el.innerHTML = '<div class="text-gray-600 text-center py-3">Could not load</div>'; return; }
+  const d = await res.json();
+  const issues = d.issues || [];
+  if (badge) {
+    if (issues.length) { badge.textContent = issues.length; badge.classList.remove('hidden'); }
+    else { badge.classList.add('hidden'); }
+  }
+  if (!issues.length) {
+    el.innerHTML = '<div class="text-emerald-600 text-center py-3">No issues detected</div>';
+    return;
+  }
+  const sevColor = s => s === 'critical' ? 'text-red-400 bg-red-900/30 border-red-800'
+                      : s === 'warning'  ? 'text-amber-400 bg-amber-900/30 border-amber-800'
+                                         : 'text-blue-400 bg-blue-900/30 border-blue-800';
+  el.innerHTML = `<div class="space-y-2">` + issues.map(iss => `
+    <div class="flex items-start gap-3 px-3 py-2 rounded-lg border ${sevColor(iss.severity)}">
+      <span class="text-[10px] font-bold uppercase tracking-wider mt-0.5 flex-shrink-0">${esc(iss.severity||'info')}</span>
+      <div class="min-w-0">
+        <div class="font-medium">${esc(iss.message||iss.title||'')}</div>
+        ${iss.detail ? `<div class="text-[10px] opacity-70 mt-0.5">${esc(iss.detail)}</div>` : ''}
+      </div>
+    </div>`).join('') + '</div>';
+}
+
+// ── rclone status panel ───────────────────────────────────────────────────────
+async function loadRcloneStatus() {
+  const res = await fetch('/api/media/rclone-status').catch(()=>null);
+  if (!res?.ok) return;
+  const d = await res.json();
+  if (d.status === 'error' || d.status === 'needs_paramiko') return;
+
+  const running = d.rclone_running;
+  const runEl = $('rclone-running');
+  if (runEl) {
+    runEl.textContent = running ? 'Running' : 'Idle';
+    runEl.className = `font-medium ${running ? 'text-emerald-400' : 'text-gray-400'}`;
+  }
+
+  const ago = d.last_sync_ago_min;
+  const syncEl = $('rclone-last-sync');
+  if (syncEl) {
+    if (ago === null || ago === undefined) syncEl.textContent = 'No log found';
+    else if (ago < 60) syncEl.textContent = `${ago}m ago`;
+    else syncEl.textContent = `${Math.round(ago/60)}h ago`;
+    if (ago !== null && ago !== undefined && ago > 30)
+      syncEl.className = 'text-amber-400';
+    else
+      syncEl.className = 'text-gray-400';
+  }
+
+  setText('rclone-pending', d.pending_files ?? '—');
+  setText('rclone-dl-gb', d.download_gb !== undefined ? `${d.download_gb} GB` : '—');
+
+  const alertEl = $('rclone-alert');
+  if (alertEl) {
+    if (d.alert) { alertEl.textContent = d.alert; alertEl.classList.remove('hidden'); }
+    else { alertEl.classList.add('hidden'); }
+  }
+
+  // Update pipeline rclone stage
+  const pipeEl = $('pipe-rclone-state');
+  if (pipeEl) {
+    pipeEl.textContent = running ? 'syncing' : (ago !== null && ago !== undefined ? `idle (${ago < 60 ? ago+'m' : Math.round(ago/60)+'h'})` : 'idle');
+    pipeEl.className = `text-[10px] ${running ? 'text-emerald-400' : 'text-gray-600'}`;
+  }
+}
+
+// ── Download queue ────────────────────────────────────────────────────────────
+async function loadMediaQueue() {
+  const el = $('media-queue-body');
+  const badge = $('media-queue-errors-badge');
+  if (!el) return;
+  const res = await fetch('/api/media/queue').catch(()=>null);
+  if (!res?.ok) { el.innerHTML = '<div class="text-gray-600 text-center py-4">Could not load queue</div>'; return; }
+  const d = await res.json();
+  // server returns {tv:[], movies:[], total, errors}
+  const items = [...(d.tv||[]), ...(d.movies||[])];
+  const errCount = d.errors || 0;
+  if (badge) {
+    if (errCount) { badge.textContent = `${errCount} error${errCount>1?'s':''}`; badge.classList.remove('hidden'); }
+    else badge.classList.add('hidden');
+  }
+  if (!items.length) {
+    el.innerHTML = '<div class="text-gray-600 text-center py-4">Queue is empty</div>';
+    return;
+  }
+  el.innerHTML = `<table class="w-full text-xs border-collapse">
+    <thead><tr class="text-gray-600 border-b border-[#21262d]">
+      <th class="text-left pb-2 font-medium">Title</th>
+      <th class="text-left pb-2 font-medium">Source</th>
+      <th class="text-right pb-2 font-medium">Size</th>
+      <th class="text-right pb-2 font-medium">Progress</th>
+      <th class="text-center pb-2 font-medium">Status</th>
+      <th class="text-center pb-2 font-medium"></th>
+    </tr></thead>
+    <tbody class="divide-y divide-[#21262d]">
+    ${items.map(item => {
+      // server fields: size_gb, sizeleft_gb, error (bool), messages[]
+      const pct = item.size_gb && item.sizeleft_gb !== undefined
+        ? Math.round((1 - item.sizeleft_gb/item.size_gb)*100) : null;
+      const isErr = item.error || item.tracked === 'error' || item.tracked === 'warning';
+      const statusColor = isErr ? 'text-red-400'
+                        : item.status === 'downloading' ? 'text-blue-400'
+                        : 'text-gray-500';
+      const sizeGb = item.size_gb ? item.size_gb + ' GB' : '—';
+      const errMsg = (item.messages || []).join('; ').substring(0, 80);
+      return `<tr class="hover:bg-[#1c2128] transition ${isErr ? 'bg-red-950/20' : ''}">
+        <td class="py-2 pr-3 text-gray-300 max-w-[200px] truncate" title="${esc(item.title||'')}">
+          ${esc((item.title||'').substring(0,60))}
+        </td>
+        <td class="py-2 pr-3 text-gray-600 text-[10px]">${esc(item.service||'')}</td>
+        <td class="py-2 pr-3 text-gray-500 text-right whitespace-nowrap">${sizeGb}</td>
+        <td class="py-2 pr-3 text-right whitespace-nowrap">
+          ${pct !== null ? `<span class="text-gray-400">${pct}%</span>` : (item.timeleft ? `<span class="text-gray-600">${esc(item.timeleft)}</span>` : '—')}
+        </td>
+        <td class="py-2 text-center">
+          <span class="${statusColor} text-[10px]">${esc(item.status||'')}</span>
+          ${isErr && errMsg ? `<div class="text-red-500 text-[9px] truncate max-w-[120px]">${esc(errMsg)}</div>` : ''}
+        </td>
+        <td class="py-2 text-center">
+          <button onclick="removeFromQueue(${item.id},'${esc(item.service||'')}')"
+                  class="text-[10px] px-1.5 py-0.5 rounded bg-[#21262d] hover:bg-red-900 text-gray-500 hover:text-red-300 transition">
+            ✕
+          </button>
+        </td>
+      </tr>`;
+    }).join('')}
+    </tbody></table>`;
+}
+
+async function removeFromQueue(id, service) {
+  if (!confirm(`Remove item ${id} from ${service} queue?`)) return;
+  const res = await fetch('/api/media/queue/remove', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({queue_id: id, service}),
+  }).catch(()=>null);
+  if (!res) { toast('Server unreachable', 'err'); return; }
+  const d = await res.json();
+  toast(d.message || (d.ok ? 'Removed from queue' : 'Failed to remove'), d.ok ? 'ok' : 'err');
+  if (d.ok) loadMediaQueue();
+}
+
+// ── Missing content ───────────────────────────────────────────────────────────
+let _missingTab = 'tv';
+
+function setMissingTab(tab) {
+  _missingTab = tab;
+  const tvBtn  = $('missing-tab-tv');
+  const movBtn = $('missing-tab-movies');
+  const tvEl   = $('media-missing-tv');
+  const movEl  = $('media-missing-movies');
+  const active   = 'text-[11px] px-3 py-1 rounded-lg bg-[#21262d] text-gray-300 font-medium';
+  const inactive = 'text-[11px] px-3 py-1 rounded-lg text-gray-600 hover:text-gray-400 transition';
+  if (tab === 'tv') {
+    if (tvBtn)  tvBtn.className  = active;
+    if (movBtn) movBtn.className = inactive;
+    if (tvEl)  tvEl.classList.remove('hidden');
+    if (movEl) movEl.classList.add('hidden');
+  } else {
+    if (tvBtn)  tvBtn.className  = inactive;
+    if (movBtn) movBtn.className = active;
+    if (tvEl)  tvEl.classList.add('hidden');
+    if (movEl) movEl.classList.remove('hidden');
+  }
+}
+
+async function loadMediaMissing() {
+  const tvEl  = $('media-missing-tv');
+  const movEl = $('media-missing-movies');
+  const badge = $('media-missing-badge');
+  if (tvEl)  tvEl.innerHTML  = '<div class="text-gray-600 text-center py-4">Loading…</div>';
+  if (movEl) movEl.innerHTML = '<div class="text-gray-600 text-center py-4">Loading…</div>';
+  const res = await fetch('/api/media/missing').catch(()=>null);
+  if (!res?.ok) {
+    if (tvEl)  tvEl.innerHTML  = '<div class="text-gray-600 text-center py-4">Could not load</div>';
+    if (movEl) movEl.innerHTML = '';
+    return;
+  }
+  const d = await res.json();
+  const episodes = d.episodes || [];
+  const movies   = d.movies   || [];
+  // server returns episodes_total / movies_total
+  const epTotal  = d.episodes_total ?? d.episode_total ?? episodes.length;
+  const mvTotal  = d.movies_total   ?? d.movie_total   ?? movies.length;
+  const total    = epTotal + mvTotal;
+  if (badge) badge.textContent = total ? `${total} missing` : 'none missing';
+
+  if (tvEl) {
+    if (!episodes.length) {
+      tvEl.innerHTML = '<div class="text-gray-600 text-center py-4">No missing episodes</div>';
+    } else {
+      const showing = epTotal > episodes.length
+        ? `<div class="text-[10px] text-gray-700 mb-2">Showing ${episodes.length} of ${epTotal}</div>` : '';
+      tvEl.innerHTML = showing + `<table class="w-full text-xs border-collapse">
+        <thead><tr class="text-gray-600 border-b border-[#21262d]">
+          <th class="text-left pb-2 font-medium">Series</th>
+          <th class="text-left pb-2 font-medium">Episode</th>
+          <th class="text-left pb-2 font-medium">Title</th>
+          <th class="text-right pb-2 font-medium">Aired</th>
+        </tr></thead>
+        <tbody class="divide-y divide-[#21262d]">
+        ${episodes.map(ep => `<tr class="hover:bg-[#1c2128] transition">
+          <td class="py-1.5 pr-3 text-gray-300 max-w-[160px] truncate">${esc(ep.series)}</td>
+          <td class="py-1.5 pr-3 text-gray-500 font-mono text-[11px]">S${String(ep.season||0).padStart(2,'0')}E${String(ep.episode||0).padStart(2,'0')}</td>
+          <td class="py-1.5 pr-3 text-gray-600 max-w-[180px] truncate">${esc(ep.title||'')}</td>
+          <td class="py-1.5 text-right text-gray-600 whitespace-nowrap">${ep.air_date ? ep.air_date.slice(0,10) : '—'}</td>
+        </tr>`).join('')}
+        </tbody></table>`;
+    }
+  }
+
+  if (movEl) {
+    if (!movies.length) {
+      movEl.innerHTML = '<div class="text-gray-600 text-center py-4">No missing movies</div>';
+    } else {
+      const showing = mvTotal > movies.length
+        ? `<div class="text-[10px] text-gray-700 mb-2">Showing ${movies.length} of ${mvTotal}</div>` : '';
+      movEl.innerHTML = showing + `<table class="w-full text-xs border-collapse">
+        <thead><tr class="text-gray-600 border-b border-[#21262d]">
+          <th class="text-left pb-2 font-medium">Title</th>
+          <th class="text-left pb-2 font-medium">Year</th>
+          <th class="text-left pb-2 font-medium">Status</th>
+          <th class="text-right pb-2 font-medium">Release</th>
+        </tr></thead>
+        <tbody class="divide-y divide-[#21262d]">
+        ${movies.map(m => `<tr class="hover:bg-[#1c2128] transition">
+          <td class="py-1.5 pr-3 text-gray-300 max-w-[200px] truncate">${esc(m.title)}</td>
+          <td class="py-1.5 pr-3 text-gray-500">${m.year||'—'}</td>
+          <td class="py-1.5 pr-3 text-gray-600 text-[11px]">${esc(m.status||'')}</td>
+          <td class="py-1.5 text-right text-gray-600 whitespace-nowrap">${m.air_date ? m.air_date.slice(0,10) : '—'}</td>
+        </tr>`).join('')}
+        </tbody></table>`;
+    }
+  }
+}
+
+async function searchMissing(service) {
+  const label = service === 'sonarr' ? 'TV' : 'Movies';
+  if (!confirm(`Trigger search for all missing ${label}? This may take several minutes.`)) return;
+  const btn = document.querySelector(`button[onclick="searchMissing('${service}')"]`);
+  if (btn) { btn.disabled = true; btn.textContent = 'Searching…'; }
+  const res = await fetch('/api/media/search-missing', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({service}),
+  }).catch(()=>null);
+  if (btn) { btn.disabled = false; btn.textContent = service === 'sonarr' ? 'Search TV' : 'Search Movies'; }
+  if (!res) { toast('Server unreachable', 'err'); return; }
+  const d = await res.json();
+  toast(d.message || (d.ok ? 'Search triggered' : 'Failed'), d.ok ? 'ok' : 'err');
+}
+
+// ── Force rclone sync ─────────────────────────────────────────────────────────
+async function forceSync() {
+  if (!confirm('Trigger rclone sync on QNAP now?')) return;
+  const btn = document.querySelector('button[onclick="forceSync()"]');
+  if (btn) { btn.disabled = true; btn.textContent = 'Starting…'; }
+  const res = await fetch('/api/media/force-sync', {method:'POST'}).catch(()=>null);
+  if (btn) { btn.disabled = false; btn.textContent = 'Force Sync'; }
+  if (!res) { toast('Server unreachable', 'err'); return; }
+  const d = await res.json();
+  toast(d.message || (d.ok ? 'Sync started' : 'Failed to start sync'), d.ok ? 'ok' : 'err');
+  if (d.ok) setTimeout(loadRcloneStatus, 3000);
+}
+
 function loadMedia() {
   if (!mediaLoaded) {
     mediaLoaded = true;
     loadMediaPipeline();
+    loadMediaIssues();
+    loadRcloneStatus();
+    loadMediaQueue();
+    loadMediaMissing();
     loadMediaDownloads();
     loadMediaRecent();
     loadMediaUpcoming();
@@ -2595,6 +3351,161 @@ async function refreshMediaOverview() {
     $('ov-sonarr-series').textContent = `${d.sonarr.series} series`;
   if ($('ov-plex-streams') && health.plex && d.plex?.active_streams !== undefined)
     $('ov-plex-streams').textContent = d.plex.active_streams > 0 ? `${d.plex.active_streams} streaming` : '';
+}
+
+// ── Security tab ─────────────────────────────────────────────────────────────
+let securityLoaded = false;
+
+function loadSecurity() {
+  if (!securityLoaded) {
+    securityLoaded = true;
+    loadCircuitBreakers();
+    loadAuditLog();
+  }
+}
+
+async function loadCircuitBreakers() {
+  const el = $('cb-grid');
+  const summary = $('cb-summary');
+  if (!el) return;
+  const res = await fetch('/api/circuit-breakers').catch(()=>null);
+  if (!res?.ok) { el.innerHTML = '<div class="text-gray-600 text-center py-4">Could not load</div>'; return; }
+  const d = await res.json();
+  const breakers = d.breakers || [];
+  const s = d.summary || {};
+  if (summary) {
+    const parts = [];
+    if (s.open > 0)      parts.push(`<span class="text-red-400">${s.open} open</span>`);
+    if (s.half_open > 0) parts.push(`<span class="text-amber-400">${s.half_open} half-open</span>`);
+    if (s.closed > 0)    parts.push(`<span class="text-emerald-400">${s.closed} closed</span>`);
+    summary.innerHTML = parts.join(' · ');
+  }
+  el.innerHTML = breakers.map(cb => {
+    const stateColor = cb.state === 'closed' ? 'border-emerald-800 bg-emerald-950/20'
+                     : cb.state === 'open'   ? 'border-red-800 bg-red-950/20'
+                                             : 'border-amber-800 bg-amber-950/20';
+    const dotColor   = cb.state === 'closed' ? 'bg-emerald-500'
+                     : cb.state === 'open'   ? 'bg-red-500'
+                                             : 'bg-amber-500';
+    const retryNote  = cb.state === 'open' && cb.retry_in_sec !== null
+                     ? `<div class="text-[10px] text-gray-600 mt-0.5">retry in ${cb.retry_in_sec}s</div>` : '';
+    const cacheNote  = cb.cache_age_sec !== null
+                     ? `<div class="text-[10px] text-gray-700">cache ${cb.cache_age_sec}s old</div>` : '';
+    return `<div class="border ${stateColor} rounded-lg p-3">
+      <div class="flex items-center gap-2 mb-1">
+        <span class="w-2 h-2 rounded-full ${dotColor} flex-shrink-0"></span>
+        <span class="font-medium text-gray-300">${esc(cb.name)}</span>
+      </div>
+      <div class="text-[11px] text-gray-500 capitalize">${esc(cb.state)}</div>
+      ${cb.failures > 0 ? `<div class="text-[10px] text-red-500 mt-0.5">${cb.failures} failures</div>` : ''}
+      ${retryNote}${cacheNote}
+      ${cb.state !== 'closed'
+        ? `<button onclick="resetCircuitBreaker('${esc(cb.name)}')"
+              class="mt-2 text-[10px] px-2 py-0.5 rounded bg-[#21262d] hover:bg-blue-900 text-gray-500 hover:text-blue-300 transition">
+            Reset
+          </button>` : ''}
+    </div>`;
+  }).join('');
+}
+
+async function resetCircuitBreaker(service) {
+  const res = await fetch('/api/circuit-breakers/reset', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({service}),
+  }).catch(()=>null);
+  if (!res) { toast('Server unreachable', 'err'); return; }
+  const d = await res.json();
+  toast(d.message || (d.ok ? 'Reset' : 'Failed'), d.ok ? 'ok' : 'err');
+  if (d.ok) loadCircuitBreakers();
+}
+
+async function loadAuditLog() {
+  const el = $('audit-log-body');
+  const statsEl = $('audit-stats');
+  if (!el) return;
+  const res = await fetch('/api/audit/events').catch(()=>null);
+  if (!res?.ok) { el.innerHTML = '<div class="text-gray-600 text-center py-4">Could not load audit log</div>'; return; }
+  const d = await res.json();
+  const events = d.events || [];
+
+  if (statsEl && d.stats_24h) {
+    const total = Object.values(d.stats_24h).reduce((a, b) => a + b, 0);
+    statsEl.textContent = `${total} events today`;
+  }
+
+  if (!events.length) {
+    el.innerHTML = '<div class="text-gray-600 text-center py-4">No audit events yet</div>';
+    return;
+  }
+
+  el.innerHTML = `<div class="overflow-x-auto">
+    <table class="w-full text-xs border-collapse">
+      <thead><tr class="text-gray-600 border-b border-[#21262d]">
+        <th class="text-left pb-2 font-medium w-36">Time</th>
+        <th class="text-left pb-2 font-medium">Action</th>
+        <th class="text-left pb-2 font-medium">Resource</th>
+        <th class="text-left pb-2 font-medium">From</th>
+        <th class="text-center pb-2 font-medium">Result</th>
+        <th class="text-left pb-2 font-medium">Detail</th>
+      </tr></thead>
+      <tbody class="divide-y divide-[#21262d]">
+      ${events.map(ev => {
+        const ts = ev.ts ? ev.ts.replace('T', ' ').replace('+00:00','') : '';
+        const ok = ev.result === 'ok';
+        const resultColor = ok ? 'text-emerald-500' : 'text-red-400';
+        return `<tr class="hover:bg-[#1c2128] transition">
+          <td class="py-1.5 pr-3 text-gray-600 font-mono text-[10px] whitespace-nowrap">${esc(ts)}</td>
+          <td class="py-1.5 pr-3 text-gray-300 font-medium">${esc(ev.label || ev.action)}</td>
+          <td class="py-1.5 pr-3 text-gray-500">${esc(ev.resource || '—')}</td>
+          <td class="py-1.5 pr-3 text-gray-600 font-mono text-[10px]">${esc(ev.user_ip || '—')}</td>
+          <td class="py-1.5 text-center"><span class="${resultColor} font-medium">${esc(ev.result)}</span></td>
+          <td class="py-1.5 pl-3 text-gray-700 text-[11px] max-w-[200px] truncate">${esc(ev.detail || '')}</td>
+        </tr>`;
+      }).join('')}
+      </tbody>
+    </table>
+  </div>`;
+}
+
+// ── System stats (Infra tab) ──────────────────────────────────────────────────
+async function loadSystemStats() {
+  const res = await fetch('/api/system/stats').catch(()=>null);
+  if (!res?.ok) return;
+  const d = await res.json();
+  const mac = d.mac || {};
+  if (mac.status !== 'ok') return;
+
+  const pctColor = p => p > 85 ? 'text-red-400' : p > 70 ? 'text-amber-400' : 'text-white';
+
+  const cpuEl = $('sys-cpu');
+  if (cpuEl) { cpuEl.textContent = mac.cpu_pct + '%'; cpuEl.className = `text-2xl font-bold ${pctColor(mac.cpu_pct)}`; }
+  setText('sys-cpu-sub', `${mac.cpu_cores || '?'}c · load ${mac.load_1m}`);
+
+  const memEl = $('sys-mem');
+  if (memEl) { memEl.textContent = mac.mem_pct + '%'; memEl.className = `text-2xl font-bold ${pctColor(mac.mem_pct)}`; }
+  setText('sys-mem-sub', `${mac.mem_used_gb}/${mac.mem_total_gb} GB`);
+
+  const diskEl = $('sys-disk');
+  if (diskEl) { diskEl.textContent = mac.disk_pct + '%'; diskEl.className = `text-2xl font-bold ${pctColor(mac.disk_pct)}`; }
+  setText('sys-disk-sub', `${mac.disk_free_gb} GB free`);
+
+  const upH = mac.uptime_h;
+  const uptimeStr = upH > 24 ? `${Math.floor(upH/24)}d ${Math.floor(upH%24)}h` : `${upH}h`;
+  setText('sys-uptime', uptimeStr);
+  setText('sys-load', `load ${mac.load_1m} / ${mac.load_5m} / ${mac.load_15m}`);
+
+  // Ollama
+  const ollama = d.ollama || {};
+  const ollamaEl = $('sys-ollama-status');
+  if (ollamaEl) {
+    ollamaEl.textContent = ollama.status === 'running' ? 'Running' : 'Offline';
+    ollamaEl.className = `font-medium ${ollama.status === 'running' ? 'text-emerald-400' : 'text-red-400'}`;
+  }
+  if (ollama.models?.length) {
+    setText('sys-ollama-models', ollama.models.slice(0,3).join(', ') + (ollama.models.length > 3 ? ` +${ollama.models.length-3}` : ''));
+  }
+  setText('sys-net', mac.net_mb_s + ' MB/s');
 }
 
 // ── Boot ──────────────────────────────────────────────────────────────────────
@@ -2620,6 +3531,7 @@ const CMD_ACTIONS = [
   { icon:'5', label:'Media tab',            group:'Navigate', fn:()=>setTab('media') },
   { icon:'7', label:'Infrastructure tab',   group:'Navigate', fn:()=>setTab('infra') },
   { icon:'8', label:'Home Assistant tab',   group:'Navigate', fn:()=>setTab('home') },
+  { icon:'9', label:'Security tab',         group:'Navigate', fn:()=>setTab('security') },
   { icon:'6', label:'Controls tab',         group:'Navigate', fn:()=>setTab('controls') },
   { icon:'?', label:'Keyboard shortcuts',   group:'Help',     fn:()=>showSC() },
 ];
@@ -2956,6 +3868,299 @@ function renderHome(d) {
       </div>`;
     }).join('')}
     </div>`;
+}
+
+// ── ITEM DETAIL MODAL ─────────────────────────────────────────────────────────
+let _currentItem = null;
+
+async function openItemModal(itemId) {
+  try {
+    const res = await fetch(`/api/roadmap/item/${itemId}`);
+    const d   = await res.json();
+    if (d.error) { toast(`Item ${itemId} not found`, 'err'); return; }
+    _currentItem = d;
+    $('im-id').textContent     = d.id || '';
+    $('im-title').textContent  = d.title || '';
+    $('im-cat').value          = d.category || '';
+    $('im-loe').value          = d.loe || '';
+    $('im-pri').value          = d.priority || '';
+    $('im-desc').textContent   = d.description || '(no description)';
+    $('im-save-msg').textContent = '';
+    const sel = $('im-status');
+    sel.value = d.status || 'Pending';
+    $('item-modal-bg').classList.add('im-open');
+  } catch(e) {
+    toast('Could not load item details', 'err');
+  }
+}
+
+function closeItemModal() {
+  $('item-modal-bg').classList.remove('im-open');
+  _currentItem = null;
+}
+
+async function saveItemStatus() {
+  if (!_currentItem) return;
+  const newStatus = $('im-status').value;
+  const btn = $('im-save-btn');
+  btn.disabled = true; btn.textContent = 'Saving...';
+  try {
+    const res = await fetch('/api/roadmap/move', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({id: _currentItem.id, status: newStatus}),
+    });
+    const d = await res.json();
+    $('im-save-msg').textContent = d.ok ? `✓ ${d.message}` : `✗ ${d.message}`;
+    $('im-save-msg').style.color = d.ok ? 'var(--clr-success)' : 'var(--clr-danger)';
+    if (d.ok) {
+      toast(d.message, 'ok');
+      _currentItem.status = newStatus;
+      addNotif(`${d.id}: ${d.old_status} → ${d.new_status}`, 'ok');
+    }
+  } catch(e) {
+    $('im-save-msg').textContent = 'Request failed';
+  } finally {
+    btn.disabled = false; btn.textContent = 'Save Status';
+  }
+}
+
+async function executeItem() {
+  if (!_currentItem) return;
+  closeItemModal();
+  try {
+    const res = await fetch('/api/executor', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({action: 'start', filter: _currentItem.id}),
+    });
+    const d = await res.json();
+    toast(d.message, d.ok ? 'ok' : 'err');
+  } catch(e) { toast('Request failed', 'err'); }
+}
+
+// Patch loadKanban to make cards clickable
+const _origLoadKanban = loadKanban;
+async function loadKanban() {
+  await _origLoadKanban();
+  // Make all kanban card IDs clickable for detail view
+  document.querySelectorAll('[data-kbi]').forEach(el => {
+    const idEl = el.querySelector('.text-xs.text-gray-400.font-mono');
+    if (idEl && !idEl.dataset.clickable) {
+      idEl.dataset.clickable = '1';
+      idEl.style.cursor = 'pointer';
+      idEl.style.textDecoration = 'underline';
+      idEl.addEventListener('click', e => {
+        e.stopPropagation();
+        openItemModal(idEl.textContent.trim());
+      });
+    }
+  });
+}
+
+// ── CREATE ITEM MODAL ─────────────────────────────────────────────────────────
+function openCreateModal() {
+  $('ci-title').value = '';
+  $('ci-desc').value  = '';
+  $('ci-msg').textContent = '';
+  $('create-modal-bg').classList.add('cm-open');
+  setTimeout(() => $('ci-title').focus(), 50);
+}
+
+function closeCreateModal() {
+  $('create-modal-bg').classList.remove('cm-open');
+}
+
+async function submitCreateItem() {
+  const title = $('ci-title').value.trim();
+  if (!title) { $('ci-msg').textContent = 'Title is required'; $('ci-msg').style.color='var(--clr-danger)'; return; }
+  const btn = $('ci-submit');
+  btn.disabled = true; btn.textContent = 'Creating...';
+  try {
+    const res = await fetch('/api/roadmap/create', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        title,
+        category: $('ci-cat').value,
+        loe:      $('ci-loe').value,
+        description: $('ci-desc').value.trim(),
+      }),
+    });
+    const d = await res.json();
+    if (d.ok) {
+      $('ci-msg').textContent = `✓ Created ${d.id}`;
+      $('ci-msg').style.color = 'var(--clr-success)';
+      toast(`Created ${d.id}: ${d.title}`, 'ok');
+      addNotif(`Created ${d.id}: ${d.title}`, 'info');
+      setTimeout(() => { closeCreateModal(); if (kanbanLoaded) { kanbanLoaded=false; loadKanban(); } }, 1200);
+    } else {
+      $('ci-msg').textContent = `✗ ${d.message}`;
+      $('ci-msg').style.color = 'var(--clr-danger)';
+    }
+  } catch(e) {
+    $('ci-msg').textContent = 'Request failed';
+  } finally {
+    btn.disabled = false; btn.textContent = 'Create Item';
+  }
+}
+
+// Add "+ New Item" button to roadmap tab -- run once on load
+(function addCreateBtn() {
+  const observer = new MutationObserver(() => {
+    const pane = $('pane-roadmap');
+    if (!pane || pane.querySelector('#create-item-btn')) return;
+    const btn = document.createElement('button');
+    btn.id = 'create-item-btn';
+    btn.className = 'btn btn-md btn-primary';
+    btn.textContent = '+ New Item';
+    btn.onclick = openCreateModal;
+    pane.querySelector('.flex')?.append(btn);
+  });
+  observer.observe(document.body, {childList:true, subtree:true});
+  setTimeout(() => observer.disconnect(), 5000);
+})();
+
+// ── TOOLS TAB ─────────────────────────────────────────────────────────────────
+let toolsLoaded = false;
+
+function loadTools() {
+  toolsLoaded = true;
+  const el = $('tools-active');
+  if (!el) return;
+  // Populated from system data already in _lastStatus
+  if (_lastStatus) {
+    const sys = _lastStatus.system || {};
+    const rows = [
+      { icon:'⚙️',  name:'Executor',       status: sys.executor_running ? `Running (PID ${(sys.executor_pids||[]).join(', ')})` : 'Idle' },
+      { icon:'🤖',  name:'Aider',          status: (sys.aider_processes||0) > 0 ? `${sys.aider_processes} process(es)` : 'Idle' },
+      { icon:'🧠',  name:'Ollama',         status: sys.ollama_available ? `Online (${sys.ollama_queue||0} loaded)` : 'Offline' },
+      { icon:'🎓',  name:'Training',       status: 'Idle' },
+    ];
+    el.innerHTML = rows.map(r =>
+      `<div style="display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--border-muted)">
+        <span style="font-size:16px">${r.icon}</span>
+        <span style="color:var(--text-secondary);min-width:80px">${r.name}</span>
+        <span style="color:var(--text-muted);font-size:12px">${r.status}</span>
+      </div>`
+    ).join('');
+  } else {
+    el.innerHTML = '<p style="color:var(--text-muted)">Loading...</p>';
+  }
+}
+
+// ── AI CHAT PANEL ─────────────────────────────────────────────────────────────
+let _chatOpen    = false;
+let _chatLoading = false;
+const _chatHistory = [];
+
+function toggleChat() {
+  _chatOpen = !_chatOpen;
+  $('ai-chat').classList.toggle('chat-collapsed', !_chatOpen);
+  $('chat-toggle-icon').textContent = _chatOpen ? '▼' : '▲';
+  if (_chatOpen) setTimeout(() => $('chat-textarea').focus(), 200);
+}
+
+function clearChat() {
+  _chatHistory.length = 0;
+  $('chat-messages').innerHTML = `
+    <div class="chat-msg chat-msg-ai">
+      <div class="chat-bubble">
+        Chat cleared. How can I help?<br>
+        <code>find media items</code> &middot; <code>status</code> &middot; <code>start executor</code>
+      </div>
+    </div>`;
+}
+
+function chatKeydown(e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendChat();
+  }
+}
+
+function _chatAppend(role, html, chips) {
+  const msgs = $('chat-messages');
+  const div = document.createElement('div');
+  div.className = `chat-msg chat-msg-${role}`;
+  const bubble = document.createElement('div');
+  bubble.className = 'chat-bubble';
+  bubble.innerHTML = html;
+  div.appendChild(bubble);
+  if (chips && chips.length) {
+    const row = document.createElement('div');
+    row.className = 'chat-result-chips';
+    chips.forEach(c => {
+      const btn = document.createElement('button');
+      btn.className = 'chat-result-chip';
+      btn.textContent = c.id;
+      btn.title = c.title;
+      btn.onclick = () => openItemModal(c.id);
+      row.appendChild(btn);
+    });
+    div.appendChild(row);
+  }
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function _chatMarkdown(text) {
+  return text
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+    .replace(/^- (.+)$/gm, '<li>$1</li>')
+    .replace(/(<li>.*<\/li>\n?)+/g, m => `<ul>${m}</ul>`)
+    .replace(/\n/g, '<br>');
+}
+
+async function sendChat() {
+  const ta = $('chat-textarea');
+  const msg = ta.value.trim();
+  if (!msg || _chatLoading) return;
+  ta.value = '';
+  ta.style.height = 'auto';
+
+  _chatAppend('user', esc(msg));
+  _chatHistory.push({role:'user', content:msg});
+
+  // Typing indicator
+  _chatLoading = true;
+  const typingDiv = document.createElement('div');
+  typingDiv.className = 'chat-msg chat-msg-ai';
+  typingDiv.innerHTML = `<div class="chat-bubble chat-typing"><span></span><span></span><span></span></div>`;
+  $('chat-messages').appendChild(typingDiv);
+  $('chat-messages').scrollTop = $('chat-messages').scrollHeight;
+
+  try {
+    const res = await fetch('/api/chat/message', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({message: msg, context: {tab: currentTab}}),
+    });
+    const d = await res.json();
+    typingDiv.remove();
+    const chips = (d.type === 'roadmap_search') ? (d.results || []) : [];
+    _chatAppend('ai', _chatMarkdown(d.text || '(no response)'), chips);
+    _chatHistory.push({role:'assistant', content: d.text});
+  } catch(e) {
+    typingDiv.remove();
+    _chatAppend('ai', '<span style="color:var(--clr-danger)">Server unreachable</span>');
+  } finally {
+    _chatLoading = false;
+  }
+}
+
+// Update Ollama status dot in chat header
+function _updateChatDot(available) {
+  const dot = $('chat-ol-dot');
+  if (!dot) return;
+  dot.style.background = available ? 'var(--clr-success)' : 'var(--clr-warn)';
+  dot.style.boxShadow  = available ? '0 0 6px var(--clr-success)' : 'none';
+}
+
+// Hook into render() to update chat dot and tools tab
+const _origRender = render;
+function render(d) {
+  _origRender(d);
+  _updateChatDot(d.system?.ollama_available);
+  if (currentTab === 'tools') loadTools();
 }
 </script>
 </body>

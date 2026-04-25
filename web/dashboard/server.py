@@ -15,6 +15,7 @@ import os
 import re
 import subprocess
 import sys
+import threading
 import time
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
@@ -27,7 +28,7 @@ ITEMS_DIR = Path(_env_items) if _env_items else REPO_ROOT / "docs" / "roadmap" /
 DASHBOARD_DIR = Path(__file__).parent
 
 _LOG_DIR = Path(os.environ.get("LOG_DIR", "/tmp"))
-EXECUTOR_HOST = os.environ.get("EXECUTOR_HOST", "")          # SSH host for remote executor
+EXECUTOR_HOST = os.environ.get("EXECUTOR_HOST", "")
 REMOTE_REPO_ROOT = os.environ.get("REMOTE_REPO_ROOT", "~/repos/integrated-ai-platform")
 
 LOG_CANDIDATES = [
@@ -38,6 +39,59 @@ LOG_CANDIDATES = [
 ]
 TRAINING_LOG_PATH = str(_LOG_DIR / "training_cycle.log")
 GITHUB_REPO_URL = "https://github.com/adbcox/integrated-ai-platform"
+
+# ── Circuit breakers (one per external service) ───────────────────────────────
+sys.path.insert(0, str(REPO_ROOT))
+from framework.circuit_breaker import CircuitBreaker as _CB  # noqa: E402
+
+_breakers: dict[str, _CB] = {
+    "sonarr":   _CB("sonarr",   failures_to_open=5, timeout_seconds=30),
+    "radarr":   _CB("radarr",   failures_to_open=5, timeout_seconds=30),
+    "prowlarr": _CB("prowlarr", failures_to_open=5, timeout_seconds=30),
+    "plex":     _CB("plex",     failures_to_open=5, timeout_seconds=30),
+    "qnap":     _CB("qnap",     failures_to_open=3, timeout_seconds=60),
+    "seedbox":  _CB("seedbox",  failures_to_open=3, timeout_seconds=60),
+    "ollama":   _CB("ollama",   failures_to_open=5, timeout_seconds=30),
+}
+
+# ── TTL response cache ────────────────────────────────────────────────────────
+# Structure: key → (value, expires_at_monotonic, stored_at_wallclock)
+_resp_cache: dict[str, tuple[object, float, float]] = {}
+_cache_lock = threading.Lock()
+
+_CACHE_TTL = {
+    "media_pipeline":   30,
+    "media_issues":     30,
+    "media_queue":      15,
+    "media_rclone":     20,
+    "media_missing":    300,
+    "media_downloads":  20,
+    "media_recent":     60,
+    "media_upcoming":   120,
+    "infra_status":     10,
+    "system_stats":     5,
+    "roadmap_stats":    60,
+}
+
+
+def _cached(key: str, fn, ttl: float | None = None) -> tuple[object, bool, int]:
+    """
+    Return (result, from_cache, cache_age_seconds).
+    Calls fn() on cache miss; returns stale on cache hit.
+    """
+    effective_ttl = ttl if ttl is not None else _CACHE_TTL.get(key, 30)
+    now_mono = time.monotonic()
+    now_wall = time.time()
+    with _cache_lock:
+        if key in _resp_cache:
+            value, expires, stored_wall = _resp_cache[key]
+            if now_mono < expires:
+                age = round(now_wall - stored_wall)
+                return value, True, age
+    result = fn()
+    with _cache_lock:
+        _resp_cache[key] = (result, now_mono + effective_ttl, now_wall)
+    return result, False, 0
 
 # ── Data collectors ───────────────────────────────────────────────────────────
 
@@ -863,57 +917,97 @@ def _media_upcoming() -> dict:
 
 
 def _media_pipeline() -> dict:
-    """Full pipeline status: all 6 services in one call."""
+    """Full pipeline status: all 6 services with circuit-breaker protection."""
+    sys.path.insert(0, str(REPO_ROOT))
+
+    def _fetch_sonarr():
+        from connectors.arr_stack import ArrStackConnector
+        c = ArrStackConnector("sonarr", os.environ.get("SONARR_URL", "http://192.168.10.201:8989"),
+                              os.environ.get("SONARR_API_KEY", ""))
+        up = c.health_check()
+        if not up:
+            raise ConnectionError("sonarr down")
+        sc = c.get_series_count()
+        return {"series": sc.get("total", 0), "upcoming": 0, "queue": c.get_queue_count(), "up": True}
+
+    def _fetch_radarr():
+        from connectors.arr_stack import ArrStackConnector
+        c = ArrStackConnector("radarr", os.environ.get("RADARR_URL", "http://192.168.10.201:7878"),
+                              os.environ.get("RADARR_API_KEY", ""))
+        up = c.health_check()
+        if not up:
+            raise ConnectionError("radarr down")
+        mc = c.get_movie_count()
+        return {"movies": mc.get("total", 0), "monitored": mc.get("monitored", 0),
+                "downloaded": mc.get("downloaded", 0), "queue": c.get_queue_count(), "up": True}
+
+    def _fetch_prowlarr():
+        from connectors.arr_stack import ArrStackConnector
+        c = ArrStackConnector("prowlarr", os.environ.get("PROWLARR_URL", "http://192.168.10.201:9696"),
+                              os.environ.get("PROWLARR_API_KEY", ""))
+        up = c.health_check()
+        if not up:
+            raise ConnectionError("prowlarr down")
+        ic = c.get_indexer_count()
+        return {"indexers": ic.get("enabled", 0), "total": ic.get("total", 0), "up": True}
+
+    def _fetch_qnap():
+        from connectors.qnap import QNAPConnector
+        c = QNAPConnector(os.environ.get("QNAP_URL", "http://192.168.10.201"),
+                          os.environ.get("QNAP_USER", "admin"),
+                          os.environ.get("QNAP_PASS", ""))
+        if not c.health_check():
+            raise ConnectionError("qnap down")
+        s = c.get_storage_stats()
+        if s.get("status") != "connected":
+            raise ConnectionError(f"qnap storage: {s.get('status')}")
+        return {**s, "up": True}
+
+    sonarr,   cb_s = _breakers["sonarr"].call(_fetch_sonarr,   {"up": False})
+    radarr,   cb_r = _breakers["radarr"].call(_fetch_radarr,   {"up": False})
+    prowlarr, cb_p = _breakers["prowlarr"].call(_fetch_prowlarr, {"up": False})
+    qnap,     cb_q = _breakers["qnap"].call(_fetch_qnap,       {"up": False})
+
+    # Seedbox and Plex: keep lightweight health-only checks
     try:
-        sys.path.insert(0, str(REPO_ROOT))
         from domains.media import MediaDomain
         domain = MediaDomain()
-        stats = domain.get_stats()
-        health = stats.get("health", {})
-        sb    = stats.get("seedbox", {})
-        qnap  = stats.get("qnap",    {})
-        return {
-            "sonarr": {
-                "series":   stats.get("sonarr", {}).get("series_total", 0),
-                "upcoming": stats.get("sonarr", {}).get("upcoming", 0),
-                "queue":    stats.get("sonarr", {}).get("queue", 0),
-                "up": health.get("sonarr", False),
-            },
-            "radarr": {
-                "movies":     stats.get("radarr", {}).get("movies_total", 0),
-                "monitored":  stats.get("radarr", {}).get("movies_monitored", 0),
-                "downloaded": stats.get("radarr", {}).get("movies_downloaded", 0),
-                "queue":      stats.get("radarr", {}).get("queue", 0),
-                "up": health.get("radarr", False),
-            },
-            "prowlarr": {
-                "indexers": stats.get("prowlarr", {}).get("indexers_enabled", 0),
-                "total":    stats.get("prowlarr", {}).get("indexers_total", 0),
-                "up": health.get("prowlarr", False),
-            },
-            "plex": {
-                "libraries":      len(stats.get("plex", {}).get("libraries", [])),
-                "active_streams": stats.get("plex", {}).get("active_streams", 0),
-                "up": health.get("plex", False),
-            },
-            "seedbox": {
-                "recent_files": sb.get("recent_files", 0),
-                "total_files":  sb.get("total_files", 0),
-                "total_gb":     sb.get("total_size_gb", 0),
-                "status":       sb.get("status", "unknown"),
-                "up": health.get("seedbox", False),
-            },
-            "qnap": {
-                "total_gb": qnap.get("total_gb", 0),
-                "used_gb":  qnap.get("used_gb",  0),
-                "free_gb":  qnap.get("free_gb",  0),
-                "used_pct": qnap.get("used_pct", 0),
-                "status":   qnap.get("status", "unknown"),
-                "up": health.get("qnap", False),
-            },
+        full   = domain.get_stats()
+        sb     = full.get("seedbox", {})
+        plex_d = full.get("plex", {})
+        seedbox = {
+            "recent_files": sb.get("recent_files", 0),
+            "total_files":  sb.get("total_files", 0),
+            "total_gb":     sb.get("total_size_gb", 0),
+            "status":       sb.get("status", "unknown"),
+            "up":           full.get("health", {}).get("seedbox", False),
         }
-    except Exception as exc:
-        return {"error": str(exc)}
+        plex = {
+            "libraries":      len(plex_d.get("libraries", [])),
+            "active_streams": plex_d.get("active_streams", 0),
+            "up":             full.get("health", {}).get("plex", False),
+        }
+        # Patch sonarr upcoming from domain if circuit is closed
+        if not cb_s and isinstance(sonarr, dict):
+            sonarr["upcoming"] = full.get("sonarr", {}).get("upcoming", 0)
+    except Exception:
+        seedbox = {"up": False}
+        plex    = {"up": False}
+
+    return {
+        "sonarr":   sonarr   or {"up": False},
+        "radarr":   radarr   or {"up": False},
+        "prowlarr": prowlarr or {"up": False},
+        "plex":     plex,
+        "seedbox":  seedbox,
+        "qnap":     qnap     or {"up": False},
+        "_circuit": {
+            "sonarr":   "open" if cb_s else "closed",
+            "radarr":   "open" if cb_r else "closed",
+            "prowlarr": "open" if cb_p else "closed",
+            "qnap":     "open" if cb_q else "closed",
+        },
+    }
 
 
 def _media_downloads() -> dict:
@@ -925,6 +1019,204 @@ def _media_downloads() -> dict:
         return domain.get_downloads()
     except Exception as exc:
         return {"status": "error", "error": str(exc), "files": []}
+
+
+def _get_arr_connectors():
+    from connectors.arr_stack import ArrStackConnector
+    sonarr   = ArrStackConnector("sonarr",   os.environ.get("SONARR_URL",   "http://192.168.10.201:8989"), os.environ.get("SONARR_API_KEY",   ""))
+    radarr   = ArrStackConnector("radarr",   os.environ.get("RADARR_URL",   "http://192.168.10.201:7878"), os.environ.get("RADARR_API_KEY",   ""))
+    prowlarr = ArrStackConnector("prowlarr", os.environ.get("PROWLARR_URL", "http://192.168.10.201:9696"), os.environ.get("PROWLARR_API_KEY", ""))
+    return sonarr, radarr, prowlarr
+
+
+def _get_qnap_connector():
+    from connectors.qnap import QNAPConnector
+    return QNAPConnector(
+        base_url=os.environ.get("QNAP_URL",  "http://192.168.10.201"),
+        username=os.environ.get("QNAP_USER", "admin"),
+        password=os.environ.get("QNAP_PASS", ""),
+    )
+
+
+def _media_issues() -> dict:
+    """Detect problems across the media pipeline."""
+    sys.path.insert(0, str(REPO_ROOT))
+    issues = []
+
+    try:
+        sonarr, radarr, _ = _get_arr_connectors()
+        for connector, svc, label in [(sonarr, "sonarr", "TV"), (radarr, "radarr", "Movie")]:
+            if not connector.health_check():
+                continue
+            for item in connector.get_queue_details():
+                tracked = item.get("trackedDownloadStatus", "ok")
+                status  = item.get("status", "")
+                title   = (item.get("title") or "")[:60]
+                msgs    = [m.get("message", "") for m in item.get("statusMessages", [])]
+                qid     = item.get("id")
+                if tracked in ("warning", "error"):
+                    issues.append({
+                        "severity": "critical" if tracked == "error" else "warning",
+                        "service": svc, "type": "download_failed",
+                        "message": f"{label} download issue: {title}",
+                        "detail": ("; ".join(msgs)[:120] if msgs else tracked),
+                        "fix": "retry", "queue_id": qid,
+                    })
+                elif status == "downloading" and not item.get("timeleft"):
+                    issues.append({
+                        "severity": "warning", "service": svc, "type": "stalled",
+                        "message": f"Possibly stalled: {title}",
+                        "detail": "No time remaining reported",
+                        "fix": "retry", "queue_id": qid,
+                    })
+    except Exception as e:
+        issues.append({"severity": "info", "service": "arr", "type": "check_error",
+                       "message": f"Queue check error: {str(e)[:80]}", "fix": None})
+
+    try:
+        qnap = _get_qnap_connector()
+        storage = qnap.get_storage_stats()
+        if storage.get("status") == "connected":
+            pct  = storage.get("used_pct", 0)
+            free = storage.get("free_gb", 0)
+            if pct >= 90:
+                issues.append({"severity": "critical", "service": "qnap", "type": "disk_full",
+                               "message": f"QNAP disk {pct}% full — only {free} GB free",
+                               "detail": "Delete completed downloads or expand storage", "fix": None})
+            elif pct >= 80:
+                issues.append({"severity": "warning", "service": "qnap", "type": "disk_high",
+                               "message": f"QNAP disk {pct}% used — {free} GB remaining",
+                               "detail": "Consider cleaning up soon", "fix": None})
+        rclone = qnap.get_rclone_status()
+        if rclone.get("status") == "connected":
+            ago = rclone.get("last_sync_ago_min")
+            if ago is not None and ago > 30 and not rclone.get("rclone_running"):
+                issues.append({"severity": "warning", "service": "rclone", "type": "sync_stale",
+                               "message": f"rclone hasn't synced in {ago} min",
+                               "detail": "Sync may be stuck or not scheduled", "fix": "force_sync"})
+    except Exception as e:
+        issues.append({"severity": "info", "service": "qnap", "type": "check_error",
+                       "message": f"QNAP check error: {str(e)[:80]}", "fix": None})
+
+    critical = sum(1 for i in issues if i["severity"] == "critical")
+    warnings = sum(1 for i in issues if i["severity"] == "warning")
+    return {"issues": issues, "count": len(issues), "critical": critical, "warnings": warnings}
+
+
+def _media_missing() -> dict:
+    """Missing monitored episodes and movies."""
+    sys.path.insert(0, str(REPO_ROOT))
+    try:
+        sonarr, radarr, _ = _get_arr_connectors()
+        eps, ep_total = sonarr.get_missing_episodes(50) if sonarr.health_check() else ([], 0)
+        mvs, mv_total = radarr.get_missing_movies(50)   if radarr.health_check() else ([], 0)
+        return {"episodes": eps, "episodes_total": ep_total,
+                "movies": mvs, "movies_total": mv_total}
+    except Exception as exc:
+        return {"episodes": [], "movies": [], "error": str(exc)}
+
+
+def _media_queue_details() -> dict:
+    """Detailed queue from Sonarr + Radarr with error detection."""
+    sys.path.insert(0, str(REPO_ROOT))
+    try:
+        sonarr, radarr, _ = _get_arr_connectors()
+
+        def fmt(connector, svc):
+            return [{
+                "id":          item.get("id"),
+                "service":     svc,
+                "title":       (item.get("title") or "")[:70],
+                "status":      item.get("status", ""),
+                "tracked":     item.get("trackedDownloadStatus", "ok"),
+                "size_gb":     round((item.get("size") or 0) / (1024**3), 2),
+                "sizeleft_gb": round((item.get("sizeleft") or 0) / (1024**3), 2),
+                "timeleft":    item.get("timeleft") or "",
+                "protocol":    item.get("protocol", ""),
+                "error":       item.get("trackedDownloadStatus", "ok") in ("warning", "error"),
+                "messages":    [m.get("message","") for m in item.get("statusMessages", [])],
+            } for item in connector.get_queue_details()]
+
+        tv     = fmt(sonarr, "sonarr") if sonarr.health_check() else []
+        movies = fmt(radarr, "radarr") if radarr.health_check() else []
+        all_q  = tv + movies
+        return {"tv": tv, "movies": movies, "total": len(all_q),
+                "errors": sum(1 for i in all_q if i["error"])}
+    except Exception as exc:
+        return {"tv": [], "movies": [], "error": str(exc)}
+
+
+def _media_rclone_status() -> dict:
+    sys.path.insert(0, str(REPO_ROOT))
+    try:
+        return _get_qnap_connector().get_rclone_status()
+    except Exception as exc:
+        return {"status": "error", "message": str(exc)}
+
+
+def _media_search_missing(body: dict) -> dict:
+    sys.path.insert(0, str(REPO_ROOT))
+    try:
+        sonarr, radarr, _ = _get_arr_connectors()
+        service   = body.get("service", "sonarr")
+        ids       = body.get("ids", [])
+        connector = sonarr if service == "sonarr" else radarr
+        if not connector.health_check():
+            return {"ok": False, "message": f"{service} offline"}
+        if ids:
+            ok = connector.search_by_ids(ids)
+        else:
+            ok = connector.search_missing_all()
+        return {"ok": ok, "message": ("Search triggered" if ok else "Failed to trigger search")}
+    except Exception as exc:
+        return {"ok": False, "message": str(exc)}
+
+
+def _media_force_sync() -> dict:
+    sys.path.insert(0, str(REPO_ROOT))
+    try:
+        return _get_qnap_connector().force_rclone_sync()
+    except Exception as exc:
+        return {"ok": False, "message": str(exc)}
+
+
+def _media_queue_remove(body: dict) -> dict:
+    sys.path.insert(0, str(REPO_ROOT))
+    try:
+        sonarr, radarr, _ = _get_arr_connectors()
+        service   = body.get("service", "sonarr")
+        queue_id  = int(body.get("queue_id", 0))
+        blacklist = bool(body.get("blacklist", False))
+        if not queue_id:
+            return {"ok": False, "message": "No queue_id provided"}
+        connector = sonarr if service == "sonarr" else radarr
+        ok = connector.remove_from_queue(queue_id, blacklist=blacklist)
+        return {"ok": ok, "message": "Removed" if ok else "Failed to remove"}
+    except Exception as exc:
+        return {"ok": False, "message": str(exc)}
+
+
+def _audit_events() -> dict:
+    from framework.audit_log import tail, stats
+    return {"events": tail(100), "stats_24h": stats()}
+
+
+def _circuit_breaker_status() -> dict:
+    return {
+        "breakers": [cb.info() for cb in _breakers.values()],
+        "summary": {
+            "open":      sum(1 for cb in _breakers.values() if cb._state == "open"),
+            "half_open": sum(1 for cb in _breakers.values() if cb._state == "half-open"),
+            "closed":    sum(1 for cb in _breakers.values() if cb._state == "closed"),
+        },
+    }
+
+
+def _system_stats() -> dict:
+    from connectors.system_monitor import get_mac_stats, get_ollama_stats
+    mac    = get_mac_stats()
+    ollama = get_ollama_stats()
+    return {"mac": mac, "ollama": ollama}
 
 
 def _deploy_model() -> dict:
@@ -945,6 +1237,241 @@ def _deploy_model() -> dict:
     if r.returncode != 0:
         return {"ok": False, "message": f"ollama create failed: {r.stderr[:200]}"}
     return {"ok": True, "message": "qwen2.5-coder:custom deployed to Ollama"}
+
+
+def _roadmap_search(query: str, max_results: int = 10) -> list[dict]:
+    """Search roadmap items by text (title, id, category, description)."""
+    if not ITEMS_DIR.exists():
+        return []
+    q = query.lower().strip()
+    if not q:
+        return []
+    results = []
+    for md in sorted(ITEMS_DIR.glob("*.md")):
+        text = md.read_text()
+        if q in text.lower():
+            id_m    = re.search(r"\*\*ID:\*\*\s*`([^`]+)`", text)
+            title_m = re.search(r"\*\*Title:\*\*\s*(.+)", text)
+            cat_m   = re.search(r"\*\*Category:\*\*\s*`([^`]+)`", text)
+            stat_m  = re.search(r"\*\*Status:\*\*\s*`([^`]+)`", text)
+            loe_m   = re.search(r"\*\*LOE:\*\*\s*`([^`]+)`", text)
+            item_id  = id_m.group(1) if id_m else md.stem
+            results.append({
+                "id":       item_id,
+                "title":    (title_m.group(1).strip() if title_m else item_id)[:80],
+                "category": cat_m.group(1) if cat_m else "?",
+                "status":   stat_m.group(1) if stat_m else "?",
+                "loe":      loe_m.group(1) if loe_m else "M",
+            })
+            if len(results) >= max_results:
+                break
+    return results
+
+
+def _roadmap_item_detail(item_id: str) -> dict | None:
+    """Get full detail of a roadmap item by ID."""
+    if not ITEMS_DIR.exists():
+        return None
+    # Try exact filename match first, then search
+    candidates = list(ITEMS_DIR.glob(f"{item_id}.md"))
+    if not candidates:
+        candidates = [md for md in ITEMS_DIR.glob("*.md") if item_id in md.stem]
+    if not candidates:
+        return None
+    md = candidates[0]
+    text = md.read_text()
+    id_m    = re.search(r"\*\*ID:\*\*\s*`([^`]+)`", text)
+    title_m = re.search(r"\*\*Title:\*\*\s*(.+)", text)
+    cat_m   = re.search(r"\*\*Category:\*\*\s*`([^`]+)`", text)
+    stat_m  = re.search(r"\*\*Status:\*\*\s*`([^`]+)`", text)
+    loe_m   = re.search(r"\*\*LOE:\*\*\s*`([^`]+)`", text)
+    pri_m   = re.search(r"\*\*Priority class:\*\*\s*`([^`]+)`", text)
+    risk_m  = re.search(r"\*\*Execution risk:\*\*\s*`?(\d+)`?", text)
+    desc_m  = re.search(r"## Description\s*\n+(.*?)(?=\n## |\Z)", text, re.DOTALL)
+    return {
+        "id":          id_m.group(1) if id_m else md.stem,
+        "title":       title_m.group(1).strip() if title_m else "",
+        "category":    cat_m.group(1) if cat_m else "",
+        "status":      stat_m.group(1) if stat_m else "",
+        "loe":         loe_m.group(1) if loe_m else "",
+        "priority":    pri_m.group(1) if pri_m else "",
+        "risk":        risk_m.group(1) if risk_m else "",
+        "description": desc_m.group(1).strip()[:800] if desc_m else "",
+        "file":        str(md),
+        "raw":         text[:2000],
+    }
+
+
+def _roadmap_move(item_id: str, new_status: str) -> dict:
+    """Change the status field of a roadmap item and commit."""
+    VALID = {"Pending", "Accepted", "In progress", "Completed"}
+    if new_status not in VALID:
+        return {"ok": False, "message": f"Invalid status '{new_status}'"}
+    if not ITEMS_DIR.exists():
+        return {"ok": False, "message": "Items directory not found"}
+    candidates = list(ITEMS_DIR.glob(f"{item_id}.md"))
+    if not candidates:
+        candidates = [md for md in ITEMS_DIR.glob("*.md") if item_id in md.stem]
+    if not candidates:
+        return {"ok": False, "message": f"Item {item_id} not found"}
+    md = candidates[0]
+    text = md.read_text()
+    old_m = re.search(r"\*\*Status:\*\*\s*`([^`]+)`", text)
+    if not old_m:
+        return {"ok": False, "message": "No Status field found"}
+    old_status = old_m.group(1)
+    new_text = re.sub(r"(\*\*Status:\*\*\s*)`[^`]+`", f"\\1`{new_status}`", text)
+    md.write_text(new_text)
+    try:
+        subprocess.run(["git", "add", str(md)], capture_output=True, cwd=REPO_ROOT)
+        subprocess.run(["git", "commit", "-m", f"status: {item_id} to {new_status}"],
+                       capture_output=True, cwd=REPO_ROOT)
+    except Exception:
+        pass
+    return {"ok": True, "id": item_id, "old_status": old_status, "new_status": new_status,
+            "message": f"{item_id}: {old_status} to {new_status}"}
+
+
+def _roadmap_create(data: dict) -> dict:
+    """Create a new roadmap item markdown file."""
+    if not ITEMS_DIR.exists():
+        return {"ok": False, "message": "Items directory not found"}
+    cat = re.sub(r"[^A-Z0-9]", "", data.get("category", "UTIL").upper()) or "UTIL"
+    prefix = f"RM-{cat}"
+    existing_nums = []
+    for f in ITEMS_DIR.glob(f"{prefix}-*.md"):
+        m = re.search(r"-(\d+)\.md$", f.name)
+        if m:
+            existing_nums.append(int(m.group(1)))
+    next_num = max(existing_nums, default=0) + 1
+    item_id = f"{prefix}-{next_num:03d}"
+    title       = data.get("title", "Untitled").strip()
+    description = data.get("description", "").strip()
+    loe         = data.get("loe", "M")
+    status      = data.get("status", "Pending")
+    content = (
+        f"# {item_id}: {title}\n\n"
+        f"- **ID:** `{item_id}`\n"
+        f"- **Title:** {title}\n"
+        f"- **Category:** `{cat}`\n"
+        f"- **Type:** `Feature`\n"
+        f"- **Status:** `{status}`\n"
+        f"- **LOE:** `{loe}`\n"
+        f"- **Execution risk:** `2`\n"
+        f"- **Priority class:** `P3`\n"
+        f"- **Readiness:** `immediate`\n\n"
+        f"## Description\n\n"
+        f"{description or 'No description provided.'}\n\n"
+        f"## Acceptance Criteria\n\n"
+        f"- Implementation complete and tested\n"
+        f"- Committed to main branch\n"
+    )
+    out_path = ITEMS_DIR / f"{item_id}.md"
+    out_path.write_text(content)
+    try:
+        subprocess.run(["git", "add", str(out_path)], capture_output=True, cwd=REPO_ROOT)
+        subprocess.run(["git", "commit", "-m", f"Add {item_id}: {title}"],
+                       capture_output=True, cwd=REPO_ROOT)
+    except Exception:
+        pass
+    return {"ok": True, "id": item_id, "title": title, "status": status, "category": cat}
+
+
+def _chat_message(message: str, context: dict | None = None) -> dict:
+    """Route chat message to appropriate handler. Falls back to Ollama."""
+    import urllib.request as _req
+    import json as _json
+
+    msg_lower = message.lower().strip()
+
+    # Intent: roadmap search
+    if any(kw in msg_lower for kw in ('search', 'find', 'look for', 'show items', 'roadmap item')):
+        q = re.sub(r'\b(search|find|look for|show items?|roadmap items?|in roadmap|items? (for|about|with))\b', '',
+                   message, flags=re.IGNORECASE).strip()
+        q = q or message
+        results = _roadmap_search(q)
+        if results:
+            lines = '\n'.join(f"- **{r['id']}** [{r['status']}]: {r['title']}" for r in results)
+            return {"type": "roadmap_search", "text": f"Found **{len(results)}** item(s):\n\n{lines}",
+                    "results": results}
+        return {"type": "roadmap_search", "text": f"No items found matching '{q}'.", "results": []}
+
+    # Intent: system status
+    if any(kw in msg_lower for kw in ('status', 'how many', 'completed', 'progress', 'running', 'stats')):
+        rm   = _roadmap_stats()
+        ex   = _executor_live_status()
+        sys_h = _system_health()
+        run_icon = "online" if ex.get("running") else "idle"
+        ol_icon  = "online" if sys_h.get("ollama_available") else "offline"
+        cur = f" -- {ex.get('current_item')}" if ex.get("current_item") else ""
+        text = (
+            f"**System Status:**\n"
+            f"- Roadmap: **{rm['completed']}/{rm['total']}** completed, "
+            f"{rm['in_progress']} in progress, {rm['accepted']} accepted\n"
+            f"- Executor: **{run_icon}**{cur}\n"
+            f"- Ollama: **{ol_icon}**\n"
+            f"- CPU: {sys_h.get('cpu_pct', 0)}%  "
+            f"RAM: {sys_h.get('ram_used_pct', 0)}%  "
+            f"Disk: {sys_h.get('disk_free_gb', '?')}GB free"
+        )
+        return {"type": "status", "text": text}
+
+    # Intent: executor control
+    if 'start executor' in msg_lower or ('start' in msg_lower and 'executor' in msg_lower):
+        r = _executor_action('start', {})
+        return {"type": "action", "text": f"{'OK' if r['ok'] else 'FAIL'} {r['message']}"}
+    if 'stop executor' in msg_lower or ('stop' in msg_lower and 'executor' in msg_lower):
+        r = _executor_action('stop', {})
+        return {"type": "action", "text": f"{'OK' if r['ok'] else 'FAIL'} {r['message']}"}
+
+    # Intent: create item
+    if any(kw in msg_lower for kw in ('create item', 'add item', 'new item', 'new task',
+                                       'add to roadmap', 'create task')):
+        return {
+            "type": "create_prompt",
+            "text": (
+                "I can create a roadmap item. Use the **+ New Item** button in the Roadmap tab, "
+                "or tell me:\n- **Title**: What's the task?\n"
+                "- **Category**: (MEDIA, AI, UTIL, TEST, SECURITY...)\n"
+                "- **Description**: What should be built?"
+            ),
+        }
+
+    # Default: Ollama
+    ollama_host = os.environ.get("OLLAMA_HOST", "127.0.0.1:11434")
+    try:
+        payload = _json.dumps({
+            "model": "qwen2.5-coder:14b",
+            "prompt": (
+                "You are an AI assistant for an integrated AI development platform. "
+                "The platform manages 600 roadmap items, an autonomous executor, "
+                "local Ollama models (qwen2.5-coder), "
+                "a media pipeline (Sonarr/Radarr/Plex), and a LoRA fine-tuning system. "
+                "Be concise and helpful. Format with markdown.\n\n"
+                f"User: {message}\n\nAssistant:"
+            ),
+            "stream": False,
+            "options": {"num_predict": 400, "temperature": 0.7},
+        }).encode()
+        req = _req.Request(
+            f"http://{ollama_host}/api/generate",
+            data=payload, headers={"Content-Type": "application/json"},
+        )
+        with _req.urlopen(req, timeout=30) as r:
+            resp = _json.loads(r.read())
+            return {"type": "ollama", "text": resp.get("response", "").strip()}
+    except Exception as exc:
+        return {
+            "type": "fallback",
+            "text": (
+                "**I can help you:**\n"
+                "- Search: *'find image enhancement items'*\n"
+                "- Status: *'how many items completed?'*\n"
+                "- Control: *'start executor'*, *'stop executor'*\n"
+                "- Create: *'create item for video processing'*\n\n"
+                f"*(Ollama offline: {str(exc)[:50]})*"
+            ),
+        }
 
 
 def _build_status() -> dict:
@@ -1048,7 +1575,9 @@ class Handler(BaseHTTPRequestHandler):
         elif path == "/api/velocity":
             self._serve_json(_velocity_stats())
         elif path == "/api/infra/status":
-            self._serve_json(_infra_status())
+            d, from_cache, age = _cached("infra_status", _infra_status)
+            if from_cache: d = dict(d); d["_cached"] = True; d["_cache_age"] = age
+            self._serve_json(d)
         elif path == "/api/home/status":
             self._serve_json(_home_status())
         elif path == "/api/health":
@@ -1058,33 +1587,113 @@ class Handler(BaseHTTPRequestHandler):
         elif path == "/api/media/status":
             self._serve_json(_media_status())
         elif path == "/api/media/pipeline":
-            self._serve_json(_media_pipeline())
+            d, from_cache, age = _cached("media_pipeline", _media_pipeline)
+            if from_cache: d = dict(d); d["_cached"] = True; d["_cache_age"] = age
+            self._serve_json(d)
         elif path == "/api/media/recent":
-            self._serve_json(_media_recent())
+            d, from_cache, age = _cached("media_recent", _media_recent)
+            if from_cache: d = dict(d); d["_cached"] = True; d["_cache_age"] = age
+            self._serve_json(d)
         elif path == "/api/media/recent-additions":
-            self._serve_json(_media_recent())
+            d, from_cache, age = _cached("media_recent", _media_recent)
+            self._serve_json(d)
         elif path == "/api/media/upcoming":
-            self._serve_json(_media_upcoming())
+            d, from_cache, age = _cached("media_upcoming", _media_upcoming)
+            if from_cache: d = dict(d); d["_cached"] = True; d["_cache_age"] = age
+            self._serve_json(d)
         elif path == "/api/media/downloads":
-            self._serve_json(_media_downloads())
+            d, from_cache, age = _cached("media_downloads", _media_downloads)
+            if from_cache: d = dict(d); d["_cached"] = True; d["_cache_age"] = age
+            self._serve_json(d)
+        elif path == "/api/media/issues":
+            d, from_cache, age = _cached("media_issues", _media_issues)
+            if from_cache: d = dict(d); d["_cached"] = True; d["_cache_age"] = age
+            self._serve_json(d)
+        elif path == "/api/media/missing":
+            d, from_cache, age = _cached("media_missing", _media_missing)
+            if from_cache: d = dict(d); d["_cached"] = True; d["_cache_age"] = age
+            self._serve_json(d)
+        elif path == "/api/media/queue":
+            d, from_cache, age = _cached("media_queue", _media_queue_details)
+            if from_cache: d = dict(d); d["_cached"] = True; d["_cache_age"] = age
+            self._serve_json(d)
+        elif path == "/api/media/rclone-status":
+            d, from_cache, age = _cached("media_rclone", _media_rclone_status)
+            if from_cache: d = dict(d); d["_cached"] = True; d["_cache_age"] = age
+            self._serve_json(d)
+        elif path == "/api/audit/events":
+            self._serve_json(_audit_events())
+        elif path == "/api/circuit-breakers":
+            self._serve_json(_circuit_breaker_status())
+        elif path == "/api/system/stats":
+            d, from_cache, age = _cached("system_stats", _system_stats)
+            if from_cache: d = dict(d); d["_cached"] = True; d["_cache_age"] = age
+            self._serve_json(d)
+        elif path == "/api/roadmap/search":
+            from urllib.parse import parse_qs, urlparse as _up
+            qs = parse_qs(_up(self.path).query)
+            q = qs.get("q", [""])[0]
+            self._serve_json({"results": _roadmap_search(q)})
+        elif path.startswith("/api/roadmap/item/"):
+            item_id = path[len("/api/roadmap/item/"):]
+            detail = _roadmap_item_detail(item_id)
+            self._serve_json(detail if detail else {"error": "not found"})
         else:
             self.send_response(404)
             self.end_headers()
 
     def do_POST(self):
-        path = urlparse(self.path).path
+        from framework.audit_log import log as _audit
+        path   = urlparse(self.path).path
         length = int(self.headers.get("Content-Length", 0))
-        body = json.loads(self.rfile.read(length) or b"{}")
+        body   = json.loads(self.rfile.read(length) or b"{}")
+        ip     = self.client_address[0] if self.client_address else ""
 
         if path == "/api/executor":
             action = body.get("action", "")
-            self._serve_json(_executor_action(action, body))
+            result = _executor_action(action, body)
+            _audit(f"executor_{action}", "executor", "ok" if result.get("ok") else "fail", ip)
+            self._serve_json(result)
         elif path in ("/api/train", "/api/training/start"):
-            self._serve_json(_start_training())
+            result = _start_training()
+            _audit("training_started", "training", "ok" if result.get("ok") else "fail", ip)
+            self._serve_json(result)
         elif path == "/api/training/stop":
-            self._serve_json(_stop_training())
+            result = _stop_training()
+            _audit("training_stopped", "training", "ok" if result.get("ok") else "fail", ip)
+            self._serve_json(result)
         elif path == "/api/model/deploy":
-            self._serve_json(_deploy_model())
+            result = _deploy_model()
+            _audit("model_deployed", "ollama", "ok" if result.get("ok") else "fail", ip)
+            self._serve_json(result)
+        elif path == "/api/media/search-missing":
+            result = _media_search_missing(body)
+            svc = body.get("service", "")
+            _audit("missing_search", svc, "ok" if result.get("ok") else "fail", ip)
+            self._serve_json(result)
+        elif path == "/api/media/force-sync":
+            result = _media_force_sync()
+            _audit("rclone_forced", "qnap", "ok" if result.get("ok") else "fail", ip)
+            self._serve_json(result)
+        elif path == "/api/media/queue/remove":
+            result = _media_queue_remove(body)
+            _audit("queue_item_removed", body.get("service", ""), "ok" if result.get("ok") else "fail", ip,
+                   f"queue_id={body.get('queue_id')}")
+            self._serve_json(result)
+        elif path == "/api/circuit-breakers/reset":
+            svc = body.get("service", "")
+            if svc in _breakers:
+                _breakers[svc].reset()
+                _audit("circuit_reset", svc, "ok", ip)
+                self._serve_json({"ok": True, "message": f"Reset {svc} circuit breaker"})
+            else:
+                self._serve_json({"ok": False, "message": f"Unknown service: {svc}"})
+        elif path == "/api/chat/message":
+            self._serve_json(_chat_message(body.get("message", ""), body.get("context")))
+        elif path == "/api/roadmap/move":
+            self._serve_json(_roadmap_move(body.get("id", ""), body.get("status", "")))
+        elif path == "/api/roadmap/create":
+            self._serve_json(_roadmap_create(body))
         else:
             self.send_response(404)
             self.end_headers()
