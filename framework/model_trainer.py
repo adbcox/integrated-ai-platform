@@ -149,7 +149,7 @@ def train(
 
     model = AutoModelForCausalLM.from_pretrained(
         config.base_model,
-        torch_dtype=torch.bfloat16,
+        dtype=torch.bfloat16,
         device_map="auto" if device != "mps" else None,
         trust_remote_code=True,
     )
@@ -188,7 +188,7 @@ def train(
         gradient_accumulation_steps=config.grad_accumulation,
         learning_rate=config.learning_rate,
         warmup_ratio=config.warmup_ratio,
-        evaluation_strategy="epoch",
+        eval_strategy="epoch",
         save_strategy="epoch",
         load_best_model_at_end=True,
         logging_steps=10,
@@ -196,7 +196,6 @@ def train(
         fp16=(device == "cuda"),
         bf16=(device in ("cpu", "mps")),
         dataloader_pin_memory=(device == "cuda"),
-        use_mps_device=(device == "mps"),
     )
 
     trainer = Trainer(
@@ -234,7 +233,7 @@ def evaluate_on_tasks(
     from transformers import AutoModelForCausalLM, AutoTokenizer
 
     tokenizer = AutoTokenizer.from_pretrained(str(adapter_path))
-    base = AutoModelForCausalLM.from_pretrained(base_model, torch_dtype=torch.bfloat16, device_map="auto")
+    base = AutoModelForCausalLM.from_pretrained(base_model, dtype=torch.bfloat16, device_map="auto")
     model = PeftModel.from_pretrained(base, str(adapter_path))
     model.eval()
 
