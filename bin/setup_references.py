@@ -33,6 +33,19 @@ def verify_snippets(mgr: ReferenceManager) -> bool:
     return True
 
 
+def verify_repo_indexer() -> None:
+    from framework.repo_indexer import RepoIndexer
+    idx = RepoIndexer()
+    repos = idx.list_repos()
+    if not repos:
+        print("○ Repo indexer: no repos cloned yet — run with --clone to enable smart context")
+        return
+    total_files = sum(c for _, c in repos)
+    print(f"✓ Repo indexer: {len(repos)} repos, {total_files} .py files available")
+    for name, count in repos:
+        print(f"  ~/ai-reference/{name}: {count} files")
+
+
 def verify_mini_context() -> bool:
     mini = REPO_ROOT / "artifacts" / "repo_context_mini.txt"
     if not mini.exists():
@@ -57,6 +70,7 @@ def main() -> int:
     ok = True
     ok = verify_snippets(mgr) and ok
     ok = verify_mini_context() and ok
+    verify_repo_indexer()
 
     if args.clone:
         print(f"\n── Cloning reference repos to ~/ai-reference/ ──")
@@ -71,13 +85,17 @@ def main() -> int:
         print()
         mgr.report()
 
-    print("\n── Context Budget Summary ──────────────────────────────────────")
-    print("  7b model limit:      ~32,000 tokens")
-    print("  System + task:        ~1,000 tokens")
-    print("  Mini repo context:    ~1,285 tokens  (was 57,308 — fixed)")
-    print("  Target file:           ~500 tokens")
-    print("  References budget:   ~6,000 tokens  ← your snippets inject here")
-    print("  Remaining for output: ~23,000 tokens")
+    print("\n── Context Budget Summary (qwen2.5-coder:14b, 32k token window) ──")
+    print("  Model context window: ~32,000 tokens  (131,072 chars @ chars/4)")
+    print("  Aider system prompt:  ~2,000 tokens   (editblock coder)")
+    print("  Mini repo context:    ~1,300 tokens   (was 57k — fixed)")
+    print("  Curated patterns:     ~1,100 tokens   (2-3 pattern files)")
+    print("  Task + target file:   ~1,000 tokens")
+    print("  Repo files (smart):  up to 12,500 tokens  ← REFERENCE_BUDGET_CHARS=50k chars")
+    print("  Remaining for output: ~14,000 tokens  (safe)")
+    print()
+    print("  Old cap (20k chars = 5k tokens) left 22k tokens unused.")
+    print("  New cap (50k chars = 12.5k tokens) uses the budget properly.")
 
     if ok:
         print("\n✓ Reference system ready. Run:")

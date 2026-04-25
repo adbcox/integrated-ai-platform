@@ -686,14 +686,23 @@ Make sure to address all issues and test edge cases."""
                 # Infer category from file paths in the task
                 category = "_default"
                 desc_lower = task_description.lower()
-                for kw, cat in [("media", "MEDIA"), ("api", "API"), ("data", "DATA"),
-                                 ("ui", "UI"), ("ops", "OPS"), ("learn", "LEARN")]:
+                for kw, cat in [
+                    ("media", "MEDIA"), ("api", "API"), ("data", "DATA"),
+                    ("ui", "UI"), ("ops", "OPS"), ("learn", "LEARN"),
+                    ("periph", "PERIPH"), ("printer", "PERIPH"), ("niimbot", "PERIPH"),
+                    ("serial", "PERIPH"), ("bluetooth", "PERIPH"),
+                    ("test", "TEST"), ("core", "CORE"),
+                ]:
                     if kw in desc_lower:
                         category = cat
                         break
                 # task_description chars + file chars already in context
                 used = context_chars + sum(len(f) * 40 for f in files)  # rough file estimate
-                for flag in ref_mgr.get_read_flags(category, used_chars=used):
+                for flag in ref_mgr.get_read_flags(
+                    category,
+                    used_chars=used,
+                    task_description=task_description,
+                ):
                     cmd.append(flag)
         except Exception:
             pass  # reference system is optional — never block aider

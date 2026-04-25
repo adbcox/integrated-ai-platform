@@ -31,7 +31,7 @@ REFERENCE_DIR = REPO_ROOT / "framework" / "patterns"
 # Token budget: chars / 4 ≈ tokens. 7b model has 32k tokens.
 # Subtract: system prompt (~500), task description (~200), target file (~500),
 # mini repo context (~1300). Remaining for references: ~6000 tokens = ~24k chars.
-REFERENCE_BUDGET_CHARS = 20_000  # conservative
+REFERENCE_BUDGET_CHARS = 50_000  # 12,500 tokens — safe with 32k window and 2k aider overhead
 
 # Category → ordered list of snippet paths (relative to REFERENCE_DIR).
 # Earlier entries are higher priority when budget is tight.
@@ -68,6 +68,10 @@ CATEGORY_SNIPPETS: dict[str, list[str]] = {
         "patterns/adapter_pattern.py",
         "patterns/factory_pattern.py",
     ],
+    "PERIPH": [
+        "patterns/adapter_pattern.py",  # wrapping hardware APIs
+        "patterns/observer_pattern.py", # event-driven device state
+    ],
     # Default for unknown categories
     "_default": [
         "patterns/adapter_pattern.py",
@@ -75,18 +79,25 @@ CATEGORY_SNIPPETS: dict[str, list[str]] = {
     ],
 }
 
-# Remote repos to clone for reference browsing (NOT injected directly into aider).
-# Only small, focused repos. Avoid massive ones (TheAlgorithms = 4GB).
+# Remote repos to clone for smart context injection via RepoIndexer.
+# Rules: <20MB each, focused on patterns the 14b model should imitate.
+# DO NOT add: TheAlgorithms/Python (4GB), any repo needing npm/build steps.
 REFERENCE_REPOS = {
     "python-patterns": {
         "url": "https://github.com/faif/python-patterns",
-        "description": "Pythonic implementations of common design patterns",
+        "description": "50+ Pythonic design pattern implementations (~5MB)",
         "size_mb": 5,
     },
     "fastapi-realworld": {
         "url": "https://github.com/nsidnev/fastapi-realworld-example-app",
-        "description": "Production FastAPI app structure",
+        "description": "Production FastAPI: routers, deps, models, middleware (~2MB)",
         "size_mb": 2,
+    },
+    "pythonnet-samples": {
+        "url": "https://github.com/pythonnet/pythonnet",
+        "description": "Python .NET interop — skip; included only as reference",
+        "size_mb": 10,
+        "skip": True,  # too broad; kept for documentation only
     },
 }
 
@@ -105,37 +116,57 @@ class ReferenceManager:
         category: str,
         used_chars: int = 0,
         budget_chars: int = REFERENCE_BUDGET_CHARS,
+        task_description: str = "",
     ) -> list[str]:
-        """Return --read flags for snippets that fit within the char budget.
+        """Return --read flags for patterns + repo files within the char budget.
+
+        Injects in two tiers:
+          1. Curated patterns (framework/patterns/) — always highest priority
+          2. Smart-selected files from cloned repos (~/ai-reference/) — fills remaining budget
 
         Args:
             category: Roadmap item category (MEDIA, UI, API, etc.)
             used_chars: Chars already consumed by other context (task, files, mini-context)
             budget_chars: Total char budget for all references
+            task_description: Task text for keyword-based repo file selection
 
         Returns:
             List of "--read=/path/to/snippet.py" strings
         """
-        if not self.snippets_available():
-            return []
-
         remaining = budget_chars - used_chars
         if remaining <= 0:
             return []
 
-        snippet_keys = CATEGORY_SNIPPETS.get(category.upper(), CATEGORY_SNIPPETS["_default"])
         flags: list[str] = []
 
-        for rel_path in snippet_keys:
-            # rel_path may be "patterns/observer_pattern.py" or just "observer_pattern.py"
-            snippet = self.reference_dir / Path(rel_path).name
-            if not snippet.exists():
-                continue
-            size = snippet.stat().st_size
-            if size > remaining:
-                break  # Ordered by priority, stop when budget exhausted
-            flags.append(f"--read={snippet}")
-            remaining -= size
+        # Tier 1: curated patterns (fast, always relevant, small)
+        if self.snippets_available():
+            snippet_keys = CATEGORY_SNIPPETS.get(category.upper(), CATEGORY_SNIPPETS["_default"])
+            for rel_path in snippet_keys:
+                snippet = self.reference_dir / Path(rel_path).name
+                if not snippet.exists():
+                    continue
+                size = snippet.stat().st_size
+                if size > remaining:
+                    break
+                flags.append(f"--read={snippet}")
+                remaining -= size
+
+        # Tier 2: smart-selected repo files (fills remaining budget)
+        if task_description and remaining > 2_000:
+            try:
+                from framework.repo_indexer import RepoIndexer
+                indexer = RepoIndexer()
+                if indexer.repos_available():
+                    repo_flags = indexer.get_relevant_files(
+                        task_description=task_description,
+                        category=category,
+                        budget_chars=remaining,
+                        max_files=5,
+                    )
+                    flags.extend(repo_flags)
+            except Exception:
+                pass  # repo indexer is optional
 
         return flags
 
@@ -151,6 +182,8 @@ class ReferenceManager:
         results: dict[str, bool] = {}
 
         for name, info in REFERENCE_REPOS.items():
+            if info.get("skip"):
+                continue
             dest = target / name
             if dest.exists():
                 print(f"  {name}: already cloned, pulling...")
