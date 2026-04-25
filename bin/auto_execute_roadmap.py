@@ -28,7 +28,7 @@ class RoadmapExecutor:
     """Manages autonomous execution with RM-GOV-001 compliance."""
 
     EXECUTION_READY_STATUSES = ["Accepted", "Planned"]
-    READY_READINESS = ["now", "near", "later"]
+    READY_READINESS = ["immediate", "now", "near", "later"]
     VALID_STATUSES = ["Proposed", "Accepted", "Decomposing", "Planned", "Execution-ready", "In progress", "Validating", "Completed", "Deferred", "Frozen", "Rejected"]
 
     def __init__(self, repo_root: Path, llm_model: Optional[str] = None):
