@@ -173,8 +173,7 @@ class RoadmapExecutor:
             llm_model = self.llm_model
 
         expected_files = ', '.join(item.expected_file_families) if item.expected_file_families else 'infer from context'
-        prompt = f"""Break down this task into 3-7 EXECUTABLE subtasks.
-CRITICAL: Each subtask MUST mention specific Python file(s) to modify.
+        prompt = f"""Break down this task into 2-4 EXECUTABLE subtasks.
 
 ID: {item.id}
 Title: {item.title}
@@ -182,30 +181,29 @@ Description: {item.description}
 Category: {item.category}
 Expected files: {expected_files}
 
-RULES:
-1. Every subtask MUST include a .py file path (e.g., "Update domains/media.py...")
-2. Subtasks without file paths will FAIL - be specific!
-3. Use existing project structure:
-   - bin/ for scripts and executors
-   - domains/ for business logic (coding, media, operations, etc.)
-   - web/ for web interfaces
-   - framework/ for core runtime
-   - tests/ for test files
-   - config/ for configuration
+CRITICAL RULES — read carefully:
+1. PREFER creating NEW small files over modifying existing large ones.
+   New files: model writes the entire file fresh. Existing files: model must read+rewrite everything, often truncated.
+2. Each new file MUST be small: 10-20 lines maximum. One class or function per file.
+3. Every subtask MUST name a .py file path.
+4. Use descriptive module names in the right directory:
+   - domains/  → domain logic (e.g., domains/video_quality.py)
+   - framework/ → infrastructure (e.g., framework/retry_policy.py)
+   - bin/       → scripts (e.g., bin/scan_inventory.py)
+   - tests/     → tests (e.g., tests/test_video_quality.py)
 
-GOOD EXAMPLES:
-✅ "Add health_check() method to domains/media.py"
-✅ "Create bin/inventory_manager.py with asset tagging functions"
-✅ "Update web/dashboard/app.py to add click-tile navigation"
-✅ "Add validation logic to framework/code_executor.py"
+GOOD EXAMPLES (new small files, one concept each):
+✅ "Create new file domains/video_quality.py with VideoQualityAnalyzer class (15 lines)"
+✅ "Create new file framework/retry_policy.py with RetryPolicy dataclass (12 lines)"
+✅ "Create new file bin/health_reporter.py with health_report() function (18 lines)"
 
-BAD EXAMPLES (will fail):
-❌ "Design the user interface layout" (no file!)
-❌ "Implement drag-and-drop functionality" (no file!)
-❌ "Ensure compatibility with devices" (no file!)
+BAD EXAMPLES (avoid these patterns):
+❌ "Add VideoAnalyzer to domains/media.py" (media.py is 40+ lines — model truncates)
+❌ "Update framework/worker_runtime.py" (42KB file — will definitely fail)
+❌ "Implement drag-and-drop" (no file path)
 
-Generate subtasks as a JSON array following these rules. MUST be valid JSON with file paths:
-["Update domains/xxx.py to add yyy", "Create bin/zzz.py with aaa functionality", ...]
+Generate subtasks as a JSON array. MUST be valid JSON, 2-4 items:
+["Create new file domains/xxx.py with XxxClass (N lines)", ...]
 
 Only JSON array, no other text."""
 
@@ -237,23 +235,21 @@ Only JSON array, no other text."""
                     except json.JSONDecodeError:
                         pass
 
-            # Fallback: use expected_file_families to generate file-anchored subtasks
-            files = item.expected_file_families[:2] if item.expected_file_families else [f"domains/{item.category.lower()}.py"]
+            # Fallback: generate new small-file subtasks from item title
+            cat = item.category.lower() if item.category else "core"
+            slug = re.sub(r'[^a-z0-9]+', '_', item.title.lower())[:30].strip('_')
+            new_file = f"domains/{slug}.py"
             return [
-                f"Review and implement core logic in {files[0]}",
-                f"Add validation and error handling to {files[0]}",
-                f"Add tests for {files[0]}",
-                f"Update {files[1] if len(files) > 1 else files[0]} with integration",
+                f"Create new file {new_file} with core logic for {item.title} (15 lines)",
+                f"Create new file tests/test_{slug}.py with basic tests for {slug} (12 lines)",
             ]
         except Exception as e:
             print(f"⚠️  Decomposition error: {e}", file=sys.stderr)
-            # Fallback when API unavailable
-            files = item.expected_file_families[:1] if item.expected_file_families else [f"domains/{item.category.lower()}.py"]
+            cat = item.category.lower() if item.category else "core"
+            slug = re.sub(r'[^a-z0-9]+', '_', item.title.lower())[:30].strip('_')
+            new_file = f"domains/{slug}.py"
             return [
-                f"Review {item.id} in {files[0]}",
-                f"Implement {item.title} in {files[0]}",
-                f"Test {item.id} in {files[0]}",
-                f"Document {item.title} in {files[0]}"
+                f"Create new file {new_file} with core logic for {item.title} (15 lines)",
             ]
 
     def _kill_browser_processes(self) -> None:

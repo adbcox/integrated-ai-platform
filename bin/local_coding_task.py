@@ -229,12 +229,20 @@ def main() -> int:
             return 3
 
     # Validate files exist and check integrity
+    # "Create new file X" subtasks: file won't exist yet — create a stub so aider has a target.
+    _is_create_task = re.search(r'\b(create|new file|new module)\b', args.description, re.IGNORECASE)
     missing_files = []
     invalid_files = []
     for file_path in task_files:
         full_path = repo_root / file_path  # repo_root already assigned above
         if not full_path.exists():
-            missing_files.append(file_path)
+            if _is_create_task:
+                # Scaffold a minimal stub so aider sees a git-tracked target
+                full_path.parent.mkdir(parents=True, exist_ok=True)
+                full_path.write_text(f"# {full_path.stem}\n")
+                print(f"📄 Stub created: {file_path} (aider will populate it)")
+            else:
+                missing_files.append(file_path)
         else:
             # Validate file is not corrupted (check for directory trees)
             try:
@@ -309,31 +317,8 @@ def main() -> int:
             commit_hash = result.get("commit_hash", "")[:12]
             model_used = result.get("model", "Unknown")
 
-            # CRITICAL: Verify actual code changes were made (not just status flips)
-            changes_verified = False
-            if commit_hash:
-                try:
-                    # Check if commit has real file changes (not just markdown)
-                    diff_result = subprocess.run(
-                        ["git", "diff-tree", "--numstat", commit_hash],
-                        capture_output=True,
-                        text=True,
-                        cwd=repo_root,
-                    )
-                    # Parse numstat: lines are "additions\tdeletions\tfile"
-                    if diff_result.stdout.strip():
-                        lines = diff_result.stdout.strip().split('\n')
-                        py_files_changed = sum(1 for line in lines if '.py' in line)
-                        if py_files_changed > 0:
-                            changes_verified = True
-                except Exception:
-                    pass
-
-            if not changes_verified and commit_hash:
-                print(f"⚠️  Warning: Commit {commit_hash} may not contain actual code changes")
-                print(f"   (Only status/docs may have changed)")
-                return 1
-
+            # result["success"]=True means _execute_with_model verified HEAD advanced
+            # (new commit was made vs head_before). No secondary check needed.
             print(f"✅ Success!")
             print(f"   Commit: {commit_hash}")
             print(f"   Model Used: {model_used}")

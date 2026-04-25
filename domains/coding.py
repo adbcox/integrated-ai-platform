@@ -537,10 +537,16 @@ Make sure to address all issues and test edge cases."""
         try:
             env = os.environ.copy()
             env["OLLAMA_API_BASE"] = "http://127.0.0.1:11434"
-            env["AIDER_AUTO_COMMITS"] = "0"
+            # Do NOT set AIDER_AUTO_COMMITS=0 — auto-commits are our success signal.
             env["AIDER_NO_SHOW_MODEL_WARNINGS"] = "1"
             env["AIDER_YES"] = "1"
             env["AIDER_DARK_MODE"] = "1"
+
+            # Snapshot HEAD before aider runs — new commit = real file change
+            head_before = subprocess.run(
+                ["git", "rev-parse", "HEAD"],
+                capture_output=True, text=True, timeout=5, cwd=self.repo_root,
+            ).stdout.strip()
 
             proc = subprocess.Popen(
                 cmd,
@@ -590,12 +596,19 @@ Make sure to address all issues and test edge cases."""
                         cwd=self.repo_root,
                     )
                     commit_hash = commit_result.stdout.strip()
-                    result_data.update(
-                        {
-                            "success": True,
-                            "commit_hash": commit_hash,
-                        }
-                    )
+                    if commit_hash != head_before:
+                        # Aider made a real commit — verified success
+                        result_data.update({"success": True, "commit_hash": commit_hash})
+                    else:
+                        # Aider exited 0 but made no commit — model truncated, no change applied
+                        result_data.update({
+                            "success": False,
+                            "error": (
+                                "Aider exited 0 but made no git commit. "
+                                "Model likely truncated its response (large file under concurrent Ollama load). "
+                                "Fix: decompose into smaller new files (<20 lines each)."
+                            ),
+                        })
                 except Exception as exc:
                     result_data.update(
                         {
@@ -641,7 +654,9 @@ Make sure to address all issues and test edge cases."""
         """Build aider command with context."""
         cmd = [
             "aider",
-            "--no-auto-commits",
+            # Auto-commits enabled: the only reliable signal that aider applied a change
+            # is a new git commit. --no-auto-commits lets aider exit 0 without writing,
+            # making success/failure indistinguishable.
             f"--model=ollama/{model}",
             "--yes",
             "--no-show-model-warnings",
