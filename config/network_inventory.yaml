@@ -1,0 +1,107 @@
+# Network Inventory — Integrated AI Platform Homelab
+# Auto-populated from network scan; edit manually to add metadata.
+# Last updated: 2026-04-25 (IPs corrected: Mac Mini .113, QNAP .201, Mac Studio .202)
+
+network:
+  subnet: 192.168.10.0/24
+  gateway: 192.168.10.1
+  isp: Google Fiber
+  bandwidth_gbps: 1
+
+devices:
+  - ip: 192.168.10.1
+    name: OPNsense
+    hostname: opnsense.local
+    role: firewall
+    vendor: Deciso / OPNsense
+    hardware: Protectli FW4B
+    management_url: https://192.168.10.1
+    credentials_env: OPNSENSE_API_KEY / OPNSENSE_API_SECRET
+    services:
+      - firewall
+      - dhcp
+      - dns
+      - vpn
+    monitoring:
+      api: true
+      snmp: false
+      metrics_endpoint: null
+
+  - ip: 192.168.10.2
+    name: Brocade Switch
+    hostname: brocade.local
+    role: switch
+    vendor: Brocade
+    model: ICX 6450-24
+    management_url: http://192.168.10.2
+    monitoring:
+      snmp: true
+      snmp_community_env: BROCADE_SNMP_COMMUNITY
+      snmp_port: 161
+      oids:
+        uptime: 1.3.6.1.2.1.1.3.0
+        interfaces: 1.3.6.1.2.1.2.2
+        traffic_in: 1.3.6.1.2.1.2.2.1.10
+        traffic_out: 1.3.6.1.2.1.2.2.1.16
+
+  - ip: 192.168.10.3
+    name: TP-Link Deco
+    hostname: deco.local
+    role: mesh_ap
+    vendor: TP-Link
+    model: Deco XE75 Pro (or similar)
+    management_url: http://192.168.10.3
+    credentials_env: DECO_PASSWORD
+    monitoring:
+      api: true  # unofficial local API
+
+  - ip: 192.168.10.113
+    name: Mac Mini
+    hostname: mac-mini.local
+    role: worker
+    vendor: Apple
+    model: Mac Mini M5
+    services:
+      - ai-platform-dashboard (port 8080)
+      - plane-ce (port 3001)
+      - observability-stack (ports 3030/8428/8429/3033)
+      - 26 AI systems
+    monitoring:
+      node_exporter_port: 9100
+      dashboard_health: http://localhost:8080/api/health
+
+  - ip: 192.168.10.201
+    name: QNAP NAS
+    hostname: qnap.local
+    role: storage
+    vendor: QNAP
+    model: UNKNOWN                  # requires QNAP credentials to confirm
+    management_url: http://192.168.10.201:8080
+    credentials_env: QNAP_USER / QNAP_PASSWORD
+    monitoring:
+      api: true
+      snmp: true
+
+  - ip: 192.168.10.202
+    name: Mac Studio
+    hostname: mac-studio.local
+    role: compute
+    vendor: Apple
+    model: Mac Studio M3
+    status: planned
+    services:
+      - ollama (port 11434)
+      - aider-worker
+    monitoring:
+      node_exporter_port: 9100
+      dashboard_health: http://192.168.10.202:8080/api/health
+
+# Port allocations (homelab)
+ports:
+  3001: Plane CE (project management)
+  3030: Grafana (observability dashboards)
+  3033: Uptime Kuma (service uptime)
+  8080: AI Platform Dashboard
+  8428: VictoriaMetrics (metrics storage)
+  8429: VMAgent (metrics scraper)
+  60072: "(reserved — was Scanopy placeholder)"

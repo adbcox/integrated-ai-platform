@@ -1,0 +1,40 @@
+# QNAP NAS — Storage Node Profile
+# Primary role: Media storage, Sonarr/Radarr/Prowlarr/Plex host, rclone sync target
+
+machine:
+  name: "QNAP NAS"
+  hostname: "server"              # confirmed from QTS authLogin.cgi response
+  ip: "192.168.10.201"            # confirmed; device online, QTS responding
+  vendor: QNAP
+  model: UNKNOWN                  # requires QNAP_USER/QNAP_PASS to poll
+  cpu: UNKNOWN                    # requires authenticated QTS API
+  ram: UNKNOWN                    # requires authenticated QTS API
+  storage: "23.4 TB"              # confirmed from docs/SEEDBOX_QNAP_ARCHITECTURE.md
+
+  # How to populate model/cpu/ram:
+  #   export QNAP_USER=admin QNAP_PASS=<password>
+  #   curl -s "http://192.168.10.201:8080/cgi-bin/authLogin.cgi?user=$QNAP_USER&pwd=$(echo -n $QNAP_PASS | md5sum | cut -d' ' -f1)" \
+  #     | grep -E "model|cpu|memory"
+
+connectivity:
+  web_ui: "http://192.168.10.201:8080"
+  web_ui_https: "https://192.168.10.201:443"
+  sftp_port: 22
+  credentials_env: "QNAP_USER / QNAP_PASS"
+
+services:
+  sonarr:
+    port: 8989
+    status: reachable
+  radarr:
+    port: 7878
+    status: unreachable       # connection refused as of 2026-04-25 audit
+  prowlarr:
+    port: 9696
+    status: unreachable       # connection refused as of 2026-04-25 audit
+  plex:
+    port: 32400
+
+storage:
+  receive_dir: "/share/download"   # rclone from seedbox drops completed files here
+  total: "23.4 TB"
