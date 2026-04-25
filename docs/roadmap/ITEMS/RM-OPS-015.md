@@ -4,7 +4,7 @@
 - **Title:** Log aggregation and analysis (ELK/Loki)
 - **Category:** `OPS`
 - **Type:** `Enhancement`
-- **Status:** `In progress`
+- **Status:** `Accepted`
 - **Maturity:** `M0`
 - **Priority:** `High`
 - **Priority class:** `P2`
