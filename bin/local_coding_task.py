@@ -201,6 +201,18 @@ def main() -> int:
     inferred_files = extract_files_from_description(args.description, repo_root)
     task_files = list(dict.fromkeys([*(args.files or []), *inferred_files]))
 
+    # For "create new file" tasks the target doesn't exist yet — extract it directly
+    # so the stub creation below can scaffold it (before the README fallback fires).
+    if not task_files and re.search(r'\b(create|new file|new module)\b', args.description, re.IGNORECASE):
+        for m in FILE_PATTERN.finditer(args.description):
+            candidate = repo_root / m.group(1)
+            try:
+                candidate.relative_to(repo_root.resolve())
+                task_files.append(m.group(1))
+                break
+            except ValueError:
+                pass
+
     # Force-local mode without files: create README for documentation tasks
     if hasattr(args, "force_local") and args.force_local and not task_files:
         readme_path = repo_root / "README.md"

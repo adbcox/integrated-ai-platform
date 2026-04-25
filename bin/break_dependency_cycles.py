@@ -41,16 +41,23 @@ def remove_dependency_from_file(file_path: Path, dep_id: str) -> bool:
         content = file_path.read_text()
         original = content
 
-        # Remove the line mentioning the dependency ID
-        lines = content.split('\n')
-        new_lines = []
-        for line in lines:
-            # Skip lines that mention this dependency (but preserve section headers)
-            if dep_id in line and not line.startswith('##'):
-                continue
-            new_lines.append(line)
+        # Strategy: Remove the dependency ID with backticks (e.g. `RM-TESTING-020`)
+        # This handles both explicit Dependencies sections and inferred references
 
-        new_content = '\n'.join(new_lines)
+        # First, try removing the dependency from the Dependencies section
+        new_content = re.sub(
+            rf'- `{re.escape(dep_id)}`[^\n]*\n',  # Match `RM-ID` with optional description
+            '',
+            content
+        )
+
+        # Also remove it from inline references in descriptions (just the ID and backticks)
+        if new_content == content:
+            new_content = re.sub(
+                rf'`{re.escape(dep_id)}`',
+                '',
+                content
+            )
 
         if new_content != original:
             file_path.write_text(new_content)
@@ -61,7 +68,7 @@ def remove_dependency_from_file(file_path: Path, dep_id: str) -> bool:
         return False
 
 
-def break_cycles(cycles: List[List[str]], items_by_id: Dict[str, RoadmapItem], roadmap_dir: Path, max_to_break: int = 35) -> List[Tuple[str, str]]:
+def break_cycles(cycles: List[List[str]], items_by_id: Dict[str, RoadmapItem], roadmap_dir: Path, max_to_break: int = 50) -> List[Tuple[str, str]]:
     """Break circular dependencies intelligently."""
     broken = []
 

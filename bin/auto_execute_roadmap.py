@@ -263,7 +263,7 @@ Only JSON array, no other text."""
         except Exception:
             pass
 
-    def execute_subtask(self, subtask: str, item_id: str = "", dry_run: bool = False, max_retries: int = 3, subtask_timeout: int = 600) -> bool:
+    def execute_subtask(self, subtask: str, item_id: str = "", dry_run: bool = False, max_retries: int = 2, subtask_timeout: int = 900) -> bool:
         """Execute subtask via local_coding_task.py --force-local with retry logic."""
         # EMERGENCY: Log immediately before any other logic
         print(f"[EMERGENCY] execute_subtask() ENTRY: dry_run={dry_run}, subtask={subtask[:50] if subtask else 'EMPTY'}", flush=True)
