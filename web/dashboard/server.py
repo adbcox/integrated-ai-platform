@@ -710,6 +710,111 @@ def _stop_training() -> dict:
     return {"ok": True, "message": msg}
 
 
+def _infra_status() -> dict:
+    """Ping known services and list Docker containers via Colima."""
+    import socket
+
+    SERVICES = [
+        {"name": "Ollama",    "host": os.environ.get("OLLAMA_HOST", "127.0.0.1").split(":")[0], "port": 11434, "label": "AI"},
+        {"name": "Dashboard", "host": "127.0.0.1",     "port": 8080,  "label": "Dash"},
+        {"name": "Sonarr",    "host": "192.168.10.201", "port": 8989,  "label": "TV"},
+        {"name": "Radarr",    "host": "192.168.10.201", "port": 7878,  "label": "Movies"},
+        {"name": "Prowlarr",  "host": "192.168.10.201", "port": 9696,  "label": "Index"},
+        {"name": "Plex",      "host": "192.168.10.201", "port": 32400, "label": "Stream"},
+    ]
+
+    services = []
+    for svc in SERVICES:
+        t0 = time.time()
+        up = False
+        try:
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.settimeout(0.8)
+            up = sock.connect_ex((svc["host"], svc["port"])) == 0
+            sock.close()
+        except Exception:
+            up = False
+        ms = round((time.time() - t0) * 1000)
+        services.append({**svc, "up": up, "latency_ms": ms if up else None})
+
+    # Docker containers via Colima socket
+    docker_containers: list = []
+    docker_available = False
+    try:
+        colima_sock = os.path.expanduser("~/.colima/default/docker.sock")
+        env = {**os.environ, "DOCKER_HOST": f"unix://{colima_sock}"}
+        r = subprocess.run(
+            ["docker", "ps", "--format", "{{json .}}"],
+            capture_output=True, text=True, timeout=5, env=env,
+        )
+        if r.returncode == 0:
+            docker_available = True
+            for line in r.stdout.strip().splitlines():
+                if not line.strip():
+                    continue
+                try:
+                    c = json.loads(line)
+                    docker_containers.append({
+                        "name":   c.get("Names", ""),
+                        "status": c.get("Status", ""),
+                        "image":  c.get("Image", "").split(":")[0],
+                        "ports":  (c.get("Ports", "") or "")[:60],
+                    })
+                except Exception:
+                    pass
+    except Exception:
+        pass
+
+    return {
+        "services":          services,
+        "docker_available":  docker_available,
+        "docker_containers": docker_containers,
+    }
+
+
+def _home_status() -> dict:
+    """Fetch entity states from Home Assistant REST API."""
+    ha_url   = os.environ.get("HA_URL", "")
+    ha_token = os.environ.get("HA_TOKEN", "")
+    if not ha_url:
+        return {"available": False, "message": "HA_URL not configured — set HA_URL and HA_TOKEN env vars",
+                "entities": [], "entity_count": 0}
+
+    import urllib.request as _req
+    import json as _json
+    try:
+        req = _req.Request(
+            f"{ha_url.rstrip('/')}/api/states",
+            headers={
+                "Authorization": f"Bearer {ha_token}",
+                "Content-Type": "application/json",
+            },
+        )
+        with _req.urlopen(req, timeout=5) as r:
+            states = _json.loads(r.read())
+
+        DOMAINS = {"sensor", "binary_sensor", "light", "switch", "climate",
+                   "media_player", "person", "weather", "cover", "lock"}
+        entities = []
+        for state in states:
+            domain = state["entity_id"].split(".")[0]
+            if domain not in DOMAINS:
+                continue
+            attrs = state.get("attributes", {})
+            entities.append({
+                "entity_id":    state["entity_id"],
+                "domain":       domain,
+                "name":         attrs.get("friendly_name", state["entity_id"].split(".")[-1]),
+                "state":        state["state"],
+                "unit":         attrs.get("unit_of_measurement", ""),
+                "device_class": attrs.get("device_class", ""),
+            })
+
+        return {"available": True, "entity_count": len(states), "entities": entities[:80]}
+    except Exception as exc:
+        return {"available": False, "message": str(exc), "entities": [], "entity_count": 0}
+
+
 def _media_status() -> dict:
     """Fetch live stats from the *Arr stack and Plex."""
     try:
@@ -719,6 +824,107 @@ def _media_status() -> dict:
         return domain.get_stats()
     except Exception as exc:
         return {"error": str(exc), "health": {}}
+
+
+def _media_recent() -> dict:
+    """Recent TV episode downloads + recent movie downloads."""
+    try:
+        sys.path.insert(0, str(REPO_ROOT))
+        from connectors.arr_stack import ArrStackConnector
+        import os
+        sonarr = ArrStackConnector("sonarr",
+            os.environ.get("SONARR_URL", "http://192.168.10.201:8989"),
+            os.environ.get("SONARR_API_KEY", ""))
+        radarr = ArrStackConnector("radarr",
+            os.environ.get("RADARR_URL", "http://192.168.10.201:7878"),
+            os.environ.get("RADARR_API_KEY", ""))
+        episodes = sonarr.get_recent_episodes(10) if sonarr.health_check() else []
+        movies   = radarr.get_recent_movies(10)   if radarr.health_check() else []
+        needs_key = not os.environ.get("SONARR_API_KEY") and not os.environ.get("RADARR_API_KEY")
+        return {"episodes": episodes, "movies": movies, "needs_key": needs_key}
+    except Exception as exc:
+        return {"episodes": [], "movies": [], "error": str(exc)}
+
+
+def _media_upcoming() -> dict:
+    """Upcoming TV episodes for the next 7 days."""
+    try:
+        sys.path.insert(0, str(REPO_ROOT))
+        from connectors.arr_stack import ArrStackConnector
+        import os
+        sonarr = ArrStackConnector("sonarr",
+            os.environ.get("SONARR_URL", "http://192.168.10.201:8989"),
+            os.environ.get("SONARR_API_KEY", ""))
+        episodes = sonarr.get_upcoming_episodes(7) if sonarr.health_check() else []
+        needs_key = not os.environ.get("SONARR_API_KEY")
+        return {"episodes": episodes, "needs_key": needs_key}
+    except Exception as exc:
+        return {"episodes": [], "error": str(exc)}
+
+
+def _media_pipeline() -> dict:
+    """Full pipeline status: all 6 services in one call."""
+    try:
+        sys.path.insert(0, str(REPO_ROOT))
+        from domains.media import MediaDomain
+        domain = MediaDomain()
+        stats = domain.get_stats()
+        health = stats.get("health", {})
+        sb    = stats.get("seedbox", {})
+        qnap  = stats.get("qnap",    {})
+        return {
+            "sonarr": {
+                "series":   stats.get("sonarr", {}).get("series_total", 0),
+                "upcoming": stats.get("sonarr", {}).get("upcoming", 0),
+                "queue":    stats.get("sonarr", {}).get("queue", 0),
+                "up": health.get("sonarr", False),
+            },
+            "radarr": {
+                "movies":     stats.get("radarr", {}).get("movies_total", 0),
+                "monitored":  stats.get("radarr", {}).get("movies_monitored", 0),
+                "downloaded": stats.get("radarr", {}).get("movies_downloaded", 0),
+                "queue":      stats.get("radarr", {}).get("queue", 0),
+                "up": health.get("radarr", False),
+            },
+            "prowlarr": {
+                "indexers": stats.get("prowlarr", {}).get("indexers_enabled", 0),
+                "total":    stats.get("prowlarr", {}).get("indexers_total", 0),
+                "up": health.get("prowlarr", False),
+            },
+            "plex": {
+                "libraries":      len(stats.get("plex", {}).get("libraries", [])),
+                "active_streams": stats.get("plex", {}).get("active_streams", 0),
+                "up": health.get("plex", False),
+            },
+            "seedbox": {
+                "recent_files": sb.get("recent_files", 0),
+                "total_files":  sb.get("total_files", 0),
+                "total_gb":     sb.get("total_size_gb", 0),
+                "status":       sb.get("status", "unknown"),
+                "up": health.get("seedbox", False),
+            },
+            "qnap": {
+                "total_gb": qnap.get("total_gb", 0),
+                "used_gb":  qnap.get("used_gb",  0),
+                "free_gb":  qnap.get("free_gb",  0),
+                "used_pct": qnap.get("used_pct", 0),
+                "status":   qnap.get("status", "unknown"),
+                "up": health.get("qnap", False),
+            },
+        }
+    except Exception as exc:
+        return {"error": str(exc)}
+
+
+def _media_downloads() -> dict:
+    """Active seedbox downloads and queue."""
+    try:
+        sys.path.insert(0, str(REPO_ROOT))
+        from domains.media import MediaDomain
+        domain = MediaDomain()
+        return domain.get_downloads()
+    except Exception as exc:
+        return {"status": "error", "error": str(exc), "files": []}
 
 
 def _deploy_model() -> dict:
@@ -841,12 +1047,26 @@ class Handler(BaseHTTPRequestHandler):
             self._serve_json(_training_cycle_status())
         elif path == "/api/velocity":
             self._serve_json(_velocity_stats())
+        elif path == "/api/infra/status":
+            self._serve_json(_infra_status())
+        elif path == "/api/home/status":
+            self._serve_json(_home_status())
         elif path == "/api/health":
             self._serve_json(_health())
         elif path == "/api/embed/widget":
             self._serve_json(_embed_widget())
         elif path == "/api/media/status":
             self._serve_json(_media_status())
+        elif path == "/api/media/pipeline":
+            self._serve_json(_media_pipeline())
+        elif path == "/api/media/recent":
+            self._serve_json(_media_recent())
+        elif path == "/api/media/recent-additions":
+            self._serve_json(_media_recent())
+        elif path == "/api/media/upcoming":
+            self._serve_json(_media_upcoming())
+        elif path == "/api/media/downloads":
+            self._serve_json(_media_downloads())
         else:
             self.send_response(404)
             self.end_headers()

@@ -333,12 +333,149 @@ tailwind.config = { theme: { extend: { colors: {
   #train-btn:disabled { opacity:.4; cursor:not-allowed; }
 
   @media(max-width:768px) { .desktop { display:none!important; } }
+
+  /* ── Command Palette ─────────────────────────────────────────────────────── */
+  #cmd-palette {
+    position:fixed; inset:0; z-index:70;
+    display:flex; align-items:flex-start; justify-content:center;
+    padding-top:14vh;
+    background:rgba(0,0,0,.6); backdrop-filter:blur(8px);
+  }
+  .cmd-box {
+    background:var(--bg-card); border:1px solid var(--border-hover);
+    border-radius:var(--r-xl); width:100%; max-width:560px;
+    box-shadow:0 28px 80px rgba(0,0,0,.75);
+    overflow:hidden;
+  }
+  .cmd-input-row {
+    display:flex; align-items:center; gap:10px;
+    padding:14px 18px; border-bottom:1px solid var(--border-muted);
+  }
+  .cmd-input {
+    flex:1; background:transparent; border:none; outline:none;
+    font-family:var(--font-ui); font-size:14px; color:var(--text-primary);
+  }
+  .cmd-item {
+    display:flex; align-items:center; gap:10px;
+    padding:9px 18px; cursor:pointer;
+    transition:background var(--t-fast); font-size:13px; color:var(--text-secondary);
+  }
+  .cmd-item:hover,.cmd-item.cmd-sel { background:var(--tint-info); color:var(--text-primary); }
+  .cmd-icon { width:22px; text-align:center; flex-shrink:0; font-size:12px; }
+  .cmd-section {
+    font-size:10px; font-weight:600; letter-spacing:.08em; text-transform:uppercase;
+    color:var(--text-muted); padding:8px 18px 3px;
+  }
+  .cmd-footer {
+    padding:8px 18px; border-top:1px solid var(--border-muted);
+    display:flex; gap:14px; font-size:10px; color:var(--text-disabled);
+  }
+
+  /* ── Notification Center ─────────────────────────────────────────────────── */
+  #notif-panel {
+    position:fixed; top:56px; right:16px; z-index:50; width:300px; max-height:430px;
+    background:var(--bg-card); border:1px solid var(--border-default);
+    border-radius:var(--r-xl); box-shadow:0 12px 40px rgba(0,0,0,.6);
+    display:flex; flex-direction:column; overflow:hidden;
+  }
+  .notif-item {
+    padding:10px 14px; border-bottom:1px solid var(--border-muted);
+    font-size:12px; transition:background var(--t-fast); line-height:1.5;
+  }
+  .notif-item:hover { background:var(--bg-subtle); }
+  #notif-badge {
+    position:absolute; top:-5px; right:-5px; min-width:16px; height:16px;
+    border-radius:8px; background:var(--clr-danger); color:#fff;
+    font-size:9px; font-weight:700; display:flex; align-items:center;
+    justify-content:center; padding:0 3px; pointer-events:none;
+  }
+
+  /* ── Quick Actions FAB ───────────────────────────────────────────────────── */
+  #fab-root { position:fixed; bottom:24px; right:24px; z-index:40; }
+  #fab-main {
+    width:48px; height:48px; border-radius:50%;
+    background:var(--clr-accent); color:#fff; border:none; cursor:pointer;
+    font-size:22px; font-weight:300; line-height:1;
+    box-shadow:0 4px 18px rgba(0,82,204,.55);
+    transition:all var(--t-base); display:flex; align-items:center; justify-content:center;
+  }
+  #fab-main:hover { background:var(--clr-inprog); transform:scale(1.08); }
+  #fab-main.open  { transform:rotate(45deg); }
+  #fab-menu {
+    position:absolute; bottom:58px; right:0;
+    display:flex; flex-direction:column; gap:8px; align-items:flex-end;
+    transition:opacity var(--t-base),transform var(--t-base); transform-origin:bottom right;
+  }
+  #fab-menu.fab-hidden { opacity:0; transform:scale(.85); pointer-events:none; }
+  .fab-action {
+    display:flex; align-items:center; gap:8px;
+    background:var(--bg-card); border:1px solid var(--border-default);
+    border-radius:20px; padding:7px 14px; font-size:12px; font-weight:500;
+    color:var(--text-primary); cursor:pointer; white-space:nowrap;
+    box-shadow:0 2px 10px rgba(0,0,0,.35); transition:all var(--t-fast);
+    font-family:var(--font-ui);
+  }
+  .fab-action:hover { border-color:var(--border-hover); background:var(--bg-card-hov); transform:translateX(-2px); }
+
+  /* ── Service / infra cards ───────────────────────────────────────────────── */
+  .svc-card {
+    background:var(--bg-card); border-radius:var(--r-lg);
+    border:1px solid var(--border-default); padding:14px 16px;
+    transition:all var(--t-base); position:relative; overflow:hidden;
+  }
+  .svc-card.svc-up::before {
+    content:''; position:absolute; left:0; top:0; bottom:0;
+    width:3px; background:var(--clr-success);
+  }
+  .svc-card.svc-down::before {
+    content:''; position:absolute; left:0; top:0; bottom:0;
+    width:3px; background:var(--clr-danger);
+  }
+
+  /* ── Hero stat card accents ──────────────────────────────────────────────── */
+  .hero-stat { position:relative; overflow:hidden; }
+  .hero-stat::after {
+    content:''; position:absolute; bottom:0; left:0; right:0; height:2px;
+    background:linear-gradient(90deg,var(--hs-color,transparent) 0%,transparent 100%);
+  }
 </style>
 </head>
 <body class="text-gray-300 min-h-screen">
 
 <!-- ── Toast container ── -->
 <div id="toasts" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     COMMAND PALETTE  (/ or Ctrl+K)
+════════════════════════════════════════════════════════════════════════════ -->
+<div id="cmd-palette" class="hidden" onclick="closeCmdPalette()">
+  <div class="cmd-box fadein" onclick="event.stopPropagation()">
+    <div class="cmd-input-row">
+      <span style="color:var(--text-muted);font-size:16px;">⌘</span>
+      <input id="cmd-input" class="cmd-input" placeholder="Search actions, roadmap items…"
+             oninput="filterCmd(this.value)" onkeydown="cmdKeyNav(event)" autocomplete="off">
+      <span class="kbd text-[10px]">Esc</span>
+    </div>
+    <div id="cmd-list" class="overflow-y-auto" style="max-height:320px;"></div>
+    <div class="cmd-footer">
+      <span><span class="kbd">↑↓</span> navigate</span>
+      <span><span class="kbd">↵</span> select</span>
+      <span><span class="kbd">Esc</span> close</span>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     NOTIFICATION PANEL
+════════════════════════════════════════════════════════════════════════════ -->
+<div id="notif-panel" class="hidden">
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:11px 14px;border-bottom:1px solid var(--border-muted);">
+    <span class="text-xs font-semibold text-white">Notifications</span>
+    <button onclick="clearNotifs()" style="font-size:11px;color:var(--text-muted);background:none;border:none;cursor:pointer;"
+            onmouseover="this.style.color='white'" onmouseout="this.style.color='var(--text-muted)'">Clear all</button>
+  </div>
+  <div id="notif-list" class="overflow-y-auto flex-1"></div>
+</div>
 
 <!-- ══════════════════════════════════════════════════════════════════════════
      SHORTCUTS MODAL
@@ -352,7 +489,8 @@ tailwind.config = { theme: { extend: { colors: {
     <div class="grid grid-cols-2 gap-3 text-xs">
       <div class="space-y-2">
         <p class="text-gray-500 uppercase text-[10px] tracking-wider">Navigation</p>
-        <div class="flex gap-2"><span class="kbd">1–5</span><span class="text-gray-400">Switch tabs</span></div>
+        <div class="flex gap-2"><span class="kbd">1–8</span><span class="text-gray-400">Switch tabs</span></div>
+        <div class="flex gap-2"><span class="kbd">/</span><span class="text-gray-400">Command palette</span></div>
         <div class="flex gap-2"><span class="kbd">L</span><span class="text-gray-400">Live Logs</span></div>
         <div class="flex gap-2"><span class="kbd">?</span><span class="text-gray-400">This overlay</span></div>
         <div class="flex gap-2"><span class="kbd">Esc</span><span class="text-gray-400">Close / clear</span></div>
@@ -428,11 +566,30 @@ tailwind.config = { theme: { extend: { colors: {
       <button onclick="setTab('roadmap')"   class="tab-btn"        id="tab-roadmap">Roadmap</button>
       <button onclick="setTab('analytics')" class="tab-btn"        id="tab-analytics">Analytics</button>
       <button onclick="setTab('logs')"      class="tab-btn"        id="tab-logs">Logs</button>
+      <button onclick="setTab('media')"     class="tab-btn"        id="tab-media">Media</button>
+      <button onclick="setTab('infra')"     class="tab-btn"        id="tab-infra">Infra</button>
+      <button onclick="setTab('home')"      class="tab-btn"        id="tab-home">Home</button>
       <button onclick="setTab('controls')"  class="tab-btn"        id="tab-controls">Controls</button>
     </nav>
-    <div class="flex items-center gap-3">
+    <div class="flex items-center gap-2">
       <span id="hdr-status" style="font-size:12px;color:var(--text-muted);">connecting</span>
       <span id="hdr-time" class="desktop" style="font-size:12px;color:var(--text-disabled);font-family:var(--font-mono);"></span>
+      <!-- Command palette trigger -->
+      <button onclick="openCmdPalette()" aria-label="Command palette"
+              style="color:var(--text-muted);font-size:11px;padding:4px 8px;border-radius:var(--r-sm);background:rgba(255,255,255,.05);border:1px solid var(--border-muted);cursor:pointer;display:flex;align-items:center;gap:5px;"
+              onmouseover="this.style.background='rgba(255,255,255,.09)'" onmouseout="this.style.background='rgba(255,255,255,.05)'">
+        <span>⌘</span><span class="kbd desktop" style="font-size:9px;">/</span>
+      </button>
+      <!-- Notification bell -->
+      <div class="relative">
+        <button onclick="toggleNotifPanel()" id="notif-btn" aria-label="Notifications"
+                style="color:var(--text-muted);font-size:15px;padding:4px 8px;border-radius:var(--r-sm);background:rgba(255,255,255,.05);border:1px solid var(--border-muted);cursor:pointer;display:flex;align-items:center;position:relative;"
+                onmouseover="this.style.background='rgba(255,255,255,.09)'" onmouseout="this.style.background='rgba(255,255,255,.05)'">
+          🔔
+        </button>
+        <span id="notif-badge" class="hidden"></span>
+      </div>
+      <!-- Shortcuts -->
       <button onclick="showSC()" aria-label="Show keyboard shortcuts"
               style="color:var(--text-muted);font-size:13px;font-weight:600;padding:4px 8px;border-radius:var(--r-sm);background:rgba(255,255,255,.05);border:1px solid var(--border-muted);cursor:pointer;"
               onmouseover="this.style.background='rgba(255,255,255,.09)'" onmouseout="this.style.background='rgba(255,255,255,.05)'">?</button>
@@ -449,24 +606,24 @@ tailwind.config = { theme: { extend: { colors: {
 
   <!-- Hero stats -->
   <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-    <div class="bg-[#161b22] border border-[#21262d] rounded-xl p-4">
+    <div class="bg-[#161b22] border border-[#21262d] rounded-xl p-4 hero-stat" style="--hs-color:#3fb950">
       <p class="text-xs text-gray-500 mb-1">Completed</p>
-      <p id="h-done"  class="text-3xl font-bold text-emerald-400">—</p>
+      <p id="h-done"  class="text-3xl font-bold text-emerald-400 stat-num">—</p>
       <p id="h-total" class="text-xs text-gray-600 mt-1">of — items</p>
     </div>
-    <div class="bg-[#161b22] border border-[#21262d] rounded-xl p-4">
+    <div class="bg-[#161b22] border border-[#21262d] rounded-xl p-4 hero-stat" style="--hs-color:#58a6ff">
       <p class="text-xs text-gray-500 mb-1">Success Rate</p>
-      <p id="h-rate"  class="text-3xl font-bold text-blue-400">—</p>
+      <p id="h-rate"  class="text-3xl font-bold text-blue-400 stat-num">—</p>
       <p id="h-runs"  class="text-xs text-gray-600 mt-1">— subtasks</p>
     </div>
-    <div class="bg-[#161b22] border border-[#21262d] rounded-xl p-4">
+    <div class="bg-[#161b22] border border-[#21262d] rounded-xl p-4 hero-stat" style="--hs-color:#a371f7">
       <p class="text-xs text-gray-500 mb-1">Avg Time</p>
-      <p id="h-avg"   class="text-3xl font-bold text-violet-400">—</p>
+      <p id="h-avg"   class="text-3xl font-bold text-violet-400 stat-num">—</p>
       <p class="text-xs text-gray-600 mt-1">per subtask</p>
     </div>
-    <div class="bg-[#161b22] border border-[#21262d] rounded-xl p-4">
+    <div class="bg-[#161b22] border border-[#21262d] rounded-xl p-4 hero-stat" style="--hs-color:#d29922">
       <p class="text-xs text-gray-500 mb-1">Queue Depth</p>
-      <p id="h-queue" class="text-3xl font-bold text-amber-400">—</p>
+      <p id="h-queue" class="text-3xl font-bold text-amber-400 stat-num">—</p>
       <p id="h-qsub"  class="text-xs text-gray-600 mt-1">items pending</p>
     </div>
   </div>
@@ -655,6 +812,36 @@ tailwind.config = { theme: { extend: { colors: {
         </div>
       </div>
 
+    <!-- Media health mini-card -->
+    <div class="bg-[#161b22] border border-[#21262d] rounded-xl p-4 cursor-pointer hover:border-gray-600 transition"
+         onclick="setTab('media')" title="Click to open Media tab">
+      <h2 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Media</h2>
+      <div class="space-y-2 text-xs">
+        <div class="flex justify-between items-center">
+          <span class="text-gray-500">Sonarr</span>
+          <div class="flex items-center gap-1.5">
+            <span id="ov-sonarr-series" class="text-gray-600 text-[11px]"></span>
+            <span id="ov-sonarr-dot" class="w-2 h-2 rounded-full bg-gray-700 flex-shrink-0"></span>
+          </div>
+        </div>
+        <div class="flex justify-between items-center">
+          <span class="text-gray-500">Radarr</span>
+          <span id="ov-radarr-dot" class="w-2 h-2 rounded-full bg-gray-700 flex-shrink-0"></span>
+        </div>
+        <div class="flex justify-between items-center">
+          <span class="text-gray-500">Prowlarr</span>
+          <span id="ov-prowlarr-dot" class="w-2 h-2 rounded-full bg-gray-700 flex-shrink-0"></span>
+        </div>
+        <div class="flex justify-between items-center">
+          <span class="text-gray-500">Plex</span>
+          <div class="flex items-center gap-1.5">
+            <span id="ov-plex-streams" class="text-gray-600 text-[11px]"></span>
+            <span id="ov-plex-dot" class="w-2 h-2 rounded-full bg-gray-700 flex-shrink-0"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
     </div>
   </div>
 
@@ -788,6 +975,223 @@ tailwind.config = { theme: { extend: { colors: {
 </div>
 
 <!-- ══════════════════════════════════════════════════════════════════════════
+     MEDIA TAB
+════════════════════════════════════════════════════════════════════════════ -->
+<div id="pane-media" class="hidden space-y-4">
+
+  <!-- ── Service health cards (6 services) ──────────────────────────────── -->
+  <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+
+    <!-- Sonarr -->
+    <div class="bg-[#161b22] border border-[#21262d] rounded-xl p-4">
+      <div class="flex items-center gap-2 mb-2">
+        <div id="media-dot-sonarr" class="w-2 h-2 rounded-full bg-gray-600 flex-shrink-0"></div>
+        <span class="text-xs font-semibold text-white">Sonarr</span>
+        <span id="media-lbl-sonarr" class="text-[10px] text-gray-600 ml-auto">—</span>
+      </div>
+      <div class="flex justify-between text-[11px] text-gray-500">
+        <span>Series</span><span id="media-sonarr-series" class="text-white font-bold">—</span>
+      </div>
+      <div class="flex justify-between text-[11px] text-gray-500">
+        <span>Upcoming</span><span id="media-upcoming-count" class="text-white">—</span>
+      </div>
+      <div class="flex justify-between text-[11px] text-gray-500">
+        <span>Queue</span><span id="media-sonarr-queue" class="text-white">—</span>
+      </div>
+    </div>
+
+    <!-- Radarr -->
+    <div class="bg-[#161b22] border border-[#21262d] rounded-xl p-4">
+      <div class="flex items-center gap-2 mb-2">
+        <div id="media-dot-radarr" class="w-2 h-2 rounded-full bg-gray-600 flex-shrink-0"></div>
+        <span class="text-xs font-semibold text-white">Radarr</span>
+        <span id="media-lbl-radarr" class="text-[10px] text-gray-600 ml-auto">—</span>
+      </div>
+      <div class="flex justify-between text-[11px] text-gray-500">
+        <span>Total</span><span id="media-movies-total" class="text-white font-bold">—</span>
+      </div>
+      <div class="flex justify-between text-[11px] text-gray-500">
+        <span>Downloaded</span><span id="media-movies-dl" class="text-white">—</span>
+      </div>
+      <div class="flex justify-between text-[11px] text-gray-500">
+        <span>Queue</span><span id="media-radarr-queue" class="text-white">—</span>
+      </div>
+    </div>
+
+    <!-- Prowlarr -->
+    <div class="bg-[#161b22] border border-[#21262d] rounded-xl p-4">
+      <div class="flex items-center gap-2 mb-2">
+        <div id="media-dot-prowlarr" class="w-2 h-2 rounded-full bg-gray-600 flex-shrink-0"></div>
+        <span class="text-xs font-semibold text-white">Prowlarr</span>
+        <span id="media-lbl-prowlarr" class="text-[10px] text-gray-600 ml-auto">—</span>
+      </div>
+      <div class="flex justify-between text-[11px] text-gray-500">
+        <span>Indexers</span><span id="media-indexers" class="text-white font-bold">—</span>
+      </div>
+      <div class="flex justify-between text-[11px] text-gray-500">
+        <span>Enabled</span><span id="media-indexers-enabled" class="text-white">—</span>
+      </div>
+    </div>
+
+    <!-- Plex -->
+    <div class="bg-[#161b22] border border-[#21262d] rounded-xl p-4">
+      <div class="flex items-center gap-2 mb-2">
+        <div id="media-dot-plex" class="w-2 h-2 rounded-full bg-gray-600 flex-shrink-0"></div>
+        <span class="text-xs font-semibold text-white">Plex</span>
+        <span id="media-lbl-plex" class="text-[10px] text-gray-600 ml-auto">—</span>
+      </div>
+      <div class="flex justify-between text-[11px] text-gray-500">
+        <span>Libraries</span><span id="media-plex-libs" class="text-white font-bold">—</span>
+      </div>
+      <div class="flex justify-between text-[11px] text-gray-500">
+        <span>Streams</span><span id="media-streams" class="text-white">—</span>
+      </div>
+    </div>
+
+    <!-- QNAP Storage -->
+    <div class="bg-[#161b22] border border-[#21262d] rounded-xl p-4">
+      <div class="flex items-center gap-2 mb-2">
+        <div id="media-dot-qnap" class="w-2 h-2 rounded-full bg-gray-600 flex-shrink-0"></div>
+        <span class="text-xs font-semibold text-white">QNAP</span>
+        <span id="media-lbl-qnap" class="text-[10px] text-gray-600 ml-auto">—</span>
+      </div>
+      <div class="flex justify-between text-[11px] text-gray-500 mb-1">
+        <span>Free</span><span id="media-qnap-free" class="text-white font-bold">—</span>
+      </div>
+      <!-- Storage bar -->
+      <div class="w-full bg-[#0d1117] rounded-full h-1.5 mt-1">
+        <div id="media-qnap-bar" class="bg-blue-500 h-1.5 rounded-full transition-all" style="width:0%"></div>
+      </div>
+      <div class="text-[10px] text-gray-700 mt-1 text-right" id="media-qnap-pct">—</div>
+    </div>
+
+    <!-- Seedbox -->
+    <div class="bg-[#161b22] border border-[#21262d] rounded-xl p-4">
+      <div class="flex items-center gap-2 mb-2">
+        <div id="media-dot-seedbox" class="w-2 h-2 rounded-full bg-gray-600 flex-shrink-0"></div>
+        <span class="text-xs font-semibold text-white">Seedbox</span>
+        <span id="media-lbl-seedbox" class="text-[10px] text-gray-600 ml-auto">—</span>
+      </div>
+      <div class="flex justify-between text-[11px] text-gray-500">
+        <span>Active</span><span id="media-seedbox-recent" class="text-white font-bold">—</span>
+      </div>
+      <div class="flex justify-between text-[11px] text-gray-500">
+        <span>Total</span><span id="media-seedbox-total" class="text-white">—</span>
+      </div>
+      <div class="flex justify-between text-[11px] text-gray-500">
+        <span>Size</span><span id="media-seedbox-gb" class="text-white">—</span>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── Download Pipeline Visualization ────────────────────────────────── -->
+  <div class="bg-[#161b22] border border-[#21262d] rounded-xl p-4">
+    <div class="flex items-center justify-between mb-3">
+      <h2 class="text-sm font-semibold text-white">Download Pipeline</h2>
+      <button onclick="loadMediaPipeline()" class="text-[11px] text-gray-500 hover:text-gray-300 transition">↻ refresh</button>
+    </div>
+    <div class="flex items-stretch gap-1 overflow-x-auto pb-1">
+
+      <!-- Stage: Request -->
+      <div class="flex-1 min-w-[100px] bg-[#0d1117] rounded-lg p-3 text-center">
+        <div class="text-[10px] text-gray-600 uppercase tracking-wider mb-1">Request</div>
+        <div class="text-xs font-semibold text-gray-300 mb-2">Sonarr / Radarr</div>
+        <div class="text-[10px] text-gray-500"><span id="pipe-sonarr-q" class="text-blue-400 font-bold">—</span> TV</div>
+        <div class="text-[10px] text-gray-500"><span id="pipe-radarr-q" class="text-blue-400 font-bold">—</span> Movies</div>
+      </div>
+
+      <div class="flex items-center text-gray-700 text-lg px-1">→</div>
+
+      <!-- Stage: Seedbox -->
+      <div class="flex-1 min-w-[100px] bg-[#0d1117] rounded-lg p-3 text-center">
+        <div class="text-[10px] text-gray-600 uppercase tracking-wider mb-1">Downloading</div>
+        <div class="text-xs font-semibold text-gray-300 mb-2">Seedbox</div>
+        <div class="text-[10px] text-gray-500"><span id="pipe-seedbox-active" class="text-amber-400 font-bold">—</span> active</div>
+        <div class="text-[10px] text-gray-500"><span id="pipe-seedbox-gb" class="text-gray-400">—</span> GB</div>
+      </div>
+
+      <div class="flex items-center text-gray-700 text-lg px-1">→</div>
+
+      <!-- Stage: rclone -->
+      <div class="flex-1 min-w-[90px] bg-[#0d1117] rounded-lg p-3 text-center">
+        <div class="text-[10px] text-gray-600 uppercase tracking-wider mb-1">Transfer</div>
+        <div class="text-xs font-semibold text-gray-300 mb-2">rclone</div>
+        <div class="text-[10px] text-gray-600">→ QNAP</div>
+      </div>
+
+      <div class="flex items-center text-gray-700 text-lg px-1">→</div>
+
+      <!-- Stage: QNAP -->
+      <div class="flex-1 min-w-[100px] bg-[#0d1117] rounded-lg p-3 text-center">
+        <div class="text-[10px] text-gray-600 uppercase tracking-wider mb-1">Storage</div>
+        <div class="text-xs font-semibold text-gray-300 mb-2">QNAP /share</div>
+        <div class="text-[10px] text-gray-500"><span id="pipe-qnap-free" class="text-emerald-400 font-bold">—</span> free</div>
+        <div class="text-[10px] text-gray-500"><span id="pipe-qnap-pct" class="text-gray-400">—</span>% used</div>
+      </div>
+
+      <div class="flex items-center text-gray-700 text-lg px-1">→</div>
+
+      <!-- Stage: Plex -->
+      <div class="flex-1 min-w-[90px] bg-[#0d1117] rounded-lg p-3 text-center">
+        <div class="text-[10px] text-gray-600 uppercase tracking-wider mb-1">Stream</div>
+        <div class="text-xs font-semibold text-gray-300 mb-2">Plex</div>
+        <div class="text-[10px] text-gray-500"><span id="pipe-plex-streams" class="text-purple-400 font-bold">—</span> streams</div>
+        <div class="text-[10px] text-gray-500"><span id="pipe-plex-libs" class="text-gray-400">—</span> libs</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── Active Downloads Table ──────────────────────────────────────────── -->
+  <div class="bg-[#161b22] border border-[#21262d] rounded-xl p-4">
+    <div class="flex items-center justify-between mb-3">
+      <h2 class="text-sm font-semibold text-white">Active Downloads</h2>
+      <button onclick="loadMediaDownloads()" class="text-[11px] text-gray-500 hover:text-gray-300 transition">↻ refresh</button>
+    </div>
+    <div id="media-downloads-body" class="text-xs">
+      <div class="text-gray-600 text-center py-4">Loading…</div>
+    </div>
+  </div>
+
+  <!-- ── Recent additions ────────────────────────────────────────────────── -->
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+    <div class="bg-[#161b22] border border-[#21262d] rounded-xl p-4">
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="text-sm font-semibold text-white">Recent TV Downloads</h2>
+        <button onclick="loadMediaRecent()" class="text-[11px] text-gray-500 hover:text-gray-300 transition">↻ refresh</button>
+      </div>
+      <div id="media-recent-tv" class="space-y-1.5 text-xs overflow-y-auto" style="max-height:280px">
+        <div class="text-gray-600 text-center py-6">Loading…</div>
+      </div>
+    </div>
+
+    <div class="bg-[#161b22] border border-[#21262d] rounded-xl p-4">
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="text-sm font-semibold text-white">Recent Movie Downloads</h2>
+        <button onclick="loadMediaRecent()" class="text-[11px] text-gray-500 hover:text-gray-300 transition">↻ refresh</button>
+      </div>
+      <div id="media-recent-movies" class="space-y-1.5 text-xs overflow-y-auto" style="max-height:280px">
+        <div class="text-gray-600 text-center py-6">Loading…</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Upcoming episodes ───────────────────────────────────────────────── -->
+  <div class="bg-[#161b22] border border-[#21262d] rounded-xl p-4">
+    <div class="flex items-center justify-between mb-3">
+      <h2 class="text-sm font-semibold text-white">Upcoming Episodes — Next 7 Days</h2>
+      <button onclick="loadMediaUpcoming()" class="text-[11px] text-gray-500 hover:text-gray-300 transition">↻ refresh</button>
+    </div>
+    <div id="media-upcoming-list" class="overflow-x-auto">
+      <div class="text-gray-600 text-center py-6 text-xs">Loading…</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════════════
      CONTROLS TAB
 ════════════════════════════════════════════════════════════════════════════ -->
 <div id="pane-controls" class="hidden">
@@ -842,7 +1246,58 @@ tailwind.config = { theme: { extend: { colors: {
   </div>
 </div>
 
+<!-- ══════════════════════════════════════════════════════════════════════════
+     INFRASTRUCTURE TAB
+════════════════════════════════════════════════════════════════════════════ -->
+<div id="pane-infra" class="hidden">
+  <div class="flex justify-between items-center mb-4">
+    <h2 class="text-sm font-semibold text-white">Infrastructure</h2>
+    <button onclick="loadInfra()" class="text-xs text-gray-500 hover:text-white transition">↻ refresh</button>
+  </div>
+
+  <!-- Service health grid -->
+  <p class="section-hdr mb-3">Service Reachability</p>
+  <div id="infra-services" class="grid grid-cols-2 md:grid-cols-3 gap-3 mb-5">
+    <div class="text-xs text-gray-600 col-span-full text-center py-6">Checking services…</div>
+  </div>
+
+  <!-- Docker containers -->
+  <div class="bg-[#161b22] border border-[#21262d] rounded-xl p-4">
+    <div class="flex items-center justify-between mb-3">
+      <p class="section-hdr mb-0">Docker Containers</p>
+      <span id="infra-docker-status" class="text-xs text-gray-600">—</span>
+    </div>
+    <div id="infra-docker-list" class="text-xs text-gray-600 text-center py-6">Loading…</div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     HOME ASSISTANT TAB
+════════════════════════════════════════════════════════════════════════════ -->
+<div id="pane-home" class="hidden">
+  <div class="flex justify-between items-center mb-4">
+    <h2 class="text-sm font-semibold text-white">Home Assistant</h2>
+    <button onclick="loadHome()" class="text-xs text-gray-500 hover:text-white transition">↻ refresh</button>
+  </div>
+  <div id="home-content">
+    <div class="text-xs text-gray-600 text-center py-10">Loading…</div>
+  </div>
+</div>
+
 </main>
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     QUICK ACTIONS FAB
+════════════════════════════════════════════════════════════════════════════ -->
+<div id="fab-root">
+  <div id="fab-menu" class="fab-hidden">
+    <button class="fab-action" onclick="execAction('start');closeFab()">▶ Start Executor</button>
+    <button class="fab-action" onclick="execAction('stop');closeFab()">■ Stop Executor</button>
+    <button class="fab-action" onclick="startTraining();closeFab()">🎓 Start Training</button>
+    <button class="fab-action" onclick="refresh();closeFab()">↻ Refresh All</button>
+  </div>
+  <button id="fab-main" onclick="toggleFab()" aria-label="Quick actions">+</button>
+</div>
 
 <!-- ══════════════════════════════════════════════════════════════════════════
      SCRIPTS
@@ -877,18 +1332,23 @@ function showSC() { $('sc-modal').classList.remove('hidden'); }
 function hideSC() { $('sc-modal').classList.add('hidden'); }
 
 // ── Tab system ────────────────────────────────────────────────────────────────
-const TABS = ['overview','roadmap','analytics','logs','controls'];
+const TABS = ['overview','roadmap','analytics','logs','media','infra','home','controls'];
 let currentTab = 'overview';
 
 function setTab(name) {
   TABS.forEach(t => {
-    $(`pane-${t}`).classList.toggle('hidden', t !== name);
-    $(`tab-${t}`).classList.toggle('active',  t === name);
+    const pane = $(`pane-${t}`);
+    const btn  = $(`tab-${t}`);
+    if (pane) pane.classList.toggle('hidden', t !== name);
+    if (btn)  btn.classList.toggle('active',  t === name);
   });
   currentTab = name;
   if (name === 'roadmap'  && !kanbanLoaded) loadKanban();
   if (name === 'logs')                      loadLog();
   if (name === 'analytics')                 renderCharts();
+  if (name === 'media')                     loadMedia();
+  if (name === 'infra'    && !infraLoaded)  loadInfra();
+  if (name === 'home'     && !homeLoaded)   loadHome();
 }
 
 // ── Training lifecycle ────────────────────────────────────────────────────────
@@ -1693,11 +2153,17 @@ function render(d) {
   // Category bars
   renderCatBars(cats);
 
-  // Completions
+  // Completions + notification tracking
   const comps = (ex.completions||[]).slice().reverse();
   $('feed-done').innerHTML = comps.length
     ? comps.map(c => `<div class="flex gap-2"><span class="text-emerald-500">✓</span><span class="text-gray-300 font-mono text-[11px]">${esc(c)}</span></div>`).join('')
     : '<p class="text-gray-600">No completions yet</p>';
+  // Fire notifications for new completions
+  const compCount = (ex.completions||[]).length;
+  if (compCount > _prevCompCount && _prevCompCount > 0) {
+    (ex.completions||[]).slice(_prevCompCount).forEach(c => addNotif(`Completed: ${c}`, 'ok'));
+  }
+  _prevCompCount = compCount;
 
   const fails = ex.recent_failures || [];
   if (fails.length) {
@@ -1797,17 +2263,27 @@ async function refresh() {
 
 // ── Keyboard shortcuts ────────────────────────────────────────────────────────
 document.addEventListener('keydown', e => {
-  if (e.target.tagName === 'INPUT') return;
-  const scOpen = !$('sc-modal').classList.contains('hidden');
-  const tmOpen = !$('train-modal').classList.contains('hidden');
+  const tag = e.target.tagName;
+  if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+
+  const scOpen  = !$('sc-modal').classList.contains('hidden');
+  const tmOpen  = !$('train-modal').classList.contains('hidden');
+  const cmdOpen = !$('cmd-palette').classList.contains('hidden');
 
   if (e.key === 'Escape') {
-    if (scOpen) { hideSC(); return; }
-    if (tmOpen) { closeTrainModal(); return; }
+    if (cmdOpen) { closeCmdPalette(); return; }
+    if (scOpen)  { hideSC(); return; }
+    if (tmOpen)  { closeTrainModal(); return; }
+    if (_notifPanelOpen) { toggleNotifPanel(); return; }
+    if (_fabOpen) { closeFab(); return; }
     clearKbFilter(); activeCat=null; applyKbCatFilter();
     return;
   }
-  if (scOpen || tmOpen) return;
+  if (cmdOpen || scOpen || tmOpen) return;
+
+  if ((e.key === '/' || (e.key === 'k' && (e.ctrlKey||e.metaKey)))) {
+    e.preventDefault(); openCmdPalette(); return;
+  }
 
   switch(e.key) {
     case '?': showSC(); break;
@@ -1815,7 +2291,10 @@ document.addEventListener('keydown', e => {
     case '2': setTab('roadmap');    break;
     case '3': setTab('analytics');  break;
     case '4': setTab('logs');       break;
-    case '5': setTab('controls');   break;
+    case '5': setTab('media');      break;
+    case '6': setTab('controls');   break;
+    case '7': setTab('infra');      break;
+    case '8': setTab('home');       break;
     case 'r': case 'R': refresh();              break;
     case 'l': case 'L': setTab('logs');         break;
     case 's': case 'S': execAction('start');    break;
@@ -1827,12 +2306,615 @@ document.addEventListener('keydown', e => {
   }
 });
 
+// ── Media tab ────────────────────────────────────────────────────────────────
+let mediaLoaded = false;
+
+const dotStyle = up => up
+  ? 'background:#00875A;box-shadow:0 0 5px #00875A'
+  : 'background:#DE350B;box-shadow:0 0 5px #DE350B';
+
+function setDotEl(id, up) {
+  const e = $(id);
+  if (e) e.setAttribute('style', dotStyle(up));
+}
+
+function fmtDate(iso) {
+  if (!iso) return '';
+  try {
+    return new Date(iso).toLocaleDateString('en-US', {month:'short', day:'numeric'});
+  } catch { return iso.slice(0,10); }
+}
+
+function fmtDateTime(iso) {
+  if (!iso) return '';
+  try {
+    return new Date(iso).toLocaleDateString('en-US', {month:'short', day:'numeric', hour:'numeric', minute:'2-digit'});
+  } catch { return iso.slice(0,16); }
+}
+
+function setText(id, val) { const e=$(id); if(e) e.textContent = val ?? '—'; }
+function fmtGb(n) { return n ? `${n} GB` : '—'; }
+
+async function loadMediaPipeline() {
+  const res = await fetch('/api/media/pipeline').catch(()=>null);
+  if (!res?.ok) return;
+  const d = await res.json();
+
+  // Service health dots + labels
+  const services = ['sonarr','radarr','prowlarr','plex','qnap','seedbox'];
+  services.forEach(svc => {
+    const up = d[svc]?.up;
+    setDotEl(`media-dot-${svc}`, up);
+    setText(`media-lbl-${svc}`, up ? 'online' : (up === false ? 'offline' : '—'));
+  });
+
+  // Sonarr card
+  setText('media-sonarr-series', d.sonarr?.series ?? '—');
+  setText('media-upcoming-count', d.sonarr?.upcoming ?? '—');
+  setText('media-sonarr-queue', d.sonarr?.queue ?? '—');
+
+  // Radarr card
+  setText('media-movies-total', d.radarr?.movies ?? '—');
+  setText('media-movies-dl', d.radarr?.downloaded ?? '—');
+  setText('media-radarr-queue', d.radarr?.queue ?? '—');
+
+  // Prowlarr card
+  const idxTotal = d.prowlarr?.total;
+  const idxOn    = d.prowlarr?.indexers;
+  setText('media-indexers', idxTotal ?? '—');
+  setText('media-indexers-enabled', idxOn !== undefined && idxTotal ? `${idxOn}/${idxTotal}` : '—');
+
+  // Plex card
+  setText('media-plex-libs', d.plex?.libraries ?? '—');
+  setText('media-streams', d.plex?.active_streams ?? '—');
+
+  // QNAP card
+  const qFree = d.qnap?.free_gb;
+  const qPct  = d.qnap?.used_pct;
+  setText('media-qnap-free', qFree !== undefined ? `${qFree} GB` : (d.qnap?.status === 'not_configured' ? 'n/a' : '—'));
+  setText('media-qnap-pct',  qPct  !== undefined ? `${qPct}% used` : '');
+  const bar = $('media-qnap-bar');
+  if (bar && qPct !== undefined) {
+    bar.style.width = `${qPct}%`;
+    bar.className = `h-1.5 rounded-full transition-all ${qPct > 85 ? 'bg-red-500' : qPct > 70 ? 'bg-amber-500' : 'bg-blue-500'}`;
+  }
+
+  // Seedbox card
+  setText('media-seedbox-recent', d.seedbox?.recent_files ?? '—');
+  setText('media-seedbox-total',  d.seedbox?.total_files  ?? '—');
+  setText('media-seedbox-gb', d.seedbox?.total_gb !== undefined ? `${d.seedbox.total_gb} GB` : '—');
+  if (!d.seedbox?.up && d.seedbox?.status) {
+    setText('media-lbl-seedbox', d.seedbox.status);
+  }
+
+  // Pipeline stages
+  setText('pipe-sonarr-q', d.sonarr?.queue ?? '—');
+  setText('pipe-radarr-q', d.radarr?.queue ?? '—');
+  setText('pipe-seedbox-active', d.seedbox?.recent_files ?? '—');
+  setText('pipe-seedbox-gb', d.seedbox?.total_gb ?? '—');
+  setText('pipe-qnap-free', qFree !== undefined ? `${qFree} GB` : '—');
+  setText('pipe-qnap-pct',  qPct  ?? '—');
+  setText('pipe-plex-streams', d.plex?.active_streams ?? '—');
+  setText('pipe-plex-libs',    d.plex?.libraries      ?? '—');
+}
+
+async function loadMediaDownloads() {
+  const el = $('media-downloads-body');
+  if (!el) return;
+  const res = await fetch('/api/media/downloads').catch(()=>null);
+  if (!res?.ok) { el.innerHTML = '<div class="text-gray-600 text-center py-4">Could not load</div>'; return; }
+  const d = await res.json();
+
+  if (d.status === 'not_configured') {
+    el.innerHTML = '<div class="text-gray-600 text-center py-4">Seedbox not configured — set SEEDBOX_PASSWORD in docker/.env</div>';
+    return;
+  }
+  if (d.status === 'needs_paramiko') {
+    el.innerHTML = '<div class="text-amber-600 text-center py-4">Install paramiko: pip install paramiko</div>';
+    return;
+  }
+  if (d.status === 'error') {
+    el.innerHTML = `<div class="text-red-600 text-center py-4">${esc(d.message || d.error || 'Connection failed')}</div>`;
+    return;
+  }
+  const files = d.files || [];
+  if (!files.length) {
+    el.innerHTML = '<div class="text-gray-600 text-center py-4">No active downloads</div>';
+    return;
+  }
+  el.innerHTML = `<table class="w-full text-xs border-collapse">
+    <thead><tr class="text-gray-600 border-b border-[#21262d]">
+      <th class="text-left pb-2 font-medium">Name</th>
+      <th class="text-right pb-2 font-medium">Size</th>
+      <th class="text-right pb-2 font-medium">Age</th>
+      <th class="text-left pb-2 font-medium pl-3">Path</th>
+    </tr></thead>
+    <tbody class="divide-y divide-[#21262d]">
+    ${files.map(f => `
+      <tr class="hover:bg-[#1c2128] transition">
+        <td class="py-1.5 pr-3 text-gray-300 max-w-[200px] truncate">${esc(f.name)}</td>
+        <td class="py-1.5 pr-3 text-gray-500 text-right whitespace-nowrap">${f.size_gb ? f.size_gb+' GB' : '—'}</td>
+        <td class="py-1.5 pr-3 text-gray-500 text-right whitespace-nowrap">${f.age_hours ? f.age_hours+'h' : '—'}</td>
+        <td class="py-1.5 pl-3 text-gray-700 text-[10px] truncate max-w-[120px]">${esc(f.dir||'')}</td>
+      </tr>`).join('')}
+    </tbody></table>
+    <div class="mt-2 text-[10px] text-gray-700">${d.total_files||0} total files · ${d.total_size_gb||0} GB · dirs: ${(d.dirs_monitored||[]).length}</div>`;
+}
+
+async function loadMediaRecent() {
+  const res = await fetch('/api/media/recent').catch(()=>null);
+  if (!res?.ok) return;
+  const d = await res.json();
+
+  const tvEl = $('media-recent-tv');
+  if (tvEl) {
+    if (d.needs_key && !d.episodes?.length) {
+      tvEl.innerHTML = '<div class="text-gray-600 text-center py-4">API key required</div>';
+    } else if (!d.episodes?.length) {
+      tvEl.innerHTML = '<div class="text-gray-600 text-center py-4">No recent downloads</div>';
+    } else {
+      tvEl.innerHTML = d.episodes.map(ep => `
+        <div class="flex items-start justify-between gap-2 bg-[#0d1117] rounded-lg px-3 py-2 hover:bg-[#111820] transition">
+          <div class="min-w-0">
+            <div class="text-gray-300 font-medium truncate">${esc(ep.series)}</div>
+            <div class="text-gray-600 text-[11px]">S${String(ep.season).padStart(2,'0')}E${String(ep.episode).padStart(2,'0')}${ep.title ? ' · '+esc(ep.title) : ''}</div>
+          </div>
+          <div class="text-right flex-shrink-0">
+            <div class="text-gray-500 text-[11px]">${fmtDate(ep.date)}</div>
+            ${ep.quality ? `<div class="text-gray-700 text-[10px]">${esc(ep.quality)}</div>` : ''}
+          </div>
+        </div>`).join('');
+    }
+  }
+
+  const movEl = $('media-recent-movies');
+  if (movEl) {
+    if (d.needs_key && !d.movies?.length) {
+      movEl.innerHTML = '<div class="text-gray-600 text-center py-4">API key required</div>';
+    } else if (!d.movies?.length) {
+      movEl.innerHTML = '<div class="text-gray-600 text-center py-4">No recent downloads</div>';
+    } else {
+      movEl.innerHTML = d.movies.map(m => `
+        <div class="flex items-start justify-between gap-2 bg-[#0d1117] rounded-lg px-3 py-2 hover:bg-[#111820] transition">
+          <div class="min-w-0">
+            <div class="text-gray-300 font-medium truncate">${esc(m.title)}${m.year ? ` <span class="text-gray-600">(${m.year})</span>` : ''}</div>
+            ${m.quality ? `<div class="text-gray-600 text-[11px]">${esc(m.quality)}</div>` : ''}
+          </div>
+          <div class="text-gray-500 text-[11px] flex-shrink-0">${fmtDate(m.date)}</div>
+        </div>`).join('');
+    }
+  }
+}
+
+async function loadMediaUpcoming() {
+  const res = await fetch('/api/media/upcoming').catch(()=>null);
+  if (!res?.ok) return;
+  const d = await res.json();
+  const el = $('media-upcoming-list');
+  if (!el) return;
+
+  if (d.needs_key && !d.episodes?.length) {
+    el.innerHTML = '<div class="text-gray-600 text-center py-4 text-xs">API key required</div>';
+    return;
+  }
+  if (!d.episodes?.length) {
+    el.innerHTML = '<div class="text-gray-600 text-center py-4 text-xs">No episodes airing in the next 7 days</div>';
+    return;
+  }
+
+  // Update upcoming count in Sonarr card too
+  setText('media-upcoming-count', d.episodes.length);
+
+  el.innerHTML = `<table class="w-full text-xs border-collapse">
+    <thead><tr class="text-gray-600 border-b border-[#21262d]">
+      <th class="text-left pb-2 font-medium">Series</th>
+      <th class="text-left pb-2 font-medium">Episode</th>
+      <th class="text-left pb-2 font-medium">Title</th>
+      <th class="text-right pb-2 font-medium">Airs</th>
+      <th class="text-center pb-2 font-medium">Got it</th>
+    </tr></thead>
+    <tbody class="divide-y divide-[#21262d]">
+    ${d.episodes.map(ep => `
+      <tr class="hover:bg-[#1c2128] transition">
+        <td class="py-2 pr-3 text-gray-300 font-medium max-w-[160px] truncate">${esc(ep.series)}</td>
+        <td class="py-2 pr-3 text-gray-500 font-mono">S${String(ep.season).padStart(2,'0')}E${String(ep.episode).padStart(2,'0')}</td>
+        <td class="py-2 pr-3 text-gray-500 max-w-[200px] truncate">${esc(ep.title||'')}</td>
+        <td class="py-2 text-right text-gray-400 whitespace-nowrap">${fmtDateTime(ep.air_date)}</td>
+        <td class="py-2 text-center">${ep.has_file
+          ? '<span class="text-emerald-500">✓</span>'
+          : '<span class="text-gray-700">·</span>'}</td>
+      </tr>`).join('')}
+    </tbody></table>`;
+}
+
+function loadMedia() {
+  if (!mediaLoaded) {
+    mediaLoaded = true;
+    loadMediaPipeline();
+    loadMediaDownloads();
+    loadMediaRecent();
+    loadMediaUpcoming();
+  }
+}
+
+async function refreshMediaOverview() {
+  const res = await fetch('/api/media/pipeline').catch(()=>null);
+  if (!res?.ok) return;
+  const d = await res.json();
+  const health = { sonarr: d.sonarr?.up, radarr: d.radarr?.up,
+                   prowlarr: d.prowlarr?.up, plex: d.plex?.up };
+  const dotColor = up => up ? '#00875A' : '#DE350B';
+  const setDot = (id, up) => { const e=$(id); if(e) e.style.background = dotColor(up); };
+  setDot('ov-sonarr-dot',   health.sonarr);
+  setDot('ov-radarr-dot',   health.radarr);
+  setDot('ov-prowlarr-dot', health.prowlarr);
+  setDot('ov-plex-dot',     health.plex);
+  if ($('ov-sonarr-series') && d.sonarr?.series !== undefined)
+    $('ov-sonarr-series').textContent = `${d.sonarr.series} series`;
+  if ($('ov-plex-streams') && health.plex && d.plex?.active_streams !== undefined)
+    $('ov-plex-streams').textContent = d.plex.active_streams > 0 ? `${d.plex.active_streams} streaming` : '';
+}
+
 // ── Boot ──────────────────────────────────────────────────────────────────────
 refresh();
 loadRecs();
 setInterval(refresh,  5000);  // full status every 5s
 setInterval(pollExec, 2000);  // executor panel every 2s
 setTimeout(() => setInterval(loadRecs, 30000), 5000);  // recs every 30s
+// Media mini-card on overview — poll every 60s, first load after 3s
+setTimeout(refreshMediaOverview, 3000);
+setInterval(refreshMediaOverview, 60000);
+
+// ── COMMAND PALETTE ───────────────────────────────────────────────────────────
+const CMD_ACTIONS = [
+  { icon:'▶', label:'Start Executor',       group:'Actions',  fn:()=>execAction('start') },
+  { icon:'■', label:'Stop Executor',        group:'Actions',  fn:()=>execAction('stop') },
+  { icon:'🎓', label:'Start Training',      group:'Actions',  fn:()=>startTraining() },
+  { icon:'↻', label:'Refresh dashboard',   group:'Actions',  fn:()=>refresh() },
+  { icon:'1', label:'Overview tab',         group:'Navigate', fn:()=>setTab('overview') },
+  { icon:'2', label:'Roadmap tab',          group:'Navigate', fn:()=>setTab('roadmap') },
+  { icon:'3', label:'Analytics tab',        group:'Navigate', fn:()=>setTab('analytics') },
+  { icon:'4', label:'Logs tab',             group:'Navigate', fn:()=>setTab('logs') },
+  { icon:'5', label:'Media tab',            group:'Navigate', fn:()=>setTab('media') },
+  { icon:'7', label:'Infrastructure tab',   group:'Navigate', fn:()=>setTab('infra') },
+  { icon:'8', label:'Home Assistant tab',   group:'Navigate', fn:()=>setTab('home') },
+  { icon:'6', label:'Controls tab',         group:'Navigate', fn:()=>setTab('controls') },
+  { icon:'?', label:'Keyboard shortcuts',   group:'Help',     fn:()=>showSC() },
+];
+
+let _cmdFiltered = [...CMD_ACTIONS];
+let _cmdSel      = 0;
+let _cmdOpen     = false;
+
+function openCmdPalette() {
+  _cmdOpen = true;
+  $('cmd-palette').classList.remove('hidden');
+  const inp = $('cmd-input');
+  inp.value = '';
+  filterCmd('');
+  setTimeout(() => inp.focus(), 40);
+}
+
+function closeCmdPalette() {
+  _cmdOpen = false;
+  $('cmd-palette').classList.add('hidden');
+}
+
+function filterCmd(q) {
+  const lower = q.toLowerCase().trim();
+  if (!lower) {
+    _cmdFiltered = [...CMD_ACTIONS];
+  } else {
+    const recItems = (_recs || []).filter(r => !r.error).map(r => ({
+      icon:'📋', label:`${r.id}: ${r.title}`, group:'Roadmap',
+      fn:() => runRec(r.id),
+    }));
+    const all = [...CMD_ACTIONS, ...recItems];
+    _cmdFiltered = all.filter(it =>
+      it.label.toLowerCase().includes(lower) || it.group.toLowerCase().includes(lower)
+    );
+  }
+  _cmdSel = 0;
+  renderCmdList();
+}
+
+function renderCmdList() {
+  if (!_cmdFiltered.length) {
+    $('cmd-list').innerHTML = '<div style="padding:12px 18px;font-size:12px;color:var(--text-muted)">No results</div>';
+    return;
+  }
+  let html = '';
+  let lastGroup = '';
+  _cmdFiltered.forEach((it, i) => {
+    if (it.group !== lastGroup) {
+      html += `<div class="cmd-section">${esc(it.group)}</div>`;
+      lastGroup = it.group;
+    }
+    html += `<div class="cmd-item${i === _cmdSel ? ' cmd-sel' : ''}" data-ci="${i}" onclick="cmdExec(${i})">
+      <span class="cmd-icon">${it.icon}</span>
+      <span>${esc(it.label)}</span>
+    </div>`;
+  });
+  $('cmd-list').innerHTML = html;
+  const sel = $('cmd-list').querySelector(`[data-ci="${_cmdSel}"]`);
+  if (sel) sel.scrollIntoView({block:'nearest'});
+}
+
+function cmdKeyNav(e) {
+  if (e.key === 'Escape') { closeCmdPalette(); return; }
+  if (e.key === 'ArrowDown') {
+    _cmdSel = Math.min(_cmdSel + 1, _cmdFiltered.length - 1);
+    renderCmdList(); e.preventDefault();
+  } else if (e.key === 'ArrowUp') {
+    _cmdSel = Math.max(_cmdSel - 1, 0);
+    renderCmdList(); e.preventDefault();
+  } else if (e.key === 'Enter') {
+    cmdExec(_cmdSel);
+  }
+}
+
+function cmdExec(i) {
+  const it = _cmdFiltered[i];
+  if (!it) return;
+  closeCmdPalette();
+  it.fn();
+}
+
+// Close cmd palette on backdrop click — already handled by onclick on #cmd-palette
+
+// ── NOTIFICATION CENTER ───────────────────────────────────────────────────────
+const _notifs       = [];
+let _notifPanelOpen = false;
+let _prevCompCount  = 0;
+
+function addNotif(msg, type = 'info') {
+  _notifs.unshift({ msg, type, ts: Date.now() });
+  if (_notifs.length > 20) _notifs.pop();
+  updateNotifBadge();
+  if (_notifPanelOpen) renderNotifList();
+}
+
+function updateNotifBadge() {
+  const badge = $('notif-badge');
+  if (!badge) return;
+  if (_notifs.length) {
+    badge.textContent = _notifs.length > 9 ? '9+' : String(_notifs.length);
+    badge.classList.remove('hidden');
+  } else {
+    badge.classList.add('hidden');
+  }
+}
+
+function toggleNotifPanel() {
+  _notifPanelOpen = !_notifPanelOpen;
+  $('notif-panel').classList.toggle('hidden', !_notifPanelOpen);
+  if (_notifPanelOpen) renderNotifList();
+  // Close if clicking elsewhere
+  if (_notifPanelOpen) {
+    setTimeout(() => document.addEventListener('click', _closeNotifOnBlur, {once:true}), 50);
+  }
+}
+
+function _closeNotifOnBlur(e) {
+  const panel = $('notif-panel');
+  const btn   = $('notif-btn');
+  if (!panel?.contains(e.target) && !btn?.contains(e.target)) {
+    _notifPanelOpen = false;
+    panel?.classList.add('hidden');
+  }
+}
+
+function clearNotifs() {
+  _notifs.length = 0;
+  updateNotifBadge();
+  renderNotifList();
+}
+
+function renderNotifList() {
+  const el = $('notif-list');
+  if (!el) return;
+  if (!_notifs.length) {
+    el.innerHTML = '<p style="font-size:12px;color:var(--text-muted);text-align:center;padding:20px 14px;">No notifications</p>';
+    return;
+  }
+  const TYPE_CLR = { ok:'#3fb950', err:'#f85149', warn:'#d29922', info:'#58a6ff' };
+  el.innerHTML = _notifs.map(n => {
+    const age = Math.round((Date.now() - n.ts) / 1000);
+    const ageStr = age < 60 ? `${age}s` : age < 3600 ? `${Math.round(age/60)}m` : `${Math.round(age/3600)}h`;
+    const clr = TYPE_CLR[n.type] || '#8b949e';
+    return `<div class="notif-item">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
+        <span style="color:${clr};font-size:12px;flex:1;line-height:1.4">${esc(n.msg)}</span>
+        <span style="color:var(--text-disabled);font-size:10px;flex-shrink:0">${ageStr}</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── QUICK ACTIONS FAB ─────────────────────────────────────────────────────────
+let _fabOpen = false;
+
+function toggleFab() {
+  _fabOpen = !_fabOpen;
+  $('fab-main').classList.toggle('open', _fabOpen);
+  $('fab-menu').classList.toggle('fab-hidden', !_fabOpen);
+}
+
+function closeFab() {
+  if (!_fabOpen) return;
+  _fabOpen = false;
+  $('fab-main').classList.remove('open');
+  $('fab-menu').classList.add('fab-hidden');
+}
+
+document.addEventListener('click', e => {
+  if (_fabOpen && $('fab-root') && !$('fab-root').contains(e.target)) closeFab();
+});
+
+// ── INFRASTRUCTURE TAB ────────────────────────────────────────────────────────
+let infraLoaded = false;
+
+async function loadInfra() {
+  const el = $('infra-services');
+  if (el) el.innerHTML = '<div class="text-xs text-gray-600 col-span-full text-center py-6">Checking services…</div>';
+  const dl = $('infra-docker-list');
+  if (dl) dl.innerHTML = '<div class="text-center py-6 text-gray-600 text-xs">Loading…</div>';
+
+  try {
+    const res = await fetch('/api/infra/status');
+    if (!res.ok) return;
+    const d = await res.json();
+    renderInfraServices(d.services || []);
+    renderDockerContainers(d.docker_containers || [], d.docker_available);
+    infraLoaded = true;
+  } catch(e) {
+    if (el) el.innerHTML = '<div class="text-xs text-red-500 col-span-full text-center py-6">Error loading status</div>';
+  }
+}
+
+function renderInfraServices(services) {
+  const el = $('infra-services');
+  if (!el || !services.length) return;
+  el.innerHTML = services.map(s => {
+    const cls  = s.up ? 'svc-up' : 'svc-down';
+    const dot  = s.up ? '#3fb950' : '#f85149';
+    const glow = s.up ? ';box-shadow:0 0 6px #3fb950' : '';
+    const lat  = s.latency_ms != null ? `<span style="font-size:10px;color:var(--text-muted)">${s.latency_ms}ms</span>` : '';
+    return `<div class="svc-card ${cls}">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+        <div style="display:flex;align-items:center;gap:7px">
+          <div style="width:7px;height:7px;border-radius:50%;background:${dot}${glow};flex-shrink:0"></div>
+          <span style="font-size:12px;font-weight:600;color:var(--text-primary)">${esc(s.name)}</span>
+        </div>
+        ${lat}
+      </div>
+      <div style="font-size:10px;color:var(--text-muted);font-family:var(--font-mono)">${esc(s.host)}:${s.port}</div>
+      <div style="font-size:10px;margin-top:4px;color:${s.up ? '#3fb950' : '#f85149'}">${s.up ? 'online' : 'offline'}</div>
+    </div>`;
+  }).join('');
+}
+
+function renderDockerContainers(containers, available) {
+  const el = $('infra-docker-list');
+  const st = $('infra-docker-status');
+  if (!el) return;
+
+  if (!available) {
+    el.innerHTML = '<div style="text-align:center;padding:20px;font-size:12px;color:var(--text-muted)">Docker unavailable — is Colima running?</div>';
+    if (st) st.textContent = 'unavailable';
+    return;
+  }
+  if (st) st.textContent = `${containers.length} running`;
+
+  if (!containers.length) {
+    el.innerHTML = '<div style="text-align:center;padding:20px;font-size:12px;color:var(--text-muted)">No containers running</div>';
+    return;
+  }
+
+  el.innerHTML = `<table style="width:100%;border-collapse:collapse;font-size:12px">
+    <thead><tr style="color:var(--text-muted);border-bottom:1px solid var(--border-muted)">
+      <th style="text-align:left;padding-bottom:8px;font-weight:500">Name</th>
+      <th style="text-align:left;padding-bottom:8px;font-weight:500">Image</th>
+      <th style="text-align:left;padding-bottom:8px;font-weight:500">Status</th>
+      <th style="text-align:left;padding-bottom:8px;font-weight:500">Ports</th>
+    </tr></thead>
+    <tbody>
+    ${containers.map(c => `
+      <tr style="border-bottom:1px solid var(--border-muted)">
+        <td style="padding:8px 12px 8px 0;color:var(--text-primary);font-family:var(--font-mono)">${esc(c.name)}</td>
+        <td style="padding:8px 12px 8px 0;color:var(--text-secondary)">${esc(c.image)}</td>
+        <td style="padding:8px 12px 8px 0">
+          <span style="color:${c.status.startsWith('Up') ? '#3fb950' : 'var(--text-muted)'}">${esc(c.status)}</span>
+        </td>
+        <td style="padding:8px 0;color:var(--text-muted);font-family:var(--font-mono);font-size:10px">${esc(c.ports)}</td>
+      </tr>`).join('')}
+    </tbody></table>`;
+}
+
+// ── HOME ASSISTANT TAB ────────────────────────────────────────────────────────
+let homeLoaded = false;
+
+async function loadHome() {
+  const el = $('home-content');
+  if (el) el.innerHTML = '<div style="text-align:center;padding:40px;font-size:12px;color:var(--text-muted)">Connecting to Home Assistant…</div>';
+
+  try {
+    const res = await fetch('/api/home/status');
+    if (!res.ok) return;
+    const d = await res.json();
+    renderHome(d);
+    homeLoaded = true;
+  } catch(e) {
+    const el2 = $('home-content');
+    if (el2) el2.innerHTML = '<div style="text-align:center;padding:40px;font-size:12px;color:#f85149">Error connecting to server</div>';
+  }
+}
+
+function renderHome(d) {
+  const el = $('home-content');
+  if (!el) return;
+
+  if (!d.available) {
+    el.innerHTML = `
+      <div style="max-width:480px;margin:0 auto;text-align:center;padding:24px">
+        <div style="font-size:48px;margin-bottom:12px">🏠</div>
+        <h3 style="font-size:14px;font-weight:600;color:var(--text-primary);margin-bottom:8px">Home Assistant not configured</h3>
+        <p style="font-size:12px;color:var(--text-muted);margin-bottom:20px">${esc(d.message || 'Set HA_URL and HA_TOKEN env vars')}</p>
+        <div style="background:var(--bg-inset);border:1px solid var(--border-muted);border-radius:var(--r-lg);padding:14px;text-align:left;font-family:var(--font-mono);font-size:11px;color:var(--text-secondary)">
+          <div style="color:var(--text-muted);margin-bottom:6px"># Add to your environment:</div>
+          <div>export HA_URL=http://homeassistant.local:8123</div>
+          <div>export HA_TOKEN=your_long_lived_access_token</div>
+        </div>
+      </div>`;
+    return;
+  }
+
+  const DOMAIN_ICONS = {
+    sensor:'📊', binary_sensor:'💡', light:'🔦', switch:'🔌',
+    climate:'🌡️', media_player:'🎵', person:'👤', weather:'🌤️',
+    cover:'🪟', lock:'🔒',
+  };
+  const ORDER = ['weather','person','climate','light','switch','cover','lock','media_player','sensor','binary_sensor'];
+
+  const byDomain = {};
+  (d.entities || []).forEach(e => {
+    if (!byDomain[e.domain]) byDomain[e.domain] = [];
+    byDomain[e.domain].push(e);
+  });
+
+  const domains = ORDER.filter(dm => byDomain[dm])
+    .concat(Object.keys(byDomain).filter(dm => !ORDER.includes(dm)));
+
+  const STATE_CLR = {
+    'on':'#3fb950', 'off':'var(--text-muted)', 'unavailable':'rgba(248,81,73,.4)',
+    'home':'#3fb950', 'not_home':'var(--text-muted)',
+  };
+
+  el.innerHTML = `
+    <p style="font-size:11px;color:var(--text-muted);margin-bottom:12px">${d.entity_count} total entities</p>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:16px">
+    ${domains.map(domain => {
+      const entities = byDomain[domain];
+      const icon = DOMAIN_ICONS[domain] || '●';
+      return `
+      <div style="background:var(--bg-card);border:1px solid var(--border-default);border-radius:var(--r-lg);padding:14px 16px">
+        <h3 style="font-size:10px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px">
+          ${icon} ${domain.replace(/_/g,' ')} <span style="font-weight:400;font-size:10px">(${entities.length})</span>
+        </h3>
+        <div style="display:flex;flex-direction:column;gap:7px">
+        ${entities.slice(0, 8).map(e => {
+          const clr = STATE_CLR[e.state] || '#58a6ff';
+          return `<div style="display:flex;justify-content:space-between;align-items:center;font-size:12px">
+            <span style="color:var(--text-secondary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-right:8px">${esc(e.name)}</span>
+            <span style="color:${clr};flex-shrink:0">${esc(e.state)}${e.unit?' '+esc(e.unit):''}</span>
+          </div>`;
+        }).join('')}
+        ${entities.length > 8 ? `<div style="font-size:10px;color:var(--text-muted)">+${entities.length-8} more</div>` : ''}
+        </div>
+      </div>`;
+    }).join('')}
+    </div>`;
+}
 </script>
 </body>
 </html>
