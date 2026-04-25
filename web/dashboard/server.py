@@ -443,51 +443,134 @@ def _get_recommendations() -> list:
                  "loe": "?", "risk": 3, "easiness": 0, "unlocks": 0, "filter": ""}]
 
 
+def _validate_training_prereqs() -> dict | None:
+    """Return error dict if training can't start, else None."""
+    # Check training data
+    data_path = REPO_ROOT / "artifacts" / "training_data" / "alpaca.jsonl"
+    if not data_path.exists():
+        return {"ok": False, "message": "No training data at artifacts/training_data/alpaca.jsonl — run bin/collect_training_data.py first"}
+    # Check quality examples count
+    try:
+        sys.path.insert(0, str(REPO_ROOT))
+        from framework.learning_analytics import analyze_training_data
+        r = analyze_training_data()
+        count = r.get("example_count", 0) if isinstance(r, dict) else getattr(r, "example_count", 0)
+        if count < 10:
+            return {"ok": False, "message": f"Only {count}/10 quality examples — collect more before training"}
+    except Exception:
+        pass
+    # Check venv
+    venv = Path.home() / "training-env" / "bin" / "python"
+    if not venv.exists():
+        return {"ok": False, "message": "~/training-env not found — run bin/run_training_cycle.py once to set it up"}
+    return None
+
+
 def _start_training() -> dict:
-    """Spawn run_training_cycle.py in ~/training-env context."""
+    """Spawn run_training_cycle.py inside ~/training-env."""
     r = subprocess.run(["pgrep", "-f", "run_training_cycle"], capture_output=True, text=True)
     if r.stdout.strip():
-        return {"ok": False, "message": f"Already running (PID {r.stdout.strip().split()[0]})"}
+        pid = r.stdout.strip().split()[0]
+        return {"ok": False, "message": f"Already running (PID {pid})", "pid": int(pid)}
+
     script = REPO_ROOT / "bin" / "run_training_cycle.py"
     if not script.exists():
         return {"ok": False, "message": "bin/run_training_cycle.py not found"}
+
+    err = _validate_training_prereqs()
+    if err:
+        return err
+
     venv_python = Path.home() / "training-env" / "bin" / "python"
-    py = str(venv_python) if venv_python.exists() else sys.executable
-    with open(TRAINING_LOG_PATH, "w") as lf:
-        proc = subprocess.Popen(
-            [py, str(script), "--collect-only"],
-            cwd=REPO_ROOT, stdout=lf, stderr=subprocess.STDOUT,
-            start_new_session=True,
-        )
-    return {"ok": True, "message": f"Training started (PID {proc.pid})",
-            "pid": proc.pid, "log": TRAINING_LOG_PATH}
+    data_path   = REPO_ROOT / "artifacts" / "training_data" / "alpaca.jsonl"
+    cmd = [
+        "/bin/bash", "-c",
+        f"source {Path.home()}/training-env/bin/activate && "
+        f"python3 {script} --data {data_path} "
+        f"> {TRAINING_LOG_PATH} 2>&1"
+    ]
+    proc = subprocess.Popen(cmd, cwd=REPO_ROOT, start_new_session=True)
+    return {
+        "ok": True,
+        "message": f"Training started (PID {proc.pid})",
+        "pid": proc.pid,
+        "log": TRAINING_LOG_PATH,
+        "estimated_minutes": 45,
+        "status": "started",
+    }
 
 
 def _training_cycle_status() -> dict:
-    """Parse /tmp/training_cycle.log for step progress."""
+    """Parse TRAINING_LOG_PATH for step progress and status."""
     log = Path(TRAINING_LOG_PATH)
     if not log.exists():
-        return {"running": False, "lines": [], "step": 0, "total_steps": 0}
-    text = log.read_text(errors="replace")
+        return {"is_running": False, "lines": [], "step": 0, "total_steps": 0,
+                "progress_percent": 0, "current_step": "", "eta_minutes": 0}
+    text  = log.read_text(errors="replace")
     lines = text.splitlines()
-    # Detect running: pgrep
+
     r = subprocess.run(["pgrep", "-f", "run_training_cycle"], capture_output=True, text=True)
     running = bool(r.stdout.strip())
-    # Parse step progress e.g. "Step 15/100"
+
     step = total = 0
+    current_step = "Preparing"
     for line in reversed(lines):
-        m = re.search(r"[Ss]tep\s+(\d+)[/\s]+(\d+)", line)
+        # "Step 15/500" or "step 15 of 500"
+        m = re.search(r"[Ss]tep[s]?\s+(\d+)\s*[/of]+\s*(\d+)", line)
         if m:
             step, total = int(m.group(1)), int(m.group(2))
             break
-    done = not running and any(kw in text for kw in ("Training complete", "Saved adapter", "Done"))
+    for line in reversed(lines[-20:]):
+        ll = line.lower()
+        if "collect" in ll or "gathering" in ll:
+            current_step = "Collecting training data"
+        elif "tokeniz" in ll or "preprocess" in ll:
+            current_step = "Preprocessing data"
+        elif "train" in ll and "lora" in ll:
+            current_step = "Training LoRA adapter"
+        elif "save" in ll or "export" in ll:
+            current_step = "Saving adapter"
+        elif "gguf" in ll:
+            current_step = "Exporting GGUF"
+
+    pct = round(step / total * 100) if total > 0 else 0
+    done = not running and any(kw in text for kw in ("Training complete", "Saved adapter", "Done", "adapter_model"))
+    eta_minutes = 0
+    if running and total > 0 and step > 0:
+        # Estimate from log timestamps if possible, else rough guess
+        eta_minutes = max(1, round((total - step) * 0.5))
+
     return {
-        "running": running,
-        "done": done,
-        "step": step,
-        "total_steps": total,
-        "lines": lines[-30:],
+        "is_running":       running,
+        "done":             done,
+        "step":             step,
+        "total_steps":      total,
+        "progress_percent": pct,
+        "current_step":     current_step,
+        "eta_minutes":      eta_minutes,
+        "log_tail":         lines[-15:],
+        "log_file":         TRAINING_LOG_PATH,
     }
+
+
+def _deploy_model() -> dict:
+    """Load trained LoRA adapter into Ollama as qwen2.5-coder:custom."""
+    adapter = REPO_ROOT / "artifacts" / "lora_adapter"
+    if not adapter.exists():
+        return {"ok": False, "message": "No trained adapter at artifacts/lora_adapter — train first"}
+    modelfile = Path("/tmp/Modelfile_custom")
+    modelfile.write_text(
+        "FROM qwen2.5-coder:14b\n"
+        f"ADAPTER {adapter}\n"
+        'PARAMETER system "You are an expert coding assistant fine-tuned on this codebase."\n'
+    )
+    r = subprocess.run(
+        ["ollama", "create", "qwen2.5-coder:custom", "-f", str(modelfile)],
+        capture_output=True, text=True, timeout=120,
+    )
+    if r.returncode != 0:
+        return {"ok": False, "message": f"ollama create failed: {r.stderr[:200]}"}
+    return {"ok": True, "message": "qwen2.5-coder:custom deployed to Ollama"}
 
 
 def _build_status() -> dict:
@@ -552,6 +635,8 @@ class Handler(BaseHTTPRequestHandler):
             self._serve_json({"items": _get_recommendations()})
         elif path == "/api/train/status":
             self._serve_json(_training_cycle_status())
+        elif path == "/api/training/status":
+            self._serve_json(_training_cycle_status())
         else:
             self.send_response(404)
             self.end_headers()
@@ -566,6 +651,8 @@ class Handler(BaseHTTPRequestHandler):
             self._serve_json(_executor_action(action))
         elif path in ("/api/train", "/api/training/start"):
             self._serve_json(_start_training())
+        elif path == "/api/model/deploy":
+            self._serve_json(_deploy_model())
         else:
             self.send_response(404)
             self.end_headers()

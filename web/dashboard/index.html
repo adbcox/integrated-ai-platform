@@ -4,80 +4,329 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>AI Platform — Control Plane</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
 <script>
 tailwind.config = { theme: { extend: { colors: {
-  surface:'#0d1117', card:'#161b22', border:'#21262d', accent:'#58a6ff'
+  surface:'#0D1117', card:'#161B22', border:'#21262D', accent:'#0052CC'
 }}}}
 </script>
 <style>
+  /* ── Design system variables ─────────────────────────────────────────────── */
+  :root {
+    /* Surfaces */
+    --bg-surface:  #0D1117;
+    --bg-card:     #161B22;
+    --bg-card-hov: #1C2128;
+    --bg-inset:    #0D1117;
+    --bg-subtle:   rgba(255,255,255,0.04);
+
+    /* Borders */
+    --border-default: rgba(255,255,255,0.08);
+    --border-muted:   rgba(255,255,255,0.05);
+    --border-hover:   rgba(255,255,255,0.16);
+    --border-focus:   #0052CC;
+
+    /* Text hierarchy */
+    --text-primary:   rgba(255,255,255,0.95);
+    --text-secondary: rgba(255,255,255,0.70);
+    --text-muted:     rgba(255,255,255,0.45);
+    --text-disabled:  rgba(255,255,255,0.25);
+
+    /* Status semantic colours */
+    --clr-success: #00875A;
+    --clr-warn:    #FF991F;
+    --clr-danger:  #DE350B;
+    --clr-info:    #0052CC;
+    --clr-inprog:  #0065FF;
+    --clr-done:    #00875A;
+    --clr-accent:  #0052CC;
+
+    /* Success/warn/danger tints */
+    --tint-success: rgba(0,135,90,.12);
+    --tint-warn:    rgba(255,153,31,.12);
+    --tint-danger:  rgba(222,53,11,.12);
+    --tint-info:    rgba(0,82,204,.12);
+
+    /* Shadows */
+    --shadow-card:  0 1px 3px rgba(0,0,0,.35), 0 0 0 1px var(--border-default);
+    --shadow-elev:  0 4px 14px rgba(0,0,0,.45), 0 0 0 1px var(--border-hover);
+    --shadow-focus: 0 0 0 3px rgba(0,82,204,.22);
+    --shadow-modal: 0 20px 60px rgba(0,0,0,.6);
+
+    /* Typography */
+    --font-ui:   'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-mono: ui-monospace, 'SF Mono', Menlo, Monaco, 'Cascadia Code', monospace;
+    --font-num:  'Inter', sans-serif;
+
+    /* Spacing — 8px grid */
+    --sp-1: 8px; --sp-2: 16px; --sp-3: 24px; --sp-4: 32px;
+
+    /* Radius */
+    --r-sm: 4px; --r-md: 6px; --r-lg: 10px; --r-xl: 14px;
+
+    /* Transitions */
+    --t-fast:   100ms cubic-bezier(.4,0,.2,1);
+    --t-base:   200ms cubic-bezier(.4,0,.2,1);
+    --t-slow:   300ms cubic-bezier(.4,0,.2,1);
+  }
+
   * { box-sizing: border-box; }
-  body { font-family: ui-monospace,'Cascadia Code','JetBrains Mono',monospace; background:#0d1117; }
-  .ring-track { fill:none; stroke:#21262d; }
-  .ring-fill  { fill:none; stroke-linecap:round; transition:stroke-dashoffset .8s ease; }
-  .pulse { animation:pulse 2s ease-in-out infinite; }
-  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.35} }
-  .slide-in { animation:slidein .3s ease; }
-  @keyframes slidein { from{opacity:0;transform:translateY(5px)} to{opacity:1;transform:none} }
-  .bar-fill { transition:width .7s ease; }
-  .tab-btn.active { color:#58a6ff; border-bottom-color:#58a6ff; }
-  .tab-btn { border-bottom:2px solid transparent; }
-  ::-webkit-scrollbar { width:3px; height:3px; }
-  ::-webkit-scrollbar-thumb { background:#30363d; border-radius:2px; }
-  .glow-green { box-shadow:0 0 14px rgba(46,160,67,.4); }
-  .glow-amber { box-shadow:0 0 14px rgba(210,153,34,.4); }
-  .toast { animation:tin .3s ease,tout .3s ease 2.7s forwards; }
-  @keyframes tin  { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:none} }
-  @keyframes tout { to{opacity:0;transform:translateY(16px)} }
 
-  /* Cat bars */
-  .cat-row { cursor:pointer; border-radius:5px; padding:2px 4px; transition:background .15s; }
-  .cat-row:hover { background:#21262d; }
-  .cat-row.sel { background:#1f3050; outline:1px solid #58a6ff50; }
+  body {
+    font-family: var(--font-ui);
+    background: var(--bg-surface);
+    color: var(--text-secondary);
+    font-size: 14px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
 
-  /* File chips */
-  .chip { display:inline-block; font-size:10px; padding:1px 5px; border-radius:3px;
-          background:#21262d; color:#8b949e; cursor:pointer; transition:background .15s; }
-  .chip:hover,.chip.on { background:#1f3050; color:#58a6ff; }
+  /* ── Scrollbars ─────────────────────────────────────────────────────────── */
+  ::-webkit-scrollbar { width: 4px; height: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgba(255,255,255,.12); border-radius: 2px; }
+  ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,.2); }
 
-  /* Diff */
-  .diff-pre { font-size:10px; line-height:1.55; white-space:pre; overflow-x:auto; }
-  .d-add  { color:#3fb950; } .d-del { color:#f85149; }
-  .d-hunk { color:#79c0ff; } .d-meta { color:#6e7681; }
+  /* ── Cards ──────────────────────────────────────────────────────────────── */
+  .card {
+    background: var(--bg-card);
+    border-radius: var(--r-lg);
+    box-shadow: var(--shadow-card);
+    transition: box-shadow var(--t-base), transform var(--t-base);
+  }
+  .card-p { padding: var(--sp-2); }
+  .card:hover { box-shadow: var(--shadow-elev); }
+  .card-interactive { cursor: pointer; }
+  .card-interactive:hover { transform: translateY(-2px); }
 
-  /* Resource bars */
-  .res-bg   { background:#21262d; border-radius:3px; height:4px; overflow:hidden; }
-  .res-fill { height:100%; border-radius:3px; transition:width .6s ease; }
-  .cpu-fill { background:linear-gradient(90deg,#58a6ff,#79c0ff); }
-  .ram-fill { background:linear-gradient(90deg,#bc8cff,#d2a8ff); }
+  /* ── Section headers ────────────────────────────────────────────────────── */
+  .section-hdr {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 12px;
+  }
 
-  /* kbd */
-  .kbd { display:inline-block; background:#21262d; border:1px solid #30363d;
-         border-radius:4px; padding:2px 6px; font-size:11px; color:#c9d1d9; }
+  /* ── Dividers ───────────────────────────────────────────────────────────── */
+  .divider { border-color: var(--border-muted); }
 
-  /* Modal overlay */
-  .modal-bg { backdrop-filter:blur(4px); }
+  /* ── Badges / chips ─────────────────────────────────────────────────────── */
+  .badge {
+    display: inline-flex; align-items: center;
+    height: 20px; padding: 0 6px; border-radius: var(--r-sm);
+    font-size: 11px; font-weight: 600; font-family: var(--font-ui);
+    line-height: 1; white-space: nowrap;
+  }
+  .badge-success { background: var(--tint-success); color: #4ade80; }
+  .badge-warn    { background: var(--tint-warn);    color: #fb923c; }
+  .badge-danger  { background: var(--tint-danger);  color: #f87171; }
+  .badge-info    { background: var(--tint-info);    color: #60a5fa; }
+  .badge-muted   { background: rgba(255,255,255,.06); color: var(--text-muted); }
+  .badge-inprog  { background: rgba(0,101,255,.15); color: #60a5fa; }
 
-  /* Executor live ring */
-  @keyframes spin { to { transform:rotate(360deg); } }
-  .spin { animation:spin 1s linear infinite; }
+  /* ── Buttons ────────────────────────────────────────────────────────────── */
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    font-family: var(--font-ui); font-weight: 500;
+    border: none; cursor: pointer; transition: all var(--t-fast);
+    border-radius: var(--r-sm); white-space: nowrap;
+    outline: none;
+  }
+  .btn:focus-visible { box-shadow: var(--shadow-focus); }
+  .btn:active { transform: scale(.98); filter: brightness(.9); }
+  .btn:disabled { opacity: .38; cursor: not-allowed; pointer-events: none; }
 
-  /* Rec cards */
-  .rec-card { transition:border-color .2s, transform .15s; }
-  .rec-card:hover { border-color:#58a6ff60; transform:translateY(-1px); }
+  .btn-md { height: 32px; padding: 0 12px; font-size: 13px; }
+  .btn-lg { height: 40px; padding: 0 16px; font-size: 14px; }
+  .btn-sm { height: 24px; padding: 0 8px;  font-size: 11px; }
 
-  /* Commit filter btn */
-  .cf-btn { border-radius:4px; padding:2px 8px; font-size:10px;
-            background:#21262d; color:#6e7681; cursor:pointer; transition:background .15s; }
-  .cf-btn.on { background:#1f3050; color:#58a6ff; }
+  .btn-primary { background: var(--clr-accent);   color: #fff; }
+  .btn-primary:hover { background: var(--clr-inprog); }
+  .btn-success { background: var(--clr-success);  color: #fff; box-shadow: 0 0 12px rgba(0,135,90,.35); }
+  .btn-success:hover { filter: brightness(1.12); }
+  .btn-danger  { background: var(--clr-danger);   color: #fff; }
+  .btn-danger:hover  { filter: brightness(1.1); }
+  .btn-subtle  { background: var(--bg-subtle); color: var(--text-secondary); }
+  .btn-subtle:hover  { background: rgba(255,255,255,.08); }
+  .btn-ghost   { background: transparent; color: var(--text-muted); border: 1px solid var(--border-default); }
+  .btn-ghost:hover   { border-color: var(--border-hover); color: var(--text-primary); }
+  .btn-warn    { background: var(--clr-warn); color: #000; font-weight: 600; box-shadow: 0 0 14px rgba(255,153,31,.4); }
+  .btn-warn:hover { filter: brightness(1.08); }
 
-  /* Python syntax */
-  .py-kw { color:#ff7b72; }
-  .py-str { color:#a5d6ff; }
-  .py-cmt { color:#6e7681; font-style:italic; }
-  .py-dec { color:#d2a8ff; }
-  .py-num { color:#f8c555; }
+  /* ── Progress bars ──────────────────────────────────────────────────────── */
+  .prog-track { background: rgba(255,255,255,.07); border-radius: 999px; overflow: hidden; }
+  .prog-track-sm  { height: 4px; }
+  .prog-track-md  { height: 6px; }
+  .prog-track-lg  { height: 8px; }
+  .prog-fill  { height: 100%; border-radius: 999px; transition: width .65s cubic-bezier(.4,0,.2,1); }
+  .prog-success { background: linear-gradient(90deg, #00875A, #00a86b); }
+  .prog-warn    { background: linear-gradient(90deg, #FF991F, #ffb347); }
+  .prog-info    { background: linear-gradient(90deg, #0052CC, #0065FF); }
+  .prog-amber   { background: linear-gradient(90deg, #d97706, #f59e0b); }
+  .prog-cpu     { background: linear-gradient(90deg, #0052CC, #0065FF); }
+  .prog-ram     { background: linear-gradient(90deg, #7c3aed, #9f67fa); }
+
+  /* ── Tabs ───────────────────────────────────────────────────────────────── */
+  .tab-btn {
+    font-family: var(--font-ui); font-size: 13px; font-weight: 500;
+    color: var(--text-muted); padding: 0 14px; height: 100%;
+    border-bottom: 2px solid transparent;
+    transition: color var(--t-fast), border-color var(--t-fast);
+    cursor: pointer; background: none; border-top: none; border-left: none; border-right: none;
+  }
+  .tab-btn:hover { color: var(--text-secondary); }
+  .tab-btn.active { color: var(--text-primary); border-bottom-color: var(--clr-accent); }
+
+  /* ── Ring SVG ───────────────────────────────────────────────────────────── */
+  .ring-track { fill: none; stroke: rgba(255,255,255,.06); }
+  .ring-fill  { fill: none; stroke-linecap: round; transition: stroke-dashoffset .85s cubic-bezier(.4,0,.2,1); }
+
+  /* ── Animations ─────────────────────────────────────────────────────────── */
+  @keyframes pulse  { 0%,100%{opacity:1} 50%{opacity:.3} }
+  @keyframes spin   { to { transform: rotate(360deg); } }
+  @keyframes fadein { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:none} }
+  @keyframes tin    { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:none} }
+  @keyframes tout   { to{opacity:0;transform:translateY(12px)} }
+  @keyframes numcount { from{opacity:0;transform:scale(.8)} to{opacity:1;transform:none} }
+  @keyframes shimmer {
+    0%   { background-position: -200% center; }
+    100% { background-position:  200% center; }
+  }
+
+  .pulse  { animation: pulse  2s ease-in-out infinite; }
+  .spin   { animation: spin   .9s linear infinite; }
+  .fadein { animation: fadein .3s ease; }
+  .toast  { animation: tin .3s ease, tout .3s ease 2.7s forwards; }
+
+  .num-anim { animation: numcount .35s cubic-bezier(.34,1.56,.64,1); }
+
+  /* Skeleton loading */
+  .skeleton {
+    background: linear-gradient(90deg, rgba(255,255,255,.04) 25%, rgba(255,255,255,.08) 50%, rgba(255,255,255,.04) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.6s infinite;
+    border-radius: var(--r-sm);
+  }
+
+  /* ── Table rows ─────────────────────────────────────────────────────────── */
+  .row-hover { transition: background var(--t-fast); }
+  .row-hover:hover { background: var(--bg-subtle); }
+
+  /* ── Cat bars ───────────────────────────────────────────────────────────── */
+  .cat-row {
+    cursor: pointer; border-radius: var(--r-sm);
+    padding: 4px 6px; transition: background var(--t-fast);
+  }
+  .cat-row:hover { background: var(--bg-subtle); }
+  .cat-row.sel   { background: var(--tint-info); outline: 1px solid rgba(0,82,204,.3); }
+
+  /* ── File chips ─────────────────────────────────────────────────────────── */
+  .chip {
+    display: inline-block; font-size: 11px; padding: 2px 6px;
+    border-radius: var(--r-sm); background: rgba(255,255,255,.06);
+    color: var(--text-muted); cursor: pointer;
+    transition: background var(--t-fast), color var(--t-fast);
+    font-family: var(--font-mono);
+  }
+  .chip:hover, .chip.on { background: var(--tint-info); color: #60a5fa; }
+
+  /* ── Diff viewer ────────────────────────────────────────────────────────── */
+  .diff-pre { font-size: 11px; line-height: 1.6; white-space: pre; overflow-x: auto;
+              font-family: var(--font-mono); }
+  .d-add  { color: #4ade80; }
+  .d-del  { color: #f87171; }
+  .d-hunk { color: #60a5fa; }
+  .d-meta { color: var(--text-muted); }
+
+  /* ── Resource bars ──────────────────────────────────────────────────────── */
+  .res-bg   { background: rgba(255,255,255,.07); border-radius: 999px; height: 4px; overflow: hidden; }
+  .res-fill { height: 100%; border-radius: 999px; transition: width .6s ease; }
+  .cpu-fill { background: linear-gradient(90deg, #0052CC, #0065FF); }
+  .ram-fill { background: linear-gradient(90deg, #7c3aed, #9f67fa); }
+
+  /* ── Kbd ────────────────────────────────────────────────────────────────── */
+  .kbd {
+    display: inline-block; background: rgba(255,255,255,.06);
+    border: 1px solid rgba(255,255,255,.12);
+    border-radius: var(--r-sm); padding: 2px 7px;
+    font-size: 11px; color: var(--text-secondary);
+    font-family: var(--font-mono);
+  }
+
+  /* ── Modal ──────────────────────────────────────────────────────────────── */
+  .modal-bg { backdrop-filter: blur(6px); }
+  .modal-box {
+    background: var(--bg-card);
+    border-radius: var(--r-xl);
+    box-shadow: var(--shadow-modal);
+    border: 1px solid var(--border-default);
+  }
+
+  /* ── Rec cards ──────────────────────────────────────────────────────────── */
+  .rec-card {
+    background: var(--bg-inset);
+    border: 1px solid var(--border-muted);
+    border-radius: var(--r-md);
+    transition: border-color var(--t-base), transform var(--t-base), box-shadow var(--t-base);
+  }
+  .rec-card:hover {
+    border-color: rgba(0,82,204,.4);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0,0,0,.3);
+  }
+
+  /* ── Commit filter btns ─────────────────────────────────────────────────── */
+  .cf-btn {
+    border-radius: var(--r-sm); padding: 3px 10px; font-size: 11px; font-weight: 500;
+    background: rgba(255,255,255,.05); color: var(--text-muted);
+    cursor: pointer; transition: background var(--t-fast), color var(--t-fast);
+    font-family: var(--font-ui); border: 1px solid transparent;
+  }
+  .cf-btn:hover { background: var(--bg-subtle); color: var(--text-secondary); }
+  .cf-btn.on    { background: var(--tint-info); color: #60a5fa; border-color: rgba(0,82,204,.3); }
+
+  /* ── Training button states ─────────────────────────────────────────────── */
+  #train-btn { transition: all var(--t-base); }
+  #train-btn:disabled { opacity: .35; cursor: not-allowed; pointer-events: none; }
+
+  /* ── Hero stat numbers ──────────────────────────────────────────────────── */
+  .stat-num {
+    font-family: var(--font-num);
+    font-feature-settings: "tnum";
+    font-variant-numeric: tabular-nums;
+    font-weight: 700; line-height: 1;
+  }
+
+  /* ── Input ──────────────────────────────────────────────────────────────── */
+  input[type=text], input:not([type]) {
+    background: var(--bg-inset);
+    border: 1px solid var(--border-default);
+    border-radius: var(--r-sm);
+    color: var(--text-primary);
+    font-family: var(--font-ui); font-size: 13px;
+    padding: 4px 10px; height: 32px;
+    transition: border-color var(--t-fast), box-shadow var(--t-fast);
+    outline: none;
+  }
+  input:focus {
+    border-color: var(--border-focus);
+    box-shadow: var(--shadow-focus);
+  }
+
+  /* ── Monospace areas ────────────────────────────────────────────────────── */
+  .mono { font-family: var(--font-mono); }
+
+  /* ── Accessibility ──────────────────────────────────────────────────────── */
+  .sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px;
+             overflow:hidden; clip:rect(0,0,0,0); border:0; }
+  :focus-visible { outline: 2px solid var(--clr-accent); outline-offset: 2px; }
+
+  @media (max-width: 768px) { .desktop { display: none !important; } }
 
   /* Training button states */
   #train-btn { transition:all .3s; }
@@ -151,11 +400,12 @@ tailwind.config = { theme: { extend: { colors: {
       Waiting for output…
     </div>
 
-    <div class="mt-4 flex justify-between items-center">
-      <p id="tm-status" class="text-xs text-gray-500"></p>
-      <button onclick="closeTrainModal()" class="text-xs text-gray-500 hover:text-white px-3 py-1 rounded border border-[#21262d] hover:border-gray-500 transition">
-        Close
+    <div class="mt-4 flex justify-between items-center gap-3">
+      <p id="tm-status" style="font-size:12px;color:var(--text-muted);flex:1;"></p>
+      <button id="tm-deploy" onclick="deployModel()" class="btn btn-md btn-success hidden">
+        🚀 Deploy to Ollama
       </button>
+      <button onclick="closeTrainModal()" class="btn btn-md btn-ghost">Close</button>
     </div>
   </div>
 </div>
@@ -163,24 +413,27 @@ tailwind.config = { theme: { extend: { colors: {
 <!-- ══════════════════════════════════════════════════════════════════════════
      HEADER
 ════════════════════════════════════════════════════════════════════════════ -->
-<header class="border-b border-[#21262d] sticky top-0 z-40 bg-[#0d1117]/95 backdrop-blur">
-  <div class="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between">
+<header style="border-bottom:1px solid var(--border-muted);background:rgba(13,17,23,.94);backdrop-filter:blur(12px);"
+        class="sticky top-0 z-40">
+  <div class="max-w-7xl mx-auto px-6 flex items-center justify-between" style="height:56px;">
     <div class="flex items-center gap-3">
-      <div id="hdr-dot" class="w-2 h-2 rounded-full bg-gray-600"></div>
-      <span class="text-sm font-semibold text-white">AI Platform</span>
-      <span class="text-xs text-gray-600 desktop">Control Plane</span>
+      <div id="hdr-dot" style="width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.2);flex-shrink:0;transition:background .3s;"></div>
+      <span style="font-size:14px;font-weight:600;color:var(--text-primary);letter-spacing:-.01em;">AI Platform</span>
+      <span class="desktop" style="font-size:12px;color:var(--text-muted);">Control Plane</span>
     </div>
-    <nav class="flex items-center gap-0.5">
-      <button onclick="setTab('overview')"     class="tab-btn active  px-3 py-1 text-xs" id="tab-overview">Overview</button>
-      <button onclick="setTab('roadmap')"      class="tab-btn        px-3 py-1 text-xs" id="tab-roadmap">Roadmap</button>
-      <button onclick="setTab('analytics')"    class="tab-btn        px-3 py-1 text-xs" id="tab-analytics">Analytics</button>
-      <button onclick="setTab('logs')"         class="tab-btn        px-3 py-1 text-xs" id="tab-logs">Logs</button>
-      <button onclick="setTab('controls')"     class="tab-btn        px-3 py-1 text-xs" id="tab-controls">Controls</button>
+    <nav class="flex items-center h-full">
+      <button onclick="setTab('overview')"  class="tab-btn active" id="tab-overview">Overview</button>
+      <button onclick="setTab('roadmap')"   class="tab-btn"        id="tab-roadmap">Roadmap</button>
+      <button onclick="setTab('analytics')" class="tab-btn"        id="tab-analytics">Analytics</button>
+      <button onclick="setTab('logs')"      class="tab-btn"        id="tab-logs">Logs</button>
+      <button onclick="setTab('controls')"  class="tab-btn"        id="tab-controls">Controls</button>
     </nav>
-    <div class="flex items-center gap-2">
-      <span id="hdr-status" class="text-xs text-gray-500">connecting</span>
-      <span id="hdr-time"   class="text-xs text-gray-600 desktop"></span>
-      <button onclick="showSC()" class="text-gray-600 hover:text-gray-300 text-xs px-1" title="Shortcuts (?)">?</button>
+    <div class="flex items-center gap-3">
+      <span id="hdr-status" style="font-size:12px;color:var(--text-muted);">connecting</span>
+      <span id="hdr-time" class="desktop" style="font-size:12px;color:var(--text-disabled);font-family:var(--font-mono);"></span>
+      <button onclick="showSC()" aria-label="Show keyboard shortcuts"
+              style="color:var(--text-muted);font-size:13px;font-weight:600;padding:4px 8px;border-radius:var(--r-sm);background:rgba(255,255,255,.05);border:1px solid var(--border-muted);cursor:pointer;"
+              onmouseover="this.style.background='rgba(255,255,255,.09)'" onmouseout="this.style.background='rgba(255,255,255,.05)'">?</button>
     </div>
   </div>
 </header>
@@ -365,11 +618,10 @@ tailwind.config = { theme: { extend: { colors: {
         <p id="t-eta" class="text-xs text-gray-600 border-t border-[#21262d] pt-2 mb-3"></p>
 
         <button id="train-btn" onclick="startTraining()" disabled
-          class="w-full py-2.5 rounded-xl text-sm font-semibold transition
-                 border border-gray-700 text-gray-500 bg-transparent cursor-not-allowed">
+          class="btn btn-lg btn-ghost w-full" style="width:100%">
           🎓 Start Fine-Tuning
         </button>
-        <p id="t-btn-note" class="text-[10px] text-gray-600 text-center mt-1">Need 10 quality examples first</p>
+        <p id="t-btn-note" style="font-size:11px;color:var(--text-disabled);text-align:center;margin-top:6px;">Need 10 quality examples first</p>
       </div>
 
       <!-- System health -->
@@ -602,26 +854,56 @@ function setTab(name) {
   if (name === 'analytics')                 renderCharts();
 }
 
-// ── Training modal ────────────────────────────────────────────────────────────
+// ── Training lifecycle ────────────────────────────────────────────────────────
 let trainingPollTimer = null;
+let _trainingDone     = false;
+let _trainingPid      = 0;
+
+const TRAIN_STATES = {
+  disabled: { cls:'btn btn-lg btn-ghost w-full', text:'🎓 Start Fine-Tuning', note:'Need 10 quality examples first' },
+  ready:    { cls:'btn btn-lg btn-warn w-full pulse',    text:'🎓 Start Fine-Tuning — Ready!',  note:'Ready to fine-tune!' },
+  running:  { cls:'btn btn-lg w-full', text:'⏳ Training… (click to view progress)', note:'Training in progress' },
+  trained:  { cls:'btn btn-lg btn-success w-full', text:'✅ Model Trained — Deploy', note:'Click to deploy to Ollama' },
+};
+
+function setTrainState(state, extraNote='') {
+  const btn  = $('train-btn');
+  const note = $('t-btn-note');
+  const s = TRAIN_STATES[state];
+  if (!s) return;
+  btn.className = s.cls;
+  btn.textContent = s.text;
+  note.textContent = extraNote || s.note;
+  btn.disabled = (state === 'disabled');
+  if (state === 'trained') {
+    btn.onclick = deployModel;
+  } else if (state === 'running') {
+    btn.onclick = () => $('train-modal').classList.remove('hidden');
+  } else {
+    btn.onclick = startTraining;
+  }
+}
 
 async function startTraining() {
-  const btn = $('train-btn');
-  btn.disabled = true;
   $('train-modal').classList.remove('hidden');
   $('tm-spinner').classList.remove('hidden');
   $('tm-title').textContent = 'Starting Fine-Tuning…';
   $('tm-status').textContent = '';
+  setBar('tm-prog', 0); $('tm-pct').textContent = '0%';
+  $('tm-step-lbl').textContent = 'Preparing…';
+  $('tm-deploy').classList.add('hidden');
 
   try {
-    const res = await fetch('/api/train', {method:'POST', headers:{'Content-Type':'application/json'}, body:'{}'});
+    const res  = await fetch('/api/train', {method:'POST', headers:{'Content-Type':'application/json'}, body:'{}'});
     const data = await res.json();
     if (data.ok) {
-      $('tm-title').textContent = `Training running (PID ${data.pid})`;
-      toast('Training started', 'ok');
-      trainingPollTimer = setInterval(pollTraining, 2000);
+      _trainingPid = data.pid || 0;
+      $('tm-title').textContent = `Training (PID ${data.pid}) — est. ${data.estimated_minutes || '~45'} min`;
+      toast('Fine-tuning started', 'ok');
+      setTrainState('running');
+      trainingPollTimer = setInterval(pollTraining, 5000);
     } else {
-      $('tm-title').textContent = 'Error';
+      $('tm-title').textContent = 'Cannot start training';
       $('tm-status').textContent = data.message;
       $('tm-spinner').classList.add('hidden');
       toast(data.message, 'err');
@@ -635,41 +917,63 @@ async function startTraining() {
 
 async function pollTraining() {
   try {
-    const res = await fetch('/api/train/status');
-    const d = await res.json();
-    const lines = (d.lines || []).join('\n');
+    const res = await fetch('/api/training/status');
+    const d   = await res.json();
+
+    // Log tail
+    const lines = (d.log_tail || d.lines || []).join('\n');
     $('tm-log').textContent = lines || 'Waiting for output…';
     $('tm-log').scrollTop = $('tm-log').scrollHeight;
 
+    // Progress
     if (d.total_steps > 0) {
-      const p = pct(d.step, d.total_steps);
+      const p = d.progress_percent || pct(d.step, d.total_steps);
       setBar('tm-prog', p);
       $('tm-pct').textContent = p + '%';
-      $('tm-step-lbl').textContent = `Step ${d.step} / ${d.total_steps}`;
+      $('tm-step-lbl').textContent = `${d.current_step || 'Training'} — step ${d.step}/${d.total_steps}`;
+      if (d.eta_minutes) $('tm-status').textContent = `~${d.eta_minutes} min remaining`;
+    } else if (d.is_running) {
+      $('tm-step-lbl').textContent = d.current_step || 'Preparing…';
     }
 
-    if (!d.running) {
+    if (!d.is_running) {
       clearInterval(trainingPollTimer);
       trainingPollTimer = null;
       $('tm-spinner').classList.add('hidden');
       if (d.done) {
-        $('tm-title').textContent = '✅ Training Complete';
-        $('tm-status').textContent = 'Model trained! Deploy as qwen2.5-coder:custom';
+        _trainingDone = true;
+        $('tm-title').textContent = '✅ Fine-Tuning Complete';
+        $('tm-status').textContent = 'Model trained! Ready to deploy as qwen2.5-coder:custom';
         setBar('tm-prog', 100);
         $('tm-pct').textContent = '100%';
-        toast('Fine-tuning complete!', 'ok');
+        $('tm-deploy').classList.remove('hidden');
+        setTrainState('trained');
+        toast('Fine-tuning complete! Ready to deploy.', 'ok');
       } else {
         $('tm-title').textContent = 'Training stopped';
+        setTrainState('ready');
       }
     }
-  } catch(e) { /* server might be busy */ }
+  } catch(e) { /* server busy */ }
+}
+
+async function deployModel() {
+  $('tm-status').textContent = 'Deploying to Ollama…';
+  try {
+    const res  = await fetch('/api/model/deploy', {method:'POST', headers:{'Content-Type':'application/json'}, body:'{}'});
+    const data = await res.json();
+    $('tm-status').textContent = data.message;
+    if (data.ok) {
+      $('train-modal').classList.remove('hidden');
+      toast('qwen2.5-coder:custom deployed!', 'ok');
+    } else {
+      toast(data.message, 'err');
+    }
+  } catch(e) { toast('Server unreachable', 'err'); }
 }
 
 function closeTrainModal() {
   $('train-modal').classList.add('hidden');
-  if (!trainingPollTimer) {
-    $('train-btn').disabled = false;
-  }
 }
 
 // ── Executor live status (2-second poll) ──────────────────────────────────────
@@ -1083,7 +1387,9 @@ function render(d) {
 
   // Header
   const run = sys.executor_running || ex.is_running;
-  $('hdr-dot').className     = `w-2 h-2 rounded-full ${run ? 'bg-emerald-400 pulse' : 'bg-gray-600'}`;
+  $('hdr-dot').style.background = run ? '#00875A' : 'rgba(255,255,255,.18)';
+  $('hdr-dot').style.boxShadow  = run ? '0 0 8px #00875A' : 'none';
+  if (run) $('hdr-dot').classList.add('pulse'); else $('hdr-dot').classList.remove('pulse');
   $('hdr-status').textContent = run ? 'executor running' : 'idle';
   $('hdr-time').textContent   = new Date().toLocaleTimeString();
 
@@ -1135,17 +1441,17 @@ function render(d) {
     ? '✓ SFT threshold reached — ready to fine-tune!'
     : `${need} more examples for SFT (~${etaMin} min at current pace)`;
 
-  const btn = $('train-btn');
-  const note = $('t-btn-note');
-  if (qual >= (tr.sft_threshold||10) && !trainingPollTimer) {
-    btn.disabled = false;
-    btn.className = 'w-full py-2.5 rounded-xl text-sm font-semibold transition bg-amber-600 hover:bg-amber-500 text-white glow-amber';
-    note.textContent = 'Ready to fine-tune!';
-  } else if (!trainingPollTimer) {
-    btn.disabled = true;
-    btn.className = 'w-full py-2.5 rounded-xl text-sm font-semibold transition border border-gray-700 text-gray-500 bg-transparent cursor-not-allowed';
-    note.textContent = `Need ${need} more examples`;
+  // Training button state machine
+  if (!trainingPollTimer && !_trainingDone) {
+    if (qual >= (tr.sft_threshold||10)) {
+      setTrainState('ready');
+    } else {
+      setTrainState('disabled', `Need ${need} more examples`);
+    }
+  } else if (_trainingDone) {
+    setTrainState('trained');
   }
+  // If trainingPollTimer active, stay in 'running' state
 
   // System
   const oll = sys.ollama_available;
@@ -1267,7 +1573,9 @@ async function refresh() {
     render(await res.json());
     if (currentTab === 'logs') loadLog();
   } catch(e) {
-    $('hdr-dot').className     = 'w-2 h-2 rounded-full bg-red-500 pulse';
+    $('hdr-dot').style.background = '#DE350B';
+    $('hdr-dot').style.boxShadow  = '0 0 8px #DE350B';
+    $('hdr-dot').classList.add('pulse');
     $('hdr-status').textContent = 'server unreachable';
   }
 }
