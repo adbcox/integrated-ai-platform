@@ -4,7 +4,7 @@
 - **Title:** Cross-platform mobile companion app for platform control and monitoring
 - **Category:** `UI`
 - **Type:** `Feature`
-- **Status:** `Planned`
+- **Status:** `In progress`
 - **Maturity:** `M0`
 - **Priority:** `High`
 - **Priority class:** `P2`
