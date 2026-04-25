@@ -1,43 +1,103 @@
 #!/usr/bin/env python3
 """End-to-end training cycle: collect → format → train → evaluate.
 
-PREREQUISITES:
-    pip install torch transformers peft datasets accelerate bitsandbytes
+ISOLATION: Training deps (torch, transformers, peft) live in ~/training-env,
+isolated from aider's uv environment. This script auto-detects and uses the
+venv; it creates the venv and installs deps if they're missing.
 
-Apple Silicon note: MPS is auto-detected. No CUDA needed.
+Aider runs via uv (/Users/admin/.local/share/uv/tools/aider-chat/). The
+system Python 3.9 (pip3) is NOT used for training — never install training
+libs there.
 
 The base model (Qwen2.5-Coder-7B-Instruct) is downloaded from HuggingFace
-on first run (~14 GB). Set HF_HOME to control the cache location.
+on first run (~14 GB). Set HF_HOME to control cache location.
 
 Usage:
     # Full cycle (collect + train + eval)
     python3 bin/run_training_cycle.py
 
+    # Collect only — works without any ML deps
+    python3 bin/run_training_cycle.py --collect-only
+
     # Use pre-collected data
     python3 bin/run_training_cycle.py --data artifacts/training_data/alpaca.jsonl
 
-    # Collect only (no training)
-    python3 bin/run_training_cycle.py --collect-only
-
-    # Train only (data already collected)
+    # Train only
     python3 bin/run_training_cycle.py --train-only --data artifacts/training_data/alpaca.jsonl
 
-    # Export trained adapter to GGUF for Ollama (requires llama.cpp)
+    # Export to GGUF for Ollama (requires llama.cpp)
     python3 bin/run_training_cycle.py --export-gguf --adapter artifacts/lora_adapter/adapter
+
+    # Activate venv manually for debugging:
+    source ~/training-env/bin/activate
 """
 from __future__ import annotations
 
 import argparse
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).parent.parent
+VENV_DIR = Path.home() / "training-env"
+VENV_PYTHON = VENV_DIR / "bin" / "python"
+TRAINING_DEPS = ["torch", "transformers", "peft", "datasets", "accelerate"]
+
 sys.path.insert(0, str(REPO_ROOT))
 
 
+def _ensure_venv() -> bool:
+    """Create ~/training-env if missing and install training deps."""
+    if not VENV_DIR.exists():
+        print(f"Creating isolated training venv at {VENV_DIR} ...")
+        # Use Python 3.12 from brew for best torch/MPS compatibility
+        python_bin = "/opt/homebrew/bin/python3.12"
+        if not Path(python_bin).exists():
+            python_bin = sys.executable  # fallback to current interpreter
+        result = subprocess.run([python_bin, "-m", "venv", str(VENV_DIR)])
+        if result.returncode != 0:
+            print(f"Failed to create venv. Try: {python_bin} -m venv ~/training-env")
+            return False
+        print(f"Venv created with {python_bin}")
+
+    # Check which deps are missing inside the venv
+    missing = []
+    for pkg in TRAINING_DEPS:
+        check = subprocess.run(
+            [str(VENV_PYTHON), "-c", f"import {pkg.replace('-', '_')}"],
+            capture_output=True,
+        )
+        if check.returncode != 0:
+            missing.append(pkg)
+
+    if missing:
+        print(f"Installing into venv: {', '.join(missing)}")
+        print("(torch is ~2 GB — first install takes a few minutes)")
+        result = subprocess.run(
+            [str(VENV_DIR / "bin" / "pip"), "install", "--quiet", *missing]
+        )
+        if result.returncode != 0:
+            print("Install failed. Check network / disk space.")
+            return False
+        print("Done installing.")
+
+    return True
+
+
+def _relaunch_in_venv() -> None:
+    """If not already running in the training venv, re-exec inside it."""
+    if sys.executable == str(VENV_PYTHON):
+        return  # already in venv
+    if not VENV_PYTHON.exists():
+        return  # venv not created yet — let _ensure_venv handle it
+    # Re-execute this script under the venv's Python
+    os.execv(str(VENV_PYTHON), [str(VENV_PYTHON)] + sys.argv)
+
+
 def _check_training_deps() -> bool:
+    """Check training deps are available in the current interpreter."""
     missing = []
     for pkg in ("torch", "transformers", "peft", "datasets"):
         try:
@@ -45,8 +105,8 @@ def _check_training_deps() -> bool:
         except ImportError:
             missing.append(pkg)
     if missing:
-        print(f"Missing packages: {', '.join(missing)}")
-        print(f"Install: pip install {' '.join(missing)} accelerate bitsandbytes")
+        print(f"Missing in current env: {', '.join(missing)}")
+        print(f"Run: {VENV_PYTHON} {' '.join(sys.argv)}")
         return False
     return True
 
@@ -170,11 +230,12 @@ def main() -> int:
     parser.add_argument("--export-gguf", action="store_true")
     parser.add_argument("--adapter", help="Path to trained adapter (for --export-gguf or --evaluate)")
     parser.add_argument("--out-dir", default=str(REPO_ROOT / "artifacts" / "training_data"))
+    parser.add_argument("--no-venv", action="store_true", help="Skip venv isolation (advanced)")
     args = parser.parse_args()
 
     out_dir = Path(args.out_dir)
 
-    # Collect
+    # Collect — works without ML deps; always runs in current interpreter
     if args.data:
         data_path = Path(args.data)
     else:
@@ -185,9 +246,15 @@ def main() -> int:
     if args.collect_only:
         return 0
 
-    # Train
+    # Training requires ML deps — ensure venv and re-exec inside it
+    if not args.no_venv:
+        if not _ensure_venv():
+            return 1
+        _relaunch_in_venv()  # re-execs under venv Python if not already there
+
     if not _check_training_deps():
-        print("\nInstall training dependencies first, then re-run.")
+        print("\nDeps not available in current interpreter.")
+        print(f"Run directly: {VENV_PYTHON} {Path(__file__).name} {' '.join(sys.argv[1:])}")
         return 1
 
     adapter_path = None

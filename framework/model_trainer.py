@@ -1,22 +1,23 @@
 """LoRA fine-tuning of a local Qwen2.5-Coder model.
 
-PREREQUISITES (must install before this module works):
-    pip install torch transformers peft datasets accelerate bitsandbytes
+ISOLATION: This module must run inside ~/training-env, NOT system Python 3.9
+or aider's uv environment. run_training_cycle.py auto-handles this via
+_ensure_venv() + _relaunch_in_venv(). Do not import this from other modules
+that run in the system Python path.
 
-For Apple Silicon (faster training via MPS):
-    pip install torch --index-url https://download.pytorch.org/whl/cpu
-    # MPS is auto-detected; no CUDA needed
+Dependency boundary:
+  aider     → uv isolated env (/Users/admin/.local/share/uv/tools/aider-chat/)
+  training  → ~/training-env (Python 3.12, torch + peft + transformers)
+  executor  → system Python 3.9 (no ML deps — just requests, yaml, pathlib)
 
-The base model must be downloaded from HuggingFace, NOT from Ollama.
-Ollama uses GGUF (quantized inference format) which cannot be LoRA-trained.
+The base model must come from HuggingFace, NOT from Ollama.
+Ollama distributes GGUF (quantized inference format) which cannot be LoRA-trained.
+HuggingFace weights: Qwen/Qwen2.5-Coder-7B-Instruct (~14 GB, bf16).
+Downloaded automatically by transformers on first use.
 
-    from huggingface_hub import snapshot_download
-    snapshot_download("Qwen/Qwen2.5-Coder-7B-Instruct", local_dir="~/.cache/qwen25-coder-7b")
-
-Disk space: ~14 GB for 7B model in bf16.
-
-After training, to use with Ollama:
-    python3 bin/run_training_cycle.py --export-gguf   # requires llama.cpp
+After training, to load into Ollama:
+    python3 bin/run_training_cycle.py --export-gguf --adapter artifacts/lora_adapter/adapter
+    ollama create qwen25-coder-finetuned -f artifacts/lora_adapter/Modelfile
 """
 from __future__ import annotations
 
