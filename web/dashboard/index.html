@@ -336,11 +336,13 @@ tailwind.config = { theme: { extend: { colors: {
 
   /* ── Command Palette ─────────────────────────────────────────────────────── */
   #cmd-palette {
+    display:none; /* default hidden — JS sets display:flex to open */
     position:fixed; inset:0; z-index:70;
-    display:flex; align-items:flex-start; justify-content:center;
+    align-items:flex-start; justify-content:center;
     padding-top:14vh;
     background:rgba(0,0,0,.6); backdrop-filter:blur(8px);
   }
+  #cmd-palette.cmd-open { display:flex; }
   .cmd-box {
     background:var(--bg-card); border:1px solid var(--border-hover);
     border-radius:var(--r-xl); width:100%; max-width:560px;
@@ -448,7 +450,7 @@ tailwind.config = { theme: { extend: { colors: {
 <!-- ══════════════════════════════════════════════════════════════════════════
      COMMAND PALETTE  (/ or Ctrl+K)
 ════════════════════════════════════════════════════════════════════════════ -->
-<div id="cmd-palette" class="hidden" onclick="closeCmdPalette()">
+<div id="cmd-palette" onclick="closeCmdPalette()">
   <div class="cmd-box fadein" onclick="event.stopPropagation()">
     <div class="cmd-input-row">
       <span style="color:var(--text-muted);font-size:16px;">⌘</span>
@@ -979,7 +981,7 @@ tailwind.config = { theme: { extend: { colors: {
 ════════════════════════════════════════════════════════════════════════════ -->
 <div id="pane-media" class="hidden space-y-4">
 
-  <!-- ── Service health cards (6 services) ──────────────────────────────── -->
+  <!-- ── Service health cards ──────────────────────────────────────────────── -->
   <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
 
     <!-- Sonarr -->
@@ -989,15 +991,9 @@ tailwind.config = { theme: { extend: { colors: {
         <span class="text-xs font-semibold text-white">Sonarr</span>
         <span id="media-lbl-sonarr" class="text-[10px] text-gray-600 ml-auto">—</span>
       </div>
-      <div class="flex justify-between text-[11px] text-gray-500">
-        <span>Series</span><span id="media-sonarr-series" class="text-white font-bold">—</span>
-      </div>
-      <div class="flex justify-between text-[11px] text-gray-500">
-        <span>Upcoming</span><span id="media-upcoming-count" class="text-white">—</span>
-      </div>
-      <div class="flex justify-between text-[11px] text-gray-500">
-        <span>Queue</span><span id="media-sonarr-queue" class="text-white">—</span>
-      </div>
+      <div class="flex justify-between text-[11px] text-gray-500"><span>Series</span><span id="media-sonarr-series" class="text-white font-bold">—</span></div>
+      <div class="flex justify-between text-[11px] text-gray-500"><span>Upcoming 7d</span><span id="media-upcoming-count" class="text-white">—</span></div>
+      <div class="flex justify-between text-[11px] text-gray-500"><span>Queue</span><span id="media-sonarr-queue" class="text-white">—</span></div>
     </div>
 
     <!-- Radarr -->
@@ -1007,15 +1003,9 @@ tailwind.config = { theme: { extend: { colors: {
         <span class="text-xs font-semibold text-white">Radarr</span>
         <span id="media-lbl-radarr" class="text-[10px] text-gray-600 ml-auto">—</span>
       </div>
-      <div class="flex justify-between text-[11px] text-gray-500">
-        <span>Total</span><span id="media-movies-total" class="text-white font-bold">—</span>
-      </div>
-      <div class="flex justify-between text-[11px] text-gray-500">
-        <span>Downloaded</span><span id="media-movies-dl" class="text-white">—</span>
-      </div>
-      <div class="flex justify-between text-[11px] text-gray-500">
-        <span>Queue</span><span id="media-radarr-queue" class="text-white">—</span>
-      </div>
+      <div class="flex justify-between text-[11px] text-gray-500"><span>Total</span><span id="media-movies-total" class="text-white font-bold">—</span></div>
+      <div class="flex justify-between text-[11px] text-gray-500"><span>Downloaded</span><span id="media-movies-dl" class="text-white">—</span></div>
+      <div class="flex justify-between text-[11px] text-gray-500"><span>Queue</span><span id="media-radarr-queue" class="text-white">—</span></div>
     </div>
 
     <!-- Prowlarr -->
@@ -1025,12 +1015,8 @@ tailwind.config = { theme: { extend: { colors: {
         <span class="text-xs font-semibold text-white">Prowlarr</span>
         <span id="media-lbl-prowlarr" class="text-[10px] text-gray-600 ml-auto">—</span>
       </div>
-      <div class="flex justify-between text-[11px] text-gray-500">
-        <span>Indexers</span><span id="media-indexers" class="text-white font-bold">—</span>
-      </div>
-      <div class="flex justify-between text-[11px] text-gray-500">
-        <span>Enabled</span><span id="media-indexers-enabled" class="text-white">—</span>
-      </div>
+      <div class="flex justify-between text-[11px] text-gray-500"><span>Indexers</span><span id="media-indexers" class="text-white font-bold">—</span></div>
+      <div class="flex justify-between text-[11px] text-gray-500"><span>Enabled</span><span id="media-indexers-enabled" class="text-white">—</span></div>
     </div>
 
     <!-- Plex -->
@@ -1040,26 +1026,19 @@ tailwind.config = { theme: { extend: { colors: {
         <span class="text-xs font-semibold text-white">Plex</span>
         <span id="media-lbl-plex" class="text-[10px] text-gray-600 ml-auto">—</span>
       </div>
-      <div class="flex justify-between text-[11px] text-gray-500">
-        <span>Libraries</span><span id="media-plex-libs" class="text-white font-bold">—</span>
-      </div>
-      <div class="flex justify-between text-[11px] text-gray-500">
-        <span>Streams</span><span id="media-streams" class="text-white">—</span>
-      </div>
+      <div class="flex justify-between text-[11px] text-gray-500"><span>Libraries</span><span id="media-plex-libs" class="text-white font-bold">—</span></div>
+      <div class="flex justify-between text-[11px] text-gray-500"><span>Streams</span><span id="media-streams" class="text-white">—</span></div>
     </div>
 
-    <!-- QNAP Storage -->
+    <!-- QNAP -->
     <div class="bg-[#161b22] border border-[#21262d] rounded-xl p-4">
       <div class="flex items-center gap-2 mb-2">
         <div id="media-dot-qnap" class="w-2 h-2 rounded-full bg-gray-600 flex-shrink-0"></div>
         <span class="text-xs font-semibold text-white">QNAP</span>
         <span id="media-lbl-qnap" class="text-[10px] text-gray-600 ml-auto">—</span>
       </div>
-      <div class="flex justify-between text-[11px] text-gray-500 mb-1">
-        <span>Free</span><span id="media-qnap-free" class="text-white font-bold">—</span>
-      </div>
-      <!-- Storage bar -->
-      <div class="w-full bg-[#0d1117] rounded-full h-1.5 mt-1">
+      <div class="flex justify-between text-[11px] text-gray-500 mb-1"><span>Free</span><span id="media-qnap-free" class="text-white font-bold">—</span></div>
+      <div class="w-full bg-[#0d1117] rounded-full h-1.5">
         <div id="media-qnap-bar" class="bg-blue-500 h-1.5 rounded-full transition-all" style="width:0%"></div>
       </div>
       <div class="text-[10px] text-gray-700 mt-1 text-right" id="media-qnap-pct">—</div>
@@ -1072,81 +1051,146 @@ tailwind.config = { theme: { extend: { colors: {
         <span class="text-xs font-semibold text-white">Seedbox</span>
         <span id="media-lbl-seedbox" class="text-[10px] text-gray-600 ml-auto">—</span>
       </div>
-      <div class="flex justify-between text-[11px] text-gray-500">
-        <span>Active</span><span id="media-seedbox-recent" class="text-white font-bold">—</span>
-      </div>
-      <div class="flex justify-between text-[11px] text-gray-500">
-        <span>Total</span><span id="media-seedbox-total" class="text-white">—</span>
-      </div>
-      <div class="flex justify-between text-[11px] text-gray-500">
-        <span>Size</span><span id="media-seedbox-gb" class="text-white">—</span>
-      </div>
+      <div class="flex justify-between text-[11px] text-gray-500"><span>Active (24h)</span><span id="media-seedbox-recent" class="text-white font-bold">—</span></div>
+      <div class="flex justify-between text-[11px] text-gray-500"><span>Total files</span><span id="media-seedbox-total" class="text-white">—</span></div>
+      <div class="flex justify-between text-[11px] text-gray-500"><span>Size</span><span id="media-seedbox-gb" class="text-white">—</span></div>
     </div>
 
   </div>
 
-  <!-- ── Download Pipeline Visualization ────────────────────────────────── -->
-  <div class="bg-[#161b22] border border-[#21262d] rounded-xl p-4">
-    <div class="flex items-center justify-between mb-3">
-      <h2 class="text-sm font-semibold text-white">Download Pipeline</h2>
-      <button onclick="loadMediaPipeline()" class="text-[11px] text-gray-500 hover:text-gray-300 transition">↻ refresh</button>
+  <!-- ── Issues panel ────────────────────────────────────────────────────── -->
+  <div id="media-issues-panel" class="bg-[#161b22] border border-[#21262d] rounded-xl overflow-hidden">
+    <div class="flex items-center justify-between px-4 py-3 cursor-pointer select-none"
+         onclick="toggleMediaIssues()">
+      <div class="flex items-center gap-2">
+        <span class="text-sm font-semibold text-white">Issues</span>
+        <span id="media-issues-badge" class="hidden text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-red-900 text-red-300"></span>
+      </div>
+      <div class="flex items-center gap-3">
+        <button onclick="event.stopPropagation(); loadMediaIssues()"
+                class="text-[11px] text-gray-500 hover:text-gray-300 transition">↻ check</button>
+        <span id="media-issues-chevron" class="text-gray-600 text-xs">▼</span>
+      </div>
     </div>
-    <div class="flex items-stretch gap-1 overflow-x-auto pb-1">
-
-      <!-- Stage: Request -->
-      <div class="flex-1 min-w-[100px] bg-[#0d1117] rounded-lg p-3 text-center">
-        <div class="text-[10px] text-gray-600 uppercase tracking-wider mb-1">Request</div>
-        <div class="text-xs font-semibold text-gray-300 mb-2">Sonarr / Radarr</div>
-        <div class="text-[10px] text-gray-500"><span id="pipe-sonarr-q" class="text-blue-400 font-bold">—</span> TV</div>
-        <div class="text-[10px] text-gray-500"><span id="pipe-radarr-q" class="text-blue-400 font-bold">—</span> Movies</div>
-      </div>
-
-      <div class="flex items-center text-gray-700 text-lg px-1">→</div>
-
-      <!-- Stage: Seedbox -->
-      <div class="flex-1 min-w-[100px] bg-[#0d1117] rounded-lg p-3 text-center">
-        <div class="text-[10px] text-gray-600 uppercase tracking-wider mb-1">Downloading</div>
-        <div class="text-xs font-semibold text-gray-300 mb-2">Seedbox</div>
-        <div class="text-[10px] text-gray-500"><span id="pipe-seedbox-active" class="text-amber-400 font-bold">—</span> active</div>
-        <div class="text-[10px] text-gray-500"><span id="pipe-seedbox-gb" class="text-gray-400">—</span> GB</div>
-      </div>
-
-      <div class="flex items-center text-gray-700 text-lg px-1">→</div>
-
-      <!-- Stage: rclone -->
-      <div class="flex-1 min-w-[90px] bg-[#0d1117] rounded-lg p-3 text-center">
-        <div class="text-[10px] text-gray-600 uppercase tracking-wider mb-1">Transfer</div>
-        <div class="text-xs font-semibold text-gray-300 mb-2">rclone</div>
-        <div class="text-[10px] text-gray-600">→ QNAP</div>
-      </div>
-
-      <div class="flex items-center text-gray-700 text-lg px-1">→</div>
-
-      <!-- Stage: QNAP -->
-      <div class="flex-1 min-w-[100px] bg-[#0d1117] rounded-lg p-3 text-center">
-        <div class="text-[10px] text-gray-600 uppercase tracking-wider mb-1">Storage</div>
-        <div class="text-xs font-semibold text-gray-300 mb-2">QNAP /share</div>
-        <div class="text-[10px] text-gray-500"><span id="pipe-qnap-free" class="text-emerald-400 font-bold">—</span> free</div>
-        <div class="text-[10px] text-gray-500"><span id="pipe-qnap-pct" class="text-gray-400">—</span>% used</div>
-      </div>
-
-      <div class="flex items-center text-gray-700 text-lg px-1">→</div>
-
-      <!-- Stage: Plex -->
-      <div class="flex-1 min-w-[90px] bg-[#0d1117] rounded-lg p-3 text-center">
-        <div class="text-[10px] text-gray-600 uppercase tracking-wider mb-1">Stream</div>
-        <div class="text-xs font-semibold text-gray-300 mb-2">Plex</div>
-        <div class="text-[10px] text-gray-500"><span id="pipe-plex-streams" class="text-purple-400 font-bold">—</span> streams</div>
-        <div class="text-[10px] text-gray-500"><span id="pipe-plex-libs" class="text-gray-400">—</span> libs</div>
-      </div>
-
+    <div id="media-issues-body" class="px-4 pb-4 text-xs">
+      <div class="text-gray-600 text-center py-3">Loading…</div>
     </div>
   </div>
 
-  <!-- ── Active Downloads Table ──────────────────────────────────────────── -->
+  <!-- ── Pipeline + rclone row ──────────────────────────────────────────── -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+
+    <!-- Pipeline visualization (2/3 width) -->
+    <div class="md:col-span-2 bg-[#161b22] border border-[#21262d] rounded-xl p-4">
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="text-sm font-semibold text-white">Download Pipeline</h2>
+        <button onclick="loadMediaPipeline()" class="text-[11px] text-gray-500 hover:text-gray-300 transition">↻ refresh</button>
+      </div>
+      <div class="flex items-stretch gap-1 overflow-x-auto pb-1">
+        <div class="flex-1 min-w-[80px] bg-[#0d1117] rounded-lg p-2 text-center">
+          <div class="text-[9px] text-gray-600 uppercase tracking-wider mb-1">Request</div>
+          <div class="text-[11px] font-semibold text-gray-300 mb-1">Sonarr/Radarr</div>
+          <div class="text-[10px] text-gray-500"><span id="pipe-sonarr-q" class="text-blue-400 font-bold">—</span> TV</div>
+          <div class="text-[10px] text-gray-500"><span id="pipe-radarr-q" class="text-blue-400 font-bold">—</span> Movies</div>
+        </div>
+        <div class="flex items-center text-gray-700 px-0.5">→</div>
+        <div class="flex-1 min-w-[80px] bg-[#0d1117] rounded-lg p-2 text-center">
+          <div class="text-[9px] text-gray-600 uppercase tracking-wider mb-1">Download</div>
+          <div class="text-[11px] font-semibold text-gray-300 mb-1">Seedbox</div>
+          <div class="text-[10px] text-gray-500"><span id="pipe-seedbox-active" class="text-amber-400 font-bold">—</span> active</div>
+          <div class="text-[10px] text-gray-500"><span id="pipe-seedbox-gb" class="text-gray-400">—</span> GB</div>
+        </div>
+        <div class="flex items-center text-gray-700 px-0.5">→</div>
+        <div class="flex-1 min-w-[70px] bg-[#0d1117] rounded-lg p-2 text-center">
+          <div class="text-[9px] text-gray-600 uppercase tracking-wider mb-1">Sync</div>
+          <div class="text-[11px] font-semibold text-gray-300 mb-1">rclone</div>
+          <div id="pipe-rclone-state" class="text-[10px] text-gray-600">—</div>
+        </div>
+        <div class="flex items-center text-gray-700 px-0.5">→</div>
+        <div class="flex-1 min-w-[80px] bg-[#0d1117] rounded-lg p-2 text-center">
+          <div class="text-[9px] text-gray-600 uppercase tracking-wider mb-1">Storage</div>
+          <div class="text-[11px] font-semibold text-gray-300 mb-1">QNAP</div>
+          <div class="text-[10px] text-gray-500"><span id="pipe-qnap-free" class="text-emerald-400 font-bold">—</span> free</div>
+          <div class="text-[10px] text-gray-500"><span id="pipe-qnap-pct" class="text-gray-400">—</span>% used</div>
+        </div>
+        <div class="flex items-center text-gray-700 px-0.5">→</div>
+        <div class="flex-1 min-w-[70px] bg-[#0d1117] rounded-lg p-2 text-center">
+          <div class="text-[9px] text-gray-600 uppercase tracking-wider mb-1">Stream</div>
+          <div class="text-[11px] font-semibold text-gray-300 mb-1">Plex</div>
+          <div class="text-[10px] text-gray-500"><span id="pipe-plex-streams" class="text-purple-400 font-bold">—</span> streams</div>
+          <div class="text-[10px] text-gray-500"><span id="pipe-plex-libs" class="text-gray-400">—</span> libs</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- rclone status + controls (1/3 width) -->
+    <div class="bg-[#161b22] border border-[#21262d] rounded-xl p-4 flex flex-col">
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="text-sm font-semibold text-white">rclone Sync</h2>
+        <button onclick="loadRcloneStatus()" class="text-[11px] text-gray-500 hover:text-gray-300 transition">↻</button>
+      </div>
+      <div class="space-y-2 text-[11px] flex-1">
+        <div class="flex justify-between"><span class="text-gray-500">Status</span><span id="rclone-running" class="font-medium">—</span></div>
+        <div class="flex justify-between"><span class="text-gray-500">Last sync</span><span id="rclone-last-sync" class="text-gray-400">—</span></div>
+        <div class="flex justify-between"><span class="text-gray-500">Pending files</span><span id="rclone-pending" class="text-white">—</span></div>
+        <div class="flex justify-between"><span class="text-gray-500">Download folder</span><span id="rclone-dl-gb" class="text-white">—</span></div>
+        <div id="rclone-alert" class="hidden text-amber-400 text-[10px] mt-1"></div>
+      </div>
+      <button onclick="forceSync()"
+              class="mt-3 w-full py-1.5 rounded-lg bg-blue-700 hover:bg-blue-600 text-white text-xs font-medium transition">
+        Force Sync
+      </button>
+    </div>
+  </div>
+
+  <!-- ── Download Queue (Sonarr + Radarr) ───────────────────────────────── -->
   <div class="bg-[#161b22] border border-[#21262d] rounded-xl p-4">
     <div class="flex items-center justify-between mb-3">
-      <h2 class="text-sm font-semibold text-white">Active Downloads</h2>
+      <div class="flex items-center gap-3">
+        <h2 class="text-sm font-semibold text-white">Download Queue</h2>
+        <span id="media-queue-errors-badge" class="hidden text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-red-900 text-red-300"></span>
+      </div>
+      <button onclick="loadMediaQueue()" class="text-[11px] text-gray-500 hover:text-gray-300 transition">↻ refresh</button>
+    </div>
+    <div id="media-queue-body" class="text-xs">
+      <div class="text-gray-600 text-center py-4">Loading…</div>
+    </div>
+  </div>
+
+  <!-- ── Missing Content ─────────────────────────────────────────────────── -->
+  <div class="bg-[#161b22] border border-[#21262d] rounded-xl p-4">
+    <div class="flex items-center justify-between mb-3">
+      <div class="flex items-center gap-3">
+        <h2 class="text-sm font-semibold text-white">Missing Content</h2>
+        <span id="media-missing-badge" class="text-[10px] text-gray-500">—</span>
+      </div>
+      <div class="flex items-center gap-2">
+        <button onclick="searchMissing('sonarr')"
+                class="text-[11px] px-2 py-1 rounded bg-blue-800 hover:bg-blue-700 text-blue-200 transition">
+          Search TV
+        </button>
+        <button onclick="searchMissing('radarr')"
+                class="text-[11px] px-2 py-1 rounded bg-purple-800 hover:bg-purple-700 text-purple-200 transition">
+          Search Movies
+        </button>
+        <button onclick="loadMediaMissing()" class="text-[11px] text-gray-500 hover:text-gray-300 transition">↻</button>
+      </div>
+    </div>
+    <!-- Tab switcher -->
+    <div class="flex gap-1 mb-3">
+      <button id="missing-tab-tv" onclick="setMissingTab('tv')"
+              class="text-[11px] px-3 py-1 rounded-lg bg-[#21262d] text-gray-300 font-medium">TV Episodes</button>
+      <button id="missing-tab-movies" onclick="setMissingTab('movies')"
+              class="text-[11px] px-3 py-1 rounded-lg text-gray-600 hover:text-gray-400 transition">Movies</button>
+    </div>
+    <div id="media-missing-tv" class="overflow-y-auto" style="max-height:280px"></div>
+    <div id="media-missing-movies" class="hidden overflow-y-auto" style="max-height:280px"></div>
+  </div>
+
+  <!-- ── Active Downloads (Seedbox SFTP) ────────────────────────────────── -->
+  <div class="bg-[#161b22] border border-[#21262d] rounded-xl p-4">
+    <div class="flex items-center justify-between mb-3">
+      <h2 class="text-sm font-semibold text-white">Seedbox Files</h2>
       <button onclick="loadMediaDownloads()" class="text-[11px] text-gray-500 hover:text-gray-300 transition">↻ refresh</button>
     </div>
     <div id="media-downloads-body" class="text-xs">
@@ -1156,7 +1200,6 @@ tailwind.config = { theme: { extend: { colors: {
 
   <!-- ── Recent additions ────────────────────────────────────────────────── -->
   <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-
     <div class="bg-[#161b22] border border-[#21262d] rounded-xl p-4">
       <div class="flex items-center justify-between mb-3">
         <h2 class="text-sm font-semibold text-white">Recent TV Downloads</h2>
@@ -1166,7 +1209,6 @@ tailwind.config = { theme: { extend: { colors: {
         <div class="text-gray-600 text-center py-6">Loading…</div>
       </div>
     </div>
-
     <div class="bg-[#161b22] border border-[#21262d] rounded-xl p-4">
       <div class="flex items-center justify-between mb-3">
         <h2 class="text-sm font-semibold text-white">Recent Movie Downloads</h2>
@@ -2268,7 +2310,7 @@ document.addEventListener('keydown', e => {
 
   const scOpen  = !$('sc-modal').classList.contains('hidden');
   const tmOpen  = !$('train-modal').classList.contains('hidden');
-  const cmdOpen = !$('cmd-palette').classList.contains('hidden');
+  const cmdOpen = $('cmd-palette').classList.contains('cmd-open');
 
   if (e.key === 'Escape') {
     if (cmdOpen) { closeCmdPalette(); return; }
@@ -2588,7 +2630,7 @@ let _cmdOpen     = false;
 
 function openCmdPalette() {
   _cmdOpen = true;
-  $('cmd-palette').classList.remove('hidden');
+  $('cmd-palette').classList.add('cmd-open');
   const inp = $('cmd-input');
   inp.value = '';
   filterCmd('');
@@ -2597,7 +2639,7 @@ function openCmdPalette() {
 
 function closeCmdPalette() {
   _cmdOpen = false;
-  $('cmd-palette').classList.add('hidden');
+  $('cmd-palette').classList.remove('cmd-open');
 }
 
 function filterCmd(q) {
