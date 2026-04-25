@@ -209,6 +209,94 @@ def _system_health() -> dict:
     }
 
 
+def _category_stats() -> list[dict]:
+    """Return per-category completion breakdown, sorted by total desc."""
+    if not ITEMS_DIR.exists():
+        return []
+    from collections import Counter
+    totals: Counter = Counter()
+    done: Counter = Counter()
+    for md in ITEMS_DIR.glob("*.md"):
+        text = md.read_text()
+        cat_m = re.search(r"\*\*Category:\*\*\s*`([^`]+)`", text)
+        stat_m = re.search(r"\*\*Status:\*\*\s*`([^`]+)`", text)
+        cat = cat_m.group(1) if cat_m else "?"
+        stat = stat_m.group(1) if stat_m else "?"
+        totals[cat] += 1
+        if stat in ("Completed", "Accepted"):
+            done[cat] += 1
+    result = []
+    for cat, total in totals.most_common(15):
+        d = done.get(cat, 0)
+        result.append({
+            "category": cat,
+            "total": total,
+            "done": d,
+            "pct": round(d / total * 100) if total else 0,
+        })
+    return result
+
+
+def _kanban_items() -> dict:
+    """Return items grouped by status (trimmed for payload size)."""
+    if not ITEMS_DIR.exists():
+        return {}
+    buckets: dict[str, list] = {
+        "In progress": [], "Pending": [], "Completed": [], "Accepted": [],
+    }
+    for md in sorted(ITEMS_DIR.glob("*.md")):
+        text = md.read_text()
+        id_m = re.search(r"\*\*ID:\*\*\s*`([^`]+)`", text)
+        title_m = re.search(r"\*\*Title:\*\*\s*(.+)", text)
+        stat_m = re.search(r"\*\*Status:\*\*\s*`([^`]+)`", text)
+        cat_m = re.search(r"\*\*Category:\*\*\s*`([^`]+)`", text)
+        item_id = id_m.group(1) if id_m else md.stem
+        title = (title_m.group(1).strip() if title_m else item_id)[:60]
+        stat = stat_m.group(1) if stat_m else "Pending"
+        cat = cat_m.group(1) if cat_m else "?"
+        bucket = stat if stat in buckets else "Pending"
+        # Limit payload: only keep first 40 per bucket
+        if len(buckets[bucket]) < 40:
+            buckets[bucket].append({"id": item_id, "title": title, "category": cat})
+    return buckets
+
+
+def _executor_action(action: str) -> dict:
+    """Start or stop the autonomous executor. Returns {ok, message}."""
+    if action == "start":
+        r = subprocess.run(
+            ["pgrep", "-f", "auto_execute_roadmap"],
+            capture_output=True, text=True,
+        )
+        if r.stdout.strip():
+            return {"ok": False, "message": f"Already running (PID {r.stdout.strip().split()[0]})"}
+        log_path = "/tmp/executor_longrun.log"
+        proc = subprocess.Popen(
+            [sys.executable, str(REPO_ROOT / "bin" / "auto_execute_roadmap.py"),
+             "--max-items", "10"],
+            cwd=REPO_ROOT,
+            stdout=open(log_path, "w"),
+            stderr=subprocess.STDOUT,
+            start_new_session=True,
+        )
+        return {"ok": True, "message": f"Started PID {proc.pid}", "pid": proc.pid,
+                "log": log_path}
+
+    elif action == "stop":
+        r = subprocess.run(
+            ["pgrep", "-f", "auto_execute_roadmap"],
+            capture_output=True, text=True,
+        )
+        pids = [p for p in r.stdout.strip().splitlines() if p]
+        if not pids:
+            return {"ok": False, "message": "No executor running"}
+        for pid in pids:
+            subprocess.run(["kill", "-TERM", pid], capture_output=True)
+        return {"ok": True, "message": f"Sent SIGTERM to PID(s) {', '.join(pids)}"}
+
+    return {"ok": False, "message": f"Unknown action: {action}"}
+
+
 def _build_status() -> dict:
     log_path = _find_active_log()
     exec_data = _parse_log(log_path) if log_path else {"is_running": False, "completion_count": 0}
@@ -220,6 +308,7 @@ def _build_status() -> dict:
         "git": _git_log(),
         "training": _training_stats(),
         "system": _system_health(),
+        "categories": _category_stats(),
     }
 
 
@@ -236,6 +325,27 @@ class Handler(BaseHTTPRequestHandler):
             self._serve_file(DASHBOARD_DIR / "index.html", "text/html")
         elif path == "/api/status":
             self._serve_json(_build_status())
+        elif path == "/api/kanban":
+            self._serve_json(_kanban_items())
+        elif path == "/api/log":
+            log = _find_active_log()
+            if log:
+                lines = log.read_text(errors="replace").splitlines()
+                self._serve_json({"lines": lines[-200:], "file": str(log)})
+            else:
+                self._serve_json({"lines": [], "file": None})
+        else:
+            self.send_response(404)
+            self.end_headers()
+
+    def do_POST(self):
+        path = urlparse(self.path).path
+        length = int(self.headers.get("Content-Length", 0))
+        body = json.loads(self.rfile.read(length) or b"{}")
+
+        if path == "/api/executor":
+            action = body.get("action", "")
+            self._serve_json(_executor_action(action))
         else:
             self.send_response(404)
             self.end_headers()

@@ -1,342 +1,589 @@
 <!DOCTYPE html>
-<html lang="en" class="bg-gray-950">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Execution Dashboard</title>
+<title>AI Platform — Control Plane</title>
 <script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config = {
+  theme: {
+    extend: {
+      colors: {
+        surface: '#0d1117',
+        card: '#161b22',
+        border: '#21262d',
+        accent: '#58a6ff',
+      }
+    }
+  }
+}
+</script>
 <style>
-  body { font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace; }
-  .pulse-dot { animation: pulse 2s cubic-bezier(0.4,0,0.6,1) infinite; }
-  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
-  .bar-fill { transition: width 0.6s ease; }
-  .fade-in { animation: fadein 0.4s ease; }
-  @keyframes fadein { from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:translateY(0)} }
-  ::-webkit-scrollbar { width: 4px; }
-  ::-webkit-scrollbar-track { background: #111827; }
-  ::-webkit-scrollbar-thumb { background: #374151; border-radius: 2px; }
+  * { box-sizing: border-box; }
+  body { font-family: ui-monospace, 'Cascadia Code', 'JetBrains Mono', monospace; background: #0d1117; }
+  .ring-track { fill: none; stroke: #21262d; }
+  .ring-fill  { fill: none; stroke-linecap: round; transition: stroke-dashoffset 0.8s ease; }
+  .pulse { animation: pulse 2s ease-in-out infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.35} }
+  .slide-in { animation: slidein .35s ease; }
+  @keyframes slidein { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+  .bar-fill { transition: width .7s ease; }
+  .tab-btn.active { color:#58a6ff; border-bottom-color:#58a6ff; }
+  .tab-btn { border-bottom: 2px solid transparent; }
+  ::-webkit-scrollbar { width:3px; height:3px; }
+  ::-webkit-scrollbar-thumb { background:#30363d; border-radius:2px; }
+  .cat-bar { transition: width .6s ease; }
+  .glow-green { box-shadow: 0 0 12px rgba(46,160,67,.35); }
+  .glow-red   { box-shadow: 0 0 12px rgba(248,81,73,.35); }
+  .toast { animation: toastin .3s ease, toastout .3s ease 2.7s forwards; }
+  @keyframes toastin  { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+  @keyframes toastout { to{opacity:0;transform:translateY(20px)} }
+  @media (max-width: 768px) { .desktop-only { display: none !important; } }
 </style>
 </head>
-<body class="bg-gray-950 text-gray-100 min-h-screen p-4">
+<body class="text-gray-300 min-h-screen">
 
-<!-- Header -->
-<div class="max-w-7xl mx-auto">
-  <div class="flex items-center justify-between mb-6">
-    <div>
-      <h1 class="text-xl font-bold text-white tracking-tight">Integrated AI Platform</h1>
-      <p class="text-xs text-gray-500 mt-0.5">Execution Dashboard · auto-refreshes every 5s</p>
-    </div>
+<!-- Toast container -->
+<div id="toasts" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+<!-- ── Header ── -->
+<header class="border-b border-[#21262d] sticky top-0 z-40 bg-[#0d1117]/95 backdrop-blur">
+  <div class="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between">
     <div class="flex items-center gap-3">
-      <span id="status-dot" class="w-2 h-2 rounded-full bg-gray-600"></span>
-      <span id="status-text" class="text-xs text-gray-500">connecting…</span>
-      <span id="last-update" class="text-xs text-gray-600"></span>
+      <div id="hdr-dot" class="w-2 h-2 rounded-full bg-gray-600"></div>
+      <span class="text-sm font-semibold text-white">AI Platform</span>
+      <span class="text-xs text-gray-600 desktop-only">Control Plane</span>
+    </div>
+    <nav class="flex items-center gap-1">
+      <button onclick="setTab('overview')"  class="tab-btn active   px-3 py-1 text-xs" id="tab-overview">Overview</button>
+      <button onclick="setTab('kanban')"    class="tab-btn         px-3 py-1 text-xs" id="tab-kanban">Roadmap</button>
+      <button onclick="setTab('logs')"      class="tab-btn         px-3 py-1 text-xs" id="tab-logs">Logs</button>
+      <button onclick="setTab('controls')"  class="tab-btn         px-3 py-1 text-xs" id="tab-controls">Controls</button>
+    </nav>
+    <div class="flex items-center gap-2">
+      <span id="hdr-status" class="text-xs text-gray-500">connecting</span>
+      <span id="hdr-time"   class="text-xs text-gray-600 desktop-only"></span>
     </div>
   </div>
+</header>
 
-  <!-- Top metrics row -->
-  <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
-    <div class="bg-gray-900 rounded-xl p-4 border border-gray-800">
-      <p class="text-xs text-gray-500 mb-1">Roadmap Progress</p>
-      <p id="m-completed" class="text-3xl font-bold text-emerald-400">—</p>
-      <p id="m-total" class="text-xs text-gray-500 mt-1">of — items</p>
-      <div class="mt-2 h-1.5 bg-gray-800 rounded-full overflow-hidden">
-        <div id="bar-roadmap" class="bar-fill h-full bg-emerald-500 rounded-full" style="width:0%"></div>
-      </div>
+<main class="max-w-7xl mx-auto px-4 py-5">
+
+<!-- ══ OVERVIEW TAB ══════════════════════════════════════════════════════════ -->
+<div id="pane-overview">
+
+  <!-- Hero stats -->
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
+    <div class="bg-[#161b22] border border-[#21262d] rounded-xl p-4">
+      <p class="text-xs text-gray-500 mb-1">Completed</p>
+      <p id="h-done"  class="text-3xl font-bold text-emerald-400">—</p>
+      <p id="h-total" class="text-xs text-gray-600 mt-1">of — items</p>
     </div>
-
-    <div class="bg-gray-900 rounded-xl p-4 border border-gray-800">
+    <div class="bg-[#161b22] border border-[#21262d] rounded-xl p-4">
       <p class="text-xs text-gray-500 mb-1">Success Rate</p>
-      <p id="m-rate" class="text-3xl font-bold text-blue-400">—</p>
-      <p id="m-subtasks" class="text-xs text-gray-500 mt-1">— subtasks run</p>
+      <p id="h-rate"  class="text-3xl font-bold text-blue-400">—</p>
+      <p id="h-runs"  class="text-xs text-gray-600 mt-1">— subtasks</p>
     </div>
-
-    <div class="bg-gray-900 rounded-xl p-4 border border-gray-800">
-      <p class="text-xs text-gray-500 mb-1">Avg Subtask Time</p>
-      <p id="m-avgtime" class="text-3xl font-bold text-violet-400">—</p>
-      <p class="text-xs text-gray-500 mt-1">seconds per subtask</p>
+    <div class="bg-[#161b22] border border-[#21262d] rounded-xl p-4">
+      <p class="text-xs text-gray-500 mb-1">Avg Time</p>
+      <p id="h-avg"   class="text-3xl font-bold text-violet-400">—</p>
+      <p class="text-xs text-gray-600 mt-1">per subtask</p>
     </div>
-
-    <div class="bg-gray-900 rounded-xl p-4 border border-gray-800">
-      <p class="text-xs text-gray-500 mb-1">Training Examples</p>
-      <p id="m-examples" class="text-3xl font-bold text-amber-400">—</p>
-      <p id="m-sft" class="text-xs text-gray-500 mt-1">of 10 for SFT</p>
+    <div class="bg-[#161b22] border border-[#21262d] rounded-xl p-4">
+      <p class="text-xs text-gray-500 mb-1">Quality Examples</p>
+      <p id="h-ex"    class="text-3xl font-bold text-amber-400">—</p>
+      <p id="h-sft"   class="text-xs text-gray-600 mt-1">of 10 for SFT</p>
     </div>
   </div>
 
-  <!-- Main content grid -->
   <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
 
-    <!-- Left: Current execution + activity -->
+    <!-- Left 2/3 -->
     <div class="lg:col-span-2 flex flex-col gap-4">
 
       <!-- Current execution -->
-      <div class="bg-gray-900 rounded-xl p-4 border border-gray-800">
+      <div class="bg-[#161b22] border border-[#21262d] rounded-xl p-4">
         <div class="flex items-center justify-between mb-3">
-          <h2 class="text-sm font-semibold text-gray-300">Current Execution</h2>
-          <span id="exec-badge" class="text-xs px-2 py-0.5 rounded-full bg-gray-800 text-gray-500">idle</span>
+          <h2 class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Active Execution</h2>
+          <span id="exec-badge" class="text-xs px-2 py-0.5 rounded-full bg-[#21262d] text-gray-500">idle</span>
         </div>
-        <div id="exec-item" class="text-sm text-gray-400 mb-1">No executor running</div>
-        <div id="exec-subtask" class="text-xs text-gray-600 truncate"></div>
-        <div id="exec-log" class="text-xs text-gray-600 mt-1"></div>
-      </div>
-
-      <!-- Recent activity feed -->
-      <div class="bg-gray-900 rounded-xl p-4 border border-gray-800 flex-1">
-        <h2 class="text-sm font-semibold text-gray-300 mb-3">Recent Completions</h2>
-        <div id="feed-completions" class="space-y-1 max-h-40 overflow-y-auto">
-          <p class="text-xs text-gray-600">loading…</p>
+        <div id="exec-item"    class="text-sm text-gray-400 mb-1">No executor running</div>
+        <div id="exec-subtask" class="text-xs text-gray-600 truncate mb-2"></div>
+        <div class="h-1 bg-[#21262d] rounded-full overflow-hidden">
+          <div id="exec-prog" class="h-full bg-emerald-500 rounded-full bar-fill" style="width:0%"></div>
         </div>
       </div>
 
-      <!-- Recent git commits -->
-      <div class="bg-gray-900 rounded-xl p-4 border border-gray-800">
-        <h2 class="text-sm font-semibold text-gray-300 mb-3">Recent Commits</h2>
-        <div id="feed-commits" class="space-y-2 max-h-52 overflow-y-auto">
-          <p class="text-xs text-gray-600">loading…</p>
-        </div>
+      <!-- Category breakdown -->
+      <div class="bg-[#161b22] border border-[#21262d] rounded-xl p-4">
+        <h2 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Category Progress</h2>
+        <div id="cat-chart" class="space-y-2"></div>
+      </div>
+
+      <!-- Git feed -->
+      <div class="bg-[#161b22] border border-[#21262d] rounded-xl p-4">
+        <h2 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Recent Commits</h2>
+        <div id="git-feed" class="space-y-3 max-h-56 overflow-y-auto pr-1"></div>
       </div>
     </div>
 
-    <!-- Right: Training + system -->
+    <!-- Right 1/3 -->
     <div class="flex flex-col gap-4">
 
-      <!-- Training readiness -->
-      <div class="bg-gray-900 rounded-xl p-4 border border-gray-800">
-        <h2 class="text-sm font-semibold text-gray-300 mb-4">Training Readiness</h2>
-
-        <div class="space-y-4">
-          <div>
-            <div class="flex justify-between text-xs mb-1.5">
-              <span class="text-gray-400">SFT threshold</span>
-              <span id="sft-label" class="text-gray-500">0 / 10</span>
-            </div>
-            <div class="h-2 bg-gray-800 rounded-full overflow-hidden">
-              <div id="bar-sft" class="bar-fill h-full bg-amber-500 rounded-full" style="width:0%"></div>
-            </div>
-          </div>
-
-          <div>
-            <div class="flex justify-between text-xs mb-1.5">
-              <span class="text-gray-400">LoRA threshold</span>
-              <span id="lora-label" class="text-gray-500">0 / 50</span>
-            </div>
-            <div class="h-2 bg-gray-800 rounded-full overflow-hidden">
-              <div id="bar-lora" class="bar-fill h-full bg-orange-500 rounded-full" style="width:0%"></div>
-            </div>
-          </div>
-
-          <div>
-            <div class="flex justify-between text-xs mb-1.5">
-              <span class="text-gray-400">Stable fine-tune</span>
-              <span id="stable-label" class="text-gray-500">0 / 200</span>
-            </div>
-            <div class="h-2 bg-gray-800 rounded-full overflow-hidden">
-              <div id="bar-stable" class="bar-fill h-full bg-red-500 rounded-full" style="width:0%"></div>
-            </div>
-          </div>
+      <!-- Progress rings -->
+      <div class="bg-[#161b22] border border-[#21262d] rounded-xl p-4">
+        <h2 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">Roadmap</h2>
+        <div class="flex justify-center">
+          <svg width="160" height="160" viewBox="0 0 160 160">
+            <!-- Outer ring: all items -->
+            <circle class="ring-track" cx="80" cy="80" r="68" stroke-width="10"/>
+            <circle class="ring-fill"  cx="80" cy="80" r="68" stroke-width="10"
+              stroke="#58a6ff" id="ring-outer"
+              stroke-dasharray="427" stroke-dashoffset="427"
+              transform="rotate(-90 80 80)"/>
+            <!-- Inner ring: completed only -->
+            <circle class="ring-track" cx="80" cy="80" r="52" stroke-width="8"/>
+            <circle class="ring-fill"  cx="80" cy="80" r="52" stroke-width="8"
+              stroke="#3fb950" id="ring-inner"
+              stroke-dasharray="327" stroke-dashoffset="327"
+              transform="rotate(-90 80 80)"/>
+            <text x="80" y="76" text-anchor="middle" fill="#c9d1d9" font-size="22" font-weight="bold" id="ring-label">—</text>
+            <text x="80" y="93" text-anchor="middle" fill="#6e7681" font-size="10" id="ring-sub">of —</text>
+          </svg>
         </div>
-
-        <div id="training-eta" class="mt-4 text-xs text-gray-500 border-t border-gray-800 pt-3"></div>
-        <div id="training-quality" class="text-xs text-gray-600 mt-1"></div>
+        <div class="mt-2 space-y-1">
+          <div class="flex justify-between text-xs"><span class="text-gray-500">● Completed</span><span id="r-completed" class="text-emerald-400">—</span></div>
+          <div class="flex justify-between text-xs"><span class="text-gray-500">● Accepted</span><span id="r-accepted"  class="text-blue-400">—</span></div>
+          <div class="flex justify-between text-xs"><span class="text-gray-500">● In progress</span><span id="r-inprog"   class="text-yellow-400">—</span></div>
+          <div class="flex justify-between text-xs"><span class="text-gray-500">  Pending</span><span id="r-pending"  class="text-gray-500">—</span></div>
+        </div>
       </div>
 
-      <!-- Roadmap breakdown -->
-      <div class="bg-gray-900 rounded-xl p-4 border border-gray-800">
-        <h2 class="text-sm font-semibold text-gray-300 mb-3">Roadmap Status</h2>
-        <div class="space-y-2" id="roadmap-breakdown">
-          <p class="text-xs text-gray-600">loading…</p>
+      <!-- Training readiness -->
+      <div class="bg-[#161b22] border border-[#21262d] rounded-xl p-4">
+        <h2 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">Training Readiness</h2>
+        <div class="space-y-3">
+          <div>
+            <div class="flex justify-between text-xs mb-1"><span class="text-gray-400">SFT (10)</span><span id="t-sft-lbl" class="text-gray-500">0/10</span></div>
+            <div class="h-1.5 bg-[#21262d] rounded-full overflow-hidden">
+              <div id="t-sft" class="h-full bg-amber-500 bar-fill rounded-full" style="width:0%"></div>
+            </div>
+          </div>
+          <div>
+            <div class="flex justify-between text-xs mb-1"><span class="text-gray-400">LoRA (50)</span><span id="t-lora-lbl" class="text-gray-500">0/50</span></div>
+            <div class="h-1.5 bg-[#21262d] rounded-full overflow-hidden">
+              <div id="t-lora" class="h-full bg-orange-500 bar-fill rounded-full" style="width:0%"></div>
+            </div>
+          </div>
+          <div>
+            <div class="flex justify-between text-xs mb-1"><span class="text-gray-400">Stable (200)</span><span id="t-stable-lbl" class="text-gray-500">0/200</span></div>
+            <div class="h-1.5 bg-[#21262d] rounded-full overflow-hidden">
+              <div id="t-stable" class="h-full bg-red-500 bar-fill rounded-full" style="width:0%"></div>
+            </div>
+          </div>
         </div>
+        <p id="t-eta" class="text-xs text-gray-600 mt-3 border-t border-[#21262d] pt-3"></p>
       </div>
 
       <!-- System health -->
-      <div class="bg-gray-900 rounded-xl p-4 border border-gray-800">
-        <h2 class="text-sm font-semibold text-gray-300 mb-3">System Health</h2>
-        <div class="space-y-2.5">
+      <div class="bg-[#161b22] border border-[#21262d] rounded-xl p-4">
+        <h2 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">System</h2>
+        <div class="space-y-2">
           <div class="flex justify-between items-center">
-            <span class="text-xs text-gray-400">Ollama</span>
-            <span id="sys-ollama" class="text-xs px-2 py-0.5 rounded-full bg-gray-800 text-gray-500">—</span>
+            <span class="text-xs text-gray-500">Ollama</span>
+            <span id="s-ollama" class="text-xs px-1.5 py-0.5 rounded bg-[#21262d] text-gray-400">—</span>
           </div>
           <div class="flex justify-between items-center">
-            <span class="text-xs text-gray-400">Aider processes</span>
-            <span id="sys-aider" class="text-xs text-gray-300">—</span>
+            <span class="text-xs text-gray-500">Aider</span>
+            <span id="s-aider"    class="text-xs text-gray-300">—</span>
           </div>
           <div class="flex justify-between items-center">
-            <span class="text-xs text-gray-400">Executor running</span>
-            <span id="sys-executor" class="text-xs text-gray-300">—</span>
+            <span class="text-xs text-gray-500">Executor</span>
+            <span id="s-executor" class="text-xs text-gray-300">—</span>
           </div>
           <div class="flex justify-between items-center">
-            <span class="text-xs text-gray-400">Disk free</span>
-            <span id="sys-disk" class="text-xs text-gray-300">—</span>
+            <span class="text-xs text-gray-500">Disk free</span>
+            <span id="s-disk"     class="text-xs text-gray-300">—</span>
           </div>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Failures section (hidden when empty) -->
-  <div id="failures-section" class="mt-4 hidden">
-    <div class="bg-gray-900 rounded-xl p-4 border border-red-900/40">
-      <h2 class="text-sm font-semibold text-red-400 mb-3">Recent Failures</h2>
-      <div id="feed-failures" class="space-y-2"></div>
+  <!-- Completions + failures -->
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+    <div class="bg-[#161b22] border border-[#21262d] rounded-xl p-4">
+      <h2 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Recent Completions</h2>
+      <div id="feed-done" class="space-y-1 max-h-36 overflow-y-auto text-xs"></div>
+    </div>
+    <div id="failures-card" class="bg-[#161b22] border border-red-900/40 rounded-xl p-4 hidden">
+      <h2 class="text-xs font-semibold text-red-400 uppercase tracking-wider mb-3">Failures</h2>
+      <div id="feed-fail" class="space-y-1 max-h-36 overflow-y-auto text-xs"></div>
     </div>
   </div>
-
-  <p class="text-center text-xs text-gray-700 mt-6">
-    integrated-ai-platform · <span id="footer-ts"></span>
-  </p>
 </div>
 
+<!-- ══ KANBAN TAB ═════════════════════════════════════════════════════════════ -->
+<div id="pane-kanban" class="hidden">
+  <div class="flex justify-between items-center mb-4">
+    <h2 class="text-sm font-semibold text-white">Roadmap Kanban</h2>
+    <button onclick="loadKanban()" class="text-xs text-blue-400 hover:text-blue-300">↻ refresh</button>
+  </div>
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-3" id="kanban-board">
+    <div class="text-xs text-gray-600">Loading…</div>
+  </div>
+</div>
+
+<!-- ══ LOGS TAB ═══════════════════════════════════════════════════════════════ -->
+<div id="pane-logs" class="hidden">
+  <div class="flex justify-between items-center mb-3">
+    <h2 class="text-sm font-semibold text-white">Live Log</h2>
+    <div class="flex items-center gap-3">
+      <span id="log-file" class="text-xs text-gray-600"></span>
+      <label class="text-xs text-gray-400 flex items-center gap-1">
+        <input type="checkbox" id="log-follow" checked class="w-3 h-3"> Follow
+      </label>
+    </div>
+  </div>
+  <div id="log-view"
+       class="bg-[#0a0e14] border border-[#21262d] rounded-xl p-4 font-mono text-xs text-gray-400
+              h-[65vh] overflow-y-auto whitespace-pre-wrap leading-5">
+    Loading…
+  </div>
+</div>
+
+<!-- ══ CONTROLS TAB ═══════════════════════════════════════════════════════════ -->
+<div id="pane-controls" class="hidden">
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl">
+
+    <!-- Executor controls -->
+    <div class="bg-[#161b22] border border-[#21262d] rounded-xl p-5">
+      <h2 class="text-sm font-semibold text-white mb-4">Executor</h2>
+      <div class="flex gap-3 mb-4">
+        <button onclick="execAction('start')"
+          class="flex-1 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-medium transition glow-green">
+          ▶ Start
+        </button>
+        <button onclick="execAction('stop')"
+          class="flex-1 py-2 rounded-lg bg-red-700 hover:bg-red-600 text-white text-sm font-medium transition">
+          ■ Stop
+        </button>
+      </div>
+      <p id="ctrl-status" class="text-xs text-gray-500 text-center"></p>
+      <div class="mt-4 border-t border-[#21262d] pt-4 space-y-2">
+        <div class="flex justify-between text-xs">
+          <span class="text-gray-500">Executor running</span>
+          <span id="ctrl-running" class="text-gray-300">—</span>
+        </div>
+        <div class="flex justify-between text-xs">
+          <span class="text-gray-500">PIDs</span>
+          <span id="ctrl-pids"    class="text-gray-300 font-mono">—</span>
+        </div>
+        <div class="flex justify-between text-xs">
+          <span class="text-gray-500">Log file</span>
+          <span id="ctrl-log"     class="text-gray-400 text-right break-all">/tmp/executor_longrun.log</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick links -->
+    <div class="bg-[#161b22] border border-[#21262d] rounded-xl p-5">
+      <h2 class="text-sm font-semibold text-white mb-4">Quick Commands</h2>
+      <div class="space-y-2 text-xs font-mono">
+        <div class="bg-[#0d1117] rounded p-2 text-gray-400">python3 bin/auto_execute_roadmap.py --max-items 10</div>
+        <div class="bg-[#0d1117] rounded p-2 text-gray-400">python3 bin/analyze_learning.py</div>
+        <div class="bg-[#0d1117] rounded p-2 text-gray-400">python3 bin/setup_references.py</div>
+        <div class="bg-[#0d1117] rounded p-2 text-gray-400">make check</div>
+      </div>
+      <p class="text-xs text-gray-600 mt-3">Run these in your terminal.</p>
+    </div>
+
+    <!-- Keyboard shortcuts -->
+    <div class="bg-[#161b22] border border-[#21262d] rounded-xl p-5 md:col-span-2">
+      <h2 class="text-sm font-semibold text-white mb-3">Keyboard Shortcuts</h2>
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
+        <div><kbd class="bg-[#21262d] px-2 py-0.5 rounded text-gray-300">1</kbd><span class="text-gray-500 ml-2">Overview</span></div>
+        <div><kbd class="bg-[#21262d] px-2 py-0.5 rounded text-gray-300">2</kbd><span class="text-gray-500 ml-2">Roadmap</span></div>
+        <div><kbd class="bg-[#21262d] px-2 py-0.5 rounded text-gray-300">3</kbd><span class="text-gray-500 ml-2">Logs</span></div>
+        <div><kbd class="bg-[#21262d] px-2 py-0.5 rounded text-gray-300">4</kbd><span class="text-gray-500 ml-2">Controls</span></div>
+        <div><kbd class="bg-[#21262d] px-2 py-0.5 rounded text-gray-300">R</kbd><span class="text-gray-500 ml-2">Refresh now</span></div>
+        <div><kbd class="bg-[#21262d] px-2 py-0.5 rounded text-gray-300">L</kbd><span class="text-gray-500 ml-2">Go to logs</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</main>
+
 <script>
+// ── Utilities ────────────────────────────────────────────────────────────────
 const $ = id => document.getElementById(id);
+const pct = (v, t) => t > 0 ? Math.min(100, Math.round(v / t * 100)) : 0;
 
-function pct(val, total) {
-  return total > 0 ? Math.min(100, Math.round(val / total * 100)) : 0;
+function setBar(id, p) { const e=$(id); if(e) e.style.width=p+'%'; }
+
+function setRing(id, circ, p) {
+  const e=$(id); if(!e) return;
+  e.setAttribute('stroke-dashoffset', circ - circ * p / 100);
 }
 
-function setBar(id, pctVal, pctStr) {
-  const el = $(id);
-  if (el) el.style.width = pctStr || pctVal + '%';
+function toast(msg, type='ok') {
+  const el = document.createElement('div');
+  el.className = `toast pointer-events-auto px-4 py-2 rounded-lg text-sm font-medium shadow-lg
+    ${type==='ok' ? 'bg-emerald-800 text-emerald-100' : 'bg-red-800 text-red-100'}`;
+  el.textContent = msg;
+  $('toasts').appendChild(el);
+  setTimeout(() => el.remove(), 3100);
 }
 
+// ── Tab system ────────────────────────────────────────────────────────────────
+const TABS = ['overview', 'kanban', 'logs', 'controls'];
+let currentTab = 'overview';
+
+function setTab(name) {
+  TABS.forEach(t => {
+    $(`pane-${t}`).classList.toggle('hidden', t !== name);
+    $(`tab-${t}`).classList.toggle('active', t === name);
+  });
+  currentTab = name;
+  if (name === 'kanban' && !kanbanLoaded) loadKanban();
+  if (name === 'logs') loadLog();
+}
+
+// ── Render status ─────────────────────────────────────────────────────────────
 function render(d) {
-  const rm = d.roadmap || {};
-  const ex = d.execution || {};
-  const tr = d.training || {};
-  const sys = d.system || {};
-  const git = d.git || [];
+  const rm  = d.roadmap   || {};
+  const ex  = d.execution || {};
+  const tr  = d.training  || {};
+  const sys = d.system    || {};
+  const cats = d.categories || [];
 
-  // Status dot
+  // Header
   const running = sys.executor_running || ex.is_running;
-  $('status-dot').className = `w-2 h-2 rounded-full ${running ? 'bg-emerald-400 pulse-dot' : 'bg-gray-600'}`;
-  $('status-text').textContent = running ? 'executor running' : 'idle';
-  $('last-update').textContent = new Date().toLocaleTimeString();
+  $('hdr-dot').className    = `w-2 h-2 rounded-full ${running ? 'bg-emerald-400 pulse' : 'bg-gray-600'}`;
+  $('hdr-status').textContent = running ? 'executor running' : 'idle';
+  $('hdr-time').textContent   = new Date().toLocaleTimeString();
 
-  // Top metrics
-  const done = (rm.completed || 0) + (rm.accepted || 0);
+  // Hero
+  const done = (rm.completed||0) + (rm.accepted||0);
   const total = rm.total || 254;
-  $('m-completed').textContent = done;
-  $('m-total').textContent = `of ${total} items`;
-  setBar('bar-roadmap', pct(done, total));
+  $('h-done').textContent  = done;
+  $('h-total').textContent = `of ${total} items`;
 
-  const successRate = ex.subtask_count > 0
-    ? Math.round((ex.subtask_count - (ex.failure_count || 0)) / ex.subtask_count * 100)
-    : (done > 0 ? 100 : 0);
-  $('m-rate').textContent = successRate + '%';
-  $('m-subtasks').textContent = `${ex.subtask_count || 0} subtasks run`;
+  const subtasks = ex.subtask_count || 0;
+  const fails    = ex.failure_count || 0;
+  const rate = subtasks > 0 ? Math.round((subtasks - fails) / subtasks * 100) : (done > 0 ? 100 : 0);
+  $('h-rate').textContent = rate + '%';
+  $('h-runs').textContent = `${subtasks} subtasks`;
 
-  $('m-avgtime').textContent = ex.avg_subtask_seconds > 0 ? ex.avg_subtask_seconds + 's' : '—';
+  const avg = ex.avg_subtask_seconds;
+  $('h-avg').textContent = avg > 0 ? avg + 's' : '—';
 
   const qual = tr.quality_examples || 0;
-  $('m-examples').textContent = qual;
-  $('m-sft').textContent = `of ${tr.sft_threshold || 10} for SFT`;
+  $('h-ex').textContent  = qual;
+  $('h-sft').textContent = `of ${tr.sft_threshold||10} for SFT`;
 
-  // Current execution
-  if (ex.is_running || ex.current_item) {
-    $('exec-badge').className = 'text-xs px-2 py-0.5 rounded-full bg-emerald-900/50 text-emerald-400';
+  // Execution panel
+  if (running || ex.current_item) {
+    $('exec-badge').className   = 'text-xs px-2 py-0.5 rounded-full bg-emerald-900/50 text-emerald-400';
     $('exec-badge').textContent = 'running';
-    $('exec-item').textContent = ex.current_item
-      ? `▶ ${ex.current_item}`
-      : 'Starting…';
-    $('exec-item').className = 'text-sm text-emerald-300 mb-1 font-medium';
+    $('exec-item').textContent  = ex.current_item ? `▶ ${ex.current_item}` : 'Starting…';
+    $('exec-item').className    = 'text-sm text-emerald-300 mb-1 font-medium';
     $('exec-subtask').textContent = ex.current_subtask || '';
-    $('exec-log').textContent = ex.log_file ? `log: ${ex.log_file}` : '';
+    setBar('exec-prog', pct(done, total));
   } else {
-    $('exec-badge').className = 'text-xs px-2 py-0.5 rounded-full bg-gray-800 text-gray-500';
+    $('exec-badge').className   = 'text-xs px-2 py-0.5 rounded-full bg-[#21262d] text-gray-500';
     $('exec-badge').textContent = 'idle';
-    $('exec-item').textContent = 'No executor running';
-    $('exec-item').className = 'text-sm text-gray-500 mb-1';
-    $('exec-subtask').textContent = ex.log_file
-      ? `Last log: ${ex.log_file} (${ex.log_size_kb}KB)`
-      : '';
-    $('exec-log').textContent = '';
+    $('exec-item').textContent  = ex.log_file
+      ? `Last: ${ex.log_file.split('/').pop()} (${ex.log_size_kb}KB)`
+      : 'No executor running';
+    $('exec-item').className    = 'text-sm text-gray-500 mb-1';
+    $('exec-subtask').textContent = '';
+    setBar('exec-prog', pct(done, total));
   }
 
-  // Completions feed
-  const completions = (ex.completions || []).slice().reverse();
-  $('feed-completions').innerHTML = completions.length
-    ? completions.map(c => `
-      <div class="flex items-center gap-2 text-xs fade-in">
-        <span class="text-emerald-500">✓</span>
-        <span class="text-gray-300 font-mono">${c}</span>
-      </div>`).join('')
-    : '<p class="text-xs text-gray-600">No completions yet</p>';
+  // Category chart
+  $('cat-chart').innerHTML = cats.slice(0, 12).map(c => `
+    <div class="flex items-center gap-2">
+      <span class="text-xs text-gray-500 w-20 shrink-0 truncate">${c.category}</span>
+      <div class="flex-1 h-4 bg-[#21262d] rounded overflow-hidden relative">
+        <div class="cat-bar h-full bg-blue-600/50 rounded" style="width:${c.total > 0 ? 100 : 0}%"></div>
+        <div class="cat-bar h-full bg-emerald-500 rounded absolute top-0 left-0" style="width:${c.pct}%"></div>
+      </div>
+      <span class="text-xs text-gray-500 w-14 text-right shrink-0">${c.done}/${c.total}</span>
+    </div>`).join('');
 
-  // Git commits
-  $('feed-commits').innerHTML = git.length
-    ? git.map(c => `
-      <div class="fade-in">
-        <div class="flex items-start gap-2">
-          <span class="text-xs font-mono text-violet-400 shrink-0 mt-0.5">${c.hash}</span>
-          <span class="text-xs text-gray-300 leading-relaxed">${c.message}</span>
-        </div>
-        <div class="text-xs text-gray-600 ml-12">${c.when} · ${c.author}</div>
-      </div>`).join('')
-    : '<p class="text-xs text-gray-600">No commits</p>';
+  // Git feed
+  $('git-feed').innerHTML = (d.git||[]).map(c => `
+    <div class="slide-in">
+      <div class="flex gap-2 items-start">
+        <span class="text-violet-400 text-xs font-mono shrink-0">${c.hash}</span>
+        <span class="text-xs text-gray-300 leading-snug">${esc(c.message)}</span>
+      </div>
+      <div class="text-xs text-gray-600 ml-14">${c.when}</div>
+    </div>`).join('') || '<p class="text-xs text-gray-600">No commits</p>';
+
+  // Rings
+  const donePct  = pct(done, total);
+  const compPct  = pct(rm.completed||0, total);
+  setRing('ring-outer', 427, donePct);
+  setRing('ring-inner', 327, compPct);
+  $('ring-label').textContent = done;
+  $('ring-sub').textContent   = `of ${total}`;
+  $('r-completed').textContent = rm.completed || 0;
+  $('r-accepted').textContent  = rm.accepted  || 0;
+  $('r-inprog').textContent    = rm.in_progress || 0;
+  $('r-pending').textContent   = rm.pending || 0;
 
   // Training bars
-  const sftPct = pct(qual, tr.sft_threshold || 10);
-  const loraPct = pct(qual, tr.lora_threshold || 50);
-  const stablePct = pct(qual, tr.stable_threshold || 200);
-  $('sft-label').textContent = `${qual} / ${tr.sft_threshold || 10}`;
-  $('lora-label').textContent = `${qual} / ${tr.lora_threshold || 50}`;
-  $('stable-label').textContent = `${qual} / ${tr.stable_threshold || 200}`;
-  setBar('bar-sft', sftPct);
-  setBar('bar-lora', loraPct);
-  setBar('bar-stable', stablePct);
+  $('t-sft-lbl').textContent   = `${qual}/${tr.sft_threshold||10}`;
+  $('t-lora-lbl').textContent  = `${qual}/${tr.lora_threshold||50}`;
+  $('t-stable-lbl').textContent= `${qual}/${tr.stable_threshold||200}`;
+  setBar('t-sft',    pct(qual, tr.sft_threshold||10));
+  setBar('t-lora',   pct(qual, tr.lora_threshold||50));
+  setBar('t-stable', pct(qual, tr.stable_threshold||200));
 
-  const sftNeed = Math.max(0, (tr.sft_threshold || 10) - qual);
-  const etaMin = sftNeed * (ex.avg_subtask_seconds || 80) / 60;
-  $('training-eta').textContent = tr.sft_ready
-    ? '✓ SFT threshold reached — fine-tuning ready'
-    : `SFT: ${sftNeed} more quality examples needed (~${Math.ceil(etaMin)} min at current pace)`;
-  $('training-quality').textContent = tr.diff_median_lines
-    ? `Median diff size: ${tr.diff_median_lines} lines`
-    : '';
+  const sftNeed = Math.max(0, (tr.sft_threshold||10) - qual);
+  const etaMin  = sftNeed * ((ex.avg_subtask_seconds||80)) / 60;
+  $('t-eta').textContent = tr.sft_ready
+    ? '✓ SFT threshold reached'
+    : `${sftNeed} more examples for SFT (~${Math.ceil(etaMin)} min at current pace)`;
 
-  // Roadmap breakdown
-  $('roadmap-breakdown').innerHTML = `
-    <div class="flex justify-between text-xs"><span class="text-gray-400">Completed</span><span class="text-emerald-400">${rm.completed || 0}</span></div>
-    <div class="flex justify-between text-xs"><span class="text-gray-400">Accepted</span><span class="text-blue-400">${rm.accepted || 0}</span></div>
-    <div class="flex justify-between text-xs"><span class="text-gray-400">In progress</span><span class="text-yellow-400">${rm.in_progress || 0}</span></div>
-    <div class="flex justify-between text-xs"><span class="text-gray-400">Pending</span><span class="text-gray-500">${rm.pending || 0}</span></div>
-  `;
+  // System
+  const ollOk = sys.ollama_available;
+  $('s-ollama').textContent  = ollOk ? 'online' : 'offline';
+  $('s-ollama').className    = `text-xs px-1.5 py-0.5 rounded ${ollOk ? 'bg-emerald-900/40 text-emerald-400' : 'bg-red-900/40 text-red-400'}`;
+  $('s-aider').textContent   = (sys.aider_processes||0) > 0 ? `${sys.aider_processes} running` : 'none';
+  $('s-executor').textContent= sys.executor_running ? `yes · PID ${(sys.executor_pids||[]).join(', ')}` : 'no';
+  $('s-disk').textContent    = sys.disk_free_gb ? `${sys.disk_free_gb} GB free` : '—';
 
-  // System health
-  $('sys-ollama').textContent = sys.ollama_available ? 'online' : 'offline';
-  $('sys-ollama').className = `text-xs px-2 py-0.5 rounded-full ${sys.ollama_available ? 'bg-emerald-900/40 text-emerald-400' : 'bg-red-900/40 text-red-400'}`;
-  $('sys-aider').textContent = (sys.aider_processes || 0) > 0 ? `${sys.aider_processes} running` : 'none';
-  $('sys-executor').textContent = sys.executor_running
-    ? `yes (PID ${(sys.executor_pids || []).join(', ')})`
-    : 'no';
-  $('sys-disk').textContent = sys.disk_free_gb ? `${sys.disk_free_gb} GB free` : '—';
+  // Controls tab mirror
+  $('ctrl-running').textContent = sys.executor_running ? 'yes' : 'no';
+  $('ctrl-pids').textContent    = (sys.executor_pids||[]).join(', ') || '—';
+
+  // Completions
+  const comps = (ex.completions||[]).slice().reverse();
+  $('feed-done').innerHTML = comps.length
+    ? comps.map(c => `<div class="flex gap-2"><span class="text-emerald-500">✓</span><span class="text-gray-300 font-mono">${c}</span></div>`).join('')
+    : '<p class="text-gray-600">No completions yet</p>';
 
   // Failures
-  const failures = ex.recent_failures || [];
-  if (failures.length > 0) {
-    $('failures-section').classList.remove('hidden');
-    $('feed-failures').innerHTML = failures.map(f => `
-      <div class="text-xs fade-in">
-        <span class="text-red-400 font-medium">${f.item || 'unknown'}</span>
-        <span class="text-gray-500 ml-2">${f.error || ''}</span>
-      </div>`).join('');
+  const fails_ = ex.recent_failures || [];
+  if (fails_.length) {
+    $('failures-card').classList.remove('hidden');
+    $('feed-fail').innerHTML = fails_.map(f => `
+      <div><span class="text-red-400">${f.item||'?'}</span><span class="text-gray-500 ml-2">${esc(f.error||'')}</span></div>`).join('');
   } else {
-    $('failures-section').classList.add('hidden');
+    $('failures-card').classList.add('hidden');
   }
-
-  $('footer-ts').textContent = new Date(d.ts * 1000).toLocaleString();
 }
 
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ── Kanban ────────────────────────────────────────────────────────────────────
+let kanbanLoaded = false;
+const BUCKET_COLORS = {
+  'In progress': 'border-yellow-500/40 bg-yellow-900/10',
+  'Pending':     'border-[#21262d] bg-[#161b22]',
+  'Completed':   'border-emerald-500/40 bg-emerald-900/10',
+  'Accepted':    'border-blue-500/40 bg-blue-900/10',
+};
+const BADGE_COLORS = {
+  'In progress': 'bg-yellow-800/60 text-yellow-300',
+  'Pending':     'bg-[#21262d] text-gray-400',
+  'Completed':   'bg-emerald-900/60 text-emerald-300',
+  'Accepted':    'bg-blue-900/60 text-blue-300',
+};
+
+async function loadKanban() {
+  kanbanLoaded = true;
+  const res = await fetch('/api/kanban').catch(() => null);
+  if (!res?.ok) { $('kanban-board').textContent = 'Error loading'; return; }
+  const data = await res.json();
+  const order = ['In progress', 'Pending', 'Completed', 'Accepted'];
+  $('kanban-board').innerHTML = order.map(status => {
+    const items = data[status] || [];
+    return `
+    <div class="border ${BUCKET_COLORS[status]} rounded-xl p-3">
+      <div class="flex justify-between items-center mb-3">
+        <h3 class="text-xs font-semibold text-gray-300">${status}</h3>
+        <span class="text-xs px-1.5 py-0.5 rounded ${BADGE_COLORS[status]}">${items.length}</span>
+      </div>
+      <div class="space-y-1.5 max-h-[50vh] overflow-y-auto">
+        ${items.map(it => `
+          <div class="bg-[#0d1117] border border-[#21262d] rounded-lg p-2 hover:border-gray-600 transition">
+            <div class="text-xs text-gray-400 font-mono mb-0.5">${it.id}</div>
+            <div class="text-xs text-gray-300 leading-snug">${esc(it.title)}</div>
+            <div class="text-xs text-gray-600 mt-1">${it.category}</div>
+          </div>`).join('')}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── Log viewer ────────────────────────────────────────────────────────────────
+async function loadLog() {
+  const res = await fetch('/api/log').catch(() => null);
+  if (!res?.ok) return;
+  const data = await res.json();
+  $('log-file').textContent = data.file ? data.file.split('/').pop() : '';
+  const view = $('log-view');
+  const lines = (data.lines||[]).join('\n');
+  // Colour-code key lines
+  const coloured = lines
+    .replace(/✅ Completed.*/g,  '<span class="text-emerald-400">$&</span>')
+    .replace(/❌ Failed.*/g,     '<span class="text-red-400">$&</span>')
+    .replace(/🚀.*/g,            '<span class="text-blue-300">$&</span>')
+    .replace(/\[DEBUG\].*/g,     '<span class="text-gray-600">$&</span>')
+    .replace(/\[EMERGENCY\].*/g, '<span class="text-yellow-600">$&</span>');
+  view.innerHTML = coloured || '<span class="text-gray-600">No log data</span>';
+  if ($('log-follow').checked) view.scrollTop = view.scrollHeight;
+}
+
+// ── Executor controls ─────────────────────────────────────────────────────────
+async function execAction(action) {
+  $('ctrl-status').textContent = action === 'start' ? 'Starting…' : 'Stopping…';
+  try {
+    const res = await fetch('/api/executor', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({action}),
+    });
+    const data = await res.json();
+    $('ctrl-status').textContent = data.message;
+    toast(data.message, data.ok ? 'ok' : 'err');
+  } catch(e) {
+    $('ctrl-status').textContent = 'Request failed';
+    toast('Server unreachable', 'err');
+  }
+}
+
+// ── Polling ───────────────────────────────────────────────────────────────────
 async function refresh() {
   try {
     const res = await fetch('/api/status');
     if (!res.ok) throw new Error(res.status);
     render(await res.json());
-  } catch (e) {
-    $('status-dot').className = 'w-2 h-2 rounded-full bg-red-500 pulse-dot';
-    $('status-text').textContent = 'server unreachable';
-    $('last-update').textContent = new Date().toLocaleTimeString();
+    if (currentTab === 'logs') loadLog();
+  } catch(e) {
+    $('hdr-dot').className    = 'w-2 h-2 rounded-full bg-red-500 pulse';
+    $('hdr-status').textContent = 'server unreachable';
   }
 }
+
+// ── Keyboard shortcuts ────────────────────────────────────────────────────────
+document.addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT') return;
+  if (e.key === '1') setTab('overview');
+  if (e.key === '2') setTab('kanban');
+  if (e.key === '3') setTab('logs');
+  if (e.key === '4') setTab('controls');
+  if (e.key === 'r' || e.key === 'R') refresh();
+  if (e.key === 'l' || e.key === 'L') setTab('logs');
+});
 
 refresh();
 setInterval(refresh, 5000);
