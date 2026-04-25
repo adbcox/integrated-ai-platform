@@ -4,7 +4,7 @@
 - **Title:** Response cache layer for repeated queries
 - **Category:** `PERF`
 - **Type:** `Enhancement`
-- **Status:** `In progress`
+- **Status:** `Accepted`
 - **Maturity:** `M0`
 - **Priority:** `Medium`
 - **Priority class:** `P3`
