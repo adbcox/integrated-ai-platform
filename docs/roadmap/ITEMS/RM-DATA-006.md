@@ -4,7 +4,7 @@
 - **Title:** OCR and document intelligence pipeline for vision models and batch processing
 - **Category:** `DATA`
 - **Type:** `System`
-- **Status:** `Planned`
+- **Status:** `In progress`
 - **Maturity:** `M0`
 - **Priority:** `High`
 - **Priority class:** `P2`
