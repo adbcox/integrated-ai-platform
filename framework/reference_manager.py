@@ -69,8 +69,9 @@ CATEGORY_SNIPPETS: dict[str, list[str]] = {
         "patterns/factory_pattern.py",
     ],
     "PERIPH": [
-        "patterns/adapter_pattern.py",  # wrapping hardware APIs
-        "patterns/observer_pattern.py", # event-driven device state
+        "patterns/hardware_adapter_pattern.py",  # device lifecycle, retry, Niimbot example
+        "patterns/adapter_pattern.py",           # generic ABC/adapter structure
+        "patterns/observer_pattern.py",          # event-driven device state
     ],
     # Default for unknown categories
     "_default": [
