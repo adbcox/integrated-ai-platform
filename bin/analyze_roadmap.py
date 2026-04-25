@@ -20,8 +20,11 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).parent.parent
 ITEMS_DIR = REPO_ROOT / "docs" / "roadmap" / "ITEMS"
 
-# Must match auto_execute_roadmap.py EXECUTION_READY_STATUSES exactly
-PENDING_STATUSES = {"Accepted", "Planned", "In progress"}
+# Must match auto_execute_roadmap.py exactly:
+#   EXECUTION_READY_STATUSES = ["Accepted", "Planned"]
+#   READY_READINESS           = ["now", "near", "later"]
+PENDING_STATUSES   = {"Accepted", "Planned"}
+READY_READINESS    = {"now", "near", "later"}
 
 # ── Scoring ───────────────────────────────────────────────────────────────────
 # LOE maps to base easiness score
@@ -90,6 +93,9 @@ def load_items() -> list[Item]:
         text = md.read_text()
         status = _field(text, "Status")
         if status not in PENDING_STATUSES:
+            continue
+        readiness = _field(text, "Readiness")
+        if readiness not in READY_READINESS:
             continue
 
         item_id = _field(text, "ID") or md.stem

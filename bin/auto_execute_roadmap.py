@@ -502,32 +502,23 @@ Only JSON array, no other text."""
         attempt = 0
 
         # Run until target completions reached or too many consecutive failures
-        skipped_without_match = 0
         while completed_count < target_completions:
-            # Find next executable item
-            candidates = self.find_executable_items(items, max_count=1)
+            # Find all currently executable items, then apply filter across the whole list
+            candidates = self.find_executable_items(items, max_count=200)
             if not candidates:
                 print(f"✅ No more executable items (completed: {completed_count}/{target_completions})", flush=True)
                 sys.stdout.flush()
                 break
 
-            item = candidates[0]
-
-            # Apply filter if specified
             if filter_pattern:
-                if not re.search(filter_pattern, item.id):
-                    # Skip this item, reload and find next
-                    skipped_without_match += 1
-                    if skipped_without_match > 10:
-                        print(f"❌ No items matching filter '{filter_pattern}' found after 10 attempts", flush=True)
-                        sys.stdout.flush()
-                        break
-                    items = parse_roadmap_directory(self.roadmap_dir)
-                    infer_dependencies(items)
-                    continue
-
-            # Reset skipped counter when we find a match
-            skipped_without_match = 0
+                matching = [c for c in candidates if re.search(filter_pattern, c.id)]
+                if not matching:
+                    print(f"❌ No items matching filter '{filter_pattern}' found in {len(candidates)} executable items", flush=True)
+                    sys.stdout.flush()
+                    break
+                item = matching[0]
+            else:
+                item = candidates[0]
 
             # Find grouped items
             grouped = self.find_grouped_items(items, item)
