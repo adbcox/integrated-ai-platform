@@ -158,11 +158,14 @@ def main() -> int:
     if args.batch_mode:
         args.force = True
         args.skip_analysis = True
+        # 32b reviewer blocks for 15+ min per subtask in batch; writer commit is sufficient
+        args.dual_model = False
 
     # Force-local mode: allow tasks without files (research/planning)
     if args.force_local:
         args.skip_analysis = True
         args.force = True
+        args.dual_model = False  # same reason as batch_mode
 
     # Get repo root
     repo_root = Path(__file__).parent.parent
