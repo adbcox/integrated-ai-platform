@@ -20,7 +20,8 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).parent.parent
 ITEMS_DIR = REPO_ROOT / "docs" / "roadmap" / "ITEMS"
 
-PENDING_STATUSES = {"Pending", "Planning", "Planned", "In progress"}
+# Must match auto_execute_roadmap.py EXECUTION_READY_STATUSES exactly
+PENDING_STATUSES = {"Accepted", "Planned", "In progress"}
 
 # ── Scoring ───────────────────────────────────────────────────────────────────
 # LOE maps to base easiness score
