@@ -4,7 +4,7 @@
 - **Title:** Test coverage reporting and analysis
 - **Category:** `TESTING`
 - **Type:** `Enhancement`
-- **Status:** `In progress`
+- **Status:** `Completed`
 - **Maturity:** `M0`
 - **Priority:** `Medium`
 - **Priority class:** `P3`
