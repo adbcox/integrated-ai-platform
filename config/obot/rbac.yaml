@@ -1,0 +1,57 @@
+# Obot RBAC Configuration — integrated-AI-platform
+#
+# Three roles, least-privilege:
+#   Admin  — Full access (you, Adrian)
+#   Dev    — Read+write code tools, read-only infrastructure
+#   Agent  — Automated agent scope (read-mostly, constrained write)
+#
+# Applied by: bin/register_obot_tools.py
+
+roles:
+
+  Admin:
+    description: "Platform owner — full access to all tools and admin operations"
+    permissions:
+      - "tools:*"
+      - "agents:*"
+      - "admin:*"
+      - "audit:read"
+    tool_overrides: {}  # no restrictions
+
+  Dev:
+    description: "Developer — can read/write code tools, read infrastructure"
+    permissions:
+      - "tools:read"
+      - "tools:write"
+      - "agents:read"
+      - "audit:read"
+    tool_overrides:
+      github-mcp:      [read, write]   # PRs, issues, code
+      filesystem-mcp:  [read, write]   # workspace files
+      plane-roadmap-mcp: [read, write] # roadmap CRUD
+      postgresql-mcp:  [read]          # DB read-only for devs
+      docker-mcp:      [read]          # inspect only, no start/stop
+
+  Agent:
+    description: "Automated agent — minimum necessary scope for AI execution"
+    permissions:
+      - "tools:read"
+      - "tools:write"   # agents can write but with tool-level limits
+    tool_overrides:
+      github-mcp:      [read]          # read repos, issues
+      filesystem-mcp:  [read]          # read workspace only
+      plane-roadmap-mcp: [read, write] # update issue status
+      postgresql-mcp:  [read]          # query only
+      docker-mcp:      [read]          # inspect only
+
+# Audit log settings
+audit:
+  enabled: true
+  log_path: /data/audit.log
+  log_format: jsonl
+  capture:
+    - tool_calls          # log every MCP tool invocation
+    - auth_events         # login/logout
+    - admin_changes       # role/config changes
+    - tool_registrations  # when new tools are added
+  retention_days: 90

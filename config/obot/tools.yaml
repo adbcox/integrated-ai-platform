@@ -1,0 +1,134 @@
+# Obot P0 MCP Tool Definitions — integrated-AI-platform
+# Applied by: bin/register_obot_tools.py (POST to Obot API after startup)
+#
+# P0 = Must-have for core platform operation
+# P1 = Month 1 additions (Ollama, Sequential, Brave, SQLite, Memory)
+
+tools:
+
+  # ── P0-1: GitHub MCP ────────────────────────────────────────────────────────
+  github:
+    id: github-mcp
+    name: "GitHub"
+    description: "Read/write GitHub repos, issues, PRs, and actions for adbcox/integrated-ai-platform"
+    tier: P0
+    package: "@modelcontextprotocol/server-github"
+    transport: stdio
+    command: npx
+    args: ["-y", "@modelcontextprotocol/server-github"]
+    env:
+      GITHUB_PERSONAL_ACCESS_TOKEN: "${GITHUB_TOKEN}"
+    rbac:
+      Admin: [read, write, admin]
+      Dev:   [read, write]
+      Agent: [read]
+    status: BLOCKED_BY_CREDENTIAL  # Set GITHUB_TOKEN in docker/.env
+
+  # ── P0-2: Filesystem MCP ────────────────────────────────────────────────────
+  filesystem:
+    id: filesystem-mcp
+    name: "Filesystem"
+    description: "Read/write access to the integrated-ai-platform repository workspace"
+    tier: P0
+    package: "@modelcontextprotocol/server-filesystem"
+    transport: stdio
+    command: npx
+    args: ["-y", "@modelcontextprotocol/server-filesystem", "/workspace"]
+    env: {}
+    rbac:
+      Admin: [read, write, admin]
+      Dev:   [read, write]
+      Agent: [read]
+    status: READY
+
+  # ── P0-3: PostgreSQL MCP ─────────────────────────────────────────────────────
+  postgresql:
+    id: postgresql-mcp
+    name: "PostgreSQL (Plane)"
+    description: "Query Plane CE's Postgres database (plane/plane@plane-db:5432/plane)"
+    tier: P0
+    package: "@modelcontextprotocol/server-postgres"
+    transport: stdio
+    command: npx
+    args: ["-y", "@modelcontextprotocol/server-postgres", "${POSTGRES_DSN}"]
+    env:
+      POSTGRES_DSN: "postgresql://plane:plane@docker-plane-db-1:5432/plane"
+    rbac:
+      Admin: [read, write, admin]
+      Dev:   [read]
+      Agent: [read]
+    status: READY  # credentials embedded, reachable on docker_plane-net
+
+  # ── P0-4: Plane MCP ──────────────────────────────────────────────────────────
+  plane:
+    id: plane-roadmap-mcp
+    name: "Plane Roadmap"
+    description: "CRUD access to Plane CE roadmap: list/get/create/update issues, search, stats"
+    tier: P0
+    transport: stdio
+    command: python3
+    args: ["/workspace/mcp/plane_mcp_server.py"]
+    env:
+      PLANE_URL: "${PLANE_URL}"
+      PLANE_API_TOKEN: "${PLANE_API_TOKEN}"
+      PLANE_WORKSPACE: "${PLANE_WORKSPACE}"
+      PLANE_PROJECT_ID: "${PLANE_PROJECT_ID}"
+      REPO_ROOT: "/workspace"
+    rbac:
+      Admin: [read, write, admin]
+      Dev:   [read, write]
+      Agent: [read, write]
+    status: READY
+
+  # ── P0-5: Docker MCP ─────────────────────────────────────────────────────────
+  docker:
+    id: docker-mcp
+    name: "Docker"
+    description: "Inspect and manage Docker containers/images/volumes on this host"
+    tier: P0
+    package: "mcp-server-docker"
+    transport: stdio
+    command: uvx
+    args: ["mcp-server-docker"]
+    env: {}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    rbac:
+      Admin: [read, write, admin]
+      Dev:   [read]
+      Agent: [read]
+    status: READY
+
+# ── P1 tools (Month 1) ────────────────────────────────────────────────────────
+# Uncomment and register after P0 is stable
+
+p1_tools:
+  ollama:
+    id: ollama-mcp
+    tier: P1
+    description: "Local LLM inference via Ollama (qwen2.5-coder:14b)"
+    status: BLOCKED_BY_CONTAINER  # Start Ollama container first
+
+  sequential-thinking:
+    id: sequential-thinking-mcp
+    tier: P1
+    package: "@modelcontextprotocol/server-sequential-thinking"
+    status: READY_TO_ADD
+
+  brave-search:
+    id: brave-search-mcp
+    tier: P1
+    package: "@modelcontextprotocol/server-brave-search"
+    status: BLOCKED_BY_CREDENTIAL  # Needs BRAVE_API_KEY
+
+  sqlite:
+    id: sqlite-mcp
+    tier: P1
+    package: "@modelcontextprotocol/server-sqlite"
+    status: READY_TO_ADD
+
+  memory:
+    id: memory-mcp
+    tier: P1
+    package: "@modelcontextprotocol/server-memory"
+    status: READY_TO_ADD

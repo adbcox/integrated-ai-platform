@@ -1,0 +1,92 @@
+# Obot AI Agent Gateway — MCP hub for the integrated-AI-platform
+#
+# Obot acts as a central MCP gateway: Claude Code connects to Obot as a single
+# MCP server, and Obot routes requests to the 5 P0 backend MCP servers.
+#
+# Port mapping: Obot listens on 8080 internally; exposed on 8090 to avoid
+# conflict with the existing dashboard server on 8080.
+#
+# Usage:
+#   cd docker && docker-compose -f obot-stack.yml up -d
+#   docker-compose -f obot-stack.yml logs -f obot
+#
+# After startup:
+#   1. Open http://localhost:8090  (admin UI)
+#   2. Run: python3 bin/register_obot_tools.py
+#   3. Claude Code picks up Obot via ~/.claude.json (added by register script)
+#
+# Credentials needed before starting:
+#   - GITHUB_TOKEN in docker/.env (PAT with repo scope)
+#   - OBOT_ADMIN_PASSWORD in docker/.env (choose a strong password)
+#
+# Networks:
+#   obot-net       — Obot ↔ MCP subprocess containers
+#   docker_plane-net (external) — Obot ↔ Plane postgres (plane/plane@5432)
+
+version: "3.9"
+
+services:
+
+  # ── Obot Gateway (MCP hub + RBAC + audit log) ────────────────────────────────
+  obot:
+    image: obot/obot:latest
+    container_name: obot
+    restart: unless-stopped
+    ports:
+      - "8090:8080"          # internal 8080 → host 8090
+    environment:
+      # Core server config
+      OBOT_SERVER_URL: "http://localhost:8090"
+      OBOT_ADMIN_USERNAME: "admin"
+      OBOT_ADMIN_PASSWORD: "${OBOT_ADMIN_PASSWORD:-changeme_before_prod}"
+
+      # Audit logging (writes to /data/audit.log inside container)
+      OBOT_AUDIT_LOG: "true"
+      OBOT_AUDIT_LOG_PATH: "/data/audit.log"
+
+      # GitHub MCP (P0) — set GITHUB_TOKEN in docker/.env
+      GITHUB_TOKEN: "${GITHUB_TOKEN:-}"
+
+      # Plane MCP (P0) — pulled from docker/.env
+      PLANE_URL: "${PLANE_URL:-http://docker-plane-api-1:8000}"
+      PLANE_API_TOKEN: "${PLANE_API_TOKEN:-}"
+      PLANE_WORKSPACE: "${PLANE_WORKSPACE:-iap}"
+      PLANE_PROJECT_ID: "${PLANE_PROJECT_ID:-}"
+
+      # PostgreSQL MCP (P0) — Plane's postgres on the shared plane-net
+      POSTGRES_DSN: "postgresql://plane:plane@docker-plane-db-1:5432/plane"
+
+    volumes:
+      - obot-data:/data
+      # Docker MCP needs socket access to manage containers
+      - /var/run/docker.sock:/var/run/docker.sock
+      # Filesystem MCP — expose repo root read-only for safety
+      - /Users/admin/repos/integrated-ai-platform:/workspace:ro
+
+    networks:
+      - obot-net
+      - plane-net     # access Plane API + postgres on plane-net
+
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080/healthz || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+    labels:
+      com.iap.service: "obot-gateway"
+      com.iap.tier: "infrastructure"
+      com.iap.mcp-p0: "github,filesystem,postgresql,plane,docker"
+
+volumes:
+  obot-data:
+    name: obot-data
+
+networks:
+  obot-net:
+    name: obot-net
+    driver: bridge
+  plane-net:
+    external: true
+    name: docker_plane-net   # join existing Plane network for postgres access
