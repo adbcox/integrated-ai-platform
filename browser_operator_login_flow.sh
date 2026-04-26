@@ -17,7 +17,7 @@ if [ ! -x "$BOP" ]; then
   exit 1
 fi
 
-LOGIN_URL="${LOGIN_URL:-https://192.168.10.114/cgi-bin/}"
+LOGIN_URL="${LOGIN_URL:-https://192.168.10.201/cgi-bin/}"
 QNAP_USER="${QNAP_USER:-admin}"
 QNAP_PASS="${QNAP_PASS:-}"
 

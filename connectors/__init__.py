@@ -4,3 +4,6 @@
 
 from .arr_stack import ArrStackConnector
 from .home_assistant import HomeAssistantConnector
+from .plex import PlexConnector
+from .qnap import QNAPConnector
+from .seedbox import SeedboxConnector

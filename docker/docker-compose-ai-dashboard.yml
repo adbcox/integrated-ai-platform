@@ -1,0 +1,77 @@
+version: "3.8"
+
+# Standalone AI Platform Dashboard
+# Usage: docker compose -f docker/docker-compose-ai-dashboard.yml up -d
+#
+# On Mac Mini pointing at Mac Studio executor:
+#   EXECUTOR_HOST=mac-studio.local docker compose -f ... up -d
+
+services:
+  ai-platform-dashboard:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.dashboard
+    image: integrated-ai-platform/dashboard:latest
+    container_name: ai-platform-dashboard
+    restart: unless-stopped
+    ports:
+      - "${DASHBOARD_PORT:-8080}:8080"
+    volumes:
+      # Roadmap data (read-only — source of truth stays in the repo)
+      - ../docs/roadmap/ITEMS:/app/docs/roadmap/ITEMS:ro
+      # Git repo for git-log endpoint
+      - ../.git:/app/.git:ro
+      # Executor logs — rw so remote SSH log writes land here too
+      - ${LOG_DIR:-/tmp}:/app/logs
+    environment:
+      REPO_ROOT: /app
+      ITEMS_DIR: /app/docs/roadmap/ITEMS
+      LOG_DIR: /app/logs
+      # Set EXECUTOR_HOST to SSH target when executor runs on another machine
+      EXECUTOR_HOST: ${EXECUTOR_HOST:-}
+      REMOTE_REPO_ROOT: ${REMOTE_REPO_ROOT:-~/repos/integrated-ai-platform}
+      # Ollama on another host (e.g. mac-studio.local:11434)
+      OLLAMA_HOST: ${OLLAMA_HOST:-127.0.0.1:11434}
+      # *Arr stack + Plex (QNAP at 192.168.10.201)
+      SONARR_URL: ${SONARR_URL:-http://192.168.10.201:8989}
+      SONARR_API_KEY: ${SONARR_API_KEY:-}
+      RADARR_URL: ${RADARR_URL:-http://192.168.10.201:7878}
+      RADARR_API_KEY: ${RADARR_API_KEY:-}
+      PROWLARR_URL: ${PROWLARR_URL:-http://192.168.10.201:9696}
+      PROWLARR_API_KEY: ${PROWLARR_API_KEY:-}
+      PLEX_URL: ${PLEX_URL:-http://192.168.10.201:32400}
+      PLEX_TOKEN: ${PLEX_TOKEN:-}
+      # QNAP NAS
+      QNAP_URL: ${QNAP_URL:-http://192.168.10.201}
+      QNAP_USER: ${QNAP_USER:-admin}
+      QNAP_PASS: ${QNAP_PASS:-}
+      # Seedbox (seedit4me)
+      SEEDBOX_HOST: ${SEEDBOX_HOST:-5.nl19.seedit4me}
+      SEEDBOX_USER: ${SEEDBOX_USER:-seedit4me}
+      SEEDBOX_PASSWORD: ${SEEDBOX_PASSWORD:-}
+      SEEDBOX_PORT: ${SEEDBOX_PORT:-2088}
+    networks:
+      - dashboard-net
+    labels:
+      # Homepage auto-discovery
+      homepage.group: "AI & Automation"
+      homepage.name: "AI Platform"
+      homepage.description: "Roadmap executor control plane"
+      homepage.href: "http://mac-mini.local:${DASHBOARD_PORT:-8080}"
+      homepage.icon: "robot.png"
+      homepage.widget.type: "customapi"
+      homepage.widget.url: "http://ai-platform-dashboard:8080/api/embed/widget"
+      homepage.widget.method: "GET"
+    healthcheck:
+      test: ["CMD", "python3", "-c",
+             "import urllib.request; urllib.request.urlopen('http://localhost:8080/api/health', timeout=3)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+networks:
+  dashboard-net:
+    name: dashboard-net
+    # Attach to traefik-network if it exists for reverse-proxy integration
+    external: false

@@ -1,0 +1,16 @@
+---
+# Docker integration for Homepage auto-discovery
+# Docs: https://gethomepage.dev/configs/docker/
+#
+# IMPORTANT: Use the socket proxy, not direct socket access.
+# The docker-socket-proxy service in docker-compose-dashboards.yml
+# exposes a read-only API at dockerproxy:2375.
+
+my-docker:
+  # When running via docker-compose-dashboards.yml:
+  host: dockerproxy
+  port: 2375
+
+# Uncomment for direct local socket (less secure, acceptable for home lab):
+# my-docker:
+#   socket: /var/run/docker.sock

@@ -1,5 +1,7 @@
 # Architecture: Integrated AI Platform
 
+> **Quick Start:** See [PLATFORM_OVERVIEW.md](PLATFORM_OVERVIEW.md) for high-level system summary.
+
 **System Version:** Post-convergence local-first execution  
 **Last Updated:** 2026-04-24  
 **Primary Goal:** Autonomous code generation and infrastructure task execution via local LLM

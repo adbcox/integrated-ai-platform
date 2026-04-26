@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # =============================================================
-# control-plane one-shot setup for 192.168.10.114 (qnap-brain)
+# control-plane one-shot setup for 192.168.10.201 (qnap-brain)
 # Run via: bash control-plane-setup.sh
 # =============================================================
 CONTROL_PLANE_HOME="${CONTROL_PLANE_HOME:-$HOME/control-plane}"
@@ -21,7 +21,7 @@ echo "[2/4] Writing config/endpoints.yaml..."
 cat > $CONTROL_PLANE_HOME/config/endpoints.yaml <<'EOF'
 control_plane:
   name: qnap-brain
-  host: 192.168.10.114
+  host: 192.168.10.201
   role: automation_control_plane
   read_only_phase: true
 qnap_201:

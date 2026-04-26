@@ -1,0 +1,101 @@
+version: "3.8"
+
+# Zabbix monitoring stack — complements VictoriaMetrics/Grafana observability stack.
+# Use Zabbix for: network devices, SNMP, NOC dashboards.
+# Use VictoriaMetrics for: application metrics, custom time-series dashboards.
+#
+# Start:  docker compose -f docker/zabbix-stack.yml up -d
+# Stop:   docker compose -f docker/zabbix-stack.yml down
+# Logs:   docker compose -f docker/zabbix-stack.yml logs -f
+
+services:
+  postgres-zabbix:
+    image: postgres:15-alpine
+    container_name: zabbix-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: zabbix
+      POSTGRES_USER: zabbix
+      POSTGRES_PASSWORD: ${ZABBIX_DB_PASSWORD:-zabbix_secret}
+    volumes:
+      - zabbix-db:/var/lib/postgresql/data
+    networks:
+      - zabbix-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U zabbix -d zabbix"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  zabbix-server:
+    image: zabbix/zabbix-server-pgsql:alpine-7.0-latest
+    container_name: zabbix-server
+    restart: unless-stopped
+    ports:
+      - "10051:10051"
+    environment:
+      DB_SERVER_HOST: postgres-zabbix
+      POSTGRES_DB: zabbix
+      POSTGRES_USER: zabbix
+      POSTGRES_PASSWORD: ${ZABBIX_DB_PASSWORD:-zabbix_secret}
+    depends_on:
+      postgres-zabbix:
+        condition: service_healthy
+    networks:
+      - zabbix-net
+    ulimits:
+      nproc: 65535
+      nofile:
+        soft: 20000
+        hard: 40000
+
+  zabbix-web:
+    image: zabbix/zabbix-web-nginx-pgsql:alpine-7.0-latest
+    container_name: zabbix-web
+    restart: unless-stopped
+    ports:
+      - "10080:8080"
+    environment:
+      DB_SERVER_HOST: postgres-zabbix
+      POSTGRES_DB: zabbix
+      POSTGRES_USER: zabbix
+      POSTGRES_PASSWORD: ${ZABBIX_DB_PASSWORD:-zabbix_secret}
+      ZBX_SERVER_HOST: zabbix-server
+      PHP_TZ: ${TZ:-America/Los_Angeles}
+      ZBX_SERVER_NAME: "Homelab NOC"
+    depends_on:
+      postgres-zabbix:
+        condition: service_healthy
+      zabbix-server:
+        condition: service_started
+    networks:
+      - zabbix-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  zabbix-agent:
+    image: zabbix/zabbix-agent2:alpine-7.0-latest
+    container_name: zabbix-agent
+    restart: unless-stopped
+    ports:
+      - "10050:10050"
+    environment:
+      ZBX_HOSTNAME: "Mac-Mini-Host"
+      ZBX_SERVER_HOST: zabbix-server
+      ZBX_SERVER_ACTIVE: zabbix-server
+    networks:
+      - zabbix-net
+    privileged: true
+
+networks:
+  zabbix-net:
+    name: zabbix-net
+    driver: bridge
+
+volumes:
+  zabbix-db:
+    name: zabbix-db

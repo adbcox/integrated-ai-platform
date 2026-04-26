@@ -3,7 +3,7 @@ set -eu
 
 BASE="${BASE:-$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)}"
 BOP_BIN="${BOP_BIN:-$BASE/bop.sh}"
-QNAP_URL="${QNAP_URL:-https://192.168.10.114/cgi-bin/}"
+QNAP_URL="${QNAP_URL:-https://192.168.10.201/cgi-bin/}"
 QNAP_USER="${QNAP_USER:-admin}"
 QNAP_PASS="${QNAP_PASS:-*Huckbear17}"
 COMMON_SH="${COMMON_SH:-$BASE/shell/common.sh}"

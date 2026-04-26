@@ -12,7 +12,7 @@ uvicorn==0.34.0
 EOF
 
 cat > .env.example <<'EOF'
-QNAP_URL=http://192.168.10.114/
+QNAP_URL=http://192.168.10.201/
 QNAP_USERNAME=admin
 QNAP_PASSWORD=change-me
 

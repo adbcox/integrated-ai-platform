@@ -1,0 +1,178 @@
+/**
+ * light.css — Light theme CSS custom properties.
+ *
+ * Usage:
+ *   <link rel="stylesheet" href="themes/light.css">
+ *   document.documentElement.dataset.theme = 'light';
+ *
+ * All variables mirror the full set defined in dark.css.
+ */
+
+[data-theme="light"] {
+
+  /* Surfaces */
+  --bg-primary:   #ffffff;
+  --bg-secondary: #f6f8fa;
+  --bg-tertiary:  #eaeef2;
+
+  /* Legacy compat */
+  --bg-surface:   #ffffff;
+  --bg-card:      #f6f8fa;
+  --bg-card-hov:  #eaeef2;
+  --bg-inset:     #ffffff;
+  --bg-subtle:    rgba(0, 0, 0, 0.04);
+
+  /* Borders */
+  --border-color:   #d0d7de;
+  --border-default: rgba(0, 0, 0, 0.12);
+  --border-muted:   rgba(0, 0, 0, 0.06);
+  --border-hover:   rgba(0, 0, 0, 0.22);
+  --border-focus:   #0969da;
+
+  /* Text hierarchy */
+  --text-primary:   #1f2328;
+  --text-secondary: #656d76;
+  --text-muted:     #9198a1;
+  --text-disabled:  rgba(0, 0, 0, 0.28);
+
+  /* Accent palette */
+  --accent-blue:   #0969da;
+  --accent-green:  #1a7f37;
+  --accent-yellow: #9a6700;
+  --accent-red:    #cf222e;
+  --accent-purple: #8250df;
+  --accent-orange: #bc4c00;
+
+  /* Status semantic */
+  --clr-success: #1a7f37;
+  --clr-warn:    #9a6700;
+  --clr-danger:  #cf222e;
+  --clr-info:    #0969da;
+  --clr-inprog:  #0550ae;
+  --clr-done:    #1a7f37;
+  --clr-accent:  #0969da;
+
+  /* Tints */
+  --tint-success: rgba(26, 127, 55,   0.1);
+  --tint-warn:    rgba(154, 103,  0,  0.1);
+  --tint-danger:  rgba(207,  34, 46,  0.1);
+  --tint-info:    rgba(9,  105, 218,  0.1);
+
+  /* Chart palette */
+  --chart-1: #0969da;
+  --chart-2: #1a7f37;
+  --chart-3: #9a6700;
+  --chart-4: #cf222e;
+  --chart-5: #8250df;
+  --chart-6: #bc4c00;
+
+  /* Shadows */
+  --shadow: rgba(0, 0, 0, 0.15);
+  --shadow-card:  0 1px 3px rgba(0, 0, 0, 0.1), 0 0 0 1px var(--border-default);
+  --shadow-elev:  0 4px 14px rgba(0, 0, 0, 0.12), 0 0 0 1px var(--border-hover);
+  --shadow-focus: 0 0 0 3px rgba(9, 105, 218, 0.2);
+  --shadow-modal: 0 20px 60px rgba(0, 0, 0, 0.18);
+
+  /* Typography */
+  --font-ui:   'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', Menlo, Monaco, 'Cascadia Code', monospace;
+  --font-num:  'Inter', sans-serif;
+
+  /* Spacing — 8px grid */
+  --sp-1: 8px;
+  --sp-2: 16px;
+  --sp-3: 24px;
+  --sp-4: 32px;
+
+  /* Radii */
+  --r-sm: 4px;
+  --r-md: 6px;
+  --r-lg: 10px;
+  --r-xl: 14px;
+
+  /* Transitions */
+  --t-fast: 100ms cubic-bezier(0.4, 0, 0.2, 1);
+  --t-base: 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  --t-slow: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ── Light mode overrides for existing dashboard classes ─────────────────── */
+[data-theme="light"] body {
+  background: var(--bg-primary);
+  color: var(--text-secondary);
+}
+
+[data-theme="light"] .card {
+  background: var(--bg-card);
+}
+
+/* Tailwind class overrides — invert dark Tailwind colours */
+[data-theme="light"] .bg-\[#161b22\],
+[data-theme="light"] .bg-\[#0d1117\] {
+  background-color: var(--bg-card) !important;
+}
+[data-theme="light"] .bg-\[#21262d\] {
+  background-color: var(--bg-tertiary) !important;
+}
+[data-theme="light"] .border-\[#21262d\] {
+  border-color: var(--border-color) !important;
+}
+[data-theme="light"] .text-gray-400,
+[data-theme="light"] .text-gray-500 {
+  color: var(--text-secondary) !important;
+}
+[data-theme="light"] .text-white {
+  color: var(--text-primary) !important;
+}
+[data-theme="light"] .text-gray-300 {
+  color: var(--text-secondary) !important;
+}
+
+/* Header */
+[data-theme="light"] header {
+  background: rgba(255, 255, 255, 0.95) !important;
+  border-color: var(--border-color) !important;
+}
+
+/* Badges — remap in light */
+[data-theme="light"] .badge-success { background: var(--tint-success); color: #1a7f37; }
+[data-theme="light"] .badge-warn    { background: var(--tint-warn);    color: #9a6700; }
+[data-theme="light"] .badge-danger  { background: var(--tint-danger);  color: #cf222e; }
+[data-theme="light"] .badge-info    { background: var(--tint-info);    color: #0969da; }
+
+/* Inputs */
+[data-theme="light"] input[type=text],
+[data-theme="light"] input:not([type]) {
+  background: var(--bg-inset);
+  border-color: var(--border-default);
+  color: var(--text-primary);
+}
+
+/* Scrollbar */
+[data-theme="light"] ::-webkit-scrollbar-thumb  { background: rgba(0, 0, 0, 0.15); }
+[data-theme="light"] ::-webkit-scrollbar-thumb:hover { background: rgba(0, 0, 0, 0.25); }
+
+/* Selection */
+[data-theme="light"] ::selection {
+  background: rgba(9, 105, 218, 0.2);
+  color: #1f2328;
+}
+
+/* Diff viewer */
+[data-theme="light"] .d-add  { color: #1a7f37; }
+[data-theme="light"] .d-del  { color: #cf222e; }
+[data-theme="light"] .d-hunk { color: #0969da; }
+
+/* Code backgrounds */
+[data-theme="light"] .chat-bubble code { background: rgba(0, 0, 0, 0.06); }
+
+/* Modal backgrounds */
+[data-theme="light"] .modal-bg { backdrop-filter: blur(6px); background: rgba(0,0,0,0.2); }
+[data-theme="light"] .modal-box,
+[data-theme="light"] .cmd-box  { background: var(--bg-card); border-color: var(--border-default); }
+
+/* FAB */
+[data-theme="light"] #fab-main { background: var(--clr-accent); }
+[data-theme="light"] .fab-action { background: var(--bg-card); border-color: var(--border-default); color: var(--text-primary); }
+
+/* Progress fills stay same colours — they're semantic */

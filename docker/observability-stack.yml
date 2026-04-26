@@ -1,0 +1,167 @@
+# Observability Stack — VictoriaMetrics + Grafana + VMAgent
+#
+# Why VictoriaMetrics over Prometheus:
+#   - 5x lower RAM at equivalent workload (important on Mac Mini)
+#   - Single binary — no separate WAL/compaction complexity
+#   - PromQL-compatible — all Grafana dashboards work unchanged
+#   - 90-day retention by default with auto-cleanup
+#
+# Ports used (chosen to avoid conflicts with existing stack):
+#   8428  — VictoriaMetrics query + ingestion API (Prometheus-compatible)
+#   3030  — Grafana (3000 taken by Homepage, 3001 by Plane)
+#   8429  — VMAgent web UI
+#   8431  — VMAlert (optional, add only if alerting needed)
+#
+# Usage:
+#   cd docker && docker-compose -f observability-stack.yml up -d
+#
+# After starting:
+#   1. Open Grafana at http://localhost:3030 (admin/admin, change on first login)
+#   2. Add VictoriaMetrics as datasource: http://victoriametrics:8428
+#   3. Import dashboard ID 19237 (VictoriaMetrics overview) from grafana.com
+#   4. Import dashboard ID 1860 (Node Exporter Full) for system metrics
+#   5. Set VICTORIA_URL=http://localhost:8428 in docker/.env for push-metric scripts
+
+version: "3.9"
+
+services:
+
+  # ── Time-series storage (Prometheus-compatible) ─────────────────────────────
+  victoriametrics:
+    image: victoriametrics/victoria-metrics:v1.99.0
+    container_name: vm
+    restart: unless-stopped
+    ports:
+      - "8428:8428"
+    volumes:
+      - vm-data:/storage
+    command:
+      - -storageDataPath=/storage
+      - -retentionPeriod=90d
+      - -httpListenAddr=:8428
+      - -search.maxQueryDuration=30s
+      - -search.maxUniqueTimeseries=100000
+    healthcheck:
+      test: ["CMD-SHELL", "echo OK"]
+      interval: 10s
+      timeout: 5s
+      retries: 2
+      start_period: 5s
+
+  # ── Metrics scraper (push to VictoriaMetrics) ───────────────────────────────
+  vmagent:
+    image: victoriametrics/vmagent:v1.99.0
+    container_name: vmagent
+    restart: unless-stopped
+    ports:
+      - "8429:8429"
+    volumes:
+      - ./vmagent-config:/etc/vmagent
+      - vmagent-data:/vmagentdata
+    command:
+      - -promscrape.config=/etc/vmagent/scrape.yml
+      - -remoteWrite.url=http://victoriametrics:8428/api/v1/write
+      - -httpListenAddr=:8429
+    depends_on:
+      victoriametrics:
+        condition: service_healthy
+
+  # ── Dashboards ──────────────────────────────────────────────────────────────
+  grafana:
+    image: grafana/grafana:10.4.2
+    container_name: grafana-obs
+    restart: unless-stopped
+    ports:
+      - "3030:3000"
+    environment:
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
+      GF_AUTH_DISABLE_LOGIN_FORM: "false"
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: "${GRAFANA_PASSWORD:-changeme}"
+      GF_SERVER_ROOT_URL: "http://localhost:3030"
+      GF_FEATURE_TOGGLES_ENABLE: "publicDashboards"
+      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /etc/grafana/provisioning/dashboards/overview.json
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana-provisioning:/etc/grafana/provisioning
+    depends_on:
+      - victoriametrics
+
+  # ── System metrics (host node) ───────────────────────────────────────────────
+  node-exporter:
+    image: prom/node-exporter:v1.7.0
+    container_name: node-exporter
+    restart: unless-stopped
+    pid: host
+    network_mode: host
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - --path.procfs=/host/proc
+      - --path.sysfs=/host/sys
+      - --path.rootfs=/rootfs
+      - --collector.filesystem.mount-points-exclude=^/(dev|proc|sys|run|snap)($|/)
+    # Note: host network mode required for accurate CPU/memory/disk on macOS Docker Desktop
+
+  # ── Service uptime monitor ───────────────────────────────────────────────────
+  uptime-kuma:
+    image: louislam/uptime-kuma:1
+    container_name: uptime-kuma
+    restart: unless-stopped
+    ports:
+      - "3033:3001"
+    volumes:
+      - uptime-data:/app/data
+    # After starting: http://localhost:3033
+    # Add monitors for:
+    #   Dashboard: http://localhost:8080/api/status
+    #   Plex:      http://192.168.10.201:32400/identity
+    #   Plane:     http://localhost:3001
+    #   OPNsense:  https://192.168.10.1 (HTTP keyword check)
+
+volumes:
+  vm-data:
+  vmagent-data:
+  grafana-data:
+  uptime-data:
+
+networks:
+  default:
+    name: observability
+    driver: bridge
+
+# This file is referenced by vmagent. Create the directory first:
+#   mkdir -p docker/vmagent-config docker/grafana-provisioning/datasources
+#
+# Then create docker/vmagent-config/scrape.yml:
+#
+# global:
+#   scrape_interval: 15s
+#
+# scrape_configs:
+#   - job_name: dashboard
+#     static_configs:
+#       - targets: ['host.docker.internal:8080']
+#     metrics_path: /metrics
+#
+#   - job_name: node
+#     static_configs:
+#       - targets: ['host.docker.internal:9100']
+#
+#   - job_name: aider_tasks
+#     static_configs:
+#       - targets: ['host.docker.internal:9091']  # pushgateway if used
+#
+# ── Grafana datasource provisioning (docker/grafana-provisioning/datasources/vm.yaml) ──
+#
+# apiVersion: 1
+# datasources:
+#   - name: VictoriaMetrics
+#     type: prometheus
+#     url: http://victoriametrics:8428
+#     isDefault: true
+#     jsonData:
+#       timeInterval: 15s

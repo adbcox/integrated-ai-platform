@@ -21,9 +21,9 @@ domains:
 # Enabled connectors - which external services are available
 connectors:
   arr_stack:
-    enabled: false
+    enabled: true
     description: "Sonarr/Radarr/Prowlarr integration"
-    base_url: "http://192.168.10.114"
+    base_url: "http://192.168.10.201"
 
 # Job routing and permissions
 jobs:

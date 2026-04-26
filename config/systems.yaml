@@ -1,0 +1,286 @@
+# Integrated AI Platform — Systems Configuration Manifest
+# All 26 production systems, their categories, API endpoints, and config.
+
+meta:
+  version: "1.0"
+  last_updated: "2026-04-25"
+  total_systems: 26
+
+# ── Framework systems (cross-cutting infrastructure) ─────────────────────────
+framework:
+
+  event_system:
+    module: framework.event_system
+    description: Pub/sub event bus with fnmatch wildcard patterns, DLQ, and JSONL persistence
+    config:
+      dlq_max_size: 1000
+      persistence_path: artifacts/events.jsonl
+      thread_pool_workers: 4
+    events_published: []  # receives events from all other systems
+
+  connector_framework:
+    module: framework.connector_framework
+    description: BaseConnector ABC with circuit breaker, connection pool, and registry
+    config:
+      circuit_breaker_failures: 5
+      circuit_breaker_timeout: 30
+      pool_max_size: 10
+      half_open_test_interval: 60
+
+  config_system:
+    module: framework.config_system
+    description: YAML deep-merge config loading with Fernet encryption for ENC[...] values and hot reload
+    config:
+      config_dir: config/
+      watch_interval: 5
+      encryption_key_env: CONFIG_ENCRYPTION_KEY
+
+  metrics_system:
+    module: framework.metrics_system
+    description: Counter/Gauge/Histogram metrics with time-series storage and Prometheus export
+    api_endpoint: GET /api/metrics
+    config:
+      time_series_maxlen: 10000
+      prometheus_prefix: iap_
+    scrape_interval: 15
+
+  monitoring_system:
+    module: framework.monitoring_system
+    description: Distributed tracing with Span/trace, @trace() decorator, AlertRule evaluation
+    config:
+      alert_eval_interval: 30
+      trace_propagation: threading.local
+      span_export_path: artifacts/traces/
+
+# ── Domain systems: Media Intelligence ───────────────────────────────────────
+media_intelligence:
+
+  quality_analyzer:
+    module: domains.quality_analyzer
+    description: Resolution/HDR/codec/audio quality scoring and Sonarr/Radarr profile generation
+    api_endpoint: GET /api/media/quality-scores
+    config:
+      score_weights:
+        resolution: 0.30
+        hdr: 0.25
+        codec: 0.25
+        audio: 0.20
+      cache_ttl: 300
+    events:
+      publishes: [media.quality.scored]
+
+  bandwidth_manager:
+    module: domains.bandwidth_manager
+    description: psutil network delta sampling, business-hours throttle windows, rclone param output
+    api_endpoint: GET /api/media/bandwidth
+    config:
+      business_hours_start: 9
+      business_hours_end: 18
+      default_limit_mbps: 100
+      throttle_limit_mbps: 20
+      sample_interval: 30
+    events:
+      publishes: [media.bandwidth.throttled, media.bandwidth.released]
+
+  content_recommender:
+    module: domains.content_recommender
+    description: Ollama embedding + cosine similarity recommendations, Jaccard genre fallback, TMDB integration
+    api_endpoint: GET /api/media/recommendations-ai
+    config:
+      ollama_model: nomic-embed-text
+      top_k: 20
+      cache_embeddings: true
+      embedding_cache_size: 1000
+      fallback_to_jaccard: true
+    events:
+      publishes: [media.recommendation.generated]
+
+  source_ranker:
+    module: domains.source_ranker
+    description: EMA health tracking (alpha=0.1), composite score (success×0.4 + speed×0.3 + quality×0.3)
+    config:
+      ema_alpha: 0.1
+      score_weights:
+        success_rate: 0.40
+        speed: 0.30
+        quality: 0.30
+      persistence_path: artifacts/source_ranks.json
+    events:
+      publishes: [media.source.ranked]
+
+  release_scheduler:
+    module: domains.release_scheduler
+    description: Day-of-week/hour pattern learning, confidence = n/(n+5), Prowlarr pre-warm
+    config:
+      min_confidence: 0.6
+      pre_warm_hours: 2
+      calendar_export_path: artifacts/release_calendar.ics
+    events:
+      publishes: [media.release.scheduled]
+
+# ── Domain systems: Roadmap Analytics ────────────────────────────────────────
+roadmap_analytics:
+
+  dependency_analyzer:
+    module: domains.dependency_analyzer
+    description: NetworkX/stdlib BFS dependency graphs, Tarjan SCC cycle detection, D3 JSON export
+    api_endpoint: GET /api/analytics/dependencies
+    config:
+      items_dir: docs/roadmap/ITEMS
+      cache_ttl: 120
+      d3_export_path: artifacts/dep_graph.json
+    events:
+      publishes: [roadmap.deps.analyzed]
+
+  effort_predictor:
+    module: domains.effort_predictor
+    description: LOE calibration via historical ratios, p80/p95 estimation, sprint forecast, Monte Carlo
+    api_endpoint: GET /api/analytics/effort
+    config:
+      monte_carlo_runs: 1000
+      sprint_duration_weeks: 2
+      cache_ttl: 300
+    events:
+      publishes: [roadmap.effort.predicted]
+
+  priority_engine:
+    module: domains.priority_engine
+    description: "Priority formula: sv×0.4 + urgency×0.3 − effort×0.2 − risk×0.1 + bottleneck boost"
+    api_endpoint: GET /api/analytics/priorities
+    config:
+      weights:
+        strategic_value: 0.40
+        urgency: 0.30
+        effort: -0.20
+        risk: -0.10
+      quick_win_max_loe: M
+      quick_win_min_sv: 7
+      plane_sync_rate_limit: 1.5
+    events:
+      publishes: [roadmap.priority.ranked]
+
+  progress_analytics:
+    module: domains.progress_analytics
+    description: Git-log history, velocity trend, burndown/burnup series, Gaussian Monte Carlo forecast
+    api_endpoint: GET /api/analytics/progress
+    config:
+      history_days: 90
+      monte_carlo_runs: 500
+      cache_ttl: 60
+    events:
+      publishes: [roadmap.progress.updated]
+
+  knowledge_graph:
+    module: domains.knowledge_graph
+    description: BFS shortest path, weakly-connected cluster detection, impact scoring via reverse-BFS, D3 JSON
+    config:
+      max_path_length: 10
+      impact_decay: 0.8
+      d3_export_path: artifacts/knowledge_graph.json
+    events:
+      publishes: [roadmap.knowledge.updated]
+
+# ── Domain systems: Execution Engine ─────────────────────────────────────────
+execution_engine:
+
+  parallel_engine:
+    module: domains.parallel_engine
+    description: Kahn's topological sort → layers, ThreadPoolExecutor, per-task timeouts, CPU autoscale
+    config:
+      max_workers: 8
+      cpu_autoscale_threshold: 0.80
+      task_timeout: 300
+      layer_execution: true
+    events:
+      publishes: [executor.task.started, executor.task.completed, executor.task.failed]
+
+  code_generator:
+    module: domains.code_generator
+    description: Ollama task decomposition (JSON array), retry-on-syntax-error ×2, pylint/mypy validation
+    config:
+      ollama_model: qwen2.5-coder:14b
+      max_retries: 2
+      validate_syntax: true
+      run_pylint: false
+    events:
+      publishes: [codegen.task.generated, codegen.task.validated]
+
+  context_manager:
+    module: domains.context_manager
+    description: "File scoring: import count + query-token hits + recency decay (30-day half-life), 25% cap"
+    config:
+      max_context_tokens: 8000
+      single_file_cap: 0.25
+      recency_half_life_days: 30
+    events:
+      publishes: [context.files.selected]
+
+  recovery_engine:
+    module: domains.recovery_engine
+    description: 7 regex error patterns, strategies (fix_syntax/install_missing/rollback), EMA success rates
+    config:
+      strategies: [fix_syntax, install_missing, extend_timeout, rollback, partial_save]
+      ema_alpha: 0.1
+    events:
+      publishes: [recovery.strategy.applied]
+
+  execution_tracer:
+    module: domains.execution_tracer
+    description: Step recording, file-content snapshots, difflib diffs, JSON/Markdown export
+    config:
+      trace_dir: artifacts/traces/
+      max_snapshot_size: 50000
+      export_formats: [json, markdown]
+    events:
+      publishes: [tracer.trace.completed]
+
+# ── Domain systems: Training ──────────────────────────────────────────────────
+training:
+
+  hyperparam_tuner:
+    module: domains.hyperparam_tuner
+    description: UCB-based, first 5 random, then 70% exploit (Gaussian log/linear) + 30% random; early stopping
+    api_endpoint: GET /api/training/viz (via training_viz)
+    config:
+      first_random_trials: 5
+      exploit_ratio: 0.70
+      patience: 5
+      log_scale_params: [learning_rate, weight_decay]
+    events:
+      publishes: [training.hyperparams.selected]
+
+  checkpoint_mgr:
+    module: domains.checkpoint_mgr
+    description: "torch.save/pickle fallback, composite score: 0.7×val_loss − 0.3×f1, prune to best + max_keep"
+    config:
+      checkpoint_dir: artifacts/checkpoints/
+      max_keep: 5
+      score_weights:
+        val_loss: 0.70
+        f1: -0.30
+      export_metadata: true
+    events:
+      publishes: [training.checkpoint.saved, training.checkpoint.pruned]
+
+  training_viz:
+    module: domains.training_viz
+    description: JSONL log append, overfitting detection, gradient stats, confusion matrix, live data endpoint
+    api_endpoint: GET /api/training/viz
+    config:
+      log_path: artifacts/training_log.jsonl
+      overfitting_window: 3
+      gradient_explode_threshold: 100
+      gradient_vanish_threshold: 1.0e-7
+    events:
+      publishes: [training.epoch.logged, training.overfitting.detected]
+
+  distributed_prep:
+    module: domains.distributed_prep
+    description: GPU detection (torch.cuda/nvidia-smi), DDP init code generation, torchrun launcher
+    config:
+      backend_gpu: nccl
+      backend_cpu: gloo
+      backend_mps: gloo
+      mac_studio_world_size: 1
+    events:
+      publishes: [training.distributed.configured]

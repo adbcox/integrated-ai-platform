@@ -22,12 +22,13 @@ domains:
       default_connector: "arr_stack"
 
 MediaDomain:
-  enabled: false
+  enabled: true
   parameters:
-    sonarr_url: "http://192.168.10.114:8989"
-    radarr_url: "http://192.168.10.114:7878"
-    prowlarr_url: "http://192.168.10.114:9696"
-    # API keys added when user enables
+    sonarr_url: "http://192.168.10.201:8989"
+    radarr_url: "http://192.168.10.201:7878"
+    prowlarr_url: "http://192.168.10.201:9696"
+    plex_url: "http://192.168.10.201:32400"
+    # API keys via environment: SONARR_API_KEY, RADARR_API_KEY, PROWLARR_API_KEY, PLEX_TOKEN
 
 HomeDomain:
   enabled: false

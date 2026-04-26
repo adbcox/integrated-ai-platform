@@ -1,0 +1,33 @@
+---
+# Homepage top-bar widgets
+# Docs: https://gethomepage.dev/configs/widgets/
+
+- resources:
+    cpu: true
+    memory: true
+    disk: /
+    label: Mac Mini
+    expanded: true
+
+- datetime:
+    text_size: xl
+    format:
+      dateStyle: long
+      timeStyle: short
+      hour12: true
+
+- search:
+    provider: duckduckgo
+    focus: false
+    target: _blank
+
+# Uncomment when weather API key is set:
+# - openweathermap:
+#     label: Local Weather
+#     latitude: 37.7749
+#     longitude: -122.4194
+#     units: imperial
+#     provider: openweathermap
+#     apiKey: "{{HOMEPAGE_VAR_OWM_KEY}}"
+#     format:
+#       maximumFractionDigits: 1

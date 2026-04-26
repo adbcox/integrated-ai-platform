@@ -1,5 +1,7 @@
 # Handoff Guide: Integrated AI Platform
 
+> **See also:** [PLATFORM_OVERVIEW.md](PLATFORM_OVERVIEW.md) | [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md) | [TROUBLESHOOTING.md](TROUBLESHOOTING.md)
+
 **Last Updated:** 2026-04-24  
 **Current Status:** 253 roadmap items, 59 completed (23.3%), 0 circular dependencies  
 **Execution Mode:** Autonomous executor on tmux (mac-mini)

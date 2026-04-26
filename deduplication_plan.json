@@ -1,0 +1,246 @@
+{
+  "summary": {
+    "total_files": 636,
+    "issue_items": 601,
+    "exec_packs": 35,
+    "unique_ids": 609,
+    "true_content_duplicates": 0,
+    "item_exec_pairs": 27,
+    "exec_only_ids": 8,
+    "verdict": "CLEAN \u2014 no content duplicates in ITEMS/. All shared IDs are ITEM+EXECUTION_PACK pairs (by design)."
+  },
+  "true_duplicates": [],
+  "item_exec_pairs": [
+    {
+      "id": "RM-AUTO-001",
+      "item": "docs/roadmap/ITEMS/RM-AUTO-001.md",
+      "exec_packs": [
+        "docs/roadmap/RM-AUTO-001_EXECUTION_PACK.md"
+      ],
+      "action": "NO_ACTION \u2014 EXEC_PACK is complementary, not a duplicate"
+    },
+    {
+      "id": "RM-AUTO-MECH-001",
+      "item": "docs/roadmap/ITEMS/RM-AUTO-MECH-001.md",
+      "exec_packs": [
+        "docs/roadmap/RM-AUTO-MECH-001_EXECUTION_PACK.md"
+      ],
+      "action": "NO_ACTION \u2014 EXEC_PACK is complementary, not a duplicate"
+    },
+    {
+      "id": "RM-CORE-002",
+      "item": "docs/roadmap/ITEMS/RM-CORE-002.md",
+      "exec_packs": [
+        "docs/roadmap/RM-CORE-002_EXECUTION_PACK.md"
+      ],
+      "action": "NO_ACTION \u2014 EXEC_PACK is complementary, not a duplicate"
+    },
+    {
+      "id": "RM-DEV-001",
+      "item": "docs/roadmap/ITEMS/RM-DEV-001.md",
+      "exec_packs": [
+        "docs/roadmap/RM-DEV-001_EXECUTION_PACK.md"
+      ],
+      "action": "NO_ACTION \u2014 EXEC_PACK is complementary, not a duplicate"
+    },
+    {
+      "id": "RM-DEV-002",
+      "item": "docs/roadmap/ITEMS/RM-DEV-002.md",
+      "exec_packs": [
+        "docs/roadmap/RM-DEV-002_EXECUTION_PACK.md"
+      ],
+      "action": "NO_ACTION \u2014 EXEC_PACK is complementary, not a duplicate"
+    },
+    {
+      "id": "RM-DEV-003",
+      "item": "docs/roadmap/ITEMS/RM-DEV-003.md",
+      "exec_packs": [
+        "docs/roadmap/RM-DEV-003_EXECUTION_PACK.md"
+      ],
+      "action": "NO_ACTION \u2014 EXEC_PACK is complementary, not a duplicate"
+    },
+    {
+      "id": "RM-DEV-004",
+      "item": "docs/roadmap/ITEMS/RM-DEV-004.md",
+      "exec_packs": [
+        "docs/roadmap/RM-DEV-004_EXECUTION_PACK.md"
+      ],
+      "action": "NO_ACTION \u2014 EXEC_PACK is complementary, not a duplicate"
+    },
+    {
+      "id": "RM-DEV-005",
+      "item": "docs/roadmap/ITEMS/RM-DEV-005.md",
+      "exec_packs": [
+        "docs/roadmap/RM-DEV-005_EXECUTION_PACK.md"
+      ],
+      "action": "NO_ACTION \u2014 EXEC_PACK is complementary, not a duplicate"
+    },
+    {
+      "id": "RM-DEV-006",
+      "item": "docs/roadmap/ITEMS/RM-DEV-006.md",
+      "exec_packs": [
+        "docs/roadmap/RM-DEV-006_EXECUTION_PACK.md"
+      ],
+      "action": "NO_ACTION \u2014 EXEC_PACK is complementary, not a duplicate"
+    },
+    {
+      "id": "RM-DEV-008",
+      "item": "docs/roadmap/ITEMS/RM-DEV-008.md",
+      "exec_packs": [
+        "docs/roadmap/RM-DEV-008_EXECUTION_PACK.md"
+      ],
+      "action": "NO_ACTION \u2014 EXEC_PACK is complementary, not a duplicate"
+    },
+    {
+      "id": "RM-DEV-009",
+      "item": "docs/roadmap/ITEMS/RM-DEV-009.md",
+      "exec_packs": [
+        "docs/roadmap/RM-DEV-009_EXECUTION_PACK.md"
+      ],
+      "action": "NO_ACTION \u2014 EXEC_PACK is complementary, not a duplicate"
+    },
+    {
+      "id": "RM-DOCAPP-002",
+      "item": "docs/roadmap/ITEMS/RM-DOCAPP-002.md",
+      "exec_packs": [
+        "docs/roadmap/RM-DOCAPP-002_EXECUTION_PACK.md"
+      ],
+      "action": "NO_ACTION \u2014 EXEC_PACK is complementary, not a duplicate"
+    },
+    {
+      "id": "RM-GOV-001",
+      "item": "docs/roadmap/ITEMS/RM-GOV-001.md",
+      "exec_packs": [
+        "docs/roadmap/RM-GOV-001_EXECUTION_PACK.md"
+      ],
+      "action": "NO_ACTION \u2014 EXEC_PACK is complementary, not a duplicate"
+    },
+    {
+      "id": "RM-GOV-002",
+      "item": "docs/roadmap/ITEMS/RM-GOV-002.md",
+      "exec_packs": [
+        "docs/roadmap/RM-GOV-002_EXECUTION_PACK.md"
+      ],
+      "action": "NO_ACTION \u2014 EXEC_PACK is complementary, not a duplicate"
+    },
+    {
+      "id": "RM-GOV-003",
+      "item": "docs/roadmap/ITEMS/RM-GOV-003.md",
+      "exec_packs": [
+        "docs/roadmap/RM-GOV-003_EXECUTION_PACK.md"
+      ],
+      "action": "NO_ACTION \u2014 EXEC_PACK is complementary, not a duplicate"
+    },
+    {
+      "id": "RM-HOME-001",
+      "item": "docs/roadmap/ITEMS/RM-HOME-001.md",
+      "exec_packs": [
+        "docs/roadmap/RM-HOME-001_EXECUTION_PACK.md"
+      ],
+      "action": "NO_ACTION \u2014 EXEC_PACK is complementary, not a duplicate"
+    },
+    {
+      "id": "RM-HW-001",
+      "item": "docs/roadmap/ITEMS/RM-HW-001.md",
+      "exec_packs": [
+        "docs/roadmap/RM-HW-001_EXECUTION_PACK.md"
+      ],
+      "action": "NO_ACTION \u2014 EXEC_PACK is complementary, not a duplicate"
+    },
+    {
+      "id": "RM-INV-002",
+      "item": "docs/roadmap/ITEMS/RM-INV-002.md",
+      "exec_packs": [
+        "docs/roadmap/RM-INV-002_EXECUTION_PACK.md"
+      ],
+      "action": "NO_ACTION \u2014 EXEC_PACK is complementary, not a duplicate"
+    },
+    {
+      "id": "RM-INV-003",
+      "item": "docs/roadmap/ITEMS/RM-INV-003.md",
+      "exec_packs": [
+        "docs/roadmap/RM-INV-003_EXECUTION_PACK.md"
+      ],
+      "action": "NO_ACTION \u2014 EXEC_PACK is complementary, not a duplicate"
+    },
+    {
+      "id": "RM-MEDIA-002",
+      "item": "docs/roadmap/ITEMS/RM-MEDIA-002.md",
+      "exec_packs": [
+        "docs/roadmap/RM-MEDIA-002_EXECUTION_PACK.md"
+      ],
+      "action": "NO_ACTION \u2014 EXEC_PACK is complementary, not a duplicate"
+    },
+    {
+      "id": "RM-MEDIA-004",
+      "item": "docs/roadmap/ITEMS/RM-MEDIA-004.md",
+      "exec_packs": [
+        "docs/roadmap/RM-MEDIA-004_EXECUTION_PACK.md"
+      ],
+      "action": "NO_ACTION \u2014 EXEC_PACK is complementary, not a duplicate"
+    },
+    {
+      "id": "RM-OPS-001",
+      "item": "docs/roadmap/ITEMS/RM-OPS-001.md",
+      "exec_packs": [
+        "docs/roadmap/RM-OPS-001_EXECUTION_PACK.md"
+      ],
+      "action": "NO_ACTION \u2014 EXEC_PACK is complementary, not a duplicate"
+    },
+    {
+      "id": "RM-OPS-004",
+      "item": "docs/roadmap/ITEMS/RM-OPS-004.md",
+      "exec_packs": [
+        "docs/roadmap/RM-OPS-004_EXECUTION_PACK.md"
+      ],
+      "action": "NO_ACTION \u2014 EXEC_PACK is complementary, not a duplicate"
+    },
+    {
+      "id": "RM-OPS-005",
+      "item": "docs/roadmap/ITEMS/RM-OPS-005.md",
+      "exec_packs": [
+        "docs/roadmap/RM-OPS-005_EXECUTION_PACK.md"
+      ],
+      "action": "NO_ACTION \u2014 EXEC_PACK is complementary, not a duplicate"
+    },
+    {
+      "id": "RM-SHOP-002",
+      "item": "docs/roadmap/ITEMS/RM-SHOP-002.md",
+      "exec_packs": [
+        "docs/roadmap/RM-SHOP-002_EXECUTION_PACK.md"
+      ],
+      "action": "NO_ACTION \u2014 EXEC_PACK is complementary, not a duplicate"
+    },
+    {
+      "id": "RM-SHOP-003",
+      "item": "docs/roadmap/ITEMS/RM-SHOP-003.md",
+      "exec_packs": [
+        "docs/roadmap/RM-SHOP-003_EXECUTION_PACK.md"
+      ],
+      "action": "NO_ACTION \u2014 EXEC_PACK is complementary, not a duplicate"
+    },
+    {
+      "id": "RM-UI-001",
+      "item": "docs/roadmap/ITEMS/RM-UI-001.md",
+      "exec_packs": [
+        "docs/roadmap/RM-UI-001_EXECUTION_PACK.md"
+      ],
+      "action": "NO_ACTION \u2014 EXEC_PACK is complementary, not a duplicate"
+    }
+  ],
+  "exec_only_ids": [
+    "RM-AUTO-002",
+    "RM-CORE-003",
+    "RM-CORE-004",
+    "RM-CORE-005",
+    "RM-GOV-004",
+    "RM-INTEL-001",
+    "RM-INTEL-002",
+    "RM-INV-004"
+  ],
+  "recommendation": {
+    "for_plane": "Import only docs/roadmap/ITEMS/ files (601 issues). EXECUTION_PACK files are execution notes, not Plane issues.",
+    "for_exec_only": "8 EXECUTION_PACK IDs have no matching ITEM file. These may represent items that were planned but never written as issues.",
+    "action": "NONE \u2014 no file deletion or archiving needed"
+  }
+}

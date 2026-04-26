@@ -170,6 +170,55 @@ class MediaDomain:
         """Return current seedbox download activity."""
         return self._seedbox_safe(timeout=10.0)
 
+    def get_seedbox_status(self) -> Dict[str, Any]:
+        """
+        Rich seedbox status: active downloads, completed files ready for sync,
+        blackhole queue, rclone log, and optional Flood torrent data.
+        """
+        sb = self._seedbox_safe(timeout=12.0)
+        status = sb.get("status", "unknown")
+
+        result: Dict[str, Any] = {
+            "status":          status,
+            "active_count":    sb.get("active_count",    0),
+            "completed_count": sb.get("completed_count", 0),
+            "blackhole_count": sb.get("blackhole_count", 0),
+            "total_size_gb":   sb.get("total_size_gb",  0),
+            "completed_size_gb": sb.get("completed_size_gb", 0),
+            "active":          sb.get("active",    []),
+            "completed":       sb.get("completed", [])[:10],
+            "blackhole":       sb.get("blackhole", []),
+            # backwards-compat
+            "recent_files":    sb.get("recent_files", 0),
+            "total_files":     sb.get("total_files",  0),
+            "files":           sb.get("files",        []),
+        }
+
+        if status != "connected":
+            result["message"] = sb.get("message", "")
+            return result
+
+        # Rclone log (SSH command — best-effort, never blocks)
+        try:
+            from connectors.seedbox import SeedboxConnector
+            sc = SeedboxConnector()
+            rclone = sc.get_rclone_log()
+            result["rclone"] = rclone
+        except Exception:
+            result["rclone"] = {}
+
+        # Flood torrent data (optional — skip if not installed)
+        try:
+            from connectors.flood_api import FloodAPI
+            flood_url = os.environ.get("FLOOD_URL", f"http://{sc.host}:3000")
+            flood = FloodAPI(url=flood_url)
+            if flood.health_check():
+                result["flood"] = flood.get_all_status()
+        except Exception:
+            pass
+
+        return result
+
     def get_upcoming(self, days: int = 7) -> List[Dict[str, Any]]:
         """Return upcoming episodes from Sonarr calendar."""
         sonarr = self._sonarr()

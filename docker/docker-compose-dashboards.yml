@@ -1,0 +1,157 @@
+version: "3.8"
+
+# Master Control Panel — full dashboard stack
+#
+# Services:
+#   homepage           — Primary dashboard/portal (port 3000)
+#   docker-socket-proxy — Secure Docker API proxy (no direct socket access)
+#   ai-platform-dashboard — AI executor control plane (port 8080)
+#   traefik            — Reverse proxy + HTTPS + basic auth
+#
+# Usage:
+#   cp docker/.env.example docker/.env   # fill in secrets
+#   docker compose -f docker/docker-compose-dashboards.yml up -d
+#
+# Prerequisites:
+#   mkdir -p ~/homelab/homepage/config ~/homelab/traefik/certs
+
+services:
+
+  # ── Homepage master portal ────────────────────────────────────────────────
+  homepage:
+    image: ghcr.io/gethomepage/homepage:latest
+    container_name: homepage
+    restart: unless-stopped
+    ports:
+      - "${HOMEPAGE_PORT:-3000}:3000"
+    volumes:
+      - ../config/homepage:/app/config
+      # Docker socket via proxy — never mount the socket directly
+      - /var/run/docker.sock:/var/run/docker.sock:ro  # fallback if no proxy
+    environment:
+      PUID: ${PUID:-1000}
+      PGID: ${PGID:-1000}
+      LOG_TARGETS: stdout
+    networks:
+      - mcp-net
+    labels:
+      traefik.enable: "true"
+      traefik.http.routers.homepage.rule: "Host(`dashboard.${DOMAIN:-local}`)"
+      traefik.http.routers.homepage.entrypoints: "websecure"
+      traefik.http.routers.homepage.tls: "true"
+      traefik.http.services.homepage.loadbalancer.server.port: "3000"
+    depends_on:
+      - docker-socket-proxy
+
+  # ── Docker socket proxy (security layer) ─────────────────────────────────
+  docker-socket-proxy:
+    image: ghcr.io/tecnativa/docker-socket-proxy:latest
+    container_name: docker-socket-proxy
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    environment:
+      # Read-only permissions — Homepage only needs to read container state
+      CONTAINERS: 1
+      SERVICES: 1
+      NETWORKS: 1
+      IMAGES: 1
+      INFO: 1
+      PING: 1
+      VERSION: 1
+      # Deny all write operations
+      POST: 0
+      DELETE: 0
+    networks:
+      - mcp-net
+      - socket-proxy-net
+    ports: []  # Not exposed externally
+
+  # ── AI Platform Dashboard ─────────────────────────────────────────────────
+  ai-platform-dashboard:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.dashboard
+    image: integrated-ai-platform/dashboard:latest
+    container_name: ai-platform-dashboard
+    restart: unless-stopped
+    ports:
+      - "${DASHBOARD_PORT:-8080}:8080"
+    volumes:
+      - ../docs/roadmap/ITEMS:/app/docs/roadmap/ITEMS:ro
+      - ../.git:/app/.git:ro
+      - ${LOG_DIR:-/tmp}:/app/logs
+    environment:
+      REPO_ROOT: /app
+      ITEMS_DIR: /app/docs/roadmap/ITEMS
+      LOG_DIR: /app/logs
+      EXECUTOR_HOST: ${EXECUTOR_HOST:-}
+      REMOTE_REPO_ROOT: ${REMOTE_REPO_ROOT:-~/repos/integrated-ai-platform}
+      OLLAMA_HOST: ${OLLAMA_HOST:-127.0.0.1:11434}
+      SONARR_URL: ${SONARR_URL:-http://192.168.10.201:8989}
+      RADARR_URL: ${RADARR_URL:-http://192.168.10.201:7878}
+      PROWLARR_URL: ${PROWLARR_URL:-http://192.168.10.201:9696}
+      PLEX_URL: ${PLEX_URL:-http://192.168.10.201:32400}
+      SONARR_API_KEY: ${SONARR_API_KEY:-}
+      RADARR_API_KEY: ${RADARR_API_KEY:-}
+      PROWLARR_API_KEY: ${PROWLARR_API_KEY:-}
+      PLEX_TOKEN: ${PLEX_TOKEN:-}
+    networks:
+      - mcp-net
+    labels:
+      traefik.enable: "true"
+      traefik.http.routers.ai-dashboard.rule: "Host(`ai.${DOMAIN:-local}`)"
+      traefik.http.routers.ai-dashboard.entrypoints: "websecure"
+      traefik.http.services.ai-dashboard.loadbalancer.server.port: "8080"
+      homepage.group: "AI & Automation"
+      homepage.name: "AI Platform"
+      homepage.description: "Roadmap executor — autonomous coding"
+      homepage.href: "http://mac-mini.local:${DASHBOARD_PORT:-8080}"
+      homepage.icon: "robot.png"
+      homepage.widget.type: "customapi"
+      homepage.widget.url: "http://ai-platform-dashboard:8080/api/embed/widget"
+      homepage.widget.method: "GET"
+    healthcheck:
+      test: ["CMD", "python3", "-c",
+             "import urllib.request; urllib.request.urlopen('http://localhost:8080/api/health', timeout=3)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  # ── Traefik reverse proxy ─────────────────────────────────────────────────
+  traefik:
+    image: traefik:v3.0
+    container_name: traefik
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8090:8080"  # Traefik dashboard (separate from AI dashboard)
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ${HOMELAB_DIR:-~/homelab}/traefik/certs:/certs
+      - ${HOMELAB_DIR:-~/homelab}/traefik/traefik.yml:/etc/traefik/traefik.yml:ro
+    environment:
+      TZ: ${TZ:-America/Los_Angeles}
+    networks:
+      - mcp-net
+    command:
+      - "--api.dashboard=true"
+      - "--api.insecure=false"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
+      - "--entrypoints.websecure.address=:443"
+      - "--certificatesresolvers.letsencrypt.acme.tlschallenge=true"
+      - "--certificatesresolvers.letsencrypt.acme.email=${ACME_EMAIL:-admin@example.com}"
+      - "--certificatesresolvers.letsencrypt.acme.storage=/certs/acme.json"
+      - "--log.level=WARN"
+
+networks:
+  mcp-net:
+    name: mcp-net
+  socket-proxy-net:
+    name: socket-proxy-net
+    internal: true  # Docker socket proxy not reachable from outside

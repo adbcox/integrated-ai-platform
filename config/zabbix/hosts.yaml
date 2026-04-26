@@ -1,0 +1,35 @@
+hosts:
+  - name: "QNAP-NAS"
+    ip: "192.168.10.201"
+    type: "SNMP"
+    community: "public"
+    template: "Linux by SNMP"
+    groups:
+      - "Homelab Network"
+
+  - name: "OPNsense-Firewall"
+    ip: "192.168.10.1"
+    type: "SNMP"
+    community: "public"
+    template: "OPNsense by SNMP"
+    groups:
+      - "Homelab Network"
+
+  - name: "Mac-Mini-M5-Orchestrator"
+    ip: "192.168.10.113"
+    type: "Zabbix agent"
+    cpu: "Apple M5"
+    ram: "48 GB"
+    template: "macOS by Zabbix agent"
+    groups:
+      - "Homelab Compute"
+
+  - name: "Mac-Studio-M3-Powerhouse"
+    ip: "192.168.10.202"
+    type: "Zabbix agent"
+    cpu: "Apple M3"
+    ram: "96 GB"
+    status: "disabled_pending_arrival"
+    template: "macOS by Zabbix agent"
+    groups:
+      - "Homelab Compute"

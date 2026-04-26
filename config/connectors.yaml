@@ -3,19 +3,31 @@
 
 connectors:
   arr_stack:
-    enabled: false
+    enabled: true
     module: "connectors.arr_stack"
     class: "ArrStackConnector"
-    description: "Sonarr/Radarr/Prowlarr integration on QNAP"
+    description: "Sonarr/Radarr/Prowlarr integration on QNAP NAS (192.168.10.201)"
     endpoints:
       sonarr:
-        base_url: "http://192.168.10.114:8989"
+        base_url: "http://192.168.10.201:8989"
         api_key_env: "SONARR_API_KEY"
       radarr:
-        base_url: "http://192.168.10.114:7878"
+        base_url: "http://192.168.10.201:7878"
         api_key_env: "RADARR_API_KEY"
       prowlarr:
-        base_url: "http://192.168.10.114:9696"
+        base_url: "http://192.168.10.201:9696"
         api_key_env: "PROWLARR_API_KEY"
     timeout_seconds: 30
+    retry_policy: "exponential_backoff"
+
+  plex:
+    enabled: true
+    module: "connectors.plex"
+    class: "PlexConnector"
+    description: "Plex Media Server"
+    endpoints:
+      server:
+        base_url: "http://192.168.10.201:32400"
+        token_env: "PLEX_TOKEN"
+    timeout_seconds: 10
     retry_policy: "exponential_backoff"

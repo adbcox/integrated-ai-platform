@@ -1,0 +1,42 @@
+global:
+  scrape_interval: 15s
+  external_labels:
+    platform: integrated-ai-platform
+    location: mac-mini
+
+scrape_configs:
+  # ── Host system metrics ─────────────────────────────────────────────────────
+  - job_name: node
+    static_configs:
+      - targets: ['host.docker.internal:9100']
+    scrape_timeout: 10s
+
+  # ── AI Platform Dashboard ────────────────────────────────────────────────────
+  - job_name: dashboard
+    static_configs:
+      - targets: ['host.docker.internal:8080']
+    metrics_path: /metrics
+    scrape_timeout: 10s
+
+  # ── VictoriaMetrics self-monitoring ──────────────────────────────────────────
+  - job_name: victoriametrics
+    static_configs:
+      - targets: ['victoriametrics:8428']
+
+  # ── ISP Monitor (ping latency pushed by isp_monitor.py) ───────────────────
+  # Metrics pushed via /api/v1/import/prometheus or Pushgateway
+  # No pull target needed; server.py pushes on each check cycle
+
+  # ── OPNsense (install os-prometheus plugin) ───────────────────────────────
+  # System → Firmware → Plugins → os-prometheus, then enable exporter
+  # - job_name: opnsense
+  #   static_configs:
+  #     - targets: ['192.168.10.1:9100']
+  #   scheme: https
+  #   tls_config:
+  #     insecure_skip_verify: true
+
+  # ── Mac Studio (future) ───────────────────────────────────────────────────
+  # - job_name: mac_studio_node
+  #   static_configs:
+  #     - targets: ['192.168.10.210:9100']

@@ -1,0 +1,56 @@
+/*
+ * Homepage custom CSS — aligned with AI Platform design system
+ * Matches the GitHub dark / Jira palette from web/dashboard/index.html
+ * Place this file at config/homepage/custom.css
+ */
+
+:root {
+  /* Surfaces — match web/shared/design-system.css */
+  --color-background: #0D1117;
+  --color-card:       #161B22;
+  --color-border:     rgba(255, 255, 255, 0.08);
+
+  /* Accent — Atlassian blue */
+  --color-primary:    #0052CC;
+  --color-primary-hover: #0065FF;
+
+  /* Text */
+  --color-text:       rgba(255, 255, 255, 0.95);
+  --color-text-secondary: rgba(255, 255, 255, 0.70);
+  --color-text-muted: rgba(255, 255, 255, 0.45);
+
+  /* Status */
+  --color-success: #00875A;
+  --color-warning: #FF991F;
+  --color-danger:  #DE350B;
+
+  /* Typography — match the dashboard */
+  --font-ui: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+body {
+  font-family: var(--font-ui) !important;
+  background-color: var(--color-background) !important;
+}
+
+/* Card styling */
+#information-widgets .widget,
+.service-widget {
+  background: var(--color-card) !important;
+  border: 1px solid var(--color-border) !important;
+  border-radius: 10px !important;
+}
+
+/* Service group headers */
+#services h2 {
+  color: var(--color-text-muted) !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.08em !important;
+  text-transform: uppercase !important;
+}
+
+/* Status dots — map to design system colours */
+.status-dot-green  { background: var(--color-success) !important; }
+.status-dot-yellow { background: var(--color-warning) !important; }
+.status-dot-red    { background: var(--color-danger)  !important; }

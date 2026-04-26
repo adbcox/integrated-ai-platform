@@ -1,0 +1,165 @@
+---
+# Homepage services configuration
+# Groups → Services → widget/integration config
+# Docs: https://gethomepage.dev/configs/services/
+
+- AI & Automation:
+    - AI Platform:
+        href: "http://mac-mini.local:8080"
+        description: "Autonomous roadmap executor"
+        icon: "robot.png"
+        widget:
+          type: customapi
+          url: "http://ai-platform-dashboard:8080/api/embed/widget"
+          method: GET
+          mappings:
+            - field: completions
+              label: Completed
+              format: number
+            - field: in_progress
+              label: In Progress
+              format: number
+            - field: success_rate
+              label: Success
+              format: percent
+
+    - Ollama (Mac Studio):
+        href: "http://mac-studio.local:11434"
+        description: "Local LLM inference"
+        icon: "ollama.png"
+        widget:
+          type: customapi
+          url: "http://mac-studio.local:11434/api/tags"
+          method: GET
+          mappings:
+            - field: models.length
+              label: Models
+              format: number
+
+    - Portainer:
+        href: "http://mac-mini.local:9000"
+        description: "Container management"
+        icon: "portainer.png"
+        widget:
+          type: portainer
+          url: "http://mac-mini.local:9443"
+          env: 1
+          key: "{{HOMEPAGE_VAR_PORTAINER_KEY}}"
+
+- Home Automation:
+    - Home Assistant:
+        href: "http://homeassistant.local:8123"
+        description: "Home automation hub"
+        icon: "home-assistant.png"
+        widget:
+          type: homeassistant
+          url: "http://homeassistant.local:8123"
+          key: "{{HOMEPAGE_VAR_HASS_TOKEN}}"
+          # See RM-HOME-001 through RM-HOME-006 for planned integrations
+          custom:
+            - state: sensor.indoor_aqi
+              label: Indoor AQI
+            - state: sensor.indoor_temperature
+              label: Temp
+            - state: binary_sensor.occupancy_home
+              label: Occupied
+
+    - Node-RED:
+        href: "http://homeassistant.local:1880"
+        description: "Automation flows"
+        icon: "node-red.png"
+
+- Media:
+    - Plex:
+        href: "http://mac-mini.local:32400/web"
+        description: "Media server"
+        icon: "plex.png"
+        widget:
+          type: plex
+          url: "http://mac-mini.local:32400"
+          key: "{{HOMEPAGE_VAR_PLEX_TOKEN}}"
+
+    - Sonarr:
+        href: "http://192.168.10.201:8989"
+        description: "TV series automation (QNAP)"
+        icon: "sonarr.png"
+        widget:
+          type: sonarr
+          url: "http://192.168.10.201:8989"
+          key: "{{HOMEPAGE_VAR_SONARR_KEY}}"
+
+    - Radarr:
+        href: "http://192.168.10.201:7878"
+        description: "Movie automation (QNAP)"
+        icon: "radarr.png"
+        widget:
+          type: radarr
+          url: "http://192.168.10.201:7878"
+          key: "{{HOMEPAGE_VAR_RADARR_KEY}}"
+
+    - Prowlarr:
+        href: "http://192.168.10.201:9696"
+        description: "Indexer manager (QNAP)"
+        icon: "prowlarr.png"
+        widget:
+          type: prowlarr
+          url: "http://192.168.10.201:9696"
+          key: "{{HOMEPAGE_VAR_PROWLARR_KEY}}"
+
+    - Media Stats:
+        href: "http://mac-mini.local:8080/api/media/status"
+        description: "Live *Arr + Plex status"
+        icon: "robot.png"
+        widget:
+          type: customapi
+          url: "http://ai-platform-dashboard:8080/api/media/status"
+          method: GET
+          mappings:
+            - field: sonarr.series_total
+              label: Series
+              format: number
+            - field: radarr.movies_total
+              label: Movies
+              format: number
+            - field: plex.active_streams
+              label: Streams
+              format: number
+
+- Infrastructure:
+    - Mac Mini:
+        href: "http://mac-mini.local:8090"
+        description: "Dashboard/control host"
+        icon: "apple.png"
+        widget:
+          type: glances
+          url: "http://mac-mini.local:61208"
+          version: 3
+          metric: fs:/
+
+    - Mac Studio:
+        href: "http://mac-studio.local:8090"
+        description: "Model/compute host"
+        icon: "apple.png"
+        widget:
+          type: glances
+          url: "http://mac-studio.local:61208"
+          version: 3
+          metric: cpu
+
+    - Traefik:
+        href: "http://mac-mini.local:8090/dashboard/"
+        description: "Reverse proxy"
+        icon: "traefik.png"
+        widget:
+          type: traefik
+          url: "http://mac-mini.local:8090"
+
+    - GitHub:
+        href: "https://github.com/adbcox/integrated-ai-platform"
+        description: "Source repository"
+        icon: "github.png"
+        widget:
+          type: github
+          url: "https://github.com/adbcox/integrated-ai-platform"
+          user: adbcox
+          repo: integrated-ai-platform

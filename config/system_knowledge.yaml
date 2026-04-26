@@ -1,0 +1,137 @@
+# System Knowledge Configuration for AI Engines
+# Loaded by bin/inject_system_context.py to prime aider, Ollama, and MCP contexts.
+# Keep this file factual and concise — it gets injected into every AI prompt.
+
+platform:
+  name: "Integrated AI Platform"
+  purpose: "Local-first AI coding automation advancing toward Codex 5.1 replacement"
+  primary_host: "Mac Studio (compute) + Mac Mini (dashboards/media)"
+  repo_root: "/Users/admin/repos/integrated-ai-platform"
+
+architecture:
+  primary_milestone: "Codex 5.1 replacement gate (docs/codex51-replacement-gate.md)"
+  session_discipline: "AGENTS.md — declare type, objective, baseline, blockers"
+  executor_primary: "ClaudeCodeExecutor (framework/code_executor.py)"
+  executor_fallback: "AiderExecutor (local Ollama)"
+
+# Pipeline stages — know these when suggesting where code changes belong
+pipeline:
+  rag_stages:
+    - stage: "rag1"
+      file: "bin/stage_rag1_plan_probe.py"
+      role: "Initial BM25 code search with metrics"
+    - stage: "rag2"
+      file: "bin/stage_rag2_plan_probe.py"
+      role: "Search refinement with ranking signals"
+    - stage: "rag3"
+      file: "bin/stage_rag3_plan_probe.py"
+      role: "Context aggregation and deduplication"
+    - stage: "rag4"
+      file: "bin/stage_rag4_plan_probe.py"
+      role: "Entity-aware reranking — PRIMARY retrieval stage"
+    - stage: "rag6"
+      file: "bin/stage_rag6_plan_probe.py"
+      role: "Multi-target orchestration planning"
+
+  managers:
+    - id: "stage3"
+      file: "bin/stage3_manager.py"
+      role: "Direct file modification with executor abstraction"
+    - id: "stage6"
+      file: "bin/stage6_manager.py"
+      role: "Multi-target orchestration across files"
+    - id: "stage7"
+      file: "bin/stage7_manager.py"
+      role: "Full AI agent execution with learning loops"
+
+# Local models — use these names when suggesting model routing
+models:
+  default_fast: "qwen2.5-coder:14b"
+  default_hard: "deepseek-coder-v2:latest"
+  default_smart: "qwen2.5-coder:32b"  # via OLLAMA_API_BASE_32B
+  ollama_base: "http://127.0.0.1:11434"
+  pair_workflows:
+    fast_accurate:
+      writer: "qwen2.5-coder:7b"
+      reviewer: "qwen2.5-coder:32b"
+    balanced:
+      writer: "qwen2.5-coder:14b"
+      reviewer: "deepseek-coder-v2:latest"
+
+# External services — real IPs and ports for this homelab
+services:
+  qnap_nas:
+    host: "192.168.10.201"
+    services: ["Sonarr:8989", "Radarr:7878", "Prowlarr:9696", "Plex:32400"]
+  opnsense:
+    host: "192.168.10.1"
+    note: "Firewall/router — API auth via OPNSENSE_API_KEY/SECRET"
+  seedbox:
+    host: "193.163.71.22"
+    port: 2088
+    user: "seedit4me"
+    note: "Download-only; rclone syncs completed torrents to QNAP"
+  plane:
+    host: "localhost"
+    port: 3001
+    note: "Project management — roadmap tracked here; MCP at mcp/plane_mcp_server.py"
+  dashboard:
+    host: "localhost"
+    port: 8080
+    note: "Main control panel — web/dashboard/server.py"
+
+# Key constraints for AI engines to respect
+constraints:
+  - "No mocking databases in tests — use real connections or skip the test"
+  - "No staged/unstaged changes in working tree before micro-lane runs"
+  - "Max 2 code-adjacent files per micro-lane edit"
+  - "Run make check + make quick after any code change"
+  - "Do not re-implement completed sessions; treat them as foundation"
+  - "Local-first: use aider-fast/hard before escalating to Claude Code"
+  - "Modify only files directly relevant to the stated task scope"
+
+# Validation commands — include these in task completion checks
+validation:
+  full: "make check"
+  fast: "make quick"
+  offline: "make test-offline"
+  micro_regression: "make micro-lane-regression"
+  stage6_dryrun: "make micro-lane-stage6"
+
+# File paths the AI should know about
+key_files:
+  - path: "CLAUDE.md"
+    role: "Primary session guidance for Claude Code"
+  - path: "AGENTS.md"
+    role: "Session governance and discipline rules"
+  - path: "docs/progress-contract.md"
+    role: "Session completeness checklist"
+  - path: "docs/codex51-replacement-gate.md"
+    role: "Primary milestone success criteria"
+  - path: "framework/code_executor.py"
+    role: "ExecutorFactory, ClaudeCodeExecutor, AiderExecutor"
+  - path: "framework/worker_runtime.py"
+    role: "WorkerPool, WorkerRuntime — parallel job execution (42KB)"
+  - path: "framework/inference_adapter.py"
+    role: "Inference backend abstraction (not yet wired to real Ollama calls)"
+  - path: "framework/metrics_collector.py"
+    role: "Metrics collection — currently placeholder values, needs psutil"
+  - path: "config/connectors.yaml"
+    role: "External service connections (authoritative)"
+  - path: "config/model_pairs.yaml"
+    role: "Dual-model writer+reviewer workflow configuration"
+  - path: "artifacts/"
+    role: "Stage outputs, benchmarks, escalations — do not commit large files here"
+
+# Inject instructions for aider (used when model is primed via --read flag)
+aider_context: |
+  You are working on an integrated AI platform that orchestrates local LLM models for
+  coding tasks. The primary goal is to build real capability gain, not just infrastructure.
+
+  Before suggesting any change:
+  1. Identify which pipeline stage(s) are affected
+  2. Check if the change is "safely attackable" (scoped, measurable, non-speculative)
+  3. Propose running `make quick` after the change
+
+  Prefer: small targeted edits over refactors.
+  Avoid: adding error handling for impossible cases, creating new abstractions for <3 uses.

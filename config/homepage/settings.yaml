@@ -1,0 +1,48 @@
+---
+# Homepage global settings
+# Docs: https://gethomepage.dev/configs/settings/
+
+title: Home Control Panel
+description: Integrated AI Platform — Master Control
+
+# Theme: matches AI Platform dashboard (GitHub dark / Jira-inspired)
+theme: dark
+color: slate
+
+# Layout
+headerStyle: clean
+layout:
+  AI & Automation:
+    style: row
+    columns: 3
+  Home Automation:
+    style: row
+    columns: 2
+  Media:
+    style: row
+    columns: 4
+  Infrastructure:
+    style: row
+    columns: 4
+
+# Optional background — use a dark minimal image or leave blank
+# background:
+#   image: /images/background.jpg
+#   blur: sm
+#   saturate: 50
+#   brightness: 50
+#   opacity: 50
+
+# Status indicators
+statusStyle: dot
+
+# Provider for icons (selfhosted or remote)
+iconStyle: theme
+
+# Disable telemetry
+hideVersion: false
+logpath: /app/config/logs
+
+# Custom CSS to match AI Platform design system
+# (see web/shared/design-system.css for the full token set)
+# Injected via custom.css if needed — put the file at config/homepage/custom.css
