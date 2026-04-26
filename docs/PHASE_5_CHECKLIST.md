@@ -44,7 +44,21 @@
 
 ---
 
-## Week 2: Phase 3 Integration Validation
+## Week 2: Phase 3 Integration Validation ✅ COMPLETE 2026-04-26
+
+### Root Folder Fix ✅ COMPLETE 2026-04-26
+- [x] Sonarr root folder: `/tv` (inaccessible) → `/downloads/TV` (2.6TB free) ✅
+- [x] Radarr root folder: `/movie` (inaccessible) → `/downloads/Movies` (2.6TB free) ✅
+- [x] All 185 Sonarr series paths bulk-updated via API
+- [x] All 424 Radarr movie paths bulk-updated via API
+- [x] Library rescan: Sonarr 4,106 episode files | Radarr 335 movies on disk
+
+### Download Pipeline Validated ✅ 2026-04-26
+- [x] RSS Sync: 400 reports found, 0 grabbed (library current — last import 2026-04-25)
+- [x] Sonarr history: grabs + imports active (Gold Rush S16E22, Fire Country S04E16, Hunting Party S02E11)
+- [x] SABnzbd download client: enabled → 5.nl19.seedit4.me:443 (SSL)
+- [x] rclone-mover + rclone-sabnzbd: running on QNAP
+- [x] All 4 services healthy: :8989 :7878 :9696 :1867
 
 ### LiteLLM → Ollama ✅ VALIDATED
 - [x] Chat test passes (293ms first token, qwen-coder-7b)
