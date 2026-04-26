@@ -9,7 +9,7 @@
 You are working on a production autonomous AI platform. Before taking any action:
 
 1. **Read the docs first:** All context is in `docs/PLATFORM_OVERVIEW.md`
-2. **Deployment target:** Mac Mini .113 (you're SSH'd in remotely)
+2. **Deployment target:** Mac Mini .145 (192.168.10.145)
 3. **All code execution:** Happens ON the Mac Mini, NOT locally
 4. **User preference:** Give complete prompts, don't execute incrementally
 
@@ -30,7 +30,7 @@ You are working on a production autonomous AI platform. Before taking any action
 - "What's the architecture" → Point to `docs/PLATFORM_OVERVIEW.md`
 
 **Never:**
-- Try to execute on local filesystem (everything is on Mac Mini .113)
+- Try to execute on local filesystem (everything is on Mac Mini .145)
 - Reference files expecting them to be read - include content inline
 - Waste tokens on unnecessary validations or tool calls
 - Call this a "homelab" - it's an enterprise AI platform
