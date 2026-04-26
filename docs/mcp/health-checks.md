@@ -29,7 +29,7 @@ check "Plane DB :5433"   "python3 -c \"import socket; s=socket.socket(); s.setti
 check "Obot :8090"       "curl -sf http://localhost:8090/api/healthz"
 check "Ollama :11434"    "curl -sf http://localhost:11434/api/tags"
 check "Grafana :3030"    "curl -sf http://localhost:3030"
-check "Dashboard :8080"  "curl -sf http://localhost:8080/"
+check "Dashboard :8080"  "curl -sf http://localhost:8081/"
 
 echo ""
 echo "MCP server executables:"
@@ -50,20 +50,20 @@ echo "=== Results: $checks_passed/$checks_total passed ==="
 
 ## Uptime Kuma Monitors (Manual Setup)
 
-Add these monitors at http://192.168.10.145:3033:
+Add these monitors at http://192.168.10.113:3033:
 
 | Monitor Name | Type | URL/Host | Interval | Alert |
 |-------------|------|----------|----------|-------|
 | Plane API | HTTP | http://localhost:8000/api/v1/workspaces/iap/projects/ | 1 min | Yes |
 | Obot Gateway | HTTP | http://localhost:8090/api/healthz | 1 min | Yes |
 | Ollama | HTTP | http://localhost:11434/api/tags | 2 min | Yes |
-| IAP Dashboard | HTTP | http://localhost:8080/ | 1 min | Yes |
+| IAP Dashboard | HTTP | http://localhost:8081/ | 1 min | Yes |
 | Plane DB :5433 | TCP Port | localhost:5433 | 1 min | Yes |
 | VictoriaMetrics | HTTP | http://localhost:8428 | 2 min | No |
 
 ## Grafana Alert Thresholds
 
-In Grafana (http://192.168.10.145:3030), create alerts for:
+In Grafana (http://192.168.10.113:3030), create alerts for:
 
 | Metric | Threshold | Severity |
 |--------|-----------|----------|
@@ -75,7 +75,7 @@ In Grafana (http://192.168.10.145:3030), create alerts for:
 ## Monitoring Targets in vmagent
 
 Current scrape targets (`docker/vmagent-config/scrape.yml`):
-- `localhost:8080/metrics` — IAP dashboard (platform_* metrics)
+- `localhost:8081/metrics` — IAP dashboard (platform_* metrics)
 - `localhost:9100` — node-exporter (host metrics)
 
 To add Obot metrics (if Obot exposes /metrics in future):

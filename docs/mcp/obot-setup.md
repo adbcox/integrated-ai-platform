@@ -2,7 +2,7 @@
 
 ## Status: Running, needs browser-based admin configuration
 
-Obot is deployed and healthy at `http://192.168.10.145:8090`. The initial admin
+Obot is deployed and healthy at `http://192.168.10.113:8090`. The initial admin
 setup requires browser access — the API requires OAuth/bootstrap authentication
 that cannot be configured programmatically.
 
@@ -17,7 +17,7 @@ Obot acts as a central MCP hub:
 ## Initial Admin Setup (Do This Once)
 
 ### Step 1 — Open browser
-Navigate to: http://192.168.10.145:8090
+Navigate to: http://192.168.10.113:8090
 
 ### Step 2 — Bootstrap setup
 Obot will present a setup wizard. Use:
@@ -28,7 +28,7 @@ Obot will present a setup wizard. Use:
 For local homelab use, authentication is currently disabled
 (`OBOT_SERVER_ENABLE_AUTHENTICATION=false`). To enable GitHub OAuth:
 1. Create GitHub OAuth App at github.com/settings/developers
-2. Callback URL: `http://192.168.10.145:8090/oauth2/callback`
+2. Callback URL: `http://192.168.10.113:8090/oauth2/callback`
 3. Add to `docker/.env`:
    ```
    OBOT_GITHUB_CLIENT_ID=your_client_id

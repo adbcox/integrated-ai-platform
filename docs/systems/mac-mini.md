@@ -6,12 +6,12 @@
 |------|-------|
 | Model | Mac mini (2024, Mac16,11) |
 | Model # | G1JV1LL/A |
-| Chip | Apple M4 Pro |
+| Chip | Apple M5 |
 | CPU | 12 cores (8 Performance + 4 Efficiency) |
 | RAM | 48 GB unified memory |
 | OS | macOS 26.3 (Sequoia) build 25D125 |
 | Hostname | mac-mini.local |
-| IP | 192.168.10.145 |
+| IP | 192.168.10.113 |
 | Role | **Primary orchestration hub** |
 
 ## Purpose

@@ -4,7 +4,7 @@
 
 | System | IP | Role | Status |
 |--------|----|------|--------|
-| Mac Mini | 192.168.10.145 | Orchestration hub (this machine) | Active |
+| Mac Mini | 192.168.10.113 | Orchestration hub (this machine) | Active |
 | Mac Studio | 192.168.10.202 | AI compute (GPU workloads) | Pending arrival |
 | QNAP NAS | 192.168.10.201 | Media storage + backups | Active |
 | OPNsense | 192.168.10.1 | Firewall / router | Active |
@@ -22,7 +22,7 @@
 ## Key Service Map
 
 ```
-192.168.10.145 (Mac Mini — active)
+192.168.10.113 (Mac Mini — active)
 ├── :3000  OpenHands (AI agent IDE)
 ├── :3001  Plane CE (project management)
 ├── :3030  Grafana (dashboards)

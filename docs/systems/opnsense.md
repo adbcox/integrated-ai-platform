@@ -20,14 +20,14 @@
 | IP | Device | MAC |
 |----|--------|-----|
 | 192.168.10.1 | OPNsense (router) | — |
-| 192.168.10.145 | Mac Mini | — |
+| 192.168.10.113 | Mac Mini | — |
 | 192.168.10.201 | QNAP NAS | — |
 | 192.168.10.202 | Mac Studio (reserved) | — |
 
 ## DNS Configuration
 
 OPNsense acts as the local DNS resolver. Platform-specific DNS:
-- `mac-mini.local` → 192.168.10.145
+- `mac-mini.local` → 192.168.10.113
 - `qnap.local` → 192.168.10.201
 - `mac-studio.local` → 192.168.10.202 (pending)
 
