@@ -210,18 +210,23 @@ def get_or_create_workspace(name):
     return result.get("workspace", {})
 
 
-def embed_docs_in_workspace(ws_slug, doc_paths):
-    """Call update-embeddings to add uploaded docs to a workspace namespace."""
+def embed_docs_in_workspace(ws_slug, doc_paths, batch_size=50):
+    """Call update-embeddings in batches to avoid Prisma transaction timeouts."""
     adds = [f"custom-documents/{p}" for p in doc_paths]
-    result = api(
-        "POST",
-        f"/api/v1/workspace/{ws_slug}/update-embeddings",
-        {"adds": adds, "deletes": []},
-    )
-    ws = result.get("workspace", {})
-    if isinstance(ws, list):
-        ws = ws[0] if ws else {}
-    return len(ws.get("documents", []))
+    total = 0
+    batches = [adds[i:i + batch_size] for i in range(0, len(adds), batch_size)]
+    for i, batch in enumerate(batches, 1):
+        result = api(
+            "POST",
+            f"/api/v1/workspace/{ws_slug}/update-embeddings",
+            {"adds": batch, "deletes": []},
+        )
+        ws = result.get("workspace", {})
+        if isinstance(ws, list):
+            ws = ws[0] if ws else {}
+        total = len(ws.get("documents", []))
+        print(f"  Batch {i}/{len(batches)}: workspace now has {total} docs")
+    return total
 
 
 # ── Commands ───────────────────────────────────────────────────────────────────
