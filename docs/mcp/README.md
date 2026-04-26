@@ -22,7 +22,7 @@ Obot gateway (`:8090`) is running and becomes an 8th connection point once brows
 | Server | Tier | Blocker |
 |--------|------|---------|
 | github-mcp | P0 | Needs `GITHUB_TOKEN` in `docker/.env` (PAT: repo, read:org, workflow) |
-| obot-gateway | Hub | Needs browser setup at http://192.168.10.113:8090 → generate API key |
+| obot-gateway | Hub | Needs browser setup at http://192.168.10.145:8090 → generate API key |
 | brave-search | P1 | Needs Brave Search API key (free tier at brave.com/search/api/) |
 
 ## Ollama (Native — Not MCP)
@@ -60,7 +60,7 @@ Claude Code CLI
 
 ## Quick References
 
-- Obot Admin UI: http://192.168.10.113:8090
+- Obot Admin UI: http://192.168.10.145:8090
 - Obot healthcheck: `curl http://localhost:8090/api/healthz`
 - Plane API: http://localhost:8000/api/v1
 - Ollama API: http://localhost:11434/api

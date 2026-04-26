@@ -278,7 +278,7 @@ curl -s http://admin:admin@localhost:3030/api/datasources | python3 -m json.tool
 
 ### Uptime Kuma not detecting outages
 
-Uptime Kuma checks from inside Docker — it can't reach `localhost` on the host. Use actual LAN IP (`192.168.10.113`) or container names in monitors.
+Uptime Kuma checks from inside Docker — it can't reach `localhost` on the host. Use actual LAN IP (`192.168.10.145`) or container names in monitors.
 
 ### Zabbix not collecting host metrics
 
@@ -287,7 +287,7 @@ Uptime Kuma checks from inside Docker — it can't reach `localhost` on the host
 docker ps --filter "name=zabbix-agent" --format "{{.Status}}"
 
 # Test agent from server
-docker exec zabbix-server zabbix_get -s 192.168.10.113 -p 10050 -k system.uname
+docker exec zabbix-server zabbix_get -s 192.168.10.145 -p 10050 -k system.uname
 ```
 
 ### VictoriaMetrics high disk usage

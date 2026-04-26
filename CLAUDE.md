@@ -1,7 +1,7 @@
 # Claude Code - Project Instructions
 
 **Project:** Integrated AI Platform (Enterprise Autonomous AI Infrastructure)  
-**Deployment Target:** Mac Mini M5 at 192.168.10.113  
+**Deployment Target:** Mac Mini M5 at 192.168.10.145  
 **Current Phase:** Phase 3 Complete - All services operational
 
 ## Quick Start

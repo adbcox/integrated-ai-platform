@@ -1,6 +1,6 @@
 # Security Baseline Configuration
 
-## Platform Security Posture (Mac Mini 192.168.10.113)
+## Platform Security Posture (Mac Mini 192.168.10.145)
 
 ### Container Hardening
 

@@ -90,13 +90,13 @@ done
 | Action | Where | Priority |
 |--------|-------|----------|
 | Back up vault-init-keys.txt | QNAP or password manager | **CRITICAL** |
-| Obot browser setup | http://192.168.10.113:8090 | High |
+| Obot browser setup | http://192.168.10.145:8090 | High |
 | GITHUB_TOKEN | docker/.env | Medium |
 | BRAVE_API_KEY | docker/.env | Medium |
-| Open WebUI → LiteLLM test | http://192.168.10.113:3002 | Medium |
-| Home Assistant dashboard config | http://192.168.10.113:8123 | Low |
-| Homarr service widgets | http://192.168.10.113:7575 | Low |
-| Uptime Kuma monitors | http://192.168.10.113:3033 | Low |
+| Open WebUI → LiteLLM test | http://192.168.10.145:3002 | Medium |
+| Home Assistant dashboard config | http://192.168.10.145:8123 | Low |
+| Homarr service widgets | http://192.168.10.145:7575 | Low |
+| Uptime Kuma monitors | http://192.168.10.145:3033 | Low |
 
 ## Quick Health Check
 

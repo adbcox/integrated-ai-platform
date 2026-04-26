@@ -13,7 +13,7 @@ A local-first AI operating system and control plane running on a Mac Mini M5. It
 
 | Node | Role | Spec | IP |
 |------|------|------|----|
-| Mac Mini M5 | Orchestration (current) | Apple M5 / 48 GB RAM | 192.168.10.113 |
+| Mac Mini M5 | Orchestration (current) | Apple M5 / 48 GB RAM | 192.168.10.145 |
 | Mac Studio M3 | Compute / inference (future) | Apple M3 / 96 GB RAM | 192.168.10.202 |
 | QNAP NAS | Storage | 23.4 TB | 192.168.10.201 |
 

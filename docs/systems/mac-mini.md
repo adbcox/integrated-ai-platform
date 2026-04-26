@@ -11,7 +11,7 @@
 | RAM | 48 GB unified memory |
 | OS | macOS 26.3 (Sequoia) build 25D125 |
 | Hostname | mac-mini.local |
-| IP | 192.168.10.113 |
+| IP | 192.168.10.145 |
 | Role | **Primary orchestration hub** |
 
 ## Purpose

@@ -50,7 +50,7 @@ echo "=== Results: $checks_passed/$checks_total passed ==="
 
 ## Uptime Kuma Monitors (Manual Setup)
 
-Add these monitors at http://192.168.10.113:3033:
+Add these monitors at http://192.168.10.145:3033:
 
 | Monitor Name | Type | URL/Host | Interval | Alert |
 |-------------|------|----------|----------|-------|
@@ -63,7 +63,7 @@ Add these monitors at http://192.168.10.113:3033:
 
 ## Grafana Alert Thresholds
 
-In Grafana (http://192.168.10.113:3030), create alerts for:
+In Grafana (http://192.168.10.145:3030), create alerts for:
 
 | Metric | Threshold | Severity |
 |--------|-----------|----------|

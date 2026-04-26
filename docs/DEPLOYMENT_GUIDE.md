@@ -1,7 +1,7 @@
 # Deployment Guide: Integrated AI Platform
 
 **Last Updated:** 2026-04-25  
-**Host:** Mac Mini M5 — 192.168.10.113
+**Host:** Mac Mini M5 — 192.168.10.145
 
 ---
 

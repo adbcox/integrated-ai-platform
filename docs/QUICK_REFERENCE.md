@@ -1,28 +1,28 @@
 # Quick Reference — Service Access
 
-**Mac Mini M5 · 192.168.10.113**
+**Mac Mini M5 · 192.168.10.145**
 
 ## Primary Interfaces
 
 | Service | URL | Credentials |
 |---------|-----|-------------|
-| Open WebUI | http://192.168.10.113:3002 | Local account (create on first login) |
-| Homarr | http://192.168.10.113:7575 | No auth (LAN only) |
-| Home Assistant | http://192.168.10.113:8123 | Local account (create on first login) |
-| Plane CE | http://192.168.10.113:3001 | Workspace credentials |
-| Grafana | http://192.168.10.113:3030 | admin / admin |
-| Uptime Kuma | http://192.168.10.113:3033 | Local account |
+| Open WebUI | http://192.168.10.145:3002 | Local account (create on first login) |
+| Homarr | http://192.168.10.145:7575 | No auth (LAN only) |
+| Home Assistant | http://192.168.10.145:8123 | Local account (create on first login) |
+| Plane CE | http://192.168.10.145:3001 | Workspace credentials |
+| Grafana | http://192.168.10.145:3030 | admin / admin |
+| Uptime Kuma | http://192.168.10.145:3033 | Local account |
 
 ## Gateways (API Access)
 
 | Service | URL | Auth |
 |---------|-----|------|
-| LiteLLM | http://192.168.10.113:4000 | Bearer `$LITELLM_MASTER_KEY` |
-| MCPO (OpenAPI) | http://192.168.10.113:8081 | None |
-| Vault | http://192.168.10.113:8200 | Root token in `vault/.env` |
-| Obot | http://192.168.10.113:8090 | Browser OAuth (setup pending) |
-| Ollama | http://192.168.10.113:11434 | None |
-| Plane API | http://192.168.10.113:8000 | `x-api-key: $PLANE_API_TOKEN` |
+| LiteLLM | http://192.168.10.145:4000 | Bearer `$LITELLM_MASTER_KEY` |
+| MCPO (OpenAPI) | http://192.168.10.145:8081 | None |
+| Vault | http://192.168.10.145:8200 | Root token in `vault/.env` |
+| Obot | http://192.168.10.145:8090 | Browser OAuth (setup pending) |
+| Ollama | http://192.168.10.145:11434 | None |
+| Plane API | http://192.168.10.145:8000 | `x-api-key: $PLANE_API_TOKEN` |
 
 ## Ollama Models
 
