@@ -66,7 +66,7 @@ def wait_for_obot(max_retries: int = 30) -> bool:
     print(f"Waiting for Obot at {OBOT_URL}...")
     for i in range(max_retries):
         try:
-            with urllib.request.urlopen(f"{OBOT_URL}/healthz", timeout=3):
+            with urllib.request.urlopen(f"{OBOT_URL}/api/healthz", timeout=3):
                 print(f"  Obot is healthy (attempt {i+1})")
                 return True
         except Exception:
