@@ -100,35 +100,55 @@ tools:
     status: READY
 
 # ── P1 tools (Month 1) ────────────────────────────────────────────────────────
-# Uncomment and register after P0 is stable
+# sequential-thinking, memory, sqlite are DEPLOYED directly in ~/.claude.json
+# Ollama runs natively at localhost:11434 (not MCP — called via HTTP API)
 
 p1_tools:
   ollama:
     id: ollama-mcp
     tier: P1
-    description: "Local LLM inference via Ollama (qwen2.5-coder:14b)"
-    status: BLOCKED_BY_CONTAINER  # Start Ollama container first
+    description: "Native Ollama at localhost:11434 — NOT an MCP server; called via HTTP"
+    models: [qwen2.5-coder:32b, devstral:latest, deepseek-coder-v2, qwen2.5-coder:14b, qwen2.5-coder:7b]
+    status: RUNNING_NATIVE  # No container needed; use http://localhost:11434 directly
 
   sequential-thinking:
     id: sequential-thinking-mcp
     tier: P1
-    package: "@modelcontextprotocol/server-sequential-thinking"
-    status: READY_TO_ADD
+    command: npx
+    args: ["-y", "@modelcontextprotocol/server-sequential-thinking"]
+    transport: stdio
+    status: DEPLOYED  # Active in ~/.claude.json
+    rbac:
+      Admin: [read, write]
+      Dev:   [read, write]
+      Agent: [read, write]
 
   brave-search:
     id: brave-search-mcp
     tier: P1
     package: "@modelcontextprotocol/server-brave-search"
-    status: BLOCKED_BY_CREDENTIAL  # Needs BRAVE_API_KEY
+    status: BLOCKED_BY_CREDENTIAL  # Needs BRAVE_API_KEY from brave.com/search/api/
 
   sqlite:
     id: sqlite-mcp
     tier: P1
-    package: "@modelcontextprotocol/server-sqlite"
-    status: READY_TO_ADD
+    command: uvx
+    args: ["mcp-server-sqlite", "--db-path", "/workspace/data/platform_analytics.db"]
+    transport: stdio
+    status: DEPLOYED  # Active in ~/.claude.json
+    rbac:
+      Admin: [read, write]
+      Dev:   [read, write]
+      Agent: [read, write]
 
   memory:
     id: memory-mcp
     tier: P1
-    package: "@modelcontextprotocol/server-memory"
-    status: READY_TO_ADD
+    command: npx
+    args: ["-y", "@modelcontextprotocol/server-memory"]
+    transport: stdio
+    status: DEPLOYED  # Active in ~/.claude.json
+    rbac:
+      Admin: [read, write]
+      Dev:   [read, write]
+      Agent: [read, write]
