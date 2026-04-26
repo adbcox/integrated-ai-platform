@@ -6,6 +6,23 @@
 
 ## Week 1: Arr Stack Migration (QNAP .201 → Mac Mini .145) ✅ COMPLETE 2026-04-26
 
+### QNAP Storage Migration ✅ COMPLETE 2026-04-26
+- [x] @Recycle emptied: 371GB freed
+- [x] New directory structure created: `/share/CACHEDEV2_DATA/data/{media,torrents,usenet}/{tv,movies,sports}`
+- [x] Symlink created: `/share/download/data → /share/CACHEDEV2_DATA/data` (SMB-accessible)
+- [x] Staging moved to review: rtorrent/, sonarr/, radarr/ → review-for-deletion/old-staging/
+- [x] TV migrated: 169 dirs instant-moved to `/share/CACHEDEV2_DATA/data/media/tv/` (CACHEDEV2 local mv)
+- [x] Movies migrated: 357 dirs instant-moved to `/share/CACHEDEV2_DATA/data/media/movies/` (CACHEDEV2 local mv)
+- [x] Plex DB backed up: `/share/CACHEDEV2_DATA/backups/plex/` (222MB)
+- [x] Plex library paths updated via Plex SQLite: `/data/media/movies` + `/data/media/tv`
+- [x] Plex library scan triggered — refreshing at new paths
+- [x] Sonarr root folder: `/downloads/TV` → `/data/media/tv` (id=10, accessible, 2815GB free)
+- [x] Radarr root folder: `/downloads/Movies` → `/data/media/movies` (id=8, accessible, 2815GB free)
+- [x] Sonarr bulk path update: 185/185 series paths updated, library rescan triggered
+- [x] Radarr bulk path update: 424/425 movies updated (1 corrected separately), rescan triggered
+- [x] Validation: Sonarr 4,106 episode files ✅ | Radarr 335 movies on disk ✅ (matches pre-migration)
+- [x] docker-compose updated: `/data` volume mount added (symlink path through `/downloads/data`)
+
 ### Pre-migration ✅
 - [x] SSH key auth set up: Mac Mini → QNAP (passwordless)
 - [x] Full QNAP inventory captured: `~/qnap-inventory-20260426/`
