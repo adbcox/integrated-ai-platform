@@ -1,48 +1,72 @@
 # Integrated AI Platform
 
-Local-first AI operating system and control plane running on Mac Mini M5 (192.168.10.113).
+Local-first AI operating system and control plane running on Mac Mini M5 (192.168.10.145).
 
-## Core Documentation
+## Documentation
 
-| Document | Purpose |
-|----------|---------|
-| [docs/PLATFORM_OVERVIEW.md](docs/PLATFORM_OVERVIEW.md) | Hardware, services, what's running |
-| [docs/DEPLOYMENT_GUIDE.md](docs/DEPLOYMENT_GUIDE.md) | Start/stop services, access UIs, operations |
-| [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) | Diagnose and fix problems |
-| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | How the system works |
-| [docs/HANDOFF_GUIDE.md](docs/HANDOFF_GUIDE.md) | Resume development, check progress |
+All documentation lives in the AnythingLLM knowledge base at **http://192.168.10.145:3004**.
+
+| Workspace | Content | Count |
+|-----------|---------|-------|
+| `roadmap-items` | All roadmap items (RM-AI-*, RM-SEC-*, RM-OPS-*, etc.) | 680 docs |
+| `engineering` | Architecture, deployment, runbooks, security, MCP, systems | 111 docs |
+
+Query examples:
+- "Show all P1 security roadmap items with status Accepted"
+- "How do I restart services after a failure?"
+- "What is the master system architecture?"
+
+Architecture Decision Records are in `docs/adr/` (governance artifacts kept in git).
 
 ## Quick Start
 
 ```bash
-# 1. Start Docker stacks
-docker compose -f docker/docker-compose-plane.yml up -d
-docker compose -f docker/observability-stack.yml up -d
-docker compose -f docker/zabbix-stack.yml up -d
+# SSH to platform host
+ssh admin@192.168.10.145
 
-# 2. Start dashboard (not in Docker)
-python3 web/dashboard/server.py &
+# Start knowledge base
+cd ~/repos/integrated-ai-platform
+docker compose -f docker/knowledge-stack.yml up -d
 
-# 3. Verify Ollama (local inference)
-curl http://localhost:11434/api/tags
+# Re-ingest docs after updates
+python3 bin/ingest-docs.py --dir roadmap --workspace roadmap-items
+python3 bin/ingest-docs.py --dir architecture --workspace engineering
 
-# 4. Run validation
-make check && make test-offline
+# Validate infrastructure
+./scripts/validate-cmdb.sh
 ```
 
 ## Key Services
 
 | Service | URL |
 |---------|-----|
-| AI Dashboard | http://localhost:8080 |
-| Plane (roadmap) | http://localhost:3001 |
-| Grafana | http://localhost:3030 |
-| Ollama | http://localhost:11434 |
+| AnythingLLM (knowledge base) | http://192.168.10.145:3004 |
+| Open WebUI | http://192.168.10.145:3002 |
+| Plane (roadmap) | http://192.168.10.145:3001 |
+| Grafana | http://192.168.10.145:3030 |
+| Uptime Kuma | http://192.168.10.145:3033 |
+| Ollama | http://192.168.10.145:11434 |
+
+## Repository Structure
+
+```
+bin/                    Scripts (ingest-docs.py, import_all_to_plane.py, ...)
+config/
+  service-registry.yaml CMDB — 32 services, machine-readable
+docker/                 Compose stacks for all services
+docs/
+  adr/                  Architecture Decision Records (ADR-A-001, 006, 007, 008)
+scripts/
+  validate-cmdb.sh      6-check infrastructure validator
+.github/workflows/      CI — YAML lint, registry validation, ADR format checks
+CODEOWNERS              Protection rules for critical paths
+```
 
 ## Roadmap
 
-601 items in `docs/roadmap/ITEMS/`. 65 complete (10.8%).
+680 items tracked in Plane (http://192.168.10.145:3001) and searchable via AnythingLLM.
 
 ```bash
-python3 bin/auto_execute_roadmap.py --target-completions 5
+# Search roadmap via API
+python3 bin/ingest-docs.py --list-workspace roadmap-items
 ```
