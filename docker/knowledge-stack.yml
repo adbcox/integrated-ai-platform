@@ -1,0 +1,61 @@
+# Knowledge Base Stack — AnythingLLM
+#
+# Semantic search over platform documentation for autonomous agent queries.
+# Ingests: docs/architecture/, docs/roadmap/ (governance docs), docs/runbooks/
+#
+# Port 3004 (3000=OpenHands, 3001=Plane, 3002=Open WebUI, 3003=free, 3004=here)
+#
+# Usage:
+#   cd docker && docker compose -f knowledge-stack.yml up -d
+#
+# After starting:
+#   1. Open http://localhost:3004 → create admin account
+#   2. Create workspace "Engineering" (for architecture + runbook docs)
+#   3. Create workspace "Roadmap" (for governance docs)
+#   4. Run: python3 bin/ingest-docs.py --workspace engineering
+#   5. Test: query "What external systems adoption policy applies?"
+
+version: "3.9"
+
+services:
+  anythingllm:
+    image: mintplexlabs/anythingllm:latest
+    container_name: anythingllm
+    restart: unless-stopped
+    ports:
+      - "3004:3001"
+    volumes:
+      - anythingllm-storage:/app/server/storage
+      - /Users/admin/repos/integrated-ai-platform/docs:/platform-docs:ro
+    environment:
+      STORAGE_DIR: /app/server/storage
+      JWT_SECRET: "${ANYTHINGLLM_JWT_SECRET:-change-this-jwt-secret}"
+      LLM_PROVIDER: ollama
+      OLLAMA_BASE_PATH: "http://host.docker.internal:11434"
+      EMBEDDING_ENGINE: ollama
+      EMBEDDING_MODEL_PREF: "nomic-embed-text:latest"
+      EMBEDDING_BASE_PATH: "http://host.docker.internal:11434"
+      OLLAMA_MODEL_PREF: "qwen2.5-coder:14b"
+      VECTOR_DB: lancedb
+      DISABLE_TELEMETRY: "true"
+      AUTH_TOKEN: "${ANYTHINGLLM_AUTH_TOKEN:-}"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - knowledge-net
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:3001/api/ping || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+volumes:
+  anythingllm-storage:
+
+networks:
+  knowledge-net:
+    name: knowledge
+    driver: bridge

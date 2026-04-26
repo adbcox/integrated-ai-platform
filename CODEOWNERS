@@ -1,0 +1,45 @@
+# CODEOWNERS — Integrated AI Platform
+#
+# These rules determine who must review changes to protected paths.
+# GitHub enforces this when branch protection is enabled.
+# Pattern matching follows .gitignore syntax — last matching rule wins.
+#
+# Owner: @adbcox (sole maintainer)
+
+# ── Default owner (all files not otherwise matched) ─────────────────────────
+*                               @adbcox
+
+# ── Architecture decisions — human review mandatory ──────────────────────────
+# ADRs are immutable once merged. Any addition to docs/adr/ must be reviewed.
+/docs/adr/                      @adbcox
+
+# Block autonomous agents from writing to docs/ root except via ADR path.
+# Agents should update docs/adr/ for architecture decisions
+# and docs/roadmap/ITEMS/ for roadmap items.
+/docs/                          @adbcox
+
+# ── Service registry — source of truth for CMDB ──────────────────────────────
+# All changes to service definitions require human review.
+/config/service-registry.yaml   @adbcox
+
+# ── Infrastructure definitions ────────────────────────────────────────────────
+# Docker compose files affect running services — require human review.
+/docker/                        @adbcox
+/control-center-stack/          @adbcox
+
+# ── CI/CD pipeline ────────────────────────────────────────────────────────────
+# Changes to validation rules must be reviewed.
+/.github/                       @adbcox
+
+# ── Secrets and credentials ───────────────────────────────────────────────────
+# These files must never be modified by automation.
+/config/mac_mini/               @adbcox
+/config/mac_studio/             @adbcox
+/config/qnap/                   @adbcox
+.env                            @adbcox
+*.env                           @adbcox
+
+# ── Roadmap items — autonomous agents MAY write here (with CI validation) ────
+# Agents create/update ITEMS files as part of roadmap management.
+# CI validates schema before merge.
+/docs/roadmap/ITEMS/            @adbcox

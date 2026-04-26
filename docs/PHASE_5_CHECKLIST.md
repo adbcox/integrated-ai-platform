@@ -108,26 +108,28 @@
 
 ---
 
-## Week 3: Monitoring
+## Week 3: Monitoring ✅ COMPLETE 2026-04-26 (Phase 7)
 
-### Uptime Kuma (http://192.168.10.145:3033)
-- [ ] Open WebUI :3002
-- [ ] LiteLLM :4000/v1/models
-- [ ] MCPO :8081/openapi.json
-- [ ] Homarr :7575
-- [ ] Home Assistant :8123
-- [ ] Vault :8200/v1/sys/health
-- [ ] Obot :8090/api/healthz
-- [ ] Sonarr :8989 (after migration)
-- [ ] Radarr :7878 (after migration)
-- [ ] Prowlarr :9696 (after migration)
-- [ ] Ollama :11434/api/tags
-- [ ] Plane :3001
+### Uptime Kuma (http://192.168.10.145:3033) ✅ 12 monitors configured
+- [x] Open WebUI :3002
+- [x] LiteLLM :4000/v1/models
+- [x] MCPO :8081/openapi.json
+- [x] Homarr :7575
+- [x] Home Assistant .141 :8123
+- [x] Vault :8200/v1/sys/health
+- [x] Obot :8090/api/healthz
+- [x] Sonarr :8989
+- [x] Radarr :7878
+- [x] Prowlarr :9696
+- [x] Plex .201 :32400
+- [x] IAP Dashboard :8080/api/status
+- [ ] Ollama :11434/api/tags (optional — not externally exposed)
+- [ ] Plane :3001 (optional)
 
-### Grafana (http://192.168.10.145:3030)
-- [ ] Dashboard: Control Center overview (all service status)
-- [ ] Dashboard: Arr Stack (queue sizes, disk usage)
-- [ ] Dashboard: Performance (response times, request rates)
+### Grafana (http://192.168.10.145:3030) ✅ Dashboard provisioned
+- [x] Dashboard: Phase 7 — Infrastructure Status (CPU, memory, network, disk, containers)
+- [ ] Dashboard: Arr Stack (queue sizes, disk usage) — future
+- [ ] Dashboard: Performance (response times, request rates) — future
 
 ---
 

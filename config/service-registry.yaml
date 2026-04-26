@@ -1,0 +1,628 @@
+# Service Registry — Integrated AI Platform
+# Machine-readable CMDB for all platform services.
+# This is the canonical source for port assignments, dependencies, and health checks.
+# Consumed by: scripts/validate-cmdb.sh, GitHub Actions CI, autonomous agents.
+#
+# Last updated: 2026-04-26
+# Schema: id (required), name (required), host (required), port (required),
+#         health_url (required), category (required), depends_on (list),
+#         security.no_new_privileges, security.cap_drop
+
+metadata:
+  version: "1.0"
+  platform: "Integrated AI Platform"
+  primary_host: "mac-mini"
+  primary_ip: "192.168.10.145"
+
+# ── AI Layer ────────────────────────────────────────────────────────────────
+services:
+
+  - id: litellm-gateway
+    name: LiteLLM Gateway
+    category: ai
+    host: mac-mini
+    container: litellm-gateway
+    image: ghcr.io/berriai/litellm:main-latest
+    port: 4000
+    internal_port: 4000
+    health_url: "http://localhost:4000/health/liveliness"
+    health_method: GET
+    health_expect: 200
+    purpose: Multi-provider LLM routing (Anthropic, OpenAI, Ollama)
+    depends_on: []
+    security:
+      no_new_privileges: true
+      cap_drop: [ALL]
+    compose_file: control-center-stack/stacks/gateways/docker-compose.yml
+    credentials_env: [LITELLM_MASTER_KEY, ANTHROPIC_API_KEY, OPENAI_API_KEY]
+
+  - id: open-webui
+    name: Open WebUI
+    category: ai
+    host: mac-mini
+    container: open-webui
+    image: ghcr.io/open-webui/open-webui:main
+    port: 3002
+    internal_port: 8080
+    health_url: "http://localhost:3002/health"
+    health_method: GET
+    health_expect: 200
+    purpose: Multi-model AI chat frontend with RAG
+    depends_on: [litellm-gateway, ollama]
+    security:
+      no_new_privileges: true
+      cap_drop: [ALL]
+    compose_file: control-center-stack/stacks/ai-control/docker-compose.yml
+    credentials_env: [WEBUI_SECRET_KEY, LITELLM_MASTER_KEY]
+
+  - id: ollama
+    name: Ollama
+    category: ai
+    host: mac-mini
+    container: null
+    image: null
+    port: 11434
+    internal_port: 11434
+    health_url: "http://localhost:11434/api/tags"
+    health_method: GET
+    health_expect: 200
+    purpose: "Local LLM runtime (5 models: qwen2.5-coder variants, deepseek-coder-v2)"
+    depends_on: []
+    security:
+      no_new_privileges: null
+      cap_drop: null
+    compose_file: null
+    notes: host process, not containerized
+
+  - id: obot
+    name: Obot
+    category: ai
+    host: mac-mini
+    container: obot
+    image: obot/obot:latest
+    port: 8090
+    internal_port: 8080
+    health_url: "http://localhost:8090/api/healthz"
+    health_method: GET
+    health_expect: 200
+    purpose: AI agent orchestrator with MCP tool integration
+    depends_on: [litellm-gateway]
+    security:
+      no_new_privileges: false
+      cap_drop: []
+    compose_file: docker/obot-stack.yml
+    notes: OAuth browser setup pending; sms1obot-mcp-server companion containers on ports 32768/32769
+
+  - id: openhands
+    name: OpenHands
+    category: ai
+    host: mac-mini
+    container: openhands-app
+    image: custom
+    port: 3000
+    internal_port: 3000
+    health_url: "http://localhost:3000/"
+    health_method: GET
+    health_expect: 200
+    purpose: AI software engineering agent
+    depends_on: [litellm-gateway]
+    security:
+      no_new_privileges: false
+      cap_drop: []
+    compose_file: docker/docker-compose-ai-dashboard.yml
+    notes: Not yet in primary service documentation; running live
+
+  - id: mcpo-proxy
+    name: MCPO Proxy
+    category: ai
+    host: mac-mini
+    container: mcpo-proxy
+    image: nikolaik/python-nodejs:python3.12-nodejs22-slim
+    port: 8081
+    internal_port: 8081
+    health_url: "http://localhost:8081/openapi.json"
+    health_method: GET
+    health_expect: 200
+    purpose: MCP stdio to OpenAPI bridge — exposes filesystem MCP as HTTP tools for Open WebUI
+    depends_on: []
+    security:
+      no_new_privileges: true
+      cap_drop: [ALL]
+    compose_file: control-center-stack/stacks/gateways/docker-compose.yml
+    notes: "Port 8081, NOT 8080 — 8080 is IAP Dashboard (host service)"
+
+# ── Platform Core ────────────────────────────────────────────────────────────
+
+  - id: iap-dashboard
+    name: IAP Control Plane Dashboard
+    category: platform
+    host: mac-mini
+    container: null
+    image: null
+    port: 8080
+    internal_port: 8080
+    health_url: "http://localhost:8080/"
+    health_method: GET
+    health_expect: 200
+    purpose: Platform control plane web UI — roadmap status, execution state, service graph
+    depends_on: []
+    security:
+      no_new_privileges: null
+      cap_drop: null
+    compose_file: null
+    notes: host Python process (server.py), NOT a container; serves roadmap JSON from data/
+
+  - id: vault
+    name: HashiCorp Vault
+    category: platform
+    host: mac-mini
+    container: vault-server
+    image: hashicorp/vault:latest
+    port: 8200
+    internal_port: 8200
+    health_url: "http://localhost:8200/v1/sys/health"
+    health_method: GET
+    health_expect: [200, 429, 472, 473, 501, 503]
+    purpose: Secrets management — API keys, tokens, credentials store
+    depends_on: []
+    security:
+      no_new_privileges: true
+      cap_drop: [ALL]
+    compose_file: control-center-stack/stacks/vault/docker-compose.yml
+    notes: Requires manual unseal after container restart (3 of 5 Shamir keys at ~/vault-init-keys.txt)
+
+  - id: plane
+    name: Plane CE
+    category: platform
+    host: mac-mini
+    container: docker-plane-web-1
+    image: makeplane/plane-frontend:stable
+    port: 3001
+    internal_port: 3000
+    health_url: "http://localhost:3001/"
+    health_method: GET
+    health_expect: 200
+    purpose: Project management and roadmap tracking (601 issues, MCP integration)
+    depends_on: [plane-api, plane-db, plane-redis, plane-minio]
+    security:
+      no_new_privileges: false
+      cap_drop: []
+    compose_file: docker/docker-compose-plane.yml
+    notes: 7-container stack; API at :8000; PostgreSQL at :5433; MinIO at :9000/9001
+
+  - id: plane-api
+    name: Plane API
+    category: platform
+    host: mac-mini
+    container: docker-plane-api-1
+    image: makeplane/plane-backend:stable
+    port: 8000
+    internal_port: 8000
+    health_url: "http://localhost:8000/"
+    health_method: GET
+    health_expect: 200
+    purpose: Plane backend REST API
+    depends_on: [plane-db, plane-redis, plane-minio]
+    security:
+      no_new_privileges: false
+      cap_drop: []
+    compose_file: docker/docker-compose-plane.yml
+
+  - id: plane-db
+    name: Plane PostgreSQL
+    category: platform
+    host: mac-mini
+    container: docker-plane-db-1
+    image: postgres:15-alpine
+    port: 5433
+    internal_port: 5432
+    health_url: null
+    health_method: TCP
+    health_expect: open
+    purpose: Plane project management database
+    depends_on: []
+    security:
+      no_new_privileges: false
+      cap_drop: []
+    compose_file: docker/docker-compose-plane.yml
+
+  - id: plane-minio
+    name: MinIO Object Storage
+    category: platform
+    host: mac-mini
+    container: docker-plane-minio-1
+    image: minio/minio:latest
+    port: 9000
+    internal_port: 9000
+    health_url: "http://localhost:9001/"
+    health_method: GET
+    health_expect: 200
+    purpose: Plane object storage (S3-compatible) — file attachments, exports
+    depends_on: []
+    security:
+      no_new_privileges: false
+      cap_drop: []
+    compose_file: docker/docker-compose-plane.yml
+    notes: Console at :9001; not exposed externally
+
+  - id: homarr
+    name: Homarr
+    category: platform
+    host: mac-mini
+    container: homarr
+    image: ghcr.io/ajnart/homarr:latest
+    port: 7575
+    internal_port: 7575
+    health_url: "http://localhost:7575/"
+    health_method: GET
+    health_expect: [200, 307]
+    purpose: Service dashboard with Docker auto-discovery
+    depends_on: []
+    security:
+      no_new_privileges: true
+      cap_drop: []
+    compose_file: control-center-stack/stacks/ai-control/docker-compose.yml
+
+# ── Observability ────────────────────────────────────────────────────────────
+
+  - id: grafana
+    name: Grafana
+    category: observability
+    host: mac-mini
+    container: grafana-obs
+    image: grafana/grafana:10.4.2
+    port: 3030
+    internal_port: 3000
+    health_url: "http://localhost:3030/api/health"
+    health_method: GET
+    health_expect: 200
+    purpose: Metrics dashboards — infrastructure status, container health
+    depends_on: [victoriametrics]
+    security:
+      no_new_privileges: false
+      cap_drop: []
+    compose_file: docker/observability-stack.yml
+    notes: Anonymous viewer enabled; admin via GF_SECURITY_ADMIN_PASSWORD env
+
+  - id: victoriametrics
+    name: VictoriaMetrics
+    category: observability
+    host: mac-mini
+    container: vm
+    image: victoriametrics/victoria-metrics:v1.99.0
+    port: 8428
+    internal_port: 8428
+    health_url: "http://localhost:8428/health"
+    health_method: GET
+    health_expect: 200
+    purpose: Time-series metrics storage (PromQL-compatible, 90-day retention)
+    depends_on: []
+    security:
+      no_new_privileges: false
+      cap_drop: []
+    compose_file: docker/observability-stack.yml
+
+  - id: vmagent
+    name: VMAgent
+    category: observability
+    host: mac-mini
+    container: vmagent
+    image: victoriametrics/vmagent:v1.99.0
+    port: 8429
+    internal_port: 8429
+    health_url: "http://localhost:8429/"
+    health_method: GET
+    health_expect: 200
+    purpose: Metrics scraper — scrapes node-exporter, IAP dashboard, VictoriaMetrics
+    depends_on: [victoriametrics, node-exporter]
+    security:
+      no_new_privileges: false
+      cap_drop: []
+    compose_file: docker/observability-stack.yml
+
+  - id: uptime-kuma
+    name: Uptime Kuma
+    category: observability
+    host: mac-mini
+    container: uptime-kuma
+    image: louislam/uptime-kuma:1
+    port: 3033
+    internal_port: 3001
+    health_url: "http://localhost:3033/"
+    health_method: GET
+    health_expect: [200, 302]
+    purpose: Service uptime monitoring — 12 monitors covering all platform services
+    depends_on: []
+    security:
+      no_new_privileges: false
+      cap_drop: []
+    compose_file: docker/observability-stack.yml
+
+  - id: node-exporter
+    name: Node Exporter
+    category: observability
+    host: mac-mini
+    container: node-exporter
+    image: prom/node-exporter:v1.7.0
+    port: 9100
+    internal_port: 9100
+    health_url: "http://localhost:9100/metrics"
+    health_method: GET
+    health_expect: 200
+    purpose: Host system metrics (CPU, memory, disk, network) for Grafana
+    depends_on: []
+    security:
+      no_new_privileges: false
+      cap_drop: []
+    compose_file: docker/observability-stack.yml
+    notes: host network mode for accurate macOS metrics
+
+# ── Media Automation ─────────────────────────────────────────────────────────
+
+  - id: sonarr
+    name: Sonarr
+    category: media
+    host: mac-mini
+    container: sonarr
+    image: lscr.io/linuxserver/sonarr:latest
+    port: 8989
+    internal_port: 8989
+    health_url: "http://localhost:8989/ping"
+    health_method: GET
+    health_expect: 200
+    purpose: TV show automation — 185 shows tracked
+    depends_on: [prowlarr]
+    security:
+      no_new_privileges: true
+      cap_drop: []
+    compose_file: control-center-stack/stacks/arr-stack/docker-compose.yml
+    credentials_env: [SONARR_API_KEY]
+    notes: API key 2731353744504eb0a5d4225b7c40dfc6; s6-overlay requires CAP_SETGID (no cap_drop ALL)
+
+  - id: radarr
+    name: Radarr
+    category: media
+    host: mac-mini
+    container: radarr
+    image: lscr.io/linuxserver/radarr:latest
+    port: 7878
+    internal_port: 7878
+    health_url: "http://localhost:7878/ping"
+    health_method: GET
+    health_expect: 200
+    purpose: Movie automation — 425 movies tracked
+    depends_on: [prowlarr]
+    security:
+      no_new_privileges: true
+      cap_drop: []
+    compose_file: control-center-stack/stacks/arr-stack/docker-compose.yml
+    credentials_env: [RADARR_API_KEY]
+    notes: API key 2a3636f0d3b44ee48082c96298dc5194; s6-overlay requires CAP_SETGID
+
+  - id: prowlarr
+    name: Prowlarr
+    category: media
+    host: mac-mini
+    container: prowlarr
+    image: lscr.io/linuxserver/prowlarr:latest
+    port: 9696
+    internal_port: 9696
+    health_url: "http://localhost:9696/ping"
+    health_method: GET
+    health_expect: 200
+    purpose: Indexer management — 5 indexers feeding Sonarr and Radarr
+    depends_on: []
+    security:
+      no_new_privileges: true
+      cap_drop: []
+    compose_file: control-center-stack/stacks/arr-stack/docker-compose.yml
+    credentials_env: [PROWLARR_API_KEY]
+
+  - id: sportarr
+    name: Sportarr
+    category: media
+    host: mac-mini
+    container: sportarr
+    image: sportarr/sportarr:latest
+    port: 1867
+    internal_port: 1867
+    health_url: "http://localhost:1867/"
+    health_method: GET
+    health_expect: 200
+    purpose: Sports TV automation
+    depends_on: []
+    security:
+      no_new_privileges: true
+      cap_drop: [CAP_NET_ADMIN, CAP_SYS_ADMIN, CAP_SYS_PTRACE]
+    compose_file: control-center-stack/stacks/arr-stack/docker-compose.yml
+
+  - id: plex
+    name: Plex Media Server
+    category: media
+    host: qnap
+    container: null
+    image: null
+    port: 32400
+    internal_port: 32400
+    health_url: "http://192.168.10.201:32400/identity"
+    health_method: GET
+    health_expect: 200
+    purpose: Media streaming — TV library (169 dirs), Movie library (357 dirs)
+    depends_on: []
+    security: null
+    compose_file: null
+    notes: QNAP native QPKG (not Docker); media at /share/CACHEDEV2_DATA/data/media/
+
+# ── Home Automation ──────────────────────────────────────────────────────────
+
+  - id: homeassistant-container
+    name: Home Assistant (Mac Mini container)
+    category: automation
+    host: mac-mini
+    container: homeassistant
+    image: ghcr.io/home-assistant/home-assistant:stable
+    port: 8123
+    internal_port: 8123
+    health_url: "http://localhost:8123/"
+    health_method: GET
+    health_expect: [200, 302]
+    purpose: Home automation — Sonarr/Radarr REST sensors configured
+    depends_on: []
+    security:
+      no_new_privileges: true
+      cap_drop: []
+    compose_file: control-center-stack/stacks/dashboards/docker-compose.yml
+
+  - id: homeassistant-physical
+    name: Home Assistant (Physical device)
+    category: automation
+    host: ha-device
+    container: null
+    image: null
+    port: 8123
+    internal_port: 8123
+    health_url: "http://192.168.10.141:8123/"
+    health_method: GET
+    health_expect: [200, 302]
+    purpose: Physical Home Assistant instance for actual home automation
+    depends_on: []
+    security: null
+    compose_file: null
+    notes: Separate physical device at 192.168.10.141; not managed by this platform
+
+# ── Knowledge Base ──────────────────────────────────────────────────────────
+
+  - id: anythingllm
+    name: AnythingLLM
+    category: ai
+    host: mac-mini
+    container: anythingllm
+    image: mintplexlabs/anythingllm:latest
+    port: 3004
+    internal_port: 3001
+    health_url: "http://localhost:3004/api/ping"
+    health_method: GET
+    health_expect: 200
+    purpose: Semantic document search and RAG over platform architecture docs
+    depends_on: [ollama]
+    security:
+      no_new_privileges: true
+      cap_drop: []
+    compose_file: docker/knowledge-stack.yml
+    notes: Ingests docs/architecture/, docs/roadmap/ governance docs, docs/runbooks/
+
+# ── Plane Internal Services (not exposed externally) ─────────────────────────
+
+  - id: plane-redis
+    name: Plane Redis
+    category: platform
+    host: mac-mini
+    container: docker-plane-redis-1
+    image: redis:7.2-alpine
+    port: null
+    internal_port: 6379
+    health_url: null
+    health_method: null
+    health_expect: null
+    purpose: Plane cache layer (internal to Plane stack)
+    depends_on: []
+    security:
+      no_new_privileges: false
+      cap_drop: []
+    compose_file: docker/docker-compose-plane.yml
+
+  - id: plane-worker
+    name: Plane Worker
+    category: platform
+    host: mac-mini
+    container: docker-plane-worker-1
+    image: makeplane/plane-backend:stable
+    port: null
+    internal_port: 8000
+    health_url: null
+    health_method: null
+    health_expect: null
+    purpose: Plane async task worker
+    depends_on: [plane-db, plane-redis]
+    security:
+      no_new_privileges: false
+      cap_drop: []
+    compose_file: docker/docker-compose-plane.yml
+
+  - id: plane-beat
+    name: Plane Beat Scheduler
+    category: platform
+    host: mac-mini
+    container: docker-plane-beat-1
+    image: makeplane/plane-backend:stable
+    port: null
+    internal_port: 8000
+    health_url: null
+    health_method: null
+    health_expect: null
+    purpose: Plane periodic task scheduler (Celery Beat)
+    depends_on: [plane-db, plane-redis]
+    security:
+      no_new_privileges: false
+      cap_drop: []
+    compose_file: docker/docker-compose-plane.yml
+
+# ── Obot Internal Services ────────────────────────────────────────────────────
+
+  - id: obot-mcp-server
+    name: Obot MCP Server
+    category: ai
+    host: mac-mini
+    container: sms1obot-mcp-server
+    image: ghcr.io/obot-platform/obot-mcp-server:v0.1.1
+    port: null
+    internal_port: 8080
+    health_url: null
+    health_method: null
+    health_expect: null
+    purpose: Internal MCP server for Obot agent tools
+    depends_on: [obot]
+    security:
+      no_new_privileges: false
+      cap_drop: []
+    compose_file: docker/obot-stack.yml
+    notes: Internal only; exposed at 127.0.0.1:32768
+
+  - id: obot-mcp-shim
+    name: Obot MCP Shim
+    category: ai
+    host: mac-mini
+    container: sms1obot-mcp-server-shim
+    image: ghcr.io/nanobot-ai/nanobot:v0.0.67
+    port: null
+    internal_port: 8099
+    health_url: null
+    health_method: null
+    health_expect: null
+    purpose: Nanobot shim for Obot MCP server communication
+    depends_on: [obot-mcp-server]
+    security:
+      no_new_privileges: false
+      cap_drop: []
+    compose_file: docker/obot-stack.yml
+    notes: Internal only; exposed at 127.0.0.1:32769
+
+# ── Network Infrastructure ───────────────────────────────────────────────────
+
+  - id: opnsense
+    name: OPNsense Firewall
+    category: network
+    host: opnsense
+    container: null
+    image: null
+    port: 443
+    internal_port: 443
+    health_url: "https://192.168.10.1/"
+    health_method: GET
+    health_expect: [200, 301, 302]
+    purpose: Network firewall, DHCP, DNS (Unbound), VPN
+    depends_on: []
+    security: null
+    compose_file: null
+    notes: "Unbound DNS host overrides: mac-mini.internal=192.168.10.145, qnap.internal=192.168.10.201"
+    credentials_env: [OPNSENSE_API_KEY, OPNSENSE_API_SECRET]

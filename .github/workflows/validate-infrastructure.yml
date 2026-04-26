@@ -1,0 +1,322 @@
+name: Validate Infrastructure
+
+on:
+  pull_request:
+    paths:
+      - "docker/**"
+      - "**/docker-compose*.yml"
+      - "control-center-stack/**docker-compose*.yml"
+      - "config/service-registry.yaml"
+      - "docs/**"
+      - "scripts/validate-cmdb.sh"
+
+  push:
+    branches: [main]
+    paths:
+      - "config/service-registry.yaml"
+      - "scripts/validate-cmdb.sh"
+
+jobs:
+  # ── Job 1: YAML lint ────────────────────────────────────────────────────────
+  yaml-lint:
+    name: YAML Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install yamllint
+        run: pip install yamllint
+
+      - name: Lint service-registry.yaml
+        run: |
+          yamllint -d '{
+            extends: default,
+            rules: {
+              line-length: {max: 200},
+              truthy: {allowed-values: ["true", "false", "null"]},
+              comments: disable
+            }
+          }' config/service-registry.yaml
+
+      - name: Lint all docker-compose files
+        run: |
+          find . -name "docker-compose*.yml" -o -name "compose.yml" | \
+          grep -v ".git" | \
+          while read f; do
+            echo "Linting: $f"
+            yamllint -d relaxed "$f" || exit 1
+          done
+
+  # ── Job 2: Service registry schema validation ───────────────────────────────
+  validate-service-registry:
+    name: Validate Service Registry
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install pyyaml jsonschema
+
+      - name: Validate service registry schema
+        run: |
+          python3 - <<'PYEOF'
+          import yaml, sys
+
+          with open("config/service-registry.yaml") as f:
+              registry = yaml.safe_load(f)
+
+          assert "metadata" in registry, "Missing 'metadata' key"
+          assert "services" in registry, "Missing 'services' key"
+          assert "version" in registry["metadata"], "Missing metadata.version"
+          assert "primary_ip" in registry["metadata"], "Missing metadata.primary_ip"
+
+          required = ["id", "name", "category", "host", "port", "health_url"]
+          valid_categories = {"ai", "platform", "observability", "media", "automation", "network"}
+          errors = []
+
+          ids = set()
+          for svc in registry["services"]:
+              for field in required:
+                  if field not in svc:
+                      errors.append(f"{svc.get('id','?')}: missing field '{field}'")
+
+              sid = svc.get("id")
+              if sid in ids:
+                  errors.append(f"Duplicate service id: {sid}")
+              ids.add(sid)
+
+              cat = svc.get("category")
+              if cat not in valid_categories:
+                  errors.append(f"{sid}: invalid category '{cat}' (valid: {valid_categories})")
+
+              port = svc.get("port")
+              if port and not isinstance(port, int):
+                  errors.append(f"{sid}: port must be an integer, got {type(port)}")
+
+          if errors:
+              for e in errors:
+                  print(f"ERROR: {e}", file=sys.stderr)
+              sys.exit(1)
+
+          print(f"OK: {len(registry['services'])} services validated successfully")
+          PYEOF
+
+      - name: Check for port conflicts
+        run: |
+          python3 - <<'PYEOF'
+          import yaml, sys
+
+          with open("config/service-registry.yaml") as f:
+              registry = yaml.safe_load(f)
+
+          port_map = {}
+          conflicts = []
+          for svc in registry["services"]:
+              if svc.get("host") != "mac-mini":
+                  continue
+              port = svc.get("port")
+              if port in port_map:
+                  conflicts.append(f"Port {port}: '{port_map[port]}' and '{svc['id']}'")
+              else:
+                  port_map[port] = svc["id"]
+
+          if conflicts:
+              for c in conflicts:
+                  print(f"CONFLICT: {c}", file=sys.stderr)
+              sys.exit(1)
+
+          print(f"OK: No port conflicts ({len(port_map)} ports mapped)")
+          PYEOF
+
+  # ── Job 3: Docs structure enforcement ──────────────────────────────────────
+  validate-docs:
+    name: Validate Documentation Structure
+    runs-on: ubuntu-latest
+    if: |
+      contains(github.event.pull_request.changed_files, 'docs/') ||
+      github.event_name == 'push'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check docs/adr/ format
+        run: |
+          python3 - <<'PYEOF'
+          import os, sys, re
+
+          adr_dir = "docs/adr"
+          errors = []
+
+          for fname in os.listdir(adr_dir):
+              if not fname.endswith(".md") or fname == "README.md":
+                  continue
+              path = os.path.join(adr_dir, fname)
+              with open(path) as f:
+                  content = f.read()
+
+              # Must have Status field
+              if "**Status:**" not in content:
+                  errors.append(f"{fname}: missing '**Status:**' field")
+
+              # Must have Date field
+              if "**Date:**" not in content:
+                  errors.append(f"{fname}: missing '**Date:**' field")
+
+              # Must have Decision section
+              if "## Decision" not in content:
+                  errors.append(f"{fname}: missing '## Decision' section")
+
+              # Status must be valid
+              status_match = re.search(r"\*\*Status:\*\*\s+(\w+)", content)
+              if status_match:
+                  status = status_match.group(1)
+                  valid = {"Accepted", "Superseded", "Deprecated", "Proposed"}
+                  if status not in valid:
+                      errors.append(f"{fname}: invalid status '{status}'")
+
+          if errors:
+              for e in errors:
+                  print(f"ERROR: {e}", file=sys.stderr)
+              sys.exit(1)
+
+          adr_count = len([f for f in os.listdir(adr_dir) if f.endswith(".md") and f != "README.md"])
+          print(f"OK: {adr_count} ADR files valid")
+          PYEOF
+
+      - name: Block non-ADR files in docs/adr/
+        run: |
+          python3 - <<'PYEOF'
+          import os, sys
+
+          adr_dir = "docs/adr"
+          if not os.path.isdir(adr_dir):
+              print("docs/adr/ does not exist — skipping")
+              sys.exit(0)
+
+          allowed_patterns = ["ADR-", "README"]
+          violations = []
+
+          for fname in os.listdir(adr_dir):
+              if not fname.endswith(".md"):
+                  continue
+              if not any(fname.startswith(p) for p in allowed_patterns):
+                  violations.append(fname)
+
+          if violations:
+              for v in violations:
+                  print(f"VIOLATION: docs/adr/{v} — only ADR-*.md and README.md allowed here", file=sys.stderr)
+              sys.exit(1)
+
+          print(f"OK: docs/adr/ contains only ADR files")
+          PYEOF
+
+      - name: Check required architecture docs present
+        run: |
+          required_docs=(
+            "docs/architecture/MASTER_SYSTEM_ARCHITECTURE.md"
+            "docs/architecture/DECISION_REGISTER.md"
+            "docs/architecture/AUTHORITY_SURFACES.md"
+            "docs/adr/README.md"
+            "config/service-registry.yaml"
+            "CODEOWNERS"
+          )
+          missing=0
+          for doc in "${required_docs[@]}"; do
+            if [[ ! -f "$doc" ]]; then
+              echo "MISSING: $doc" >&2
+              missing=$((missing+1))
+            fi
+          done
+          if [[ $missing -gt 0 ]]; then
+            echo "ERROR: $missing required files missing" >&2
+            exit 1
+          fi
+          echo "OK: All required architecture files present"
+
+  # ── Job 4: CMDB validation (offline — no live service checks in CI) ─────────
+  validate-cmdb:
+    name: Validate CMDB Offline
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install pyyaml
+
+      - name: Run offline CMDB validation
+        run: |
+          python3 - <<'PYEOF'
+          import yaml, sys, json
+
+          with open("config/service-registry.yaml") as f:
+              registry = yaml.safe_load(f)
+
+          services = registry["services"]
+          service_ids = {s["id"] for s in services}
+          errors = []
+          warnings = []
+
+          # Dependency graph: all depends_on entries must exist
+          for svc in services:
+              for dep in svc.get("depends_on", []):
+                  if dep not in service_ids:
+                      errors.append(f"{svc['id']} depends_on unknown service: '{dep}'")
+
+          # All mac-mini services must have health_url or explicit null
+          for svc in services:
+              if svc.get("host") != "mac-mini":
+                  continue
+              if "health_url" not in svc:
+                  errors.append(f"{svc['id']}: mac-mini service missing health_url field")
+
+          # Security fields: containerized mac-mini services must declare security
+          for svc in services:
+              if svc.get("host") != "mac-mini":
+                  continue
+              if not svc.get("container"):
+                  continue
+              if "security" not in svc:
+                  warnings.append(f"{svc['id']}: missing security declaration")
+
+          # Compose file: containerized services should reference their compose file
+          for svc in services:
+              if svc.get("container") and not svc.get("compose_file"):
+                  warnings.append(f"{svc['id']}: has container but no compose_file")
+
+          for w in warnings:
+              print(f"WARN: {w}")
+          for e in errors:
+              print(f"ERROR: {e}", file=sys.stderr)
+
+          if errors:
+              print(f"\n{len(errors)} error(s), {len(warnings)} warning(s)", file=sys.stderr)
+              sys.exit(1)
+
+          print(f"\nOK: CMDB offline validation passed ({len(services)} services, {len(warnings)} warnings)")
+          PYEOF
+
+  # ── Summary gate ───────────────────────────────────────────────────────────
+  validation-gate:
+    name: Validation Gate
+    needs: [yaml-lint, validate-service-registry, validate-docs, validate-cmdb]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Check all jobs passed
+        run: |
+          if [[ "${{ needs.yaml-lint.result }}" != "success" ]] || \
+             [[ "${{ needs.validate-service-registry.result }}" != "success" ]] || \
+             [[ "${{ needs.validate-cmdb.result }}" != "success" ]]; then
+            echo "One or more validation jobs failed — blocking merge"
+            exit 1
+          fi
+          echo "All validation jobs passed ✅"
