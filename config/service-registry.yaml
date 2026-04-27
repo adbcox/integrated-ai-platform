@@ -626,3 +626,465 @@ services:
     compose_file: null
     notes: "Unbound DNS host overrides: mac-mini.internal=192.168.10.145, qnap.internal=192.168.10.201"
     credentials_env: [OPNSENSE_API_KEY, OPNSENSE_API_SECRET]
+
+# ── Zabbix Monitoring Stack ──────────────────────────────────────────────────
+
+  - id: zabbix-server
+    name: Zabbix Server
+    category: monitoring
+    host: mac-mini
+    container: zabbix-server
+    image: zabbix/zabbix-server-pgsql:alpine-7.4-latest
+    port: 10051
+    internal_port: 10051
+    health_url: null
+    health_method: null
+    health_expect: null
+    purpose: Zabbix monitoring server — collects metrics from agents and SNMP devices
+    depends_on: [zabbix-postgres]
+    security:
+      no_new_privileges: false
+      cap_drop: []
+    compose_file: docker/zabbix/docker-compose.yml
+
+  - id: zabbix-web
+    name: Zabbix Web UI
+    category: monitoring
+    host: mac-mini
+    container: zabbix-web
+    image: zabbix/zabbix-web-nginx-pgsql:alpine-7.4-latest
+    port: 10080
+    internal_port: 8080
+    health_url: "http://localhost:10080"
+    health_method: GET
+    health_expect: [200, 302]
+    purpose: Zabbix web frontend — dashboards, host management, alerting configuration
+    depends_on: [zabbix-server, zabbix-postgres]
+    security:
+      no_new_privileges: false
+      cap_drop: []
+    compose_file: docker/zabbix/docker-compose.yml
+
+  - id: zabbix-agent
+    name: Zabbix Agent (Docker)
+    category: monitoring
+    host: mac-mini
+    container: zabbix-agent
+    image: zabbix/zabbix-agent:alpine-7.4-latest
+    port: null
+    internal_port: 10050
+    health_url: null
+    health_method: null
+    health_expect: null
+    purpose: Zabbix agent inside Docker — monitors container environment metrics
+    depends_on: [zabbix-server]
+    security:
+      no_new_privileges: false
+      cap_drop: []
+    compose_file: docker/zabbix/docker-compose.yml
+    notes: Native agent on host at 192.168.10.145:10050 is primary; this container monitors Docker internals
+
+  - id: zabbix-postgres
+    name: Zabbix PostgreSQL + TimescaleDB
+    category: data
+    host: mac-mini
+    container: zabbix-postgres
+    image: timescale/timescaledb:latest-pg16
+    port: null
+    internal_port: 5432
+    health_url: null
+    health_method: null
+    health_expect: null
+    purpose: TimescaleDB-backed PostgreSQL for Zabbix history and trend data
+    depends_on: []
+    security:
+      no_new_privileges: false
+      cap_drop: []
+    compose_file: docker/zabbix/docker-compose.yml
+    notes: Named volume zabbix-pgdata; 256MB shared_buffers (Colima 8GB constraint)
+
+# ── MCP Remote Services ──────────────────────────────────────────────────────
+
+  - id: mcp-filesystem-remote
+    name: MCP Filesystem (Remote HTTP)
+    category: mcp
+    host: mac-mini
+    container: mcp-filesystem-remote
+    image: node:22-slim
+    port: 8091
+    internal_port: 8091
+    health_url: "http://localhost:8091/healthz"
+    health_method: GET
+    health_expect: 200
+    purpose: Filesystem MCP server exposed via supergateway streamable HTTP for Obot
+    depends_on: []
+    security:
+      no_new_privileges: false
+      cap_drop: []
+    compose_file: docker/obot-stack.yml
+    notes: Mounts /workspace (repo root read-only); healthcheck uses node HTTP (curl absent from image)
+
+  - id: mcp-docker-remote
+    name: MCP Docker (Remote HTTP)
+    category: mcp
+    host: mac-mini
+    container: null
+    image: null
+    port: 8092
+    internal_port: 8092
+    health_url: "http://localhost:8092/healthz"
+    health_method: GET
+    health_expect: 200
+    purpose: Docker MCP server running as host nohup process — Colima socket not mountable from containers
+    depends_on: []
+    security:
+      no_new_privileges: null
+      cap_drop: null
+    compose_file: null
+    notes: Started via launchd; obot registers as http://host.docker.internal:8092/mcp
+
+  - id: mcp-docs-remote
+    name: MCP Docs (Remote HTTP)
+    category: mcp
+    host: mac-mini
+    container: mcp-docs-remote
+    image: node:22-slim
+    port: 8093
+    internal_port: 8093
+    health_url: "http://localhost:8093/healthz"
+    health_method: GET
+    health_expect: 200
+    purpose: Documentation MCP server wrapping @arabold/docs-mcp-server via supergateway
+    depends_on: []
+    security:
+      no_new_privileges: false
+      cap_drop: []
+    compose_file: docker/obot-stack.yml
+
+# ── Obot Dynamic MCP Shims ───────────────────────────────────────────────────
+# Obot spawns these containers on demand with cryptic IDs (ms1xxxxx pattern).
+# Container names are dynamic — registry uses container: null for all shims.
+# Each shim = one phat MCP server (parent) + one nanobot shim (child) per tool.
+
+  - id: obot-shim-postgres
+    name: Obot MCP Shim — PostgreSQL
+    category: mcp-shim
+    host: mac-mini
+    container: null
+    image: ghcr.io/obot-platform/mcp-images/phat:v0.20.2
+    port: null
+    internal_port: 8099
+    health_url: null
+    health_method: null
+    health_expect: null
+    purpose: Obot-managed PostgreSQL MCP tool (1 tool) — query Plane DB and platform analytics
+    depends_on: [obot]
+    security:
+      no_new_privileges: false
+      cap_drop: []
+    compose_file: null
+    notes: Dynamic container; Obot assigns ID at spawn time
+
+  - id: obot-shim-postgres-nanobot
+    name: Obot Nanobot Shim — PostgreSQL
+    category: mcp-shim
+    host: mac-mini
+    container: null
+    image: ghcr.io/nanobot-ai/nanobot:v0.0.67
+    port: null
+    internal_port: 8099
+    health_url: null
+    health_method: null
+    health_expect: null
+    purpose: Nanobot communication shim for PostgreSQL MCP server
+    depends_on: [obot-shim-postgres]
+    security:
+      no_new_privileges: false
+      cap_drop: []
+    compose_file: null
+    notes: Dynamic container; paired with obot-shim-postgres
+
+  - id: obot-shim-github
+    name: Obot MCP Shim — GitHub
+    category: mcp-shim
+    host: mac-mini
+    container: null
+    image: ghcr.io/obot-platform/mcp-images/phat:v0.20.2
+    port: null
+    internal_port: 8099
+    health_url: null
+    health_method: null
+    health_expect: null
+    purpose: Obot-managed GitHub MCP tool (26 tools) — repo management, PRs, issues
+    depends_on: [obot]
+    security:
+      no_new_privileges: false
+      cap_drop: []
+    compose_file: null
+    notes: Dynamic container; requires GITHUB_TOKEN
+
+  - id: obot-shim-github-nanobot
+    name: Obot Nanobot Shim — GitHub
+    category: mcp-shim
+    host: mac-mini
+    container: null
+    image: ghcr.io/nanobot-ai/nanobot:v0.0.67
+    port: null
+    internal_port: 8099
+    health_url: null
+    health_method: null
+    health_expect: null
+    purpose: Nanobot communication shim for GitHub MCP server
+    depends_on: [obot-shim-github]
+    security:
+      no_new_privileges: false
+      cap_drop: []
+    compose_file: null
+    notes: Dynamic container
+
+  - id: obot-shim-weather
+    name: Obot MCP Shim — Weather
+    category: mcp-shim
+    host: mac-mini
+    container: null
+    image: ghcr.io/obot-platform/mcp-images/phat:v0.20.2
+    port: null
+    internal_port: 8099
+    health_url: null
+    health_method: null
+    health_expect: null
+    purpose: Obot-managed Weather MCP tool (17 tools) — forecast and conditions data
+    depends_on: [obot]
+    security:
+      no_new_privileges: false
+      cap_drop: []
+    compose_file: null
+    notes: Dynamic container
+
+  - id: obot-shim-weather-nanobot
+    name: Obot Nanobot Shim — Weather
+    category: mcp-shim
+    host: mac-mini
+    container: null
+    image: ghcr.io/nanobot-ai/nanobot:v0.0.67
+    port: null
+    internal_port: 8099
+    health_url: null
+    health_method: null
+    health_expect: null
+    purpose: Nanobot communication shim for Weather MCP server
+    depends_on: [obot-shim-weather]
+    security:
+      no_new_privileges: false
+      cap_drop: []
+    compose_file: null
+    notes: Dynamic container
+
+  - id: obot-shim-fitness
+    name: Obot MCP Shim — Health & Fitness
+    category: mcp-shim
+    host: mac-mini
+    container: null
+    image: ghcr.io/obot-platform/mcp-images/phat:v0.20.2
+    port: null
+    internal_port: 8099
+    health_url: null
+    health_method: null
+    health_expect: null
+    purpose: Obot-managed Health & Fitness MCP tool (17 tools) — activity and health metrics
+    depends_on: [obot]
+    security:
+      no_new_privileges: false
+      cap_drop: []
+    compose_file: null
+    notes: Dynamic container
+
+  - id: obot-shim-fitness-nanobot
+    name: Obot Nanobot Shim — Health & Fitness
+    category: mcp-shim
+    host: mac-mini
+    container: null
+    image: ghcr.io/nanobot-ai/nanobot:v0.0.67
+    port: null
+    internal_port: 8099
+    health_url: null
+    health_method: null
+    health_expect: null
+    purpose: Nanobot communication shim for Health & Fitness MCP server
+    depends_on: [obot-shim-fitness]
+    security:
+      no_new_privileges: false
+      cap_drop: []
+    compose_file: null
+    notes: Dynamic container
+
+  - id: obot-shim-semgrep
+    name: Obot MCP Shim — Semgrep
+    category: mcp-shim
+    host: mac-mini
+    container: null
+    image: ghcr.io/obot-platform/mcp-images/phat:v0.20.2
+    port: null
+    internal_port: 8099
+    health_url: null
+    health_method: null
+    health_expect: null
+    purpose: Obot-managed Semgrep MCP tool (7 tools) — static code analysis
+    depends_on: [obot]
+    security:
+      no_new_privileges: false
+      cap_drop: []
+    compose_file: null
+    notes: Dynamic container
+
+  - id: obot-shim-semgrep-nanobot
+    name: Obot Nanobot Shim — Semgrep
+    category: mcp-shim
+    host: mac-mini
+    container: null
+    image: ghcr.io/nanobot-ai/nanobot:v0.0.67
+    port: null
+    internal_port: 8099
+    health_url: null
+    health_method: null
+    health_expect: null
+    purpose: Nanobot communication shim for Semgrep MCP server
+    depends_on: [obot-shim-semgrep]
+    security:
+      no_new_privileges: false
+      cap_drop: []
+    compose_file: null
+    notes: Dynamic container
+
+  - id: obot-shim-strava
+    name: Obot MCP Shim — Strava
+    category: mcp-shim
+    host: mac-mini
+    container: null
+    image: ghcr.io/obot-platform/mcp-images/phat:v0.20.2
+    port: null
+    internal_port: 8099
+    health_url: null
+    health_expect: null
+    health_method: null
+    purpose: Obot-managed Strava MCP tool (24 tools) — activity tracking and analysis
+    depends_on: [obot]
+    security:
+      no_new_privileges: false
+      cap_drop: []
+    compose_file: null
+    notes: Dynamic container; OAuth token expires ~6h, requires manual refresh
+
+  - id: obot-shim-strava-nanobot
+    name: Obot Nanobot Shim — Strava
+    category: mcp-shim
+    host: mac-mini
+    container: null
+    image: ghcr.io/nanobot-ai/nanobot:v0.0.67
+    port: null
+    internal_port: 8099
+    health_url: null
+    health_method: null
+    health_expect: null
+    purpose: Nanobot communication shim for Strava MCP server
+    depends_on: [obot-shim-strava]
+    security:
+      no_new_privileges: false
+      cap_drop: []
+    compose_file: null
+    notes: Dynamic container
+
+  - id: obot-shim-homeassistant
+    name: Obot MCP Shim — Home Assistant
+    category: mcp-shim
+    host: mac-mini
+    container: null
+    image: ghcr.io/obot-platform/mcp-images/phat:v0.20.2
+    port: null
+    internal_port: 8099
+    health_url: null
+    health_method: null
+    health_expect: null
+    purpose: Obot-managed Home Assistant MCP tool (3 tools) — smart home control
+    depends_on: [obot, homeassistant-container]
+    security:
+      no_new_privileges: false
+      cap_drop: []
+    compose_file: null
+    notes: Dynamic container; requires HA long-lived access token
+
+  - id: obot-shim-homeassistant-nanobot
+    name: Obot Nanobot Shim — Home Assistant
+    category: mcp-shim
+    host: mac-mini
+    container: null
+    image: ghcr.io/nanobot-ai/nanobot:v0.0.67
+    port: null
+    internal_port: 8099
+    health_url: null
+    health_method: null
+    health_expect: null
+    purpose: Nanobot communication shim for Home Assistant MCP server
+    depends_on: [obot-shim-homeassistant]
+    security:
+      no_new_privileges: false
+      cap_drop: []
+    compose_file: null
+    notes: Dynamic container
+
+  - id: obot-shim-generic-a
+    name: Obot MCP Shim — Tool A
+    category: mcp-shim
+    host: mac-mini
+    container: null
+    image: ghcr.io/obot-platform/mcp-images/phat:v0.20.2
+    port: null
+    internal_port: 8099
+    health_url: null
+    health_method: null
+    health_expect: null
+    purpose: Obot-managed MCP tool — identity determined by Obot configuration at runtime
+    depends_on: [obot]
+    security:
+      no_new_privileges: false
+      cap_drop: []
+    compose_file: null
+    notes: Dynamic container (ms1kf6h4 pattern); tool identity in Obot UI
+
+  - id: obot-shim-generic-b
+    name: Obot MCP Shim — Tool B
+    category: mcp-shim
+    host: mac-mini
+    container: null
+    image: ghcr.io/obot-platform/mcp-images/phat:v0.20.2
+    port: null
+    internal_port: 8099
+    health_url: null
+    health_method: null
+    health_expect: null
+    purpose: Obot-managed MCP tool — identity determined by Obot configuration at runtime
+    depends_on: [obot]
+    security:
+      no_new_privileges: false
+      cap_drop: []
+    compose_file: null
+    notes: Dynamic container (ms1ljkbg pattern); tool identity in Obot UI
+
+  - id: obot-shim-generic-c
+    name: Obot MCP Shim — Tool C
+    category: mcp-shim
+    host: mac-mini
+    container: null
+    image: ghcr.io/obot-platform/mcp-images/phat:v0.20.2
+    port: null
+    internal_port: 8099
+    health_url: null
+    health_method: null
+    health_expect: null
+    purpose: Obot-managed MCP tool — identity determined by Obot configuration at runtime
+    depends_on: [obot]
+    security:
+      no_new_privileges: false
+      cap_drop: []
+    compose_file: null
+    notes: Dynamic container (ms1nfxvf pattern); tool identity in Obot UI

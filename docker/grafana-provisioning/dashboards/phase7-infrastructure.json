@@ -1,0 +1,177 @@
+{
+  "__inputs": [],
+  "__requires": [],
+  "annotations": {"list": []},
+  "description": "Phase 7 - Mac Mini .145 infrastructure status and system metrics",
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "gridPos": {"h": 3, "w": 24, "x": 0, "y": 0},
+      "id": 1,
+      "options": {
+        "content": "## Infrastructure Status — Mac Mini .145\n**Arr Stack** · Sonarr :8989 · Radarr :7878 · Prowlarr :9696 · Sportarr :1867  \n**AI** · LiteLLM :4000 · Open WebUI :3002 · Obot :8090  \n**Core** · Vault :8200 · Home Assistant :8123 · Homarr :7575  \n**QNAP .201** · Plex :32400  \n**Monitoring** · [Uptime Kuma](http://mac-mini.internal:3033) · [Grafana](http://mac-mini.internal:3030)",
+        "mode": "markdown"
+      },
+      "title": "Services",
+      "type": "text"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "${DS_VICTORIAMETRICS}"},
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "palette-classic"},
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "green", "value": null},
+              {"color": "yellow", "value": 70},
+              {"color": "red", "value": 90}
+            ]
+          }
+        }
+      },
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 3},
+      "id": 2,
+      "options": {"tooltip": {"mode": "single"}},
+      "targets": [
+        {
+          "expr": "100 - (avg(rate(node_cpu_seconds_total{mode=\"idle\"}[5m])) * 100)",
+          "legendFormat": "CPU %",
+          "refId": "A"
+        }
+      ],
+      "title": "CPU Usage",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "${DS_VICTORIAMETRICS}"},
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "palette-classic"},
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "green", "value": null},
+              {"color": "yellow", "value": 75},
+              {"color": "red", "value": 90}
+            ]
+          }
+        }
+      },
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 3},
+      "id": 3,
+      "targets": [
+        {
+          "expr": "(1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100",
+          "legendFormat": "Memory %",
+          "refId": "A"
+        }
+      ],
+      "title": "Memory Usage",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "${DS_VICTORIAMETRICS}"},
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "color": {"mode": "palette-classic"}
+        }
+      },
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 11},
+      "id": 4,
+      "targets": [
+        {
+          "expr": "rate(node_network_receive_bytes_total{device=\"en0\"}[5m])",
+          "legendFormat": "RX en0",
+          "refId": "A"
+        },
+        {
+          "expr": "rate(node_network_transmit_bytes_total{device=\"en0\"}[5m])",
+          "legendFormat": "TX en0",
+          "refId": "B"
+        }
+      ],
+      "title": "Network Throughput (en0 LAN)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "${DS_VICTORIAMETRICS}"},
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "color": {"mode": "palette-classic"}
+        }
+      },
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 11},
+      "id": 5,
+      "targets": [
+        {
+          "expr": "node_filesystem_free_bytes{mountpoint=\"/\"}",
+          "legendFormat": "/ free",
+          "refId": "A"
+        },
+        {
+          "expr": "node_filesystem_free_bytes{mountpoint=~\"/Users.*\"}",
+          "legendFormat": "{{mountpoint}} free",
+          "refId": "B"
+        }
+      ],
+      "title": "Disk Free Space",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "${DS_VICTORIAMETRICS}"},
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "palette-classic"},
+          "unit": "short"
+        }
+      },
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 19},
+      "id": 6,
+      "targets": [
+        {
+          "expr": "count(container_last_seen)",
+          "legendFormat": "Running Containers",
+          "refId": "A"
+        }
+      ],
+      "title": "Container Count",
+      "type": "timeseries"
+    }
+  ],
+  "refresh": "30s",
+  "schemaVersion": 36,
+  "tags": ["phase7", "infrastructure"],
+  "templating": {
+    "list": [
+      {
+        "current": {},
+        "hide": 0,
+        "includeAll": false,
+        "name": "DS_VICTORIAMETRICS",
+        "options": [],
+        "query": "prometheus",
+        "refresh": 1,
+        "type": "datasource"
+      }
+    ]
+  },
+  "time": {"from": "now-3h", "to": "now"},
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "Phase 7 — Infrastructure Status",
+  "uid": "phase7-infra",
+  "version": 1
+}
