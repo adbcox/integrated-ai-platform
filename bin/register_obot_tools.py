@@ -1,20 +1,14 @@
 #!/usr/bin/env python3
-"""Register P0 MCP tools with Obot gateway and configure RBAC.
+"""Register MCP tools with Obot.
 
-Run after `docker-compose -f docker/obot-stack.yml up -d`.
+Uses Obot's actual API format:
+  POST /api/mcp-servers with {manifest: {runtime, name, npxConfig|uvxConfig|remoteConfig, env}}
+
+Valid runtimes: npx, uvx, containerized, remote, composite
 
 Usage:
-    python3 bin/register_obot_tools.py              # register all P0 tools
-    python3 bin/register_obot_tools.py --check      # verify tool health only
-    python3 bin/register_obot_tools.py --register-claude  # also update ~/.claude.json
-
-What this does:
-    1. Waits for Obot to be healthy (retries 30x)
-    2. Authenticates as admin
-    3. Registers each P0 MCP tool (filesystem, postgres, plane, docker)
-    4. Skips tools with missing credentials (GitHub without GITHUB_TOKEN)
-    5. Configures RBAC roles (Admin, Dev, Agent)
-    6. Optionally registers Obot as MCP server in ~/.claude.json
+    python3 bin/register_obot_tools.py              # register all READY tools
+    python3 bin/register_obot_tools.py --check      # check what's registered
 """
 from __future__ import annotations
 
@@ -23,217 +17,336 @@ import json
 import os
 import sys
 import time
-from pathlib import Path
 import urllib.request
 import urllib.error
+from pathlib import Path
 
 REPO_ROOT = Path(__file__).parent.parent
 OBOT_URL = os.environ.get("OBOT_URL", "http://localhost:8090")
-OBOT_ADMIN_USER = os.environ.get("OBOT_ADMIN_USERNAME", "admin")
-OBOT_ADMIN_PASS = os.environ.get("OBOT_ADMIN_PASSWORD", "changeme_before_prod")
 
-# Load docker/.env
+# Load docker/.env into os.environ
 _dotenv = REPO_ROOT / "docker" / ".env"
 if _dotenv.exists():
     for line in _dotenv.read_text().splitlines():
         line = line.strip()
         if line and not line.startswith("#") and "=" in line:
             k, _, v = line.partition("=")
-            if k.strip() and k.strip() not in os.environ:
-                os.environ[k.strip()] = v.strip()
+            k = k.strip()
+            if k and k not in os.environ:
+                os.environ[k] = v.strip()
+
+GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN", "")
+POSTGRES_DSN = os.environ.get("POSTGRES_DSN", "postgresql://plane:plane@docker-plane-db-1:5432/plane")
+HA_TOKEN = os.environ.get("HA_TOKEN", "")
+HA_BASE_URL = os.environ.get("HA_BASE_URL", "http://192.168.10.141:8123")
+STRAVA_CLIENT_ID = os.environ.get("STRAVA_CLIENT_ID", "")
+STRAVA_CLIENT_SECRET = os.environ.get("STRAVA_CLIENT_SECRET", "")
+STRAVA_ACCESS_TOKEN = os.environ.get("STRAVA_ACCESS_TOKEN", "")
+STRAVA_REFRESH_TOKEN = os.environ.get("STRAVA_REFRESH_TOKEN", "")
+
+# ── Tool definitions ──────────────────────────────────────────────────────────
+# Each entry maps to one POST /api/mcp-servers call.
+# runtime: npx | uvx | remote | containerized
+# npxConfig: {package, args}
+# uvxConfig: {package, command, args}
+# remoteConfig: {url}
+# env: [{name, key, value, description, sensitive}]
+
+TOOLS = [
+    {
+        "id": "filesystem",
+        "manifest": {
+            "name": "Filesystem",
+            "shortDescription": "Read/write access to the IAP repository workspace",
+            "runtime": "remote",
+            "remoteConfig": {
+                "url": "http://host.docker.internal:8091/mcp",
+            },
+        },
+    },
+    {
+        "id": "postgresql",
+        "manifest": {
+            "name": "PostgreSQL (Plane)",
+            "shortDescription": "Query Plane CE's Postgres database",
+            "runtime": "npx",
+            "npxConfig": {
+                "package": "@modelcontextprotocol/server-postgres",
+                "args": [POSTGRES_DSN],
+            },
+        },
+    },
+    {
+        "id": "github",
+        "manifest": {
+            "name": "GitHub",
+            "shortDescription": "Read/write GitHub repos, issues, PRs, and actions",
+            "runtime": "npx",
+            "npxConfig": {
+                "package": "@modelcontextprotocol/server-github",
+                "args": [],
+            },
+            "env": [
+                {
+                    "name": "GitHub Token",
+                    "key": "GITHUB_PERSONAL_ACCESS_TOKEN",
+                    "value": GITHUB_TOKEN,
+                    "description": "GitHub PAT with repo scope",
+                    "sensitive": True,
+                }
+            ],
+        },
+        "skip_if": not GITHUB_TOKEN,
+        "skip_reason": "GITHUB_TOKEN not set in docker/.env",
+    },
+    {
+        "id": "docker",
+        "manifest": {
+            "name": "Docker",
+            "shortDescription": "Inspect and manage Docker containers, images, and volumes",
+            "runtime": "remote",
+            "remoteConfig": {
+                "url": "http://host.docker.internal:8092/mcp",
+            },
+        },
+    },
+    {
+        "id": "weather",
+        "manifest": {
+            "name": "Weather",
+            "shortDescription": "Global weather: forecast, historical, air quality (open-meteo, no auth)",
+            "runtime": "npx",
+            "npxConfig": {
+                "package": "open-meteo-mcp-server",
+                "args": [],
+            },
+        },
+    },
+    {
+        "id": "semgrep",
+        "manifest": {
+            "name": "Semgrep",
+            "shortDescription": "Static analysis: scan directories, list rules, create/filter results",
+            "runtime": "npx",
+            "npxConfig": {
+                "package": "mcp-server-semgrep",
+                "args": [],
+            },
+        },
+    },
+    {
+        "id": "health-fitness",
+        "manifest": {
+            "name": "Health & Fitness",
+            "shortDescription": "BMI, TDEE, macros, workouts, heart rate zones, nutrition, sleep",
+            "runtime": "npx",
+            "npxConfig": {
+                "package": "health-fitness-mcp",
+                "args": [],
+            },
+        },
+    },
+    {
+        "id": "docs",
+        "manifest": {
+            "name": "Docs",
+            "shortDescription": "Scrape and search documentation for any library or framework",
+            "runtime": "remote",
+            "remoteConfig": {
+                "url": "http://host.docker.internal:8093/mcp",
+            },
+        },
+    },
+    {
+        "id": "home-assistant",
+        "manifest": {
+            "name": "Home Assistant",
+            "shortDescription": "Smart home device control and state queries for 192.168.10.141",
+            "runtime": "npx",
+            "npxConfig": {
+                "package": "home-mcp",
+                "args": [],
+            },
+            "env": [
+                {
+                    "name": "HA Base URL",
+                    "key": "HA_BASE_URL",
+                    "value": HA_BASE_URL,
+                    "description": "Home Assistant base URL",
+                    "sensitive": False,
+                },
+                {
+                    "name": "HA Token",
+                    "key": "HA_TOKEN",
+                    "value": HA_TOKEN,
+                    "description": "Long-lived Home Assistant access token",
+                    "sensitive": True,
+                },
+            ],
+        },
+        "skip_if": not HA_TOKEN,
+        "skip_reason": "HA_TOKEN not set in docker/.env",
+    },
+    {
+        "id": "strava",
+        "manifest": {
+            "name": "Strava",
+            "shortDescription": "Triathlon training: activities, segments, routes, athlete stats (OAuth)",
+            "runtime": "npx",
+            "npxConfig": {
+                "package": "strava-mcp-server",
+                "args": [],
+            },
+            "env": [
+                {
+                    "name": "Strava Client ID",
+                    "key": "STRAVA_CLIENT_ID",
+                    "value": STRAVA_CLIENT_ID,
+                    "description": "Numeric Strava API app client ID",
+                    "sensitive": False,
+                },
+                {
+                    "name": "Strava Client Secret",
+                    "key": "STRAVA_CLIENT_SECRET",
+                    "value": STRAVA_CLIENT_SECRET,
+                    "description": "Strava API app client secret",
+                    "sensitive": True,
+                },
+                {
+                    "name": "Strava Access Token",
+                    "key": "STRAVA_ACCESS_TOKEN",
+                    "value": STRAVA_ACCESS_TOKEN,
+                    "description": "OAuth access token (from OAuth flow)",
+                    "sensitive": True,
+                },
+                {
+                    "name": "Strava Refresh Token",
+                    "key": "STRAVA_REFRESH_TOKEN",
+                    "value": STRAVA_REFRESH_TOKEN,
+                    "description": "OAuth refresh token (from OAuth flow)",
+                    "sensitive": True,
+                },
+            ],
+        },
+        "skip_if": not (STRAVA_CLIENT_ID and STRAVA_CLIENT_SECRET and STRAVA_ACCESS_TOKEN),
+        "skip_reason": "STRAVA_CLIENT_ID / STRAVA_ACCESS_TOKEN not set — complete OAuth flow first",
+    },
+]
 
 
-def _request(method: str, path: str, body: dict | None = None, token: str | None = None) -> dict:
+def _request(method: str, path: str, body: dict | None = None) -> dict:
     url = f"{OBOT_URL}{path}"
     data = json.dumps(body).encode() if body else None
     headers = {"Content-Type": "application/json", "Accept": "application/json"}
-    if token:
-        headers["Authorization"] = f"Bearer {token}"
     req = urllib.request.Request(url, data=data, headers=headers, method=method)
     try:
-        with urllib.request.urlopen(req, timeout=10) as r:
+        with urllib.request.urlopen(req, timeout=15) as r:
             content = r.read().decode()
             return json.loads(content) if content.strip() else {}
     except urllib.error.HTTPError as e:
-        body_text = e.read().decode()[:200]
-        print(f"  HTTP {e.code} on {method} {path}: {body_text}")
-        return {"error": e.code, "body": body_text}
-    except Exception as e:
-        return {"error": str(e)}
+        body_text = e.read().decode()[:300]
+        return {"_error": e.code, "_body": body_text}
 
 
-def wait_for_obot(max_retries: int = 30) -> bool:
+def wait_for_obot(retries: int = 30, delay: float = 2.0) -> bool:
     print(f"Waiting for Obot at {OBOT_URL}...")
-    for i in range(max_retries):
+    for attempt in range(1, retries + 1):
         try:
-            with urllib.request.urlopen(f"{OBOT_URL}/api/healthz", timeout=3):
-                print(f"  Obot is healthy (attempt {i+1})")
-                return True
+            req = urllib.request.Request(f"{OBOT_URL}/api/healthz", method="GET")
+            with urllib.request.urlopen(req, timeout=5) as r:
+                if r.status == 200:
+                    print(f"  Obot healthy (attempt {attempt})")
+                    return True
         except Exception:
             pass
-        time.sleep(3)
-        sys.stdout.write(f"\r  Attempt {i+2}/{max_retries}...")
-        sys.stdout.flush()
-    print("\n  Obot did not become healthy")
+        print(f"  attempt {attempt}/{retries} — not ready yet")
+        time.sleep(delay)
     return False
 
 
-def get_token() -> str | None:
-    result = _request("POST", "/api/v1/auth/token", {
-        "username": OBOT_ADMIN_USER,
-        "password": OBOT_ADMIN_PASS,
-    })
-    return result.get("token") or result.get("access_token")
+def list_registered() -> list[dict]:
+    result = _request("GET", "/api/mcp-servers")
+    return result.get("items", [])
 
 
-def register_tool(token: str, tool_def: dict) -> bool:
-    tool_id = tool_def["id"]
-    print(f"\n  Registering: {tool_id}")
+def register_tool(tool: dict, existing_names: set[str]) -> bool:
+    name = tool["manifest"]["name"]
+    if name in existing_names:
+        print(f"  already registered (skipping)")
+        return True
 
-    # Check for missing credentials
-    status = tool_def.get("status", "READY")
-    if status.startswith("BLOCKED_BY"):
-        reason = status.replace("BLOCKED_BY_", "")
-        print(f"  SKIPPED — blocked by: {reason}")
+    payload = {"manifest": tool["manifest"]}
+    result = _request("POST", "/api/mcp-servers", payload)
+
+    if "_error" in result:
+        print(f"  FAILED — HTTP {result['_error']}: {result['_body']}")
         return False
 
-    payload = {
-        "id": tool_id,
-        "name": tool_def.get("name", tool_id),
-        "description": tool_def.get("description", ""),
-        "transport": tool_def.get("transport", "stdio"),
-        "command": tool_def.get("command", ""),
-        "args": tool_def.get("args", []),
-        "env": {k: os.path.expandvars(str(v)) for k, v in tool_def.get("env", {}).items()},
-    }
-
-    result = _request("POST", f"/api/v1/tools", payload, token=token)
-    if "error" in result:
-        # Tool may already exist — try PUT
-        result = _request("PUT", f"/api/v1/tools/{tool_id}", payload, token=token)
-
-    if "error" not in result or result.get("error") == 409:
-        print(f"  OK: {tool_id}")
-        return True
-    print(f"  FAILED: {result}")
-    return False
-
-
-def configure_rbac(token: str, roles: dict) -> None:
-    print("\n  Configuring RBAC roles...")
-    for role_name, role_def in roles.items():
-        payload = {
-            "name": role_name,
-            "description": role_def.get("description", ""),
-            "permissions": role_def.get("permissions", []),
-        }
-        result = _request("POST", "/api/v1/roles", payload, token=token)
-        if "error" not in result or result.get("error") == 409:
-            print(f"  Role '{role_name}': OK")
-        else:
-            print(f"  Role '{role_name}': {result}")
-
-
-def register_with_claude_code() -> None:
-    claude_json_path = Path.home() / ".claude.json"
-    if not claude_json_path.exists():
-        print("  ~/.claude.json not found — skipping Claude Code registration")
-        return
-
-    data = json.loads(claude_json_path.read_text())
-    repo_key = str(REPO_ROOT)
-    projects = data.setdefault("projects", {})
-    project = projects.setdefault(repo_key, {})
-    mcp_servers = project.setdefault("mcpServers", {})
-
-    mcp_servers["obot-gateway"] = {
-        "type": "http",
-        "url": f"{OBOT_URL}/api/mcp",
-        "headers": {
-            "Authorization": f"Bearer {os.environ.get('OBOT_API_KEY', 'configure-obot-api-key')}"
-        }
-    }
-
-    claude_json_path.write_text(json.dumps(data, indent=2))
-    print(f"  Registered 'obot-gateway' in {claude_json_path}")
-
-
-def check_tool_health(token: str) -> None:
-    print("\n=== Tool Health Check ===")
-    result = _request("GET", "/api/v1/tools", token=token)
-    tools = result.get("items", result if isinstance(result, list) else [])
-    if not tools:
-        print("  No tools registered or Obot API format differs")
-        return
-    for t in tools:
-        tid = t.get("id", "?")
-        status = t.get("status", "unknown")
-        print(f"  {tid}: {status}")
+    registered_id = result.get("id", "?")
+    print(f"  registered (id={registered_id})")
+    return True
 
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--check", action="store_true", help="Check tool health only")
-    parser.add_argument("--register-claude", action="store_true", help="Register Obot in ~/.claude.json")
+    parser.add_argument("--check", action="store_true", help="Only list what's registered")
     args = parser.parse_args()
 
-    # Load tool/RBAC definitions
-    import yaml
-    tools_path = REPO_ROOT / "config" / "obot" / "tools.yaml"
-    rbac_path = REPO_ROOT / "config" / "obot" / "rbac.yaml"
-
-    try:
-        tools_cfg = yaml.safe_load(tools_path.read_text())
-        rbac_cfg = yaml.safe_load(rbac_path.read_text())
-    except ImportError:
-        print("yaml not available — using json fallback")
-        tools_cfg = {"tools": {}}
-        rbac_cfg = {"roles": {}}
+    print("=" * 60)
+    print("OBOT MCP SERVER REGISTRATION")
+    print("=" * 60)
+    print()
 
     if not wait_for_obot():
-        print("\nObot is not reachable. Start it first:")
-        print("  cd docker && docker-compose -f obot-stack.yml up -d")
+        print("Obot not reachable — aborting")
         sys.exit(1)
-
-    token = get_token()
-    if not token:
-        print("\nCould not authenticate with Obot. Check OBOT_ADMIN_PASSWORD.")
-        print("  If first run, Obot may use a different auth flow — check http://localhost:8090")
-        # Continue with check even without token
-        if args.check:
-            check_tool_health(None)
-        sys.exit(1)
+    print()
 
     if args.check:
-        check_tool_health(token)
+        items = list_registered()
+        if not items:
+            print("No MCP servers registered yet.")
+        else:
+            print(f"{len(items)} registered server(s):")
+            for item in items:
+                name = item.get("manifest", {}).get("name", item.get("id", "?"))
+                runtime = item.get("manifest", {}).get("runtime", "?")
+                configured = item.get("configured", False)
+                status = "configured" if configured else "not configured"
+                print(f"  [{status}] {name} ({runtime})  id={item.get('id')}")
         return
 
-    print("\n=== Registering P0 MCP Tools ===")
-    tools = tools_cfg.get("tools", {})
-    registered = 0
+    print(f"Registering {len(TOOLS)} server(s)...\n")
+    existing_names = {
+        item.get("manifest", {}).get("name", "")
+        for item in list_registered()
+    }
+    ok = 0
     skipped = 0
-    for name, tool_def in tools.items():
-        tool_def["id"] = tool_def.get("id", f"{name}-mcp")
-        if register_tool(token, tool_def):
-            registered += 1
-        else:
+    failed = 0
+
+    for tool in TOOLS:
+        print(f"→ {tool['id']} ({tool['manifest'].get('runtime')})")
+        if tool.get("skip_if"):
+            print(f"  SKIPPED — {tool.get('skip_reason', '')}")
             skipped += 1
+            continue
+        success = register_tool(tool, existing_names)
+        if success:
+            ok += 1
+        else:
+            failed += 1
+        print()
 
-    print(f"\n  Registered: {registered} | Skipped/blocked: {skipped}")
+    print("=" * 60)
+    print(f"Done: {ok} registered, {skipped} skipped, {failed} failed")
+    print()
 
-    configure_rbac(token, rbac_cfg.get("roles", {}))
+    if failed:
+        print("Re-run with --check to see what's registered.")
+        sys.exit(1)
 
-    if args.register_claude:
-        print("\n=== Registering Obot with Claude Code ===")
-        register_with_claude_code()
-
-    print("\n=== Summary ===")
-    print(f"  Obot gateway: {OBOT_URL}")
-    print(f"  Admin UI:     {OBOT_URL}/")
-    print(f"  Audit log:    docker exec obot tail -f /data/audit.log")
-    print(f"  MCP endpoint: {OBOT_URL}/api/mcp")
-    print(f"\n  To use in Claude Code:")
-    print(f"    python3 bin/register_obot_tools.py --register-claude")
+    print("Run with --check to verify all servers are configured.")
 
 
 if __name__ == "__main__":

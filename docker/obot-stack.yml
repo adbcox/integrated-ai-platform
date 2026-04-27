@@ -83,6 +83,58 @@ services:
       com.iap.tier: "infrastructure"
       com.iap.mcp-p0: "github,filesystem,postgresql,plane,docker"
 
+  # ── Remote MCP: Filesystem (:8091) ──────────────────────────────────────────
+  # Wraps @modelcontextprotocol/server-filesystem via supergateway (streamable HTTP)
+  # Obot registers this as remote runtime → http://mcp-filesystem-remote:8091/mcp
+  mcp-filesystem-remote:
+    image: node:22-slim
+    container_name: mcp-filesystem-remote
+    restart: unless-stopped
+    ports:
+      - "8091:8091"
+    volumes:
+      - /Users/admin/repos/integrated-ai-platform:/workspace:ro
+    networks:
+      - obot-net
+    command:
+      - sh
+      - -c
+      - "npx -y supergateway --stdio 'npx -y @modelcontextprotocol/server-filesystem /workspace' --outputTransport streamableHttp --port 8091 --cors --healthEndpoint /healthz"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8091/healthz || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 90s
+
+  # ── Remote MCP: Docker (:8092) ───────────────────────────────────────────────
+  # Runs on macOS HOST (not in Docker) — Colima socket not mountable from containers.
+  # Started via launchd agent: com.iap.mcp.docker
+  # Obot registers as remote runtime → http://host.docker.internal:8092/mcp
+  # NOTE: This service block is a no-op placeholder — actual process runs on host.
+
+  # ── Remote MCP: Docs (:8093) ─────────────────────────────────────────────────
+  # Wraps @arabold/docs-mcp-server via supergateway on Node 22 (fixes ABI mismatch
+  # present in phat containers which use Node 25). Needs build tools for tree-sitter.
+  mcp-docs-remote:
+    image: node:22-slim
+    container_name: mcp-docs-remote
+    restart: unless-stopped
+    ports:
+      - "8093:8093"
+    networks:
+      - obot-net
+    command:
+      - sh
+      - -c
+      - "apt-get update -qq && apt-get install -y -qq python3 make g++ curl && npm install -g @arabold/docs-mcp-server && npx -y supergateway --stdio 'docs-mcp-server' --outputTransport streamableHttp --port 8093 --cors --healthEndpoint /healthz"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8093/healthz || exit 1"]
+      interval: 20s
+      timeout: 10s
+      retries: 5
+      start_period: 180s
+
 volumes:
   obot-data:
     name: obot-data

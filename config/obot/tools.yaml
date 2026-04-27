@@ -99,7 +99,163 @@ tools:
       Agent: [read]
     status: READY
 
-# ── P1 tools (Month 1) ────────────────────────────────────────────────────────
+  # ── P2 tools (Phase 9 — Personal + Coding + Security) ──────────────────────
+
+  # ── P2-1: Code Research ──────────────────────────────────────────────────────
+  code-research:
+    id: code-research-mcp
+    name: "Code Research"
+    description: "Search Stack Overflow, MDN, GitHub, npm, and PyPI for code answers"
+    tier: P2
+    transport: stdio
+    command: node
+    args: ["/Users/admin/mcp-servers/code-research/build/index.js"]
+    env:
+      GITHUB_TOKEN: "${GITHUB_TOKEN}"   # optional — raises rate limit
+    rbac:
+      Admin: [read, write]
+      Dev:   [read, write]
+      Agent: [read]
+    status: READY
+
+  # ── P2-2: Docs ───────────────────────────────────────────────────────────────
+  docs:
+    id: docs-mcp
+    name: "Docs"
+    description: "Scrape and search documentation for any library or framework"
+    tier: P2
+    transport: stdio
+    command: node
+    args: ["/Users/admin/mcp-servers/docs/dist/index.js"]
+    env: {}
+    rbac:
+      Admin: [read, write]
+      Dev:   [read, write]
+      Agent: [read]
+    status: READY
+
+  # ── P2-3: Brave Search ───────────────────────────────────────────────────────
+  brave-search:
+    id: brave-search-mcp
+    name: "Brave Search"
+    description: "Web, image, video, and news search via Brave Search API"
+    tier: P2
+    transport: stdio
+    command: /Users/admin/mcp-servers/brave/node_modules/.bin/brave-search-mcp-server
+    args: []
+    env:
+      BRAVE_API_KEY: "${BRAVE_API_KEY}"
+    rbac:
+      Admin: [read, write]
+      Dev:   [read, write]
+      Agent: [read]
+    status: BLOCKED_BY_CREDENTIAL  # Set BRAVE_API_KEY in docker/.env
+
+  # ── P2-4: Strava ─────────────────────────────────────────────────────────────
+  strava:
+    id: strava-mcp
+    name: "Strava"
+    description: "Triathlon training: activities, segments, routes, athlete stats (OAuth)"
+    tier: P2
+    transport: stdio
+    command: node
+    args: ["/Users/admin/mcp-servers/strava/dist/server.js"]
+    env:
+      STRAVA_CLIENT_ID: "${STRAVA_CLIENT_ID}"
+      STRAVA_CLIENT_SECRET: "${STRAVA_CLIENT_SECRET}"
+      STRAVA_ACCESS_TOKEN: "${STRAVA_ACCESS_TOKEN}"
+      STRAVA_REFRESH_TOKEN: "${STRAVA_REFRESH_TOKEN}"
+    rbac:
+      Admin: [read, write]
+      Dev:   [read]
+      Agent: [read]
+    status: BLOCKED_BY_CREDENTIAL  # Set STRAVA_* in docker/.env, then OAuth via Claude
+
+  # ── P2-5: Health & Fitness ───────────────────────────────────────────────────
+  health-fitness:
+    id: health-fitness-mcp
+    name: "Health & Fitness"
+    description: "BMI, TDEE, macros, workouts, heart rate zones, nutrition, sleep"
+    tier: P2
+    transport: stdio
+    command: /Users/admin/mcp-servers/health/node_modules/.bin/health-fitness-mcp
+    args: []
+    env: {}
+    rbac:
+      Admin: [read, write]
+      Dev:   [read, write]
+      Agent: [read, write]
+    status: READY
+
+  # ── P2-6: Plex ───────────────────────────────────────────────────────────────
+  plex:
+    id: plex-mcp
+    name: "Plex"
+    description: "Browse and manage Plex media library"
+    tier: P2
+    transport: stdio
+    command: node
+    args: ["/Users/admin/mcp-servers/plex/build/plex-mcp-server.js"]
+    env:
+      PLEX_URL: "${PLEX_URL}"
+      PLEX_TOKEN: "${PLEX_TOKEN}"
+    rbac:
+      Admin: [read, write]
+      Dev:   [read]
+      Agent: [read]
+    status: BLOCKED_BY_CREDENTIAL  # Set PLEX_URL and PLEX_TOKEN in docker/.env
+
+  # ── P2-7: Home Assistant ─────────────────────────────────────────────────────
+  home-assistant:
+    id: home-assistant-mcp
+    name: "Home Assistant"
+    description: "Smart home device control and state queries for .141"
+    tier: P2
+    transport: stdio
+    command: /Users/admin/mcp-servers/home-assistant/node_modules/.bin/home-mcp
+    args: []
+    env:
+      HA_BASE_URL: "${HA_BASE_URL:-http://192.168.10.141:8123}"
+      HA_TOKEN: "${HA_TOKEN}"
+    rbac:
+      Admin: [read, write]
+      Dev:   [read]
+      Agent: [read]
+    status: BLOCKED_BY_CREDENTIAL  # Set HA_TOKEN in docker/.env
+
+  # ── P2-8: Weather ────────────────────────────────────────────────────────────
+  weather:
+    id: weather-mcp
+    name: "Weather"
+    description: "Global weather: forecast, historical, air quality, marine (open-meteo, no auth)"
+    tier: P2
+    transport: stdio
+    command: /Users/admin/mcp-servers/weather/node_modules/.bin/open-meteo-mcp-server
+    args: []
+    env: {}
+    rbac:
+      Admin: [read, write]
+      Dev:   [read, write]
+      Agent: [read, write]
+    status: READY
+
+  # ── P2-9: Semgrep ────────────────────────────────────────────────────────────
+  semgrep:
+    id: semgrep-mcp
+    name: "Semgrep"
+    description: "Static analysis: scan directories, list rules, create/filter/export results"
+    tier: P2
+    transport: stdio
+    command: /Users/admin/mcp-servers/semgrep/node_modules/.bin/mcp-server-semgrep
+    args: []
+    env: {}
+    rbac:
+      Admin: [read, write, admin]
+      Dev:   [read, write]
+      Agent: [read]
+    status: READY  # semgrep CLI installed at /opt/homebrew/bin/semgrep
+
+# ── P1 tools (Month 1 — managed separately) ───────────────────────────────────
 # sequential-thinking, memory, sqlite are DEPLOYED directly in ~/.claude.json
 # Ollama runs natively at localhost:11434 (not MCP — called via HTTP API)
 
@@ -122,12 +278,6 @@ p1_tools:
       Admin: [read, write]
       Dev:   [read, write]
       Agent: [read, write]
-
-  brave-search:
-    id: brave-search-mcp
-    tier: P1
-    package: "@modelcontextprotocol/server-brave-search"
-    status: BLOCKED_BY_CREDENTIAL  # Needs BRAVE_API_KEY from brave.com/search/api/
 
   sqlite:
     id: sqlite-mcp
