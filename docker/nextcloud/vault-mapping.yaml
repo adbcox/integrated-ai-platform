@@ -1,0 +1,5 @@
+# vault-mapping.yaml — Nextcloud stack secrets
+# Format: ENV_VAR_NAME: secret/path:field
+
+NEXTCLOUD_DB_PASSWORD: secret/nextcloud/db:password
+NEXTCLOUD_ADMIN_PASSWORD: secret/nextcloud/admin:password

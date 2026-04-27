@@ -1,0 +1,6 @@
+# vault-mapping.yaml — Zabbix stack secrets
+# Format: ENV_VAR_NAME: secret/path:field
+# Note: POSTGRES_PASSWORD goes in .env; ZABBIX_ADMIN_PASSWORD in .env.zabbix-admin
+
+POSTGRES_PASSWORD: secret/zabbix/admin:password
+ZABBIX_ADMIN_PASSWORD: secret/zabbix/admin:password

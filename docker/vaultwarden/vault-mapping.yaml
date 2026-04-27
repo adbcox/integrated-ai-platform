@@ -1,0 +1,4 @@
+# vault-mapping.yaml — Vaultwarden stack secrets
+# Format: ENV_VAR_NAME: secret/path:field
+
+ADMIN_TOKEN: secret/vaultwarden/admin:token

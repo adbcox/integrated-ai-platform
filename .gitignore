@@ -26,3 +26,6 @@ tmp/
 # Historical backup artifacts
 *.bak.*
 *.bad_codex_*
+
+# Phase migration backups (contain vault snapshots — never commit)
+backups/

@@ -1,0 +1,52 @@
+# vault-mapping.yaml — maps docker/.env variables to Vault paths
+# Format: ENV_VAR_NAME: secret/path:field
+#
+# Usage: source scripts/lib/vault-env.sh && generate_env_from_mapping docker/vault-mapping.yaml docker/.env
+# Or: export VAULT_TOKEN=<token> && scripts/deploy-stack.sh docker/<stack>
+#
+# Non-secret config vars (TZ, DOMAIN, PUID, ports, URLs) are NOT in this file.
+# They remain as static values in docker/.env or set directly in compose files.
+
+# ── Arr stack ────────────────────────────────────────────────────────────────
+SONARR_API_KEY: secret/arr/sonarr:api_key
+RADARR_API_KEY: secret/arr/radarr:api_key
+PROWLARR_API_KEY: secret/arr/prowlarr:api_key
+
+# ── Homepage dashboard tokens ─────────────────────────────────────────────────
+HOMEPAGE_VAR_SONARR_KEY: secret/arr/sonarr:api_key
+HOMEPAGE_VAR_RADARR_KEY: secret/arr/radarr:api_key
+HOMEPAGE_VAR_PROWLARR_KEY: secret/arr/prowlarr:api_key
+HOMEPAGE_VAR_PLEX_TOKEN: secret/plex/api:homepage_token
+HOMEPAGE_VAR_HASS_TOKEN: secret/homeassistant/api:homepage_token
+HOMEPAGE_VAR_OWM_KEY: secret/openweathermap/api:key
+
+# ── Plex ──────────────────────────────────────────────────────────────────────
+PLEX_TOKEN: secret/plex/api:token
+
+# ── QNAP ─────────────────────────────────────────────────────────────────────
+QNAP_PASS: secret/qnap/admin:password
+
+# ── Seedbox ───────────────────────────────────────────────────────────────────
+SEEDBOX_PASSWORD: secret/seedbox/account:password
+
+# ── GitHub ────────────────────────────────────────────────────────────────────
+GITHUB_TOKEN: secret/github/api:token
+
+# ── Plane ─────────────────────────────────────────────────────────────────────
+PLANE_API_TOKEN: secret/plane/api:token
+PLANE_ADMIN_PASSWORD: secret/plane/admin:password
+PLANE_SECRET_KEY: secret/plane/app:secret_key
+MINIO_ROOT_USER: secret/plane/minio:username
+MINIO_ROOT_PASSWORD: secret/plane/minio:password
+
+# ── Obot ──────────────────────────────────────────────────────────────────────
+OBOT_ADMIN_PASSWORD: secret/obot/admin:password
+
+# ── Home Assistant ────────────────────────────────────────────────────────────
+HA_TOKEN: secret/homeassistant/api:token
+HOMEPAGE_VAR_PORTAINER_KEY: secret/portainer/api:token
+
+# ── Strava OAuth ──────────────────────────────────────────────────────────────
+STRAVA_CLIENT_ID: secret/strava/oauth:client_id
+STRAVA_CLIENT_SECRET: secret/strava/oauth:client_secret
+STRAVA_ACCESS_TOKEN: secret/strava/oauth:access_token
