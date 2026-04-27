@@ -15,7 +15,7 @@ services:
     networks:
       - headscale-net
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:8080/health"]
+      test: ["CMD", "headscale", "version"]
       interval: 30s
       timeout: 10s
       retries: 3
