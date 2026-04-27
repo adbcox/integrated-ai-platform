@@ -22,3 +22,15 @@
 - To complete: from a Terminal session inside the console user's GUI (or with the
   console user physically present to click the auth prompt), run:
   `sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain /tmp/caddy-local-ca.crt`
+
+## Caddy CA Trust — COMPLETE (Mon Apr 27 19:34:35 EDT 2026)
+- Root CA installed in /Library/Keychains/System.keychain via Screen Sharing GUI session (adriancox)
+- HTTPS validation succeeds without -k flag (verify=0 confirmed across 18 .internal domains)
+- secret/macmini/sudo established for future privileged SSH operations
+- Phase 7 closeout complete
+
+## 30-Day Plan Status — COMPLETE (Mon Apr 27 19:34:35 EDT 2026)
+- Phase 16 (Vault architecture restoration): Complete (commit 76aa6e4)
+- Strava OAuth: Complete, 21 activities synced
+- Caddy CA trust: Complete, all .internal HTTPS validates cleanly
+- All P0/P1/P2 automatable items closed
