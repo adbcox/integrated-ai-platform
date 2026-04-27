@@ -1,0 +1,63 @@
+version: "3.9"
+
+services:
+  nextcloud-db:
+    image: postgres:16-alpine
+    container_name: nextcloud-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: nextcloud
+      POSTGRES_USER: nextcloud
+      POSTGRES_PASSWORD: ${NEXTCLOUD_DB_PASSWORD}
+    volumes:
+      - nextcloud-db-data:/var/lib/postgresql/data
+    networks:
+      - nextcloud-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nextcloud"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  nextcloud:
+    image: nextcloud:29-apache
+    container_name: nextcloud
+    restart: unless-stopped
+    ports:
+      - "8085:80"
+    environment:
+      POSTGRES_HOST: nextcloud-db
+      POSTGRES_DB: nextcloud
+      POSTGRES_USER: nextcloud
+      POSTGRES_PASSWORD: ${NEXTCLOUD_DB_PASSWORD}
+      NEXTCLOUD_ADMIN_USER: admin
+      NEXTCLOUD_ADMIN_PASSWORD: ${NEXTCLOUD_ADMIN_PASSWORD}
+      NEXTCLOUD_TRUSTED_DOMAINS: "192.168.10.145 nextcloud.internal"
+      NEXTCLOUD_UPDATE: "1"
+    volumes:
+      - nextcloud-data:/var/www/html
+    depends_on:
+      nextcloud-db:
+        condition: service_healthy
+    networks:
+      - nextcloud-net
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost/status.php | grep -q '\"installed\":true'"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 120s
+    labels:
+      com.iap.service: "nextcloud"
+      com.iap.tier: "platform"
+
+volumes:
+  nextcloud-db-data:
+    name: nextcloud-db-data
+  nextcloud-data:
+    name: nextcloud-data
+
+networks:
+  nextcloud-net:
+    name: nextcloud-net
+    driver: bridge

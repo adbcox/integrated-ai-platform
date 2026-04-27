@@ -6,6 +6,8 @@
 {
     # Use Caddy's built-in local CA for all .internal sites (no ACME needed)
     local_certs
+    # Expose admin API on all interfaces so host health checks can reach it
+    admin 0.0.0.0:2019
 }
 
 # ── AI Layer ──────────────────────────────────────────────────────────────────
@@ -78,4 +80,8 @@ vaultwarden.internal {
 
 headscale.internal {
     reverse_proxy 192.168.10.145:8082
+}
+
+nextcloud.internal {
+    reverse_proxy 192.168.10.145:8085
 }

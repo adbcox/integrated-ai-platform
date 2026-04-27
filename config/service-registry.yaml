@@ -1088,3 +1088,94 @@ services:
       cap_drop: []
     compose_file: null
     notes: Dynamic container (ms1nfxvf pattern); tool identity in Obot UI
+
+# ── Reverse Proxy & VPN ─────────────────────────────────────────────────────
+  - id: caddy
+    name: Caddy Reverse Proxy
+    category: infrastructure
+    host: mac-mini
+    container: caddy
+    image: caddy:2-alpine
+    port: 443
+    internal_port: 443
+    health_url: "http://localhost:2019/config/"
+    health_method: GET
+    health_expect: 200
+    purpose: TLS termination for all .internal domains — 20 sites, local CA certs
+    depends_on: []
+    security:
+      no_new_privileges: true
+      cap_drop: []
+    compose_file: docker/caddy/docker-compose.yml
+
+  - id: headscale
+    name: Headscale VPN Server
+    category: infrastructure
+    host: mac-mini
+    container: headscale
+    image: headscale/headscale:latest
+    port: 8082
+    internal_port: 8080
+    health_url: "http://localhost:8082/health"
+    health_method: GET
+    health_expect: 200
+    purpose: Self-hosted Tailscale VPN mesh server — pre-auth key in Vault at secret/headscale/admin
+    depends_on: []
+    security:
+      no_new_privileges: false
+      cap_drop: []
+    compose_file: docker/headscale/docker-compose.yml
+
+  - id: vaultwarden
+    name: Vaultwarden Password Manager
+    category: platform
+    host: mac-mini
+    container: vaultwarden
+    image: vaultwarden/server:latest
+    port: 8083
+    internal_port: 80
+    health_url: "http://localhost:8083/alive"
+    health_method: GET
+    health_expect: 200
+    purpose: Self-hosted Bitwarden — admin token in Vault at secret/vaultwarden/admin; https://vaultwarden.internal
+    depends_on: []
+    security:
+      no_new_privileges: false
+      cap_drop: []
+    compose_file: docker/vaultwarden/docker-compose.yml
+
+  - id: nextcloud
+    name: Nextcloud + Calendar
+    category: platform
+    host: mac-mini
+    container: nextcloud
+    image: nextcloud:29-apache
+    port: 8085
+    internal_port: 80
+    health_url: "http://localhost:8085/status.php"
+    health_method: GET
+    health_expect: 200
+    purpose: Self-hosted calendar (CalDAV) — 4 calendars; https://nextcloud.internal; credentials in Vault at secret/nextcloud/admin
+    depends_on: [nextcloud-db]
+    security:
+      no_new_privileges: false
+      cap_drop: []
+    compose_file: docker/nextcloud/docker-compose.yml
+
+  - id: nextcloud-db
+    name: Nextcloud PostgreSQL
+    category: data
+    host: mac-mini
+    container: nextcloud-db
+    image: postgres:16-alpine
+    port: null
+    internal_port: 5432
+    health_url: null
+    health_method: null
+    health_expect: null
+    purpose: Nextcloud database — credentials in Vault at secret/nextcloud/db
+    depends_on: []
+    security:
+      no_new_privileges: false
+      cap_drop: []
+    compose_file: docker/nextcloud/docker-compose.yml
