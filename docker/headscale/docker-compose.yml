@@ -1,0 +1,34 @@
+version: "3.9"
+
+services:
+  headscale:
+    image: headscale/headscale:latest
+    container_name: headscale
+    restart: unless-stopped
+    ports:
+      - "8082:8080"
+      - "50443:50443"
+    volumes:
+      - ./config:/etc/headscale:ro
+      - headscale-data:/var/lib/headscale
+    command: serve
+    networks:
+      - headscale-net
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:9090/metrics"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    labels:
+      com.iap.service: "headscale"
+      com.iap.tier: "infrastructure"
+
+volumes:
+  headscale-data:
+    name: headscale-data
+
+networks:
+  headscale-net:
+    name: headscale-net
+    driver: bridge

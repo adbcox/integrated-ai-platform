@@ -1,0 +1,81 @@
+# Caddy reverse proxy — LAN TLS termination for .internal domains
+# Uses Caddy's internal CA for self-signed LAN certs.
+# Trust the CA on clients:
+#   docker exec caddy cat /data/caddy/pki/authorities/local/root.crt > caddy-local-ca.crt
+
+{
+    # Use Caddy's built-in local CA for all .internal sites (no ACME needed)
+    local_certs
+}
+
+# ── AI Layer ──────────────────────────────────────────────────────────────────
+plane.internal {
+    reverse_proxy 192.168.10.145:3001
+}
+
+obot.internal {
+    reverse_proxy 192.168.10.145:8090
+}
+
+ollama.internal {
+    reverse_proxy 192.168.10.145:11434
+}
+
+anythingllm.internal {
+    reverse_proxy 192.168.10.145:3004
+}
+
+webui.internal {
+    reverse_proxy 192.168.10.145:3002
+}
+
+litellm.internal {
+    reverse_proxy 192.168.10.145:4000
+}
+
+# ── Platform Layer ────────────────────────────────────────────────────────────
+vault.internal {
+    reverse_proxy 192.168.10.145:8200
+}
+
+dashboard.internal {
+    reverse_proxy 192.168.10.145:8080
+}
+
+homarr.internal {
+    reverse_proxy 192.168.10.145:7575
+}
+
+# ── Observability Layer ───────────────────────────────────────────────────────
+grafana.internal {
+    reverse_proxy 192.168.10.145:3030
+}
+
+zabbix.internal {
+    reverse_proxy 192.168.10.145:10080
+}
+
+uptime.internal {
+    reverse_proxy 192.168.10.145:3033
+}
+
+# ── Media Layer ───────────────────────────────────────────────────────────────
+sonarr.internal {
+    reverse_proxy 192.168.10.145:8989
+}
+
+radarr.internal {
+    reverse_proxy 192.168.10.145:7878
+}
+
+prowlarr.internal {
+    reverse_proxy 192.168.10.145:9696
+}
+
+vaultwarden.internal {
+    reverse_proxy 192.168.10.145:8083
+}
+
+headscale.internal {
+    reverse_proxy 192.168.10.145:8082
+}

@@ -1,0 +1,36 @@
+version: "3.9"
+
+services:
+  vaultwarden:
+    image: vaultwarden/server:latest
+    container_name: vaultwarden
+    restart: unless-stopped
+    ports:
+      - "8083:80"
+    environment:
+      DOMAIN: "https://vaultwarden.internal"
+      SIGNUPS_ALLOWED: "true"
+      ADMIN_TOKEN: ${ADMIN_TOKEN}
+      LOG_LEVEL: "warn"
+    volumes:
+      - vaultwarden-data:/data
+    networks:
+      - vaultwarden-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80/alive"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    labels:
+      com.iap.service: "vaultwarden"
+      com.iap.tier: "platform"
+
+volumes:
+  vaultwarden-data:
+    name: vaultwarden-data
+
+networks:
+  vaultwarden-net:
+    name: vaultwarden-net
+    driver: bridge
