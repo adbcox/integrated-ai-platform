@@ -1,0 +1,135 @@
+services:
+  postgres-server:
+    image: timescale/timescaledb:${TIMESCALEDB_IMAGE_TAG:-latest-pg16}
+    container_name: zabbix-postgres
+    restart: unless-stopped
+    shm_size: "256m"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - zabbix-pgdata:/var/lib/postgresql/data
+      - ./postgres/backups:/backups
+    command:
+      - "postgres"
+      - "-c"
+      - "shared_buffers=${POSTGRES_SHARED_BUFFERS:-12GB}"
+      - "-c"
+      - "effective_cache_size=${POSTGRES_EFFECTIVE_CACHE_SIZE:-36GB}"
+      - "-c"
+      - "maintenance_work_mem=${POSTGRES_MAINTENANCE_WORK_MEM:-2GB}"
+      - "-c"
+      - "checkpoint_completion_target=0.9"
+      - "-c"
+      - "wal_buffers=16MB"
+      - "-c"
+      - "default_statistics_target=500"
+      - "-c"
+      - "random_page_cost=1.1"
+      - "-c"
+      - "effective_io_concurrency=200"
+      - "-c"
+      - "work_mem=${POSTGRES_WORK_MEM:-64MB}"
+      - "-c"
+      - "min_wal_size=256MB"
+      - "-c"
+      - "max_wal_size=2GB"
+      - "-c"
+      - "max_worker_processes=8"
+      - "-c"
+      - "max_parallel_workers_per_gather=4"
+      - "-c"
+      - "max_parallel_workers=8"
+      - "-c"
+      - "max_parallel_maintenance_workers=4"
+    networks:
+      - zabbix-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  zabbix-server:
+    image: zabbix/zabbix-server-pgsql:${ZABBIX_IMAGE_TAG:-alpine-7.4-latest}
+    container_name: zabbix-server
+    restart: unless-stopped
+    ports:
+      - "10051:10051"
+    environment:
+      DB_SERVER_HOST: postgres-server
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      ZBX_SERVER_NAME: ${ZBX_SERVER_NAME}
+      ZBX_DEBUGLEVEL: ${ZBX_DEBUGLEVEL:-3}
+      ZBX_CACHESIZE: 1G
+      ZBX_HISTORYCACHESIZE: 512M
+      ZBX_TRENDCACHESIZE: 256M
+      ZBX_VALUECACHESIZE: 512M
+    volumes:
+      - ./server/alertscripts:/usr/lib/zabbix/alertscripts
+      - ./server/externalscripts:/usr/lib/zabbix/externalscripts
+    depends_on:
+      postgres-server:
+        condition: service_healthy
+    networks:
+      - zabbix-net
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
+
+  zabbix-web:
+    image: zabbix/zabbix-web-nginx-pgsql:${ZABBIX_IMAGE_TAG:-alpine-7.4-latest}
+    container_name: zabbix-web
+    restart: unless-stopped
+    ports:
+      - "${ZBX_WEB_PORT:-10080}:8080"
+      - "10443:8443"
+    environment:
+      ZBX_SERVER_HOST: zabbix-server
+      DB_SERVER_HOST: postgres-server
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      PHP_TZ: ${PHP_TZ:-America/New_York}
+      ZBX_SERVER_NAME: ${ZBX_SERVER_NAME}
+    depends_on:
+      - postgres-server
+      - zabbix-server
+    networks:
+      - zabbix-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  zabbix-agent:
+    image: zabbix/zabbix-agent:${ZABBIX_IMAGE_TAG:-alpine-7.4-latest}
+    container_name: zabbix-agent
+    restart: unless-stopped
+    environment:
+      ZBX_SERVER_HOST: zabbix-server
+      ZBX_HOSTNAME: Mac-Mini-M4-Pro
+      ZBX_SERVER_ACTIVE: zabbix-server
+    depends_on:
+      - zabbix-server
+    networks:
+      - zabbix-net
+
+networks:
+  zabbix-net:
+    name: zabbix-net
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.25.0.0/16
+
+volumes:
+  zabbix-pgdata:
+    name: zabbix-pgdata

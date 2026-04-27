@@ -1,0 +1,9 @@
+# PostgreSQL data directory (binary, large, managed by Docker named volume)
+postgres/data/
+
+# Environment file contains credentials
+.env
+
+# Backups
+postgres/backups/*.sql.gz
+postgres/backups/*.sql
