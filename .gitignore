@@ -35,3 +35,6 @@ data/platform_analytics.db
 
 # Phase block backup files (use git history instead)
 *.pre-block*
+
+# H1 rollback state — contains deleted credentials, never commit
+docs/phase-13/h1-rollback-state/
