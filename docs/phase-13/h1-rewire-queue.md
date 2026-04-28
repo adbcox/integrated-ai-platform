@@ -11,6 +11,12 @@
 
 ---
 
+## Post-H1 follow-ups (deferred, non-blocking)
+
+1. **Vaultwarden ADMIN_TOKEN format remediation**: token currently stored as plain text; vaultwarden's admin endpoint requires argon2-hashed format. Fix path: generate argon2 hash via `vaultwarden_argon2` utility (or the upstream-recommended `argon2` CLI), update `secret/vaultwarden/admin:admin_token`, `docker restart vaultwarden`. Estimated 15 min. Not blocking on §6 closure because admin endpoint is rarely used and user-facing /api remains functional. Filed during A.1 vaultwarden rewire (2026-04-28).
+
+---
+
 ## Database password posture (Phase 0 spot-check)
 
 | Path | Length | Strength | Action |

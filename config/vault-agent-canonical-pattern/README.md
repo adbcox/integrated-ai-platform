@@ -59,8 +59,26 @@ After Phase 0 empirical testing on 2026-04-28, the canonical mechanism for stori
 5. Modify the main service entry to add:
    - `depends_on: { vault-agent-<svc>: { condition: service_completed_successfully } }`
    - `volumes: - /Users/admin/.vault-agent-secrets/<svc>:/vault/secrets:ro`
-   - `entrypoint: ["sh", "-c", ". /vault/secrets/credentials.env && exec <original-entrypoint>"]`
+   - `entrypoint: ["sh", "-c", "set -a && . /vault/secrets/credentials.env && set +a && exec <original-entrypoint>"]`
    - Remove credential entries from `environment:` block.
+
+### Entrypoint wrapper — REQUIRED on main service, NOT on sidecar
+
+The wrapper above is **mandatory on the main service container** for the rendered credentials to actually reach the application process. It is **NOT used on the sidecar** — the sidecar's role ends at "render `/vault/secrets/credentials.env` and exit cleanly".
+
+**Why the wrapper is required**:
+
+POSIX `.` (source) loads variable assignments from a file into the **current shell** as shell-local variables. They are not exported as environment variables unless explicitly exported. When the shell then `exec`s the application binary, the application inherits the shell's **environment** (exported vars only), not its shell-local variables — so the application would not see `ADMIN_TOKEN` or any other rendered field.
+
+`set -a` enables the auto-export attribute: every variable assigned (including via sourced files) becomes an exported environment variable for the duration. `set +a` disables it after sourcing. The pattern is therefore:
+
+```
+sh -c 'set -a && . /vault/secrets/credentials.env && set +a && exec <original>'
+```
+
+Container images don't automatically source env-file mounts. Docker's `env_file:` directive is read by Compose at parse time and injected into the container's static environment — but we deliberately removed that path because it requires a `.env` file on disk at compose time. The Vault Agent renders the env file at **runtime**, after the sidecar has authenticated. Therefore the application has to read the file itself, and the entrypoint wrapper is how it does so.
+
+**Where to find `<original-entrypoint>`**: inspect the image with `docker inspect <image> --format 'Entrypoint: {{.Config.Entrypoint}}\nCmd: {{.Config.Cmd}}'`. If `Entrypoint` is `[]` (empty) and `Cmd` is `[/start.sh]`, then `<original-entrypoint>` is `/start.sh`. If both are populated, the original execution is `entrypoint cmd...` — replicate exactly.
 
 6. `docker compose up -d` — vault-agent runs once, renders `/vault/secrets/credentials.env` to the host bind-mount, exits; main service starts and sources the rendered env file from the same path.
 
