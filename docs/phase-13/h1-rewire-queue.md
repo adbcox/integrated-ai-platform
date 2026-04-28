@@ -29,6 +29,48 @@
 
 ---
 
+## C.1 nextcloud — rewire log
+
+- 2-cred sidecar (NEXTCLOUD_ADMIN_PASSWORD + POSTGRES_PASSWORD) rendered from `secret/nextcloud/{admin,db}`.
+- Hash matches Vault for both.
+- Image `nextcloud:29-apache`. Entrypoint `/entrypoint.sh`, Cmd `apache2-foreground`. Wrapper preserves both via `exec /entrypoint.sh "$0" "$@"` + Cmd `["apache2-foreground"]`.
+- §7 hardening: cap_drop=[ALL], cap_add=[CHOWN, SETUID, SETGID, DAC_OVERRIDE, NET_BIND_SERVICE], no-new-privileges, mem_limit 512m, cpus 1.0.
+- Deep probe `/ocs/v2.php/cloud/capabilities` → 200; data sanity unchanged (105 tables, 1 oc_users).
+- `.env` disposition deferred — `docker/nextcloud/.env` retains both `NEXTCLOUD_ADMIN_PASSWORD` and `NEXTCLOUD_DB_PASSWORD` but neither is now consumed by nextcloud or nextcloud-db. Filing as Phase C cleanup.
+
+## C.2/C.3 zabbix-server + zabbix-web — rewire log
+
+- 1-cred sidecar each (POSTGRES_PASSWORD from `secret/zabbix/db`); hash matches.
+- zabbix-server: original 4-arg Cmd preserved through exec wrapper. §7: cap_drop=[ALL]+NET_BIND_SERVICE, mem 2g (zabbix caches), cpus 2.0.
+- zabbix-web: image had empty Cmd; entrypoint wrapper exec's docker-entrypoint.sh. §7: cap_drop=[ALL]+CHOWN/SETUID/SETGID/DAC_OVERRIDE/NET_BIND_SERVICE, mem 256m.
+- Deep probe `/api_jsonrpc.php apiinfo.version` → 200 with `{"result":"7.4.9"}`; auth failure scan: empty.
+- `.env` disposition deferred — `docker/zabbix/.env` still consumed by zabbix-agent (which has no AppRole and was unmodified). Phase C cleanup must verify zabbix-agent doesn't actually use POSTGRES_PASSWORD; if not, remove from agent's compose env interpolation and drain .env.
+
+## C.4 obot — DEFERRED to Big Prompt 2 (architectural coupling)
+
+obot's database credential is NOT separate — it IS plane's credential. obot's POSTGRES_DSN connects as user `plane` to database `plane` on docker-plane-db-1, sharing the credential stored in `secret/plane/db`. Verified hash equality:
+
+- `obot DSN-embedded password sha256-12 = fad900280ce5`
+- `secret/plane/db                 sha256-12 = fad900280ce5`
+
+Confirmed plane-db has a single user `plane` (superuser) + single application database `plane` — no obot-specific user or DB.
+
+Vestigial obot env vars (unused by obot when DSN is set; remove during rewire):
+- `POSTGRES_USER=obot`
+- `POSTGRES_PASSWORD=<weak length-4 value, hash ec929dcd98fb>`
+- `POSTGRES_DB=obot`
+
+Big Prompt 2 obot rewire requirements:
+1. Update `config/vault-policies/obot-policy.hcl` to add `read` on `secret/data/plane/db` (currently grants only `obot/admin + github/api`).
+2. Sidecar template renders `OBOT_ADMIN_PASSWORD`, `GITHUB_TOKEN`, AND a complete `POSTGRES_DSN=postgresql://plane:{{ .Data.data.password }}@docker-plane-db-1:5432/plane`.
+3. Remove vestigial `POSTGRES_USER/PASSWORD/DB` from compose `environment:` (they're unused).
+4. plane-db rotation in Big Prompt 2 implicitly rotates obot's connection — the rotated password is rendered into obot's DSN by the same Vault data update.
+5. Recreate obot last (after plane-* services have new password active in their sidecars).
+
+## B.3 plane-db Gap-7 verification — DEFERRED REWIRE
+
+Gap-7: MATCH (Vault hash = container env hash, length 5 = upstream default). Rewire deferred to Big Prompt 2 with rotation per Option γ. Data baseline: users=2, projects=2 in `plane` database.
+
 ## B.2 zabbix-postgres — rewire log
 
 - Gap-7 verification: MATCH (Vault sha=7e3ff814baef = container env hash, length 31, both via TCP auth probe).
