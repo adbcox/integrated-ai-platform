@@ -311,3 +311,30 @@ vault.hcl tail:
 
 === SECTION 7 COMPLETE — 310 lines ===
 
+
+## 7.1-CORRECTION — Pin location was registry, not compose
+
+Initial sed loop in §7.1 found no matches because Vault was deployed via
+`docker run` directly (not via docker-compose). The only repo reference to
+the image is in `config/service-registry.yaml`.
+
+### Corrected pin
+```
+  Before:     image: hashicorp/vault:2.0.0
+  After applied via yq -i (.services[] | select(.id == 'vault') | .image)
+```
+
+### Live container note
+
+The currently running `vault-server` container is on `hashicorp/vault:latest`
+(verified via `docker inspect`). It already IS Vault 2.0.0 (per §1).
+Re-launching from the registry image string would pick up the pin,
+but is NOT performed in this run (no restart per directive).
+
+Action item for future: when Vault is next restarted (planned maintenance),
+use the registry image string so the pin actually takes effect.
+
+### 7.4 Final audit (corrected)
+  ✅ image pinned in registry: 1 refs to vault:2.0.0, 0 to :latest
+
+=== SECTION 7.1-CORRECTION COMPLETE — 338 lines ===
