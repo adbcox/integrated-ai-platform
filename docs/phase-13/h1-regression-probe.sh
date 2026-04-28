@@ -77,7 +77,10 @@ $DOCKER exec -e VAULT_TOKEN="$VAULT_TOKEN" vault-server vault token lookup >/dev
 POST_SIZE=$($DOCKER exec vault-server /bin/sh -c 'stat -c %s /vault/logs/audit.log 2>/dev/null || stat -f %z /vault/logs/audit.log 2>/dev/null')
 if [ "$POST_SIZE" -gt "$PRE_SIZE" ]; then result OK "audit log capturing (size $PRE_SIZE → $POST_SIZE)"; else result FAIL "audit log not growing"; fi
 
-# (d) Caddy + DNS sample
+# (d) Caddy + .internal DNS sample
+# Probe via the actual domain (DNS resolves to 192.168.10.145 where Caddy
+# binds 0.0.0.0:443). Fixed in Phase B-prep: previous version probed
+# https://localhost which is occupied by an ssh tunnel, not Caddy.
 echo ""
 echo "(d) Caddy + .internal DNS sample"
 SAMPLE_DOMAINS=("vaultwarden.internal" "openhands.internal" "plane.internal" "vault.internal" "homepage.internal")
@@ -87,8 +90,15 @@ for d in "${SAMPLE_DOMAINS[@]}"; do
     result WARN "$d: not in macOS DNS cache (may be normal if not actively used)"
     continue
   fi
-  code=$(/usr/bin/curl -sk -o /dev/null -w '%{http_code}' --max-time 5 -H "Host: $d" "https://localhost/" 2>/dev/null)
-  if [[ "$code" =~ ^(200|301|302|401|403)$ ]]; then result OK "$d → HTTP $code via Caddy"; else result WARN "$d → HTTP $code"; fi
+  # -k accepts Caddy's internal CA. Direct domain probe (not localhost).
+  code=$(/usr/bin/curl -sk -o /dev/null -w '%{http_code}' --max-time 5 "https://$d/" 2>/dev/null)
+  if [[ "$code" =~ ^(200|301|302|307|401|403)$ ]]; then
+    result OK "$d → HTTP $code via Caddy"
+  elif [ "$code" = "000" ]; then
+    result FAIL "$d → no response (Caddy unreachable or TLS handshake failure)"
+  else
+    result WARN "$d → HTTP $code"
+  fi
 done
 
 # (e) Backup script

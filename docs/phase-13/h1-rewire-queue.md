@@ -29,6 +29,19 @@
 
 ---
 
+## A.7 open-webui — rewire log
+
+- 2-cred sidecar render: WEBUI_SECRET_KEY (from `secret/open-webui/app:secret_key`) + OPENAI_API_KEY (from `secret/litellm/master:master_key` — open-webui calls litellm via OpenAI-compatible API).
+- Stack contains `homarr` (no creds) — left untouched, no sidecar.
+- TRANSIENT CLOSED: open-webui's PID 1 environ post-A.7 has rotated `LITELLM_MASTER_KEY` (sha 439bcdb691d6, length 67); pre-A.7 had stale `sk-{platform}-master` (sha de61033bbd7e, length 17). Cross-service probe: open-webui → litellm /v1/models = HTTP 200.
+- §7 hardening: cap_drop=[ALL], no-new-privileges, no privileged. **mem_limit not set** (preserved upstream config) — see Phase B follow-up below.
+- ai-control/.env deleted; restart cycle confirms durability.
+
+## Phase A close (gate A.8) follow-ups (deferred to Phase B+)
+
+1. **open-webui mem_limit**: apply during Phase F vault compose revisit as part of combined §7 resource-tuning sweep. Do NOT recreate open-webui standalone for this — bundle with the broader §7 mem/cpu pass.
+2. **Caddy regression probe (check d)** returned HTTP 000 due to TLS verification failure against Caddy's internal CA. Fix: either pass `-k` to curl, or add Caddy's root CA to the probe's trust store. Apply as first action of Phase B before B.1 starts.
+
 ## A.5 gateways stack (litellm-gateway + mcpo-proxy) — rewire log
 
 - **OPENAI_API_KEY** in `secret/openai/api` is a template placeholder (`sk-your-...`, length 16). litellm_config.yaml routes `gpt-4o` model via `openai/...` provider. Populate with real key OR remove the openai routes from config. Filed during A.5 (2026-04-28).
