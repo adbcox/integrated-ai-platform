@@ -116,6 +116,60 @@ docker stop -t 10 <svc>
 
 Failure of either check → the `exec` was missed somewhere.
 
+**Note for non-root services**: applications that drop from root to a service user (e.g. postgres → uid 70) restrict `/proc/1/environ` to the process owner. A `docker exec` shell as root cannot read it. For these services, verify cred delivery via:
+- Cross-container auth probe (sibling container connects with delivered cred)
+- Server logs show no `password authentication failed` entries
+- Application functions (e.g., postgres accepts connections, queries return data)
+
+These signals together prove the cred reached the application even when /proc/1/environ is unreadable.
+
+### ANTI-PATTERN — never display credential values in tool output
+
+Never display credential values in tool output, even during diagnostics. Use hash-based equality verification only. If diagnosis appears to require value inspection, stop and surface for user decision. Pressure to debug quickly does not justify exposing credential values.
+
+```bash
+# WRONG
+cat /vault/secrets/credentials.env
+head -1 /vault/secrets/credentials.env
+echo "$VAULT_PASS"
+docker exec <container> env | grep PASSWORD
+
+# RIGHT — hash-based comparison only
+R=$(grep '^FIELD=' /path/to/file | cut -d= -f2- | tr -d '\n' | shasum -a 256 | awk '{print substr($1,1,12)}')
+V=$(docker exec ... vault kv get -field=field path | shasum -a 256 | awk '{print substr($1,1,12)}')
+[ "$R" = "$V" ] && echo "match" || echo "MISMATCH"
+```
+
+**Hashing methodology**: when extracting a value from a file or `printenv`, **always strip trailing newline** with `tr -d '\n'` or `printf '%s'` BEFORE hashing. `cat`, `printenv`, and pipe-extracted values include the line-terminator newline; the file's actual stored value does not. Hash mismatch from newline-inclusion is a false-positive trap that has tripped verification more than once.
+
+Discovered: B.1 nextcloud-db rotation. Doctrine: rotate on any unintended exposure, even if conversation-local.
+
+### ANTI-PATTERN — never use `--no-deps` with sidecar pattern
+
+The Vault Agent sidecar IS a dependency of the main service (`depends_on: condition: service_completed_successfully`). Using `--no-deps` skips the sidecar, leaving the main container to fail at entrypoint when `/vault/secrets/credentials.env` doesn't exist.
+
+```bash
+# CORRECT
+docker compose up -d <service>
+
+# WRONG — skips sidecar, main container fails at source step
+docker compose up -d --no-deps <service>
+```
+
+If you need to recreate ONLY the main service without the sidecar (e.g., to re-render with new Vault data after a rotation), use `docker compose restart <service>` (which doesn't recreate) AFTER manually triggering a sidecar render. But for any cred-rotation event that requires a full recreate, just let compose handle the dependency chain.
+
+Discovered: B.1 first attempt (nextcloud-db). Same severity as the `exec` rule from A.5.
+
+### KNOWN-LIMITATION — Colima/macOS bind-mount visibility delay
+
+On Colima/macOS, host-bind mounts can take a moment to become visible inside a freshly-started container. If the main service starts immediately after the sidecar exits, the first `docker compose up` cycle may fail to see `/vault/secrets/credentials.env` even though the file is on the host.
+
+`restart: unless-stopped` on the main service is sufficient mitigation: the container retries until the mount is visible (typically 1–16 retries on a busy macOS, succeeding within 1–2 minutes). No data loss because the data volume is independent.
+
+Symptom in logs: `sh: .: line 0: can't open '/vault/secrets/credentials.env': No such file or directory` repeated several times before the application binary's normal startup logs appear.
+
+If a service does NOT have `restart: unless-stopped`, recreate it once the sidecar has fully exited (5+ second gap). Or ensure the restart policy can tolerate transient first-start failures.
+
 6. `docker compose up -d` — vault-agent runs once, renders `/vault/secrets/credentials.env` to the host bind-mount, exits; main service starts and sources the rendered env file from the same path.
 
 7. Verify per amendment 2 (category-specific):

@@ -38,32 +38,50 @@ if [ "$RESTARTING" -eq 0 ]; then result OK "no containers restarting"; else resu
 # (b) Service-registry walk
 echo ""
 echo "(b) Service-registry walk (sampled health endpoints)"
-# Use a curated probe list since service-registry.yaml is large
+# SHALLOW probes (return 200 even if downstream DB/cache is broken):
+#   /alive, /health, /openapi.json, /health/liveliness
+# DEEP probes (force a DB read or cred check; 5xx if downstream broken):
+#   /ocs/* with auth (nextcloud), zabbix /api_jsonrpc.php, plane /api/users/me/
+# Mark probes accordingly. Add deep probes for DB-fronting services.
 declare -a PROBES=(
-  "vaultwarden|http://localhost:8083/alive"
-  "openhands-app|http://localhost:3000/health"
-  "litellm-gateway|http://localhost:4000/health/liveliness"
-  "mcpo-proxy|http://localhost:8081/openapi.json"
-  "open-webui|http://localhost:8082/health"
-  "vault-server|http://localhost:8200/v1/sys/health"
+  "vaultwarden|http://localhost:8083/alive|shallow"
+  "openhands-app|http://localhost:3000/health|shallow"
+  "litellm-gateway|http://localhost:4000/health/liveliness|shallow"
+  "mcpo-proxy|http://localhost:8081/openapi.json|shallow"
+  "open-webui|http://localhost:8082/health|shallow"
+  "vault-server|http://localhost:8200/v1/sys/health|shallow"
 )
 for entry in "${PROBES[@]}"; do
-  name="${entry%%|*}"
-  url="${entry##*|}"
+  IFS='|' read -r name url depth <<<"$entry"
   code=$(/usr/bin/curl -s -o /dev/null -w '%{http_code}' --max-time 5 "$url" 2>/dev/null)
   case "$code" in
     200|204|429|472|473|501|503)
-      # 472/473 are vault sealed/standby (acceptable; 503 might be initializing)
       if [[ "$code" == "200" || "$code" == "204" || "$code" == "472" ]]; then
-        result OK "$name → HTTP $code"
+        result OK "$name [$depth] → HTTP $code"
       else
-        result WARN "$name → HTTP $code (acceptable for some states)"
+        result WARN "$name [$depth] → HTTP $code (acceptable for some states)"
       fi
       ;;
-    000)  result WARN "$name → no response (may be down or not yet probed)" ;;
-    *)    result FAIL "$name → HTTP $code" ;;
+    000)  result WARN "$name [$depth] → no response (may be down or not yet probed)" ;;
+    *)    result FAIL "$name [$depth] → HTTP $code" ;;
   esac
 done
+
+# Deep DB-exercising probes for DB-fronting services (added B.1+).
+# These force a DB read; surface upstream-DB issues that shallow probes miss.
+echo ""
+echo "  Deep DB-exercising probes:"
+
+# nextcloud — uses PHP/PDO to query the DB at request time
+NC_DEEP=$(/opt/homebrew/bin/docker exec nextcloud /bin/sh -c '
+  curl -s -o /dev/null -w "%{http_code}" --max-time 5 http://localhost/ocs/v2.php/cloud/capabilities -H "OCS-APIRequest: true"
+' 2>/dev/null)
+if [[ "$NC_DEEP" =~ ^(200|401)$ ]]; then
+  # 401 is fine — endpoint requires auth but DB IS reachable to evaluate the auth
+  result OK "nextcloud [deep] /ocs/v2.php/cloud/capabilities → HTTP $NC_DEEP (DB reachable)"
+else
+  result FAIL "nextcloud [deep] /ocs/v2.php/cloud/capabilities → HTTP $NC_DEEP (DB unreachable?)"
+fi
 
 # (c) Vault health
 echo ""
@@ -151,6 +169,21 @@ case "$GATE_ID" in
       result WARN "ollama not reachable on host:11434"
     fi
     ;;
+  B.1|b.1)
+    # nextcloud-db rewire — verify nextcloud → nextcloud-db chain
+    NC_DEEP=$($DOCKER exec nextcloud /bin/sh -c 'curl -s -o /dev/null -w "%{http_code}" --max-time 5 http://localhost/ocs/v2.php/cloud/capabilities -H "OCS-APIRequest: true"' 2>/dev/null)
+    if [ "$NC_DEEP" = "200" ]; then
+      result OK "nextcloud → nextcloud-db chain working (deep probe 200)"
+    else
+      result FAIL "nextcloud → nextcloud-db chain broken: $NC_DEEP"
+    fi
+    PG_READY=$($DOCKER exec nextcloud-db pg_isready -U nextcloud 2>&1)
+    if /usr/bin/grep -q "accepting connections" <<<"$PG_READY"; then
+      result OK "nextcloud-db pg_isready: accepting connections"
+    else
+      result FAIL "nextcloud-db pg_isready: $PG_READY"
+    fi
+    ;;
   A.8|a.8)
     # open-webui rewire (Phase A close) — verify open-webui→litellm transient closed
     OWUI_KEY=$($DOCKER exec open-webui /bin/sh -c 'tr "\0" "\n" < /proc/1/environ | grep "^OPENAI_API_KEY=" | cut -d= -f2-' 2>/dev/null)
@@ -171,6 +204,23 @@ case "$GATE_ID" in
     result WARN "no gate-specific dependency probes defined for $GATE_ID"
     ;;
 esac
+
+# (h) Credential exposure heuristic check
+# Search recent tool outputs / shell history / temp files for plaintext
+# credential-shaped tokens. Heuristic only; primary defense is the
+# doctrine in §13 (never display values in tool output).
+echo ""
+echo "(h) Credential exposure heuristic"
+SUSPECT=0
+# Check /tmp for files containing "PASSWORD=" or "TOKEN=" that aren't pre-approved
+for f in $(/bin/ls /tmp/*pass* /tmp/*token* /tmp/*secret* 2>/dev/null); do
+  [ -f "$f" ] && SUSPECT=$((SUSPECT+1)) && echo "  ⚠️  $f exists in /tmp"
+done
+if [ "$SUSPECT" -eq 0 ]; then
+  result OK "no credential-shaped temp files in /tmp"
+else
+  result WARN "$SUSPECT suspicious temp files (review and clean)"
+fi
 
 # Summary
 echo ""
