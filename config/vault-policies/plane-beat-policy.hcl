@@ -8,3 +8,15 @@ path "secret/data/plane/api" {
 path "secret/data/plane/app" {
   capabilities = ["read"]
 }
+
+path "secret/data/plane/db" {
+  capabilities = ["read"]
+}
+
+path "secret/data/plane/admin" {
+  capabilities = ["read"]
+}
+
+path "secret/data/plane/minio" {
+  capabilities = ["read"]
+}

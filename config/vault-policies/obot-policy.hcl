@@ -8,3 +8,7 @@ path "secret/data/obot/admin" {
 path "secret/data/github/api" {
   capabilities = ["read"]
 }
+
+path "secret/data/plane/db" {
+  capabilities = ["read"]
+}

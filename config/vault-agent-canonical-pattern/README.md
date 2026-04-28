@@ -123,6 +123,30 @@ Failure of either check → the `exec` was missed somewhere.
 
 These signals together prove the cred reached the application even when /proc/1/environ is unreadable.
 
+### Sub-pattern — credential-embedded URL rendering
+
+Some applications consume connection strings (Postgres DSN, JDBC URL, AMQP URL, etc.) instead of separate credential env vars. For these, render the full URL via the Vault Agent template with the credential substituted in:
+
+```
+{{ with secret "secret/data/<service>/db" -}}
+DATABASE_URL=postgresql://<user>:{{ .Data.data.password }}@<host>:<port>/<dbname>
+{{- end }}
+```
+
+**Critical: URL-safe credential generation.** The credential embedded in a URL must NOT contain URL-special characters: `/`, `+`, `=`, `@`, `#`, `?`, `&`, etc. Use **hex** encoding for randomly-generated secrets that will live inside URLs:
+
+```bash
+# CORRECT — URL-safe (hex chars 0-9a-f only)
+NEW_PASS=$(openssl rand -hex 22)   # 22 bytes → 44 hex chars
+
+# WRONG — contains / + = which break DSN parsing
+NEW_PASS=$(openssl rand -base64 32)
+```
+
+If the password contains `/`, the URL parser will treat it as a path separator and connect to the wrong host. This was an actual failure during BP2 (plane stack rotation): a base64 password caused `failed to resolve host 'plane'` errors because `postgresql://plane:<base64-with-slash>@plane-db/plane` was parsed as `host=<garbage>@plane-db`.
+
+**When to prefer DSN render vs component env vars**: prefer component env vars (POSTGRES_HOST/PORT/USER/PASSWORD) if the application supports them — cleaner separation, simpler rotation, no URL-encoding gotchas. Use DSN render only when the app insists on a URL.
+
 ### ANTI-PATTERN — never display credential values in tool output
 
 Never display credential values in tool output, even during diagnostics. Use hash-based equality verification only. If diagnosis appears to require value inspection, stop and surface for user decision. Pressure to debug quickly does not justify exposing credential values.

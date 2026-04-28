@@ -27,50 +27,76 @@ version: "3.9"
 
 services:
 
+  # ── Vault Agent sidecar for obot ──────────────────────────────────────────
+  vault-agent-obot:
+    image: hashicorp/vault:2.0.0
+    container_name: vault-agent-obot
+    restart: "no"
+    environment:
+      VAULT_ADDR: "http://vault-server:8200"
+      SKIP_SETCAP: "true"
+    volumes:
+      - /Users/admin/.vault-approle/obot:/vault/approle:ro
+      - /Users/admin/.vault-agent-secrets/obot:/vault/secrets
+      - ./vault-agent-obot/agent.hcl:/vault/config/agent.hcl:ro
+      - ./vault-agent-obot/credentials.env.tmpl:/vault/agent-config/credentials.env.tmpl:ro
+    command: agent -config=/vault/config/agent.hcl
+    networks:
+      - control-center-net
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+
   # ── Obot Gateway (MCP hub + RBAC + audit log) ────────────────────────────────
   obot:
     image: obot/obot:latest
     container_name: obot
     restart: unless-stopped
+    depends_on:
+      vault-agent-obot:
+        condition: service_completed_successfully
     ports:
       - "8090:8080"          # internal 8080 → host 8090
     environment:
-      # Core server config
+      # Core server config (non-cred)
       OBOT_SERVER_URL: "http://localhost:8090"
       OBOT_ADMIN_USERNAME: "admin"
-      OBOT_ADMIN_PASSWORD: "${OBOT_ADMIN_PASSWORD:-changeme_before_prod}"
-      # Local platform: disable OAuth requirement; OBOT_DEV_MODE=false serves the
-      # built static UI (true makes obot proxy / to a Vite dev server on :5174).
       OBOT_SERVER_ENABLE_AUTHENTICATION: "false"
       OBOT_DEV_MODE: "false"
       OBOT_SERVER_FORCE_ENABLE_BOOTSTRAP: "true"
-
-      # Audit logging (writes to /data/audit.log inside container)
       OBOT_AUDIT_LOG: "true"
       OBOT_AUDIT_LOG_PATH: "/data/audit.log"
 
-      # GitHub MCP (P0) — set GITHUB_TOKEN in docker/.env
-      GITHUB_TOKEN: "${GITHUB_TOKEN:-}"
-
-      # Plane MCP (P0) — pulled from docker/.env
-      PLANE_URL: "${PLANE_URL:-http://docker-plane-api-1:8000}"
-      PLANE_API_TOKEN: "${PLANE_API_TOKEN:-}"
-      PLANE_WORKSPACE: "${PLANE_WORKSPACE:-iap}"
-      PLANE_PROJECT_ID: "${PLANE_PROJECT_ID:-}"
-
-      # PostgreSQL MCP (P0) — Plane's postgres on the shared plane-net
-      POSTGRES_DSN: "postgresql://plane:plane@docker-plane-db-1:5432/plane"
+      # Plane MCP non-cred config (PLANE_API_TOKEN handled separately)
+      PLANE_URL: "http://docker-plane-api-1:8000"
+      PLANE_WORKSPACE: "iap"
+      PLANE_PROJECT_ID: "dbcd4476-1e37-4812-a443-0914ec8380fc"
 
     volumes:
       - obot-data:/data
-      # Docker MCP needs socket access to manage containers
       - /var/run/docker.sock:/var/run/docker.sock
-      # Filesystem MCP — expose repo root read-only for safety
       - /Users/admin/repos/integrated-ai-platform:/workspace:ro
+      - /Users/admin/.vault-agent-secrets/obot:/vault/secrets:ro
+
+    entrypoint: ["sh", "-c", "set -a && . /vault/secrets/credentials.env && set +a && exec run.sh"]
 
     networks:
       - obot-net
-      - plane-net     # access Plane API + postgres on plane-net
+      - plane-net
+
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - SETUID
+      - SETGID
+      - DAC_OVERRIDE
+      - NET_BIND_SERVICE
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: 1g
+    cpus: 1.0
 
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:8080/api/healthz || exit 1"]
@@ -147,3 +173,6 @@ networks:
   plane-net:
     external: true
     name: docker_plane-net   # join existing Plane network for postgres access
+  control-center-net:
+    external: true
+    name: control-center-net

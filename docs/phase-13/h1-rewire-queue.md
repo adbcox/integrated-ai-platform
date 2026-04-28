@@ -29,6 +29,31 @@
 
 ---
 
+## BP2 — plane stack rotation + rewire (6 services + obot)
+
+Single coordinated rotation event:
+- **Rotation hashes**: `secret/plane/db` sha `fad900280ce5` (length 5, weak default `plane`) → sha `0e1f80537ac8` (length 44, hex)
+- **First attempt** used base64 — failed because resulting password contained `/` which broke DSN parsing in plane-migrate (`failed to resolve host 'plane'`). Re-rotated with hex (URL-safe).
+- KV v2 versions: v1 (original weak), v2 (intermediate base64 — broken), v3 (current hex). Rollback paths exist for v1.
+
+Services rewired (all reading rotated value):
+- **plane-api**: 4-cred sidecar (DATABASE_URL with embedded password + SECRET_KEY + DEFAULT_PASSWORD + AWS_ACCESS_KEY_ID/SECRET_KEY for MinIO). Policy expanded to include `secret/data/plane/db`. Healthcheck passing.
+- **plane-worker / plane-beat**: same 4-cred template (shared via copy). Policies expanded with `plane/admin + plane/minio + plane/db`. Both up.
+- **plane-db**: 1-cred sidecar (POSTGRES_PASSWORD only). Healthy.
+- **plane-minio**: 2-cred sidecar (MINIO_ROOT_USER + MINIO_ROOT_PASSWORD from `secret/plane/minio`). Up.
+- **plane-web**: §7 hardening only (no creds; nginx static frontend).
+- **plane-redis**: §7 hardening only (no creds).
+- **plane-migrate / plane-minio-setup**: init containers; sidecar-aware (use plane-api / plane-minio respective renders). Both completed successfully on recreate.
+- **obot**: 3-cred sidecar (OBOT_ADMIN_PASSWORD + GITHUB_TOKEN + POSTGRES_DSN with embedded plane password). Policy expanded with `secret/data/plane/db`. Vestigial POSTGRES_USER/PASSWORD/DB env vars removed. Health 200.
+
+Architectural pattern added to canonical README: **credential-embedded URL rendering** with explicit URL-safe character requirement (hex over base64 for embedded credentials). Discovered during BP2 rotation; documented as sub-pattern.
+
+Side findings:
+- obot connects as `plane` superuser to plane DB — privilege separation post-H1 follow-up: provision separate obot user with scoped grants.
+- plane-migrate/plane-minio-setup are init containers using sidecar renders; works but tightly coupled (if AppRole rotation needed for plane-api, the migrate init also depends on it).
+
+Probe (BP2): PASS=13 FAIL=0 WARN=5 (warns: openhands DNS, homepage offline, restic creds Vault-only, 5 pre-existing/now-cleaned /tmp files).
+
 ## C.1 nextcloud — rewire log
 
 - 2-cred sidecar (NEXTCLOUD_ADMIN_PASSWORD + POSTGRES_PASSWORD) rendered from `secret/nextcloud/{admin,db}`.

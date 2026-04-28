@@ -16,3 +16,7 @@ path "secret/data/plane/app" {
 path "secret/data/plane/minio" {
   capabilities = ["read"]
 }
+
+path "secret/data/plane/db" {
+  capabilities = ["read"]
+}

@@ -1,82 +1,122 @@
 version: '3.8'
 
 # ── Plane CE (Community Edition) — 100% Open Source ──────────────────────────
-# ALL components are open source software. Zero cloud dependencies.
-#   plane-frontend   makeplane/plane-frontend   OSS (AGPL-3.0)
-#   plane-backend    makeplane/plane-backend    OSS (AGPL-3.0)
-#   PostgreSQL       postgres:15-alpine         OSS (PostgreSQL License)
-#   Redis            redis:7.2-alpine           OSS (BSD 3-Clause)
-#   MinIO            minio/minio                OSS (AGPL-3.0) — replaces any cloud S3
-#
+# All credentials delivered via Vault Agent sidecars (Phase 13 H1 §6 BP2).
 # Web UI:   http://localhost:3001
 # API:      http://localhost:8000
-# MinIO UI: http://localhost:9001  (user: plane / password from docker/.env)
-#
-# First-run:
-#   1.  cd /Users/admin/repos/integrated-ai-platform
-#   2.  docker compose -f docker/docker-compose-plane.yml up -d
-#   3.  docker logs -f docker-plane-migrate-1   (wait for "Done")
-#   4.  Open http://localhost:3001 → create account, workspace slug: iap
-#   5.  Create project "Roadmap" → copy UUID from URL
-#   6.  Profile → API Tokens → new token → copy value
-#   7.  Edit docker/.env:  PLANE_API_TOKEN=...  PLANE_PROJECT_ID=...
-#   8.  python3 bin/configure_plane_agile.py   (set up states, labels, cycles)
-#   9.  python3 bin/sync_roadmap_to_plane.py   (load all 600 items)
+# MinIO UI: http://localhost:9001
 
 x-backend-env: &backend-env
-  # ── Database & cache ────────────────────────────────────────────────────────
-  DATABASE_URL:                  postgresql://plane:plane@plane-db/plane
+  # Non-credential operational config only. Credentials come from sidecars.
   REDIS_URL:                     redis://plane-redis:6379/
   CELERY_BROKER_URL:             redis://plane-redis:6379/
   DJANGO_CHANNEL_LAYER_BACKEND_URL: redis://plane-redis:6379/
-
-  # ── Security ────────────────────────────────────────────────────────────────
-  SECRET_KEY:                    ${PLANE_SECRET_KEY:-please-set-PLANE_SECRET_KEY-in-dot-env}
   DEBUG:                         "0"
   DJANGO_SETTINGS_MODULE:        plane.settings.production
-
-  # ── App URLs (must match what the browser uses) ──────────────────────────
   WEB_URL:                       http://localhost:3001
   CORS_ALLOWED_ORIGINS:          http://localhost:3001,http://localhost:8000
-
-  # ── Initial admin account ────────────────────────────────────────────────
   ENABLE_SIGNUP:                 "True"
-  DEFAULT_EMAIL:                 ${PLANE_ADMIN_EMAIL:-admin@local.dev}
-  DEFAULT_PASSWORD:              ${PLANE_ADMIN_PASSWORD:-Admin1234!}
-
-  # ── MinIO (open-source S3-compatible object storage — NO AWS) ────────────
+  DEFAULT_EMAIL:                 admin@local.dev
   USE_MINIO:                     "1"
   MINIO_END_POINT:               plane-minio:9000
-  AWS_ACCESS_KEY_ID:             ${MINIO_ROOT_USER:-plane}
-  AWS_SECRET_ACCESS_KEY:         ${MINIO_ROOT_PASSWORD:-plane-minio-secret}
-  AWS_S3_BUCKET_NAME:            uploads
-  AWS_S3_ENDPOINT_URL:           http://plane-minio:9000
-  AWS_DEFAULT_ACL:               public-read
-  FILE_SIZE_LIMIT:               "5242880"
+  AWS_S3_BUCKET_NAME:             uploads
+  AWS_S3_ENDPOINT_URL:            http://plane-minio:9000
+  AWS_DEFAULT_ACL:                public-read
+  FILE_SIZE_LIMIT:                "5242880"
+
+x-vault-agent-base: &vault-agent-base
+  image: hashicorp/vault:2.0.0
+  restart: "no"
+  environment:
+    VAULT_ADDR: "http://vault-server:8200"
+    SKIP_SETCAP: "true"
+  command: agent -config=/vault/config/agent.hcl
+  cap_drop:
+    - ALL
+  security_opt:
+    - no-new-privileges:true
+  networks:
+    - control-center-net
 
 services:
-  # ── Step 1: run DB migrations once, then exit ─────────────────────────────
+  # ── Vault Agent sidecars (one per consuming service) ──────────────────────
+  vault-agent-plane-api:
+    <<: *vault-agent-base
+    container_name: vault-agent-plane-api
+    volumes:
+      - /Users/admin/.vault-approle/plane-api:/vault/approle:ro
+      - /Users/admin/.vault-agent-secrets/plane-api:/vault/secrets
+      - ./vault-agent-plane-api/agent.hcl:/vault/config/agent.hcl:ro
+      - ./vault-agent-plane-api/credentials.env.tmpl:/vault/agent-config/credentials.env.tmpl:ro
+
+  vault-agent-plane-worker:
+    <<: *vault-agent-base
+    container_name: vault-agent-plane-worker
+    volumes:
+      - /Users/admin/.vault-approle/plane-worker:/vault/approle:ro
+      - /Users/admin/.vault-agent-secrets/plane-worker:/vault/secrets
+      - ./vault-agent-plane-worker/agent.hcl:/vault/config/agent.hcl:ro
+      - ./vault-agent-plane-worker/credentials.env.tmpl:/vault/agent-config/credentials.env.tmpl:ro
+
+  vault-agent-plane-beat:
+    <<: *vault-agent-base
+    container_name: vault-agent-plane-beat
+    volumes:
+      - /Users/admin/.vault-approle/plane-beat:/vault/approle:ro
+      - /Users/admin/.vault-agent-secrets/plane-beat:/vault/secrets
+      - ./vault-agent-plane-beat/agent.hcl:/vault/config/agent.hcl:ro
+      - ./vault-agent-plane-beat/credentials.env.tmpl:/vault/agent-config/credentials.env.tmpl:ro
+
+  vault-agent-plane-db:
+    <<: *vault-agent-base
+    container_name: vault-agent-plane-db
+    volumes:
+      - /Users/admin/.vault-approle/plane-db:/vault/approle:ro
+      - /Users/admin/.vault-agent-secrets/plane-db:/vault/secrets
+      - ./vault-agent-plane-db/agent.hcl:/vault/config/agent.hcl:ro
+      - ./vault-agent-plane-db/credentials.env.tmpl:/vault/agent-config/credentials.env.tmpl:ro
+
+  vault-agent-plane-minio:
+    <<: *vault-agent-base
+    container_name: vault-agent-plane-minio
+    volumes:
+      - /Users/admin/.vault-approle/plane-minio:/vault/approle:ro
+      - /Users/admin/.vault-agent-secrets/plane-minio:/vault/secrets
+      - ./vault-agent-plane-minio/agent.hcl:/vault/config/agent.hcl:ro
+      - ./vault-agent-plane-minio/credentials.env.tmpl:/vault/agent-config/credentials.env.tmpl:ro
+
+  # ── Init: DB migrations (uses plane-api's sidecar render — runs once) ─────
   plane-migrate:
     image: makeplane/plane-backend:stable
-    command: ./bin/docker-entrypoint-migrator.sh
     depends_on:
+      vault-agent-plane-api:
+        condition: service_completed_successfully
       plane-db:
         condition: service_healthy
       plane-redis:
         condition: service_healthy
     environment:
       <<: *backend-env
+    volumes:
+      - /Users/admin/.vault-agent-secrets/plane-api:/vault/secrets:ro
+    entrypoint: ["sh", "-c", "set -a && . /vault/secrets/credentials.env && set +a && exec ./bin/docker-entrypoint-migrator.sh"]
     networks:
       - plane-net
 
-  # ── Step 2: create MinIO "uploads" bucket ────────────────────────────────
+  # ── Init: MinIO bucket setup ──────────────────────────────────────────────
   plane-minio-setup:
     image: minio/mc:latest
     depends_on:
-      - plane-minio
+      vault-agent-plane-minio:
+        condition: service_completed_successfully
+      plane-minio:
+        condition: service_started
+    volumes:
+      - /Users/admin/.vault-agent-secrets/plane-minio:/vault/secrets:ro
     entrypoint: >
       /bin/sh -c "
-      until /usr/bin/mc alias set myminio http://plane-minio:9000 plane ${MINIO_ROOT_PASSWORD:-plane-minio-secret}; do
+      set -a; . /vault/secrets/credentials.env; set +a;
+      until /usr/bin/mc alias set myminio http://plane-minio:9000 \"$$MINIO_ROOT_USER\" \"$$MINIO_ROOT_PASSWORD\"; do
         echo 'MinIO not ready, retrying...'; sleep 2;
       done;
       /usr/bin/mc mb --ignore-existing myminio/uploads;
@@ -89,9 +129,11 @@ services:
   # ── API server ────────────────────────────────────────────────────────────
   plane-api:
     image: makeplane/plane-backend:stable
+    container_name: docker-plane-api-1
     restart: unless-stopped
-    command: ./bin/docker-entrypoint-api.sh
     depends_on:
+      vault-agent-plane-api:
+        condition: service_completed_successfully
       plane-migrate:
         condition: service_completed_successfully
       plane-db:
@@ -104,81 +146,148 @@ services:
       <<: *backend-env
       GUNICORN_WORKERS: "2"
       GUNICORN_TIMEOUT: "120"
+    volumes:
+      - plane-logs:/code/plane/logs
+      - /Users/admin/.vault-agent-secrets/plane-api:/vault/secrets:ro
+    entrypoint: ["sh", "-c", "set -a && . /vault/secrets/credentials.env && set +a && exec ./bin/docker-entrypoint-api.sh"]
     ports:
       - "8000:8000"
-    deploy:
-      resources:
-        limits:
-          memory: 2G
-        reservations:
-          memory: 512M
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - SETUID
+      - SETGID
+      - DAC_OVERRIDE
+      - NET_BIND_SERVICE
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: 2g
+    cpus: 2.0
     healthcheck:
       test: ["CMD-SHELL", "python3 -c \"import urllib.request,sys; urllib.request.urlopen('http://localhost:8000/');sys.exit(0)\" 2>/dev/null || exit 1"]
       interval: 10s
       timeout: 8s
       retries: 10
-      start_period: 20s
-    volumes:
-      - plane-logs:/code/plane/logs
+      start_period: 30s
     networks:
       - plane-net
 
-  # ── Frontend (nginx-based, pre-built static files) ───────────────────────
+  # ── Frontend ──────────────────────────────────────────────────────────────
   plane-web:
     image: makeplane/plane-frontend:stable
+    container_name: docker-plane-web-1
     restart: unless-stopped
-    # No command override — uses the nginx entrypoint from the image
     depends_on:
       plane-api:
         condition: service_healthy
     environment:
-      # These are substituted by the nginx entrypoint into the static app config
       NEXT_PUBLIC_API_BASE_URL:  http://localhost:8000
       NEXT_PUBLIC_DEPLOY_URL:    http://localhost:3001
     ports:
       - "3001:3000"
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - SETUID
+      - SETGID
+      - DAC_OVERRIDE
+      - NET_BIND_SERVICE
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: 256m
+    cpus: 1.0
     networks:
       - plane-net
 
   # ── Celery async worker ───────────────────────────────────────────────────
   plane-worker:
     image: makeplane/plane-backend:stable
+    container_name: docker-plane-worker-1
     restart: unless-stopped
-    command: ./bin/docker-entrypoint-worker.sh
     depends_on:
+      vault-agent-plane-worker:
+        condition: service_completed_successfully
       plane-api:
         condition: service_healthy
     environment:
       <<: *backend-env
+    volumes:
+      - /Users/admin/.vault-agent-secrets/plane-worker:/vault/secrets:ro
+    entrypoint: ["sh", "-c", "set -a && . /vault/secrets/credentials.env && set +a && exec ./bin/docker-entrypoint-worker.sh"]
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - SETUID
+      - SETGID
+      - DAC_OVERRIDE
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: 1g
+    cpus: 1.0
     networks:
       - plane-net
 
-  # ── Celery beat (scheduled tasks) ────────────────────────────────────────
+  # ── Celery beat ───────────────────────────────────────────────────────────
   plane-beat:
     image: makeplane/plane-backend:stable
+    container_name: docker-plane-beat-1
     restart: unless-stopped
-    command: ./bin/docker-entrypoint-beat.sh
     depends_on:
+      vault-agent-plane-beat:
+        condition: service_completed_successfully
       plane-api:
         condition: service_healthy
     environment:
       <<: *backend-env
+    volumes:
+      - /Users/admin/.vault-agent-secrets/plane-beat:/vault/secrets:ro
+    entrypoint: ["sh", "-c", "set -a && . /vault/secrets/credentials.env && set +a && exec ./bin/docker-entrypoint-beat.sh"]
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - SETUID
+      - SETGID
+      - DAC_OVERRIDE
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: 512m
+    cpus: 1.0
     networks:
       - plane-net
 
-  # ── PostgreSQL (OSS) ──────────────────────────────────────────────────────
+  # ── PostgreSQL ────────────────────────────────────────────────────────────
   plane-db:
     image: postgres:15-alpine
+    container_name: docker-plane-db-1
     restart: unless-stopped
-    command: postgres -c 'max_connections=500' -c 'shared_buffers=256MB'
+    depends_on:
+      vault-agent-plane-db:
+        condition: service_completed_successfully
     environment:
       POSTGRES_USER:     plane
-      POSTGRES_PASSWORD: plane
       POSTGRES_DB:       plane
     ports:
-      - "127.0.0.1:5433:5432"   # localhost-only; for postgresql-mcp from host
+      - "127.0.0.1:5433:5432"
     volumes:
       - plane-db-data:/var/lib/postgresql/data
+      - /Users/admin/.vault-agent-secrets/plane-db:/vault/secrets:ro
+    entrypoint: ["sh", "-c", "set -a && . /vault/secrets/credentials.env && set +a && exec docker-entrypoint.sh \"$$0\" \"$$@\""]
+    command: ["postgres", "-c", "max_connections=500", "-c", "shared_buffers=256MB"]
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - SETUID
+      - SETGID
+      - DAC_OVERRIDE
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: 512m
+    cpus: 1.0
     healthcheck:
       test: ["CMD", "pg_isready", "-U", "plane"]
       interval: 5s
@@ -187,12 +296,22 @@ services:
     networks:
       - plane-net
 
-  # ── Redis (OSS) ───────────────────────────────────────────────────────────
+  # ── Redis ─────────────────────────────────────────────────────────────────
   plane-redis:
     image: redis:7.2-alpine
+    container_name: docker-plane-redis-1
     restart: unless-stopped
     volumes:
       - plane-redis-data:/data
+    cap_drop:
+      - ALL
+    cap_add:
+      - SETUID
+      - SETGID
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: 256m
+    cpus: 0.5
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
@@ -201,19 +320,33 @@ services:
     networks:
       - plane-net
 
-  # ── MinIO — open-source S3-compatible object storage (NO AWS) ────────────
+  # ── MinIO ─────────────────────────────────────────────────────────────────
   plane-minio:
     image: minio/minio:latest
+    container_name: docker-plane-minio-1
     restart: unless-stopped
-    command: server /data --console-address ":9001"
-    environment:
-      MINIO_ROOT_USER:     ${MINIO_ROOT_USER:-plane}
-      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-plane-minio-secret}
-    ports:
-      - "9000:9000"   # S3 API
-      - "9001:9001"   # Web console
+    depends_on:
+      vault-agent-plane-minio:
+        condition: service_completed_successfully
     volumes:
       - plane-minio-data:/data
+      - /Users/admin/.vault-agent-secrets/plane-minio:/vault/secrets:ro
+    entrypoint: ["sh", "-c", "set -a && . /vault/secrets/credentials.env && set +a && exec /usr/bin/docker-entrypoint.sh \"$$0\" \"$$@\""]
+    command: ["server", "/data", "--console-address", ":9001"]
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - SETUID
+      - SETGID
+      - DAC_OVERRIDE
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: 512m
+    cpus: 1.0
     networks:
       - plane-net
 
@@ -226,3 +359,6 @@ volumes:
 networks:
   plane-net:
     driver: bridge
+  control-center-net:
+    name: control-center-net
+    external: true
