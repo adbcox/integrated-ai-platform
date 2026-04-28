@@ -168,7 +168,8 @@ networks:
 #       timeInterval: 15s
 
   cadvisor:
-    image: google/cadvisor:latest
+    image: gcr.io/cadvisor/cadvisor:v0.49.1
+    platform: linux/arm64
     container_name: cadvisor
     restart: unless-stopped
     privileged: true

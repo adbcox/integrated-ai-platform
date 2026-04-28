@@ -16,22 +16,8 @@ scrape_configs:
         labels:
           service: caddy
 
-  - job_name: mcp-filesystem
-    metrics_path: /healthz
-    static_configs:
-      - targets: ['host.docker.internal:8091']
-        labels:
-          service: mcp-filesystem-remote
-
-  - job_name: mcp-docker
-    metrics_path: /healthz
-    static_configs:
-      - targets: ['host.docker.internal:8092']
-        labels:
-          service: mcp-docker-remote
-
   - job_name: mcp-docs
-    metrics_path: /healthz
+    metrics_path: /metrics
     static_configs:
       - targets: ['host.docker.internal:8093']
         labels:
