@@ -147,6 +147,16 @@ If the password contains `/`, the URL parser will treat it as a path separator a
 
 **When to prefer DSN render vs component env vars**: prefer component env vars (POSTGRES_HOST/PORT/USER/PASSWORD) if the application supports them — cleaner separation, simpler rotation, no URL-encoding gotchas. Use DSN render only when the app insists on a URL.
 
+### INVESTIGATION ANTI-PATTERN — never read unknown file contents during credential investigation
+
+When investigating unknown files for credential content, NEVER read file contents directly until you've established the file doesn't contain credentials. Procedure:
+
+1. `grep -c <pattern>` (count only, no value surface)
+2. If count > 0, surface count + filename to user
+3. Only after user direction, proceed with hash-based verification
+
+Two incidents established this rule (B.1 nextcloud-db `cat`, T1.4 zabbix-admin `grep`). Codified in canonical pattern to prevent recurrence. Each incident triggered the rotation doctrine (rotate on inadvertent value exposure, even if conversation-local).
+
 ### ANTI-PATTERN — never display credential values in tool output
 
 Never display credential values in tool output, even during diagnostics. Use hash-based equality verification only. If diagnosis appears to require value inspection, stop and surface for user decision. Pressure to debug quickly does not justify exposing credential values.
