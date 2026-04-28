@@ -62,7 +62,7 @@ services:
       POSTGRES_PASSWORD: ${ZABBIX_DB_PASSWORD:-zabbix_secret}
       ZBX_SERVER_HOST: zabbix-server
       PHP_TZ: ${TZ:-America/Los_Angeles}
-      ZBX_SERVER_NAME: "Homelab NOC"
+      ZBX_SERVER_NAME: "Platform NOC"
     depends_on:
       postgres-zabbix:
         condition: service_healthy

@@ -78,7 +78,7 @@ def ai_diagnose(issue_description: str, context: dict | None = None) -> dict:
     if context:
         ctx_text = f"\n\nSystem context:\n{json.dumps(context, indent=2)}"
 
-    prompt = f"""You are a homelab media server expert. Diagnose this issue and give a concise fix.
+    prompt = f"""You are a platform media server expert. Diagnose this issue and give a concise fix.
 
 Issue: {issue_description}{ctx_text}
 

@@ -11,7 +11,7 @@ from app import run_all_checks, run_opnsense_health, run_qnap_check
 
 load_dotenv()
 
-app = FastAPI(title="Homelab Automation API", version="1.1.1")
+app = FastAPI(title="Platform Automation API", version="1.1.1")
 
 
 def require_token(x_api_token: Optional[str]) -> None:
@@ -26,7 +26,7 @@ def require_token(x_api_token: Optional[str]) -> None:
 def health() -> dict:
     return {
         "ok": True,
-        "service": "homelab-automation",
+        "service": "platform-automation",
         "auth": "token-required-for-run-endpoints",
     }
 

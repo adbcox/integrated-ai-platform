@@ -13,7 +13,7 @@ version: "3.8"
 #   docker compose -f docker/docker-compose-dashboards.yml up -d
 #
 # Prerequisites:
-#   mkdir -p ~/homelab/homepage/config ~/homelab/traefik/certs
+#   mkdir -p ~/platform/homepage/config ~/platform/traefik/certs
 
 services:
 
@@ -130,8 +130,8 @@ services:
       - "8090:8080"  # Traefik dashboard (separate from AI dashboard)
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
-      - ${HOMELAB_DIR:-~/homelab}/traefik/certs:/certs
-      - ${HOMELAB_DIR:-~/homelab}/traefik/traefik.yml:/etc/traefik/traefik.yml:ro
+      - ${PLATFORM_DIR:-~/platform}/traefik/certs:/certs
+      - ${PLATFORM_DIR:-~/platform}/traefik/traefik.yml:/etc/traefik/traefik.yml:ro
     environment:
       TZ: ${TZ:-America/Los_Angeles}
     networks:

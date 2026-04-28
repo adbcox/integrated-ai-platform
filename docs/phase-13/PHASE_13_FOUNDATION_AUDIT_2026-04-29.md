@@ -476,7 +476,7 @@ Field names:
   EXECUTOR_HOST=
   GITHUB_TOKEN=
   HA_TOKEN=
-  HOMELAB_DIR=
+  PLATFORM_DIR=
   HOMEPAGE_PORT=
   HOMEPAGE_VAR_HASS_TOKEN=
   HOMEPAGE_VAR_OWM_KEY=
@@ -529,7 +529,7 @@ Field names:
   DASHBOARD_PORT=
   DOMAIN=
   EXECUTOR_HOST=
-  HOMELAB_DIR=
+  PLATFORM_DIR=
   HOMEPAGE_PORT=
   HOMEPAGE_VAR_HASS_TOKEN=
   HOMEPAGE_VAR_OWM_KEY=
@@ -569,7 +569,7 @@ Field names:
   DASHBOARD_PORT=
   DOMAIN=
   EXECUTOR_HOST=
-  HOMELAB_DIR=
+  PLATFORM_DIR=
   HOMEPAGE_PORT=
   HOMEPAGE_VAR_HASS_TOKEN=
   HOMEPAGE_VAR_OWM_KEY=
@@ -1868,7 +1868,7 @@ Rationale grounded in our specific situation:
 
 2. **Vault 2.0 has the strongest dynamic-secrets story we'll need.** The platform will eventually want PKI for mTLS between Mac and Threadripper, dynamic Postgres credentials for plane-db, and SSH-CA when the Threadripper joins. SOPS + age cannot deliver this. Infisical's dynamic-secrets story is materially weaker and SaaS-aligned. OpenBao does deliver but inherits Vault's complexity without its ecosystem maturity.
 
-3. **The BUSL license is irritating, not blocking.** For a private homelab/single-organization deployment, BUSL 1.1's "non-competitive use" carve-out is satisfied. The only realistic trigger for migration is HashiCorp introducing a paid-tier requirement for features we currently use — which the 2.0 release explicitly did not do. Independent CNCF coverage (cncf.io 2026-03-15) confirms 2.0 retained the open BUSL boundaries from 1.16.
+3. **The BUSL license is irritating, not blocking.** For a private platform/single-organization deployment, BUSL 1.1's "non-competitive use" carve-out is satisfied. The only realistic trigger for migration is HashiCorp introducing a paid-tier requirement for features we currently use — which the 2.0 release explicitly did not do. Independent CNCF coverage (cncf.io 2026-03-15) confirms 2.0 retained the open BUSL boundaries from 1.16.
 
 4. **OpenBao is the migration insurance, not the immediate answer.** The 2.5 release is API-compatible. The right test is a *parallel-deploy* exercise in Phase 14: bring up an OpenBao 2.5 instance alongside Vault, replicate a single non-critical mount (e.g., `secret/zabbix/`), validate that all our tooling (vault CLI, MCP servers, scripts) works against it unmodified. That test has a known cost (~4 hours) and produces durable knowledge: if HashiCorp's terms ever bite, we can move in a known timeframe.
 

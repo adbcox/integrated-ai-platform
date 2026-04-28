@@ -30,7 +30,7 @@
 
 The following inaccuracies in the provided template were corrected:
 - Strava package: `strava-mcp-server` (not `@r-huijts/strava-mcp`)
-- RBAC: dev mode (`OBOT_DEV_MODE=true`) intentionally left on for homelab; auth disabled
+- RBAC: dev mode (`OBOT_DEV_MODE=true`) intentionally left on for platform; auth disabled
 - launchd paths: user-level `~/Library/LaunchAgents/` (not `/Library/LaunchDaemons/`)
 - Docker MCP: runs via nohup (launchctl load fails from non-GUI shell context)
 - Docs restart: handled via `docker compose force-recreate` (not launchctl)

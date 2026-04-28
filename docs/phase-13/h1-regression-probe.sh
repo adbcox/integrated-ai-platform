@@ -141,6 +141,22 @@ case "$GATE_ID" in
       result WARN "ollama not reachable on host:11434"
     fi
     ;;
+  A.8|a.8)
+    # open-webui rewire (Phase A close) — verify open-webui→litellm transient closed
+    OWUI_KEY=$($DOCKER exec open-webui /bin/sh -c 'tr "\0" "\n" < /proc/1/environ | grep "^OPENAI_API_KEY=" | cut -d= -f2-' 2>/dev/null)
+    LITELLM_KEY=$($DOCKER exec litellm-gateway /bin/sh -c 'tr "\0" "\n" < /proc/1/environ | grep "^LITELLM_MASTER_KEY=" | cut -d= -f2-' 2>/dev/null)
+    if [ "$OWUI_KEY" = "$LITELLM_KEY" ] && [ -n "$OWUI_KEY" ]; then
+      result OK "open-webui ↔ litellm key match (transient closed)"
+    else
+      result FAIL "open-webui ↔ litellm key mismatch (transient NOT closed)"
+    fi
+    OWUI_TO_LITELLM=$($DOCKER exec open-webui /bin/sh -c "curl -s -o /dev/null -w '%{http_code}' -H 'Authorization: Bearer $OWUI_KEY' http://litellm-gateway:4000/v1/models" 2>/dev/null)
+    if [ "$OWUI_TO_LITELLM" = "200" ]; then
+      result OK "open-webui → litellm /v1/models from inside container: 200"
+    else
+      result FAIL "open-webui → litellm: $OWUI_TO_LITELLM"
+    fi
+    ;;
   *)
     result WARN "no gate-specific dependency probes defined for $GATE_ID"
     ;;

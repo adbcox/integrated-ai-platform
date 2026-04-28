@@ -33,7 +33,10 @@ You are working on a production autonomous AI platform. Before taking any action
 - Try to execute on local filesystem (everything is on Mac Mini .145)
 - Reference files expecting them to be read - include content inline
 - Waste tokens on unnecessary validations or tool calls
-- Call this a "homelab" - it's an enterprise AI platform
+
+## Platform Rules — Non-Negotiable
+
+**Terminology**: This is the "AI workstation" or "platform". Pre-2026 alternative terminology (the 7-letter compound term starting with "h" that conflates personal-tinkering scope with this enterprise system) is deprecated and must not appear in any artifact — documentation, code, configs, secrets, container labels, or conversation. This is a doctrine rule, not a stylistic preference. Context for the deprecation lives in the §13.5 strike commit's diff (see `git log --grep="terminology audit"`).
 
 ## Project Structure
 

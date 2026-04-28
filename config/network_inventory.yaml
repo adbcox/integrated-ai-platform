@@ -1,4 +1,4 @@
-# Network Inventory — Integrated AI Platform Homelab
+# Network Inventory — Integrated AI Platform Platform
 # Auto-populated from network scan; edit manually to add metadata.
 # Last updated: 2026-04-25 (IPs corrected: Mac Mini .113, QNAP .201, Mac Studio .202)
 
@@ -96,7 +96,7 @@ devices:
       node_exporter_port: 9100
       dashboard_health: http://192.168.10.202:8080/api/health
 
-# Port allocations (homelab)
+# Port allocations (platform)
 ports:
   3001: Plane CE (project management)
   3030: Grafana (observability dashboards)

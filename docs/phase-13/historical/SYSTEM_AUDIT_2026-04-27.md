@@ -172,7 +172,7 @@ Approximately 20 `ms1*` and `sms1*` shim containers are running as part of Obot'
 | grafana-obs | ✅ (inherited) | ⚠️ [] (none dropped — verify in compose) |
 
 - **Vault:** ✅ Initialized, unsealed, persistent file storage, enterprise=false (community edition)
-- **RBAC:** Obot running in dev mode (`OBOT_DEV_MODE=true`) — auth intentionally disabled for homelab
+- **RBAC:** Obot running in dev mode (`OBOT_DEV_MODE=true`) — auth intentionally disabled for platform
 - **Credentials:** Stored in `docker/.env` — not committed to git ✅
 - **pfctl firewall:** Active on macOS host — requires `sudo` to inspect rules
 
@@ -279,7 +279,7 @@ version: 2.0.0
 | 5 | Open-WebUI and LiteLLM starting | Both containers restarted recently — may not be fully operational | Monitor; check logs if issues persist |
 | 6 | Zabbix partially deployed | 3 of 4 Zabbix containers not started | Complete Zabbix deployment or `docker compose down` to clean up |
 | 7 | No TLS/reverse-proxy for most services | 20+ ports exposed to LAN without HTTPS | Add Traefik or Caddy as documented in Master Control Panel ADR |
-| 8 | Obot dev mode (no auth) | Any LAN user can access all 138 tools | Acceptable for homelab; document explicitly |
+| 8 | Obot dev mode (no auth) | Any LAN user can access all 138 tools | Acceptable for platform; document explicitly |
 | 9 | `mcp-docker-remote` container is "Created" but never started | Creates confusion in `docker ps` output | Either remove the container or document that Docker MCP uses host nohup |
 | 10 | ADR-A-002 through ADR-A-005 missing | Gap in decision record history | Fill in or acknowledge as pre-ADR decisions |
 

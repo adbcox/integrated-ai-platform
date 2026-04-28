@@ -58,7 +58,7 @@ models:
       writer: "qwen2.5-coder:14b"
       reviewer: "deepseek-coder-v2:latest"
 
-# External services — real IPs and ports for this homelab
+# External services — real IPs and ports for this platform
 services:
   qnap_nas:
     host: "192.168.10.201"

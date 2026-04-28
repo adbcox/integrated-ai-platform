@@ -5,7 +5,7 @@ hosts:
     community: "public"
     template: "Linux by SNMP"
     groups:
-      - "Homelab Network"
+      - "Platform Network"
 
   - name: "OPNsense-Firewall"
     ip: "192.168.10.1"
@@ -13,7 +13,7 @@ hosts:
     community: "public"
     template: "OPNsense by SNMP"
     groups:
-      - "Homelab Network"
+      - "Platform Network"
 
   - name: "Mac-Mini-M5-Orchestrator"
     ip: "192.168.10.113"
@@ -22,7 +22,7 @@ hosts:
     ram: "48 GB"
     template: "macOS by Zabbix agent"
     groups:
-      - "Homelab Compute"
+      - "Platform Compute"
 
   - name: "Mac-Studio-M3-Powerhouse"
     ip: "192.168.10.202"
@@ -32,4 +32,4 @@ hosts:
     status: "disabled_pending_arrival"
     template: "macOS by Zabbix agent"
     groups:
-      - "Homelab Compute"
+      - "Platform Compute"

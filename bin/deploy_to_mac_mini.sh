@@ -74,9 +74,9 @@ if [[ "$ENV_EXISTS" == "no" ]]; then
 fi
 
 # ── 5. Create required host directories ───────────────────────────────────
-log "Creating homelab directories..."
+log "Creating platform directories..."
 if ! $DRY_RUN; then
-  $REMOTE "mkdir -p ~/homelab/traefik/certs ~/homelab/homepage/config"
+  $REMOTE "mkdir -p ~/platform/traefik/certs ~/platform/homepage/config"
 fi
 
 # ── 6. Deploy ─────────────────────────────────────────────────────────────

@@ -8,7 +8,7 @@
     {"type": "panel", "id": "gauge", "name": "Gauge", "version": ""}
   ],
   "annotations": {"list": []},
-  "description": "Integrated AI Platform — Homelab Overview",
+  "description": "Integrated AI Platform — Platform Overview",
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
@@ -267,7 +267,7 @@
   ],
   "refresh": "30s",
   "schemaVersion": 38,
-  "tags": ["homelab", "ai-platform"],
+  "tags": ["platform", "ai-platform"],
   "templating": {
     "list": [
       {
@@ -281,7 +281,7 @@
   "time": {"from": "now-3h", "to": "now"},
   "timepicker": {},
   "timezone": "browser",
-  "title": "Homelab Overview",
-  "uid": "homelab-overview",
+  "title": "Platform Overview",
+  "uid": "platform-overview",
   "version": 1
 }
