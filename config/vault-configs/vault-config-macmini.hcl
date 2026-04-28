@@ -9,6 +9,9 @@ storage "file" {
 listener "tcp" {
   address     = "0.0.0.0:8200"
   tls_disable = true
+  telemetry {
+    unauthenticated_metrics_access = true
+  }
 }
 
 # Auto-unseal via Transit (seal-vault container)
@@ -26,3 +29,10 @@ ui           = true
 
 # macOS/Colima — mlock not available; use disable_mlock + named-volume audit logs
 disable_mlock = true
+
+# Prometheus telemetry (Block 2 readiness)
+telemetry {
+  prometheus_retention_time      = "30s"
+  disable_hostname               = true
+  unauthenticated_metrics_access = true
+}

@@ -88,6 +88,16 @@ This is the "AI workstation" or "platform". Pre-2026 alternative terminology (th
 - Pre-compose launcher scripts (e.g., `bin/oss_wave_openhands.sh`) — deprecated; compose is canonical service lifecycle
 - Display of credential values during diagnostics (use hash-based equality verification only; if diagnosis appears to require value inspection, stop and surface for user decision)
 
+### Known Hardening Trade-offs
+
+- **ICMP/fping monitoring not available**: zabbix-server uses `cap_drop:[ALL]` which excludes `NET_RAW`. ICMP items will be in unsupported state. Use TCP-based health checks (telnet item type, agent.ping, http.test) instead. Adding `NET_RAW` `cap_add` was rejected as exceeding minimal-cap doctrine.
+
+- **Mac Mini host-level monitoring deferred**: monitoring of the Mac Mini itself (CPU/memory/disk/network at host level) is deferred to Block 2 and will use a combination of zabbix-agent active checks (when host registered in zabbix-web) and macOS-native tooling for items zabbix-agent can't reach.
+
+- **Caddy per-site access logs**: Caddy 2.11.2 syntax for per-site `log` directives needs investigation beyond quick-fix scope. Volume infrastructure (`caddy-logs`) and global access log writer plumbing are in place; per-site enablement deferred to Block 2 work where access-pattern dashboards drive the requirement.
+
+- **Zabbix Prometheus metrics**: zabbix-server 7.4 does not natively expose `/metrics`. Adding `zabbix-prometheus-exporter` (or similar) is an additive deployment, deferred to Block 2 when its metrics are needed in Grafana.
+
 ### Operating Doctrine
 - Master project manager (separate Claude window) is responsible for system health and completion.
 - Plan-first protocol: Claude Code outputs plan, master verifies, user approves.

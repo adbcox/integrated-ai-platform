@@ -13,6 +13,7 @@ services:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy-data:/data
       - caddy-config:/config
+      - caddy-logs:/var/log/caddy
     networks:
       - caddy-net
     cap_drop:
@@ -42,6 +43,8 @@ volumes:
     name: caddy-data
   caddy-config:
     name: caddy-config
+  caddy-logs:
+    name: caddy-logs
 
 networks:
   caddy-net:
