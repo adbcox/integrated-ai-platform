@@ -13,10 +13,8 @@ metadata:
   platform: "Integrated AI Platform"
   primary_host: "mac-mini"
   primary_ip: "192.168.10.145"
-
 # ── AI Layer ────────────────────────────────────────────────────────────────
 services:
-
   - id: litellm-gateway
     name: LiteLLM Gateway
     category: ai
@@ -35,7 +33,6 @@ services:
       cap_drop: [ALL]
     compose_file: control-center-stack/stacks/gateways/docker-compose.yml
     credentials_env: [LITELLM_MASTER_KEY, ANTHROPIC_API_KEY, OPENAI_API_KEY]
-
   - id: open-webui
     name: Open WebUI
     category: ai
@@ -54,7 +51,6 @@ services:
       cap_drop: [ALL]
     compose_file: control-center-stack/stacks/ai-control/docker-compose.yml
     credentials_env: [WEBUI_SECRET_KEY, LITELLM_MASTER_KEY]
-
   - id: ollama
     name: Ollama
     category: ai
@@ -73,7 +69,6 @@ services:
       cap_drop: null
     compose_file: null
     notes: host process, not containerized
-
   - id: obot
     name: Obot
     category: ai
@@ -92,7 +87,6 @@ services:
       cap_drop: []
     compose_file: docker/obot-stack.yml
     notes: OAuth browser setup pending; sms1obot-mcp-server companion containers on ports 32768/32769
-
   - id: openhands
     name: OpenHands
     category: ai
@@ -111,7 +105,6 @@ services:
       cap_drop: []
     compose_file: docker/docker-compose-ai-dashboard.yml
     notes: Not yet in primary service documentation; running live
-
   - id: mcpo-proxy
     name: MCPO Proxy
     category: ai
@@ -130,9 +123,7 @@ services:
       cap_drop: [ALL]
     compose_file: control-center-stack/stacks/gateways/docker-compose.yml
     notes: "Port 8081, NOT 8080 — 8080 is IAP Dashboard (host service)"
-
-# ── Platform Core ────────────────────────────────────────────────────────────
-
+    # ── Platform Core ────────────────────────────────────────────────────────────
   - id: iap-dashboard
     name: IAP Control Plane Dashboard
     category: platform
@@ -151,7 +142,6 @@ services:
       cap_drop: null
     compose_file: null
     notes: host Python process (server.py), NOT a container; serves roadmap JSON from data/
-
   - id: vault
     name: HashiCorp Vault
     category: platform
@@ -170,7 +160,6 @@ services:
       cap_drop: [ALL]
     compose_file: control-center-stack/stacks/vault/docker-compose.yml
     notes: Requires manual unseal after container restart (3 of 5 Shamir keys at ~/vault-init-keys.txt)
-
   - id: plane
     name: Plane CE
     category: platform
@@ -189,7 +178,6 @@ services:
       cap_drop: []
     compose_file: docker/docker-compose-plane.yml
     notes: 7-container stack; API at :8000; PostgreSQL at :5433; MinIO at :9000/9001
-
   - id: plane-api
     name: Plane API
     category: platform
@@ -207,7 +195,6 @@ services:
       no_new_privileges: false
       cap_drop: []
     compose_file: docker/docker-compose-plane.yml
-
   - id: plane-db
     name: Plane PostgreSQL
     category: platform
@@ -225,7 +212,6 @@ services:
       no_new_privileges: false
       cap_drop: []
     compose_file: docker/docker-compose-plane.yml
-
   - id: plane-minio
     name: MinIO Object Storage
     category: platform
@@ -244,7 +230,6 @@ services:
       cap_drop: []
     compose_file: docker/docker-compose-plane.yml
     notes: Console at :9001; not exposed externally
-
   - id: homarr
     name: Homarr
     category: platform
@@ -262,9 +247,7 @@ services:
       no_new_privileges: true
       cap_drop: []
     compose_file: control-center-stack/stacks/ai-control/docker-compose.yml
-
-# ── Observability ────────────────────────────────────────────────────────────
-
+    # ── Observability ────────────────────────────────────────────────────────────
   - id: grafana
     name: Grafana
     category: observability
@@ -283,7 +266,6 @@ services:
       cap_drop: []
     compose_file: docker/observability-stack.yml
     notes: Anonymous viewer enabled; admin via GF_SECURITY_ADMIN_PASSWORD env
-
   - id: victoriametrics
     name: VictoriaMetrics
     category: observability
@@ -301,7 +283,6 @@ services:
       no_new_privileges: false
       cap_drop: []
     compose_file: docker/observability-stack.yml
-
   - id: vmagent
     name: VMAgent
     category: observability
@@ -319,7 +300,6 @@ services:
       no_new_privileges: false
       cap_drop: []
     compose_file: docker/observability-stack.yml
-
   - id: uptime-kuma
     name: Uptime Kuma
     category: observability
@@ -337,7 +317,6 @@ services:
       no_new_privileges: false
       cap_drop: []
     compose_file: docker/observability-stack.yml
-
   - id: node-exporter
     name: Node Exporter
     category: observability
@@ -356,9 +335,7 @@ services:
       cap_drop: []
     compose_file: docker/observability-stack.yml
     notes: host network mode for accurate macOS metrics
-
-# ── Media Automation ─────────────────────────────────────────────────────────
-
+    # ── Media Automation ─────────────────────────────────────────────────────────
   - id: sonarr
     name: Sonarr
     category: media
@@ -378,7 +355,6 @@ services:
     compose_file: control-center-stack/stacks/arr-stack/docker-compose.yml
     credentials_env: [SONARR_API_KEY]
     notes: API key 2731353744504eb0a5d4225b7c40dfc6; s6-overlay requires CAP_SETGID (no cap_drop ALL)
-
   - id: radarr
     name: Radarr
     category: media
@@ -398,7 +374,6 @@ services:
     compose_file: control-center-stack/stacks/arr-stack/docker-compose.yml
     credentials_env: [RADARR_API_KEY]
     notes: API key 2a3636f0d3b44ee48082c96298dc5194; s6-overlay requires CAP_SETGID
-
   - id: prowlarr
     name: Prowlarr
     category: media
@@ -417,7 +392,6 @@ services:
       cap_drop: []
     compose_file: control-center-stack/stacks/arr-stack/docker-compose.yml
     credentials_env: [PROWLARR_API_KEY]
-
   - id: sportarr
     name: Sportarr
     category: media
@@ -435,7 +409,6 @@ services:
       no_new_privileges: true
       cap_drop: [CAP_NET_ADMIN, CAP_SYS_ADMIN, CAP_SYS_PTRACE]
     compose_file: control-center-stack/stacks/arr-stack/docker-compose.yml
-
   - id: plex
     name: Plex Media Server
     category: media
@@ -452,9 +425,7 @@ services:
     security: null
     compose_file: null
     notes: QNAP native QPKG (not Docker); media at /share/CACHEDEV2_DATA/data/media/
-
-# ── Home Automation ──────────────────────────────────────────────────────────
-
+    # ── Home Automation ──────────────────────────────────────────────────────────
   - id: homeassistant-container
     name: Home Assistant (Mac Mini container)
     category: automation
@@ -472,7 +443,6 @@ services:
       no_new_privileges: true
       cap_drop: []
     compose_file: control-center-stack/stacks/dashboards/docker-compose.yml
-
   - id: homeassistant-physical
     name: Home Assistant (Physical device)
     category: automation
@@ -489,9 +459,7 @@ services:
     security: null
     compose_file: null
     notes: Separate physical device at 192.168.10.141; not managed by this platform
-
-# ── Knowledge Base ──────────────────────────────────────────────────────────
-
+    # ── Knowledge Base ──────────────────────────────────────────────────────────
   - id: anythingllm
     name: AnythingLLM
     category: ai
@@ -510,9 +478,7 @@ services:
       cap_drop: []
     compose_file: docker/knowledge-stack.yml
     notes: Ingests docs/architecture/, docs/roadmap/ governance docs, docs/runbooks/
-
-# ── Plane Internal Services (not exposed externally) ─────────────────────────
-
+    # ── Plane Internal Services (not exposed externally) ─────────────────────────
   - id: plane-redis
     name: Plane Redis
     category: platform
@@ -530,7 +496,6 @@ services:
       no_new_privileges: false
       cap_drop: []
     compose_file: docker/docker-compose-plane.yml
-
   - id: plane-worker
     name: Plane Worker
     category: platform
@@ -548,7 +513,6 @@ services:
       no_new_privileges: false
       cap_drop: []
     compose_file: docker/docker-compose-plane.yml
-
   - id: plane-beat
     name: Plane Beat Scheduler
     category: platform
@@ -566,9 +530,7 @@ services:
       no_new_privileges: false
       cap_drop: []
     compose_file: docker/docker-compose-plane.yml
-
-# ── Obot Internal Services ────────────────────────────────────────────────────
-
+    # ── Obot Internal Services ────────────────────────────────────────────────────
   - id: obot-mcp-server
     name: Obot MCP Server
     category: ai
@@ -587,7 +549,6 @@ services:
       cap_drop: []
     compose_file: docker/obot-stack.yml
     notes: Internal only; exposed at 127.0.0.1:32768
-
   - id: obot-mcp-shim
     name: Obot MCP Shim
     category: ai
@@ -606,9 +567,7 @@ services:
       cap_drop: []
     compose_file: docker/obot-stack.yml
     notes: Internal only; exposed at 127.0.0.1:32769
-
-# ── Network Infrastructure ───────────────────────────────────────────────────
-
+    # ── Network Infrastructure ───────────────────────────────────────────────────
   - id: opnsense
     name: OPNsense Firewall
     category: network
@@ -626,9 +585,7 @@ services:
     compose_file: null
     notes: "Unbound DNS host overrides: mac-mini.internal=192.168.10.145, qnap.internal=192.168.10.201"
     credentials_env: [OPNSENSE_API_KEY, OPNSENSE_API_SECRET]
-
-# ── Zabbix Monitoring Stack ──────────────────────────────────────────────────
-
+    # ── Zabbix Monitoring Stack ──────────────────────────────────────────────────
   - id: zabbix-server
     name: Zabbix Server
     category: monitoring
@@ -646,7 +603,6 @@ services:
       no_new_privileges: false
       cap_drop: []
     compose_file: docker/zabbix/docker-compose.yml
-
   - id: zabbix-web
     name: Zabbix Web UI
     category: monitoring
@@ -664,7 +620,6 @@ services:
       no_new_privileges: false
       cap_drop: []
     compose_file: docker/zabbix/docker-compose.yml
-
   - id: zabbix-agent
     name: Zabbix Agent (Docker)
     category: monitoring
@@ -683,7 +638,6 @@ services:
       cap_drop: []
     compose_file: docker/zabbix/docker-compose.yml
     notes: Native agent on host at 192.168.10.145:10050 is primary; this container monitors Docker internals
-
   - id: zabbix-postgres
     name: Zabbix PostgreSQL + TimescaleDB
     category: data
@@ -702,9 +656,7 @@ services:
       cap_drop: []
     compose_file: docker/zabbix/docker-compose.yml
     notes: Named volume zabbix-pgdata; 256MB shared_buffers (Colima 8GB constraint)
-
-# ── MCP Remote Services ──────────────────────────────────────────────────────
-
+    # ── MCP Remote Services ──────────────────────────────────────────────────────
   - id: mcp-filesystem-remote
     name: MCP Filesystem (Remote HTTP)
     category: mcp
@@ -723,13 +675,12 @@ services:
       cap_drop: []
     compose_file: docker/obot-stack.yml
     notes: Mounts /workspace (repo root read-only); healthcheck uses node HTTP (curl absent from image)
-
   - id: mcp-docker-remote
     name: MCP Docker (Remote HTTP)
     category: mcp
     host: mac-mini
-    container: null
-    image: null
+    container: mcp-docker-remote
+    image: node:22-slim
     port: 8092
     internal_port: 8092
     health_url: "http://localhost:8092/healthz"
@@ -742,7 +693,6 @@ services:
       cap_drop: null
     compose_file: null
     notes: Started via launchd; obot registers as http://host.docker.internal:8092/mcp
-
   - id: mcp-docs-remote
     name: MCP Docs (Remote HTTP)
     category: mcp
@@ -760,12 +710,10 @@ services:
       no_new_privileges: false
       cap_drop: []
     compose_file: docker/obot-stack.yml
-
-# ── Obot Dynamic MCP Shims ───────────────────────────────────────────────────
-# Obot spawns these containers on demand with cryptic IDs (ms1xxxxx pattern).
-# Container names are dynamic — registry uses container: null for all shims.
-# Each shim = one phat MCP server (parent) + one nanobot shim (child) per tool.
-
+    # ── Obot Dynamic MCP Shims ───────────────────────────────────────────────────
+    # Obot spawns these containers on demand with cryptic IDs (ms1xxxxx pattern).
+    # Container names are dynamic — registry uses container: null for all shims.
+    # Each shim = one phat MCP server (parent) + one nanobot shim (child) per tool.
   - id: obot-shim-postgres
     name: Obot MCP Shim — PostgreSQL
     category: mcp-shim
@@ -784,7 +732,6 @@ services:
       cap_drop: []
     compose_file: null
     notes: Dynamic container; Obot assigns ID at spawn time
-
   - id: obot-shim-postgres-nanobot
     name: Obot Nanobot Shim — PostgreSQL
     category: mcp-shim
@@ -803,7 +750,6 @@ services:
       cap_drop: []
     compose_file: null
     notes: Dynamic container; paired with obot-shim-postgres
-
   - id: obot-shim-github
     name: Obot MCP Shim — GitHub
     category: mcp-shim
@@ -822,7 +768,6 @@ services:
       cap_drop: []
     compose_file: null
     notes: Dynamic container; requires GITHUB_TOKEN
-
   - id: obot-shim-github-nanobot
     name: Obot Nanobot Shim — GitHub
     category: mcp-shim
@@ -841,7 +786,6 @@ services:
       cap_drop: []
     compose_file: null
     notes: Dynamic container
-
   - id: obot-shim-weather
     name: Obot MCP Shim — Weather
     category: mcp-shim
@@ -860,7 +804,6 @@ services:
       cap_drop: []
     compose_file: null
     notes: Dynamic container
-
   - id: obot-shim-weather-nanobot
     name: Obot Nanobot Shim — Weather
     category: mcp-shim
@@ -879,7 +822,6 @@ services:
       cap_drop: []
     compose_file: null
     notes: Dynamic container
-
   - id: obot-shim-fitness
     name: Obot MCP Shim — Health & Fitness
     category: mcp-shim
@@ -898,7 +840,6 @@ services:
       cap_drop: []
     compose_file: null
     notes: Dynamic container
-
   - id: obot-shim-fitness-nanobot
     name: Obot Nanobot Shim — Health & Fitness
     category: mcp-shim
@@ -917,7 +858,6 @@ services:
       cap_drop: []
     compose_file: null
     notes: Dynamic container
-
   - id: obot-shim-semgrep
     name: Obot MCP Shim — Semgrep
     category: mcp-shim
@@ -936,7 +876,6 @@ services:
       cap_drop: []
     compose_file: null
     notes: Dynamic container
-
   - id: obot-shim-semgrep-nanobot
     name: Obot Nanobot Shim — Semgrep
     category: mcp-shim
@@ -955,7 +894,6 @@ services:
       cap_drop: []
     compose_file: null
     notes: Dynamic container
-
   - id: obot-shim-strava
     name: Obot MCP Shim — Strava
     category: mcp-shim
@@ -974,7 +912,6 @@ services:
       cap_drop: []
     compose_file: null
     notes: Dynamic container; OAuth token expires ~6h, requires manual refresh
-
   - id: obot-shim-strava-nanobot
     name: Obot Nanobot Shim — Strava
     category: mcp-shim
@@ -993,7 +930,6 @@ services:
       cap_drop: []
     compose_file: null
     notes: Dynamic container
-
   - id: obot-shim-homeassistant
     name: Obot MCP Shim — Home Assistant
     category: mcp-shim
@@ -1012,7 +948,6 @@ services:
       cap_drop: []
     compose_file: null
     notes: Dynamic container; requires HA long-lived access token
-
   - id: obot-shim-homeassistant-nanobot
     name: Obot Nanobot Shim — Home Assistant
     category: mcp-shim
@@ -1031,7 +966,6 @@ services:
       cap_drop: []
     compose_file: null
     notes: Dynamic container
-
   - id: obot-shim-generic-a
     name: Obot MCP Shim — Tool A
     category: mcp-shim
@@ -1050,7 +984,6 @@ services:
       cap_drop: []
     compose_file: null
     notes: Dynamic container (ms1kf6h4 pattern); tool identity in Obot UI
-
   - id: obot-shim-generic-b
     name: Obot MCP Shim — Tool B
     category: mcp-shim
@@ -1069,7 +1002,6 @@ services:
       cap_drop: []
     compose_file: null
     notes: Dynamic container (ms1ljkbg pattern); tool identity in Obot UI
-
   - id: obot-shim-generic-c
     name: Obot MCP Shim — Tool C
     category: mcp-shim
@@ -1088,8 +1020,7 @@ services:
       cap_drop: []
     compose_file: null
     notes: Dynamic container (ms1nfxvf pattern); tool identity in Obot UI
-
-# ── Reverse Proxy & VPN ─────────────────────────────────────────────────────
+    # ── Reverse Proxy & VPN ─────────────────────────────────────────────────────
   - id: caddy
     name: Caddy Reverse Proxy
     category: infrastructure
@@ -1107,7 +1038,6 @@ services:
       no_new_privileges: true
       cap_drop: []
     compose_file: docker/caddy/docker-compose.yml
-
   - id: headscale
     name: Headscale VPN Server
     category: infrastructure
@@ -1125,7 +1055,6 @@ services:
       no_new_privileges: false
       cap_drop: []
     compose_file: docker/headscale/docker-compose.yml
-
   - id: vaultwarden
     name: Vaultwarden Password Manager
     category: platform
@@ -1143,7 +1072,6 @@ services:
       no_new_privileges: false
       cap_drop: []
     compose_file: docker/vaultwarden/docker-compose.yml
-
   - id: nextcloud
     name: Nextcloud + Calendar
     category: platform
@@ -1161,7 +1089,6 @@ services:
       no_new_privileges: false
       cap_drop: []
     compose_file: docker/nextcloud/docker-compose.yml
-
   - id: nextcloud-db
     name: Nextcloud PostgreSQL
     category: data

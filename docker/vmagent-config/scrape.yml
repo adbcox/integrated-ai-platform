@@ -1,42 +1,48 @@
 global:
-  scrape_interval: 15s
-  external_labels:
-    platform: integrated-ai-platform
-    location: mac-mini
+  scrape_interval: 30s
+  scrape_timeout: 15s
 
 scrape_configs:
-  # ── Host system metrics ─────────────────────────────────────────────────────
-  - job_name: node
+  - job_name: node-exporter
     static_configs:
       - targets: ['host.docker.internal:9100']
-    scrape_timeout: 10s
+        labels:
+          host: mac-mini
 
-  # ── AI Platform Dashboard ────────────────────────────────────────────────────
-  - job_name: dashboard
-    static_configs:
-      - targets: ['host.docker.internal:8080']
+  - job_name: caddy
     metrics_path: /metrics
-    scrape_timeout: 10s
-
-  # ── VictoriaMetrics self-monitoring ──────────────────────────────────────────
-  - job_name: victoriametrics
     static_configs:
-      - targets: ['victoriametrics:8428']
+      - targets: ['host.docker.internal:2019']
+        labels:
+          service: caddy
 
-  # ── ISP Monitor (ping latency pushed by isp_monitor.py) ───────────────────
-  # Metrics pushed via /api/v1/import/prometheus or Pushgateway
-  # No pull target needed; server.py pushes on each check cycle
+  - job_name: mcp-filesystem
+    metrics_path: /healthz
+    static_configs:
+      - targets: ['host.docker.internal:8091']
+        labels:
+          service: mcp-filesystem-remote
 
-  # ── OPNsense (install os-prometheus plugin) ───────────────────────────────
-  # System → Firmware → Plugins → os-prometheus, then enable exporter
-  # - job_name: opnsense
-  #   static_configs:
-  #     - targets: ['192.168.10.1:9100']
-  #   scheme: https
-  #   tls_config:
-  #     insecure_skip_verify: true
+  - job_name: mcp-docker
+    metrics_path: /healthz
+    static_configs:
+      - targets: ['host.docker.internal:8092']
+        labels:
+          service: mcp-docker-remote
 
-  # ── Mac Studio (future) ───────────────────────────────────────────────────
-  # - job_name: mac_studio_node
-  #   static_configs:
-  #     - targets: ['192.168.10.210:9100']
+  - job_name: mcp-docs
+    metrics_path: /healthz
+    static_configs:
+      - targets: ['host.docker.internal:8093']
+        labels:
+          service: mcp-docs-remote
+
+  - job_name: cadvisor
+    static_configs:
+      - targets: ['host.docker.internal:8088']
+        labels:
+          service: cadvisor
+
+  - job_name: vmagent
+    static_configs:
+      - targets: ['vmagent:8429']

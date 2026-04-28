@@ -1,0 +1,26 @@
+# Phase 13 Block 1 — Plex MCP (Media Server MCP wrapper)
+# Pattern matches mcp-filesystem-remote / mcp-docs-remote (commit 99ca1bd):
+# node:22-slim base + npx supergateway --stdio <mcp> --outputTransport streamableHttp.
+#
+# Credentials are read from Vault by the deploy script and injected as env;
+# this compose file is for documentation + restart-from-disk (not the live source).
+#
+services:
+  plex-mcp:
+    image: node:22-slim
+    container_name: plex-mcp
+    restart: unless-stopped
+    ports:
+      - "0.0.0.0:8094:8094"
+    environment:
+      PLEX_TOKEN: ${PLEX_TOKEN}
+      PLEX_URL: http://192.168.10.201:32400
+      SONARR_API_KEY: ${SONARR_API_KEY}
+      SONARR_URL: http://host.docker.internal:8989
+      RADARR_API_KEY: ${RADARR_API_KEY}
+      RADARR_URL: http://host.docker.internal:7878
+      TMDB_API_KEY: ${TMDB_API_KEY:-}
+    command:
+      - sh
+      - -c
+      - "npx -y supergateway --stdio 'npx -y @adamwdraper/mcp-server-plex' --outputTransport streamableHttp --port 8094 --cors --healthEndpoint /healthz"
