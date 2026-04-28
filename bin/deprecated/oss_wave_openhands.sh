@@ -1,4 +1,11 @@
 #!/usr/bin/env bash
+# DEPRECATED — do not invoke.
+# This launcher was the pre-compose path (docker run-based).
+# openhands-app is now compose-managed via docker/openhands/docker-compose.yml.
+# Retained for historical reference only. Deprecated as part of post-H1 hygiene pass.
+echo "ERROR: This script is deprecated. Use 'docker compose -f docker/openhands/docker-compose.yml up -d' instead." >&2
+exit 1
+
 set -euo pipefail
 
 REPO_ROOT="$(git rev-parse --show-toplevel)"
