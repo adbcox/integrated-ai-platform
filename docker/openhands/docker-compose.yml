@@ -1,0 +1,73 @@
+services:
+  vault-agent-openhands-app:
+    image: hashicorp/vault:2.0.0
+    container_name: vault-agent-openhands-app
+    restart: "no"
+    environment:
+      VAULT_ADDR: "http://vault-server:8200"
+      SKIP_SETCAP: "true"
+    volumes:
+      - /Users/admin/.vault-approle/openhands-app:/vault/approle:ro
+      - /Users/admin/.vault-agent-secrets/openhands-app:/vault/secrets
+      - ./vault-agent/agent.hcl:/vault/config/agent.hcl:ro
+      - ./vault-agent/credentials.env.tmpl:/vault/agent-config/credentials.env.tmpl:ro
+    command: agent -config=/vault/config/agent.hcl
+    networks:
+      - control-center-net
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+
+  openhands-app:
+    image: docker.openhands.dev/openhands/openhands@sha256:5c0dc26f467bf8e47a6e76308edb7a30af4084b17e23a3460b5467008b12111b
+    container_name: openhands-app
+    restart: unless-stopped
+    depends_on:
+      vault-agent-openhands-app:
+        condition: service_completed_successfully
+    ports:
+      - "3000:3000"
+    environment:
+      LLM_MODEL: "openai/qwen2.5-coder:32b"
+      LLM_BASE_URL: "http://host.docker.internal:11434/v1"
+      SANDBOX_RUNTIME_CONTAINER_IMAGE: "openhands-runtime-custom:0.59"
+      SANDBOX_LOCAL_RUNTIME_URL: "http://host.docker.internal"
+      SANDBOX_USER_ID: "0"
+      RUN_AS_OPENHANDS: "true"
+      USE_HOST_NETWORK: "false"
+      WORKSPACE_BASE: "/opt/workspace_base"
+      FILE_STORE: "local"
+      FILE_STORE_PATH: "/.openhands"
+      INIT_GIT_IN_EMPTY_WORKSPACE: "1"
+    volumes:
+      - /Users/admin/repos/integrated-ai-platform/.local-model-data/openhands-state:/.openhands
+      - /Users/admin/repos/integrated-ai-platform:/opt/workspace
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /Users/admin/.vault-agent-secrets/openhands-app:/vault/secrets:ro
+    entrypoint: ["sh", "-c", "set -a && . /vault/secrets/credentials.env && set +a && exec /app/entrypoint.sh \"$$0\" \"$$@\""]
+    command: ["uvicorn", "openhands.server.listen:app", "--host", "0.0.0.0", "--port", "3000"]
+    networks:
+      - openhands-net
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - SETUID
+      - SETGID
+      - DAC_OVERRIDE
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: 4g
+    cpus: 2.0
+    labels:
+      com.iap.service: "openhands-app"
+      com.iap.tier: "ai"
+
+networks:
+  openhands-net:
+    name: openhands-net
+    driver: bridge
+  control-center-net:
+    name: control-center-net
+    external: true

@@ -15,6 +15,26 @@
 
 1. **Vaultwarden ADMIN_TOKEN format remediation**: token currently stored as plain text; vaultwarden's admin endpoint requires argon2-hashed format. Fix path: generate argon2 hash via `vaultwarden_argon2` utility (or the upstream-recommended `argon2` CLI), update `secret/vaultwarden/admin:admin_token`, `docker restart vaultwarden`. Estimated 15 min. Not blocking on §6 closure because admin endpoint is rarely used and user-facing /api remains functional. Filed during A.1 vaultwarden rewire (2026-04-28).
 
+2. **Git history credential scrub**: Git history contains historical `.env` files. Current `LLM_API_KEY` is the ollama placeholder (`ollama-p...`), not a real secret. History scrub via `git-filter-repo` or BFG is scheduled for the same window as any other historical credential cleanup pass. Risk acceptance: ollama doesn't validate API keys, so the historical placeholder provides no actual access. Filed during A.3 openhands-app rewire (2026-04-28).
+
+3. **openhands sandboxing verification**: `SANDBOX_RUNTIME_CONTAINER_IMAGE=openhands-runtime-custom:0.59` references a locally-built image not present on the host. Either openhands rebuilds on-demand (test by triggering a sandbox), or sandboxing has been broken since the image was deleted. Investigation steps: check openhands logs for runtime-image-build attempts; check last successful sandbox spawn date. Not blocking H1 because cred-delivery is independent of sandboxing functionality. Filed during A.3 openhands-app rewire (2026-04-28).
+
+---
+
+## §13 deferred to-do (CLAUDE.md cleanup pass)
+
+1. **Compose-location split note**: Out-of-repo compose changes (`~/control-center-stack/stacks/*`) require pre/post snapshots in the rewire log because git won't track them automatically. Document in `CLAUDE.md` as a platform rule.
+
+2. **Deprecate `bin/oss_wave_openhands.sh`**: Move to `bin/deprecated/` with header comment: "This launcher was the pre-compose path (docker run-based). openhands-app is now compose-managed via `docker/openhands/docker-compose.yml`. This file is retained for historical reference; do not invoke." Document deprecation in `CLAUDE.md` as a platform rule: pre-compose launcher scripts are deprecated; compose is the canonical lifecycle for all services. Filed during A.3 openhands-app rewire (2026-04-28).
+
+---
+
+## A.3 openhands-app — rewire log
+
+- WORKSPACE_BASE quirk preserved verbatim from running container. Bind mount destination is `/opt/workspace`. Path mismatch could be intentional (parent-dir convention where openhands creates per-conversation subdirs) or pre-existing drift. Not investigating during §6; preserving running behavior to avoid scope creep.
+- Vault `secret/openhands/llm` cleaned: pre-state had `api_key, base_url, model`; post-state has `api_key` only (KV v2 version 2). Per Phase 0 doctrine: secret paths contain ONLY credentials; operational config goes in compose `environment:`. KV v2 retains version 1 history; rollback via `vault kv rollback -version=1` if needed.
+- Docker socket KNOWN-LIMITATION: `/var/run/docker.sock` mount required for openhands sandboxing. Gives effective host root regardless of caps. `cap_drop:[ALL]` reduces blast radius of OTHER attack vectors (openhands code vuln, poisoned LLM response, malicious package).
+
 ---
 
 ## Database password posture (Phase 0 spot-check)
