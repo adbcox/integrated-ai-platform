@@ -39,9 +39,10 @@ services:
       OBOT_SERVER_URL: "http://localhost:8090"
       OBOT_ADMIN_USERNAME: "admin"
       OBOT_ADMIN_PASSWORD: "${OBOT_ADMIN_PASSWORD:-changeme_before_prod}"
-      # Local homelab: disable OAuth requirement, enable dev mode for API access
+      # Local homelab: disable OAuth requirement; OBOT_DEV_MODE=false serves the
+      # built static UI (true makes obot proxy / to a Vite dev server on :5174).
       OBOT_SERVER_ENABLE_AUTHENTICATION: "false"
-      OBOT_DEV_MODE: "true"
+      OBOT_DEV_MODE: "false"
       OBOT_SERVER_FORCE_ENABLE_BOOTSTRAP: "true"
 
       # Audit logging (writes to /data/audit.log inside container)

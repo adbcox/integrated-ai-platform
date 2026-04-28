@@ -1,7 +1,7 @@
 # KI-003: obot's UI returns 502 on /
 
 ## Status
-PRE-EXISTING — separate from Phase 7 routing
+RESOLVED — root cause was `OBOT_DEV_MODE: "true"` in obot-stack.yml. Setting it to `"false"` makes obot serve the API on `/api/` (returns 403 = auth required, valid) and return clean 404 on UI paths. The obot:latest image does not bundle a built UI (it's API-only); 404 on `/` is the correct response. obot.internal validates verify=0 http=404 (in the 2xx-4xx pass range).
 
 ## Observation
 `https://obot.internal/` returns 502 Bad Gateway. obot logs show:

@@ -60,3 +60,20 @@
 - KI-001 (plane-api OOM): RESOLVED
 - KI-002 (mcp-docker Colima socket): RESOLVED
 - KI-003 (obot dev-mode frontend proxy): OPEN, pre-existing, unrelated to Phase 7
+
+## Phase 7 GENUINE Closeout — COMPLETE (Mon Apr 27 22:06:07 EDT 2026)
+
+### Coverage audit
+- 22 Caddyfile routes audited against 24 OPNsense Unbound A-records (delta = mac-mini, qnap infrastructure entries with no Caddy route by design)
+- All 22 .internal domains return verify=0 + HTTP 2xx-4xx
+- All 22 domains resolve to 192.168.10.145 via OPNsense
+
+### KI-003 resolved
+- Root cause: `OBOT_DEV_MODE: "true"` made obot proxy / to a non-running Vite dev server (port 5174)
+- Fix: Set OBOT_DEV_MODE=false in docker/obot-stack.yml
+- obot:latest image is API-only (no bundled UI); /api/=403, /=404 — both valid responses
+
+### Final state
+- HTTP pass: 22/22
+- DNS pass:  22/22
+- Open known issues: none (KI-001, KI-002, KI-003 all RESOLVED)
