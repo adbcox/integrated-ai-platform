@@ -29,6 +29,40 @@
 
 ---
 
+## B.2 zabbix-postgres — rewire log
+
+- Gap-7 verification: MATCH (Vault sha=7e3ff814baef = container env hash, length 31, both via TCP auth probe).
+- Compose service name is `postgres-server` (NOT `zabbix-postgres`); container_name overrides. AppRole + sidecar named `vault-agent-zabbix-postgres` (matches AppRole convention from Phase 0).
+- Image: `timescale/timescaledb:latest-pg16` (postgres 16 + TimescaleDB extension; preserved verbatim from running config).
+- Postgres command preserves all 16 `-c` tuning flags via the `exec docker-entrypoint.sh "$0" "$@"` pattern.
+- §7 hardening: cap_drop=[ALL], cap_add=[CHOWN, SETUID, SETGID, DAC_OVERRIDE], no-new-privileges, mem_limit 512m (covers shared_buffers 256MB + maintenance_work_mem 128MB + headroom; baseline was 197 MiB but configured shared_buffers exceeds that), cpus 2.0.
+- No Colima bind-mount visibility delay this time — RestartCount=0 on first startup. Confirms B.1 retry behavior was a one-off, not a guaranteed pattern; `restart: unless-stopped` is still required as defensive measure.
+- zabbix UI deep probe `/api_jsonrpc.php apiinfo.version` → 200 with valid JSON `{"result":"7.4.9"}` (proves DB-backed chain).
+- Data sanity: 207 public-schema tables + TimescaleDB internal schemas, 415 hosts, 2 users, 18973 items — identical pre/post.
+- **Side finding (deferred)**: `secret/zabbix/db` has `database`, `password`, `username` fields; only `password` is a credential. Per Phase 0 doctrine should be cleaned to `password`-only, but skipped during B.2 to avoid scope creep. Filing as Phase B follow-up.
+- `.env` disposition: `docker/zabbix/.env` retained with all 14 fields (POSTGRES_PASSWORD, ZBX_*, PHP_TZ, image tags, memory tuning). Zabbix-server, zabbix-web, zabbix-agent still consume `${POSTGRES_PASSWORD}` from env. zabbix-postgres no longer references `${POSTGRES_PASSWORD}`. Mixed state expected; closes in Phase C when zabbix-server, zabbix-web, zabbix-agent are rewired.
+- Phase B follow-up: clean `secret/zabbix/db` to `password`-only field.
+
+## B.1 nextcloud-db — rewire log
+
+- Gap-7 verification: MATCH. Sha=7e5128a8078e at verification time.
+- Rewire applied with full canonical pattern (sidecar + entrypoint wrapper + §7 hardening).
+- §7 hardening: cap_drop=[ALL], cap_add=[CHOWN, SETUID, SETGID, DAC_OVERRIDE], no-new-privileges, mem_limit 256m, cpus 1.0. Memory baseline was 54 MiB but 150% (82m) would OOM postgres shared_buffers default; 256m is postgres-safe minimum.
+- ROTATION (doctrine response to inadvertent value exposure during diagnostics): pre-rotation sha=7e5128a8078e (length 44, base64), post-rotation sha=f36e9aa8aa04 (length 44, base64 with `=` padding to match format). Vault audit captured event. ALTER USER ran cleanly via psql heredoc with value passed as env var (not argv). nextcloud's .env temporarily updated (option (i)) and nextcloud force-recreated to pick up new value; full chain re-verified via TCP auth + deep probe `/ocs/v2.php/cloud/capabilities` 200.
+- Issues encountered: `--no-deps` misuse, Colima bind-mount visibility delay (16-retry recovery), hash-extraction newline trap (now baked into doctrine), inadvertent value exposure (now baked into doctrine).
+- Canonical pattern README updated with 4 anti-patterns + KNOWN-LIMITATION + non-root verification path.
+
+## Phase B follow-ups (deferred to post-Phase-B hygiene pass — 30 min bundled)
+
+Pre-existing `/tmp/` files flagged by regression probe check (h). All pre-date B.1 rotation. Do NOT touch during B.2/B.3.
+
+1. **`/tmp/ha-secrets.yaml`** — investigate before delete; confirm not actively read by Home Assistant container.
+2. **`/tmp/rsl-token.html`** — investigate; likely test artifact.
+3. **`/tmp/vault-secrets-only.txt`** — investigate; may contain real secret values from prior session work.
+4. **(4th file flagged by probe)** — identify first via `ls /tmp/*pass* /tmp/*token* /tmp/*secret*`, then triage.
+
+Single ~30-minute hygiene pass after Phase B completes.
+
 ## A.7 open-webui — rewire log
 
 - 2-cred sidecar render: WEBUI_SECRET_KEY (from `secret/open-webui/app:secret_key`) + OPENAI_API_KEY (from `secret/litellm/master:master_key` — open-webui calls litellm via OpenAI-compatible API).

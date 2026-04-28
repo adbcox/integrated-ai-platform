@@ -169,6 +169,25 @@ case "$GATE_ID" in
       result WARN "ollama not reachable on host:11434"
     fi
     ;;
+  B.2|b.2)
+    # zabbix-postgres rewire — verify zabbix UI + API still functional
+    PG_READY=$($DOCKER exec zabbix-postgres pg_isready -U zabbix 2>&1)
+    if /usr/bin/grep -q "accepting connections" <<<"$PG_READY"; then
+      result OK "zabbix-postgres pg_isready: accepting connections"
+    else
+      result FAIL "zabbix-postgres pg_isready: $PG_READY"
+    fi
+    # Deep zabbix probe (DB-backed JSON-RPC)
+    ZBX_API=$(/usr/bin/curl -s -X POST -H "Content-Type: application/json-rpc" \
+      -d '{"jsonrpc":"2.0","method":"apiinfo.version","params":{},"id":1}' \
+      -o /dev/null -w '%{http_code}' --max-time 5 \
+      http://localhost:10080/api_jsonrpc.php 2>/dev/null)
+    if [ "$ZBX_API" = "200" ]; then
+      result OK "zabbix /api_jsonrpc.php (DB-backed deep probe): 200"
+    else
+      result FAIL "zabbix /api_jsonrpc.php: $ZBX_API"
+    fi
+    ;;
   B.1|b.1)
     # nextcloud-db rewire — verify nextcloud → nextcloud-db chain
     NC_DEEP=$($DOCKER exec nextcloud /bin/sh -c 'curl -s -o /dev/null -w "%{http_code}" --max-time 5 http://localhost/ocs/v2.php/cloud/capabilities -H "OCS-APIRequest: true"' 2>/dev/null)
