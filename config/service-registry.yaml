@@ -26,13 +26,19 @@ services:
     health_url: "http://localhost:4000/health/liveliness"
     health_method: GET
     health_expect: 200
-    purpose: Multi-provider LLM routing (Anthropic, OpenAI, Ollama)
+    purpose: Local-only LLM routing (Ollama models). Cloud routes (Anthropic/OpenAI) removed Phase 13.5.
     depends_on: []
     security:
       no_new_privileges: true
       cap_drop: [ALL]
     compose_file: control-center-stack/stacks/gateways/docker-compose.yml
-    credentials_env: [LITELLM_MASTER_KEY, ANTHROPIC_API_KEY, OPENAI_API_KEY]
+    credentials_env: [LITELLM_MASTER_KEY]
+    notes: |
+      Phase 13.5 (2026-04-28): platform now local-only. claude-sonnet, claude-haiku, gpt-4o
+      routes removed from litellm_config.yaml; ANTHROPIC_API_KEY and OPENAI_API_KEY removed
+      from sidecar template + Vault policy. Anthropic Pro access flows directly through
+      `claude-pro` shell function (Claude Code), not through litellm. See CLAUDE.md
+      "LLM Access Doctrine".
   - id: open-webui
     name: Open WebUI
     category: ai

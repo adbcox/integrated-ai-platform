@@ -88,6 +88,36 @@ This is the "AI workstation" or "platform". Pre-2026 alternative terminology (th
 - Pre-compose launcher scripts (e.g., `bin/oss_wave_openhands.sh`) — deprecated; compose is canonical service lifecycle
 - Display of credential values during diagnostics (use hash-based equality verification only; if diagnosis appears to require value inspection, stop and surface for user decision)
 
+### LLM Access Doctrine
+
+The platform's default LLM access is local Ollama via Claude Code:
+
+```
+claude-local       # → local Ollama (free, no quota; orchestrator: qwen2.5-coder:32b)
+claude-pro         # → Anthropic via Pro subscription (uses quota)
+claude (aliased)   # → defaults to claude-local
+```
+
+Use `claude-local` for routine work: implementation, refactoring, documentation, file exploration, code review.
+
+Use `claude-pro` ONLY for high-judgment tasks where Anthropic-quality reasoning is genuinely required. Pro quota is finite; treat it as expensive.
+
+**Platform services must NEVER depend on Anthropic API access.** `secret/anthropic/api` is permanently unused (will be deleted in Phase 13.5 §6). Any service that needs LLM capability uses local models via litellm or Ollama directly.
+
+**Token discipline practices**:
+- Use `/compact` when session context exceeds ~150k tokens
+- Use `/clear` when switching to unrelated work
+- Never load skills you don't need for the current task
+- `claude-local` pins model via shell function; don't override unless intentional
+- `claude-pro` does not pin model — Anthropic defaults apply (don't pass --model with a local-only model name to claude-pro)
+
+**Subagent pattern** (`~/.claude/agents/`):
+- `decomposer` (qwen2.5-coder:32b): breaks complex problems into specs
+- `implementer` (qwen2.5-coder:14b): executes single specs end-to-end
+- `reviewer` (qwen2.5-coder:7b): validates implementation against spec
+
+The orchestrator (Claude Code at the top level) delegates implementation work to subagents to minimize its own quota usage when running under `claude-pro`. Under `claude-local`, the entire chain runs on the Mac Mini's Ollama.
+
 ### Known Hardening Trade-offs
 
 - **ICMP/fping monitoring not available**: zabbix-server uses `cap_drop:[ALL]` which excludes `NET_RAW`. ICMP items will be in unsupported state. Use TCP-based health checks (telnet item type, agent.ping, http.test) instead. Adding `NET_RAW` `cap_add` was rejected as exceeding minimal-cap doctrine.
@@ -97,6 +127,8 @@ This is the "AI workstation" or "platform". Pre-2026 alternative terminology (th
 - **Caddy per-site access logs**: Caddy 2.11.2 syntax for per-site `log` directives needs investigation beyond quick-fix scope. Volume infrastructure (`caddy-logs`) and global access log writer plumbing are in place; per-site enablement deferred to Block 2 work where access-pattern dashboards drive the requirement.
 
 - **Zabbix Prometheus metrics**: zabbix-server 7.4 does not natively expose `/metrics`. Adding `zabbix-prometheus-exporter` (or similar) is an additive deployment, deferred to Block 2 when its metrics are needed in Grafana.
+
+- **Cloud LLM routes deprecated platform-side (Phase 13.5)**: litellm-gateway no longer carries `claude-sonnet`, `claude-haiku`, or `gpt-4o` routes. `secret/anthropic/api` and `secret/openai/api` are deleted from Vault; `ANTHROPIC_API_KEY` and `OPENAI_API_KEY` are no longer rendered into the litellm sidecar template. Platform services depend exclusively on local Ollama models. Anthropic Pro subscription access (when occasionally needed for high-judgment work) flows through the `claude-pro` shell function — Claude Code talking directly to Anthropic — and never traverses platform infrastructure. This decouples the platform from any cloud-LLM availability/quota constraint and matches the user's subscription posture (Pro + ChatGPT Plus, no API credits). See "LLM Access Doctrine" above.
 
 ### Operating Doctrine
 - Master project manager (separate Claude window) is responsible for system health and completion.

@@ -157,6 +157,32 @@ When investigating unknown files for credential content, NEVER read file content
 
 Two incidents established this rule (B.1 nextcloud-db `cat`, T1.4 zabbix-admin `grep`). Codified in canonical pattern to prevent recurrence. Each incident triggered the rotation doctrine (rotate on inadvertent value exposure, even if conversation-local).
 
+#### Sub-pattern — credential-bearing well-known files
+
+Files at known paths that are *known to contain* credentials must NEVER be read via `cat`, `head`, `grep` without `-c`, or any operation that surfaces content. Known-credential files include:
+
+- `~/vault-init-keys.txt` — Shamir unseal keys + initial root token
+- `~/.vault-token`, `~/.vault-token.new`, `~/.vault-token.old` — root tokens
+- `~/.vault-approle/<svc>/role-id`, `~/.vault-approle/<svc>/secret-id` — AppRole credentials
+- `~/.vault-agent-secrets/<svc>/credentials.env` — rendered service credentials
+- Any `.env*` file under `docker/` or `~/control-center-stack/`
+
+```bash
+# WRONG — surfaces token to transcript
+grep 'Initial Root Token' ~/vault-init-keys.txt
+cat ~/.vault-token
+head ~/.vault-approle/litellm-gateway/secret-id
+
+# RIGHT — count-first; pipe directly to env or hash
+grep -c '^Initial Root Token:' ~/vault-init-keys.txt          # count only
+sha256sum ~/.vault-token | head -c 12                           # hash only
+docker exec -e VAULT_TOKEN="$(cat ~/.vault-token)" vault-server vault status
+```
+
+For operational use, always pipe credential file contents directly to `-e VAR=$(cat ...)`, environment variables, or stdin — never through stdout display.
+
+Discovered: Phase 13.5 mid-execution (2026-04-28). A `grep` against `~/vault-init-keys.txt` to locate the root token surfaced the token value in the conversation transcript. Per doctrine, rotated immediately: ephemeral root generated via `vault operator generate-root`, exposed token revoked, `vault-init-keys.txt` updated, audit log captured both events. Rotation cost ~10 minutes; sub-pattern added to prevent recurrence.
+
 ### ANTI-PATTERN — never display credential values in tool output
 
 Never display credential values in tool output, even during diagnostics. Use hash-based equality verification only. If diagnosis appears to require value inspection, stop and surface for user decision. Pressure to debug quickly does not justify exposing credential values.

@@ -3,11 +3,10 @@
 # Updated H1 §6 A.5 (2026-04-28): removed secret/data/plane/api per Finding 7
 # Updated T3.1 (2026-04-28): removed secret/data/openai/api — gpt-4o route
 #   eliminated from litellm config per platform doctrine
-#   (Anthropic as sole accepted cloud dependency)
-
-path "secret/data/anthropic/api" {
-  capabilities = ["read"]
-}
+# Updated Phase 13.5 (2026-04-28): removed secret/data/anthropic/api —
+#   platform is now local-only. Anthropic Pro access flows through
+#   `claude-pro` shell function, not litellm. See CLAUDE.md "LLM Access
+#   Doctrine".
 
 path "secret/data/litellm/master" {
   capabilities = ["read"]
