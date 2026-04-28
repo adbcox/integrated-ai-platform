@@ -40,7 +40,7 @@ docker-plane-db-1          postgres:15-alpine                                Up 
 vm                         victoriametrics/victoria-metrics:v1.99.0          Up 4 hours (healthy)   0.0.0.0:8428->8428/tcp, [::]:8428->8428/tcp
 vmagent                    victoriametrics/vmagent:v1.99.0                   Up 4 hours             0.0.0.0:8429->8429/tcp, [::]:8429->8429/tcp
 uptime-kuma                louislam/uptime-kuma:1                            Up 4 hours (healthy)   0.0.0.0:3033->3001/tcp, [::]:3033->3001/tcp
-node-exporter              prom/node-exporter:v1.7.0                         Up 4 hours             
+node-exporter              prom/node-exporter:v1.7.0                         Up 4 hours
 docker-plane-web-1         makeplane/plane-frontend:stable                   Up 4 hours (healthy)   80/tcp, 0.0.0.0:3001->3000/tcp, [::]:3001->3000/tcp
 docker-plane-beat-1        makeplane/plane-backend:stable                    Up 4 hours             8000/tcp
 docker-plane-worker-1      makeplane/plane-backend:stable                    Up 4 hours             8000/tcp
@@ -51,45 +51,45 @@ openhands-app              5c0dc26f467b                                      Up 
 
 ### Per-container detail (name | state | started | image | ports | mounts | networks)
 ```
-/obot | running | 2026-04-28T02:04:21.562035314Z | obot/obot:latest | 8080/tcp=0.0.0.0:8090 :::8090 ; | bind:/Users/admin/repos/integrated-ai-platform->/workspace(ro) volume:/var/lib/docker/volumes/obot-data/_data->/data(rw) bind:/var/run/docker.sock->/var/run/docker.sock(rw)  | docker_plane-net(172.19.0.25) obot-net(172.22.0.4) 
-/sms1obot-mcp-server-shim | running | 2026-04-28T01:45:38.978734077Z | ghcr.io/nanobot-ai/nanobot:v0.0.67 | 8080/tcp=;8099/tcp=127.0.0.1:32788 ; | volume:/var/lib/docker/volumes/sms1obot-mcp-server-shim-nanobot-config/_data->/config(rw) volume:/var/lib/docker/volumes/9b0b8e6e62d2412418b4b1b83039f5189376208c690537be84afa072a9ef9e73/_data->/data(rw)  | docker_plane-net(172.19.0.24) 
-/sms1obot-mcp-server | running | 2026-04-28T01:45:31.893988253Z | ghcr.io/obot-platform/obot-mcp-server:v0.1.1 | 8080/tcp=127.0.0.1:32787 ; |  | docker_plane-net(172.19.0.26) 
-/docker-plane-api-1 | running | 2026-04-28T01:45:16.582280587Z | makeplane/plane-backend:stable | 8000/tcp=0.0.0.0:8000 :::8000 ; | volume:/var/lib/docker/volumes/docker_plane-logs/_data->/code/plane/logs(rw)  | docker_plane-net(172.19.0.5) 
-/mcp-docker-remote | running | 2026-04-28T01:45:16.704423629Z | node:22-slim | 8092/tcp=0.0.0.0:8092 ; | bind:/var/run/docker.sock->/var/run/docker.sock(rw)  | bridge(172.17.0.2) 
-/headscale | running | 2026-04-28T01:45:16.699733587Z | headscale/headscale:latest | 50443/tcp=0.0.0.0:50443 :::50443 ;8080/tcp=0.0.0.0:8082 :::8082 ; | volume:/var/lib/docker/volumes/headscale-data/_data->/var/lib/headscale(rw) bind:/Users/admin/repos/integrated-ai-platform/docker/headscale/config->/etc/headscale(ro)  | headscale-net(172.26.0.2) 
-/caddy | running | 2026-04-28T01:45:16.56255867Z | caddy:2-alpine | 2019/tcp=0.0.0.0:2019 :::2019 ;443/tcp=0.0.0.0:443 :::443 ;443/udp=;80/tcp=0.0.0.0:80 :::80 ; | volume:/var/lib/docker/volumes/caddy-config/_data->/config(rw) volume:/var/lib/docker/volumes/caddy-data/_data->/data(rw) bind:/Users/admin/repos/integrated-ai-platform/docker/caddy/Caddyfile->/etc/caddy/Caddyfile(ro)  | caddy-net(172.21.0.2) 
-/nextcloud | running | 2026-04-28T01:45:16.700520296Z | nextcloud:29-apache | 80/tcp=0.0.0.0:8085 :::8085 ; | volume:/var/lib/docker/volumes/nextcloud-data/_data->/var/www/html(rw)  | nextcloud-net(172.28.0.3) 
-/nextcloud-db | running | 2026-04-28T01:45:16.565810712Z | postgres:16-alpine | 5432/tcp=; | volume:/var/lib/docker/volumes/nextcloud-db-data/_data->/var/lib/postgresql/data(rw)  | nextcloud-net(172.28.0.2) 
-/vaultwarden | running | 2026-04-28T01:45:16.696654837Z | vaultwarden/server:latest | 80/tcp=0.0.0.0:8083 :::8083 ; | volume:/var/lib/docker/volumes/vaultwarden-data/_data->/data(rw)  | vaultwarden-net(172.27.0.2) 
-/mcp-filesystem-remote | running | 2026-04-28T01:45:16.645286171Z | node:22-slim | 8091/tcp=0.0.0.0:8091 :::8091 ; | bind:/Users/admin/repos/integrated-ai-platform->/workspace(ro)  | obot-net(172.22.0.2) 
-/zabbix-web | running | 2026-04-28T01:45:16.676143087Z | zabbix/zabbix-web-nginx-pgsql:alpine-7.4-latest | 8080/tcp=0.0.0.0:10080 :::10080 ;8443/tcp=0.0.0.0:10443 :::10443 ; |  | zabbix-net(172.25.0.4) 
-/zabbix-agent | running | 2026-04-28T01:45:16.562254462Z | zabbix/zabbix-agent:alpine-7.4-latest | 10050/tcp=; |  | zabbix-net(172.25.0.2) 
-/zabbix-server | running | 2026-04-28T01:45:16.700143379Z | zabbix/zabbix-server-pgsql:alpine-7.4-latest | 10051/tcp=0.0.0.0:10051 :::10051 ; | bind:/Users/admin/repos/integrated-ai-platform/docker/zabbix/server/alertscripts->/usr/lib/zabbix/alertscripts(rw) bind:/Users/admin/repos/integrated-ai-platform/docker/zabbix/server/externalscripts->/usr/lib/zabbix/externalscripts(rw) volume:/var/lib/docker/volumes/7d58b4ae0ccc216e9eb33c38a6ac2c5201ef2e70e53d38018516db64db53264d/_data->/var/lib/zabbix/export(rw) volume:/var/lib/docker/volumes/4c5aa3e5d8e511716f6dee0131310394e43ee2f778b3439248d3ac3c076d451e/_data->/var/lib/zabbix/snmptraps(rw)  | zabbix-net(172.25.0.5) 
-/zabbix-postgres | running | 2026-04-28T01:45:16.642045254Z | timescale/timescaledb:latest-pg16 | 5432/tcp=; | bind:/Users/admin/repos/integrated-ai-platform/docker/zabbix/postgres/backups->/backups(rw) volume:/var/lib/docker/volumes/zabbix-pgdata/_data->/var/lib/postgresql/data(rw)  | zabbix-net(172.25.0.3) 
-/mcp-docs-remote | running | 2026-04-28T01:45:16.695287254Z | node:22-slim | 8093/tcp=0.0.0.0:8093 :::8093 ; |  | obot-net(172.22.0.3) 
-/anythingllm | running | 2026-04-28T01:45:16.702977421Z | mintplexlabs/anythingllm:latest | 3001/tcp=0.0.0.0:3004 :::3004 ; | volume:/var/lib/docker/volumes/docker_anythingllm-storage/_data->/app/server/storage(rw) bind:/Users/admin/repos/integrated-ai-platform/docs->/platform-docs(ro)  | knowledge(172.24.0.2) 
-/homarr | running | 2026-04-28T01:45:16.693267254Z | ghcr.io/ajnart/homarr:latest | 7575/tcp=0.0.0.0:7575 :::7575 ; | volume:/var/lib/docker/volumes/ai-control_homarr-icons/_data->/app/public/icons(rw) volume:/var/lib/docker/volumes/ai-control_homarr-data/_data->/data(rw) bind:/var/run/docker.sock->/var/run/docker.sock(ro) volume:/var/lib/docker/volumes/ai-control_homarr-config/_data->/app/data/configs(rw)  | control-center-net(172.23.0.9) 
-/mcpo-proxy | running | 2026-04-28T01:45:16.693205671Z | nikolaik/python-nodejs:python3.12-nodejs22-slim | 8081/tcp=0.0.0.0:8081 :::8081 ; | bind:/Users/admin/repos/integrated-ai-platform->/workspace(ro)  | control-center-net(172.23.0.5) 
-/homeassistant | running | 2026-04-28T01:45:16.695338254Z | ghcr.io/home-assistant/home-assistant:stable | 8123/tcp=0.0.0.0:8123 :::8123 ; | volume:/var/lib/docker/volumes/dashboards_homeassistant-config/_data->/config(rw)  | control-center-net(172.23.0.6) 
-/grafana-obs | running | 2026-04-28T01:45:16.699417754Z | grafana/grafana:10.4.2 | 3000/tcp=0.0.0.0:3030 :::3030 ; | bind:/Users/admin/repos/integrated-ai-platform/docker/grafana-provisioning->/etc/grafana/provisioning(rw) volume:/var/lib/docker/volumes/docker_grafana-data/_data->/var/lib/grafana(rw)  | observability(172.20.0.4) 
-/open-webui | running | 2026-04-28T01:45:16.704569837Z | ghcr.io/open-webui/open-webui:main | 8080/tcp=0.0.0.0:3002 :::3002 ; | volume:/var/lib/docker/volumes/ai-control_open-webui-data/_data->/app/backend/data(rw)  | control-center-net(172.23.0.8) 
-/litellm-gateway | running | 2026-04-28T01:45:16.694734921Z | ghcr.io/berriai/litellm:main-latest | 4000/tcp=0.0.0.0:4000 :::4000 ; | bind:/Users/admin/control-center-stack/stacks/gateways/litellm_config.yaml->/app/config.yaml(ro) volume:/var/lib/docker/volumes/gateways_litellm-data/_data->/app/data(rw)  | control-center-net(172.23.0.10) 
-/vault-server | running | 2026-04-28T01:45:16.633985629Z | hashicorp/vault:latest | 8200/tcp=0.0.0.0:8200 :::8200 ; | volume:/var/lib/docker/volumes/vault_vault-logs/_data->/vault/logs(rw) bind:/Users/admin/control-center-stack/stacks/vault/vault-config.hcl->/vault/config/vault.hcl(ro) volume:/var/lib/docker/volumes/vault_vault-data/_data->/vault/data(rw) volume:/var/lib/docker/volumes/bea5498d0d5fc54576998db788d6bc7701f6ec87c8e05cb50bc13ac205e6c7bb/_data->/vault/file(rw)  | control-center-net(172.23.0.4) 
-/sonarr | running | 2026-04-28T01:45:16.618964837Z | lscr.io/linuxserver/sonarr:latest | 8989/tcp=0.0.0.0:8989 :::8989 ; | volume:/var/lib/docker/volumes/arr-stack_sonarr-config/_data->/config(rw) bind:/Users/admin/mnt/qnap-downloads/data->/data(rw) bind:/Users/admin/mnt/qnap-downloads->/downloads(rw)  | control-center-net(172.23.0.7) 
-/radarr | running | 2026-04-28T01:45:16.694156712Z | lscr.io/linuxserver/radarr:latest | 7878/tcp=0.0.0.0:7878 :::7878 ; | volume:/var/lib/docker/volumes/arr-stack_radarr-config/_data->/config(rw) bind:/Users/admin/mnt/qnap-downloads/data->/data(rw) bind:/Users/admin/mnt/qnap-downloads->/downloads(rw)  | control-center-net(172.23.0.11) 
-/prowlarr | running | 2026-04-28T01:45:16.692879837Z | lscr.io/linuxserver/prowlarr:latest | 9696/tcp=0.0.0.0:9696 :::9696 ; | volume:/var/lib/docker/volumes/arr-stack_prowlarr-config/_data->/config(rw)  | control-center-net(172.23.0.3) 
-/sportarr | running | 2026-04-28T01:45:16.694019879Z | sportarr/sportarr:latest | 1867/tcp=0.0.0.0:1867 :::1867 ; | volume:/var/lib/docker/volumes/arr-stack_sportarr-config/_data->/config(rw) bind:/Users/admin/mnt/qnap-downloads/sports->/data(rw)  | control-center-net(172.23.0.2) 
-/docker-plane-db-1 | running | 2026-04-28T01:45:16.562408337Z | postgres:15-alpine | 5432/tcp=127.0.0.1:5433 ; | volume:/var/lib/docker/volumes/docker_plane-db-data/_data->/var/lib/postgresql/data(rw)  | docker_plane-net(172.19.0.18) 
-/vm | running | 2026-04-28T01:45:16.589869671Z | victoriametrics/victoria-metrics:v1.99.0 | 8428/tcp=0.0.0.0:8428 :::8428 ; | volume:/var/lib/docker/volumes/docker_vm-data/_data->/storage(rw)  | observability(172.20.0.2) 
-/vmagent | running | 2026-04-28T01:45:16.695161421Z | victoriametrics/vmagent:v1.99.0 | 8429/tcp=0.0.0.0:8429 :::8429 ; | volume:/var/lib/docker/volumes/docker_vmagent-data/_data->/vmagentdata(rw) bind:/Users/admin/repos/integrated-ai-platform/docker/vmagent-config->/etc/vmagent(rw)  | observability(172.20.0.3) 
-/uptime-kuma | running | 2026-04-28T01:45:16.696460712Z | louislam/uptime-kuma:1 | 3001/tcp=0.0.0.0:3033 :::3033 ; | volume:/var/lib/docker/volumes/docker_uptime-data/_data->/app/data(rw)  | observability(172.20.0.5) 
-/node-exporter | running | 2026-04-28T01:45:16.565464587Z | prom/node-exporter:v1.7.0 |  | bind:/proc->/host/proc(ro) bind:/sys->/host/sys(ro) bind:/->/rootfs(ro)  | host(invalid IP) 
-/docker-plane-web-1 | running | 2026-04-28T01:45:16.606191879Z | makeplane/plane-frontend:stable | 3000/tcp=0.0.0.0:3001 :::3001 ;80/tcp=; |  | docker_plane-net(172.19.0.7) 
-/docker-plane-beat-1 | running | 2026-04-28T01:45:16.57772692Z | makeplane/plane-backend:stable | 8000/tcp=; |  | docker_plane-net(172.19.0.10) 
-/docker-plane-worker-1 | running | 2026-04-28T01:45:16.546786462Z | makeplane/plane-backend:stable | 8000/tcp=; |  | docker_plane-net(172.19.0.6) 
-/docker-plane-redis-1 | running | 2026-04-28T01:45:16.546537629Z | redis:7.2-alpine | 6379/tcp=; | volume:/var/lib/docker/volumes/docker_plane-redis-data/_data->/data(rw)  | docker_plane-net(172.19.0.2) 
-/docker-plane-minio-1 | running | 2026-04-28T01:45:16.565658212Z | minio/minio:latest | 9000/tcp=0.0.0.0:9000 :::9000 ;9001/tcp=0.0.0.0:9001 :::9001 ; | volume:/var/lib/docker/volumes/docker_plane-minio-data/_data->/data(rw)  | docker_plane-net(172.19.0.11) 
-/openhands-app | running | 2026-04-28T01:45:16.705830712Z | docker.openhands.dev/openhands/openhands@sha256:5c0dc26f467bf8e47a6e76308edb7a30af4084b17e23a3460b5467008b12111b | 3000/tcp=0.0.0.0:3000 :::3000 ; | bind:/Users/admin/repos/integrated-ai-platform/.local-model-data/openhands-state->/.openhands(rw) bind:/Users/admin/repos/integrated-ai-platform->/opt/workspace(rw) bind:/var/run/docker.sock->/var/run/docker.sock(rw)  | bridge(172.17.0.3) 
+/obot | running | 2026-04-28T02:04:21.562035314Z | obot/obot:latest | 8080/tcp=0.0.0.0:8090 :::8090 ; | bind:/Users/admin/repos/integrated-ai-platform->/workspace(ro) volume:/var/lib/docker/volumes/obot-data/_data->/data(rw) bind:/var/run/docker.sock->/var/run/docker.sock(rw)  | docker_plane-net(172.19.0.25) obot-net(172.22.0.4)
+/sms1obot-mcp-server-shim | running | 2026-04-28T01:45:38.978734077Z | ghcr.io/nanobot-ai/nanobot:v0.0.67 | 8080/tcp=;8099/tcp=127.0.0.1:32788 ; | volume:/var/lib/docker/volumes/sms1obot-mcp-server-shim-nanobot-config/_data->/config(rw) volume:/var/lib/docker/volumes/9b0b8e6e62d2412418b4b1b83039f5189376208c690537be84afa072a9ef9e73/_data->/data(rw)  | docker_plane-net(172.19.0.24)
+/sms1obot-mcp-server | running | 2026-04-28T01:45:31.893988253Z | ghcr.io/obot-platform/obot-mcp-server:v0.1.1 | 8080/tcp=127.0.0.1:32787 ; |  | docker_plane-net(172.19.0.26)
+/docker-plane-api-1 | running | 2026-04-28T01:45:16.582280587Z | makeplane/plane-backend:stable | 8000/tcp=0.0.0.0:8000 :::8000 ; | volume:/var/lib/docker/volumes/docker_plane-logs/_data->/code/plane/logs(rw)  | docker_plane-net(172.19.0.5)
+/mcp-docker-remote | running | 2026-04-28T01:45:16.704423629Z | node:22-slim | 8092/tcp=0.0.0.0:8092 ; | bind:/var/run/docker.sock->/var/run/docker.sock(rw)  | bridge(172.17.0.2)
+/headscale | running | 2026-04-28T01:45:16.699733587Z | headscale/headscale:latest | 50443/tcp=0.0.0.0:50443 :::50443 ;8080/tcp=0.0.0.0:8082 :::8082 ; | volume:/var/lib/docker/volumes/headscale-data/_data->/var/lib/headscale(rw) bind:/Users/admin/repos/integrated-ai-platform/docker/headscale/config->/etc/headscale(ro)  | headscale-net(172.26.0.2)
+/caddy | running | 2026-04-28T01:45:16.56255867Z | caddy:2-alpine | 2019/tcp=0.0.0.0:2019 :::2019 ;443/tcp=0.0.0.0:443 :::443 ;443/udp=;80/tcp=0.0.0.0:80 :::80 ; | volume:/var/lib/docker/volumes/caddy-config/_data->/config(rw) volume:/var/lib/docker/volumes/caddy-data/_data->/data(rw) bind:/Users/admin/repos/integrated-ai-platform/docker/caddy/Caddyfile->/etc/caddy/Caddyfile(ro)  | caddy-net(172.21.0.2)
+/nextcloud | running | 2026-04-28T01:45:16.700520296Z | nextcloud:29-apache | 80/tcp=0.0.0.0:8085 :::8085 ; | volume:/var/lib/docker/volumes/nextcloud-data/_data->/var/www/html(rw)  | nextcloud-net(172.28.0.3)
+/nextcloud-db | running | 2026-04-28T01:45:16.565810712Z | postgres:16-alpine | 5432/tcp=; | volume:/var/lib/docker/volumes/nextcloud-db-data/_data->/var/lib/postgresql/data(rw)  | nextcloud-net(172.28.0.2)
+/vaultwarden | running | 2026-04-28T01:45:16.696654837Z | vaultwarden/server:latest | 80/tcp=0.0.0.0:8083 :::8083 ; | volume:/var/lib/docker/volumes/vaultwarden-data/_data->/data(rw)  | vaultwarden-net(172.27.0.2)
+/mcp-filesystem-remote | running | 2026-04-28T01:45:16.645286171Z | node:22-slim | 8091/tcp=0.0.0.0:8091 :::8091 ; | bind:/Users/admin/repos/integrated-ai-platform->/workspace(ro)  | obot-net(172.22.0.2)
+/zabbix-web | running | 2026-04-28T01:45:16.676143087Z | zabbix/zabbix-web-nginx-pgsql:alpine-7.4-latest | 8080/tcp=0.0.0.0:10080 :::10080 ;8443/tcp=0.0.0.0:10443 :::10443 ; |  | zabbix-net(172.25.0.4)
+/zabbix-agent | running | 2026-04-28T01:45:16.562254462Z | zabbix/zabbix-agent:alpine-7.4-latest | 10050/tcp=; |  | zabbix-net(172.25.0.2)
+/zabbix-server | running | 2026-04-28T01:45:16.700143379Z | zabbix/zabbix-server-pgsql:alpine-7.4-latest | 10051/tcp=0.0.0.0:10051 :::10051 ; | bind:/Users/admin/repos/integrated-ai-platform/docker/zabbix/server/alertscripts->/usr/lib/zabbix/alertscripts(rw) bind:/Users/admin/repos/integrated-ai-platform/docker/zabbix/server/externalscripts->/usr/lib/zabbix/externalscripts(rw) volume:/var/lib/docker/volumes/7d58b4ae0ccc216e9eb33c38a6ac2c5201ef2e70e53d38018516db64db53264d/_data->/var/lib/zabbix/export(rw) volume:/var/lib/docker/volumes/4c5aa3e5d8e511716f6dee0131310394e43ee2f778b3439248d3ac3c076d451e/_data->/var/lib/zabbix/snmptraps(rw)  | zabbix-net(172.25.0.5)
+/zabbix-postgres | running | 2026-04-28T01:45:16.642045254Z | timescale/timescaledb:latest-pg16 | 5432/tcp=; | bind:/Users/admin/repos/integrated-ai-platform/docker/zabbix/postgres/backups->/backups(rw) volume:/var/lib/docker/volumes/zabbix-pgdata/_data->/var/lib/postgresql/data(rw)  | zabbix-net(172.25.0.3)
+/mcp-docs-remote | running | 2026-04-28T01:45:16.695287254Z | node:22-slim | 8093/tcp=0.0.0.0:8093 :::8093 ; |  | obot-net(172.22.0.3)
+/anythingllm | running | 2026-04-28T01:45:16.702977421Z | mintplexlabs/anythingllm:latest | 3001/tcp=0.0.0.0:3004 :::3004 ; | volume:/var/lib/docker/volumes/docker_anythingllm-storage/_data->/app/server/storage(rw) bind:/Users/admin/repos/integrated-ai-platform/docs->/platform-docs(ro)  | knowledge(172.24.0.2)
+/homarr | running | 2026-04-28T01:45:16.693267254Z | ghcr.io/ajnart/homarr:latest | 7575/tcp=0.0.0.0:7575 :::7575 ; | volume:/var/lib/docker/volumes/ai-control_homarr-icons/_data->/app/public/icons(rw) volume:/var/lib/docker/volumes/ai-control_homarr-data/_data->/data(rw) bind:/var/run/docker.sock->/var/run/docker.sock(ro) volume:/var/lib/docker/volumes/ai-control_homarr-config/_data->/app/data/configs(rw)  | control-center-net(172.23.0.9)
+/mcpo-proxy | running | 2026-04-28T01:45:16.693205671Z | nikolaik/python-nodejs:python3.12-nodejs22-slim | 8081/tcp=0.0.0.0:8081 :::8081 ; | bind:/Users/admin/repos/integrated-ai-platform->/workspace(ro)  | control-center-net(172.23.0.5)
+/homeassistant | running | 2026-04-28T01:45:16.695338254Z | ghcr.io/home-assistant/home-assistant:stable | 8123/tcp=0.0.0.0:8123 :::8123 ; | volume:/var/lib/docker/volumes/dashboards_homeassistant-config/_data->/config(rw)  | control-center-net(172.23.0.6)
+/grafana-obs | running | 2026-04-28T01:45:16.699417754Z | grafana/grafana:10.4.2 | 3000/tcp=0.0.0.0:3030 :::3030 ; | bind:/Users/admin/repos/integrated-ai-platform/docker/grafana-provisioning->/etc/grafana/provisioning(rw) volume:/var/lib/docker/volumes/docker_grafana-data/_data->/var/lib/grafana(rw)  | observability(172.20.0.4)
+/open-webui | running | 2026-04-28T01:45:16.704569837Z | ghcr.io/open-webui/open-webui:main | 8080/tcp=0.0.0.0:3002 :::3002 ; | volume:/var/lib/docker/volumes/ai-control_open-webui-data/_data->/app/backend/data(rw)  | control-center-net(172.23.0.8)
+/litellm-gateway | running | 2026-04-28T01:45:16.694734921Z | ghcr.io/berriai/litellm:main-latest | 4000/tcp=0.0.0.0:4000 :::4000 ; | bind:/Users/admin/control-center-stack/stacks/gateways/litellm_config.yaml->/app/config.yaml(ro) volume:/var/lib/docker/volumes/gateways_litellm-data/_data->/app/data(rw)  | control-center-net(172.23.0.10)
+/vault-server | running | 2026-04-28T01:45:16.633985629Z | hashicorp/vault:latest | 8200/tcp=0.0.0.0:8200 :::8200 ; | volume:/var/lib/docker/volumes/vault_vault-logs/_data->/vault/logs(rw) bind:/Users/admin/control-center-stack/stacks/vault/vault-config.hcl->/vault/config/vault.hcl(ro) volume:/var/lib/docker/volumes/vault_vault-data/_data->/vault/data(rw) volume:/var/lib/docker/volumes/bea5498d0d5fc54576998db788d6bc7701f6ec87c8e05cb50bc13ac205e6c7bb/_data->/vault/file(rw)  | control-center-net(172.23.0.4)
+/sonarr | running | 2026-04-28T01:45:16.618964837Z | lscr.io/linuxserver/sonarr:latest | 8989/tcp=0.0.0.0:8989 :::8989 ; | volume:/var/lib/docker/volumes/arr-stack_sonarr-config/_data->/config(rw) bind:/Users/admin/mnt/qnap-downloads/data->/data(rw) bind:/Users/admin/mnt/qnap-downloads->/downloads(rw)  | control-center-net(172.23.0.7)
+/radarr | running | 2026-04-28T01:45:16.694156712Z | lscr.io/linuxserver/radarr:latest | 7878/tcp=0.0.0.0:7878 :::7878 ; | volume:/var/lib/docker/volumes/arr-stack_radarr-config/_data->/config(rw) bind:/Users/admin/mnt/qnap-downloads/data->/data(rw) bind:/Users/admin/mnt/qnap-downloads->/downloads(rw)  | control-center-net(172.23.0.11)
+/prowlarr | running | 2026-04-28T01:45:16.692879837Z | lscr.io/linuxserver/prowlarr:latest | 9696/tcp=0.0.0.0:9696 :::9696 ; | volume:/var/lib/docker/volumes/arr-stack_prowlarr-config/_data->/config(rw)  | control-center-net(172.23.0.3)
+/sportarr | running | 2026-04-28T01:45:16.694019879Z | sportarr/sportarr:latest | 1867/tcp=0.0.0.0:1867 :::1867 ; | volume:/var/lib/docker/volumes/arr-stack_sportarr-config/_data->/config(rw) bind:/Users/admin/mnt/qnap-downloads/sports->/data(rw)  | control-center-net(172.23.0.2)
+/docker-plane-db-1 | running | 2026-04-28T01:45:16.562408337Z | postgres:15-alpine | 5432/tcp=127.0.0.1:5433 ; | volume:/var/lib/docker/volumes/docker_plane-db-data/_data->/var/lib/postgresql/data(rw)  | docker_plane-net(172.19.0.18)
+/vm | running | 2026-04-28T01:45:16.589869671Z | victoriametrics/victoria-metrics:v1.99.0 | 8428/tcp=0.0.0.0:8428 :::8428 ; | volume:/var/lib/docker/volumes/docker_vm-data/_data->/storage(rw)  | observability(172.20.0.2)
+/vmagent | running | 2026-04-28T01:45:16.695161421Z | victoriametrics/vmagent:v1.99.0 | 8429/tcp=0.0.0.0:8429 :::8429 ; | volume:/var/lib/docker/volumes/docker_vmagent-data/_data->/vmagentdata(rw) bind:/Users/admin/repos/integrated-ai-platform/docker/vmagent-config->/etc/vmagent(rw)  | observability(172.20.0.3)
+/uptime-kuma | running | 2026-04-28T01:45:16.696460712Z | louislam/uptime-kuma:1 | 3001/tcp=0.0.0.0:3033 :::3033 ; | volume:/var/lib/docker/volumes/docker_uptime-data/_data->/app/data(rw)  | observability(172.20.0.5)
+/node-exporter | running | 2026-04-28T01:45:16.565464587Z | prom/node-exporter:v1.7.0 |  | bind:/proc->/host/proc(ro) bind:/sys->/host/sys(ro) bind:/->/rootfs(ro)  | host(invalid IP)
+/docker-plane-web-1 | running | 2026-04-28T01:45:16.606191879Z | makeplane/plane-frontend:stable | 3000/tcp=0.0.0.0:3001 :::3001 ;80/tcp=; |  | docker_plane-net(172.19.0.7)
+/docker-plane-beat-1 | running | 2026-04-28T01:45:16.57772692Z | makeplane/plane-backend:stable | 8000/tcp=; |  | docker_plane-net(172.19.0.10)
+/docker-plane-worker-1 | running | 2026-04-28T01:45:16.546786462Z | makeplane/plane-backend:stable | 8000/tcp=; |  | docker_plane-net(172.19.0.6)
+/docker-plane-redis-1 | running | 2026-04-28T01:45:16.546537629Z | redis:7.2-alpine | 6379/tcp=; | volume:/var/lib/docker/volumes/docker_plane-redis-data/_data->/data(rw)  | docker_plane-net(172.19.0.2)
+/docker-plane-minio-1 | running | 2026-04-28T01:45:16.565658212Z | minio/minio:latest | 9000/tcp=0.0.0.0:9000 :::9000 ;9001/tcp=0.0.0.0:9001 :::9001 ; | volume:/var/lib/docker/volumes/docker_plane-minio-data/_data->/data(rw)  | docker_plane-net(172.19.0.11)
+/openhands-app | running | 2026-04-28T01:45:16.705830712Z | docker.openhands.dev/openhands/openhands@sha256:5c0dc26f467bf8e47a6e76308edb7a30af4084b17e23a3460b5467008b12111b | 3000/tcp=0.0.0.0:3000 :::3000 ; | bind:/Users/admin/repos/integrated-ai-platform/.local-model-data/openhands-state->/.openhands(rw) bind:/Users/admin/repos/integrated-ai-platform->/opt/workspace(rw) bind:/var/run/docker.sock->/var/run/docker.sock(rw)  | bridge(172.17.0.3)
 ```
 
 ### Stopped / exited containers
@@ -116,20 +116,20 @@ a03b0b5bd212   obot-net             bridge    local
 0af50475e0bf   vaultwarden-net      bridge    local
 fd5eeb1de305   zabbix-net           bridge    local
 
-  bridge: mcp-docker-remote openhands-app 
-  caddy-net: caddy 
-  control-center-net: prowlarr sportarr mcpo-proxy vault-server radarr litellm-gateway open-webui homeassistant sonarr homarr 
+  bridge: mcp-docker-remote openhands-app
+  caddy-net: caddy
+  control-center-net: prowlarr sportarr mcpo-proxy vault-server radarr litellm-gateway open-webui homeassistant sonarr homarr
   dashboard-net: (empty)
-  docker_plane-net: docker-plane-redis-1 docker-plane-db-1 docker-plane-web-1 docker-plane-worker-1 sms1obot-mcp-server-shim docker-plane-minio-1 sms1obot-mcp-server docker-plane-beat-1 obot docker-plane-api-1 
-  headscale-net: headscale 
-  host: node-exporter 
-  knowledge: anythingllm 
-  nextcloud-net: nextcloud-db nextcloud 
+  docker_plane-net: docker-plane-redis-1 docker-plane-db-1 docker-plane-web-1 docker-plane-worker-1 sms1obot-mcp-server-shim docker-plane-minio-1 sms1obot-mcp-server docker-plane-beat-1 obot docker-plane-api-1
+  headscale-net: headscale
+  host: node-exporter
+  knowledge: anythingllm
+  nextcloud-net: nextcloud-db nextcloud
   none: (empty)
-  obot-net: mcp-docs-remote mcp-filesystem-remote obot 
-  observability: vmagent vm uptime-kuma grafana-obs 
-  vaultwarden-net: vaultwarden 
-  zabbix-net: zabbix-web zabbix-server zabbix-postgres zabbix-agent 
+  obot-net: mcp-docs-remote mcp-filesystem-remote obot
+  observability: vmagent vm uptime-kuma grafana-obs
+  vaultwarden-net: vaultwarden
+  zabbix-net: zabbix-web zabbix-server zabbix-postgres zabbix-agent
 ```
 
 ### Volumes & disk usage
@@ -560,112 +560,112 @@ victoria.internal {
 ### TLS cert info per .internal route
 ```
 --- anythingllm.internal ---
-subject= 
+subject=
 issuer= /CN=Caddy Local Authority - ECC Intermediate
 notBefore=Apr 28 01:55:17 2026 GMT
 notAfter=Apr 28 13:55:17 2026 GMT
 --- dashboard.internal ---
-subject= 
+subject=
 issuer= /CN=Caddy Local Authority - ECC Intermediate
 notBefore=Apr 28 01:55:17 2026 GMT
 notAfter=Apr 28 13:55:17 2026 GMT
 --- grafana.internal ---
-subject= 
+subject=
 issuer= /CN=Caddy Local Authority - ECC Intermediate
 notBefore=Apr 28 01:55:17 2026 GMT
 notAfter=Apr 28 13:55:17 2026 GMT
 --- headscale.internal ---
-subject= 
+subject=
 issuer= /CN=Caddy Local Authority - ECC Intermediate
 notBefore=Apr 28 02:15:17 2026 GMT
 notAfter=Apr 28 14:15:17 2026 GMT
 --- homarr.internal ---
-subject= 
+subject=
 issuer= /CN=Caddy Local Authority - ECC Intermediate
 notBefore=Apr 28 01:55:17 2026 GMT
 notAfter=Apr 28 13:55:17 2026 GMT
 --- litellm.internal ---
-subject= 
+subject=
 issuer= /CN=Caddy Local Authority - ECC Intermediate
 notBefore=Apr 28 01:55:17 2026 GMT
 notAfter=Apr 28 13:55:17 2026 GMT
 --- mcp-docker.internal ---
-subject= 
+subject=
 issuer= /CN=Caddy Local Authority - ECC Intermediate
 notBefore=Apr 27 23:49:25 2026 GMT
 notAfter=Apr 28 11:49:25 2026 GMT
 --- mcp-docs.internal ---
-subject= 
+subject=
 issuer= /CN=Caddy Local Authority - ECC Intermediate
 notBefore=Apr 27 23:49:25 2026 GMT
 notAfter=Apr 28 11:49:25 2026 GMT
 --- mcp-filesystem.internal ---
-subject= 
+subject=
 issuer= /CN=Caddy Local Authority - ECC Intermediate
 notBefore=Apr 27 23:49:25 2026 GMT
 notAfter=Apr 28 11:49:25 2026 GMT
 --- nextcloud.internal ---
-subject= 
+subject=
 issuer= /CN=Caddy Local Authority - ECC Intermediate
 notBefore=Apr 28 02:55:17 2026 GMT
 notAfter=Apr 28 14:55:17 2026 GMT
 --- obot.internal ---
-subject= 
+subject=
 issuer= /CN=Caddy Local Authority - ECC Intermediate
 notBefore=Apr 28 01:55:17 2026 GMT
 notAfter=Apr 28 13:55:17 2026 GMT
 --- ollama.internal ---
-subject= 
+subject=
 issuer= /CN=Caddy Local Authority - ECC Intermediate
 notBefore=Apr 28 01:55:17 2026 GMT
 notAfter=Apr 28 13:55:17 2026 GMT
 --- plane.internal ---
-subject= 
+subject=
 issuer= /CN=Caddy Local Authority - ECC Intermediate
 notBefore=Apr 28 01:55:17 2026 GMT
 notAfter=Apr 28 13:55:17 2026 GMT
 --- prowlarr.internal ---
-subject= 
+subject=
 issuer= /CN=Caddy Local Authority - ECC Intermediate
 notBefore=Apr 28 02:15:17 2026 GMT
 notAfter=Apr 28 14:15:17 2026 GMT
 --- radarr.internal ---
-subject= 
+subject=
 issuer= /CN=Caddy Local Authority - ECC Intermediate
 notBefore=Apr 28 02:15:17 2026 GMT
 notAfter=Apr 28 14:15:17 2026 GMT
 --- sonarr.internal ---
-subject= 
+subject=
 issuer= /CN=Caddy Local Authority - ECC Intermediate
 notBefore=Apr 28 02:15:17 2026 GMT
 notAfter=Apr 28 14:15:17 2026 GMT
 --- uptime.internal ---
-subject= 
+subject=
 issuer= /CN=Caddy Local Authority - ECC Intermediate
 notBefore=Apr 28 01:55:17 2026 GMT
 notAfter=Apr 28 13:55:17 2026 GMT
 --- vault.internal ---
-subject= 
+subject=
 issuer= /CN=Caddy Local Authority - ECC Intermediate
 notBefore=Apr 28 01:55:17 2026 GMT
 notAfter=Apr 28 13:55:17 2026 GMT
 --- vaultwarden.internal ---
-subject= 
+subject=
 issuer= /CN=Caddy Local Authority - ECC Intermediate
 notBefore=Apr 28 02:15:17 2026 GMT
 notAfter=Apr 28 14:15:17 2026 GMT
 --- victoria.internal ---
-subject= 
+subject=
 issuer= /CN=Caddy Local Authority - ECC Intermediate
 notBefore=Apr 27 23:49:25 2026 GMT
 notAfter=Apr 28 11:49:25 2026 GMT
 --- webui.internal ---
-subject= 
+subject=
 issuer= /CN=Caddy Local Authority - ECC Intermediate
 notBefore=Apr 28 01:55:17 2026 GMT
 notAfter=Apr 28 13:55:17 2026 GMT
 --- zabbix.internal ---
-subject= 
+subject=
 issuer= /CN=Caddy Local Authority - ECC Intermediate
 notBefore=Apr 28 01:55:17 2026 GMT
 notAfter=Apr 28 13:55:17 2026 GMT
@@ -888,7 +888,7 @@ docker-plane-minio-1	Up 4 hours	minio/minio:latest
 3001/tcp -> [::]:3004
 
 Inspect summary:
-/anythingllm | running | image=mintplexlabs/anythingllm:latest | ports=3001/tcp=0.0.0.0:3004 :::3004 ; | networks=knowledge(172.24.0.2) 
+/anythingllm | running | image=mintplexlabs/anythingllm:latest | ports=3001/tcp=0.0.0.0:3004 :::3004 ; | networks=knowledge(172.24.0.2)
 ```
 
 ### Workspace + document counts (via API)
@@ -1056,7 +1056,7 @@ Filesystem      Size    Used   Avail Capacity iused ifree %iused  Mounted on
 ### Colima VM allocation
 ```
 PROFILE    STATUS     ARCH       CPUS    MEMORY    DISK     RUNTIME    ADDRESS
-default    Running    aarch64    4       16GiB     60GiB    docker     
+default    Running    aarch64    4       16GiB     60GiB    docker
 ```
 
 ### Colima VM internal disk usage
@@ -1156,4 +1156,3 @@ DNS A-records WITHOUT matching Caddy route (mac-mini, qnap = infrastructure entr
 ### Inventory-run open items (not gaps, just notes)
 - Vault values are NEVER read in this report — only `vault status` and `vault kv list` (paths).
 - `git fetch origin` was run in §10. It's the ONLY remote call in this report; it does not mutate local state.
-

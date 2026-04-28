@@ -24,7 +24,7 @@ class MetricReporter:
             report = self.generate_json_report()
         else:
             raise ValueError("Unsupported format. Use 'txt' or 'json'.")
-        
+
         with open(file_path, 'w') as file:
             file.write(report)
 

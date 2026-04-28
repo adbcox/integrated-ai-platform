@@ -403,7 +403,7 @@ Status: Downloaded newer image for google/cadvisor:latest
 docker.io/google/cadvisor:latest
 WARNING: The requested image's platform (linux/amd64) does not match the detected host platform (linux/arm64/v8) and no specific platform was requested
 23b31fff5ede1800d15d5b7568d96bdb20b9034536c2d10960be94447ddd9341
-cadvisor | Restarting (255) Less than a second ago | 
+cadvisor | Restarting (255) Less than a second ago |
   cAdvisor http://localhost:8088/healthz -> http=000
 ```
 
@@ -679,4 +679,3 @@ revoked: true
 ```
 
 === SECTION 8 COMPLETE — 679 lines ===
-

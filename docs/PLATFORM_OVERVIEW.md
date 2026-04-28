@@ -1,8 +1,8 @@
 # Integrated AI Platform — Platform Overview
 
-**Deployment target:** Mac Mini M4 Pro at 192.168.10.145  
-**Current phase:** Phase 12 Complete (Zabbix monitoring fully operational)  
-**Services running:** 55+ across 6 categories  
+**Deployment target:** Mac Mini M4 Pro at 192.168.10.145
+**Current phase:** Phase 12 Complete (Zabbix monitoring fully operational)
+**Services running:** 55+ across 6 categories
 **Last updated:** 2026-04-27
 
 ---

@@ -5,10 +5,10 @@ logging.basicConfig(level=logging.INFO)
 def batch_process(file_paths):
     """
     Process a list of files in batch.
-    
+
     Args:
         file_paths (list): List of file paths to process.
-        
+
     Returns:
         dict: Dictionary containing the results of processing each file.
     """

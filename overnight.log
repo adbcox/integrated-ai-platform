@@ -26,7 +26,7 @@
   warnings.warn(
 [DEBUG] decompose_item returned: ['Create new file framework/cache_config.py with CacheConfig dataclass (15 lines)', 'Create new file framework/in_memory_cache.py with InMemoryCache class (18 lines)', 'Create new file framework/persistent_cache.py with PersistentCache class (20 lines)', 'Create new file domains/response_cache_layer.py with ResponseCacheLayer class (17 lines)']
    Generated 4 subtasks:
-   [1/4] 
+   [1/4]
 [DEBUG] Calling execute_subtask with: Create new file framework/cache_config.py with CacheConfig dataclass (15 lines)
 [EMERGENCY] execute_subtask() ENTRY: dry_run=False, subtask=Create new file framework/cache_config.py with Cac
 [DEBUG] execute_subtask called with: dry_run=False, subtask='Create new file framework/cache_config.py with CacheConfig dataclass (15 lines)'
@@ -45,9 +45,9 @@
 [DEBUG] Process completed with returncode=1, duration=0.1s
       ❌ Failed: exit 1: no error output
 [DEBUG] execute_subtask returned: False
-   [2/4] 
+   [2/4]
 [DEBUG] Calling execute_subtask with: Create new file framework/in_memory_cache.py with InMemoryCache class (18 lines)
-[EMERGENCY] execute_subtask() ENTRY: dry_run=False, subtask=Create new file framework/in_memory_cache.py with 
+[EMERGENCY] execute_subtask() ENTRY: dry_run=False, subtask=Create new file framework/in_memory_cache.py with
 [DEBUG] execute_subtask called with: dry_run=False, subtask='Create new file framework/in_memory_cache.py with InMemoryCache class (18 lines)'
     • Create new file framework/in_memory_cache.py with InMemoryCache class (18 lines)
 [DEBUG] Running subprocess: python3 /Users/admin/repos/integrated-ai-platform/bin/local_coding_task.py --force-local --batch-mode Create new file framework/in_memory_cache.py with InMemoryCache class (18 lines)
@@ -64,7 +64,7 @@
 [DEBUG] Process completed with returncode=1, duration=0.1s
       ❌ Failed: exit 1: no error output
 [DEBUG] execute_subtask returned: False
-   [3/4] 
+   [3/4]
 [DEBUG] Calling execute_subtask with: Create new file framework/persistent_cache.py with PersistentCache class (20 lines)
 [EMERGENCY] execute_subtask() ENTRY: dry_run=False, subtask=Create new file framework/persistent_cache.py with
 [DEBUG] execute_subtask called with: dry_run=False, subtask='Create new file framework/persistent_cache.py with PersistentCache class (20 lines)'
@@ -83,7 +83,7 @@
 [DEBUG] Process completed with returncode=1, duration=0.1s
       ❌ Failed: exit 1: no error output
 [DEBUG] execute_subtask returned: False
-   [4/4] 
+   [4/4]
 [DEBUG] Calling execute_subtask with: Create new file domains/response_cache_layer.py with ResponseCacheLayer class (17 lines)
 [EMERGENCY] execute_subtask() ENTRY: dry_run=False, subtask=Create new file domains/response_cache_layer.py wi
 [DEBUG] execute_subtask called with: dry_run=False, subtask='Create new file domains/response_cache_layer.py with ResponseCacheLayer class (17 lines)'
@@ -114,7 +114,7 @@
 📋 Decomposing into subtasks...
 [DEBUG] decompose_item returned: ['Create new file framework/cache_manager.py with CacheManager class (15 lines)', 'Create new file framework/persistent_cache.py with PersistentCache class (18 lines)', 'Create new file domains/query_response.py with QueryResponse class (12 lines)', 'Create new file tests/test_cache_manager.py with test cases for CacheManager (10 lines)']
    Generated 4 subtasks:
-   [1/4] 
+   [1/4]
 [DEBUG] Calling execute_subtask with: Create new file framework/cache_manager.py with CacheManager class (15 lines)
 [EMERGENCY] execute_subtask() ENTRY: dry_run=False, subtask=Create new file framework/cache_manager.py with Ca
 [DEBUG] execute_subtask called with: dry_run=False, subtask='Create new file framework/cache_manager.py with CacheManager class (15 lines)'
@@ -133,7 +133,7 @@
 [DEBUG] Process completed with returncode=1, duration=0.1s
       ❌ Failed: exit 1: no error output
 [DEBUG] execute_subtask returned: False
-   [2/4] 
+   [2/4]
 [DEBUG] Calling execute_subtask with: Create new file framework/persistent_cache.py with PersistentCache class (18 lines)
 [EMERGENCY] execute_subtask() ENTRY: dry_run=False, subtask=Create new file framework/persistent_cache.py with
 [DEBUG] execute_subtask called with: dry_run=False, subtask='Create new file framework/persistent_cache.py with PersistentCache class (18 lines)'
@@ -152,7 +152,7 @@
 [DEBUG] Process completed with returncode=1, duration=0.1s
       ❌ Failed: exit 1: no error output
 [DEBUG] execute_subtask returned: False
-   [3/4] 
+   [3/4]
 [DEBUG] Calling execute_subtask with: Create new file domains/query_response.py with QueryResponse class (12 lines)
 [EMERGENCY] execute_subtask() ENTRY: dry_run=False, subtask=Create new file domains/query_response.py with Que
 [DEBUG] execute_subtask called with: dry_run=False, subtask='Create new file domains/query_response.py with QueryResponse class (12 lines)'
@@ -171,7 +171,7 @@
 [DEBUG] Process completed with returncode=1, duration=0.1s
       ❌ Failed: exit 1: no error output
 [DEBUG] execute_subtask returned: False
-   [4/4] 
+   [4/4]
 [DEBUG] Calling execute_subtask with: Create new file tests/test_cache_manager.py with test cases for CacheManager (10 lines)
 [EMERGENCY] execute_subtask() ENTRY: dry_run=False, subtask=Create new file tests/test_cache_manager.py with t
 [DEBUG] execute_subtask called with: dry_run=False, subtask='Create new file tests/test_cache_manager.py with test cases for CacheManager (10 lines)'
@@ -202,7 +202,7 @@
 📋 Decomposing into subtasks...
 [DEBUG] decompose_item returned: ['Create new file framework/cache_config.py with CacheConfig dataclass (15 lines)', 'Create new file framework/in_memory_cache.py with InMemoryCache class (20 lines)', 'Create new file framework/persistent_cache.py with PersistentCache class (18 lines)', 'Create new file bin/cache_manager.py with cache_manager() function (16 lines)']
    Generated 4 subtasks:
-   [1/4] 
+   [1/4]
 [DEBUG] Calling execute_subtask with: Create new file framework/cache_config.py with CacheConfig dataclass (15 lines)
 [EMERGENCY] execute_subtask() ENTRY: dry_run=False, subtask=Create new file framework/cache_config.py with Cac
 [DEBUG] execute_subtask called with: dry_run=False, subtask='Create new file framework/cache_config.py with CacheConfig dataclass (15 lines)'
@@ -221,9 +221,9 @@
 [DEBUG] Process completed with returncode=1, duration=0.1s
       ❌ Failed: exit 1: no error output
 [DEBUG] execute_subtask returned: False
-   [2/4] 
+   [2/4]
 [DEBUG] Calling execute_subtask with: Create new file framework/in_memory_cache.py with InMemoryCache class (20 lines)
-[EMERGENCY] execute_subtask() ENTRY: dry_run=False, subtask=Create new file framework/in_memory_cache.py with 
+[EMERGENCY] execute_subtask() ENTRY: dry_run=False, subtask=Create new file framework/in_memory_cache.py with
 [DEBUG] execute_subtask called with: dry_run=False, subtask='Create new file framework/in_memory_cache.py with InMemoryCache class (20 lines)'
     • Create new file framework/in_memory_cache.py with InMemoryCache class (20 lines)
 [DEBUG] Running subprocess: python3 /Users/admin/repos/integrated-ai-platform/bin/local_coding_task.py --force-local --batch-mode Create new file framework/in_memory_cache.py with InMemoryCache class (20 lines)
@@ -240,7 +240,7 @@
 [DEBUG] Process completed with returncode=1, duration=0.1s
       ❌ Failed: exit 1: no error output
 [DEBUG] execute_subtask returned: False
-   [3/4] 
+   [3/4]
 [DEBUG] Calling execute_subtask with: Create new file framework/persistent_cache.py with PersistentCache class (18 lines)
 [EMERGENCY] execute_subtask() ENTRY: dry_run=False, subtask=Create new file framework/persistent_cache.py with
 [DEBUG] execute_subtask called with: dry_run=False, subtask='Create new file framework/persistent_cache.py with PersistentCache class (18 lines)'
@@ -259,7 +259,7 @@
 [DEBUG] Process completed with returncode=1, duration=0.1s
       ❌ Failed: exit 1: no error output
 [DEBUG] execute_subtask returned: False
-   [4/4] 
+   [4/4]
 [DEBUG] Calling execute_subtask with: Create new file bin/cache_manager.py with cache_manager() function (16 lines)
 [EMERGENCY] execute_subtask() ENTRY: dry_run=False, subtask=Create new file bin/cache_manager.py with cache_ma
 [DEBUG] execute_subtask called with: dry_run=False, subtask='Create new file bin/cache_manager.py with cache_manager() function (16 lines)'

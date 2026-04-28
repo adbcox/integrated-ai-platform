@@ -16,7 +16,7 @@ class HomarrIntegration:
             response = requests.post(url, headers=headers, json=data)
         else:
             raise ValueError("Unsupported HTTP method")
-        
+
         response.raise_for_status()
         return response.json()
 

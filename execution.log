@@ -27,7 +27,7 @@
 ⚠️  Decomposition error: HTTPConnectionPool(host='localhost', port=11434): Read timed out. (read timeout=60)
 [DEBUG] decompose_item returned: ['Review RM-MEDIA-016 in domains/media.py', 'Implement Video quality analysis and encoding presets in domains/media.py', 'Test RM-MEDIA-016 in domains/media.py', 'Document Video quality analysis and encoding presets in domains/media.py']
    Generated 4 subtasks:
-   [1/4] 
+   [1/4]
 [DEBUG] Calling execute_subtask with: Review RM-MEDIA-016 in domains/media.py
 [EMERGENCY] execute_subtask() ENTRY: dry_run=False, subtask=Review RM-MEDIA-016 in domains/media.py
 [DEBUG] execute_subtask called with: dry_run=False, subtask='Review RM-MEDIA-016 in domains/media.py'
@@ -53,7 +53,7 @@
 [DEBUG] Process completed with returncode=1, duration=300.1s
       ❌ Failed: exit 1: no error output
 [DEBUG] execute_subtask returned: False
-   [2/4] 
+   [2/4]
 [DEBUG] Calling execute_subtask with: Implement Video quality analysis and encoding presets in domains/media.py
 [EMERGENCY] execute_subtask() ENTRY: dry_run=False, subtask=Implement Video quality analysis and encoding pres
 [DEBUG] execute_subtask called with: dry_run=False, subtask='Implement Video quality analysis and encoding presets in domains/media.py'
@@ -78,7 +78,7 @@
 [DEBUG] Process started with PID 18864, waiting for completion with timeout=600s
       ❌ Failed: timeout after 600s
 [DEBUG] execute_subtask returned: False
-   [3/4] 
+   [3/4]
 [DEBUG] Calling execute_subtask with: Test RM-MEDIA-016 in domains/media.py
 [EMERGENCY] execute_subtask() ENTRY: dry_run=False, subtask=Test RM-MEDIA-016 in domains/media.py
 [DEBUG] execute_subtask called with: dry_run=False, subtask='Test RM-MEDIA-016 in domains/media.py'
@@ -101,7 +101,7 @@
 [DEBUG] Process started with PID 25238, waiting for completion with timeout=600s
       ❌ Failed: timeout after 600s
 [DEBUG] execute_subtask returned: False
-   [4/4] 
+   [4/4]
 [DEBUG] Calling execute_subtask with: Document Video quality analysis and encoding presets in domains/media.py
 [EMERGENCY] execute_subtask() ENTRY: dry_run=False, subtask=Document Video quality analysis and encoding prese
 [DEBUG] execute_subtask called with: dry_run=False, subtask='Document Video quality analysis and encoding presets in domains/media.py'
@@ -137,7 +137,7 @@
 ⚠️  Decomposition error: HTTPConnectionPool(host='localhost', port=11434): Read timed out. (read timeout=60)
 [DEBUG] decompose_item returned: ['Review RM-MEDIA-016 in domains/media.py', 'Implement Video quality analysis and encoding presets in domains/media.py', 'Test RM-MEDIA-016 in domains/media.py', 'Document Video quality analysis and encoding presets in domains/media.py']
    Generated 4 subtasks:
-   [1/4] 
+   [1/4]
 [DEBUG] Calling execute_subtask with: Review RM-MEDIA-016 in domains/media.py
 [EMERGENCY] execute_subtask() ENTRY: dry_run=False, subtask=Review RM-MEDIA-016 in domains/media.py
 [DEBUG] execute_subtask called with: dry_run=False, subtask='Review RM-MEDIA-016 in domains/media.py'
@@ -160,7 +160,7 @@
 [DEBUG] Process started with PID 35880, waiting for completion with timeout=600s
       ❌ Failed: timeout after 600s
 [DEBUG] execute_subtask returned: False
-   [2/4] 
+   [2/4]
 [DEBUG] Calling execute_subtask with: Implement Video quality analysis and encoding presets in domains/media.py
 [EMERGENCY] execute_subtask() ENTRY: dry_run=False, subtask=Implement Video quality analysis and encoding pres
 [DEBUG] execute_subtask called with: dry_run=False, subtask='Implement Video quality analysis and encoding presets in domains/media.py'
@@ -184,7 +184,7 @@
 [DEBUG] Process completed with returncode=-15, duration=361.0s
       ❌ Failed: exit -15: no error output
 [DEBUG] execute_subtask returned: False
-   [3/4] 
+   [3/4]
 [DEBUG] Calling execute_subtask with: Test RM-MEDIA-016 in domains/media.py
 [EMERGENCY] execute_subtask() ENTRY: dry_run=False, subtask=Test RM-MEDIA-016 in domains/media.py
 [DEBUG] execute_subtask called with: dry_run=False, subtask='Test RM-MEDIA-016 in domains/media.py'
@@ -196,7 +196,7 @@
 ess started with PID 28704, waiting for completion with timeout=600s
       ❌ Failed: timeout after 600s
 [DEBUG] execute_subtask returned: False
-   [6/7] 
+   [6/7]
 [DEBUG] Calling execute_subtask with: Configure log aggregation rules in config/aggregation_rules.py
 [EMERGENCY] execute_subtask() ENTRY: dry_run=False, subtask=Configure log aggregation rules in config/aggregat
 [DEBUG] execute_subtask called with: dry_run=False, subtask='Configure log aggregation rules in config/aggregation_rules.py'
@@ -219,7 +219,7 @@ ess started with PID 28704, waiting for completion with timeout=600s
 [DEBUG] Process started with PID 33569, waiting for completion with timeout=600s
       ❌ Failed: timeout after 600s
 [DEBUG] execute_subtask returned: False
-   [7/7] 
+   [7/7]
 [DEBUG] Calling execute_subtask with: Test the entire logging pipeline in tests/logging_pipeline_test.py
 [EMERGENCY] execute_subtask() ENTRY: dry_run=False, subtask=Test the entire logging pipeline in tests/logging_
 [DEBUG] execute_subtask called with: dry_run=False, subtask='Test the entire logging pipeline in tests/logging_pipeline_test.py'
@@ -255,7 +255,7 @@ ess started with PID 28704, waiting for completion with timeout=600s
 ⚠️  Decomposition error: HTTPConnectionPool(host='localhost', port=11434): Read timed out. (read timeout=60)
 [DEBUG] decompose_item returned: ['Review RM-OPS-015 in domains/ops.py', 'Implement Log aggregation and analysis (ELK/Loki) in domains/ops.py', 'Test RM-OPS-015 in domains/ops.py', 'Document Log aggregation and analysis (ELK/Loki) in domains/ops.py']
    Generated 4 subtasks:
-   [1/4] 
+   [1/4]
 [DEBUG] Calling execute_subtask with: Review RM-OPS-015 in domains/ops.py
 [EMERGENCY] execute_subtask() ENTRY: dry_run=False, subtask=Review RM-OPS-015 in domains/ops.py
 [DEBUG] execute_subtask called with: dry_run=False, subtask='Review RM-OPS-015 in domains/ops.py'

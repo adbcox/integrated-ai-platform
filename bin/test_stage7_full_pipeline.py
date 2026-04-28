@@ -17,11 +17,11 @@ def find_latest_executor_log() -> Optional[Path]:
     stage3_dir = REPO_ROOT / "artifacts" / "stage3_manager"
     if not stage3_dir.exists():
         return None
-    
+
     executor_logs = list(stage3_dir.glob("*.executor.json"))
     if not executor_logs:
         return None
-    
+
     executor_logs.sort(key=lambda p: p.stat().st_mtime, reverse=True)
     return executor_logs[0]
 
@@ -35,11 +35,11 @@ def main() -> int:
     print("FULL STAGE 7 PIPELINE INTEGRATION TEST")
     print("Testing Stage 7 → Stage 6 → Stage 5 → Stage 4 → Stage 3 flow")
     print("=" * 70)
-    
+
     # Create test file with a clear modification need
     test_dir = REPO_ROOT / "artifacts" / "stage7_full_test"
     test_dir.mkdir(parents=True, exist_ok=True)
-    
+
     test_file = test_dir / "utilities.py"
     original_content = '''def process_data(items):
     return items
@@ -47,11 +47,11 @@ def main() -> int:
     test_file.write_text(original_content, encoding="utf-8")
     print(f"\n[Setup] Created test file: {test_file.relative_to(REPO_ROOT)}")
     print(f"Original content ({len(original_content)} bytes)")
-    
+
     # Test with a simple, clear query
     plan_id = f"stage7-full-test-{int(time.time())}"
     query = "process_data function with better documentation"
-    
+
     cmd = [
         sys.executable,
         str(REPO_ROOT / "bin" / "stage7_manager.py"),
@@ -62,14 +62,14 @@ def main() -> int:
         "--max-subplans", "1",
         "--subplan-size", "1",
     ]
-    
+
     print(f"\n[Execution] Running Stage 7 with query: {query}")
     result = subprocess.run(cmd, capture_output=True, text=True)
-    
+
     print(f"Return code: {result.returncode}")
     if result.returncode != 0:
         print(f"Stderr: {result.stderr[-300:] if result.stderr else 'None'}")
-    
+
     # Wait for processing
     time.sleep(2)
 
@@ -91,7 +91,7 @@ def main() -> int:
     print(f"\n[Stage 3] Checking executor invocation...")
     # Look for the most recent executor log (assumes it was just created)
     latest_executor_log = find_latest_executor_log()
-    
+
     executor_name = None
     if latest_executor_log:
         try:
@@ -101,26 +101,26 @@ def main() -> int:
             print(f"  Executor used: {executor_name}")
         except:
             pass
-    
+
     # Check file modification
     print(f"\n[File Modification]")
     modified_content = test_file.read_text(encoding="utf-8")
     file_changed = modified_content != original_content
-    
+
     if file_changed:
         print(f"✓ File was modified")
         print(f"  Original: {len(original_content)} bytes")
         print(f"  Modified: {len(modified_content)} bytes")
     else:
         print(f"⚠ File was not modified (may still be processing)")
-    
+
     # Report results
     print(f"\n{'=' * 70}")
     print("[Summary]")
     print(f"  Plan created: {'YES' if stage7_plan else 'NO'}")
     print(f"  Executor used: {executor_name or 'NOT DETECTED'}")
     print(f"  File modified: {'YES' if file_changed else 'NO'}")
-    
+
     if executor_name == "ClaudeCodeExecutor" and file_changed:
         print(f"\n✓✓✓ PIPELINE SUCCESS ✓✓✓")
         print(f"Full Stage 7 pipeline flows to Stage 3 with real modifications!")

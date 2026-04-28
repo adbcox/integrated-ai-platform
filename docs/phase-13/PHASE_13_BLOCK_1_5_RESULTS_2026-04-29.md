@@ -414,7 +414,7 @@ D  docker/vmagent-config/scrape.yml.pre-block1
 ```
 
 ### 7.6 Audit results
-  ❌ Vaultwarden keys: 
+  ❌ Vaultwarden keys:
   ❌ secret/grafana/api missing
   ❌ secret/anythingllm/api missing
   ✅ cAdvisor: Up 3 minutes (healthy)

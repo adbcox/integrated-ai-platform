@@ -1,7 +1,7 @@
 # COMPLETE INFRASTRUCTURE INVENTORY
-**Generated:** 2026-04-27 08:45  
-**System:** Mac Mini M5 (192.168.10.145) — Autonomous AI Infrastructure  
-**Phases:** 1–12 (Phase 12: Zabbix deployed)  
+**Generated:** 2026-04-27 08:45
+**System:** Mac Mini M5 (192.168.10.145) — Autonomous AI Infrastructure
+**Phases:** 1–12 (Phase 12: Zabbix deployed)
 **Uptime:** 4 days, 29 minutes | Load: 7.65 / 7.26 / 7.08
 
 ---
@@ -63,7 +63,7 @@ docker/zabbix/docker-compose.yml
 
 ## SECTION 2: CMDB — SERVICE REGISTRY
 
-**File:** `config/service-registry.yaml` — 628 lines, 32 registered services  
+**File:** `config/service-registry.yaml` — 628 lines, 32 registered services
 **Validation:** All 32 registry containers confirmed running; 5 health checks failed (timeouts — see Section 4); 23 undocumented containers (Obot phat shims + Zabbix stack)
 
 ### Services by Category
@@ -204,8 +204,8 @@ docker/zabbix/docker-compose.yml
 | Strava | 24 | OAuth — token expires ~6h, no auto-refresh |
 | Home Assistant | 3 | Token from docker/.env |
 
-**Phat image:** `ghcr.io/obot-platform/mcp-images/phat:v0.20.2`  
-**Shim image:** `ghcr.io/nanobot-ai/nanobot:v0.0.67`  
+**Phat image:** `ghcr.io/obot-platform/mcp-images/phat:v0.20.2`
+**Shim image:** `ghcr.io/nanobot-ai/nanobot:v0.0.67`
 **Active phat instances:** 7 containers + 7 shim containers = 14 running
 
 #### Claude Code Local MCP Servers (running as host processes)
@@ -251,9 +251,9 @@ Exposes 14 filesystem MCP tools as OpenAPI REST endpoints. Primarily used for HT
 | zabbix-web | zabbix/zabbix-web-nginx-pgsql:alpine-7.4-latest | ✅ healthy |
 | zabbix-agent | zabbix/zabbix-agent:alpine-7.4-latest | ✅ up 26m |
 
-**Ports:** 10051 (server), 10080 (web HTTP), 10443 (web HTTPS)  
-**DB:** TimescaleDB on pg16 (~185 MB)  
-**Network:** zabbix-net (isolated)  
+**Ports:** 10051 (server), 10080 (web HTTP), 10443 (web HTTPS)
+**DB:** TimescaleDB on pg16 (~185 MB)
+**Network:** zabbix-net (isolated)
 **Documentation:** 7 runbook files in docs/zabbix/
 
 ### Ollama (Native Host Process)
@@ -267,7 +267,7 @@ Exposes 14 filesystem MCP tools as OpenAPI REST endpoints. Primarily used for HT
 | devstral:latest | 14.3 GB |
 | qwen2.5-coder:32b | 19.9 GB |
 
-**Total model storage:** ~57.1 GB  
+**Total model storage:** ~57.1 GB
 **Port:** 11434 — ✅ responding
 
 ### HashiCorp Vault
@@ -304,7 +304,7 @@ Exposes 14 filesystem MCP tools as OpenAPI REST endpoints. Primarily used for HT
 | QNAP NAS | 192.168.10.201 | Storage + Plex | ✅ reachable |
 | Home Assistant (physical) | 192.168.10.141 | Automation hub | ✅ HTTP 200 |
 
-**DNS resolution:** `mac-mini.internal` ✅ | `qnap.internal` ✅  
+**DNS resolution:** `mac-mini.internal` ✅ | `qnap.internal` ✅
 **Network interfaces:** en0 (Ethernet primary), en1 (Wi-Fi), en5-en7 (USB), bridge0
 
 ### Home Assistant

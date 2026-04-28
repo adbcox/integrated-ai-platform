@@ -49,9 +49,9 @@ ls: /Users/admin/.vault-token: No such file or directory
     L3: Unseal Key 3:
     L4: Unseal Key 4:
     L5: Unseal Key 5:
-    L6:   
+    L6:
     L7: Initial Root Token:
-    L8:   
+    L8:
     L9: Vault initialized with
     L10: distribute the key
 ```
@@ -72,7 +72,7 @@ ls: /Users/admin/.vault-token: No such file or directory
   "encoded_token": 0
 }
 
-  nonce captured: 
+  nonce captured:
   OTP length: 0 chars
 ```
 
@@ -138,8 +138,8 @@ Code: 403. Errors:
 * permission denied
 
 Field check:
-  secret/grafana/api keys: 
-  secret/anythingllm/api keys: 
+  secret/grafana/api keys:
+  secret/anythingllm/api keys:
 ```
 
 === SECTION 4 COMPLETE — 143 lines ===
@@ -313,4 +313,3 @@ token will not cascade to the new one.
 
 
 === SECTION 5 (FALLBACK) COMPLETE — 313 lines ===
-

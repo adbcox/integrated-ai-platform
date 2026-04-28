@@ -1120,7 +1120,7 @@ Search: grep -r 'vault/data' ~/repos/integrated-ai-platform/
 /Users/admin/repos/integrated-ai-platform/docs/phase-13/PHASE_13_BLOCK_1_6_VAULT_RECOVERY_2026-04-29.md:258:  path = "/vault/data"
 /Users/admin/repos/integrated-ai-platform/docs/phase-13/PHASE_13_FOUNDATION_AUDIT_2026-04-29.md:1046:  path = "/vault/data"
 /Users/admin/repos/integrated-ai-platform/docs/phase-13/PHASE_13_FOUNDATION_AUDIT_2026-04-29.md:1099:Search: grep -r 'vault/data' ~/repos/integrated-ai-platform/
-/Users/admin/repos/integrated-ai-platform/docs/phase-13/PHASE_13_INVENTORY_2026-04-28.md:77:/vault-server | running | 2026-04-28T01:45:16.633985629Z | hashicorp/vault:latest | 8200/tcp=0.0.0.0:8200 :::8200 ; | volume:/var/lib/docker/volumes/vault_vault-logs/_data->/vault/logs(rw) bind:/Users/admin/control-center-stack/stacks/vault/vault-config.hcl->/vault/config/vault.hcl(ro) volume:/var/lib/docker/volumes/vault_vault-data/_data->/vault/data(rw) volume:/var/lib/docker/volumes/bea5498d0d5fc54576998db788d6bc7701f6ec87c8e05cb50bc13ac205e6c7bb/_data->/vault/file(rw)  | control-center-net(172.23.0.4) 
+/Users/admin/repos/integrated-ai-platform/docs/phase-13/PHASE_13_INVENTORY_2026-04-28.md:77:/vault-server | running | 2026-04-28T01:45:16.633985629Z | hashicorp/vault:latest | 8200/tcp=0.0.0.0:8200 :::8200 ; | volume:/var/lib/docker/volumes/vault_vault-logs/_data->/vault/logs(rw) bind:/Users/admin/control-center-stack/stacks/vault/vault-config.hcl->/vault/config/vault.hcl(ro) volume:/var/lib/docker/volumes/vault_vault-data/_data->/vault/data(rw) volume:/var/lib/docker/volumes/bea5498d0d5fc54576998db788d6bc7701f6ec87c8e05cb50bc13ac205e6c7bb/_data->/vault/file(rw)  | control-center-net(172.23.0.4)
 /Users/admin/repos/integrated-ai-platform/docs/phase-13/PHASE_13_BLOCK_1_7_VAULT_20_RECOVERY_2026-04-29.md:68:  path = "/vault/data"
 /Users/admin/repos/integrated-ai-platform/docs/phase-13/PHASE_13_BLOCK_1_7_VAULT_20_RECOVERY_2026-04-29.md:86:  path = "/vault/data"
 
@@ -1616,7 +1616,7 @@ Certificate:
         Subject Public Key Info:
             Public Key Algorithm: id-ecPublicKey
                 Public-Key: (256 bit)
-                pub: 
+                pub:
                     04:57:d5:0e:bc:80:59:82:33:3b:d8:1b:0a:93:2c:
                     35:a2:ef:46:94:ef:83:d7:4f:3c:55:a0:87:7e:39:
                     be:3d:1a:91:7a:09:91:41:02:4e:46:76:fc:15:0b:
@@ -1632,22 +1632,22 @@ Certificate:
 ### 6.2 Per-service cert validity
 ```
 --- vault.internal ---
-subject= 
+subject=
 issuer= /CN=Caddy Local Authority - ECC Intermediate
 notBefore=Apr 28 10:05:17 2026 GMT
 notAfter=Apr 28 22:05:17 2026 GMT
 --- grafana.internal ---
-subject= 
+subject=
 issuer= /CN=Caddy Local Authority - ECC Intermediate
 notBefore=Apr 28 10:05:17 2026 GMT
 notAfter=Apr 28 22:05:17 2026 GMT
 --- plane.internal ---
-subject= 
+subject=
 issuer= /CN=Caddy Local Authority - ECC Intermediate
 notBefore=Apr 28 10:05:17 2026 GMT
 notAfter=Apr 28 22:05:17 2026 GMT
 --- homepage.internal ---
-subject= 
+subject=
 issuer= /CN=Caddy Local Authority - ECC Intermediate
 notBefore=Apr 28 06:47:05 2026 GMT
 notAfter=Apr 28 18:47:05 2026 GMT
@@ -1655,12 +1655,12 @@ notAfter=Apr 28 18:47:05 2026 GMT
 unable to load certificate
 8299180160:error:09FFF06C:PEM routines:CRYPTO_internal:no start line:/AppleInternal/Library/BuildRoots/4~CG4rugD0hu_MMyfOtGzXkKREnKN0qX1CS-H2E2k/Library/Caches/com.apple.xbs/Sources/libressl/libressl-3.3/crypto/pem/pem_lib.c:694:Expecting: TRUSTED CERTIFICATE
 --- webui.internal ---
-subject= 
+subject=
 issuer= /CN=Caddy Local Authority - ECC Intermediate
 notBefore=Apr 28 10:05:17 2026 GMT
 notAfter=Apr 28 22:05:17 2026 GMT
 --- plex-mcp.internal ---
-subject= 
+subject=
 issuer= /CN=Caddy Local Authority - ECC Intermediate
 notBefore=Apr 28 06:47:05 2026 GMT
 notAfter=Apr 28 18:47:05 2026 GMT

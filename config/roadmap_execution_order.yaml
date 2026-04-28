@@ -238,4 +238,3 @@ high_backlog_sample:
     name: "[RM-CI-001] GitHub Actions workflow optimization"
     priority: high
     state: Backlog
-

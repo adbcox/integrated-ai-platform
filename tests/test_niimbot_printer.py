@@ -7,10 +7,10 @@ class TestNiimbotPrinter(unittest.TestCase):
     def test_print_labels(self, mock_printer):
         # Arrange
         labels = ["label1", "label2", "label3"]
-        
+
         # Act
         niimbot_printer.print_labels(labels)
-        
+
         # Assert
         mock_printer.assert_called_with("label1")
         mock_printer.assert_called_with("label2")

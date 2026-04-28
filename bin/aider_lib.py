@@ -135,4 +135,3 @@ def fnmatch_any(paths: Iterable[str], patterns: Sequence[str]) -> int:
                 score += 1
                 break
     return score
-

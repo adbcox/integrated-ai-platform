@@ -17,27 +17,27 @@ def find_latest_executor_log() -> Optional[Path]:
     stage3_dir = REPO_ROOT / "artifacts" / "stage3_manager"
     if not stage3_dir.exists():
         return None
-    
+
     executor_logs = list(stage3_dir.glob("*.executor.json"))
     if not executor_logs:
         return None
-    
+
     # Sort by modification time, get the most recent
     executor_logs.sort(key=lambda p: p.stat().st_mtime, reverse=True)
     return executor_logs[0]
 
 def main() -> int:
     """Test stage3_manager executor abstraction directly."""
-    
+
     print("=" * 70)
     print("STAGE 3 DIRECT EXECUTOR ABSTRACTION TEST")
     print("Testing bounded task message format with actual file modification")
     print("=" * 70)
-    
+
     # Create test target file
     test_dir = REPO_ROOT / "artifacts" / "stage3_direct_test"
     test_dir.mkdir(parents=True, exist_ok=True)
-    
+
     test_file = test_dir / "functions.py"
     original_content = '''def calculate_sum(a, b):
     return a + b
@@ -48,7 +48,7 @@ def calculate_product(a, b):
     test_file.write_text(original_content, encoding="utf-8")
     print(f"\n[Setup] Created test file: {test_file.relative_to(REPO_ROOT)}")
     print(f"Original content ({len(original_content)} bytes)")
-    
+
     # Create properly formatted bounded task message
     # Format required: target:: replace exact text 'old' with 'new'
     target_relpath = str(test_file.relative_to(REPO_ROOT))
@@ -56,10 +56,10 @@ def calculate_product(a, b):
     new_literal = '''def calculate_sum(a, b):
     """Add two numbers and return the sum."""
     return a + b'''
-    
+
     # Message must have: target:: and match "replace exact text '...' with '...'"
     message = f"{target_relpath}:: replace exact text '{old_literal}' with '{new_literal}'"
-    
+
     # Call stage3_manager with the test file and bounded task message
     cmd = [
         sys.executable,
@@ -71,13 +71,13 @@ def calculate_product(a, b):
         "--lines", "1-3",
         "--notes", "Direct Stage 3 executor test",
     ]
-    
+
     print(f"\n[Execution] Calling stage3_manager with bounded task message...")
     print(f"Message format: target:: replace exact text 'old' with 'new'")
     print(f"Target: {target_relpath}")
-    
+
     result = subprocess.run(cmd, capture_output=True, text=True)
-    
+
     print(f"\nReturn code: {result.returncode}")
     if result.stdout:
         lines = result.stdout.split('\n')
@@ -87,14 +87,14 @@ def calculate_product(a, b):
                 print(f"  {line}")
     if result.stderr:
         print(f"Stderr:\n{result.stderr[-400:]}")
-    
+
     # Give it a moment for file I/O
     time.sleep(0.5)
-    
+
     # Check executor log (find most recent)
     print(f"\n[Executor Detection]")
     executor_log = find_latest_executor_log()
-    
+
     executor_name = None
     if executor_log:
         try:
@@ -106,11 +106,11 @@ def calculate_product(a, b):
             print(f"✗ Could not parse executor log: {e}")
     else:
         print(f"✗ No executor log found in artifacts/stage3_manager/")
-    
+
     # Check if file was actually modified
     print(f"\n[File Modification]")
     modified_content = test_file.read_text(encoding="utf-8")
-    
+
     if new_literal in modified_content:
         print(f"✓ File was modified successfully!")
         print(f"  Original length: {len(original_content)} bytes")
@@ -121,13 +121,13 @@ def calculate_product(a, b):
         print(f"✗ File was not modified")
         print(f"  Expected pattern not found")
         file_modified = False
-    
+
     print(f"\n{'=' * 70}")
     print("[Summary]")
     print(f"  Return code: {result.returncode}")
     print(f"  Executor detected: {executor_name or 'NO'}")
     print(f"  File modified: {'YES' if file_modified else 'NO'}")
-    
+
     if executor_name == "ClaudeCodeExecutor" and file_modified:
         print(f"\n✓✓✓ CRITICAL SUCCESS ✓✓✓")
         print(f"Claude Code executor works - real file modifications proven!")

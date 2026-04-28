@@ -1,8 +1,8 @@
 # System Audit Report — Integrated AI Platform
 
-**Date:** 2026-04-27  
-**Host:** Mac Mini M5 — 192.168.10.145  
-**Phase:** 11 Complete (Documentation & Knowledge Transfer)  
+**Date:** 2026-04-27
+**Host:** Mac Mini M5 — 192.168.10.145
+**Phase:** 11 Complete (Documentation & Knowledge Transfer)
 **Auditor:** Claude Code (claude-sonnet-4-6)
 
 ---
@@ -22,7 +22,7 @@
 | 9 | Strava | NPX phat | — | 24 | ⚠️ Operational but OAuth token expires ~every 6h — manual refresh required |
 | 10 | Home Assistant | NPX phat | — | 3 | ✅ Spawned on demand by Obot |
 
-**Total tools: 138**  
+**Total tools: 138**
 **Gateway:** Obot at http://192.168.10.145:8090 — ✅ healthy, running
 
 ### MCP Containers: Additional Note
@@ -103,7 +103,7 @@ Approximately 20 `ms1*` and `sms1*` shim containers are running as part of Obot'
 
 ## 3. Network Topology Verification
 
-**Primary IP:** 192.168.10.145 (confirmed via `ipconfig getifaddr en0`)  
+**Primary IP:** 192.168.10.145 (confirmed via `ipconfig getifaddr en0`)
 **Active interfaces:** en0 (Ethernet), en1 (Wi-Fi), en5-en7 (USB NICs), bridge0
 
 ### Externally Listening Ports (bound to `*`, accessible from LAN)
@@ -306,5 +306,5 @@ version: 2.0.0
 | Performance Metrics | All green | ✅ Well within targets |
 | Critical Gaps | 3 critical, 7 warnings | See section 8 |
 
-**Overall system health: OPERATIONAL with known gaps**  
+**Overall system health: OPERATIONAL with known gaps**
 Platform is running and serving its core function (10 MCP servers via Obot gateway). Three critical documentation gaps and one false-negative healthcheck should be resolved before next phase work begins.

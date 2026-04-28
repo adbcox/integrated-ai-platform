@@ -250,14 +250,14 @@ immediately by:
   exposed token revoke result: Success! Revoked token (if it existed)
   exposed token lookup after revoke (expect invalid):
     Error looking up token: Error making API request.
-    
+
     URL: GET http://0.0.0.0:8200/v1/auth/token/lookup-self
 ```
 
 ### 7.1 Pin Vault image to 2.0.0 in compose file
 ```
   compose files referencing hashicorp/vault:
-    
+
 
   before:
 

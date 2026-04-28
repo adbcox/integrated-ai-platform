@@ -1,0 +1,22 @@
+extends: relaxed
+
+rules:
+  line-length:
+    max: 240
+    level: warning
+  document-start: disable
+  truthy:
+    check-keys: false
+  comments:
+    min-spaces-from-content: 1
+  indentation:
+    spaces: 2
+    indent-sequences: true
+  trailing-spaces: enable
+
+ignore: |
+  docs/phase-13/h1-rollback-state/
+  docs/phase-13/historical/
+  node_modules/
+  .git/
+  backups/

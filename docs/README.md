@@ -1,6 +1,6 @@
 # MCP Infrastructure Documentation
 
-**Status:** Phase 10 Complete — 10/10 servers operational  
+**Status:** Phase 10 Complete — 10/10 servers operational
 **Last Updated:** April 27, 2026
 
 ## Quick Links

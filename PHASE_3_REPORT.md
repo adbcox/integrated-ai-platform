@@ -7,7 +7,7 @@ Prove that the executor abstraction enables real code modifications through Clau
 
 **Direct Stage 3 Executor Test - COMPLETE SUCCESS**
 - Executor: ClaudeCodeExecutor
-- File modification: YES (89 bytes → 135 bytes) 
+- File modification: YES (89 bytes → 135 bytes)
 - Message parsing: Working (parses "replace exact text 'old' with 'new'" format)
 - Worker exit code: 0
 - Artifact recording: Executor logs created correctly
@@ -48,7 +48,7 @@ Regex-based extraction for quote-delimited patterns ensures robust parsing of co
 
 All validation tests passing:
 - ✓ `make check` - Syntax validation
-- ✓ `make quick` - Quick tests  
+- ✓ `make quick` - Quick tests
 - ✓ `make test-offline` - Offline scenario suite (7/7 cases)
 
 ## Limitations & Known Issues

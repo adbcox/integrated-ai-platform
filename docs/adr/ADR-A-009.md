@@ -1,7 +1,7 @@
 # ADR-A-009: Vault as Authoritative Secret Store — Migration from .env
 
-**Status:** Accepted  
-**Date:** 2026-04-27  
+**Status:** Accepted
+**Date:** 2026-04-27
 **Deciders:** Adrian Cox
 
 ---
