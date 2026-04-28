@@ -64,21 +64,57 @@ After Phase 0 empirical testing on 2026-04-28, the canonical mechanism for stori
 
 ### Entrypoint wrapper — REQUIRED on main service, NOT on sidecar
 
-The wrapper above is **mandatory on the main service container** for the rendered credentials to actually reach the application process. It is **NOT used on the sidecar** — the sidecar's role ends at "render `/vault/secrets/credentials.env` and exit cleanly".
+The wrapper is **mandatory on the main service container** for the rendered credentials to actually reach the application process. It is **NOT used on the sidecar** — the sidecar's role ends at "render `/vault/secrets/credentials.env` and exit cleanly".
 
-**Why the wrapper is required**:
+**Why `set -a` is required**:
 
 POSIX `.` (source) loads variable assignments from a file into the **current shell** as shell-local variables. They are not exported as environment variables unless explicitly exported. When the shell then `exec`s the application binary, the application inherits the shell's **environment** (exported vars only), not its shell-local variables — so the application would not see `ADMIN_TOKEN` or any other rendered field.
 
-`set -a` enables the auto-export attribute: every variable assigned (including via sourced files) becomes an exported environment variable for the duration. `set +a` disables it after sourcing. The pattern is therefore:
+`set -a` enables the auto-export attribute: every variable assigned (including via sourced files) becomes an exported environment variable for the duration. `set +a` disables it after sourcing.
 
-```
-sh -c 'set -a && . /vault/secrets/credentials.env && set +a && exec <original>'
-```
+**Why `exec` is required (not optional)**:
 
-Container images don't automatically source env-file mounts. Docker's `env_file:` directive is read by Compose at parse time and injected into the container's static environment — but we deliberately removed that path because it requires a `.env` file on disk at compose time. The Vault Agent renders the env file at **runtime**, after the sidecar has authenticated. Therefore the application has to read the file itself, and the entrypoint wrapper is how it does so.
+`exec <command>` replaces the shell process with `<command>`, so the application becomes PID 1 (or whatever PID the shell was). Without `exec`, the shell forks the application as a child:
+- **Signal handling breaks**: `docker stop <container>` sends SIGTERM to PID 1 (the sh wrapper), which doesn't propagate to the child app. Docker waits the full grace period (10s default) then sends SIGKILL. With `exec`, PID 1 *is* the app, so SIGTERM reaches it directly and clean shutdown completes in ~0s.
+- **Verification path differs**: `/proc/1/environ` shows the wrapper-shell's fork-time env (without rendered creds) instead of the app's runtime env. `exec` makes PID 1 environ authoritative.
+- **Process tree zombies**: a sh wrapper that doesn't exec leaves an unnecessary parent process in the tree.
+
+`exec` is **not optional** — every service rewire must use it.
+
+### Two valid entrypoint-wrapper styles
+
+Pick whichever matches the upstream image's existing pattern; the rule is the same — `set -a` then source then `exec`.
+
+**Style 1 — `entrypoint:` override** (use when the image has a non-trivial `Entrypoint` you want to preserve):
+```yaml
+entrypoint: ["sh", "-c", "set -a && . /vault/secrets/credentials.env && set +a && exec <original-entrypoint> \"$$0\" \"$$@\""]
+command: [<original cmd args>]
+```
+The `"$$0" "$$@"` pattern preserves the original `command:` arguments through the sh wrapper. The double `$$` escapes Compose's variable interpolation.
+
+**Style 2 — `command:` only override** (use when the image has empty `Entrypoint` and the lifecycle is driven by `command`, or when you need a setup step before the app starts):
+```yaml
+command:
+  - sh
+  - -c
+  - "set -a && . /vault/secrets/credentials.env && set +a && <optional-setup> && exec <original-app> <args>"
+```
+The `<optional-setup>` (e.g., `pip install`, `migrate`) runs before exec. Only the final long-running app process needs `exec`.
 
 **Where to find `<original-entrypoint>`**: inspect the image with `docker inspect <image> --format 'Entrypoint: {{.Config.Entrypoint}}\nCmd: {{.Config.Cmd}}'`. If `Entrypoint` is `[]` (empty) and `Cmd` is `[/start.sh]`, then `<original-entrypoint>` is `/start.sh`. If both are populated, the original execution is `entrypoint cmd...` — replicate exactly.
+
+### Verification: PID 1 must be the application
+
+After recreate, confirm:
+```bash
+docker exec <svc> /bin/sh -c 'tr "\0" " " < /proc/1/cmdline; echo'
+# Should print the application binary, not "sh -c ..."
+
+docker stop -t 10 <svc>
+# Should complete in <2s, not the full 10s grace period
+```
+
+Failure of either check → the `exec` was missed somewhere.
 
 6. `docker compose up -d` — vault-agent runs once, renders `/vault/secrets/credentials.env` to the host bind-mount, exits; main service starts and sources the rendered env file from the same path.
 

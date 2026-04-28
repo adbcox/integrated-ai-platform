@@ -29,6 +29,15 @@
 
 ---
 
+## A.5 gateways stack (litellm-gateway + mcpo-proxy) — rewire log
+
+- **OPENAI_API_KEY** in `secret/openai/api` is a template placeholder (`sk-your-...`, length 16). litellm_config.yaml routes `gpt-4o` model via `openai/...` provider. Populate with real key OR remove the openai routes from config. Filed during A.5 (2026-04-28).
+- **LITELLM_MASTER_KEY rotation (Option γ)**: pre-rotation length=17 sha=de61033bbd7e (`sk-homelab-master` upstream default); post-rotation length=67 sha=439bcdb691d6 (`sk-` + 32-byte hex). KV v2 metadata: pre-version=1, post-version=2 (rollback available via `vault kv rollback -version=1`). Audit log captured rotation read+write. Filed during A.5 (2026-04-28).
+- **mcpo-proxy AppRole created** (was not in §5 inventory): policy grants only `secret/data/plane/api`; isolation verified (in-policy READ ✅, out-of-policy DENIED on litellm/master and anthropic/api).
+- **Finding 7 resolution**: removed `secret/data/plane/api` from `litellm-gateway-policy.hcl` (litellm doesn't consume PLANE_API_TOKEN; mcpo-proxy does, owns its own AppRole).
+- **TRANSIENT GAP — open-webui ↔ litellm**: Between A.6 close and A.7 close, open-webui has the old (pre-rotation) `LITELLM_MASTER_KEY` cached in its env. litellm-gateway now rejects the old value (HTTP 400). Open-webui chat UI is non-functional during this window. Resolution: A.7 rewire delivers rotated value via sidecar. **User: do not use open-webui UI until A.7 closes.** Filed during A.5/A.6 (2026-04-28).
+- **Canonical pattern correction**: `exec` is now mandatory (not optional) in entrypoint wrapper. Reasons: signal propagation (SIGTERM goes to PID 1; without exec, sh wrapper is PID 1 and doesn't propagate to child app), verification-path consistency (PID 1 environ shows rendered creds for all services), no zombie wrapper processes. Discovered in A.5 mcpo (sh-c-with-&& pattern leaves sh as PID 1); fixed by inserting `exec` before the final app invocation. Empirical proof: docker stop went from 10s timeout → 0s clean shutdown.
+
 ## A.3 openhands-app — rewire log
 
 - WORKSPACE_BASE quirk preserved verbatim from running container. Bind mount destination is `/opt/workspace`. Path mismatch could be intentional (parent-dir convention where openhands creates per-conversation subdirs) or pre-existing drift. Not investigating during §6; preserving running behavior to avoid scope creep.
