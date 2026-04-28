@@ -103,8 +103,15 @@ services:
     environment:
       <<: *backend-env
       GUNICORN_WORKERS: "2"
+      GUNICORN_TIMEOUT: "120"
     ports:
       - "8000:8000"
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+        reservations:
+          memory: 512M
     healthcheck:
       test: ["CMD-SHELL", "python3 -c \"import urllib.request,sys; urllib.request.urlopen('http://localhost:8000/');sys.exit(0)\" 2>/dev/null || exit 1"]
       interval: 10s

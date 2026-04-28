@@ -12,76 +12,92 @@
 
 # ── AI Layer ──────────────────────────────────────────────────────────────────
 plane.internal {
-    reverse_proxy 192.168.10.145:3001
+    reverse_proxy host.docker.internal:3001
 }
 
 obot.internal {
-    reverse_proxy 192.168.10.145:8090
+    reverse_proxy host.docker.internal:8090
 }
 
 ollama.internal {
-    reverse_proxy 192.168.10.145:11434
+    reverse_proxy host.docker.internal:11434
 }
 
 anythingllm.internal {
-    reverse_proxy 192.168.10.145:3004
+    reverse_proxy host.docker.internal:3004
 }
 
 webui.internal {
-    reverse_proxy 192.168.10.145:3002
+    reverse_proxy host.docker.internal:3002
 }
 
 litellm.internal {
-    reverse_proxy 192.168.10.145:4000
+    reverse_proxy host.docker.internal:4000
 }
 
 # ── Platform Layer ────────────────────────────────────────────────────────────
 vault.internal {
-    reverse_proxy 192.168.10.145:8200
+    reverse_proxy host.docker.internal:8200
 }
 
 dashboard.internal {
-    reverse_proxy 192.168.10.145:8080
+    reverse_proxy host.docker.internal:8080
 }
 
 homarr.internal {
-    reverse_proxy 192.168.10.145:7575
+    reverse_proxy host.docker.internal:7575
 }
 
 # ── Observability Layer ───────────────────────────────────────────────────────
 grafana.internal {
-    reverse_proxy 192.168.10.145:3030
+    reverse_proxy host.docker.internal:3030
 }
 
 zabbix.internal {
-    reverse_proxy 192.168.10.145:10080
+    reverse_proxy host.docker.internal:10080
 }
 
 uptime.internal {
-    reverse_proxy 192.168.10.145:3033
+    reverse_proxy host.docker.internal:3033
 }
 
 # ── Media Layer ───────────────────────────────────────────────────────────────
 sonarr.internal {
-    reverse_proxy 192.168.10.145:8989
+    reverse_proxy host.docker.internal:8989
 }
 
 radarr.internal {
-    reverse_proxy 192.168.10.145:7878
+    reverse_proxy host.docker.internal:7878
 }
 
 prowlarr.internal {
-    reverse_proxy 192.168.10.145:9696
+    reverse_proxy host.docker.internal:9696
 }
 
 vaultwarden.internal {
-    reverse_proxy 192.168.10.145:8083
+    reverse_proxy host.docker.internal:8083
 }
 
 headscale.internal {
-    reverse_proxy 192.168.10.145:8082
+    reverse_proxy host.docker.internal:8082
 }
 
 nextcloud.internal {
-    reverse_proxy 192.168.10.145:8085
+    reverse_proxy host.docker.internal:8085
+}
+
+mcp-filesystem.internal {
+    reverse_proxy host.docker.internal:8091
+}
+
+mcp-docs.internal {
+    reverse_proxy host.docker.internal:8093
+}
+
+mcp-docker.internal {
+    reverse_proxy host.docker.internal:8092
+}
+
+victoria.internal {
+    reverse_proxy host.docker.internal:8428
 }
