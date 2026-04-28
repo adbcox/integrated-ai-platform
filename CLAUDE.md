@@ -48,3 +48,22 @@ config/mac_mini/            — Mac Mini M5 node config
 config/mac_studio/          — Mac Studio M3 node config (future)
 config/qnap/                — QNAP NAS config
 ```
+
+## Phase Document Storage Convention
+
+All phase planning documents, inventories, audits, and deployment
+artifacts MUST be written to:
+
+  ~/repos/integrated-ai-platform/docs/phase-NN/
+
+Where NN is the zero-padded phase number (01, 13, etc.). Subdirectories
+allowed for sub-phases (phase-13/block-1/, phase-13/block-2/).
+
+Filename pattern: PHASE_NN_<TYPE>_<YYYY-MM-DD>.md
+
+Examples:
+  docs/phase-13/PHASE_13_INVENTORY_2026-04-28.md
+  docs/phase-13/PHASE_13_BLOCK_1_PLAN_2026-04-29.md
+  docs/phase-13/PHASE_13_BLOCK_1_RESULTS_2026-04-29.md
+
+NEVER write phase docs to ~/, /tmp/, or other ad-hoc locations.
