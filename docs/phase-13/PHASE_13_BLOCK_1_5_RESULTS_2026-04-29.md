@@ -420,3 +420,88 @@ D  docker/vmagent-config/scrape.yml.pre-block1
   ✅ cAdvisor: Up 3 minutes (healthy)
   ✅ vmagent UP targets: 4 (≥ 3)
   ✅ no *.pre-block* files in tree
+
+=== SECTION 7 COMPLETE — 422 lines ===
+
+
+## 8. POST-RUN BLOCKER: Vault auth cascade-revocation
+
+### Root cause
+
+Block 1 §8.9 (commit `13e1169`) attempted to rotate the Vault root token. The
+logic was:
+1. Use OLD token to `vault token create -policy=root -ttl=720h` → produced NEW token
+2. Save NEW token to `~/.vault-token`
+3. Use NEW token to revoke OLD token
+
+The mistake: `vault token create` without `-orphan` makes the new token a CHILD
+of the creating token. Vault's revoke semantics revoke ALL non-orphan child
+tokens when the parent is revoked. So step 3 revoked OLD which cascaded and
+revoked NEW too. `~/.vault-token` contains a 28-char string that LOOKS valid
+(prefix `hvs.v9cv…`) but the token is dead in Vault's auth store.
+
+### Effect on Block 1.5 sections 1 and 2
+
+- §1 `vault kv get` returned empty data because the token was rejected. The
+  decision logic saw `has_token=0 has_admin_token=0`, classified as
+  `MISSING_BOTH`, and made no rename. **Vaultwarden rename status is unknown**
+  — could be already-renamed (good) or never-renamed (bad). Cannot determine
+  without auth.
+- §2 `vault kv put secret/grafana/api status=pending_block2` returned
+  `permission denied / invalid token`. Path was NOT created. Same for
+  anythingllm.
+- §3 cAdvisor: NO Vault dependency. Worked fine. Container is up + healthy.
+- §4 scrape config: NO Vault dependency. Worked. vmagent UP targets: 4.
+- §5 cleanup: NO Vault dependency. Worked. Pre-block files removed.
+- §6 :8080 investigation: NO Vault dependency. Worked.
+- §7 final audits: ❌ marks for Vault checks ARE ACCURATE (correctly reflecting
+  failed writes from §1/§2). The ✅ marks for cAdvisor / vmagent / pre-block
+  cleanup are also accurate.
+
+### Recovery path
+
+I attempted `vault operator generate-root` to regain root access using the 3-of-5
+unseal keys at `~/vault-init-keys.txt` (Shamir share threshold).
+
+**Result**: Vault returned HTTP 403 `permission denied / invalid token` on
+`PUT /v1/sys/generate-root/attempt` — even from inside the vault-server
+container with VAULT_TOKEN explicitly unset. This Vault deployment has the
+generate-root endpoint gated behind authentication, so the standard recovery
+flow is not directly accessible to me.
+
+### What needs to happen
+
+User-driven recovery options, in order of disruption (lowest first):
+
+1. **Bypass via container shell** — exec into vault-server container as root,
+   examine the audit + storage policy that's gating /sys/generate-root, then
+   either grant temporary access or use the auth-bypass listener config.
+   Requires reading Vault's running config inside the container (not Vault's
+   normal auth flow).
+
+2. **Restart Vault in recovery mode** — `docker stop vault-server`, restart
+   with `vault server -recovery` flag, use unseal keys to issue a new root
+   token, then resume normal operation. ~30 second downtime.
+
+3. **Re-init Vault** — last resort. Loses all secret data. NOT recommended;
+   only if recovery options 1 and 2 don't work.
+
+### Mitigation guidance for next root-token rotation
+
+Use `vault token create -orphan -policy=root -ttl=720h`. The `-orphan` flag
+makes the new token NOT a child of the creating token. Then revoking the old
+token will not cascade to the new one. Vault docs:
+https://developer.hashicorp.com/vault/docs/concepts/tokens#token-hierarchies-and-orphan-tokens
+
+### Items deferred until auth is restored
+
+Until Vault auth is recovered:
+- §1 Vaultwarden `token` → `admin_token` rename: status unknown, deferred
+- §2 `secret/grafana/api` and `secret/anythingllm/api` seeding: deferred
+
+Block 2 cannot proceed for services that require Vault credential reads
+(any service deploy that reads from Vault during compose-up) until this is
+resolved.
+
+
+=== SECTION 8 (BLOCKER) COMPLETE — 505 lines ===
