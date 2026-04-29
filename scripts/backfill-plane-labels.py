@@ -3,7 +3,11 @@
 
 Reads every issue in the Plane project, extracts the RM-<PREFIX>-NNN
 prefix from `name` (which carries `[RM-PREFIX-NNN] ...`), looks up the
-matching label, and PATCHes the issue's label_ids list to add it.
+matching label, and PATCHes the issue's labels list to add it.
+
+NOTE: PATCH payload uses key "labels" (not "label_ids"). Plane V1
+silently ignores unknown payload keys (returns 200 OK with no
+mutation). See Discovery #16.
 
 Decisions baked in (per C1 audit gate, operator-approved):
   - Run via framework.plane_connector (Decision 6).
@@ -260,7 +264,7 @@ def main() -> int:
         if target_id not in new_labels:
             new_labels.append(target_id)
         try:
-            api.update_issue(issue_id, {"label_ids": new_labels})
+            api.update_issue(issue_id, {"labels": new_labels})
             applied += 1
             log.write(f"applied  {issue_id}  prefix={prefix}  label={target}\n"); log.flush()
         except RateLimitError:
@@ -268,7 +272,7 @@ def main() -> int:
             logp(f"  RATE  429 hit on {issue_id}; sleeping {BACKOFF_429}s before retry")
             time.sleep(BACKOFF_429)
             try:
-                api.update_issue(issue_id, {"label_ids": new_labels})
+                api.update_issue(issue_id, {"labels": new_labels})
                 applied += 1
                 log.write(f"applied  {issue_id}  prefix={prefix}  label={target}  (after-429-retry)\n"); log.flush()
             except Exception as e:

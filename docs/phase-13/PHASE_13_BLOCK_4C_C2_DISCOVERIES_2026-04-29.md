@@ -863,3 +863,135 @@ stage didn't price into the wall-time estimate.
 For future write-amplifying scripts: the dry-run should *count
 the requests the apply loop would emit*, not just count the
 data-level operations.
+
+---
+
+## Discovery #16: Plane V1 PATCH silently ignores wrong payload key — 603 no-op writes
+
+**Surfaced by:** Post-C4.4 validation re-read of all 604 issues — every issue had `labels: []` despite the script reporting 603 successful PATCHes (HTTP 200 on every one).
+**Severity:** API contract mismatch. The script wrote nothing to Plane state. No data corruption; full rollback unnecessary.
+**Resolution:** Two-line fix in `scripts/backfill-plane-labels.py`: PATCH payload key changed from `label_ids` to `labels`. Verified by direct curl that the corrected key actually mutates state.
+
+### Root cause
+
+Plane V1 issues PATCH endpoint expects `{"labels": [<id>, ...]}` in
+the request body. The script sent `{"label_ids": [<id>, ...]}`.
+
+Plane's behaviour with the wrong key is the silent kind:
+- HTTP 200 on the PATCH (the request schema validates).
+- Response body returned with no error.
+- `labels: []` on the next GET (no mutation actually occurred).
+- No log line on the API side indicating the field was unrecognised.
+
+The script's success counter trusted HTTP 200 and counted each
+of the 603 PATCHes as `applied += 1`. The connector's
+`update_issue()` is a generic pass-through (just calls `_patch`)
+so the wrong key passed straight through to the wire.
+
+### Empirical proof
+
+Direct curl probes during diagnosis (issue
+`cbcd3e52-0b2a-4101-bb40-c993dfab98ce`, label `AUTO-MECH`):
+
+```bash
+# Wrong key — what the script sent for 603 issues:
+PATCH .../issues/<id>/  -d '{"label_ids": ["<aut-mech-id>"]}'
+  → 200 OK
+GET   .../issues/<id>/
+  → labels: []        ← silent no-op
+
+# Correct key:
+PATCH .../issues/<id>/  -d '{"labels": ["<aut-mech-id>"]}'
+  → 200 OK
+GET   .../issues/<id>/
+  → labels: ["<aut-mech-id>"]   ← actually applied
+```
+
+Two HTTP responses indistinguishable to a status-code-trusting
+caller; only the re-GET reveals which one mutated state.
+
+### Why this wasn't caught earlier in the C4 chain
+
+1. The C4.3 dry-run never sends a real PATCH — it only
+   tabulates planned actions.
+2. The first failed C4.4 run (Discoveries #15) crashed under
+   429s before any meaningful PATCHes succeeded — so the noisy
+   failure mode masked the silent failure mode.
+3. The successful C4.4 run looked perfect: 603 PATCHes, 0 fails,
+   0 429s, ~10m wall time matching the estimate. By all script-
+   level metrics, it was a clean run.
+
+The bug only surfaced because operator instructions for the
+gate close required an independent validation re-read, which
+revealed all issues unlabeled.
+
+### State / blast radius
+
+- **No rollback needed.** The 603 PATCHes were no-ops; Plane
+  state is unchanged from before the back-fill.
+- **One issue mutated during diagnosis:**
+  `cbcd3e52-0b2a-4101-bb40-c993dfab98ce` (RM-AUTO-MECH-001) was
+  PATCHed with the correct key as part of the probe. It is now
+  legitimately labeled `AUTO-MECH`. The next run will detect
+  this via the plan-stage `target_id in existing` check and
+  emit `skip-already-labeled`.
+- **Apply log `/tmp/c4_apply.log` is invalid as a record of state
+  change.** It records what the script *attempted*, not what
+  Plane *accepted*. Cleared before re-run.
+
+### Parallel bug — separate scope
+
+`framework/plane_connector.py:360` builds the *create-issue*
+payload with `payload["label_ids"] = label_ids`. The roadmap
+sync (`bin/sync_roadmap_to_plane.py`) calls `create_issue(...,
+label_ids=[...])` and presumably has been silently dropping
+labels at create time too. Since the C4 back-fill exists
+specifically because the original sync didn't apply labels,
+this is consistent: the create-time bug is *why* the back-fill
+was needed in the first place. The PATCH-time bug just meant
+the back-fill itself didn't work either.
+
+C6 follow-up #14 registered to fix `create_issue` and audit
+other connector methods that build payloads with `label_ids`,
+`assignee_ids`, etc. for similar key-name mismatches against
+the V1 API.
+
+### Lesson
+
+**HTTP 200 ≠ mutation succeeded.** When state correctness
+matters, scripts that consume Plane V1 must verify by re-read.
+Trusting 200 OK is fine for fire-and-forget telemetry; it is
+not fine for back-fills, migrations, or any operation whose
+correctness gates downstream work.
+
+**Forward doctrine for write-heavy scripts:**
+1. Sample-verify after the first batch of writes (e.g., re-GET
+   issue #1 immediately after PATCH and confirm the change
+   landed) before sustaining the run for hours.
+2. End-of-run validation that compares post-state to expected
+   should be part of the script, not bolted on at the gate
+   close.
+3. If the API has multiple plausible payload key names for a
+   field, probe both forms during the script's first PATCH
+   and assert which one actually mutates.
+
+This script's first 5 PATCHes should have been followed by 5
+re-GETs to verify; that would have surfaced Discovery #16
+inside the first 30 seconds of apply, not after 10 minutes
+of wasted writes.
+
+### C6 follow-up #14
+
+> Fix `framework/plane_connector.py:360` — `create_issue` builds
+> `payload["label_ids"] = label_ids` which is the same wrong key
+> as Discovery #16. Audit other payload-building methods in the
+> connector for similar key-name mismatches against the V1 API.
+> Likely candidates: anywhere the connector accepts `*_ids`
+> kwargs and forwards them to a payload field.
+
+### C6 follow-up #15
+
+> Add a "first-batch verify" pattern to the canonical-pattern
+> README for write-heavy connector scripts: do an explicit
+> re-GET on issue #1 after the first PATCH, assert the
+> mutation took, and abort the run if it didn't.
