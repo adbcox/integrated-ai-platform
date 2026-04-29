@@ -2,7 +2,7 @@
 
 **Date:** 2026-04-29
 **Block:** Phase 13 Block 4.C C2 (NetBox deployment)
-**Status:** Three discoveries; all resolved.
+**Status:** Four discoveries; all resolved.
 
 ## Index
 
@@ -18,9 +18,14 @@
    the legacy `/var/lib/postgresql/data` mount layout and emitted
    `chmod: Operation not permitted` against `cap_drop:[ALL]`. See
    **§3 below**; captured as a C6 upstream-pinning follow-up.
+4. **Healthcheck shells don't inherit PID-1 env** — when a service
+   sources Vault-rendered env in its entrypoint (`set -a && . creds`)
+   rather than declaring via compose `environment:`, the healthcheck
+   command runs in a fresh shell that has no access to those vars.
+   See **§4 below**; captured as a C6 healthcheck-pattern follow-up.
 
-These three events all surfaced inside C2 (artifact authoring +
-first deployment attempt). Each contributes to a C6 closeout
+These events all surfaced inside C2 (artifact authoring + first
+two deployment attempts). Each contributes to a C6 closeout
 follow-up — the pattern that emerges is "the canonical add-new-
 service pre-check needs strengthening before it survives contact
 with another deployment."
@@ -187,3 +192,64 @@ This doesn't preclude future modernisation — it requires that
 modernisation be a first-class decision, not an artefact of
 "pick the latest stable" defaults applied during artifact
 authoring.
+
+## §4 — Healthcheck shells don't inherit PID-1 env
+
+### What happened
+
+After the pg17 pivot, `netbox-postgres` became healthy as expected,
+but `netbox-redis` and `netbox-redis-cache` reported `unhealthy`
+status even though the Valkey processes themselves were happily
+accepting connections (logs showed `Ready to accept connections
+tcp` and `requirepass` was applied via the entrypoint).
+
+Root cause: the Valkey healthcheck was
+
+```yaml
+test: ["CMD-SHELL", "[ $$(valkey-cli --pass \"$$REDIS_PASSWORD\" ping) = 'PONG' ]"]
+```
+
+Manual diagnostic from inside the container revealed
+`echo PASS_LEN=${#REDIS_PASSWORD}` returned `PASS_LEN=0` — i.e.
+the env var was empty in the healthcheck shell, even though the
+valkey-server process (PID 1) had it correctly set via the
+entrypoint's `set -a && . /vault/secrets/credentials.env && set +a`.
+
+Why: Docker `HEALTHCHECK` (which compose's `healthcheck.test:` becomes)
+runs as `docker exec`-equivalent — a fresh shell inside the container
+that inherits **only the env declared via compose `environment:`**,
+not PID-1's runtime env. Since the platform's Vault doctrine forbids
+declaring credentials via `environment:` (must come from rendered
+credentials.env), the healthcheck shell sees an empty
+`REDIS_PASSWORD`, AUTH fails with `WRONGPASS`, and the healthcheck
+flips to unhealthy on a process that's perfectly healthy.
+
+### Resolution
+
+Healthcheck command updated to source the rendered credentials.env
+itself before invoking valkey-cli:
+
+```yaml
+test: ["CMD-SHELL", ". /vault/secrets/credentials.env && [ \"$$(valkey-cli --pass \"$$REDIS_PASSWORD\" ping)\" = 'PONG' ]"]
+```
+
+This works because the `/vault/secrets/` mount is already present
+on the Valkey containers (read-only, owned by the vault-agent
+sidecar's render). The healthcheck shell can read it.
+
+Same pattern applied to both Valkey containers (netbox-redis and
+netbox-redis-cache). Postgres healthcheck is unaffected because
+its inputs (`POSTGRES_USER`, `POSTGRES_DB`) come from compose
+`environment:` (declared, inherited) and `pg_isready` doesn't
+need a password.
+
+### C6 follow-up registered (healthcheck pattern)
+
+> Doctrine for the canonical add-new-service pattern: any service
+> that sources credentials from a Vault-rendered env file in its
+> entrypoint must apply the same source step in its healthcheck
+> command. Healthcheck shells do not inherit PID-1 env. The
+> alternative — declaring secrets via compose `environment:` so
+> they reach the healthcheck shell — violates the platform secrets
+> doctrine and is forbidden. Source the credentials.env in the
+> healthcheck.
