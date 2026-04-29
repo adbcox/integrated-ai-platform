@@ -1,0 +1,293 @@
+# Phase 13 Block 3 P5 — Area-driven Lovelace dashboard framework
+#
+# Design principles (platform-layer, not device-population):
+#   - Each of the 15 HA Areas becomes one view
+#   - Cards filter by `area: <id>` rather than hard-coding entity_ids,
+#     so devices light up in their room as they're paired (without ever
+#     editing this YAML again)
+#   - Layout uses HA 2024.3+ "sections" view (responsive grid, no manual
+#     column math)
+#   - View identifiers use a-z0-9 hyphen-cased slugs to match the
+#     hostnames used in `voice-satellite-template.yaml` per-room mapping —
+#     keeps voice + dashboard slugs consistent
+#
+# Deployment (when ready):
+#   1. Copy this file to the HA host: /config/dashboards/area-driven.yaml
+#      (via SSH add-on or Studio Code Server)
+#   2. Add to /config/configuration.yaml:
+#        lovelace:
+#          mode: storage  # keep storage-mode dashboards as the default UI
+#          dashboards:
+#            area-driven:
+#              mode: yaml
+#              filename: dashboards/area-driven.yaml
+#              title: "Areas"
+#              icon: mdi:home-map-marker
+#              show_in_sidebar: true
+#              require_admin: false
+#   3. Reload Lovelace + check sidebar
+#
+# Per-room views are intentionally identical templates. As HA's auto-card
+# generator gets smarter, the by-area filters will grow to display
+# room-specific media (e.g. Cast targets for media rooms).
+
+title: "Areas"
+
+views:
+
+  # ── Foyer ─────────────────────────────────────────────────────────────
+  - title: "Foyer"
+    path: foyer
+    icon: mdi:door
+    type: sections
+    sections: &area_sections_template
+      - type: grid
+        cards:
+          - type: heading
+            heading: "Lights"
+          - type: entities
+            filter:
+              include:
+                - domain: light
+                  area: foyer
+            show_empty: false
+          - type: heading
+            heading: "Climate"
+          - type: entities
+            filter:
+              include:
+                - domain: climate
+                  area: foyer
+                - domain: sensor
+                  area: foyer
+                  device_class: temperature
+                - domain: sensor
+                  area: foyer
+                  device_class: humidity
+            show_empty: false
+          - type: heading
+            heading: "Media"
+          - type: entities
+            filter:
+              include:
+                - domain: media_player
+                  area: foyer
+            show_empty: false
+          - type: heading
+            heading: "Sensors"
+          - type: entities
+            filter:
+              include:
+                - domain: binary_sensor
+                  area: foyer
+                - domain: sensor
+                  area: foyer
+            exclude:
+              - device_class: temperature
+              - device_class: humidity
+            show_empty: false
+
+  # The remaining 14 views follow the same template — `area:` filter
+  # changes per view. Anchor (&area_sections_template) above is for
+  # documentation; YAML anchors don't work across views in Lovelace
+  # YAML mode, so each view repeats the structure verbatim. Sed-friendly:
+  #   sed 's/area: foyer/area: kitchen/g' carves a new view from any
+  #   existing one.
+
+  - title: "Kitchen"
+    path: kitchen
+    icon: mdi:silverware-fork-knife
+    type: sections
+    sections:
+      - type: grid
+        cards:
+          - { type: heading, heading: "Lights" }
+          - { type: entities, filter: { include: [{ domain: light, area: kitchen }] }, show_empty: false }
+          - { type: heading, heading: "Climate" }
+          - { type: entities, filter: { include: [{ domain: climate, area: kitchen }, { domain: sensor, area: kitchen, device_class: temperature }, { domain: sensor, area: kitchen, device_class: humidity }] }, show_empty: false }
+          - { type: heading, heading: "Media" }
+          - { type: entities, filter: { include: [{ domain: media_player, area: kitchen }] }, show_empty: false }
+          - { type: heading, heading: "Sensors" }
+          - { type: entities, filter: { include: [{ domain: binary_sensor, area: kitchen }, { domain: sensor, area: kitchen }], exclude: [{ device_class: temperature }, { device_class: humidity }] }, show_empty: false }
+
+  - title: "Living Room"
+    path: living-room
+    icon: mdi:sofa
+    type: sections
+    sections:
+      - type: grid
+        cards:
+          - { type: heading, heading: "Lights" }
+          - { type: entities, filter: { include: [{ domain: light, area: living_room }] }, show_empty: false }
+          - { type: heading, heading: "Climate" }
+          - { type: entities, filter: { include: [{ domain: climate, area: living_room }, { domain: sensor, area: living_room, device_class: temperature }, { domain: sensor, area: living_room, device_class: humidity }] }, show_empty: false }
+          - { type: heading, heading: "Media" }
+          - { type: entities, filter: { include: [{ domain: media_player, area: living_room }] }, show_empty: false }
+          - { type: heading, heading: "Sensors" }
+          - { type: entities, filter: { include: [{ domain: binary_sensor, area: living_room }, { domain: sensor, area: living_room }], exclude: [{ device_class: temperature }, { device_class: humidity }] }, show_empty: false }
+
+  - title: "Master Bedroom"
+    path: master-bedroom
+    icon: mdi:bed
+    type: sections
+    sections:
+      - type: grid
+        cards:
+          - { type: heading, heading: "Lights" }
+          - { type: entities, filter: { include: [{ domain: light, area: bedroom }] }, show_empty: false }
+          - { type: heading, heading: "Climate" }
+          - { type: entities, filter: { include: [{ domain: climate, area: bedroom }, { domain: sensor, area: bedroom, device_class: temperature }, { domain: sensor, area: bedroom, device_class: humidity }] }, show_empty: false }
+          - { type: heading, heading: "Media" }
+          - { type: entities, filter: { include: [{ domain: media_player, area: bedroom }] }, show_empty: false }
+          - { type: heading, heading: "Sensors" }
+          - { type: entities, filter: { include: [{ domain: binary_sensor, area: bedroom }, { domain: sensor, area: bedroom }], exclude: [{ device_class: temperature }, { device_class: humidity }] }, show_empty: false }
+
+  - title: "Master Bathroom"
+    path: master-bathroom
+    icon: mdi:shower-head
+    type: sections
+    sections:
+      - type: grid
+        cards:
+          - { type: heading, heading: "Lights" }
+          - { type: entities, filter: { include: [{ domain: light, area: master_bathroom }] }, show_empty: false }
+          - { type: heading, heading: "Climate" }
+          - { type: entities, filter: { include: [{ domain: climate, area: master_bathroom }, { domain: sensor, area: master_bathroom, device_class: temperature }, { domain: sensor, area: master_bathroom, device_class: humidity }] }, show_empty: false }
+          - { type: heading, heading: "Sensors" }
+          - { type: entities, filter: { include: [{ domain: binary_sensor, area: master_bathroom }, { domain: sensor, area: master_bathroom }], exclude: [{ device_class: temperature }, { device_class: humidity }] }, show_empty: false }
+
+  - title: "Master Closet"
+    path: master-closet
+    icon: mdi:hanger
+    type: sections
+    sections:
+      - type: grid
+        cards:
+          - { type: heading, heading: "Lights" }
+          - { type: entities, filter: { include: [{ domain: light, area: master_closet }] }, show_empty: false }
+          - { type: heading, heading: "Sensors" }
+          - { type: entities, filter: { include: [{ domain: binary_sensor, area: master_closet }, { domain: sensor, area: master_closet }] }, show_empty: false }
+
+  - title: "Office"
+    path: office
+    icon: mdi:desk
+    type: sections
+    sections:
+      - type: grid
+        cards:
+          - { type: heading, heading: "Lights" }
+          - { type: entities, filter: { include: [{ domain: light, area: office_2 }] }, show_empty: false }
+          - { type: heading, heading: "Climate" }
+          - { type: entities, filter: { include: [{ domain: climate, area: office_2 }, { domain: sensor, area: office_2, device_class: temperature }, { domain: sensor, area: office_2, device_class: humidity }] }, show_empty: false }
+          - { type: heading, heading: "Media" }
+          - { type: entities, filter: { include: [{ domain: media_player, area: office_2 }] }, show_empty: false }
+          - { type: heading, heading: "Sensors" }
+          - { type: entities, filter: { include: [{ domain: binary_sensor, area: office_2 }, { domain: sensor, area: office_2 }], exclude: [{ device_class: temperature }, { device_class: humidity }] }, show_empty: false }
+
+  - title: "Movie Room"
+    path: movie-room
+    icon: mdi:filmstrip
+    type: sections
+    sections:
+      - type: grid
+        cards:
+          - { type: heading, heading: "Lights" }
+          - { type: entities, filter: { include: [{ domain: light, area: movie_room }] }, show_empty: false }
+          - { type: heading, heading: "Media" }
+          - { type: entities, filter: { include: [{ domain: media_player, area: movie_room }] }, show_empty: false }
+          - { type: heading, heading: "Sensors" }
+          - { type: entities, filter: { include: [{ domain: binary_sensor, area: movie_room }, { domain: sensor, area: movie_room }] }, show_empty: false }
+
+  - title: "Workout Area"
+    path: workout-area
+    icon: mdi:dumbbell
+    type: sections
+    sections:
+      - type: grid
+        cards:
+          - { type: heading, heading: "Lights" }
+          - { type: entities, filter: { include: [{ domain: light, area: workout_area }] }, show_empty: false }
+          - { type: heading, heading: "Climate" }
+          - { type: entities, filter: { include: [{ domain: climate, area: workout_area }, { domain: sensor, area: workout_area, device_class: temperature }, { domain: sensor, area: workout_area, device_class: humidity }] }, show_empty: false }
+          - { type: heading, heading: "Media" }
+          - { type: entities, filter: { include: [{ domain: media_player, area: workout_area }] }, show_empty: false }
+          - { type: heading, heading: "Sensors" }
+          - { type: entities, filter: { include: [{ domain: binary_sensor, area: workout_area }, { domain: sensor, area: workout_area }], exclude: [{ device_class: temperature }, { device_class: humidity }] }, show_empty: false }
+
+  - title: "Upstairs Hallway"
+    path: upstairs-hallway
+    icon: mdi:stairs-up
+    type: sections
+    sections:
+      - type: grid
+        cards:
+          - { type: heading, heading: "Lights" }
+          - { type: entities, filter: { include: [{ domain: light, area: upstairs_hallway }] }, show_empty: false }
+          - { type: heading, heading: "Sensors" }
+          - { type: entities, filter: { include: [{ domain: binary_sensor, area: upstairs_hallway }, { domain: sensor, area: upstairs_hallway }] }, show_empty: false }
+
+  - title: "Garage"
+    path: garage
+    icon: mdi:garage
+    type: sections
+    sections:
+      - type: grid
+        cards:
+          - { type: heading, heading: "Lights" }
+          - { type: entities, filter: { include: [{ domain: light, area: garage }] }, show_empty: false }
+          - { type: heading, heading: "Cover/Doors" }
+          - { type: entities, filter: { include: [{ domain: cover, area: garage }] }, show_empty: false }
+          - { type: heading, heading: "Sensors" }
+          - { type: entities, filter: { include: [{ domain: binary_sensor, area: garage }, { domain: sensor, area: garage }] }, show_empty: false }
+
+  - title: "MDF"
+    path: mdf
+    icon: mdi:server-network
+    type: sections
+    sections:
+      - type: grid
+        cards:
+          - { type: heading, heading: "Sensors" }
+          - { type: entities, filter: { include: [{ domain: binary_sensor, area: office }, { domain: sensor, area: office }] }, show_empty: false }
+          - { type: heading, heading: "Lights" }
+          - { type: entities, filter: { include: [{ domain: light, area: office }] }, show_empty: false }
+
+  - title: "Front Porch"
+    path: front-porch
+    icon: mdi:home-roof
+    type: sections
+    sections:
+      - type: grid
+        cards:
+          - { type: heading, heading: "Lights" }
+          - { type: entities, filter: { include: [{ domain: light, area: front_porch }] }, show_empty: false }
+          - { type: heading, heading: "Cameras" }
+          - { type: entities, filter: { include: [{ domain: camera, area: front_porch }] }, show_empty: false }
+          - { type: heading, heading: "Sensors" }
+          - { type: entities, filter: { include: [{ domain: binary_sensor, area: front_porch }, { domain: sensor, area: front_porch }] }, show_empty: false }
+
+  - title: "Backyard"
+    path: backyard
+    icon: mdi:grass
+    type: sections
+    sections:
+      - type: grid
+        cards:
+          - { type: heading, heading: "Lights" }
+          - { type: entities, filter: { include: [{ domain: light, area: backyard }] }, show_empty: false }
+          - { type: heading, heading: "Cameras" }
+          - { type: entities, filter: { include: [{ domain: camera, area: backyard }] }, show_empty: false }
+          - { type: heading, heading: "Sensors" }
+          - { type: entities, filter: { include: [{ domain: binary_sensor, area: backyard }, { domain: sensor, area: backyard }] }, show_empty: false }
+
+  - title: "Deck"
+    path: deck
+    icon: mdi:deck
+    type: sections
+    sections:
+      - type: grid
+        cards:
+          - { type: heading, heading: "Lights" }
+          - { type: entities, filter: { include: [{ domain: light, area: deck }] }, show_empty: false }
+          - { type: heading, heading: "Sensors" }
+          - { type: entities, filter: { include: [{ domain: binary_sensor, area: deck }, { domain: sensor, area: deck }] }, show_empty: false }

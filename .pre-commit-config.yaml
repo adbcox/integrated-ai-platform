@@ -6,7 +6,10 @@ repos:
       - id: end-of-file-fixer
       - id: check-yaml
         args: [--allow-multiple-documents]
-        exclude: '^docs/.*'
+        # ESPHome templates use !secret/!lambda/!include — pyyaml's safe_load
+        # (used by check-yaml) doesn't know these constructors. Yamllint still
+        # validates structure on these files.
+        exclude: '^docs/.*|^config/phase-13/voice-satellite/.*\.yaml$'
       - id: check-json
         exclude: '^regressions/.*\.json$|^docs/phase-13/h1-rollback-state/.*'
       - id: check-added-large-files

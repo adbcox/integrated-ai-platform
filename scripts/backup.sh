@@ -74,6 +74,7 @@ BACKUP_DIRS=(
   "$HOME/repos/integrated-ai-platform/docker/caddy"
   "$HOME/repos/integrated-ai-platform/docker/headscale"
   "$HOME/repos/integrated-ai-platform/scripts"
+  "$HOME/ha-backups"
 )
 
 # Add Vault data to backup if accessible

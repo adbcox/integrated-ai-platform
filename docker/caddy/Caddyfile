@@ -245,3 +245,38 @@ filebrowser.internal {
 
     reverse_proxy host.docker.internal:8089
 }
+
+# ── Smart Home (Phase 13 Block 3) ──────────────────────────────────────
+# Home Assistant lives on a separate LAN host (Intel NUC at 192.168.10.141),
+# not in the Mac Mini docker network. Reverse-proxy uses the LAN address
+# directly. WebSocket support is automatic in Caddy v2 reverse_proxy.
+#
+# Mac Docker Desktop NAT note: when caddy (in 172.21.0.0/16 docker bridge)
+# proxies to the LAN, the source IP HA sees is NOT the Mac Mini's
+# primary 192.168.10.145 but a Docker Desktop vmnet address. HA's
+# `http.trusted_proxies` therefore can't reliably anchor to a known IP.
+#
+# Resolution: strip all X-Forwarded-* and Forwarded headers on the way
+# upstream. HA then treats the request as a normal direct connection
+# (it's LAN-local already, so there's no client IP to preserve).
+homeassistant.internal {
+    import access_log
+
+    reverse_proxy 192.168.10.141:8123 {
+        header_up -X-Forwarded-For
+        header_up -X-Forwarded-Proto
+        header_up -X-Forwarded-Host
+        header_up -Forwarded
+        header_up -X-Real-IP
+    }
+}
+
+# ── CATT Controller (Phase 13 Block 3 P6) ────────────────────────────
+# Cast All The Things HTTP API on Mac Mini. LAN-internal; no auth.
+# Used by HA `rest_command` for arbitrary URL casting that the HA Cast
+# integration doesn't expose cleanly (yt-dlp-resolved sources etc).
+catt.internal {
+    import access_log
+
+    reverse_proxy host.docker.internal:8124
+}

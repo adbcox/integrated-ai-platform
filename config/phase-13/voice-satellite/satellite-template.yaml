@@ -1,0 +1,142 @@
+# Phase 13 Block 3 P4 — Wyoming wake-word satellite reference template
+#
+# Hardware target: ESP32-S3 board with PDM mic + I2S amp.
+#   Recommended: M5Stack Atom Echo (~$13), or any ESP32-S3 dev board with
+#   INMP441 mic + MAX98357A amp combo.
+#
+# Provisions a Wyoming-protocol satellite that:
+#   - performs wake-word detection on-device (micro_wake_word, no cloud)
+#   - streams audio to the HA-side openWakeWord/Whisper add-ons for STT
+#   - speaks Piper TTS responses through the on-board speaker
+#   - announces itself over mDNS for HA's "ESPHome" integration auto-discovery
+#
+# Per-room customization steps (to be done per physical satellite):
+#   1. Replace `__SUBSTITUTE_HOSTNAME__` with the room slug (e.g. `kitchen`,
+#      `master-bedroom`). Use only [a-z0-9-].
+#   2. Replace `__SUBSTITUTE_FRIENDLY_NAME__` with the human-readable label
+#      (e.g. "Kitchen Voice Satellite"). HA Areas already exist (15 areas
+#      from Phase 2 audit) — name should align so HA auto-suggests the
+#      correct Area on first pair.
+#   3. (Optional) Adjust `wake_word_model` from `okay_nabu` to one of the
+#      bundled openWakeWord IDs: `hey_jarvis`, `hey_mycroft`, `alexa`,
+#      `hey_rhasspy`. Note the `okay_nabu` form (NOT `ok_nabu`) — this is a
+#      doctrine bug encountered in Phase 3 P3.6 pipeline setup.
+#   4. (Optional) Move `pin_microphone_*` / `pin_speaker_*` if using a
+#      board other than M5Stack Atom Echo.
+#
+# Deployment workflow:
+#   - This file is the template. Per-room copies live alongside it
+#     (e.g. `kitchen.yaml`, `master-bedroom.yaml`) checked in for audit.
+#   - Compile + flash via the ESPHome add-on web UI (install only when
+#     physical hardware is present — that step is device-population scope,
+#     out of Phase 4 framework scope).
+#   - On first boot the satellite advertises via mDNS; HA's ESPHome
+#     integration auto-creates a config_entry. No manual pairing.
+
+substitutions:
+  hostname: "__SUBSTITUTE_HOSTNAME__"
+  friendly_name: "__SUBSTITUTE_FRIENDLY_NAME__"
+  wake_word_model: "okay_nabu"
+
+esphome:
+  name: "${hostname}"
+  friendly_name: "${friendly_name}"
+
+esp32:
+  board: m5stack-atom
+  framework:
+    type: esp-idf
+
+logger:
+  level: INFO
+
+# Encryption key is per-device — generate at flash time. Never reuse.
+# Replace placeholder with `openssl rand -base64 32` output at flash time.
+api:
+  encryption:
+    key: "__GENERATE_PER_DEVICE_BASE64_KEY__"  # pragma: allowlist secret
+
+ota:
+  - platform: esphome
+    # Replace with `openssl rand -hex 32` at flash time.
+    password: "__GENERATE_PER_DEVICE_OTA_PASSWORD__"  # pragma: allowlist secret
+
+wifi:
+  # Wi-Fi credentials live in HA's secrets.yaml (per-NUC), NOT in this
+  # template. At deployment time the operator restores the canonical
+  # ESPHome `!secret` references below by replacing each placeholder
+  # string with the unquoted form `!secret wifi_ssid` / `!secret wifi_password`.
+  # The placeholder form keeps the template valid plain YAML so it can
+  # be checked in and lint-clean. The ESPHome add-on resolves the real
+  # !secret values at compile time against /config/esphome/secrets.yaml,
+  # which lives only on the HA host and is never checked into this repo.
+  ssid: "__USE_!secret_wifi_ssid_AT_DEPLOY__"
+  password: "__USE_!secret_wifi_password_AT_DEPLOY__"  # pragma: allowlist secret
+  fast_connect: true
+  manual_ip:
+    static_ip: ""  # leave blank for DHCP; set when satellite locations stabilize
+    gateway: "192.168.10.1"
+    subnet: "255.255.255.0"
+
+# Wyoming-protocol voice assistant pipeline runs on the satellite,
+# delegating STT/TTS/intent to HA. Wake-word inference is on-device
+# (micro_wake_word) for privacy + sub-50ms wake latency.
+voice_assistant:
+  microphone: mic
+  speaker: spk
+  use_wake_word: true
+  noise_suppression_level: 2
+  auto_gain: 31dBFS
+  volume_multiplier: 2.0
+
+micro_wake_word:
+  models:
+    - model: ${wake_word_model}
+  on_wake_word_detected:
+    - voice_assistant.start:
+        wake_word: !lambda return wake_word;
+
+i2s_audio:
+  - id: i2s_in
+    i2s_lrclk_pin: GPIO33
+    i2s_bclk_pin: GPIO19
+  - id: i2s_out
+    i2s_lrclk_pin: GPIO33
+    i2s_bclk_pin: GPIO19
+
+microphone:
+  - platform: i2s_audio
+    id: mic
+    i2s_din_pin: GPIO23
+    adc_type: external
+    pdm: true
+    bits_per_sample: 16bit
+    sample_rate: 16000
+    i2s_audio_id: i2s_in
+
+speaker:
+  - platform: i2s_audio
+    id: spk
+    dac_type: external
+    i2s_dout_pin: GPIO22
+    mode: mono
+    i2s_audio_id: i2s_out
+
+# Status LED gives operator-side feedback (color = pipeline stage).
+light:
+  - platform: esp32_rmt_led_strip
+    id: status_led
+    name: "Status"
+    pin: GPIO27
+    rgb_order: GRB
+    chipset: ws2812
+    num_leds: 1
+    rmt_channel: 0
+    effects:
+      - addressable_lambda:
+          name: "Voice Pipeline State"
+          update_interval: 16ms
+          lambda: |-
+            // idle = dim white, listening = blue, processing = amber, speaking = green
+            // Implementation slot — wire to voice_assistant.on_listening etc. when
+            // physical satellites enter Phase 4-deployment block.
