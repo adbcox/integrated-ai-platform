@@ -495,3 +495,109 @@ The decision is "accept as-is per the reasoning above"; no
 canonical-pattern change is needed. Surfacing here for
 auditability — the next operator reading `docker logs netbox`
 will see this line and should not be surprised by it.
+
+---
+
+## Discovery #13: Plane homepage_token diverges between memory file and Vault — both valid, different tokens
+
+**Surfaced by:** C4 pre-flight memory hygiene check (per plan C4.2).
+**Severity:** Doctrine-relevant (plaintext credential in memory file used by an active script).
+**Resolution:** A1 + scope-probe path; Vault token confirmed admin write scope; memory plaintext redacted to Vault path reference; C6 follow-up registered to revoke memory token via Plane UI.
+
+### What happened
+
+Plan C4.2 specified a pre-flight check before running the back-fill:
+
+> Read the plaintext Plane token at `~/.claude/projects/.../memory/plane_deployment.md`,
+> compare hash to Vault copy at `secret/plane/api`, and if they match,
+> redact the memory file before the back-fill runs. **If they diverge,
+> stop and surface — do NOT auto-rotate.**
+
+Hash comparison (sha256, first 12 hex chars):
+
+| Source                                              | Hash prefix     |
+|-----------------------------------------------------|-----------------|
+| Memory file plaintext (line 14, original)           | `4d83dff62161`  |
+| Vault `secret/plane/api#homepage_token`             | `b90c7b634be7`  |
+
+They **do not match**. Two distinct tokens, both currently valid
+against the same workspace/project (read probes returned 200 with
+the same issue and label inventories).
+
+This was unexpected. The memory file was written 2026-04-25 during
+Plane CE deployment; Vault was the canonical store from day 1. The
+divergence implies either a token rotation that updated Vault but
+not memory, or a second token issued at some point that landed in
+memory but was never reconciled with Vault.
+
+### Resolution path (A1 + scope-probe, operator-approved)
+
+**Step 1 — Read probes against both tokens (no writes):**
+
+```
+GET /api/v1/workspaces/iap/projects/<id>/issues/?per_page=1   → 200 (total=604)
+GET /api/v1/workspaces/iap/projects/<id>/labels/              → 200 (count=64)
+```
+
+Both tokens passed read probes. Identical inventories returned.
+
+**Step 2 — Write-scope probe on Vault token only (PATCH + restore on a label description):**
+
+```
+PATCH /api/v1/.../labels/<id>/  (description="<probe>")  → 200
+PATCH /api/v1/.../labels/<id>/  (description="<original>") → 200
+```
+
+Vault `secret/plane/api#homepage_token` confirmed **admin write scope**.
+
+**Step 3 — Path A1 executed (Vault token has admin write scope):**
+
+1. Back-fill script (`scripts/backfill-plane-labels.py`) reads token via
+   `docker exec vault-server vault kv get -field=homepage_token secret/plane/api`
+   — never the memory file.
+2. Memory file `plane_deployment.md` line 14 redacted to:
+   `Token reference: secret/plane/api#homepage_token (redacted from plaintext on 2026-04-29 per Block 4.C C4 pre-flight)`
+3. Note added to memory file recording the hash divergence (the formerly-plaintext
+   token in memory was a *different valid token*, not a stale copy of the Vault one).
+
+A2 (fall back to memory plaintext) was **explicitly forbidden** by operator —
+that would leave a plaintext credential in a file consumed by an active
+script, doctrine violation.
+
+A3 (provision a fresh dedicated `secret/plane/api#backfill_token` via Plane UI)
+was the alternative path if A1's scope probe had failed. It did not fail,
+so A3 was not needed.
+
+### Hash-only verification
+
+No token value was displayed at any point during the probe or
+redaction work. Tokens were:
+- Read from Vault via subprocess `vault kv get -field=...` (captured stdout, held as Python str only).
+- Read from memory file by Python (held as str only).
+- Hashed via `hashlib.sha256(...).hexdigest()[:12]` and only the hash prefix surfaced.
+- Used as `X-Api-Key` header value via the existing `PlaneAPI` client.
+
+### C6 follow-up #9
+
+> Revoke the memory-file Plane token via Plane UI. It is a different
+> token from the canonical Vault token, no longer needed for any
+> automation, and its revocation tightens the credential surface.
+> Reference: hash `4d83dff62161`. (Cannot be revoked from the API
+> without admin access to the token-management UI; flagged for
+> manual operator action during C6 closeout.)
+
+### Lesson for future memory hygiene
+
+Memory files that store credentials inline are **load-bearing
+surfaces**. Even when the platform's canonical store is Vault,
+a plaintext copy in memory creates:
+- A second copy that can drift (this case).
+- A second copy that can be consumed by automation that bypasses
+  Vault (this case nearly happened — the plan originally said
+  "read token from memory file" before the doctrine review).
+
+**Forward doctrine:** memory files must reference Vault paths, not
+inline credential values. Any inline credential in memory is a
+hygiene defect, regardless of whether it is currently in use.
+This is registered as platform doctrine going forward; the C2/C3/C4
+sweep redacted the only known instance.
