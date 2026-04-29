@@ -114,8 +114,8 @@ ESPHome-dev residue (`5c53de3b_esphome-dev`) from the pre-scope-correction insta
 | Item | Why deferred | Where it lives |
 |---|---|---|
 | **ESPHome add-on install + device flashes** | device-side scope; needs physical M5Stack Atom Echo / equivalent units | P4 framework doc has hardware spec + per-area priority |
-| **Meross integration credentials** | device-population scope per user directive (D2 dropped) | `secret/meross/*` exists in Vault if/when needed |
-| **Warmup integration credentials** | device-population scope per user directive (D3 dropped) | `secret/warmup/*` exists in Vault if/when needed |
+| **Meross integration credentials** | device-population scope per user directive (D2 dropped) | Vault paths for Meross credentials will be created during the device-population block; not present today (verified `vault kv list secret/meross` empty 2026-04-29). |
+| **Warmup integration credentials** | device-population scope per user directive (D3 dropped) | Vault paths for Warmup credentials will be created during the device-population block; not present today (verified `vault kv list secret/warmup` empty 2026-04-29). |
 | **HA `rest_command:` to consume CATT API** | HA-side device wiring; needs Cast targets paired in HA first | P6 endpoint reference is the contract |
 | **yt-dlp source resolution endpoint** | expands attack surface; caller-side concern | noted in P6 out-of-scope §3 |
 | **mDNS Cast device discovery in CATT** | doesn't bridge through Docker Desktop on macOS; callers pass `device_ip` directly | noted in P6 out-of-scope §3 |
