@@ -217,11 +217,22 @@ def main() -> int:
         return 0
 
     # Apply
-    print("\n── Applying ──────────────────────────────────────────────")
+    print("\n── Applying ──────────────────────────────────────────────", flush=True)
     applied = 0
     failed = 0
     last_progress = 0
     rate_limit_hits = 0
+
+    # Open a per-issue progress log. Provides:
+    #   - tail-able live progress (flush after every line)
+    #   - mid-run failure recovery audit trail (which IDs got PATCHed)
+    log_path = Path("/tmp/c4_apply.log")
+    log = log_path.open("w")
+    def logp(msg: str) -> None:
+        log.write(msg + "\n"); log.flush()
+        print(msg, flush=True)
+
+    logp(f"# C4.4 live apply — {total_writes} planned PATCHes, started {time.strftime('%Y-%m-%d %H:%M:%S')}")
 
     # Map name→id once for fast lookup
     label_id_by_target: dict[str, str] = {n.lower(): l["id"] for n, l in (
@@ -239,29 +250,32 @@ def main() -> int:
         try:
             issue = api.get_issue(issue_id)
         except Exception as e:
-            print(f"  WARN  {issue_id} GET failed: {e}")
+            logp(f"  WARN  {issue_id} GET failed: {e}")
             failed += 1
             continue
         current = list(issue.get("labels") or [])
         if target_id in current:
             applied += 1  # treat as already-applied success
+            log.write(f"already  {issue_id}  prefix={prefix}  label={target}\n"); log.flush()
             continue
         new_labels = current + [target_id]
         try:
             api.update_issue(issue_id, {"label_ids": new_labels})
             applied += 1
+            log.write(f"applied  {issue_id}  prefix={prefix}  label={target}\n"); log.flush()
         except RateLimitError:
             rate_limit_hits += 1
-            print(f"  RATE  429 hit; sleeping {BACKOFF_429}s before retry")
+            logp(f"  RATE  429 hit on {issue_id}; sleeping {BACKOFF_429}s before retry")
             time.sleep(BACKOFF_429)
             try:
                 api.update_issue(issue_id, {"label_ids": new_labels})
                 applied += 1
+                log.write(f"applied  {issue_id}  prefix={prefix}  label={target}  (after-429-retry)\n"); log.flush()
             except Exception as e:
-                print(f"  FAIL  {issue_id}: {e}")
+                logp(f"  FAIL  {issue_id}: {e}")
                 failed += 1
         except Exception as e:
-            print(f"  FAIL  {issue_id}: {e}")
+            logp(f"  FAIL  {issue_id}: {e}")
             failed += 1
 
         # Pacing
@@ -269,14 +283,15 @@ def main() -> int:
 
         # Progress every 50 applied
         if applied - last_progress >= 50:
-            print(f"  ...progress: {applied}/{total_writes} applied, {failed} failed, {rate_limit_hits} 429s")
+            logp(f"  ...progress: {applied}/{total_writes} applied, {failed} failed, {rate_limit_hits} 429s")
             last_progress = applied
 
-    print(f"\n── Result ────────────────────────────────────────────────")
-    print(f"applied:        {applied}")
-    print(f"failed:         {failed}")
-    print(f"429 backoffs:   {rate_limit_hits}")
-    print(f"target writes:  {total_writes}")
+    logp(f"\n── Result ────────────────────────────────────────────────")
+    logp(f"applied:        {applied}")
+    logp(f"failed:         {failed}")
+    logp(f"429 backoffs:   {rate_limit_hits}")
+    logp(f"target writes:  {total_writes}")
+    log.close()
     return 0 if failed == 0 else 1
 
 
