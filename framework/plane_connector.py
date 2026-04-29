@@ -293,7 +293,17 @@ class PlaneAPI:
         data = self._get(url, params=params)
         if isinstance(data, dict):
             results = data.get("results", [])
-            next_cur = data.get("next_cursor")
+            # Discovery #14: Plane V1 always returns a non-null next_cursor
+            # (an incrementing offset), even past the end of the dataset.
+            # The terminating signal is `next_page_results=False` or an
+            # empty `count`. Fall back to the original next_cursor=None
+            # check for safety (other endpoints / future API versions).
+            next_page = data.get("next_page_results")
+            count = data.get("count")
+            if next_page is False or count == 0 or not results:
+                next_cur = None
+            else:
+                next_cur = data.get("next_cursor")
         else:
             results = data
             next_cur = None
