@@ -5,7 +5,9 @@
 **Scope:** D-OP (operating-model doctrine) + D-CN (Plane connector
 hardening) + Plane label back-fill prep
 **Increment branches consumed:** none — single mainline (per ADR-A-008)
-**Result:** Closed. Ready for Increment 2 (Block 4.D, InvenTree).
+**Result:** **CLOSED** (regression PASS=15 FAIL=0 WARN=3, strictly
+better than the `ff05159` baseline of 14/0/4). Ready for Increment 2
+(Block 4.D, InvenTree).
 
 ## 1. Increment scope (as planned)
 
@@ -125,14 +127,36 @@ plausibly affect the regression probe — it is pure code +
 docs. The expected outcome is no change from `ff05159` (still
 PASS=14 FAIL=0 WARN=4).
 
-After the probe runs, append this section with:
+### 5.1 Probe results (operator-run, appended at close)
 
 ```
-Probe run timestamp: <ISO-8601>
-Result: PASS=<n> FAIL=<n> WARN=<n>
-Delta vs ff05159 baseline: <none / list>
-Closeout decision: <CLOSED / HOLD>
+Probe run timestamp: 2026-04-29T16:27:45-04:00
+Gate ID:             increment-1-final
+Result:              PASS=15 FAIL=0 WARN=3
+Baseline (ff05159):  PASS=14 FAIL=0 WARN=4
+Delta:               +1 PASS, -1 WARN, 0 FAIL — strictly better
+Closeout decision:   CLOSED
 ```
+
+Full probe output: `docs/phase-13/INCREMENT_1_REGRESSION_2026-04-29.log`.
+
+The three remaining WARNs are all pre-existing platform limitations,
+already documented in CLAUDE.md "Known Hardening Trade-offs" or
+deferred:
+
+1. `openhands.internal: not in macOS DNS cache` — normal when the
+   service has not been recently exercised; resolves on first use.
+2. `restic snapshot list inaccessible (creds may be Vault-fetched
+   only)` — pre-existing; restic creds are Vault-rendered by design,
+   probe lacks the AppRole context to enumerate. Out of scope.
+3. `no gate-specific dependency probes defined for increment-1-final`
+   — expected; this gate ID is new (Increment 1 introduced it).
+   Whether to add gate-specific probes is an Increment 2+ doctrine
+   question.
+
+No new FAILs, one fewer WARN than baseline (`ff05159` had 4),
+one extra PASS (53 containers up vs the baseline run, all healthy).
+**Pass criterion met.**
 
 ## 6. Hard-stop verification — Increment 2 NOT begun
 
@@ -181,11 +205,11 @@ Conditions met for closing Increment 1:
       but doesn't block Increment 2 — the script is idempotent and
       can run any time before, during, or after Increment 2)
 - [x] Phase D closeout doc (this) committed
-- [ ] Phase D regression probe run on Mac Mini (operator step;
-      append §5 with results)
+- [x] Phase D regression probe run on Mac Mini — PASS=15 FAIL=0
+      WARN=3 (strictly better than baseline). See §5.1.
 
-Once §5 is appended with PASS=14 FAIL=0 WARN≤4, Increment 1 is
-**CLOSED** and Increment 2 (Block 4.D) is unblocked.
+**Increment 1 is CLOSED.** Increment 2 (Block 4.D, InvenTree) is
+unblocked.
 
 ## 10. References
 
