@@ -47,12 +47,18 @@ DEVICE_ROLE_SLUG = "platform-host"
 
 
 def load_token() -> str:
+    """Return the full V2 wire token (nbt_<key>.<secret>) for API auth."""
     if not CRED_FILE.is_file():
         sys.exit(f"ERROR: credentials file {CRED_FILE} missing")
+    fields: dict[str, str] = {}
     for line in CRED_FILE.read_text().splitlines():
-        if line.startswith("SUPERUSER_API_TOKEN="):
-            return line.split("=", 1)[1].strip()
-    sys.exit("ERROR: SUPERUSER_API_TOKEN not in credentials.env")
+        if "=" not in line:
+            continue
+        k, v = line.split("=", 1)
+        fields[k.strip()] = v.strip()
+    if "NETBOX_API_TOKEN" in fields:
+        return fields["NETBOX_API_TOKEN"]
+    sys.exit("ERROR: NETBOX_API_TOKEN missing from credentials.env (Block 4.C C3 update required)")
 
 
 def load_registry() -> list[dict]:
