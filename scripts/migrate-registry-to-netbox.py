@@ -182,6 +182,11 @@ def build_service_payload(svc: dict, device_id: int, tag_ids: dict[str, int]) ->
     port = svc.get("port") or svc.get("internal_port") or 0
     if not isinstance(port, int) or port <= 0:
         port = svc.get("internal_port") or 0
+    if not isinstance(port, int) or port <= 0:
+        # Sentinel for port-less services (workers, sidecars). NetBox
+        # ipam.service.ports is required+non-empty. Port 1 is reserved
+        # (tcpmux, RFC1340) so it cannot collide with a real binding.
+        port = 1
     name = svc.get("id")
     description = svc.get("name") or svc["id"]
     purpose = svc.get("purpose") or ""
