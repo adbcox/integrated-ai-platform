@@ -62,10 +62,23 @@ def load_token() -> str:
 
 
 def load_registry() -> list[dict]:
+    """Load services, de-duplicating by id (last-wins, with a warning logged
+    once per duplicate id — per C1 audit Finding A)."""
     if not REGISTRY_FILE.is_file():
         sys.exit(f"ERROR: registry {REGISTRY_FILE} missing — run from repo root")
     data = yaml.safe_load(REGISTRY_FILE.read_text())
-    return data.get("services") or []
+    raw = data.get("services") or []
+    seen: dict[str, dict] = {}
+    dups: set[str] = set()
+    for s in raw:
+        sid = s.get("id")
+        if sid in seen:
+            dups.add(sid)
+        seen[sid] = s
+    if dups:
+        for d in sorted(dups):
+            print(f"  NOTE: duplicate id '{d}' in registry — using last entry (C1 audit Finding A)")
+    return list(seen.values())
 
 
 # ── Plan accumulator ────────────────────────────────────────────────
@@ -188,13 +201,22 @@ def build_service_payload(svc: dict, device_id: int, tag_ids: dict[str, int]) ->
     if svc.get("deprecated"):
         tag_slugs.append(tag_ids["deprecated"])
 
+    health_expect = svc.get("health_expect")
+    if isinstance(health_expect, list) and health_expect:
+        health_expect = health_expect[0]
+    if not isinstance(health_expect, int):
+        try:
+            health_expect = int(health_expect) if health_expect else 0
+        except (TypeError, ValueError):
+            health_expect = 0
+
     cf: dict[str, Any] = {
         "registry_id": svc["id"],
         "container_name": svc.get("container") or "",
         "container_image": svc.get("image") or "",
         "health_url": svc.get("health_url") or "",
         "health_method": svc.get("health_method") or "",
-        "health_expect": svc.get("health_expect") or 0,
+        "health_expect": health_expect,
         "compose_file": svc.get("compose_file") or "",
         "vault_paths": normalize_credentials(svc),
         "security_profile": json.dumps(svc.get("security") or {}, sort_keys=True),
@@ -268,6 +290,14 @@ def main() -> int:
                      payload, nb.ipam.services, svc["id"])
         if obj:
             by_id[svc["id"]] = obj
+        elif args.dry_run:
+            # Dry-run create returns None; stub so the deps pass can plan
+            class _Stub:
+                pass
+            stub = _Stub()
+            stub.id = -1  # sentinel
+            stub.custom_fields = {}
+            by_id[svc["id"]] = stub
 
     print("\n── Service dependencies (multi-object cross-refs) ────────")
     for svc in services:
