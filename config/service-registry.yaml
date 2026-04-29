@@ -1130,7 +1130,7 @@ services:
     health_method: GET
     health_expect: 200
     purpose: Mac Mini control-center portal — widgets for Sonarr/Radarr/Prowlarr/Grafana/Plane/Vault/Uptime Kuma; canonical Vault Agent sidecar pattern; routed via Caddy at https://homepage.internal
-    depends_on: [vault-server, caddy, sonarr, radarr, prowlarr, grafana-obs, plane-api, uptime-kuma]
+    depends_on: [vault, caddy, sonarr, radarr, prowlarr, grafana, plane-api, uptime-kuma]
     security:
       no_new_privileges: true
       cap_drop: [ALL]
@@ -1174,7 +1174,7 @@ services:
     health_method: GET
     health_expect: 200
     purpose: Serves config/service-registry.yaml as nodes/edges JSON for the Grafana Service Topology dashboard (Node Graph panel via marcusolsson-json-datasource).
-    depends_on: [grafana-obs]
+    depends_on: [grafana]
     security:
       no_new_privileges: true
       cap_drop: [ALL]
@@ -1206,7 +1206,7 @@ services:
       Tier 3 actions require operator re-auth (Argon2 against
       secret/control-plane/operator). Caddy 403's off-tailnet
       requests at the outer door.
-    depends_on: [vault-server, caddy, sonarr, radarr, prowlarr]
+    depends_on: [vault, caddy, sonarr, radarr, prowlarr]
     security:
       no_new_privileges: true
       cap_drop: [ALL]
@@ -1365,7 +1365,7 @@ services:
       Model Context Protocol bridge exposing Plex library queries to
       MCP-aware agents (Claude Code, Obot). Read-only; uses Plex
       credentials from Vault via plex-mcp policy.
-    depends_on: [vault-server]
+    depends_on: [vault]
     security:
       no_new_privileges: true
       cap_drop: [ALL]
@@ -1396,7 +1396,7 @@ services:
       dependencies, and Vault-path cross-references. Replaces
       config/service-registry.yaml; Block 4.C C5 deprecates the YAML.
       Block 4.D layers InvenTree on top for hardware-asset inventory.
-    depends_on: [vault-server, netbox-postgres, netbox-redis, netbox-redis-cache]
+    depends_on: [vault, netbox-postgres, netbox-redis, netbox-redis-cache]
     security:
       no_new_privileges: true
       cap_drop: [ALL]
@@ -1478,7 +1478,7 @@ services:
     purpose: |
       Dedicated Postgres for NetBox. Isolated from Plane and Zabbix
       databases per blast-radius doctrine.
-    depends_on: [vault-server]
+    depends_on: [vault]
     kind: support-service
     sidecar_of: netbox
     security:
@@ -1512,7 +1512,7 @@ services:
     purpose: |
       Valkey (open-source Redis fork) for NetBox primary database.
       Append-only, password-protected.
-    depends_on: [vault-server]
+    depends_on: [vault]
     kind: support-service
     sidecar_of: netbox
     security:
@@ -1541,7 +1541,7 @@ services:
     purpose: |
       Valkey cache for NetBox. Distinct password from netbox-redis;
       no append-only persistence (cache only).
-    depends_on: [vault-server]
+    depends_on: [vault]
     kind: support-service
     sidecar_of: netbox
     security:
