@@ -709,3 +709,157 @@ when cursor is null") was a *plausible-sounding claim* that was
 never verified. The fix has been verified directly: a probe of
 the empty-page response now returns `next_cur=None`, ending the
 loop.
+
+---
+
+## Discovery #15: Apply path had three compounding bugs that crippled C4.4
+
+**Surfaced by:** First C4.4 live attempt — 26 issues PATCHed cleanly, then a sustained storm of 429s on the per-issue GETs, every one masked as a permanent `failed`.
+**Severity:** Three bugs at once in `scripts/backfill-plane-labels.py`. Run was killed by operator after ~150 spurious failures recorded.
+**Resolution:** Removed redundant pre-fetch GET (Option A, operator-approved). Committed.
+
+### What the operator saw
+
+On `─ Applying ─` start, the script PATCHed 26 issues correctly
+in the first ~30 seconds. Then every subsequent iteration logged:
+
+```
+WARN  <issue_id> GET failed: 429 on GET <issue_id>/
+```
+
+…with no recovery and no slowing down. By the time the run was
+killed, ~150 issues were in `failed` state — all spurious; none
+of those PATCHes had been attempted, only the pre-fetch GET.
+
+### Bug 1: 2× rate budget consumption per issue
+
+The apply loop called `api.get_issue(issue_id)` THEN
+`api.update_issue(...)` for each issue, both at 1 req/sec
+pacing — sustained **2 reqs/sec = 120/min**, double the 60/min
+Plane per-token limit. The 60/min budget was exhausted in ~30
+seconds (matching the 26 successful PATCHes in the log: roughly
+26 GETs + 26 PATCHes = 52 requests in ~30s).
+
+After that, every request was at 429. Throughput collapsed to
+zero useful work but the script kept hammering at 1 req/sec.
+
+### Bug 2: `RateLimitError` masked by broad `except Exception`
+
+The `get_issue()` call was wrapped in:
+
+```python
+try:
+    issue = api.get_issue(issue_id)
+except Exception as e:
+    logp(f"  WARN  {issue_id} GET failed: {e}")
+    failed += 1
+    continue
+```
+
+`RateLimitError` inherits from Python's base `Exception`, so the
+broad handler caught it as a permanent failure. No retry, no
+backoff, no `RATE 429 hit` log line — straight to `failed += 1`.
+
+The PATCH call's handler (just below) caught `RateLimitError`
+specifically *before* the generic `Exception` handler, which is
+the correct pattern. The GET handler did not. Inconsistency.
+
+### Bug 3: Single 65s backoff would have been insufficient anyway
+
+Even if Bug 2 had been fixed (catch + retry on GET), the 60/min
+budget was being consumed by a 2× pattern. After a single 65s
+sleep the script would resume at 2 reqs/sec and hit 429 again
+within 30 seconds. The rate-limit storm is structural, not
+transient — only fixing Bug 1 actually fixes the run.
+
+### Why the dry-run didn't catch this
+
+Dry-run takes the early `return 0` at line 217, **before** the
+apply loop. The 8 inventory GETs (1 labels + 7 issue pages)
+fit comfortably in 60/min and never exercise the GET-then-PATCH
+pattern. Bug 1's 2× rate budget is invisible until the apply
+path runs against real data.
+
+The dry-run's plan output ("planned PATCHes: 603, ETA ~10m") was
+arithmetically correct (1 PATCH/sec × 603) but didn't account for
+the GET that the apply loop also did. The plan said one thing;
+the execution did another.
+
+### Resolution: remove the pre-fetch GET (Option A)
+
+The pre-fetch existed with the comment "avoid stale-cache races."
+But the data flow has no concurrent writer:
+
+1. Plan stage paginates issues, capturing `i.get("labels")` for each.
+2. Plan stage immediately enters apply stage — no other process between.
+3. Single-threaded script, single-token, no other automation in the project.
+
+The "stale-cache race" was speculative defense. The fix:
+
+- Carry plan-time `existing_labels` through the `issue_actions` tuple.
+- Apply loop builds `new_labels = existing_labels + [target_id]`,
+  deduplicating `target_id` defensively.
+- PATCH directly. No GET.
+
+Apply loop now consumes exactly 1 req per issue → 1 req/sec sustained
+→ stays under 60/min with margin.
+
+State after the failed first run:
+- 26 issues correctly labeled in Plane (per `/tmp/c4_apply.log`,
+  cross-checked against the apply-write entries).
+- These 26 will be detected on next run as `skip-already-labeled`
+  during the plan stage (their existing_labels will already
+  contain the target_id).
+- Idempotency preserved; remaining ~577 PATCHes proceed cleanly.
+
+### C6 follow-ups
+
+**#11** — Audit `framework/plane_connector.py` error class hierarchy:
+`RateLimitError` inherits from `Exception`, which makes it easy for
+caller code to mask it under a broad `except Exception` handler
+(Bug 2 above). Either:
+- Make `RateLimitError` inherit from a non-`Exception` base (e.g.,
+  `BaseException` directly, like `KeyboardInterrupt`), forcing
+  callers to handle it explicitly; or
+- Add a docstring warning on the class definition that callers
+  must catch `RateLimitError` *before* any generic `Exception`
+  handler, with an example.
+
+**#12** — Canonical-pattern README addition: when writing scripts
+that consume `framework/plane_connector.py`, the explicit pattern
+is:
+
+```python
+try:
+    api.some_call(...)
+except RateLimitError:
+    # backoff + retry
+    ...
+except Exception as e:
+    # genuine failure
+    ...
+```
+
+Generic `except Exception` first, then a specific
+`except RateLimitError` after, will be unreachable. The lint /
+review checklist for new connector consumers should look for this.
+
+**#13** — Dry-run coverage gap: dry-run mode currently skips the
+apply loop entirely. It should at least *simulate* the apply
+loop's request pattern — e.g., a `--dry-run --simulate-rate`
+flag that walks the issue_actions list with no real requests
+but estimates request volume per minute. Bug 1's 2× rate
+budget consumption would have been caught by a dry-run that
+modelled the apply loop's actual GET+PATCH cadence.
+
+### Lesson
+
+Dry-run is a planning artifact, not a behavioural test. It
+correctly answered "what will this do at the data level" but
+not "how will this consume the rate budget at the wire level."
+The two diverged because the apply loop did a GET that the plan
+stage didn't price into the wall-time estimate.
+
+For future write-amplifying scripts: the dry-run should *count
+the requests the apply loop would emit*, not just count the
+data-level operations.

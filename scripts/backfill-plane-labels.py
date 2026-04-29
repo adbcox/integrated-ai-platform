@@ -183,24 +183,27 @@ def main() -> int:
     # Tally per-issue actions
     print("\n── Per-issue plan ────────────────────────────────────────")
     action_counts = Counter()
-    issue_actions: list[tuple[str, str, str, str]] = []  # (verb, issue_id, prefix, target_label)
+    # (verb, issue_id, prefix, target_label, existing_labels)
+    # existing_labels carried from plan-time inventory so the apply loop
+    # does not need a redundant pre-fetch GET (Discovery #15).
+    issue_actions: list[tuple[str, str, str, str, list[str]]] = []
 
     for prefix, issues_in in by_prefix.items():
         target = prefix_to_label_name.get(prefix)
         if not target:
             for i in issues_in:
                 action_counts["skip-unmatched-prefix"] += 1
-                issue_actions.append(("skip-unmatched-prefix", i["id"], prefix, ""))
+                issue_actions.append(("skip-unmatched-prefix", i["id"], prefix, "", []))
             continue
         target_id = label_by_name_ci[target.lower()]["id"]
         for i in issues_in:
-            current = set(i.get("labels") or [])
-            if target_id in current:
+            existing = list(i.get("labels") or [])
+            if target_id in existing:
                 action_counts["skip-already-labeled"] += 1
-                issue_actions.append(("skip-already-labeled", i["id"], prefix, target))
+                issue_actions.append(("skip-already-labeled", i["id"], prefix, target, existing))
             else:
                 action_counts["apply"] += 1
-                issue_actions.append(("apply", i["id"], prefix, target))
+                issue_actions.append(("apply", i["id"], prefix, target, existing))
 
     for i in no_prefix:
         action_counts["skip-no-prefix"] += 1
@@ -242,23 +245,20 @@ def main() -> int:
     for l in labels:
         label_id_by_target[l["name"].lower()] = l["id"]
 
-    for verb, issue_id, prefix, target in issue_actions:
+    for verb, issue_id, prefix, target, existing_labels in issue_actions:
         if verb != "apply":
             continue
         target_id = label_id_by_target[target.lower()]
-        # Re-fetch the issue's current labels to avoid stale-cache races
-        try:
-            issue = api.get_issue(issue_id)
-        except Exception as e:
-            logp(f"  WARN  {issue_id} GET failed: {e}")
-            failed += 1
-            continue
-        current = list(issue.get("labels") or [])
-        if target_id in current:
-            applied += 1  # treat as already-applied success
-            log.write(f"already  {issue_id}  prefix={prefix}  label={target}\n"); log.flush()
-            continue
-        new_labels = current + [target_id]
+        # No pre-fetch GET (Discovery #15). The plan-stage inventory
+        # already captured this issue's existing labels into
+        # existing_labels. Doing a GET here would double rate-budget
+        # consumption (2 reqs/issue at 1 req/sec sustained = 120/min,
+        # blowing the 60/min Plane limit). Idempotency is preserved
+        # because we dedup target_id below; if existing_labels happens
+        # to be slightly stale the PATCH is still correct.
+        new_labels = list(existing_labels)
+        if target_id not in new_labels:
+            new_labels.append(target_id)
         try:
             api.update_issue(issue_id, {"label_ids": new_labels})
             applied += 1
