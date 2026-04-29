@@ -1376,3 +1376,173 @@ services:
     notes: |
       Vault policy `plex-mcp` exists (config/vault-policies/plex-mcp-policy.hcl).
       Block 4.A (2026-04-29): added to registry to reflect live state.
+  # ── CMDB (Block 4.C) ────────────────────────────────────────────────────────
+  # Note: this YAML is being deprecated in favor of NetBox itself as the
+  # CMDB source-of-truth. Block 4.C C5 will rename this file to
+  # service-registry.yaml.DEPRECATED with a header pointing at NetBox.
+  - id: netbox
+    name: NetBox CMDB
+    category: cmdb
+    host: mac-mini
+    container: netbox
+    image: docker.io/netboxcommunity/netbox:v4.5-4.0.2
+    port: 8080
+    internal_port: 8080
+    health_url: "http://localhost:8080/login/"
+    health_method: GET
+    health_expect: 200
+    purpose: |
+      Source-of-truth CMDB for the platform. Hosts services, devices,
+      dependencies, and Vault-path cross-references. Replaces
+      config/service-registry.yaml; Block 4.C C5 deprecates the YAML.
+      Block 4.D layers InvenTree on top for hardware-asset inventory.
+    depends_on: [vault-server, netbox-postgres, netbox-redis, netbox-redis-cache]
+    security:
+      no_new_privileges: true
+      cap_drop: [ALL]
+      cap_add: [CHOWN, SETUID, SETGID, FOWNER, DAC_OVERRIDE, NET_BIND_SERVICE]
+      read_only: false
+    compose_file: docker/netbox/docker-compose.yml
+    credentials: [postgres_password, redis_password, redis_cache_password, secret_key, api_token_pepper, admin_password, api_token]
+    notes: |
+      Block 4.C (2026-04-29): deployed via Vault Agent sidecar pattern.
+      Vault policy `netbox` (config/vault-policies/netbox-policy.hcl);
+      AppRole `netbox`. Caddy route `netbox.internal`.
+      Sibling services: netbox-worker, netbox-housekeeping, netbox-postgres,
+      netbox-redis, netbox-redis-cache (separate registry entries).
+  - id: netbox-worker
+    name: NetBox Worker
+    category: cmdb
+    host: mac-mini
+    container: netbox-worker
+    image: docker.io/netboxcommunity/netbox:v4.5-4.0.2
+    port: null
+    internal_port: null
+    health_url: null
+    health_method: null
+    health_expect: null
+    purpose: |
+      RQ worker for NetBox async jobs (custom scripts, reports,
+      webhook delivery). Same image as netbox app, runs `manage.py
+      rqworker`.
+    depends_on: [netbox]
+    kind: support-service
+    sidecar_of: netbox
+    security:
+      no_new_privileges: true
+      cap_drop: [ALL]
+      cap_add: [CHOWN, SETUID, SETGID, FOWNER, DAC_OVERRIDE]
+      read_only: false
+    compose_file: docker/netbox/docker-compose.yml
+    credentials: [postgres_password, redis_password, redis_cache_password, secret_key, api_token_pepper]
+    notes: |
+      Block 4.C (2026-04-29): deployed as part of NetBox stack.
+  - id: netbox-housekeeping
+    name: NetBox Housekeeping
+    category: cmdb
+    host: mac-mini
+    container: netbox-housekeeping
+    image: docker.io/netboxcommunity/netbox:v4.5-4.0.2
+    port: null
+    internal_port: null
+    health_url: null
+    health_method: null
+    health_expect: null
+    purpose: |
+      Periodic housekeeping (job result cleanup, change-log pruning,
+      cache invalidation). Same image as netbox app, runs
+      `housekeeping.sh`.
+    depends_on: [netbox]
+    kind: support-service
+    sidecar_of: netbox
+    security:
+      no_new_privileges: true
+      cap_drop: [ALL]
+      cap_add: [CHOWN, SETUID, SETGID, FOWNER, DAC_OVERRIDE]
+      read_only: false
+    compose_file: docker/netbox/docker-compose.yml
+    credentials: [postgres_password, redis_password, redis_cache_password, secret_key, api_token_pepper]
+    notes: |
+      Block 4.C (2026-04-29): deployed as part of NetBox stack.
+  - id: netbox-postgres
+    name: NetBox PostgreSQL
+    category: data
+    host: mac-mini
+    container: netbox-postgres
+    image: docker.io/postgres:18-alpine
+    port: null
+    internal_port: 5432
+    health_url: null
+    health_method: null
+    health_expect: null
+    purpose: |
+      Dedicated Postgres for NetBox. Isolated from Plane and Zabbix
+      databases per blast-radius doctrine.
+    depends_on: [vault-server]
+    kind: support-service
+    sidecar_of: netbox
+    security:
+      no_new_privileges: true
+      cap_drop: [ALL]
+      cap_add: [CHOWN, SETUID, SETGID, DAC_OVERRIDE]
+      read_only: false
+    compose_file: docker/netbox/docker-compose.yml
+    credentials: [postgres_password]
+    notes: |
+      Block 4.C (2026-04-29): postgres:18-alpine matching upstream
+      netbox-docker pinning. Deviates from Plane's postgres:15-alpine.
+  - id: netbox-redis
+    name: NetBox Valkey (database)
+    category: data
+    host: mac-mini
+    container: netbox-redis
+    image: docker.io/valkey/valkey:9.0-alpine
+    port: null
+    internal_port: 6379
+    health_url: null
+    health_method: null
+    health_expect: null
+    purpose: |
+      Valkey (open-source Redis fork) for NetBox primary database.
+      Append-only, password-protected.
+    depends_on: [vault-server]
+    kind: support-service
+    sidecar_of: netbox
+    security:
+      no_new_privileges: true
+      cap_drop: [ALL]
+      cap_add: [SETUID, SETGID]
+      read_only: false
+    compose_file: docker/netbox/docker-compose.yml
+    credentials: [redis_password]
+    notes: |
+      Block 4.C (2026-04-29): valkey:9.0-alpine matches upstream
+      netbox-docker. First Valkey deployment in the platform; Plane
+      uses redis:7.2-alpine (separate stack, different OSS license
+      posture).
+  - id: netbox-redis-cache
+    name: NetBox Valkey (cache)
+    category: data
+    host: mac-mini
+    container: netbox-redis-cache
+    image: docker.io/valkey/valkey:9.0-alpine
+    port: null
+    internal_port: 6379
+    health_url: null
+    health_method: null
+    health_expect: null
+    purpose: |
+      Valkey cache for NetBox. Distinct password from netbox-redis;
+      no append-only persistence (cache only).
+    depends_on: [vault-server]
+    kind: support-service
+    sidecar_of: netbox
+    security:
+      no_new_privileges: true
+      cap_drop: [ALL]
+      cap_add: [SETUID, SETGID]
+      read_only: false
+    compose_file: docker/netbox/docker-compose.yml
+    credentials: [redis_cache_password]
+    notes: |
+      Block 4.C (2026-04-29): second Valkey instance, cache-only.

@@ -82,6 +82,12 @@ homarr.internal {
     reverse_proxy host.docker.internal:7575
 }
 
+netbox.internal {
+    import access_log
+
+    reverse_proxy host.docker.internal:8084
+}
+
 # ── Observability Layer ───────────────────────────────────────────────────────
 grafana.internal {
     import access_log

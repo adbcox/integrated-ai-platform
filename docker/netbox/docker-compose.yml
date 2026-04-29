@@ -1,0 +1,423 @@
+version: "3.9"
+
+# Block 4.C C2.2 — NetBox CMDB stack.
+# Canonical Vault Agent sidecar pattern: 4 sidecars, one per
+# credential consumer (netbox app, netbox-postgres, netbox-redis,
+# netbox-redis-cache).
+#
+# Image pinning: NetBox app + worker share image v4.5-4.0.2 (NetBox
+# 4.5 + netbox-docker 4.0.2, latest stable as of 2026-04-29).
+# Postgres pinned to upstream's choice (postgres:18-alpine);
+# Valkey pinned to v9.0-alpine (upstream's open-source Redis fork).
+#
+# Hardening: cap_drop[ALL] universally; cap_add minimal per workload;
+# no-new-privileges true universally; mem_limit per CLAUDE.md
+# anti-undersize note (postgres needs shared_buffers headroom);
+# tmpfs for /vault/secrets where needed.
+
+x-vault-agent-base: &vault-agent-base
+  image: hashicorp/vault:2.0.0
+  restart: "no"
+  environment:
+    VAULT_ADDR: "http://vault-server:8200"
+    SKIP_SETCAP: "true"
+  command: agent -config=/vault/config/agent.hcl
+  cap_drop:
+    - ALL
+  security_opt:
+    - no-new-privileges:true
+  networks:
+    - control-center-net
+
+services:
+  # ── Vault Agent sidecars (one per credential consumer) ────────────────────
+  vault-agent-netbox:
+    <<: *vault-agent-base
+    container_name: vault-agent-netbox
+    volumes:
+      - /Users/admin/.vault-approle/netbox:/vault/approle:ro
+      - /Users/admin/.vault-agent-secrets/netbox:/vault/secrets
+      - ./vault-agent-netbox/agent.hcl:/vault/config/agent.hcl:ro
+      - ./vault-agent-netbox/credentials.env.tmpl:/vault/agent-config/credentials.env.tmpl:ro
+
+  vault-agent-netbox-postgres:
+    <<: *vault-agent-base
+    container_name: vault-agent-netbox-postgres
+    volumes:
+      - /Users/admin/.vault-approle/netbox:/vault/approle:ro
+      - /Users/admin/.vault-agent-secrets/netbox-postgres:/vault/secrets
+      - ./vault-agent-netbox-postgres/agent.hcl:/vault/config/agent.hcl:ro
+      - ./vault-agent-netbox-postgres/credentials.env.tmpl:/vault/agent-config/credentials.env.tmpl:ro
+
+  vault-agent-netbox-redis:
+    <<: *vault-agent-base
+    container_name: vault-agent-netbox-redis
+    volumes:
+      - /Users/admin/.vault-approle/netbox:/vault/approle:ro
+      - /Users/admin/.vault-agent-secrets/netbox-redis:/vault/secrets
+      - ./vault-agent-netbox-redis/agent.hcl:/vault/config/agent.hcl:ro
+      - ./vault-agent-netbox-redis/credentials.env.tmpl:/vault/agent-config/credentials.env.tmpl:ro
+
+  vault-agent-netbox-redis-cache:
+    <<: *vault-agent-base
+    container_name: vault-agent-netbox-redis-cache
+    volumes:
+      - /Users/admin/.vault-approle/netbox:/vault/approle:ro
+      - /Users/admin/.vault-agent-secrets/netbox-redis-cache:/vault/secrets
+      - ./vault-agent-netbox-redis-cache/agent.hcl:/vault/config/agent.hcl:ro
+      - ./vault-agent-netbox-redis-cache/credentials.env.tmpl:/vault/agent-config/credentials.env.tmpl:ro
+
+  # ── PostgreSQL (NetBox-dedicated; isolation per C1.2 Decision-2) ──────────
+  netbox-postgres:
+    image: docker.io/postgres:18-alpine
+    container_name: netbox-postgres
+    restart: unless-stopped
+    depends_on:
+      vault-agent-netbox-postgres:
+        condition: service_completed_successfully
+    environment:
+      POSTGRES_USER: netbox
+      POSTGRES_DB: netbox
+    volumes:
+      - netbox-postgres-data:/var/lib/postgresql/data
+      - /Users/admin/.vault-agent-secrets/netbox-postgres:/vault/secrets:ro
+    entrypoint:
+      - sh
+      - -c
+      - "set -a && . /vault/secrets/credentials.env && set +a && exec docker-entrypoint.sh \"$$0\" \"$$@\""
+    command: ["postgres"]
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - SETUID
+      - SETGID
+      - DAC_OVERRIDE
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: 1g
+    cpus: 1.0
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -q -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 20s
+    networks:
+      - netbox-net
+
+  # ── Valkey: primary database (upstream uses Valkey, the OSS Redis fork) ───
+  netbox-redis:
+    image: docker.io/valkey/valkey:9.0-alpine
+    container_name: netbox-redis
+    restart: unless-stopped
+    depends_on:
+      vault-agent-netbox-redis:
+        condition: service_completed_successfully
+    volumes:
+      - netbox-redis-data:/data
+      - /Users/admin/.vault-agent-secrets/netbox-redis:/vault/secrets:ro
+    entrypoint:
+      - sh
+      - -c
+      - "set -a && . /vault/secrets/credentials.env && set +a && exec valkey-server --appendonly yes --requirepass \"$$REDIS_PASSWORD\""
+    cap_drop:
+      - ALL
+    cap_add:
+      - SETUID
+      - SETGID
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: 512m
+    cpus: 0.5
+    healthcheck:
+      test: ["CMD-SHELL", "[ $$(valkey-cli --pass \"$$REDIS_PASSWORD\" ping) = 'PONG' ]"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks:
+      - netbox-net
+
+  # ── Valkey: cache (separate password, not appendonly) ─────────────────────
+  netbox-redis-cache:
+    image: docker.io/valkey/valkey:9.0-alpine
+    container_name: netbox-redis-cache
+    restart: unless-stopped
+    depends_on:
+      vault-agent-netbox-redis-cache:
+        condition: service_completed_successfully
+    volumes:
+      - netbox-redis-cache-data:/data
+      - /Users/admin/.vault-agent-secrets/netbox-redis-cache:/vault/secrets:ro
+    entrypoint:
+      - sh
+      - -c
+      - "set -a && . /vault/secrets/credentials.env && set +a && exec valkey-server --requirepass \"$$REDIS_PASSWORD\""
+    cap_drop:
+      - ALL
+    cap_add:
+      - SETUID
+      - SETGID
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: 512m
+    cpus: 0.5
+    healthcheck:
+      test: ["CMD-SHELL", "[ $$(valkey-cli --pass \"$$REDIS_PASSWORD\" ping) = 'PONG' ]"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks:
+      - netbox-net
+
+  # ── NetBox app ────────────────────────────────────────────────────────────
+  netbox:
+    image: docker.io/netboxcommunity/netbox:v4.5-4.0.2
+    container_name: netbox
+    restart: unless-stopped
+    depends_on:
+      vault-agent-netbox:
+        condition: service_completed_successfully
+      netbox-postgres:
+        condition: service_healthy
+      netbox-redis:
+        condition: service_healthy
+      netbox-redis-cache:
+        condition: service_healthy
+    environment:
+      # Non-secret operational config. Secrets come via env_file from
+      # the rendered Vault Agent credentials.env.
+      DB_HOST: netbox-postgres
+      DB_NAME: netbox
+      DB_USER: netbox
+      REDIS_HOST: netbox-redis
+      REDIS_DATABASE: "0"
+      REDIS_SSL: "false"
+      REDIS_INSECURE_SKIP_TLS_VERIFY: "false"
+      REDIS_CACHE_HOST: netbox-redis-cache
+      REDIS_CACHE_DATABASE: "1"
+      REDIS_CACHE_SSL: "false"
+      REDIS_CACHE_INSECURE_SKIP_TLS_VERIFY: "false"
+      ALLOWED_HOSTS: "netbox.internal localhost host.docker.internal *"
+      CORS_ORIGIN_ALLOW_ALL: "True"
+      EMAIL_FROM: "netbox@local.invalid"
+      EMAIL_PORT: "25"
+      EMAIL_SERVER: "localhost"
+      EMAIL_SSL_CERTFILE: ""
+      EMAIL_SSL_KEYFILE: ""
+      EMAIL_TIMEOUT: "5"
+      EMAIL_USERNAME: ""
+      EMAIL_USE_SSL: "false"
+      EMAIL_USE_TLS: "false"
+      EMAIL_PASSWORD: ""
+      GRANIAN_BACKPRESSURE: "4"
+      GRANIAN_WORKERS: "4"
+      GRAPHQL_ENABLED: "true"
+      MEDIA_ROOT: "/opt/netbox/netbox/media"
+      METRICS_ENABLED: "true"
+      WEBHOOKS_ENABLED: "true"
+      RELEASE_CHECK_URL: ""
+      # Superuser provisioning (handled by C2.6 createsuperuser separately,
+      # not via these env vars; we rely on SKIP_SUPERUSER=true here).
+      SKIP_SUPERUSER: "true"
+    volumes:
+      - /Users/admin/.vault-agent-secrets/netbox:/vault/secrets:ro
+      - netbox-media-files:/opt/netbox/netbox/media:rw
+      - netbox-reports-files:/opt/netbox/netbox/reports:rw
+      - netbox-scripts-files:/opt/netbox/netbox/scripts:rw
+    user: "netbox:root"
+    # Preserve upstream tini ENTRYPOINT for proper PID-1 zombie reaping
+    # and signal forwarding. Override only the CMD to source rendered
+    # Vault Agent secrets before exec-ing into NetBox's launch script.
+    command:
+      - /bin/sh
+      - -c
+      - "set -a && . /vault/secrets/credentials.env && set +a && exec /opt/netbox/docker-entrypoint.sh /opt/netbox/launch-netbox.sh"
+    ports:
+      # Host port 8084: 8080 was occupied by the dashboard.internal
+      # backend; port-conflict discovery captured in
+      # docs/phase-13/PHASE_13_BLOCK_4C_C2_PORT_DISCOVERY_2026-04-29.md
+      - "127.0.0.1:8084:8080"
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - SETUID
+      - SETGID
+      - FOWNER
+      - DAC_OVERRIDE
+      - NET_BIND_SERVICE
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: 2g
+    cpus: 2.0
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/login/ || exit 1"]
+      interval: 15s
+      timeout: 3s
+      retries: 5
+      start_period: 90s
+    networks:
+      - netbox-net
+      - control-center-net
+    labels:
+      com.iap.service: "netbox"
+      com.iap.tier: "cmdb"
+
+  # ── NetBox worker (rqworker; same image as netbox app) ────────────────────
+  netbox-worker:
+    image: docker.io/netboxcommunity/netbox:v4.5-4.0.2
+    container_name: netbox-worker
+    restart: unless-stopped
+    depends_on:
+      netbox:
+        condition: service_healthy
+    environment:
+      DB_HOST: netbox-postgres
+      DB_NAME: netbox
+      DB_USER: netbox
+      REDIS_HOST: netbox-redis
+      REDIS_DATABASE: "0"
+      REDIS_SSL: "false"
+      REDIS_INSECURE_SKIP_TLS_VERIFY: "false"
+      REDIS_CACHE_HOST: netbox-redis-cache
+      REDIS_CACHE_DATABASE: "1"
+      REDIS_CACHE_SSL: "false"
+      REDIS_CACHE_INSECURE_SKIP_TLS_VERIFY: "false"
+      ALLOWED_HOSTS: "netbox.internal localhost *"
+      EMAIL_FROM: "netbox@local.invalid"
+      EMAIL_PORT: "25"
+      EMAIL_SERVER: "localhost"
+      EMAIL_SSL_CERTFILE: ""
+      EMAIL_SSL_KEYFILE: ""
+      EMAIL_TIMEOUT: "5"
+      EMAIL_USERNAME: ""
+      EMAIL_USE_SSL: "false"
+      EMAIL_USE_TLS: "false"
+      EMAIL_PASSWORD: ""
+      MEDIA_ROOT: "/opt/netbox/netbox/media"
+      SKIP_SUPERUSER: "true"
+      RELEASE_CHECK_URL: ""
+    volumes:
+      - /Users/admin/.vault-agent-secrets/netbox:/vault/secrets:ro
+      - netbox-media-files:/opt/netbox/netbox/media:rw
+      - netbox-reports-files:/opt/netbox/netbox/reports:rw
+      - netbox-scripts-files:/opt/netbox/netbox/scripts:rw
+    user: "netbox:root"
+    command:
+      - /bin/sh
+      - -c
+      - "set -a && . /vault/secrets/credentials.env && set +a && exec /opt/netbox/venv/bin/python /opt/netbox/netbox/manage.py rqworker"
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - SETUID
+      - SETGID
+      - FOWNER
+      - DAC_OVERRIDE
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: 1g
+    cpus: 1.0
+    healthcheck:
+      test: ["CMD-SHELL", "ps -aux | grep -v grep | grep -q rqworker || exit 1"]
+      interval: 15s
+      timeout: 3s
+      retries: 5
+      start_period: 20s
+    networks:
+      - netbox-net
+    labels:
+      com.iap.service: "netbox-worker"
+      com.iap.tier: "cmdb"
+
+  # ── NetBox housekeeping (periodic cleanup; same image, runs ./housekeeping.sh) ──
+  netbox-housekeeping:
+    image: docker.io/netboxcommunity/netbox:v4.5-4.0.2
+    container_name: netbox-housekeeping
+    restart: unless-stopped
+    depends_on:
+      netbox:
+        condition: service_healthy
+    environment:
+      DB_HOST: netbox-postgres
+      DB_NAME: netbox
+      DB_USER: netbox
+      REDIS_HOST: netbox-redis
+      REDIS_DATABASE: "0"
+      REDIS_SSL: "false"
+      REDIS_INSECURE_SKIP_TLS_VERIFY: "false"
+      REDIS_CACHE_HOST: netbox-redis-cache
+      REDIS_CACHE_DATABASE: "1"
+      REDIS_CACHE_SSL: "false"
+      REDIS_CACHE_INSECURE_SKIP_TLS_VERIFY: "false"
+      ALLOWED_HOSTS: "netbox.internal localhost *"
+      EMAIL_FROM: "netbox@local.invalid"
+      EMAIL_PORT: "25"
+      EMAIL_SERVER: "localhost"
+      EMAIL_SSL_CERTFILE: ""
+      EMAIL_SSL_KEYFILE: ""
+      EMAIL_TIMEOUT: "5"
+      EMAIL_USERNAME: ""
+      EMAIL_USE_SSL: "false"
+      EMAIL_USE_TLS: "false"
+      EMAIL_PASSWORD: ""
+      MEDIA_ROOT: "/opt/netbox/netbox/media"
+      SKIP_SUPERUSER: "true"
+      RELEASE_CHECK_URL: ""
+    volumes:
+      - /Users/admin/.vault-agent-secrets/netbox:/vault/secrets:ro
+      - netbox-media-files:/opt/netbox/netbox/media:rw
+      - netbox-reports-files:/opt/netbox/netbox/reports:rw
+      - netbox-scripts-files:/opt/netbox/netbox/scripts:rw
+    user: "netbox:root"
+    command:
+      - /bin/sh
+      - -c
+      - "set -a && . /vault/secrets/credentials.env && set +a && exec /opt/netbox/housekeeping.sh"
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - SETUID
+      - SETGID
+      - FOWNER
+      - DAC_OVERRIDE
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: 256m
+    cpus: 0.25
+    healthcheck:
+      test: ["CMD-SHELL", "ps aux | grep -v grep | grep -q housekeeping || exit 0"]
+      interval: 60s
+      timeout: 3s
+      retries: 3
+      start_period: 30s
+    networks:
+      - netbox-net
+    labels:
+      com.iap.service: "netbox-housekeeping"
+      com.iap.tier: "cmdb"
+
+volumes:
+  netbox-postgres-data:
+    name: netbox-postgres-data
+  netbox-redis-data:
+    name: netbox-redis-data
+  netbox-redis-cache-data:
+    name: netbox-redis-cache-data
+  netbox-media-files:
+    name: netbox-media-files
+  netbox-reports-files:
+    name: netbox-reports-files
+  netbox-scripts-files:
+    name: netbox-scripts-files
+
+networks:
+  netbox-net:
+    name: netbox-net
+    driver: bridge
+  control-center-net:
+    name: control-center-net
+    external: true
