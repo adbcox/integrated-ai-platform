@@ -1,6 +1,11 @@
 # Service Dependency Graph
 
-Generated from `config/service-registry.yaml` by H1 §10.
+Generated from the platform CMDB. Source of truth as of Block 4.C C5
+is NetBox (`http://netbox:8080`); read via `scripts/cmdb_source.py`
+which dispatches on `$CMDB_SOURCE=yaml|netbox` and produces the same
+canonical service shape from either backend. Originally introduced
+in H1 §10 from `config/service-registry.yaml` (now the dual-source
+fallback during C5 transition).
 
 ```mermaid
 graph TB

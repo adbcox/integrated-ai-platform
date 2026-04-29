@@ -251,10 +251,13 @@ curl -s http://localhost:10080               # Zabbix Web
 | `docker/obot-stack.yml` | Obot gateway + MCP remote servers |
 | `docker/monitoring-stack.yml` | Grafana + VictoriaMetrics + Uptime Kuma |
 | `docker/zabbix/docker-compose.yml` | Zabbix 7.4 + TimescaleDB |
-| `config/service-registry.yaml` | CMDB — all 56 services with ports, health URLs, security baseline |
+| **NetBox** (in-cluster, `http://netbox:8080`) | Authoritative CMDB — 75 services, dependencies, Vault-path refs (Block 4.C C5). Replaces `config/service-registry.yaml`. |
+| `config/service-registry.yaml` | Legacy CMDB (deprecated). Kept as the YAML side of the dual-source loader during the C5 transition window. Read-only fallback; flip consumers to `CMDB_SOURCE=netbox` after C6 closes. |
+| `scripts/cmdb_source.py` | Shared loader — dispatches on `$CMDB_SOURCE=yaml\|netbox`. Both backends emit the same canonical service shape (see `scripts/cmdb-equivalence.sh`). |
+| `scripts/cmdb-equivalence.sh` | Byte-identical equivalence harness between YAML and NetBox sources. |
 | `docs/adr/` | Architecture Decision Records (A-001 through A-008) |
 | `docs/roadmap/ITEMS/` | 601 roadmap items (canonical truth) |
-| `scripts/validate-cmdb.sh` | CMDB integrity checker (6 checks) |
+| `scripts/validate-cmdb.sh` | CMDB integrity checker (6 checks); reads via `cmdb_source.py`. |
 | `~/vault-init-keys.txt` | Vault unseal keys (NOT in repo — gitignored) |
 | `/usr/local/etc/zabbix/zabbix_agentd.conf` | Mac Mini Zabbix native agent config |
 | `/Library/LaunchDaemons/com.zabbix.zabbix_agentd.plist` | Zabbix agent launchd service |
