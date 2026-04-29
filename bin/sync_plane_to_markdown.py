@@ -28,7 +28,7 @@ from typing import Optional
 _REPO_ROOT = Path(os.environ.get("REPO_ROOT", Path(__file__).parent.parent))
 sys.path.insert(0, str(_REPO_ROOT))
 
-from framework.plane_connector import PlaneAPI, PLANE_TO_MARKDOWN_STATE
+from framework.plane_connector import PlaneAPI, PLANE_TO_MARKDOWN_STATE, RateLimitError
 
 ITEMS_DIR = _REPO_ROOT / "docs" / "roadmap" / "ITEMS"
 
@@ -97,8 +97,15 @@ class PlaneToMarkdownSyncer:
         """
         print("Fetching issues from Plane...")
         t0    = time.monotonic()
-        issues = self.api.list_all_issues()
-        states = {s["id"]: s["name"] for s in self.api.list_states(use_cache=False)}
+        try:
+            issues = self.api.list_all_issues()
+            states = {s["id"]: s["name"] for s in self.api.list_states(use_cache=False)}
+        except RateLimitError as exc:
+            # Discovery #15: surface 429 distinctly so watch-mode loops
+            # back off instead of treating it as a transient error.
+            print(f"  RATE-LIMIT during fetch: {exc} — skipping this cycle",
+                  file=sys.stderr)
+            return 0
         print(f"  {len(issues)} issues fetched in {time.monotonic()-t0:.1f}s")
 
         changed: list[Path] = []

@@ -46,7 +46,7 @@ from typing import Any
 _REPO_ROOT = Path(os.environ.get("REPO_ROOT", Path(__file__).parent.parent))
 sys.path.insert(0, str(_REPO_ROOT))
 
-from framework.plane_connector import PlaneAPI
+from framework.plane_connector import PlaneAPI, RateLimitError
 
 
 # ── Tool definitions ──────────────────────────────────────────────────────────
@@ -230,7 +230,9 @@ def _fmt_issue(issue: dict, states: dict[str, str], labels: dict[str, str]) -> d
     """Format a Plane issue for MCP response."""
     name  = issue.get("name", "")
     state = states.get(issue.get("state", ""), "Unknown")
-    lids  = issue.get("label_ids", [])
+    # Plane V1 GET returns "labels" (UUIDs); tolerate "label_ids" for
+    # safety in case of cached/legacy response shapes.
+    lids  = issue.get("labels") or issue.get("label_ids") or []
     cats  = [labels.get(lid, lid) for lid in lids]
 
     import re
@@ -384,21 +386,32 @@ def tool_search_issues(api: PlaneAPI, args: dict) -> str:
 
 
 def tool_get_stats(api: PlaneAPI, _args: dict) -> str:
-    stats  = api.get_stats()
+    # Discovery #15 follow-up: previously called list_all_issues() twice
+    # (once via api.get_stats(), once here) — 2× rate budget. Now fetches
+    # once and computes both state-counts and category-counts inline.
+    states = {s["id"]: s["name"] for s in api.list_states()}
     labels = {lbl["id"]: lbl["name"] for lbl in api.list_labels()}
 
     issues = api.list_all_issues()
-    cat_counts: dict[str, int] = {}
+
+    state_counts: dict[str, int] = {}
+    cat_counts:   dict[str, int] = {}
     for issue in issues:
-        for lid in issue.get("label_ids", []):
+        sname = states.get(issue.get("state", ""), "Unknown")
+        state_counts[sname] = state_counts.get(sname, 0) + 1
+        # Plane V1 returns "labels" (the list of UUIDs) on issue GETs;
+        # tolerate the legacy "label_ids" key too in case any cached
+        # response shape differs.
+        lids = issue.get("labels") or issue.get("label_ids") or []
+        for lid in lids:
             cat = labels.get(lid, lid)
             cat_counts[cat] = cat_counts.get(cat, 0) + 1
 
     top_cats = sorted(cat_counts.items(), key=lambda x: x[1], reverse=True)[:10]
 
     return json.dumps({
-        "total":         stats["total"],
-        "by_state":      stats["by_state"],
+        "total":         len(issues),
+        "by_state":      state_counts,
         "top_categories": dict(top_cats),
     }, indent=2)
 
@@ -484,6 +497,16 @@ class MCPServer:
                 self._result(req_id, {
                     "content": [{"type": "text", "text": output}],
                     "isError": False,
+                })
+            except RateLimitError as exc:
+                # Discovery #15: surface 429 distinctly so the calling LLM
+                # knows to back off rather than retrying immediately.
+                self._result(req_id, {
+                    "content": [{"type": "text",
+                                 "text": (f"RateLimitError: {exc}. "
+                                          "Plane API limit is 60/min — wait ~60s "
+                                          "before retrying.")}],
+                    "isError": True,
                 })
             except Exception as exc:
                 self._result(req_id, {

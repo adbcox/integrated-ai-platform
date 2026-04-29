@@ -34,7 +34,7 @@ from typing import Any
 _REPO_ROOT = Path(os.environ.get("REPO_ROOT", Path(__file__).parent.parent))
 sys.path.insert(0, str(_REPO_ROOT))
 
-from framework.plane_connector import PlaneAPI
+from framework.plane_connector import PlaneAPI, RateLimitError
 
 OLLAMA_HOST  = os.environ.get("OLLAMA_HOST", "localhost:11434")
 OLLAMA_MODEL = os.environ.get("OLLAMA_MODEL", "qwen2.5-coder:14b")
@@ -244,14 +244,21 @@ def print_item(item: dict) -> None:
 
 def create_in_plane(item: dict, api: PlaneAPI) -> dict:
     """Push the translated item to Plane."""
-    issue, created = api.upsert_issue(
-        external_id = item.get("id_suggestion") or _next_id(item.get("category", "UTIL")),
-        title       = item["title"],
-        description = item.get("description", ""),
-        state_name  = "Accepted",
-        category    = item.get("category", "UTIL"),
-        priority    = item.get("priority", "Medium"),
-    )
+    try:
+        issue, created = api.upsert_issue(
+            external_id = item.get("id_suggestion") or _next_id(item.get("category", "UTIL")),
+            title       = item["title"],
+            description = item.get("description", ""),
+            state_name  = "Accepted",
+            category    = item.get("category", "UTIL"),
+            priority    = item.get("priority", "Medium"),
+        )
+    except RateLimitError as exc:
+        # Discovery #15: surface 429 distinctly. The translator is operator-
+        # paced (one item at a time) so we don't auto-retry — let the
+        # operator decide when to re-run.
+        print(f"  RATE-LIMIT: {exc} — wait and re-run", file=sys.stderr)
+        raise
     verb = "created" if created else "updated"
     print(f"  Plane: issue {verb} → ID {issue.get('id', '?')}")
     return issue

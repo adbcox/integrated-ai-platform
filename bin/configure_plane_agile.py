@@ -30,7 +30,7 @@ from typing import Any, Optional
 _REPO_ROOT = Path(os.environ.get("REPO_ROOT", Path(__file__).parent.parent))
 sys.path.insert(0, str(_REPO_ROOT))
 
-from framework.plane_connector import PlaneAPI
+from framework.plane_connector import PlaneAPI, RateLimitError
 
 
 # ── Agile workflow states ─────────────────────────────────────────────────────
@@ -141,6 +141,9 @@ class PlaneConfigurator:
                     s = self.api.create_state(name, state_def["color"], state_def["group"])
                     result[name] = s["id"]
                     print(f"  ✚ {name}")
+                except RateLimitError as e:
+                    print(f"  ⏸ {name}: {e} — sleeping 60s", file=sys.stderr)
+                    time.sleep(60)
                 except Exception as e:
                     print(f"  ✗ {name}: {e}", file=sys.stderr)
         return result
@@ -161,6 +164,9 @@ class PlaneConfigurator:
                     l = self.api.create_label(name, lbl["color"])
                     result[name] = l["id"]
                     print(f"  ✚ {name}")
+                except RateLimitError as e:
+                    print(f"  ⏸ {name}: {e} — sleeping 60s", file=sys.stderr)
+                    time.sleep(60)
                 except Exception as e:
                     print(f"  ✗ {name}: {e}", file=sys.stderr)
         return result
@@ -187,6 +193,9 @@ class PlaneConfigurator:
                 created.append({"name": sprint["name"], "id": c.get("id", "")})
                 print(f"  ✚ {sprint['name']}  ({sprint['start_date']} → {sprint['end_date']})")
                 time.sleep(1.5)  # Plane enforces 60/min rate limit on API tokens
+            except RateLimitError as e:
+                print(f"  ⏸ {sprint['name']}: {e} — sleeping 60s", file=sys.stderr)
+                time.sleep(60)
             except Exception as e:
                 print(f"  ✗ {sprint['name']}: {e}", file=sys.stderr)
                 time.sleep(3)
@@ -212,6 +221,9 @@ class PlaneConfigurator:
                 m = self._create_module(mod)
                 created.append({"name": mod["name"], "id": m.get("id", "")})
                 print(f"  ✚ {mod['name']}")
+            except RateLimitError as e:
+                print(f"  ⏸ {mod['name']}: {e} — sleeping 60s", file=sys.stderr)
+                time.sleep(60)
             except Exception as e:
                 print(f"  ✗ {mod['name']}: {e}", file=sys.stderr)
         return created

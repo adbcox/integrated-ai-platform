@@ -15,7 +15,25 @@ sys.path.insert(0, str(_REPO_ROOT))
 # ── Exceptions ────────────────────────────────────────────────────────────────
 
 class RateLimitError(Exception):
-    """Raised when Plane API returns 429. Caller must handle backoff."""
+    """Raised when Plane API returns 429.
+
+    Discovery #15 (Block 4.C C6): callers MUST catch RateLimitError
+    explicitly *before* any broad ``except Exception``, otherwise the
+    429 is masked and treated as an item-level failure. The canonical
+    pattern is::
+
+        try:
+            api.upsert_issue(...)
+        except RateLimitError:
+            time.sleep(60)
+            # then retry, or surface to operator
+        except Exception as e:
+            # genuine item-level error
+            ...
+
+    See ``scripts/backfill-plane-labels.py::_with_429_retry`` for the
+    reference handler with bounded retry budget.
+    """
 
 
 # ── Lazy imports (avoid hard dep when Plane not configured) ───────────────────
@@ -357,7 +375,11 @@ class PlaneAPI:
         if state_id:
             payload["state"] = state_id
         if label_ids:
-            payload["label_ids"] = label_ids
+            # Discovery #16 (Block 4.C C6): Plane V1 expects "labels", not
+            # "label_ids". The wrong key is silently ignored — issues are
+            # created without labels and no error is raised. Same fix in
+            # update path below (upsert_issue).
+            payload["labels"] = label_ids
         result = self._post(self._proj_url("/issues/"), payload)
         _cache.invalidate(f"ext:{external_id}")
         return result
@@ -367,6 +389,30 @@ class PlaneAPI:
         # Invalidate any cached lookup for this issue
         _cache.invalidate("ext:")
         return result
+
+    def verify_issue_field(self, issue_id: str, field: str, expected: Any) -> bool:
+        """Re-GET an issue and confirm a field matches an expected value.
+
+        Used as the first-batch verify check after a PATCH/POST on a new
+        flow: re-read the issue from the server (bypassing cache by way of
+        a fresh ``get_issue`` call) and compare the named field against
+        ``expected``. For list fields (e.g. ``labels``), comparison is
+        order-insensitive.
+
+        Returns True on match, False on mismatch. Caller decides whether
+        a mismatch is fatal — typical pattern is to raise on first-batch
+        mismatch (fail loudly before consuming the full rate budget) and
+        log on subsequent mismatches.
+
+        Discovery #16 (Block 4.C C6) is the worst-case this guards
+        against: a PATCH that returns 200 but silently dropped the field
+        because the wire-format key was wrong.
+        """
+        issue = self.get_issue(issue_id)
+        actual = issue.get(field)
+        if isinstance(expected, list) and isinstance(actual, list):
+            return sorted(map(str, actual)) == sorted(map(str, expected))
+        return actual == expected
 
     def update_issue_state(self, issue_id: str, state_name: str) -> dict:
         sid = self.get_state_id(state_name)
@@ -467,7 +513,11 @@ class PlaneAPI:
             updates: dict[str, Any] = {"name": full_name}
             if state_id:
                 updates["state"] = state_id
-            updates["label_ids"] = [label_id]
+            # Discovery #16 (Block 4.C C6): Plane V1 PATCH expects "labels",
+            # not "label_ids". Sibling of the create-path bug fixed in
+            # create_issue; until 2026-04-29 this silently dropped label
+            # updates on existing issues.
+            updates["labels"]    = [label_id]
             updates["priority"]  = PRIORITY_MAP.get(priority, "medium")
             issue = self.update_issue(existing["id"], updates)
             return issue, False

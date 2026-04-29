@@ -39,7 +39,7 @@ from typing import Optional
 _REPO_ROOT = Path(os.environ.get("REPO_ROOT", Path(__file__).parent.parent))
 sys.path.insert(0, str(_REPO_ROOT))
 
-from framework.plane_connector import PlaneAPI
+from framework.plane_connector import PlaneAPI, RateLimitError
 
 ITEMS_DIR = _REPO_ROOT / "docs" / "roadmap" / "ITEMS"
 
@@ -191,17 +191,19 @@ class RoadmapSyncer:
         self.updated = 0
         self.errors  = 0
         self.skipped = 0
+        self.rate_limited = 0
+        self._first_create_verified = False
 
     def sync_item(self, item: dict) -> str:
-        """Sync one roadmap item. Returns 'created' | 'updated' | 'skipped' | 'error'."""
+        """Sync one roadmap item. Returns 'created' | 'updated' | 'skipped' | 'error' | 'rate_limited'."""
+        if self.dry_run:
+            print(f"  [DRY] {item['id']}: {item['status']} → {item['title'][:55]}")
+            return "skipped"
+
+        description = _build_description(item)
+
         try:
-            if self.dry_run:
-                print(f"  [DRY] {item['id']}: {item['status']} → {item['title'][:55]}")
-                return "skipped"
-
-            description = _build_description(item)
-
-            _, created = self.api.upsert_issue(
+            issue, created = self.api.upsert_issue(
                 external_id = item["id"],
                 title       = item["title"],
                 description = description,
@@ -209,10 +211,38 @@ class RoadmapSyncer:
                 category    = item["category"],
                 priority    = item["priority"],
             )
-            return "created" if created else "updated"
+        except RateLimitError as exc:
+            # Discovery #15: explicit handling ahead of the broad except so
+            # a 429 cannot be misclassified as an item-level error.
+            print(f"  RATE-LIMIT {item['id']}: {exc} — sleeping 60s",
+                  file=sys.stderr)
+            time.sleep(60)
+            return "rate_limited"
         except Exception as exc:
             print(f"  ERROR {item['id']}: {exc}", file=sys.stderr)
             return "error"
+
+        # First-create verify: re-read once to confirm the label landed
+        # (Discovery #16 guard). If the very first create silently dropped
+        # labels, fail loudly before consuming the rest of the rate budget.
+        if created and not self._first_create_verified and item.get("category"):
+            try:
+                expected_label = self.api.ensure_label(item["category"])
+                ok = self.api.verify_issue_field(
+                    issue["id"], "labels", [expected_label],
+                )
+                if not ok:
+                    print(f"  VERIFY-FAIL {item['id']}: labels did not land "
+                          f"(expected={expected_label}). Aborting batch.",
+                          file=sys.stderr)
+                    raise SystemExit(2)
+                self._first_create_verified = True
+            except RateLimitError:
+                # Don't burn the verify budget; trust the create succeeded
+                # and move on. Subsequent items will surface the issue.
+                self._first_create_verified = True
+
+        return "created" if created else "updated"
 
     def sync_all(self, items: list[dict]) -> None:
         total = len(items)
@@ -232,6 +262,8 @@ class RoadmapSyncer:
                     print(f"  [{n:>3}/{total}] ↺ {n} items processed…")
             elif result == "error":
                 self.errors += 1
+            elif result == "rate_limited":
+                self.rate_limited += 1
             else:
                 self.skipped += 1
 
@@ -243,7 +275,8 @@ class RoadmapSyncer:
         rate = total / elapsed if elapsed > 0 else 0
         print(f"\nFinished in {elapsed:.0f}s ({rate:.1f} items/s)")
         print(f"  ✚ created={self.created}  ↺ updated={self.updated}  "
-              f"✗ errors={self.errors}  skip={self.skipped}")
+              f"✗ errors={self.errors}  ⏸ rate_limited={self.rate_limited}  "
+              f"skip={self.skipped}")
 
 
 # ── Init helper ───────────────────────────────────────────────────────────────
