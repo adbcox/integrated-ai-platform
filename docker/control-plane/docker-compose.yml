@@ -74,11 +74,13 @@ services:
 
   # ── Main service ────────────────────────────────────────────────────
   control-plane:
-    image: iap/control-plane:1.0.0
+    image: iap/control-plane:1.1.0
     container_name: control-plane
     build:
-      context: .
-      dockerfile: Dockerfile
+      # Build context is the repo root so the Dockerfile can COPY
+      # scripts/cmdb_source.py into the image. Block 4.C C5.2c.
+      context: ../..
+      dockerfile: docker/control-plane/Dockerfile
     restart: unless-stopped
     depends_on:
       vault-agent-control-plane:
@@ -102,6 +104,12 @@ services:
       TIER3_WINDOW_SECONDS: "300"
       TAILNET_CIDR: "100.64.0.0/10"
       REQUIRE_TAILNET: "true"
+      # Block 4.C C5.2c — CMDB_SOURCE selects backend (yaml|netbox).
+      # Default stays yaml during the C5.2 transition window.
+      CMDB_SOURCE: "${CMDB_SOURCE:-yaml}"
+      # NetBox in-cluster name; reachable on control-center-net.
+      NETBOX_URL: "http://netbox:8080"
+      NETBOX_CREDENTIALS_FILE: /run/netbox/credentials.env
     volumes:
       # Rendered credentials from sidecar (RO)
       - /Users/admin/.vault-agent-secrets/control-plane:/vault/secrets:ro
@@ -115,6 +123,9 @@ services:
       # the registry module proxies topology-api which is already
       # parsing the same file.
       - ../../config/service-registry.yaml:/app/service-registry.yaml:ro
+      # Vault Agent rendered NetBox token, needed in CMDB_SOURCE=netbox
+      # mode. Read-only file mount; container's root user can read.
+      - /Users/admin/.vault-agent-secrets/netbox/credentials.env:/run/netbox/credentials.env:ro
       # Control-plane action log (RW)
       - control-plane-actions:/var/log/control-plane
     entrypoint:

@@ -40,6 +40,11 @@ class Settings(BaseSettings):
     service_registry_path: str = "/app/service-registry.yaml"
     actions_log_path: str = "/var/log/control-plane/actions.jsonl"
 
+    # CMDB source: yaml (registry file) | netbox (in-cluster NetBox).
+    # Block 4.C C5.2c — staged toggle. Default stays yaml during the
+    # transition window; flip to netbox after C6 closes.
+    cmdb_source: str = "yaml"
+
     # Service endpoints (host-side; control-plane reaches via host.docker.internal proxy)
     sonarr_url: str = "http://host.docker.internal:8989"
     radarr_url: str = "http://host.docker.internal:7878"

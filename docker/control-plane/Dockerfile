@@ -11,10 +11,15 @@ RUN apt-get update \
 
 WORKDIR /app
 
-COPY requirements.txt /app/requirements.txt
+# Build context is the repo root (compose: context: ../..) so the
+# Dockerfile can COPY scripts/cmdb_source.py alongside the control-plane
+# app code. Block 4.C C5.2c — registry module reads CMDB via the shared
+# loader so it can dispatch on $CMDB_SOURCE.
+COPY docker/control-plane/requirements.txt /app/requirements.txt
 RUN pip install --no-cache-dir -r /app/requirements.txt
 
-COPY app /app/app
+COPY docker/control-plane/app /app/app
+COPY scripts/cmdb_source.py /app/cmdb_source.py
 
 # Bundle htmx so the runtime image has no external CDN dependency.
 RUN wget -qO /app/app/static/htmx.min.js \
