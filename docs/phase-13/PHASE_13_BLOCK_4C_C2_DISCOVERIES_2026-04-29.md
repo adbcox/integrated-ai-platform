@@ -2,7 +2,7 @@
 
 **Date:** 2026-04-29
 **Block:** Phase 13 Block 4.C C2 (NetBox deployment)
-**Status:** Six discoveries; all resolved.
+**Status:** Seven discoveries; six resolved, one accepted-with-note.
 
 ## Index
 
@@ -36,6 +36,15 @@
    `exec: not found`; netbox-docker 4.0.2 invokes housekeeping as
    the Django management command `manage.py housekeeping` instead.
    Fixed with a `while sleep 86400` wrapper. See **§6 below**.
+7. **Upstream's super_user.py prints partial token to stdout**
+   — netbox-docker 4.0.2's bootstrap logs the V2 token *key* (last
+   12 chars of token; the public identifier portion of the
+   `Authorization: Bearer nbt_<key>.<secret>` form) to container
+   stdout on creation. The *secret* portion is not logged, so this
+   is not a credential leak in the strict sense, but it does
+   surface a partial token identifier into routine `docker logs`
+   output. **Accepted as-is** (not a deployment blocker; cannot
+   be silenced without forking upstream). See **§7 below**.
 
 These events all surfaced inside C2 (artifact authoring + first
 three deployment attempts). Each contributes to a C6 closeout
@@ -425,3 +434,64 @@ in the release-current upstream image — is exactly what §5's
 should verify "what does the entrypoint expect" and "what
 ancillary files exist" against the actual pinned image, not
 against assumed conventions from earlier releases.
+
+## §7 — Upstream's super_user.py prints partial token to stdout
+
+### What happened
+
+After the fourth (and successful) deployment, `docker logs netbox`
+contained the line:
+
+```
+💡 Superuser Username: admin, E-Mail: admin@netbox.internal,
+   API Token: 08aADokGMxrG (use with 'Bearer nbt_08aADokGMxrG.<Your token>')
+```
+
+Reading `super_user.py` (the script upstream's entrypoint runs):
+
+```python
+t = Token.objects.create(user=u, token=su_api_token, version=TokenVersionChoices.V2)
+msg = f"💡 Superuser Username: {su_name}, E-Mail: {su_email}, API Token: {t} (use with '{t.get_auth_header_prefix()}<Your token>')"
+print(msg)
+```
+
+`{t}` (the str of a Token instance) renders the Token's **key**
+attribute, which in V2 tokens is the *public identifier* portion
+of the auth header (`Bearer nbt_<key>.<secret>`). The **secret**
+portion is masked as the literal string `<Your token>` and never
+goes through stdout.
+
+Strictly: this is not a credential leak — knowing the key without
+the secret does not authenticate. But it does surface a partial
+token identifier into routine `docker logs` output that goes to
+host disk via Docker's json-file logger.
+
+### Resolution
+
+**Accepted as-is.** Reasoning:
+
+1. The leaked portion (the key) is the half that's transmitted
+   in plaintext on every API request anyway — anyone who can
+   sniff in-cluster traffic already sees it. The secret half is
+   the one that matters, and that stays in Vault.
+2. Suppressing this print would require either
+   (a) forking netbox-docker (over-the-top maintenance burden
+   for a partial-identifier print), or
+   (b) post-bootstrap log redaction at the platform layer
+   (additive complexity for marginal value).
+3. The platform's secrets doctrine ("display of credential values
+   during diagnostics is forbidden") was authored against
+   credential *secrets*, which this is not.
+
+If future doctrine review wishes to broaden "credential value"
+to include public token identifiers, the resolution is to swap
+to a custom `super_user.py` mounted in via volume override
+(thinner intervention than a fork). Captured as a *potential*
+future hardening item; not currently required.
+
+### No C6 follow-up registered
+
+The decision is "accept as-is per the reasoning above"; no
+canonical-pattern change is needed. Surfacing here for
+auditability — the next operator reading `docker logs netbox`
+will see this line and should not be surprised by it.
