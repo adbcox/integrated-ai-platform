@@ -16,6 +16,9 @@ Individual ADR files live here. Each file is one decision.
 | [ADR-A-008](ADR-A-008.md) | Branches may not fork the platform | Accepted |
 | [ADR-A-009](ADR-A-009.md) | Vault as authoritative secret store — migration from .env | Accepted |
 | [ADR-A-010](ADR-A-010-external-systems.md) | External systems should be adopted where commodity fit is strong | Accepted |
+| [ADR-A-011](ADR-A-011-ivv-loop-pattern.md) | IV&V loop pattern (audit → execution → validation → regression) | Accepted |
+| [ADR-A-012](ADR-A-012-equivalence-harness-doctrine.md) | Equivalence harness doctrine for source-of-truth migrations | Accepted |
+| [ADR-A-013](ADR-A-013-folded-gates-doctrine.md) | Folded gates for mechanical applications of proven patterns | Accepted |
 
 ## Format
 
