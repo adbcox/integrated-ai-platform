@@ -136,6 +136,121 @@ Recommendation: **Option A** — these are 1-line fixes and the migration's depe
 
 ---
 
-## C3.4 — Live migration (pending approval)
+## C3.4 — Live migration (executed 2026-04-29)
 
-(To be filled in after gate approval.)
+### Discovery #10 resolution
+
+Per operator decision Option A: registry corrected at source before live migration.
+- Commit `dc9b7ac` — "Block 4.C registry hygiene: fix 8 stale depends_on refs (Discovery #10)"
+- 6 services: `vault-server` → `vault` (homepage, control-plane, plex-mcp, netbox, netbox-postgres, netbox-redis, netbox-redis-cache)
+- 2 services: `grafana-obs` → `grafana` (homepage, topology-api)
+
+Re-run dry-run after the fix: **0 dep warnings**, 47 dep updates planned.
+
+### Discovery #11 — `ipam.service` generic FK shape (NetBox 4.5)
+
+NetBox 4.5 changed `ipam.service`'s parent reference from a direct `device` FK to a generic `parent_object_type` + `parent_object_id` pair. The first live attempt failed with `400: parent_object_type / parent_object_id required`. Site + 4 devices were created cleanly (legacy shape valid for `dcim`); services failed before any was created.
+
+**Resolution** (commit `6ae8699`): switched payload to `parent_object_type="dcim.device"` + `parent_object_id=<device_id>`.
+
+### Discovery #12 — Sentinel port for port-less services
+
+Some registry entries are workers / housekeeping pods with no host-port binding (`port: null`). NetBox `ipam.service.ports` requires non-empty. Second live attempt failed at `netbox-housekeeping` with `400: ports may not be empty`.
+
+**Resolution** (commit `846c81b`): use sentinel port `1` (TCP `tcpmux`, RFC1340) for port-less services. Port 1 cannot collide with a real binding. **2 services** in the live set carry the sentinel: `netbox-worker`, `netbox-housekeeping`. These will be filtered in any "what's actually listening" query by `port != 1`.
+
+### Discovery #9 reminder — `uptime-kuma` de-dup behavior
+
+Per operator-approved C1 audit Option 1: **last-wins with NOTE log**. The NetBox object reflects the *line-1145* entry (`category: visibility`, `health_expect: 200`). The line-315 entry (`category: observability`, `health_expect: [200, 302]`) is silently ignored at load time. **Action item for C5 / registry cleanup:** delete the duplicate line-315 entry before C5 deprecates the YAML.
+
+### Live migration result
+
+```
+── Summary ────────────────────────────────────────────────
+  create   service            5
+  skip     device_role        1
+  skip     manufacturer       1
+  update   deps               47
+  update   device             4
+  update   device_type        1
+  update   service            70
+  update   site               1
+```
+
+(`update service: 70` are services created during the post-#11 attempt 2 partial; `create service: 5` are the post-housekeeping tail. Total = 75 services in NetBox.)
+
+### Validation report
+
+```
+NetBox state after C3.4:
+  sites:        1
+  devices:      4    (mac-mini=72 svcs, opnsense=1, ha-device=1, qnap=1)
+  services:    75
+  tags:        19
+  custom-fields:14
+  total dep edges: 72   (47 source-services × varying depth, see below)
+
+Sample object (litellm-gateway):
+  name:               litellm-gateway
+  description:        LiteLLM Gateway
+  ports:              [4000]
+  protocol:           TCP
+  parent_object_type: dcim.device
+  tags:               ['ai']
+  cf.registry_id:     litellm-gateway
+  cf.container_image: ghcr.io/berriai/litellm:main-latest
+  cf.health_url:      http://localhost:4000/health/liveliness
+  cf.compose_file:    control-center-stack/stacks/gateways/docker-compose.yml
+
+Side-by-side validation (NetBox vs registry, all 75 services):
+  checked: 75
+  mismatches: 0
+  fields compared: container_image, container_name, health_url, compose_file
+
+Dependency-graph spot check (homepage, the densest node):
+  registry depends_on:        8 entries
+  NetBox service_dependencies: 8 entries
+  resolved names: vault, caddy, sonarr, radarr, prowlarr, grafana,
+                  plane-api, uptime-kuma  (all clean post-#10)
+
+Idempotency probe (re-run with no registry changes):
+  zero new creates
+  zero new dep changes (skip deps: 47)
+  cosmetic re-PUTs on services / device / site
+    (root cause: payload uses string for protocol/tags ID; pynetbox
+     returns Record objects → comparator sees diff. Live data
+     unchanged. Minor; not blocking.)
+```
+
+### Tag distribution
+
+| Tag | Service count |
+|---|---|
+| mcp-shim | 17 |
+| platform | 14 |
+| ai | 9 |
+| observability | 6 |
+| support-service | 6 |
+| data | 5 |
+| media | 5 |
+| cmdb | 3 |
+| mcp | 3 |
+| monitoring | 3 |
+| automation | 2 |
+| control-center | 2 |
+| infrastructure | 2 |
+| deprecated | 1 |
+| home-automation | 1 |
+| integration | 1 |
+| network | 1 |
+| sidecar | 1 |
+| visibility | 1 |
+
+### C3 status
+
+✅ All 75 services migrated cleanly · ✅ All 47 dep-source services have their cross-references resolved (72 total dependency edges in the graph) · ✅ Zero side-by-side mismatches · ✅ Sentinel-port services correctly flagged · ✅ Idempotency holds for the dependency graph; cosmetic re-PUTs on services are not data drift.
+
+### C5 / cleanup follow-ups (added to /tmp/c6_followups.txt)
+
+7. Cosmetic-only idempotency: protocol/tag payload comparator should normalize `Record` objects to ID/value before diffing (live data unchanged; PUTs are no-ops; nice-to-have not need-to-have).
+8. Registry cleanup before C5: delete the duplicate `uptime-kuma` entry on line 315 of `service-registry.yaml` (line 1145 is canonical per current dedup behavior).
