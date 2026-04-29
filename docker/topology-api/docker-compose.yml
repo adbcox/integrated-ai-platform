@@ -1,0 +1,44 @@
+version: "3.9"
+
+services:
+  topology-api:
+    build: .
+    image: iap/topology-api:1.0.0
+    container_name: topology-api
+    restart: unless-stopped
+    ports:
+      - "8300:8300"
+    environment:
+      REGISTRY_PATH: /config/service-registry.yaml
+      LISTEN_HOST: "0.0.0.0"
+      LISTEN_PORT: "8300"
+    volumes:
+      # Mount the directory (not the file) so atomic-replace edits are visible
+      # without a container restart — Docker Desktop on Mac otherwise snapshots
+      # the original inode for single-file binds and silently serves stale YAML.
+      - /Users/admin/repos/integrated-ai-platform/config:/config:ro
+    networks:
+      - control-center-net
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    mem_limit: 64m
+    cpus: 0.25
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8300/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    labels:
+      com.iap.service: "topology-api"
+      com.iap.tier: "control-center"
+
+networks:
+  control-center-net:
+    name: control-center-net
+    external: true

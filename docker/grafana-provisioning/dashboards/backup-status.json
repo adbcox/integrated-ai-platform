@@ -1,0 +1,211 @@
+{
+  "__inputs": [],
+  "__requires": [
+    {"type": "grafana", "id": "grafana", "name": "Grafana", "version": "13.0.0"},
+    {"type": "datasource", "id": "yesoreyeram-infinity-datasource", "name": "Infinity", "version": "3.8.0"},
+    {"type": "panel", "id": "stat", "name": "Stat", "version": ""},
+    {"type": "panel", "id": "table", "name": "Table", "version": ""},
+    {"type": "panel", "id": "text", "name": "Text", "version": ""}
+  ],
+  "annotations": {"list": []},
+  "description": "Backup Status — Restic snapshot summary + scheduling context",
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "gridPos": {"h": 4, "w": 24, "x": 0, "y": 0},
+      "id": 1,
+      "options": {
+        "content": "## Restic Backup — Scheduled Nightly via AppRole\n\n**Repo:** `secret/restic/backup` (Vault-stored URL points to MinIO on QNAP `:9000`)\n**Auth:** AppRole `backup` → policy `backup` (read on `secret/restic/backup`, `secret/minio/backup`)\n**Script:** `scripts/backup.sh` — `restic backup` + `restic forget --keep-daily 30 --keep-monthly 12 --prune`\n**Backed-up paths:** `~/repos/integrated-ai-platform/{config,docs,docker/caddy,docker/headscale,scripts}` + Vault data volume",
+        "mode": "markdown"
+      },
+      "title": "Configuration",
+      "type": "text"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 4},
+      "id": 100,
+      "title": "Snapshot Summary",
+      "type": "row"
+    },
+    {
+      "datasource": {"type": "yesoreyeram-infinity-datasource", "uid": "${DS_INFINITY}"},
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "thresholds": {"mode": "absolute", "steps": [{"color": "red", "value": null}, {"color": "green", "value": 1}]},
+          "unit": "short",
+          "noValue": "(no status file yet)"
+        }
+      },
+      "gridPos": {"h": 4, "w": 6, "x": 0, "y": 5},
+      "id": 10,
+      "options": {"reduceOptions": {"calcs": ["lastNotNull"]}, "colorMode": "background", "textMode": "value"},
+      "title": "Total Snapshots",
+      "type": "stat",
+      "targets": [
+        {
+          "refId": "A",
+          "type": "json",
+          "source": "url",
+          "format": "table",
+          "url": "http://host.docker.internal:8085/restic-status.json",
+          "url_options": {"method": "GET"},
+          "columns": [
+            {"selector": "snapshot_count", "text": "count", "type": "number"}
+          ]
+        }
+      ]
+    },
+    {
+      "datasource": {"type": "yesoreyeram-infinity-datasource", "uid": "${DS_INFINITY}"},
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "thresholds": {"mode": "absolute", "steps": [{"color": "red", "value": null}, {"color": "yellow", "value": -86400}, {"color": "green", "value": -3600}]},
+          "unit": "dateTimeFromNow",
+          "noValue": "(no status file yet)"
+        }
+      },
+      "gridPos": {"h": 4, "w": 6, "x": 6, "y": 5},
+      "id": 11,
+      "options": {"reduceOptions": {"calcs": ["lastNotNull"]}, "colorMode": "background", "textMode": "value"},
+      "title": "Last Snapshot",
+      "type": "stat",
+      "targets": [
+        {
+          "refId": "A",
+          "type": "json",
+          "source": "url",
+          "format": "table",
+          "url": "http://host.docker.internal:8085/restic-status.json",
+          "url_options": {"method": "GET"},
+          "columns": [
+            {"selector": "last_snapshot_unix_ms", "text": "last", "type": "number"}
+          ]
+        }
+      ]
+    },
+    {
+      "datasource": {"type": "yesoreyeram-infinity-datasource", "uid": "${DS_INFINITY}"},
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}]},
+          "unit": "decbytes",
+          "noValue": "(no status file yet)"
+        }
+      },
+      "gridPos": {"h": 4, "w": 6, "x": 12, "y": 5},
+      "id": 12,
+      "options": {"reduceOptions": {"calcs": ["lastNotNull"]}, "colorMode": "background", "textMode": "value"},
+      "title": "Repo Size",
+      "type": "stat",
+      "targets": [
+        {
+          "refId": "A",
+          "type": "json",
+          "source": "url",
+          "format": "table",
+          "url": "http://host.docker.internal:8085/restic-status.json",
+          "url_options": {"method": "GET"},
+          "columns": [
+            {"selector": "repo_size_bytes", "text": "size", "type": "number"}
+          ]
+        }
+      ]
+    },
+    {
+      "datasource": {"type": "yesoreyeram-infinity-datasource", "uid": "${DS_INFINITY}"},
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "thresholds": {"mode": "absolute", "steps": [{"color": "red", "value": null}, {"color": "green", "value": 1}]},
+          "mappings": [{"options": {"0": {"text": "FAIL"}, "1": {"text": "OK"}}, "type": "value"}],
+          "noValue": "(no status file yet)"
+        }
+      },
+      "gridPos": {"h": 4, "w": 6, "x": 18, "y": 5},
+      "id": 13,
+      "options": {"reduceOptions": {"calcs": ["lastNotNull"]}, "colorMode": "background", "textMode": "value"},
+      "title": "Last Run Result",
+      "type": "stat",
+      "targets": [
+        {
+          "refId": "A",
+          "type": "json",
+          "source": "url",
+          "format": "table",
+          "url": "http://host.docker.internal:8085/restic-status.json",
+          "url_options": {"method": "GET"},
+          "columns": [
+            {"selector": "last_run_success", "text": "ok", "type": "number"}
+          ]
+        }
+      ]
+    },
+    {
+      "collapsed": false,
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 9},
+      "id": 200,
+      "title": "Snapshot History",
+      "type": "row"
+    },
+    {
+      "datasource": {"type": "yesoreyeram-infinity-datasource", "uid": "${DS_INFINITY}"},
+      "fieldConfig": {"defaults": {"custom": {"align": "auto"}}, "noValue": "(no snapshots file yet)"},
+      "gridPos": {"h": 10, "w": 24, "x": 0, "y": 10},
+      "id": 20,
+      "title": "Recent Snapshots (last 30)",
+      "type": "table",
+      "targets": [
+        {
+          "refId": "A",
+          "type": "json",
+          "source": "url",
+          "format": "table",
+          "url": "http://host.docker.internal:8085/restic-snapshots.json",
+          "url_options": {"method": "GET"},
+          "root_selector": "",
+          "columns": [
+            {"selector": "id", "text": "ID", "type": "string"},
+            {"selector": "time", "text": "Time", "type": "string"},
+            {"selector": "hostname", "text": "Host", "type": "string"},
+            {"selector": "tags", "text": "Tags", "type": "string"},
+            {"selector": "summary.files_new", "text": "Files New", "type": "number"},
+            {"selector": "summary.files_changed", "text": "Files Changed", "type": "number"},
+            {"selector": "summary.data_added", "text": "Data Added", "type": "number"}
+          ]
+        }
+      ]
+    },
+    {
+      "gridPos": {"h": 6, "w": 24, "x": 0, "y": 20},
+      "id": 999,
+      "options": {
+        "content": "## How to populate this dashboard\n\nThe Infinity panels above expect two endpoints on `host.docker.internal:8085`:\n- `/restic-status.json` — `{snapshot_count, last_snapshot_unix_ms, repo_size_bytes, last_run_success}`\n- `/restic-snapshots.json` — array from `restic snapshots --json`\n\n**Wiring path** (planned for backup-runbook completion in Phase 14):\n1. `scripts/backup.sh` post-run hook writes `/var/log/restic-status.json` and `/var/log/restic-snapshots.json` (mode 0644)\n2. Caddy or a small file-server (port 8085) serves `/var/log/restic-*.json` as static files (LAN-only)\n3. Schedule via `launchd` plist `~/Library/LaunchAgents/com.iap.backup.plist` at 02:00 daily\n\n**Schedule status:** AppRole + script in place; cron/launchd entry **not yet installed**. Operator runs ad-hoc until automation is wired.\n\n**Until then** these panels will show *(no status file yet)* — that is expected; the noValue mapping makes it explicit rather than blank.",
+        "mode": "markdown"
+      },
+      "title": "Wiring Path",
+      "type": "text"
+    }
+  ],
+  "refresh": "1m",
+  "schemaVersion": 38,
+  "tags": ["platform", "backup", "restic"],
+  "templating": {
+    "list": [
+      {"hide": 2, "name": "DS_INFINITY", "query": "yesoreyeram-infinity-datasource", "type": "datasource"}
+    ]
+  },
+  "time": {"from": "now-7d", "to": "now"},
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "Backup Status (Restic)",
+  "uid": "backup-status",
+  "version": 1
+}

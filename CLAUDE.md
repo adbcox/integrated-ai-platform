@@ -1,8 +1,8 @@
 # Claude Code - Project Instructions
 
 **Project:** Integrated AI Platform (Enterprise Autonomous AI Infrastructure)
-**Deployment Target:** Mac Mini M5 at 192.168.10.145
-**Current Phase:** Phase 3 Complete - All services operational
+**Deployment Target:** Mac Mini M5 at 192.168.10.145 (control plane); MacBook Pro M5 parity in Block 3
+**Current Phase:** Phase 13 Block 2 — Mac Mini operator visualization complete (homepage canonical, 6 Grafana dashboards, topology API, Zabbix host, Caddy access logs + metrics)
 
 ## Quick Start
 
@@ -56,10 +56,18 @@ This is the "AI workstation" or "platform". Pre-2026 alternative terminology (th
 - 30-day local retention; archived nightly to QNAP via cron.
 
 ### Heterogeneous Architecture
-- Platform spans Mac Mini today; Linux (Threadripper) and Mac Studio soon. Every architectural decision is portability-flagged.
+- Mac Mini M5 is the **control plane** today (Phase 13 Block 2 delivered: operator visualization, Vault, Caddy, observability stack, registry-driven topology API).
+- MacBook Pro M5 parity (Ollama + LiteLLM + Open WebUI + Headscale client + smart routing) is **Block 3**, executed when the user is ready.
+- Linux (Threadripper) and Mac Studio M3 are **future blocks** beyond Block 3. Every architectural decision is portability-flagged.
 - Per-host configs in `config/vault-configs/` (`vault-config-macmini.hcl`, `vault-config-linux.hcl`).
 - Avoid Mac-only patterns unless explicitly approved as platform-specific (KNOWN-LIMITATION).
 - Out-of-repo compose changes (`~/control-center-stack/stacks/*`) require pre/post snapshots in the rewire log because git doesn't track them automatically.
+
+### Post-Block-2 Follow-up List
+1. **Caddy route hygiene** — prune 12 dead `*.internal` routes from `docker/caddy/Caddyfile` (no backing service): `manyfold`, `gitea`, `tautulli`, `overseerr`, `ragflow`, `portainer`, `netdata`, `dozzle`, `pgadmin`, `bookstack`, `n8n`, `filebrowser`. Each carries the shared `import access_log` snippet which is harmless but inflates the Caddyfile.
+2. **Homepage widget completion** — confirm Grafana SA token (provisioned in P2.1) and Uptime Kuma slug config render the expected widgets on `homepage.internal`. Closes if no remaining gaps.
+3. **Block 3** — MacBook Pro M5 parity: Ollama + LiteLLM + Open WebUI + Headscale client + smart routing.
+4. **Phase 14** — Loki for log-based per-site Caddy analysis (unblocks per-host dashboards which Caddy 2.11.2 default Prometheus output cannot provide).
 
 ### Verification Doctrine
 - Every claim verified by command output or cited source.
@@ -122,13 +130,15 @@ The orchestrator (Claude Code at the top level) delegates implementation work to
 
 - **ICMP/fping monitoring not available**: zabbix-server uses `cap_drop:[ALL]` which excludes `NET_RAW`. ICMP items will be in unsupported state. Use TCP-based health checks (telnet item type, agent.ping, http.test) instead. Adding `NET_RAW` `cap_add` was rejected as exceeding minimal-cap doctrine.
 
-- **Mac Mini host-level monitoring deferred**: monitoring of the Mac Mini itself (CPU/memory/disk/network at host level) is deferred to Block 2 and will use a combination of zabbix-agent active checks (when host registered in zabbix-web) and macOS-native tooling for items zabbix-agent can't reach.
+- **Mac Mini host monitoring (registered Block 2 P6)**: Host `mac-mini` registered in Zabbix (hostid 10783) on group "Linux servers" with template "Linux by Zabbix agent" via DNS interface `zabbix-agent:10050`. Memory and CPU items are populating. ICMP-derived items remain unsupported (see NET_RAW note above). Host-level disk/network items reach the *agent container's* view, not the macOS host — true host-OS introspection (e.g., macOS-specific filesystems, Bonjour, smc temps) is deferred and will require either privileged agent or macOS-native exporter sidecar.
 
-- **Caddy per-site access logs**: Caddy 2.11.2 syntax for per-site `log` directives needs investigation beyond quick-fix scope. Volume infrastructure (`caddy-logs`) and global access log writer plumbing are in place; per-site enablement deferred to Block 2 work where access-pattern dashboards drive the requirement.
+- **Caddy per-site access logs (resolved Block 2 P6)**: Each site imports a shared `(access_log)` snippet → JSON entries with site `host` field land in `/var/log/caddy/access.log` (rolled at 100 MiB, 7 keeps). Per-site Prometheus metrics are *partial*: Caddy 2.11.2's default Prometheus output labels `caddy_http_request_*` series with `code`, `handler`, `method`, `server` only — there is **no `host` label**. Per-server (`server="srv0"`) is the finest aggregation available from metrics. Per-site analysis requires Loki-tailing the JSON access.log (deferred to Phase 14 logging-stack work).
 
 - **Zabbix Prometheus metrics**: zabbix-server 7.4 does not natively expose `/metrics`. Adding `zabbix-prometheus-exporter` (or similar) is an additive deployment, deferred to Block 2 when its metrics are needed in Grafana.
 
 - **Cloud LLM routes deprecated platform-side (Phase 13.5)**: litellm-gateway no longer carries `claude-sonnet`, `claude-haiku`, or `gpt-4o` routes. `secret/anthropic/api` and `secret/openai/api` are deleted from Vault; `ANTHROPIC_API_KEY` and `OPENAI_API_KEY` are no longer rendered into the litellm sidecar template. Platform services depend exclusively on local Ollama models. Anthropic Pro subscription access (when occasionally needed for high-judgment work) flows through the `claude-pro` shell function — Claude Code talking directly to Anthropic — and never traverses platform infrastructure. This decouples the platform from any cloud-LLM availability/quota constraint and matches the user's subscription posture (Pro + ChatGPT Plus, no API credits). See "LLM Access Doctrine" above.
+
+- **cAdvisor friendly-name labels missing on Docker Desktop Mac**: cAdvisor (`zcube/cadvisor:latest`) on Mac Docker Desktop emits `container_*` metrics keyed by cgroup path (`id="/docker/<sha>"`) only; `name`/`image`/`container_label_*` labels do not populate because the cgroup-to-docker-API resolution is gated by Docker Desktop's VM boundary. Setting `--docker_only=true` does not help (it filters to zero series). Container Health dashboard panels therefore use `id=~"/docker/.+"` selectors with `label_replace` to truncate the hash to 12 chars in legends. Friendly labels will return when the platform migrates to Linux/Threadripper. Operators map a hash via `docker ps --format '{{.ID}} {{.Names}}'`.
 
 ### Operating Doctrine
 - Master project manager (separate Claude window) is responsible for system health and completion.

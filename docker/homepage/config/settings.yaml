@@ -1,0 +1,25 @@
+title: Integrated AI Platform — Mac Mini Control Center
+favicon: https://gethomepage.dev/favicon.ico
+
+theme: dark
+color: slate
+
+layout:
+  Platform:
+    style: row
+    columns: 3
+  Media:
+    style: row
+    columns: 3
+  Visibility:
+    style: row
+    columns: 2
+
+providers:
+  openweathermap: openweathermapapikey
+
+statusStyle: dot
+
+hideVersion: true
+
+cardBlur: sm

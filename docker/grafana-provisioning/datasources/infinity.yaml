@@ -1,0 +1,14 @@
+apiVersion: 1
+datasources:
+  - name: Infinity
+    type: yesoreyeram-infinity-datasource
+    access: proxy
+    isDefault: false
+    jsonData:
+      allowed_hosts:
+        - "http://host.docker.internal:8200"
+        - "http://host.docker.internal:8300"
+        - "http://vault-server:8200"
+        - "http://topology-api:8300"
+      timeout: 30
+      global_queries: []

@@ -1112,3 +1112,72 @@ services:
       no_new_privileges: false
       cap_drop: []
     compose_file: docker/nextcloud/docker-compose.yml
+  - id: homepage
+    name: Homepage Control Center
+    category: control-center
+    host: mac-mini
+    container: homepage
+    image: ghcr.io/gethomepage/homepage:v1.12.3
+    port: 3005
+    internal_port: 3000
+    health_url: "http://localhost:3005/api/healthcheck"
+    health_method: GET
+    health_expect: 200
+    purpose: Mac Mini control-center portal — widgets for Sonarr/Radarr/Prowlarr/Grafana/Plane/Vault/Uptime Kuma; canonical Vault Agent sidecar pattern; routed via Caddy at https://homepage.internal
+    depends_on: [vault-server, caddy, sonarr, radarr, prowlarr, grafana-obs, plane-api, uptime-kuma]
+    security:
+      no_new_privileges: true
+      cap_drop: [ALL]
+      cap_add: [CHOWN, DAC_OVERRIDE, FOWNER, SETGID, SETUID, NET_BIND_SERVICE]
+      docker_socket: read-only (used for built-in Docker auto-discovery; see Block 2 P2.2 for rationale)
+    compose_file: docker/homepage/docker-compose.yml
+    notes: |
+      Block 2 P2 (2026-04-28): deployed under canonical sidecar pattern.
+      AppRole: homepage; policy reads secret/data/{arr/sonarr,arr/radarr,arr/prowlarr,plex/api,grafana/api,plane/api,opnsense/api,homeassistant/api,openweathermap/api}.
+      Plex widget deferred — KNOWN-LIMITATION: QNAP Plex 32400 ECONNREFUSED from container source IP (Docker Desktop NAT artifact). Container can reach QNAP ports 22/80/443.
+      Uptime Kuma rendered via customapi (slug-based public status page; status page slug "platform" hardcoded — public value, not a credential).
+  - id: uptime-kuma
+    name: Uptime Kuma
+    category: visibility
+    host: mac-mini
+    container: uptime-kuma
+    image: louislam/uptime-kuma:1
+    port: 3033
+    internal_port: 3001
+    health_url: "http://localhost:3033/"
+    health_method: GET
+    health_expect: 200
+    purpose: Service uptime monitoring; public status page at /status/platform — slug is hardcoded in homepage config; uptime-kuma 1.x has no API authentication surface, so there is no credential to rotate.
+    depends_on: []
+    security:
+      no_new_privileges: false
+      cap_drop: []
+    compose_file: docker/observability-stack.yml
+    credentials: none
+    public_values:
+      status_page_slug: platform
+  - id: topology-api
+    name: Topology API
+    category: observability
+    host: mac-mini
+    container: topology-api
+    image: iap/topology-api:1.0.0
+    port: 8300
+    internal_port: 8300
+    health_url: "http://localhost:8300/health"
+    health_method: GET
+    health_expect: 200
+    purpose: Serves config/service-registry.yaml as nodes/edges JSON for the Grafana Service Topology dashboard (Node Graph panel via marcusolsson-json-datasource).
+    depends_on: [grafana-obs]
+    security:
+      no_new_privileges: true
+      cap_drop: [ALL]
+      cap_add: [NET_BIND_SERVICE]
+      read_only: true
+    compose_file: docker/topology-api/docker-compose.yml
+    credentials: none
+    notes: |
+      Block 2 P5 (2026-04-28): created as a small Python http.server with PyYAML.
+      Reads service-registry.yaml on every request (file is small enough that re-read latency is negligible).
+      Endpoints: /health, /api/topology, /api/topology/nodes, /api/topology/edges.
+      Edges derived from each service's depends_on list; orphan deps are dropped silently.

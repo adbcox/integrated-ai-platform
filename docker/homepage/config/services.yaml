@@ -1,0 +1,128 @@
+- Platform:
+    - Grafana:
+        href: http://localhost:3030
+        description: Observability — VictoriaMetrics + dashboards
+        icon: grafana.png
+        widget:
+          type: customapi
+          url: http://host.docker.internal:3030/api/search?type=dash-db&limit=1000
+          method: GET
+          headers:
+            Authorization: "Bearer {{HOMEPAGE_VAR_GRAFANA_TOKEN}}"
+          mappings:
+            - field: length
+              label: Dashboards
+              format: number
+
+    - Plane:
+        href: http://localhost:3001
+        description: Roadmap & issue tracking
+        icon: plane.png
+        widget:
+          type: customapi
+          url: http://host.docker.internal:8000/api/v1/workspaces/iap/projects/
+          method: GET
+          headers:
+            X-Api-Key: "{{HOMEPAGE_VAR_PLANE_TOKEN}}"
+          mappings:
+            - field: total_count
+              label: Projects
+
+    - Vault:
+        href: http://mac-mini.internal:8200
+        description: Secrets & encryption
+        icon: vault.png
+        widget:
+          type: customapi
+          url: http://host.docker.internal:8200/v1/sys/health
+          method: GET
+          mappings:
+            - field: sealed
+              label: Sealed
+              format: text
+            - field: version
+              label: Version
+              format: text
+
+- Media:
+    - Sonarr:
+        href: http://mac-mini.internal:8989
+        description: TV automation
+        icon: sonarr.png
+        widget:
+          type: sonarr
+          url: "{{HOMEPAGE_VAR_SONARR_URL}}"
+          key: "{{HOMEPAGE_VAR_SONARR_API_KEY}}"
+
+    - Radarr:
+        href: http://mac-mini.internal:7878
+        description: Movie automation
+        icon: radarr.png
+        widget:
+          type: radarr
+          url: "{{HOMEPAGE_VAR_RADARR_URL}}"
+          key: "{{HOMEPAGE_VAR_RADARR_API_KEY}}"
+
+    - Prowlarr:
+        href: http://mac-mini.internal:9696
+        description: Indexer aggregation
+        icon: prowlarr.png
+        widget:
+          type: prowlarr
+          url: "{{HOMEPAGE_VAR_PROWLARR_URL}}"
+          key: "{{HOMEPAGE_VAR_PROWLARR_API_KEY}}"
+
+    - Plex:
+        href: http://192.168.10.201:32400/web
+        description: Media server on QNAP — KNOWN-LIMITATION; widget deferred (QNAP Plex 32400 refuses connections from Docker Desktop VM source IP; ports 22/80/443 to QNAP work from container, only 32400 is blocked)
+        icon: plex.png
+
+- Visibility:
+    - Uptime Kuma:
+        href: http://localhost:3033/status/platform
+        description: Service uptime — public status page
+        icon: uptime-kuma.png
+        widget:
+          type: customapi
+          url: http://host.docker.internal:3033/api/status-page/heartbeat/platform
+          method: GET
+          mappings:
+            - field:
+                heartbeatList: ~
+              label: Monitors
+
+    - OPNsense:
+        href: https://192.168.10.1
+        description: Firewall (best-effort widget — KNOWN-LIMITATION pending OPNsense API stabilization)
+        icon: opnsense.png
+        widget:
+          type: opnsense
+          url: "{{HOMEPAGE_VAR_OPNSENSE_HOST}}"
+          username: "{{HOMEPAGE_VAR_OPNSENSE_KEY}}"
+          password: "{{HOMEPAGE_VAR_OPNSENSE_SECRET}}"
+
+    - Vaultwarden:
+        href: http://localhost:8083
+        description: Password vault
+        icon: vaultwarden.png
+
+    - Headscale:
+        href: http://mac-mini.internal:8085
+        description: Mesh VPN coordination
+
+- MCP & AI Services:
+    - Open WebUI:
+        href: http://mac-mini.internal:3002
+        description: LLM chat (local Ollama)
+        icon: ollama.png
+
+    - LiteLLM Gateway:
+        href: http://mac-mini.internal:4000
+        description: LLM router (local-only routes)
+
+    - Obot:
+        href: http://mac-mini.internal:8090
+        description: Agent orchestration
+
+    - MCP Roster:
+        description: 7 active MCPs — plane-roadmap, filesystem, postgresql, docker, sequential-thinking, memory, sqlite (visibility-only; managed by Claude Code .mcp.json)

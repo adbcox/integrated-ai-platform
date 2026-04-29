@@ -1,0 +1,21 @@
+- Documentation:
+    - Platform Docs:
+        - abbr: PD
+          href: https://github.com/adbcox/integrated-ai-platform
+
+    - Roadmap:
+        - abbr: RM
+          href: http://localhost:3001
+
+    - Vault Audit:
+        - abbr: VA
+          href: http://mac-mini.internal:8200/ui/vault/audit
+
+- Operations:
+    - Grafana:
+        - abbr: GR
+          href: http://localhost:3030
+
+    - Status Page:
+        - abbr: SP
+          href: http://localhost:3033/status/platform

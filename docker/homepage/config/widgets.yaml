@@ -1,0 +1,19 @@
+- resources:
+    cpu: true
+    memory: true
+    disk: /
+
+- search:
+    provider: duckduckgo
+    target: _blank
+
+- datetime:
+    text_size: xl
+    format:
+      timeStyle: short
+      dateStyle: short
+      hourCycle: h23
+
+- greeting:
+    text_size: xl
+    text: "AI Platform Control Center"

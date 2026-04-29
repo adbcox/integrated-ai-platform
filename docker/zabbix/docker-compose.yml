@@ -214,12 +214,19 @@ services:
     restart: unless-stopped
     environment:
       ZBX_SERVER_HOST: zabbix-server
-      ZBX_HOSTNAME: Mac-Mini-M4-Pro
+      # ZBX_HOSTNAME must match the host registered in zabbix-web; "mac-mini"
+      # aligns with the platform host id used in service-registry.yaml.
+      ZBX_HOSTNAME: mac-mini
       ZBX_SERVER_ACTIVE: zabbix-server
     depends_on:
       - zabbix-server
     networks:
       - zabbix-net
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: 64m
 
 networks:
   zabbix-net:

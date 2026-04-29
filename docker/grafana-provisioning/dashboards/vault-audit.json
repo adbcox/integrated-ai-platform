@@ -1,0 +1,235 @@
+{
+  "__inputs": [],
+  "__requires": [
+    {"type": "grafana", "id": "grafana", "name": "Grafana", "version": "13.0.0"},
+    {"type": "datasource", "id": "yesoreyeram-infinity-datasource", "name": "Infinity", "version": "3.8.0"},
+    {"type": "panel", "id": "stat", "name": "Stat", "version": ""},
+    {"type": "panel", "id": "table", "name": "Table", "version": ""},
+    {"type": "panel", "id": "text", "name": "Text", "version": ""}
+  ],
+  "annotations": {"list": []},
+  "description": "Vault — seal status, health, leader, and audit log roadmap",
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "collapsed": false,
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 0},
+      "id": 100,
+      "title": "Vault Health",
+      "type": "row"
+    },
+    {
+      "datasource": {"type": "yesoreyeram-infinity-datasource", "uid": "${DS_INFINITY}"},
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "thresholds": {"mode": "absolute", "steps": [{"color": "red", "value": null}, {"color": "green", "value": 1}]},
+          "mappings": [
+            {"options": {"true": {"text": "INITIALIZED", "color": "green"}, "false": {"text": "UNINIT", "color": "red"}}, "type": "value"}
+          ]
+        }
+      },
+      "gridPos": {"h": 4, "w": 6, "x": 0, "y": 1},
+      "id": 1,
+      "options": {"reduceOptions": {"calcs": ["lastNotNull"]}, "colorMode": "background", "textMode": "value"},
+      "title": "Initialized",
+      "type": "stat",
+      "targets": [
+        {
+          "refId": "A",
+          "type": "json",
+          "source": "url",
+          "format": "table",
+          "url": "http://vault-server:8200/v1/sys/health",
+          "url_options": {"method": "GET"},
+          "root_selector": "",
+          "columns": [
+            {"selector": "initialized", "text": "initialized", "type": "string"}
+          ]
+        }
+      ]
+    },
+    {
+      "datasource": {"type": "yesoreyeram-infinity-datasource", "uid": "${DS_INFINITY}"},
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "red", "value": 1}]},
+          "mappings": [
+            {"options": {"true": {"text": "SEALED", "color": "red"}, "false": {"text": "UNSEALED", "color": "green"}}, "type": "value"}
+          ]
+        }
+      },
+      "gridPos": {"h": 4, "w": 6, "x": 6, "y": 1},
+      "id": 2,
+      "options": {"reduceOptions": {"calcs": ["lastNotNull"]}, "colorMode": "background", "textMode": "value"},
+      "title": "Sealed",
+      "type": "stat",
+      "targets": [
+        {
+          "refId": "A",
+          "type": "json",
+          "source": "url",
+          "format": "table",
+          "url": "http://vault-server:8200/v1/sys/health",
+          "url_options": {"method": "GET"},
+          "columns": [
+            {"selector": "sealed", "text": "sealed", "type": "string"}
+          ]
+        }
+      ]
+    },
+    {
+      "datasource": {"type": "yesoreyeram-infinity-datasource", "uid": "${DS_INFINITY}"},
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}]}
+        }
+      },
+      "gridPos": {"h": 4, "w": 6, "x": 12, "y": 1},
+      "id": 3,
+      "options": {"reduceOptions": {"calcs": ["lastNotNull"]}, "colorMode": "background", "textMode": "value"},
+      "title": "Version",
+      "type": "stat",
+      "targets": [
+        {
+          "refId": "A",
+          "type": "json",
+          "source": "url",
+          "format": "table",
+          "url": "http://vault-server:8200/v1/sys/health",
+          "url_options": {"method": "GET"},
+          "columns": [
+            {"selector": "version", "text": "version", "type": "string"}
+          ]
+        }
+      ]
+    },
+    {
+      "datasource": {"type": "yesoreyeram-infinity-datasource", "uid": "${DS_INFINITY}"},
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}]}
+        }
+      },
+      "gridPos": {"h": 4, "w": 6, "x": 18, "y": 1},
+      "id": 4,
+      "options": {"reduceOptions": {"calcs": ["lastNotNull"]}, "colorMode": "background", "textMode": "value"},
+      "title": "Storage Type",
+      "type": "stat",
+      "targets": [
+        {
+          "refId": "A",
+          "type": "json",
+          "source": "url",
+          "format": "table",
+          "url": "http://vault-server:8200/v1/sys/seal-status",
+          "url_options": {"method": "GET"},
+          "columns": [
+            {"selector": "storage_type", "text": "storage_type", "type": "string"}
+          ]
+        }
+      ]
+    },
+    {
+      "collapsed": false,
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 5},
+      "id": 200,
+      "title": "Seal Configuration",
+      "type": "row"
+    },
+    {
+      "datasource": {"type": "yesoreyeram-infinity-datasource", "uid": "${DS_INFINITY}"},
+      "fieldConfig": {"defaults": {"custom": {"align": "auto"}}},
+      "gridPos": {"h": 7, "w": 12, "x": 0, "y": 6},
+      "id": 10,
+      "title": "Seal Status (full)",
+      "type": "table",
+      "targets": [
+        {
+          "refId": "A",
+          "type": "json",
+          "source": "url",
+          "format": "table",
+          "url": "http://vault-server:8200/v1/sys/seal-status",
+          "url_options": {"method": "GET"},
+          "columns": [
+            {"selector": "type", "text": "Type", "type": "string"},
+            {"selector": "t", "text": "Threshold", "type": "number"},
+            {"selector": "n", "text": "Total Shares", "type": "number"},
+            {"selector": "progress", "text": "Progress", "type": "number"},
+            {"selector": "version", "text": "Version", "type": "string"},
+            {"selector": "cluster_name", "text": "Cluster", "type": "string"},
+            {"selector": "recovery_seal", "text": "Recovery Seal", "type": "string"},
+            {"selector": "migration", "text": "Migration", "type": "string"}
+          ]
+        }
+      ]
+    },
+    {
+      "datasource": {"type": "yesoreyeram-infinity-datasource", "uid": "${DS_INFINITY}"},
+      "fieldConfig": {"defaults": {"custom": {"align": "auto"}}},
+      "gridPos": {"h": 7, "w": 12, "x": 12, "y": 6},
+      "id": 11,
+      "title": "Health (full)",
+      "type": "table",
+      "targets": [
+        {
+          "refId": "A",
+          "type": "json",
+          "source": "url",
+          "format": "table",
+          "url": "http://vault-server:8200/v1/sys/health",
+          "url_options": {"method": "GET"},
+          "columns": [
+            {"selector": "initialized", "text": "Initialized", "type": "string"},
+            {"selector": "sealed", "text": "Sealed", "type": "string"},
+            {"selector": "standby", "text": "Standby", "type": "string"},
+            {"selector": "performance_standby", "text": "Perf Standby", "type": "string"},
+            {"selector": "replication_performance_mode", "text": "Repl Perf", "type": "string"},
+            {"selector": "replication_dr_mode", "text": "Repl DR", "type": "string"},
+            {"selector": "version", "text": "Version", "type": "string"},
+            {"selector": "server_time_utc", "text": "Server Time UTC", "type": "number"}
+          ]
+        }
+      ]
+    },
+    {
+      "collapsed": false,
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 13},
+      "id": 300,
+      "title": "Audit Log",
+      "type": "row"
+    },
+    {
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 14},
+      "id": 999,
+      "options": {
+        "content": "## Audit Log Aggregation — Roadmap\n\n**Live audit log:** Vault writes JSONL to `/vault/logs/audit.log` inside `vault-server`. Operator + sidecar reads land here in real time. The platform retains 30 days locally; nightly archive to QNAP.\n\n**Why this dashboard doesn't tail it inline:** Streaming a JSONL file into Grafana panels needs a log-aggregator (Loki + Promtail, or Vector → VictoriaLogs). That infrastructure is **not** deployed. Adding it would expand Block 2 scope materially, so it is **deferred** to a logs-focused phase.\n\n**Today's verification path** (operator runbook):\n```\ndocker exec vault-server tail -f /vault/logs/audit.log | jq -c '{time, type, request: {operation, path, remote_address}, response: {error}}'\n```\n\n**When logs aggregation lands**, this panel will be replaced with:\n- Auth attempts by mount (success/failure split)\n- Top accessed paths (last 24h)\n- Failed operations timeline (state-timeline)\n- Token creates / revokes by entity\n\nSee `docs/phase-13/PHASE_13_BLOCK_2_PLAN.md` for the explicit scope boundary.",
+        "mode": "markdown"
+      },
+      "title": "Audit Log Tailing — Deferred",
+      "type": "text"
+    }
+  ],
+  "refresh": "30s",
+  "schemaVersion": 38,
+  "tags": ["platform", "vault", "security"],
+  "templating": {
+    "list": [
+      {"hide": 2, "name": "DS_INFINITY", "query": "yesoreyeram-infinity-datasource", "type": "datasource"}
+    ]
+  },
+  "time": {"from": "now-1h", "to": "now"},
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "Vault Audit & Health",
+  "uid": "vault-audit",
+  "version": 1
+}

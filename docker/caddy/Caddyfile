@@ -8,190 +8,240 @@
     local_certs
     # Expose admin API on all interfaces so host health checks can reach it
     admin 0.0.0.0:2019
-    # Block 2 will enable per-site log directives. Volume /var/log/caddy is
-    # bind-mounted (caddy-logs volume) and ready for access log writing.
+    # Prometheus metrics — exposed on the admin endpoint at /metrics. VMAgent
+    # scrapes caddy:2019/metrics; Caddy attaches a `host` label to
+    # caddy_http_request_* series so per-site analysis is a label filter.
+    metrics
+}
+
+# Shared access-log snippet — single JSON file. Caddy tags each entry with the
+# site host, so per-site analysis is a JSON filter, not a per-site file split.
+(access_log) {
+    log {
+        output file /var/log/caddy/access.log {
+            roll_size 100MiB
+            roll_keep 7
+        }
+        format json
+    }
 }
 
 # ── AI Layer ──────────────────────────────────────────────────────────────────
 plane.internal {
+    import access_log
 
     reverse_proxy host.docker.internal:3001
 }
 
 obot.internal {
+    import access_log
 
     reverse_proxy host.docker.internal:8090
 }
 
 ollama.internal {
+    import access_log
 
     reverse_proxy host.docker.internal:11434
 }
 
 anythingllm.internal {
+    import access_log
 
     reverse_proxy host.docker.internal:3004
 }
 
 webui.internal {
+    import access_log
 
     reverse_proxy host.docker.internal:3002
 }
 
 litellm.internal {
+    import access_log
 
     reverse_proxy host.docker.internal:4000
 }
 
 # ── Platform Layer ────────────────────────────────────────────────────────────
 vault.internal {
+    import access_log
 
     reverse_proxy host.docker.internal:8200
 }
 
 dashboard.internal {
+    import access_log
 
     reverse_proxy host.docker.internal:8080
 }
 
 homarr.internal {
+    import access_log
 
     reverse_proxy host.docker.internal:7575
 }
 
 # ── Observability Layer ───────────────────────────────────────────────────────
 grafana.internal {
+    import access_log
 
     reverse_proxy host.docker.internal:3030
 }
 
 zabbix.internal {
+    import access_log
 
     reverse_proxy host.docker.internal:10080
 }
 
 uptime.internal {
+    import access_log
 
     reverse_proxy host.docker.internal:3033
 }
 
 # ── Media Layer ───────────────────────────────────────────────────────────────
 sonarr.internal {
+    import access_log
 
     reverse_proxy host.docker.internal:8989
 }
 
 radarr.internal {
+    import access_log
 
     reverse_proxy host.docker.internal:7878
 }
 
 prowlarr.internal {
+    import access_log
 
     reverse_proxy host.docker.internal:9696
 }
 
 vaultwarden.internal {
+    import access_log
 
     reverse_proxy host.docker.internal:8083
 }
 
 headscale.internal {
+    import access_log
 
     reverse_proxy host.docker.internal:8082
 }
 
 nextcloud.internal {
+    import access_log
 
     reverse_proxy host.docker.internal:8085
 }
 
 mcp-filesystem.internal {
+    import access_log
 
     reverse_proxy host.docker.internal:8091
 }
 
 mcp-docs.internal {
+    import access_log
 
     reverse_proxy host.docker.internal:8093
 }
 
 mcp-docker.internal {
+    import access_log
 
     reverse_proxy host.docker.internal:8092
 }
 
 victoria.internal {
+    import access_log
 
     reverse_proxy host.docker.internal:8428
 }
 
 homepage.internal {
+    import access_log
 
     reverse_proxy host.docker.internal:3005
 }
 
 manyfold.internal {
+    import access_log
 
     reverse_proxy host.docker.internal:3006
 }
 
 gitea.internal {
+    import access_log
 
     reverse_proxy host.docker.internal:3007
 }
 
 tautulli.internal {
+    import access_log
 
     reverse_proxy host.docker.internal:8181
 }
 
 overseerr.internal {
+    import access_log
 
     reverse_proxy host.docker.internal:5055
 }
 
 ragflow.internal {
+    import access_log
 
     reverse_proxy host.docker.internal:9380
 }
 
 plex-mcp.internal {
+    import access_log
 
     reverse_proxy host.docker.internal:8094
 }
 
 portainer.internal {
+    import access_log
 
     reverse_proxy host.docker.internal:9443
 }
 
 netdata.internal {
+    import access_log
 
     reverse_proxy host.docker.internal:19999
 }
 
 dozzle.internal {
+    import access_log
 
     reverse_proxy host.docker.internal:9999
 }
 
 pgadmin.internal {
+    import access_log
 
     reverse_proxy host.docker.internal:5050
 }
 
 bookstack.internal {
+    import access_log
 
     reverse_proxy host.docker.internal:6875
 }
 
 n8n.internal {
+    import access_log
 
     reverse_proxy host.docker.internal:5678
 }
 
 filebrowser.internal {
+    import access_log
 
     reverse_proxy host.docker.internal:8089
 }

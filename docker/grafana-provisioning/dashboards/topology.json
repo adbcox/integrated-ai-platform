@@ -1,0 +1,186 @@
+{
+  "__inputs": [],
+  "__requires": [
+    {"type": "grafana", "id": "grafana", "name": "Grafana", "version": "13.0.0"},
+    {"type": "datasource", "id": "marcusolsson-json-datasource", "name": "TopologyJSON", "version": "1.3.28"},
+    {"type": "panel", "id": "nodeGraph", "name": "Node graph", "version": ""},
+    {"type": "panel", "id": "stat", "name": "Stat", "version": ""},
+    {"type": "panel", "id": "table", "name": "Table", "version": ""},
+    {"type": "panel", "id": "text", "name": "Text", "version": ""}
+  ],
+  "annotations": {"list": []},
+  "description": "Service Topology — derived from config/service-registry.yaml via topology-api",
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "gridPos": {"h": 3, "w": 24, "x": 0, "y": 0},
+      "id": 1,
+      "options": {
+        "content": "## Service Topology\nDerived from `config/service-registry.yaml` via the **topology-api** sidecar (port 8300). Edges come from each service's `depends_on` list. Node colour encodes category. Refresh re-fetches the registry on each panel render — dependency changes show up immediately after a YAML edit.",
+        "mode": "markdown"
+      },
+      "title": "About",
+      "type": "text"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 3},
+      "id": 100,
+      "title": "Counts",
+      "type": "row"
+    },
+    {
+      "datasource": {"type": "marcusolsson-json-datasource", "uid": "${DS_TOPOLOGY}"},
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}]},
+          "unit": "short"
+        }
+      },
+      "gridPos": {"h": 4, "w": 6, "x": 0, "y": 4},
+      "id": 10,
+      "options": {"reduceOptions": {"calcs": ["lastNotNull"]}, "colorMode": "background"},
+      "title": "Services",
+      "type": "stat",
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {"type": "marcusolsson-json-datasource", "uid": "${DS_TOPOLOGY}"},
+          "urlPath": "/api/topology",
+          "method": "GET",
+          "fields": [
+            {"name": "service_count", "jsonPath": "$.service_count", "type": "number"}
+          ]
+        }
+      ]
+    },
+    {
+      "datasource": {"type": "marcusolsson-json-datasource", "uid": "${DS_TOPOLOGY}"},
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}]},
+          "unit": "short"
+        }
+      },
+      "gridPos": {"h": 4, "w": 6, "x": 6, "y": 4},
+      "id": 11,
+      "options": {"reduceOptions": {"calcs": ["lastNotNull"]}, "colorMode": "background"},
+      "title": "Edges (depends_on)",
+      "type": "stat",
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {"type": "marcusolsson-json-datasource", "uid": "${DS_TOPOLOGY}"},
+          "urlPath": "/api/topology",
+          "method": "GET",
+          "fields": [
+            {"name": "edge_count", "jsonPath": "$.edge_count", "type": "number"}
+          ]
+        }
+      ]
+    },
+    {
+      "collapsed": false,
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 8},
+      "id": 200,
+      "title": "Topology Graph",
+      "type": "row"
+    },
+    {
+      "datasource": {"type": "marcusolsson-json-datasource", "uid": "${DS_TOPOLOGY}"},
+      "gridPos": {"h": 18, "w": 24, "x": 0, "y": 9},
+      "id": 20,
+      "options": {
+        "nodes": {"mainStatUnit": "short", "secondaryStatUnit": "short"},
+        "edges": {"mainStatUnit": "short"}
+      },
+      "title": "Service Graph",
+      "type": "nodeGraph",
+      "targets": [
+        {
+          "refId": "nodes",
+          "datasource": {"type": "marcusolsson-json-datasource", "uid": "${DS_TOPOLOGY}"},
+          "urlPath": "/api/topology/nodes",
+          "method": "GET",
+          "fields": [
+            {"name": "id", "jsonPath": "$.[*].id", "type": "string"},
+            {"name": "title", "jsonPath": "$.[*].title", "type": "string"},
+            {"name": "subtitle", "jsonPath": "$.[*].subtitle", "type": "string"},
+            {"name": "mainStat", "jsonPath": "$.[*].mainStat", "type": "string"},
+            {"name": "secondaryStat", "jsonPath": "$.[*].secondaryStat", "type": "string"},
+            {"name": "color", "jsonPath": "$.[*].color", "type": "string"},
+            {"name": "arc__primary", "jsonPath": "$.[*].arc__primary", "type": "number"},
+            {"name": "detail__purpose", "jsonPath": "$.[*].detail__purpose", "type": "string"},
+            {"name": "detail__container", "jsonPath": "$.[*].detail__container", "type": "string"},
+            {"name": "detail__image", "jsonPath": "$.[*].detail__image", "type": "string"}
+          ]
+        },
+        {
+          "refId": "edges",
+          "datasource": {"type": "marcusolsson-json-datasource", "uid": "${DS_TOPOLOGY}"},
+          "urlPath": "/api/topology/edges",
+          "method": "GET",
+          "fields": [
+            {"name": "id", "jsonPath": "$.[*].id", "type": "string"},
+            {"name": "source", "jsonPath": "$.[*].source", "type": "string"},
+            {"name": "target", "jsonPath": "$.[*].target", "type": "string"},
+            {"name": "mainStat", "jsonPath": "$.[*].mainStat", "type": "string"}
+          ]
+        }
+      ]
+    },
+    {
+      "collapsed": false,
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 27},
+      "id": 300,
+      "title": "Service Inventory",
+      "type": "row"
+    },
+    {
+      "datasource": {"type": "marcusolsson-json-datasource", "uid": "${DS_TOPOLOGY}"},
+      "fieldConfig": {"defaults": {"custom": {"align": "auto"}}},
+      "gridPos": {"h": 12, "w": 24, "x": 0, "y": 28},
+      "id": 30,
+      "title": "Services (from registry)",
+      "type": "table",
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {"type": "marcusolsson-json-datasource", "uid": "${DS_TOPOLOGY}"},
+          "urlPath": "/api/topology/nodes",
+          "method": "GET",
+          "fields": [
+            {"name": "ID", "jsonPath": "$.[*].id", "type": "string"},
+            {"name": "Name", "jsonPath": "$.[*].title", "type": "string"},
+            {"name": "Category", "jsonPath": "$.[*].subtitle", "type": "string"},
+            {"name": "Port", "jsonPath": "$.[*].mainStat", "type": "string"},
+            {"name": "Host", "jsonPath": "$.[*].secondaryStat", "type": "string"},
+            {"name": "Container", "jsonPath": "$.[*].detail__container", "type": "string"},
+            {"name": "Image", "jsonPath": "$.[*].detail__image", "type": "string"},
+            {"name": "Purpose", "jsonPath": "$.[*].detail__purpose", "type": "string"}
+          ]
+        }
+      ]
+    }
+  ],
+  "refresh": "1m",
+  "schemaVersion": 38,
+  "tags": ["platform", "topology", "service-graph"],
+  "templating": {
+    "list": [
+      {"hide": 2, "name": "DS_TOPOLOGY", "query": "marcusolsson-json-datasource", "type": "datasource"}
+    ]
+  },
+  "time": {"from": "now-1h", "to": "now"},
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "Service Topology",
+  "uid": "service-topology",
+  "version": 1
+}

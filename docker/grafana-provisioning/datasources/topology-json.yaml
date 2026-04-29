@@ -1,0 +1,9 @@
+apiVersion: 1
+datasources:
+  - name: TopologyJSON
+    type: marcusolsson-json-datasource
+    access: proxy
+    url: http://topology-api:8300
+    isDefault: false
+    jsonData:
+      timeout: 30

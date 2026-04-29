@@ -1,0 +1,182 @@
+{
+  "__inputs": [],
+  "__requires": [
+    {"type": "grafana", "id": "grafana", "name": "Grafana", "version": "13.0.0"},
+    {"type": "datasource", "id": "prometheus", "name": "VictoriaMetrics", "version": "1.0.0"},
+    {"type": "panel", "id": "stat", "name": "Stat", "version": ""},
+    {"type": "panel", "id": "timeseries", "name": "Time series", "version": ""},
+    {"type": "panel", "id": "state-timeline", "name": "State timeline", "version": ""},
+    {"type": "panel", "id": "text", "name": "Text", "version": ""}
+  ],
+  "annotations": {"list": []},
+  "description": "Network & Reverse Proxy — host network throughput + Caddy reverse-proxy health",
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "collapsed": false,
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 0},
+      "id": 100,
+      "title": "Caddy — Health & Config",
+      "type": "row"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "${DS_VICTORIAMETRICS}"},
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "thresholds": {"mode": "absolute", "steps": [{"color": "red", "value": null}, {"color": "green", "value": 1}]},
+          "mappings": [{"options": {"0": {"text": "FAIL"}, "1": {"text": "OK"}}, "type": "value"}],
+          "unit": "short"
+        }
+      },
+      "gridPos": {"h": 4, "w": 6, "x": 0, "y": 1},
+      "id": 1,
+      "options": {"reduceOptions": {"calcs": ["lastNotNull"]}, "colorMode": "background"},
+      "title": "Last Config Reload",
+      "type": "stat",
+      "targets": [
+        {"expr": "caddy_config_last_reload_successful", "legendFormat": "reload", "refId": "A"}
+      ]
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "${DS_VICTORIAMETRICS}"},
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}]},
+          "unit": "dateTimeFromNow"
+        }
+      },
+      "gridPos": {"h": 4, "w": 6, "x": 6, "y": 1},
+      "id": 2,
+      "options": {"reduceOptions": {"calcs": ["lastNotNull"]}, "colorMode": "background"},
+      "title": "Reload Time",
+      "type": "stat",
+      "targets": [
+        {"expr": "caddy_config_last_reload_success_timestamp_seconds * 1000", "legendFormat": "ts", "refId": "A"}
+      ]
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "${DS_VICTORIAMETRICS}"},
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "thresholds": {"mode": "absolute", "steps": [{"color": "red", "value": null}, {"color": "green", "value": 1}]},
+          "unit": "short"
+        }
+      },
+      "gridPos": {"h": 4, "w": 6, "x": 12, "y": 1},
+      "id": 3,
+      "options": {"reduceOptions": {"calcs": ["sum"]}, "colorMode": "background"},
+      "title": "Healthy Upstreams",
+      "type": "stat",
+      "targets": [
+        {"expr": "sum(caddy_reverse_proxy_upstreams_healthy)", "legendFormat": "healthy", "refId": "A"}
+      ]
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "${DS_VICTORIAMETRICS}"},
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 100}]},
+          "unit": "short"
+        }
+      },
+      "gridPos": {"h": 4, "w": 6, "x": 18, "y": 1},
+      "id": 4,
+      "options": {"reduceOptions": {"calcs": ["lastNotNull"]}, "colorMode": "background"},
+      "title": "Admin API Calls (total)",
+      "type": "stat",
+      "targets": [
+        {"expr": "sum(caddy_admin_http_requests_total)", "legendFormat": "admin", "refId": "A"}
+      ]
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "${DS_VICTORIAMETRICS}"},
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {"mode": "absolute", "steps": [{"color": "red", "value": null}, {"color": "green", "value": 1}]},
+          "color": {"mode": "thresholds"},
+          "custom": {"fillOpacity": 80, "lineWidth": 0},
+          "mappings": [{"options": {"0": {"text": "DOWN"}, "1": {"text": "UP"}}, "type": "value"}]
+        }
+      },
+      "gridPos": {"h": 7, "w": 24, "x": 0, "y": 5},
+      "id": 5,
+      "options": {"showValue": "never", "alignValue": "left", "rowHeight": 0.85, "mergeValues": true, "legend": {"showLegend": true, "displayMode": "list", "placement": "bottom"}},
+      "title": "Reverse-Proxy Upstream Health (state-timeline)",
+      "type": "state-timeline",
+      "targets": [
+        {"expr": "caddy_reverse_proxy_upstreams_healthy", "legendFormat": "{{upstream}}", "refId": "A"}
+      ]
+    },
+    {
+      "collapsed": false,
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 12},
+      "id": 200,
+      "title": "Host Network Throughput (en0)",
+      "type": "row"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "${DS_VICTORIAMETRICS}"},
+      "fieldConfig": {
+        "defaults": {"unit": "Bps", "custom": {"lineWidth": 2, "fillOpacity": 10}}
+      },
+      "gridPos": {"h": 9, "w": 12, "x": 0, "y": 13},
+      "id": 10,
+      "options": {"tooltip": {"mode": "multi"}, "legend": {"showLegend": true, "displayMode": "table", "placement": "bottom", "calcs": ["mean", "max"]}},
+      "title": "RX / TX (en0)",
+      "type": "timeseries",
+      "targets": [
+        {"expr": "rate(node_network_receive_bytes_total{device=\"en0\"}[2m])", "legendFormat": "RX", "refId": "A"},
+        {"expr": "rate(node_network_transmit_bytes_total{device=\"en0\"}[2m])", "legendFormat": "TX", "refId": "B"}
+      ]
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "${DS_VICTORIAMETRICS}"},
+      "fieldConfig": {
+        "defaults": {"unit": "pps", "custom": {"lineWidth": 1, "fillOpacity": 5}}
+      },
+      "gridPos": {"h": 9, "w": 12, "x": 12, "y": 13},
+      "id": 11,
+      "options": {"tooltip": {"mode": "multi"}, "legend": {"showLegend": true, "displayMode": "table", "placement": "bottom", "calcs": ["mean", "max"]}},
+      "title": "Packet Rate & Errors (en0)",
+      "type": "timeseries",
+      "targets": [
+        {"expr": "rate(node_network_receive_packets_total{device=\"en0\"}[2m])", "legendFormat": "RX pps", "refId": "A"},
+        {"expr": "rate(node_network_transmit_packets_total{device=\"en0\"}[2m])", "legendFormat": "TX pps", "refId": "B"},
+        {"expr": "rate(node_network_receive_errs_total{device=\"en0\"}[2m])", "legendFormat": "RX err", "refId": "C"},
+        {"expr": "rate(node_network_transmit_errs_total{device=\"en0\"}[2m])", "legendFormat": "TX err", "refId": "D"}
+      ]
+    },
+    {
+      "gridPos": {"h": 4, "w": 24, "x": 0, "y": 22},
+      "id": 999,
+      "options": {
+        "content": "## Per-Site Analysis — Mixed (Block 2 P6)\n\n**Metrics**: Global `metrics` directive enabled in `docker/caddy/Caddyfile`. Caddy 2.11.2's default Prometheus output for `caddy_http_requests_total` and `caddy_http_request_duration_seconds_*` carries `code`, `handler`, `method`, `server` labels — **no `host` label**. Per-server (`server=\"srv0\"`) is therefore the finest aggregation available from metrics; this dashboard's panels reflect that ceiling.\n\n**Logs**: Per-site detail is captured via the shared `(access_log)` snippet imported by every `*.internal` site. Caddy writes JSON-formatted access entries (one per request) including the site `host` field to `/var/log/caddy/access.log` (volume `caddy-logs`, rolled at 100 MiB / 7 keeps). To grep by site:\n\n```\ndocker exec caddy sh -c 'grep \\\"host\\\":\\\"grafana.internal\\\" /var/log/caddy/access.log | tail -20'\n```\n\nLoki-tailing for in-Grafana per-site charts is deferred to Phase 14 logging-stack work.",
+        "mode": "markdown"
+      },
+      "title": "Note",
+      "type": "text"
+    }
+  ],
+  "refresh": "30s",
+  "schemaVersion": 38,
+  "tags": ["platform", "network", "caddy"],
+  "templating": {
+    "list": [
+      {"hide": 2, "name": "DS_VICTORIAMETRICS", "query": "prometheus", "type": "datasource"}
+    ]
+  },
+  "time": {"from": "now-3h", "to": "now"},
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "Network & Reverse Proxy",
+  "uid": "network-caddy",
+  "version": 1
+}

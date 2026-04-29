@@ -1,0 +1,218 @@
+{
+  "__inputs": [],
+  "__requires": [
+    {"type": "grafana", "id": "grafana", "name": "Grafana", "version": "13.0.0"},
+    {"type": "datasource", "id": "prometheus", "name": "VictoriaMetrics", "version": "1.0.0"},
+    {"type": "panel", "id": "stat", "name": "Stat", "version": ""},
+    {"type": "panel", "id": "timeseries", "name": "Time series", "version": ""},
+    {"type": "panel", "id": "state-timeline", "name": "State timeline", "version": ""},
+    {"type": "panel", "id": "table", "name": "Table", "version": ""}
+  ],
+  "annotations": {"list": []},
+  "description": "Container Health — per-container CPU/memory/network/restart from cAdvisor",
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "collapsed": false,
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 0},
+      "id": 100,
+      "title": "Inventory",
+      "type": "row"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "${DS_VICTORIAMETRICS}"},
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}]},
+          "unit": "short"
+        }
+      },
+      "gridPos": {"h": 4, "w": 6, "x": 0, "y": 1},
+      "id": 1,
+      "options": {"reduceOptions": {"calcs": ["lastNotNull"]}, "colorMode": "background"},
+      "title": "Running Containers",
+      "type": "stat",
+      "targets": [
+        {"expr": "count(container_last_seen{id=~\"/docker/.+\"})", "legendFormat": "containers", "refId": "A"}
+      ]
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "${DS_VICTORIAMETRICS}"},
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "red", "value": 1}]},
+          "unit": "short"
+        }
+      },
+      "gridPos": {"h": 4, "w": 6, "x": 6, "y": 1},
+      "id": 2,
+      "options": {"reduceOptions": {"calcs": ["sum"]}, "colorMode": "background"},
+      "title": "OOM Events (15m)",
+      "type": "stat",
+      "targets": [
+        {"expr": "sum(increase(container_oom_events_total{id=~\"/docker/.+\"}[15m]))", "legendFormat": "oom", "refId": "A"}
+      ]
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "${DS_VICTORIAMETRICS}"},
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 1}]},
+          "unit": "short"
+        }
+      },
+      "gridPos": {"h": 4, "w": 6, "x": 12, "y": 1},
+      "id": 3,
+      "options": {"reduceOptions": {"calcs": ["sum"]}, "colorMode": "background"},
+      "title": "Recent Restarts (1h)",
+      "type": "stat",
+      "targets": [
+        {"expr": "count(changes(container_start_time_seconds{id=~\"/docker/.+\"}[1h]) > 0)", "legendFormat": "restarts", "refId": "A"}
+      ]
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "${DS_VICTORIAMETRICS}"},
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "red", "value": 1}]},
+          "unit": "short"
+        }
+      },
+      "gridPos": {"h": 4, "w": 6, "x": 18, "y": 1},
+      "id": 4,
+      "options": {"reduceOptions": {"calcs": ["sum"]}, "colorMode": "background"},
+      "title": "Scrape Errors",
+      "type": "stat",
+      "targets": [
+        {"expr": "sum(container_scrape_error)", "legendFormat": "errors", "refId": "A"}
+      ]
+    },
+    {
+      "collapsed": false,
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 5},
+      "id": 200,
+      "title": "CPU & Memory",
+      "type": "row"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "${DS_VICTORIAMETRICS}"},
+      "fieldConfig": {
+        "defaults": {"unit": "percentunit", "custom": {"lineWidth": 1, "fillOpacity": 10}}
+      },
+      "gridPos": {"h": 9, "w": 12, "x": 0, "y": 6},
+      "id": 10,
+      "options": {"tooltip": {"mode": "multi", "sort": "desc"}, "legend": {"showLegend": true, "displayMode": "table", "placement": "right", "calcs": ["mean", "max"]}},
+      "title": "CPU Usage by Container (rate)",
+      "type": "timeseries",
+      "targets": [
+        {"expr": "sum by (id) (label_replace(rate(container_cpu_usage_seconds_total{id=~\"/docker/.+\"}[2m]), \"id\", \"$1\", \"id\", \"/docker/(.{12}).*\"))", "legendFormat": "{{id}}", "refId": "A"}
+      ]
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "${DS_VICTORIAMETRICS}"},
+      "fieldConfig": {
+        "defaults": {"unit": "bytes", "custom": {"lineWidth": 1, "fillOpacity": 10}}
+      },
+      "gridPos": {"h": 9, "w": 12, "x": 12, "y": 6},
+      "id": 11,
+      "options": {"tooltip": {"mode": "multi", "sort": "desc"}, "legend": {"showLegend": true, "displayMode": "table", "placement": "right", "calcs": ["mean", "max"]}},
+      "title": "Memory Working Set by Container",
+      "type": "timeseries",
+      "targets": [
+        {"expr": "sum by (id) (label_replace(container_memory_working_set_bytes{id=~\"/docker/.+\"}, \"id\", \"$1\", \"id\", \"/docker/(.{12}).*\"))", "legendFormat": "{{id}}", "refId": "A"}
+      ]
+    },
+    {
+      "collapsed": false,
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 15},
+      "id": 300,
+      "title": "Network & Filesystem",
+      "type": "row"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "${DS_VICTORIAMETRICS}"},
+      "fieldConfig": {
+        "defaults": {"unit": "Bps", "custom": {"lineWidth": 1, "fillOpacity": 10}}
+      },
+      "gridPos": {"h": 9, "w": 12, "x": 0, "y": 16},
+      "id": 20,
+      "options": {"tooltip": {"mode": "multi", "sort": "desc"}, "legend": {"showLegend": true, "displayMode": "table", "placement": "right", "calcs": ["mean"]}},
+      "title": "Network RX by Container",
+      "type": "timeseries",
+      "targets": [
+        {"expr": "sum by (id) (label_replace(rate(container_network_receive_bytes_total{id=~\"/docker/.+\"}[2m]), \"id\", \"$1\", \"id\", \"/docker/(.{12}).*\"))", "legendFormat": "{{id}}", "refId": "A"}
+      ]
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "${DS_VICTORIAMETRICS}"},
+      "fieldConfig": {
+        "defaults": {"unit": "Bps", "custom": {"lineWidth": 1, "fillOpacity": 10}}
+      },
+      "gridPos": {"h": 9, "w": 12, "x": 12, "y": 16},
+      "id": 21,
+      "options": {"tooltip": {"mode": "multi", "sort": "desc"}, "legend": {"showLegend": true, "displayMode": "table", "placement": "right", "calcs": ["mean"]}},
+      "title": "Network TX by Container",
+      "type": "timeseries",
+      "targets": [
+        {"expr": "sum by (id) (label_replace(rate(container_network_transmit_bytes_total{id=~\"/docker/.+\"}[2m]), \"id\", \"$1\", \"id\", \"/docker/(.{12}).*\"))", "legendFormat": "{{id}}", "refId": "A"}
+      ]
+    },
+    {
+      "collapsed": false,
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 25},
+      "id": 400,
+      "title": "Restart Timeline",
+      "type": "row"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "${DS_VICTORIAMETRICS}"},
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "red", "value": 1}]},
+          "color": {"mode": "thresholds"},
+          "custom": {"fillOpacity": 80, "lineWidth": 0}
+        }
+      },
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 26},
+      "id": 30,
+      "options": {"showValue": "never", "alignValue": "left", "rowHeight": 0.85, "mergeValues": true, "legend": {"showLegend": true, "displayMode": "list", "placement": "bottom"}},
+      "title": "Container Restarts (state-timeline)",
+      "type": "state-timeline",
+      "targets": [
+        {"expr": "label_replace(changes(container_start_time_seconds{id=~\"/docker/.+\"}[5m]) > 0, \"id\", \"$1\", \"id\", \"/docker/(.{12}).*\")", "legendFormat": "{{id}}", "refId": "A"}
+      ]
+    },
+    {
+      "gridPos": {"h": 4, "w": 24, "x": 0, "y": 34},
+      "id": 998,
+      "options": {
+        "content": "## Why panels show truncated container hashes\n\ncAdvisor running on Docker Desktop for Mac sees only cgroup paths (`/docker/<sha>`), not the friendly `name`/`image` labels that work on Linux. Setting `--docker_only=true` does not fix this on macOS — it caused cAdvisor to filter out everything because the cgroup-to-docker mapping is gated by Docker Desktop's VM boundary.\n\nLegends therefore show the first 12 chars of the container ID. Map a hash to a container with:\n```\ndocker ps --format '{{.ID}} {{.Names}}'\n```\n\nProper friendly-name labels will land when the platform migrates to Linux/Threadripper (see `docs/heterogeneous-architecture.md`). At that point cAdvisor on Linux will auto-emit `name`/`image`/`container_label_*`. Documented as a Mac KNOWN-LIMITATION.",
+        "mode": "markdown"
+      },
+      "title": "cAdvisor on Docker Desktop Mac — KNOWN-LIMITATION",
+      "type": "text"
+    }
+  ],
+  "refresh": "30s",
+  "schemaVersion": 38,
+  "tags": ["platform", "containers", "cadvisor"],
+  "templating": {
+    "list": [
+      {"hide": 2, "name": "DS_VICTORIAMETRICS", "query": "prometheus", "type": "datasource"}
+    ]
+  },
+  "time": {"from": "now-3h", "to": "now"},
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "Container Health (cAdvisor)",
+  "uid": "container-health",
+  "version": 1
+}
