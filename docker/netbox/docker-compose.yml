@@ -7,7 +7,13 @@ version: "3.9"
 #
 # Image pinning: NetBox app + worker share image v4.5-4.0.2 (NetBox
 # 4.5 + netbox-docker 4.0.2, latest stable as of 2026-04-29).
-# Postgres pinned to upstream's choice (postgres:18-alpine);
+# Postgres pinned to postgres:17-alpine to match netbox-docker 4.0.2
+# upstream's pin. Earlier C2 attempt with postgres:18-alpine failed
+# (pg18 reorganised data path to /var/lib/postgresql/<major>/docker
+# and rejected the legacy /var/lib/postgresql/data mount). Reverted
+# to upstream-faithful pg17 - see
+# docs/phase-13/PHASE_13_BLOCK_4C_C2_DISCOVERIES_2026-04-29.md
+# (which now also records this pg18->pg17 pivot).
 # Valkey pinned to v9.0-alpine (upstream's open-source Redis fork).
 #
 # Hardening: cap_drop[ALL] universally; cap_add minimal per workload;
@@ -69,7 +75,7 @@ services:
 
   # ── PostgreSQL (NetBox-dedicated; isolation per C1.2 Decision-2) ──────────
   netbox-postgres:
-    image: docker.io/postgres:18-alpine
+    image: docker.io/postgres:17-alpine
     container_name: netbox-postgres
     restart: unless-stopped
     depends_on:
@@ -236,7 +242,7 @@ services:
     ports:
       # Host port 8084: 8080 was occupied by the dashboard.internal
       # backend; port-conflict discovery captured in
-      # docs/phase-13/PHASE_13_BLOCK_4C_C2_PORT_DISCOVERY_2026-04-29.md
+      # docs/phase-13/PHASE_13_BLOCK_4C_C2_DISCOVERIES_2026-04-29.md
       - "127.0.0.1:8084:8080"
     cap_drop:
       - ALL

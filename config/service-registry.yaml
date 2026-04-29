@@ -1469,7 +1469,7 @@ services:
     category: data
     host: mac-mini
     container: netbox-postgres
-    image: docker.io/postgres:18-alpine
+    image: docker.io/postgres:17-alpine
     port: null
     internal_port: 5432
     health_url: null
@@ -1489,8 +1489,15 @@ services:
     compose_file: docker/netbox/docker-compose.yml
     credentials: [postgres_password]
     notes: |
-      Block 4.C (2026-04-29): postgres:18-alpine matching upstream
-      netbox-docker pinning. Deviates from Plane's postgres:15-alpine.
+      Block 4.C (2026-04-29): postgres:17-alpine matching netbox-docker
+      4.0.2 upstream's pin. Initial C2 attempt with postgres:18-alpine
+      failed (pg18 changed data path to /var/lib/postgresql/<major>/docker
+      and rejected the legacy /var/lib/postgresql/data mount layout used
+      here); reverted to upstream-faithful pg17. See
+      docs/phase-13/PHASE_13_BLOCK_4C_C2_DISCOVERIES_2026-04-29.md.
+      Deviates from Plane's postgres:15-alpine which is acceptable
+      because the stacks are isolated (separate volumes, separate
+      networks).
   - id: netbox-redis
     name: NetBox Valkey (database)
     category: data
