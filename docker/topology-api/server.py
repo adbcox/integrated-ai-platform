@@ -1,4 +1,4 @@
-"""Topology API — serves service-registry.yaml as nodes/edges for Grafana Node Graph.
+"""Topology API — serves the service registry as nodes/edges for Grafana Node Graph.
 
 Endpoints:
   GET /health                 → 200 {"ok": true}
@@ -6,9 +6,18 @@ Endpoints:
   GET /api/topology/edges     → JSON array of edge objects
   GET /api/topology           → {"nodes":[...], "edges":[...]}
 
-The service file is re-read on every request — service-registry.yaml is small
-(~1k lines, <50KB), so the latency cost is negligible vs. the operational
-benefit of always reflecting the current registry without a reload signal.
+Source of truth (Block 4.C C5.2b):
+  CMDB_SOURCE=yaml   (default during transition) — read service-registry.yaml
+  CMDB_SOURCE=netbox — read from NetBox (ipam.service objects)
+
+Both backends produce byte-identical node/edge JSON for the same registry
+data. See scripts/cmdb-equivalence.sh for the contract and proof.
+
+The service list is re-read on every request — registry shape is small
+(<50KB / 75 services), so the latency cost is negligible vs. the
+operational benefit of always reflecting the current source without a
+reload signal. NetBox mode adds ~2 HTTP calls (devices + services
+pages) per request; still well under 100 ms on the loopback.
 """
 from __future__ import annotations
 
@@ -17,13 +26,17 @@ import os
 import sys
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-import yaml
+# Make the shared loader importable regardless of how the container
+# is built. The Dockerfile copies cmdb_source.py next to server.py.
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import cmdb_source  # noqa: E402
 
 REGISTRY_PATH = os.environ.get(
     "REGISTRY_PATH", "/config/service-registry.yaml"
 )
 LISTEN_HOST = os.environ.get("LISTEN_HOST", "0.0.0.0")
 LISTEN_PORT = int(os.environ.get("LISTEN_PORT", "8300"))
+CMDB_SOURCE = os.environ.get("CMDB_SOURCE", "yaml")
 
 
 CATEGORY_COLOR = {
@@ -43,13 +56,26 @@ CATEGORY_COLOR = {
 }
 
 
-def load_registry() -> dict:
-    with open(REGISTRY_PATH, "r") as f:
-        return yaml.safe_load(f)
+def load_services() -> list[dict]:
+    """Return the canonical list of services from the configured source.
+
+    cmdb_source.load_services() respects $CMDB_SOURCE; we set
+    $CMDB_REGISTRY to topology-api's mounted path so the YAML backend
+    finds it without env confusion.
+    """
+    # Yaml backend respects CMDB_REGISTRY; NetBox backend respects
+    # NETBOX_URL / NETBOX_API_TOKEN.
+    if CMDB_SOURCE == "yaml":
+        os.environ["CMDB_REGISTRY"] = REGISTRY_PATH
+    return cmdb_source.load_services()
 
 
-def build_nodes_edges(registry: dict) -> tuple[list[dict], list[dict]]:
-    services = registry.get("services", [])
+def build_nodes_edges(services: list[dict]) -> tuple[list[dict], list[dict]]:
+    # Sort by id so the byte-level output is stable regardless of the
+    # source iteration order (NetBox returns services in a different
+    # order than registry YAML). Without this, equivalence between
+    # backends is not byte-identical even when the data is identical.
+    services = sorted(services, key=lambda s: s.get("id") or "")
     ids = {svc["id"] for svc in services if "id" in svc}
 
     nodes = []
@@ -58,25 +84,32 @@ def build_nodes_edges(registry: dict) -> tuple[list[dict], list[dict]]:
         if not sid:
             continue
         category = svc.get("category", "unknown")
+        # Normalize null-or-missing into "" so the JSON shape is
+        # stable regardless of whether the loader emits the field
+        # as None, missing, or a value. Without this, str(None)
+        # leaks "None" into mainStat for port-less services and
+        # YAML→NetBox round-trip differs purely on field presence.
+        port = svc.get("port")
+        purpose = (svc.get("purpose") or "").rstrip()
         nodes.append(
             {
                 "id": sid,
-                "title": svc.get("name", sid),
+                "title": svc.get("name") or sid,
                 "subtitle": category,
-                "mainStat": str(svc.get("port", "")),
-                "secondaryStat": svc.get("host", ""),
+                "mainStat": str(port) if port is not None else "",
+                "secondaryStat": svc.get("host") or "",
                 "color": CATEGORY_COLOR.get(category, "#9ca3af"),
                 "arc__primary": 1.0,
-                "detail__purpose": svc.get("purpose", ""),
-                "detail__container": svc.get("container", ""),
-                "detail__image": svc.get("image", ""),
+                "detail__purpose": purpose,
+                "detail__container": svc.get("container") or "",
+                "detail__image": svc.get("image") or "",
             }
         )
 
     edges = []
     for svc in services:
         sid = svc.get("id")
-        for dep in svc.get("depends_on", []) or []:
+        for dep in sorted(svc.get("depends_on", []) or []):
             if dep in ids:
                 edges.append(
                     {
@@ -109,18 +142,23 @@ class TopologyHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         path = self.path.split("?")[0]
         if path == "/health":
-            self._write(200, {"ok": True, "registry": REGISTRY_PATH})
+            self._write(
+                200,
+                {"ok": True, "source": CMDB_SOURCE, "registry": REGISTRY_PATH},
+            )
             return
         try:
-            registry = load_registry()
+            services = load_services()
         except FileNotFoundError:
             self._write(503, {"error": "registry-not-found", "path": REGISTRY_PATH})
             return
-        except yaml.YAMLError as e:
-            self._write(500, {"error": "yaml-parse", "detail": str(e)})
+        except SystemExit as e:
+            # cmdb_source raises SystemExit on loader failure (token
+            # missing, NetBox unreachable, YAML parse error)
+            self._write(500, {"error": "loader-failure", "detail": str(e)})
             return
 
-        nodes, edges = build_nodes_edges(registry)
+        nodes, edges = build_nodes_edges(services)
         if path == "/api/topology/nodes":
             self._write(200, nodes)
         elif path == "/api/topology/edges":
@@ -141,7 +179,8 @@ class TopologyHandler(BaseHTTPRequestHandler):
 
 def main() -> None:
     print(
-        f"[topology-api] listening on {LISTEN_HOST}:{LISTEN_PORT} registry={REGISTRY_PATH}",
+        f"[topology-api] listening on {LISTEN_HOST}:{LISTEN_PORT} "
+        f"source={CMDB_SOURCE} registry={REGISTRY_PATH}",
         file=sys.stderr,
         flush=True,
     )

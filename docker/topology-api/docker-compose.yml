@@ -2,14 +2,24 @@ version: "3.9"
 
 services:
   topology-api:
-    build: .
-    image: iap/topology-api:1.0.0
+    build:
+      # Build context is the repo root so the Dockerfile can COPY
+      # scripts/cmdb_source.py into the image. Block 4.C C5.2b.
+      context: ../..
+      dockerfile: docker/topology-api/Dockerfile
+    image: iap/topology-api:1.1.0
     container_name: topology-api
     restart: unless-stopped
     ports:
       - "8300:8300"
     environment:
+      # Block 4.C C5.2b — CMDB_SOURCE selects backend (yaml|netbox).
+      # Default remains yaml during the C5.2 transition window.
+      CMDB_SOURCE: "${CMDB_SOURCE:-yaml}"
       REGISTRY_PATH: /config/service-registry.yaml
+      # NetBox in-cluster name; reachable on control-center-net.
+      NETBOX_URL: "http://netbox:8080"
+      NETBOX_CREDENTIALS_FILE: /run/netbox/credentials.env
       LISTEN_HOST: "0.0.0.0"
       LISTEN_PORT: "8300"
     volumes:
@@ -17,6 +27,10 @@ services:
       # without a container restart — Docker Desktop on Mac otherwise snapshots
       # the original inode for single-file binds and silently serves stale YAML.
       - /Users/admin/repos/integrated-ai-platform/config:/config:ro
+      # Vault Agent rendered NetBox token, needed in CMDB_SOURCE=netbox mode.
+      # Read-only, file mount; the container's `svc` user (uid 1000) can read
+      # because the host file is mode 0444.
+      - /Users/admin/.vault-agent-secrets/netbox/credentials.env:/run/netbox/credentials.env:ro
     networks:
       - control-center-net
     cap_drop:

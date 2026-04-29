@@ -38,7 +38,15 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_REGISTRY = REPO_ROOT / "config" / "service-registry.yaml"
 DEFAULT_NETBOX_URL = "http://localhost:8084"
-NETBOX_VAULT_ENV = Path("/Users/admin/.vault-agent-secrets/netbox/credentials.env")
+# Vault-Agent rendered token file. Default is the host path; containers
+# (topology-api, control-plane) override via NETBOX_CREDENTIALS_FILE env
+# to point at their bind-mounted view.
+NETBOX_VAULT_ENV = Path(
+    os.environ.get(
+        "NETBOX_CREDENTIALS_FILE",
+        "/Users/admin/.vault-agent-secrets/netbox/credentials.env",
+    )
+)
 
 # Tags that are NOT categories — they describe kind or lifecycle.
 NON_CATEGORY_TAGS = {"sidecar", "support-service", "deprecated"}
@@ -244,6 +252,24 @@ def _load_netbox_services(base_url: str, token: str) -> list[dict]:
 
         notes = cf.get("service_notes") or ""
 
+        # purpose: recover from `comments` by stripping the trailing
+        # service_notes block. Migration script wrote
+        #   comments = purpose [+ "\n\n" + notes]
+        # so reverse-split on the notes tail. When migration spec
+        # had no purpose, comments == notes (unsplittable; treat as
+        # purpose-empty). See scripts/migrate-registry-to-netbox.py
+        # build_service_payload().
+        comments = (s.get("comments") or "").strip()
+        purpose = ""
+        if comments:
+            if notes and comments.endswith(notes.strip()):
+                purpose = comments[: -len(notes.strip())].rstrip()
+                # The "\n\n" separator may also need stripping
+                if purpose.endswith("\n\n"):
+                    purpose = purpose[:-2].rstrip()
+            elif not notes:
+                purpose = comments
+
         # registry_id is the canonical "id" key in registry YAML
         rid = cf.get("registry_id") or s["name"]
 
@@ -265,6 +291,7 @@ def _load_netbox_services(base_url: str, token: str) -> list[dict]:
             "credentials_env": vault_paths_combined,
             "public_values": public_values,
             "notes": notes,
+            "purpose": purpose,
             "sidecar_of": cf.get("sidecar_of") or None,
             "superseded_by": cf.get("superseded_by") or None,
             "kind": kind,
