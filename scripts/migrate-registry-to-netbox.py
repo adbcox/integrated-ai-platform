@@ -15,6 +15,18 @@ Plan:
 Idempotent: every create-or-update is keyed by a stable name so
 repeat runs are no-ops.
 
+C5.2 update (Discovery #17 — round-trip equivalence):
+  Two field mappings now write information that previously was lost:
+    - health_expect_extra: tail of any list-typed health_expect
+      ([200, 302] → primary 200, extra "302"). Preserves the registry's
+      "accept any of these codes" semantics across the migration.
+    - port_is_internal: True when `port` is null but `internal_port`
+      is set, signaling the service binds container-internal only.
+      Lets consumers filter container-only ports out of host-scoped
+      port-conflict checks.
+  Both fields are read back by scripts/cmdb_source.py to round-trip
+  the registry view from NetBox without behavioural drift.
+
 Modes:
   --dry-run    print planned creates / updates / skips, touch nothing.
   (default)    apply.
@@ -179,9 +191,14 @@ def normalize_credentials(svc: dict) -> str:
 
 
 def build_service_payload(svc: dict, device_id: int, tag_ids: dict[str, int]) -> dict:
-    port = svc.get("port") or svc.get("internal_port") or 0
+    raw_port = svc.get("port")
+    raw_internal = svc.get("internal_port")
+    # port_is_internal: registry semantics — host-bound only when `port`
+    # is set; otherwise the value (if any) was always internal.
+    port_is_internal = (raw_port is None) and (raw_internal is not None)
+    port = raw_port or raw_internal or 0
     if not isinstance(port, int) or port <= 0:
-        port = svc.get("internal_port") or 0
+        port = raw_internal or 0
     if not isinstance(port, int) or port <= 0:
         # Sentinel for port-less services (workers, sidecars). NetBox
         # ipam.service.ports is required+non-empty. Port 1 is reserved
@@ -206,9 +223,15 @@ def build_service_payload(svc: dict, device_id: int, tag_ids: dict[str, int]) ->
     if svc.get("deprecated"):
         tag_slugs.append(tag_ids["deprecated"])
 
-    health_expect = svc.get("health_expect")
-    if isinstance(health_expect, list) and health_expect:
-        health_expect = health_expect[0]
+    raw_he = svc.get("health_expect")
+    health_expect_extra = ""
+    if isinstance(raw_he, list) and raw_he:
+        health_expect = raw_he[0]
+        # Preserve [200, 302] → primary 200, extras "302"
+        if len(raw_he) > 1:
+            health_expect_extra = ",".join(str(int(x)) for x in raw_he[1:])
+    else:
+        health_expect = raw_he
     if not isinstance(health_expect, int):
         try:
             health_expect = int(health_expect) if health_expect else 0
@@ -222,6 +245,8 @@ def build_service_payload(svc: dict, device_id: int, tag_ids: dict[str, int]) ->
         "health_url": svc.get("health_url") or "",
         "health_method": svc.get("health_method") or "",
         "health_expect": health_expect,
+        "health_expect_extra": health_expect_extra,
+        "port_is_internal": port_is_internal,
         "compose_file": svc.get("compose_file") or "",
         "vault_paths": normalize_credentials(svc),
         "security_profile": json.dumps(svc.get("security") or {}, sort_keys=True),

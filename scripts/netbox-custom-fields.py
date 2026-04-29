@@ -134,6 +134,35 @@ CUSTOM_FIELDS = [
         "object_types": ["ipam.service"],
         "object_type": "ipam.service",
     },
+    # Block 4.C C5.2 — round-trip schema additions
+    # ─────────────────────────────────────────────
+    # The C3 migration was lossy on two dimensions, surfaced at the C5.2
+    # equivalence probe and resolved by extending NetBox's schema:
+    #
+    #  - health_expect_extra (longtext, comma-separated ints):
+    #     captures additional acceptable status codes beyond the primary
+    #     `health_expect`. Registry YAML allows lists like
+    #     [200, 429, 472, 473, 501, 503] (Vault when sealed). C3
+    #     collapsed to first; this field carries the rest.
+    #
+    #  - port_is_internal (boolean):
+    #     true when the service uses `internal_port` only and has no
+    #     host port binding. C3 stored either `port` or fall-through
+    #     `internal_port` in `ipam.service.ports`, losing the bit.
+    #     Tells consumers (port-conflict checks, "what's listening")
+    #     to filter this service out of host-port-scoped queries.
+    {
+        "name": "health_expect_extra",
+        "label": "Health-check extra accepted codes",
+        "type": "longtext",
+        "object_types": ["ipam.service"],
+    },
+    {
+        "name": "port_is_internal",
+        "label": "Port is container-internal only",
+        "type": "boolean",
+        "object_types": ["ipam.service"],
+    },
 ]
 
 # Tags created upfront so service objects can reference them by slug.

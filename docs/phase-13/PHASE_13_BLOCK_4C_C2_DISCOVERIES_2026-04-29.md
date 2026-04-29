@@ -995,3 +995,112 @@ of wasted writes.
 > README for write-heavy connector scripts: do an explicit
 > re-GET on issue #1 after the first PATCH, assert the
 > mutation took, and abort the run if it didn't.
+
+---
+
+## Discovery #17 — C3 migration was lossy on two dimensions
+
+Surfaced at C5.2a's equivalence probe (right place, right
+time). The C3 migration silently dropped information on its way
+into NetBox. The drop was deliberate per the C3 spec but the
+spec did not flag the lossiness as a deferred-equivalence issue.
+C5.2 had to extend NetBox's schema before the registry could be
+deprecated without behavioural regression.
+
+### Loss #1 — `health_expect` lists collapsed to first value
+
+`config/service-registry.yaml` allows lists like
+`[200, 429, 472, 473, 501, 503]` (Vault when sealed, returning
+HTTP 472/473 legitimately). The C3 migration spec stated
+*"list values like `[200, 302]` collapsed to first; defaults 0
+if missing"* and stored only the primary code in NetBox custom
+field `health_expect` (integer).
+
+Behavioural impact: if `validate-cmdb.sh` consumed the
+NetBox-backed view, **6 services** would mark legitimate
+non-200 responses as failures: `vault`, `homarr`,
+`homeassistant-container`, `homeassistant-physical`,
+`opnsense`, `zabbix-web`.
+
+### Loss #2 — `port` vs `internal_port` distinction lost
+
+Registry YAML semantics: `port: null, internal_port: <N>` means
+"binds container-port N, no host port." The C3 migration mapped
+`port` (with fall-through to `internal_port`) into NetBox's
+`ipam.service.ports` array. The "is this host-bound" bit was
+not preserved.
+
+Behavioural impact: validate-cmdb.sh §2 port-conflict check is
+scoped to `host=mac-mini` AND non-null `port`. Today: 29
+services exempt (the 21 obot shims, plane-redis/worker/beat,
+zabbix-agent, the 4 netbox sidecars, nextcloud-db,
+docker-socket-proxy-control). NetBox-backed: 0 services
+exempt, so the 21 obot shims (all on `internal_port: 8099`) are
+flagged as a 21-way conflict — a false alarm.
+
+### Resolution
+
+1. Two new NetBox custom fields on `ipam.service`:
+   - `health_expect_extra` (longtext, comma-separated ints) —
+     captures the tail of any list-typed health_expect.
+   - `port_is_internal` (boolean) — true when service binds
+     container-internal only.
+2. `scripts/netbox-custom-fields.py` provisions both
+   idempotently.
+3. `scripts/migrate-registry-to-netbox.py` updated to compute
+   and write both fields. Re-running it in update mode
+   backfilled the 6+29 affected services.
+4. `scripts/cmdb_source.py` (the dual-backend loader) reads
+   both fields back to round-trip the registry view from
+   NetBox without behavioural drift.
+
+### Probe outcome (post-fix)
+
+Side-by-side `validate-cmdb.sh` run from both sources:
+
+```
+$ CMDB_SOURCE=yaml   ./scripts/validate-cmdb.sh   > /tmp/v_yaml.out
+$ CMDB_SOURCE=netbox ./scripts/validate-cmdb.sh   > /tmp/v_netbox.out
+$ # Strip header lines that legitimately differ (the source name)
+$ # then compare: byte-identical
+$ diff <(strip < /tmp/v_yaml.out) <(strip < /tmp/v_netbox.out)
+$ echo $?
+0
+```
+
+SHA256 prefix of normalized output (both sides):
+`2d4a8fd21589de80...` Same exit code (1, due to the same
+known port-conflicts and security DRIFT findings present in
+both views), same health-check totals (35 passed, 3 failed),
+same DRIFT lines.
+
+### Loss #3 (cosmetic, surfaced for completeness)
+
+`plane-db` has `health_expect: 'open'` (string) — a TCP-connect
+sentinel, not an HTTP code. C3 stored 0 in NetBox (string
+coerced to int failed). Not a behavioural regression today
+because validate-cmdb.sh §4 is gated on `'localhost' in url`
+and `plane-db.health_url` is null, so the field is dead. Logged
+here as data-loss but does not gate C5.2.
+
+### Lesson
+
+Lossy migrations should be flagged at **migration time**, not
+discovered at deprecation time. C3's collapse of multi-value
+fields (and discard of source-distinguishing bits) was visible
+when the migration ran; it became a problem only at the C5
+gate's "equivalence probe" requirement. Forward doctrine: any
+data migration should ship with a `--verify-roundtrip` mode
+that exercises the same equivalence the future deprecation
+gate will require.
+
+### C6 follow-up #16
+
+> Doctrine: any future data migration that drops information
+> must run a round-trip equivalence probe **at migration time**
+> (not at deprecation time). Bake into the canonical-pattern:
+> migration scripts should include a `--verify-roundtrip` mode
+> that loads source, applies the migration, reads back, and
+> diffs the consumed-fields surface. Lossy collapses should be
+> either reversed (extend the target schema) or explicitly
+> declared and signed off as "irreversible by design."
