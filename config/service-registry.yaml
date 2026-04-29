@@ -147,7 +147,13 @@ services:
       no_new_privileges: null
       cap_drop: null
     compose_file: null
-    notes: host Python process (server.py), NOT a container; serves roadmap JSON from data/
+    deprecated: true
+    superseded_by: control-plane
+    notes: |
+      host Python process (server.py), NOT a container; serves roadmap JSON from data/.
+      Block 4.A (2026-04-29): annotated deprecated. The Block 2.5 control-plane
+      service (id: control-plane, container: control-plane) supersedes this
+      role. Entry retained for history; remove only after 4.B/4.C reconcile.
   - id: vault
     name: HashiCorp Vault
     category: platform
@@ -1181,7 +1187,7 @@ services:
       Reads service-registry.yaml on every request (file is small enough that re-read latency is negligible).
       Endpoints: /health, /api/topology, /api/topology/nodes, /api/topology/edges.
       Edges derived from each service's depends_on list; orphan deps are dropped silently.
-    # ── Operator Control Plane ─────────────────────────────────────────────────
+  # ── Operator Control Plane ─────────────────────────────────────────────────
   - id: control-plane
     name: Operator Control Plane
     category: control-center
@@ -1223,3 +1229,150 @@ services:
       keeping vault root token and docker exec privileges off the
       container. Audit log + Caddy access log mounted RO from existing
       named volumes (vault_vault-logs, caddy-logs).
+  # ── Block 4.A registry reconciliation (2026-04-29) ────────────────────────
+  # Five running containers added to align the registry with live state.
+  # Drift discovery: `docker ps` vs `grep container: config/service-registry.yaml`.
+  - id: docker-socket-proxy-control
+    name: Docker Socket Proxy (control-plane sidecar)
+    category: platform
+    host: mac-mini
+    container: docker-socket-proxy-control
+    image: lscr.io/linuxserver/socket-proxy:latest
+    port: null
+    internal_port: 2375
+    health_url: null
+    health_method: null
+    health_expect: null
+    purpose: |
+      Read-only Docker socket proxy. Filters control-plane API calls to
+      a minimal verb set (containers list/inspect/logs and lifecycle).
+      Sidecar of the control-plane service; not exposed to host network.
+    depends_on: [control-plane]
+    kind: sidecar
+    sidecar_of: control-plane
+    security:
+      no_new_privileges: true
+      cap_drop: [ALL]
+      cap_add: [CHOWN, SETUID, SETGID]
+      read_only: true
+    compose_file: docker/control-plane/docker-compose.yml
+    credentials: none
+    notes: |
+      Block 2.5 (2026-04-28): deployed alongside the control-plane app.
+      Block 4.A (2026-04-29): added to registry to reflect live state
+      (was a sidecar in compose but missing from registry).
+  - id: catt-controller
+    name: Cast-All-The-Things Controller
+    category: home-automation
+    host: mac-mini
+    container: catt-controller
+    image: iap/catt-controller:1.0.0
+    port: 8124
+    internal_port: 8124
+    health_url: "http://localhost:8124/health"
+    health_method: GET
+    health_expect: 200
+    purpose: |
+      Cast-control microservice for Display & Voice platform layer.
+      HTTP API wrapper around `catt` (Cast All The Things) for sending
+      media URLs to Chromecast/Google Display targets. Block 3 P6
+      deliverable.
+    depends_on: []
+    security:
+      no_new_privileges: true
+      cap_drop: [ALL]
+      cap_add: [NET_BIND_SERVICE]
+      read_only: true
+    compose_file: docker/catt-controller/docker-compose.yml
+    credentials: none
+    notes: |
+      Block 3 P6 (2026-04-29): deployed as part of Display & Voice
+      platform layer. Block 4.A (2026-04-29): added to registry.
+  - id: cadvisor
+    name: cAdvisor (container metrics)
+    category: observability
+    host: mac-mini
+    container: cadvisor
+    image: zcube/cadvisor:latest
+    port: 8088
+    internal_port: 8080
+    health_url: "http://localhost:8088/healthz"
+    health_method: GET
+    health_expect: 200
+    purpose: |
+      Per-container resource metrics (CPU, memory, network, fs) scraped
+      by vmagent and surfaced on the Container Health Grafana dashboard.
+    depends_on: [vmagent]
+    security:
+      no_new_privileges: true
+      cap_drop: [ALL]
+      privileged: true
+      read_only: false
+    compose_file: docker/observability/docker-compose.yml
+    credentials: none
+    notes: |
+      Documented exception to cap_drop:[ALL] doctrine: cAdvisor needs
+      privileged: true to read /sys/fs/cgroup. See CLAUDE.md "Container
+      Hardening" anti-pattern note. On Docker Desktop Mac, label-based
+      friendly names are missing (cgroup-to-docker-API resolution
+      gated by Docker Desktop VM); operators map sha→name via
+      `docker ps --format '{{.ID}} {{.Names}}'`. Block 4.A (2026-04-29):
+      added to registry.
+  - id: seal-vault
+    name: Vault Auto-Unseal (Transit)
+    category: platform
+    host: mac-mini
+    container: seal-vault
+    image: hashicorp/vault:2.0.0
+    port: 8201
+    internal_port: 8201
+    health_url: null
+    health_method: null
+    health_expect: null
+    purpose: |
+      Auxiliary Vault instance providing the Transit auto-unseal key
+      for the primary vault-server. Allows vault-server to come up
+      automatically after host reboot without operator-driven Shamir
+      key entry. Manual Shamir unseal remains the emergency path
+      (see docs/runbooks/vault-unseal.md).
+    depends_on: []
+    kind: support-service
+    security:
+      no_new_privileges: true
+      cap_drop: [ALL]
+      cap_add: [IPC_LOCK]
+      read_only: false
+    compose_file: docker/vault/docker-compose.yml
+    credentials: [transit_seal_key]
+    notes: |
+      Phase 7 (2026-04-26): introduced when vault-server migrated
+      dev→server mode. Block 4.A (2026-04-29): added to registry
+      (was deployed but undocumented). Healthcheck null because
+      this instance only services Transit unseal calls from
+      vault-server; not user-facing.
+  - id: plex-mcp
+    name: Plex MCP Bridge
+    category: integration
+    host: mac-mini
+    container: plex-mcp
+    image: node:22-slim
+    port: 8094
+    internal_port: 8094
+    health_url: "http://localhost:8094/health"
+    health_method: GET
+    health_expect: 200
+    purpose: |
+      Model Context Protocol bridge exposing Plex library queries to
+      MCP-aware agents (Claude Code, Obot). Read-only; uses Plex
+      credentials from Vault via plex-mcp policy.
+    depends_on: [vault-server]
+    security:
+      no_new_privileges: true
+      cap_drop: [ALL]
+      cap_add: [NET_BIND_SERVICE]
+      read_only: true
+    compose_file: docker/plex-mcp/docker-compose.yml
+    credentials: [plex_token]
+    notes: |
+      Vault policy `plex-mcp` exists (config/vault-policies/plex-mcp-policy.hcl).
+      Block 4.A (2026-04-29): added to registry to reflect live state.
