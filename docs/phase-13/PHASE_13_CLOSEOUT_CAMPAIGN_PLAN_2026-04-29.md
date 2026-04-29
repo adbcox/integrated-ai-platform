@@ -869,3 +869,468 @@ The back-fill add is scoped at 1–2 h because:
   Increment 1).
 
 The plan is now execution-ready for Increment 1.
+
+---
+
+## Appendix D — Doctrine-driven increment re-slice
+
+**Date:** 2026-04-29
+**Authority for this re-slice:**
+[ADR-A-011](../adr/ADR-A-011-ivv-loop-pattern.md) (IV&V loop pattern),
+[ADR-A-012](../adr/ADR-A-012-equivalence-harness-doctrine.md)
+(equivalence harness doctrine for source-of-truth migrations),
+[ADR-A-013](../adr/ADR-A-013-folded-gates-doctrine.md) (folded gates),
+and [`docs/runbooks/operating-model.md`](../runbooks/operating-model.md).
+
+### D.0 — Headline finding (read first)
+
+The original §4 increment proposal was sliced before the operating-model
+doctrine was codified. Re-applying that doctrine to the same scope
+**does not reduce the increment count**. It produces a count of **7**
+(unchanged on the headline number) — but the *contents* of three
+increments shift, because **A-012 forbids bundling source-of-truth
+migrations under one gate**.
+
+The original plan had three increments that bundled migrations against
+unrelated work:
+
+- **Original Increment 3** bundled 4.E (cross-index — joins authoritative
+  sources) with 4.H (drift watcher — non-migration). Per A-012, 4.E is
+  itself a source-of-truth-adjacent block: it builds the join surface
+  the platform queries instead of the underlying stores. Mixing it with
+  4.H is fine *only if* 4.E's equivalence-harness gate runs cleanly
+  before 4.H starts. The re-sliced Increment 3 makes that ordering
+  explicit; it doesn't split.
+- **Original Increment 4** bundled 4.J (writes NetBox dcim) with 4.I
+  (writes draft parts to InvenTree). Two source-of-truth migrations
+  under one gate. Per A-012, **each needs its own
+  `--verify-roundtrip` gate**. The re-slice splits 4 into 4a (4.J) and
+  4b (4.I).
+- **Original Increment 6** bundled HF-1 (new TS store) with HF-2
+  (re-application of HF-1's pattern). HF-1 establishes a new
+  authoritative store; HF-2 is a per-A-013 fold against it. The bundle
+  is doctrine-compliant *if* HF-1's equivalence harness is checked
+  before HF-2 begins. The re-slice keeps the bundle but makes the
+  intra-increment gate explicit.
+
+Net change: original 7 → revised **7** (count unchanged); composition of
+Increments 4 and 4-adjacent shifts; intra-increment gate ordering for 3,
+4, and 6 is now explicit per A-012.
+
+**Why no reduction was achievable.** ADR-A-012 fences each source-of-
+truth migration into its own equivalence-harness gate. The campaign has
+**four** such migrations (4.D = parts inventory; 4.E = cross-index join
+surface; 4.J = NetBox dcim writes; HF-1 = TS store). Plus the
+locked-by-Appendix-C Increment 1, the closeout (Increment 7), and the
+non-migration arc (4.G + 4.F + 4.I + 4.H) which itself splits across
+the migration boundaries because 4.G/4.F/4.I depend on 4.D-completed
+state. Six gate-bearing units + closeout = 7 increments minimum. The
+prior plan happened to land on the same count by accident (it bundled
+4.J+4.I incorrectly and split the doctrine-compliant 4.E+4.H pair into
+the "right" shape). The re-slice corrects the bundling errors and
+preserves the count.
+
+### D.1 — Operating-model constraints applied
+
+The re-slice obeys five hard constraints. Each is an A-011/A-012/A-013
+or operating-model rule, not a stylistic preference.
+
+| # | Constraint | Source |
+|---|---|---|
+| C1 | Each source-of-truth migration gets its own equivalence-harness gate (`--verify-roundtrip` mode in the migration script). No two migrations share an increment-level gate. | A-012 |
+| C2 | An increment may not exceed ~18 h of execution. | operating-model §6, repeated in §4 of this plan |
+| C3 | Audit, execution, validation, regression cycle integrity is preserved at every gate. Folded gates (A-013) within an increment are allowed but the increment-level close still runs full regression. | A-011, A-013 |
+| C4 | Hard dependencies in §3 are not violated. 4.D before 4.E/4.F/4.G/4.I. 4.C before everything. | §3 |
+| C5 | Where the original §4 plan and the doctrine disagree, the doctrine wins. The rationale must be cited per increment. | meta |
+
+### D.2 — Re-sliced increments
+
+**Increment 1 (locked, per Appendix C) — Platform stabilisation**
+
+- **Blocks:** D-OP + D-CN + `create_issue` label back-fill.
+- **Estimate:** 7.5–11.5 h.
+- **Gate structure:**
+  - D-OP audit: folded (A-013 — doctrine-only, no executable surface;
+    peer review of the ADR is the validation).
+  - D-OP execution: folded (one IV&V step; mechanical translation of
+    4.C's evidence package into ADR/runbook shape).
+  - D-CN audit: **full IV&V** (A-013 §worked-example for D-CN — the
+    audit's *output*, the six-consumer findings document, is novel
+    even though the per-file activity is mechanical; A-013 explicitly
+    treats this as the not-foldable case).
+  - D-CN execution: folded **per consumer** (A-013 — once the first
+    consumer's fix lands and re-reads cleanly, subsequent consumers
+    fold; combined regression at end).
+  - `create_issue` label back-fill: folded (mechanical re-run of the
+    C4-vintage `scripts/backfill-plane-labels.py` over a known subset;
+    pattern was load-bearing in 4.C).
+  - Increment 1 close: full regression probe.
+- **Doctrine citation:** A-013 directly (worked example for D-CN);
+  A-011 §parallelism (D-CN audit reads six files in parallel per A-011
+  §"read-only audits parallelise aggressively").
+- **No re-slice change vs Appendix C.** Locked.
+
+**Increment 2 — Block 4.D: InvenTree + supplier integrations**
+
+- **Blocks:** 4.D (deploy InvenTree, deploy Mouser integration, deploy
+  DigiKey integration, import 129-component CSV, add NetBox cross-
+  reference custom field).
+- **Estimate:** 8–14 h.
+- **Gate structure:**
+  - 4.D.1 pre-deploy (port-conflict check, Vault entries, AppRole,
+    compose authoring): full IV&V.
+  - 4.D.2 InvenTree deploy + bootstrap: full IV&V (A-011 §stateful
+    deployments serialise — first contact with InvenTree).
+  - 4.D.3 CSV import: **full IV&V at A-012-level** — this is the
+    source-of-truth migration step. The CSV is the prior authoritative
+    record (such as it is); InvenTree becomes the authoritative parts
+    store. The migration script must support `--verify-roundtrip` per
+    A-012, comparing the consumer (whatever script reads parts: BoM
+    export, supplier-quote scripts, future 4.G plugin) against both
+    sides. SHA256-prefix evidence in the closeout. Lossy fields
+    enumerated explicitly or schema extended.
+  - 4.D.4 Mouser integration: full IV&V (A-011 — first contact with a
+    new external API).
+  - 4.D.5 DigiKey integration: folded (A-013 — Mouser pattern is
+    load-bearing once 4.D.4 lands; DigiKey is structurally identical;
+    only inputs differ).
+  - 4.D.6 NetBox cross-reference custom field: folded (A-013 §worked-
+    example — the C5.2a custom-field provisioning pattern is the canonical
+    fold case).
+  - Increment 2 close: full regression probe + A-012 evidence
+    capture.
+- **Doctrine citation:** A-012 (4.D.3 is the migration); A-013 (4.D.5,
+  4.D.6 fold against pattern proven in 4.D.4 and C5.2a respectively);
+  A-011 (4.D.1, 4.D.2, 4.D.4 are full IV&V per their work-shape).
+- **Change vs original §4:** §4's Increment 2 was already 4.D-alone; no
+  re-slice. The doctrine annotation is new — 4.D.3 is now formally an
+  A-012-gated migration, which sharpens the closeout's evidentiary
+  requirement (raw `--verify-roundtrip` output, not paraphrase).
+
+**Increment 3 — Cross-index + drift watchers**
+
+- **Blocks:** 4.E + 4.H.
+- **Estimate:** 10–17 h.
+- **Gate structure (revised):**
+  - 4.E audit (read NetBox, InvenTree, Plane, ADR markdown schemas):
+    full IV&V (A-011 — novel cross-source surface).
+  - 4.E execution: full IV&V; the cross-index ships with a
+    `--verify-roundtrip` mode per A-012, demonstrating that joins
+    against the four sources round-trip without behavioural drift in
+    the consuming UI/script.
+  - 4.E A-012 gate close: **regression probe must include the
+    cross-index harness output** before 4.H starts. This is the
+    intra-increment ordering A-012 forces.
+  - 4.H audit + execution: folded as one IV&V step (A-013 — drift
+    watcher is mechanical: upstream feed → diff against pin → emit
+    notification; no novel pattern).
+  - Increment 3 close: full regression probe.
+- **Doctrine citation:** A-012 (4.E is the migration step; the
+  cross-index is itself a source-of-truth join surface against which
+  the platform queries instead of querying the underlying stores
+  directly); A-013 (4.H folds); A-011 (4.E's full IV&V structure).
+- **Change vs original §4:** §4 marked 4.E as "Full IV&V" but did not
+  invoke A-012 for the equivalence harness. The re-slice formalises
+  4.E.exec as A-012-bound — the cross-index must ship with
+  `--verify-roundtrip` and SHA256-prefix evidence, not just "verified
+  the join is correct". Intra-increment gate (4.E close before 4.H
+  start) is now explicit. **No split; ordering tightened.**
+
+**Increment 4a — Network discovery (was: half of Increment 4)**
+
+- **Blocks:** 4.J alone.
+- **Estimate:** 6–10 h.
+- **Gate structure:**
+  - 4.J audit (network gear inventory, existing NetBox dcim shape):
+    full IV&V (A-011 — writes against authoritative store).
+  - 4.J execution: full IV&V; the discovery service must support
+    `--verify-roundtrip` per A-012 — for any device it writes to
+    NetBox dcim, the next discovery cycle re-reads and confirms
+    no drift. SHA256-prefix evidence.
+  - 4a close: full regression probe + A-012 evidence capture.
+- **Doctrine citation:** A-012 (writes to NetBox dcim → A-012 trigger;
+  this is the pattern A-012 calls out explicitly in §Consequences);
+  A-011 (full IV&V for stateful writes against authoritative store).
+- **Change vs original §4:** **SPLIT** out of original Increment 4.
+  Original Increment 4 bundled 4.J + 4.I, which violates A-012 (two
+  migrations under one gate). The split puts 4.J under its own gate.
+
+**Increment 4b — Receipt ingestion (was: half of Increment 4)**
+
+- **Blocks:** 4.I alone.
+- **Estimate:** 6–10 h.
+- **Gate structure:**
+  - 4.I audit (Gmail OAuth, vision-API decision per Q-7, draft-part
+    schema): full IV&V (A-011 — novel surface; vision API is
+    `claude-pro` quota-bearing, requires explicit operator decision
+    per LLM Access Doctrine).
+  - 4.I execution: full IV&V; the ingestion service writes draft parts
+    into InvenTree and so must support `--verify-roundtrip` per A-012
+    — for each ingested receipt, the resulting draft-part round-trips
+    cleanly against InvenTree's read API. Idempotency key is the
+    email's Message-ID per R-10's mitigation.
+  - 4b close: full regression probe + A-012 evidence capture.
+- **Doctrine citation:** A-012 (writes to InvenTree, second migration
+  in the campaign that targets InvenTree after 4.D.3 establishes it);
+  A-011 (full IV&V for novel automated-write pattern).
+- **Change vs original §4:** **SPLIT** out of original Increment 4.
+  See 4a above.
+
+**Increment 5 — Vision plugin + label maker**
+
+- **Blocks:** 4.G + 4.F.
+- **Estimate:** 10–18 h.
+- **Gate structure:**
+  - 4.G audit (InvenTree plugin sandbox + signature; vision-API
+    decision shared with 4.I if 4.I has shipped first): full IV&V
+    (A-011 — first InvenTree plugin in the campaign).
+  - 4.G execution: full IV&V (A-011 — plugin runs server-side in
+    InvenTree's process; sandbox + signature are novel surface).
+  - 4.F audit + execution: folded as one IV&V step (A-013 — BLE
+    printing is mechanical once the device is paired; small block;
+    second InvenTree plugin so the plugin pattern is load-bearing).
+  - Increment 5 close: full regression probe.
+- **Doctrine citation:** A-013 (4.F folds against 4.G's plugin
+  pattern); A-011 (4.G full IV&V as first plugin).
+- **Change vs original §4:** No change. Both blocks extend InvenTree
+  (which 4.D built); neither is itself a source-of-truth migration
+  (4.G suggests matches against existing parts; 4.F prints labels
+  from existing parts). A-012 doesn't apply. Pairing is doctrine-
+  compliant per A-013.
+
+**Increment 6 — Health/fitness ingestion**
+
+- **Blocks:** HF-1 + HF-2.
+- **Estimate:** 10–16 h.
+- **Gate structure:**
+  - HF-1 audit (Oura SDK choice, OAuth, schema, TS-store choice per
+    Q-prereq #10): full IV&V (A-011 — new external surface, new TS
+    store).
+  - HF-1 execution: full IV&V; the ingestion service ships with
+    `--verify-roundtrip` per A-012 — Oura's source data round-trips
+    through the local TS store without dropping fields the
+    AI-coach-ready downstream consumer cares about. SHA256-prefix
+    evidence. (If Oura's API includes any field the local TS store
+    cannot represent, A-012 §Required-artefacts #3 demands explicit
+    enumeration as `LOSSY` with operator sign-off.)
+  - HF-1 A-012 gate close: **regression probe must include the HF-1
+    harness output before HF-2 starts.** Intra-increment ordering
+    per A-012.
+  - HF-2 audit: folded (A-013 — HF-1 pattern is load-bearing within
+    the same session; HF-2 against Garmin is structurally identical
+    to HF-1 against Oura).
+  - HF-2 execution: folded (A-013 — same).
+  - Increment 6 close: full regression probe.
+- **Doctrine citation:** A-012 (HF-1 establishes the TS store; HF-2
+  consumes it without itself being a separate migration so HF-2 does
+  not need its own A-012 gate, only HF-1's harness must pass before
+  HF-2 starts); A-013 (HF-2 folds against HF-1 — the canonical
+  cross-block fold case the operating-model runbook §1 worked
+  example anticipates).
+- **Change vs original §4:** No structural change; intra-increment
+  ordering (HF-1 harness clean before HF-2) is now explicit per
+  A-012. The bundle is doctrine-compliant.
+
+**Increment 7 — Phase 13 closeout (CL)**
+
+- **Blocks:** CL.
+- **Estimate:** 2–3 h.
+- **Gate structure:**
+  - Folded as one IV&V step (A-013 — closeout is regression probe +
+    closeout doc + tag; canonical pattern, no novel surface). Per
+    A-012 §Required-artefacts #4, the closeout re-runs every
+    migration's `--verify-roundtrip` harness from Increments 2, 3,
+    4a, 4b, 6 to confirm equivalence still holds. This is mechanical
+    if the harness is wired into `docs/phase-13/h1-regression-probe.sh`
+    by the time CL opens.
+- **Doctrine citation:** A-013 (closeout folds); A-012
+  §Required-artefacts #4 (deprecation/closeout gate consumes
+  harness output).
+- **Change vs original §4:** No change in scope; doctrine citation
+  added.
+
+### D.3 — Per-increment summary table
+
+| Inc | Blocks | Effort (h) | Gate type at increment level | A-012 trigger? | Source of doctrine citation |
+|---|---|---|---|---|---|
+| 1 | D-OP + D-CN + back-fill | 7.5–11.5 | Folded chain w/ full IV&V on D-CN audit | No | A-013 §worked-example, A-011 §parallelism |
+| 2 | 4.D | 8–14 | Full IV&V w/ folded 4.D.5/4.D.6 | **Yes** (4.D.3) | A-012 §Required-artefacts |
+| 3 | 4.E + 4.H | 10–17 | Full IV&V (4.E) → folded (4.H) | **Yes** (4.E) | A-012, A-013 |
+| 4a | 4.J | 6–10 | Full IV&V | **Yes** (4.J) | A-012 §Consequences |
+| 4b | 4.I | 6–10 | Full IV&V | **Yes** (4.I writes to InvenTree) | A-012 |
+| 5 | 4.G + 4.F | 10–18 | Full IV&V (4.G) → folded (4.F) | No | A-013 |
+| 6 | HF-1 + HF-2 | 10–16 | Full IV&V (HF-1) → folded (HF-2) | **Yes** (HF-1) | A-012, A-013 |
+| 7 | CL | 2–3 | Folded; consumes all prior harness outputs | Re-runs all | A-012 §Required-artefacts #4, A-013 |
+
+**Total open scope (Increments 1–7):** 60–99 h, point estimate ~80 h
+(unchanged from §1 within rounding; the split 4 → 4a/4b doesn't add
+work, it just imposes a second gate close).
+
+**Increments breaching the 18-h ceiling:** none after the 4 → 4a/4b
+split. Increment 5 at 18 h high-end touches the ceiling; if 4.G's
+sandbox/signature work surfaces a discovery cluster of 5+ items, 5
+should split into 5a (4.G) + 5b (4.F). This is an operator decision
+at Increment 5 audit close, not a planning-time split.
+
+### D.4 — Why the count didn't drop
+
+The user's request was to reduce the increment count if doctrine
+permits. It does not, for three structural reasons:
+
+1. **A-012's per-migration gate constraint is binding.** Four
+   migrations (4.D, 4.E, 4.J, HF-1) each require their own
+   `--verify-roundtrip` gate. They cannot share an increment unless
+   one is the consuming side of another's authoritative store —
+   which only HF-2 against HF-1 is, and only 4.F/4.G/4.I against
+   4.D's InvenTree are. Those reductions are already exploited.
+
+2. **A-013's session-scoped fold is binding.** A-013 §1 limits
+   folding to "this session = the same execution increment". A
+   migration in Increment N cannot un-bind the next session's
+   increment from running its own audit — even if the two
+   migrations are structurally identical. This is by design (A-013
+   §Stop-and-surface — fold's transitive trust is contingent and
+   per-session).
+
+3. **A-011's stateful-deploy serialisation is binding.** Multiple
+   stateful deploys against the same authoritative store (e.g.,
+   4.E reading and 4.J writing NetBox simultaneously) **must
+   serialise** per A-011 §parallelism. They cannot share an
+   increment in a way that would parallelise the writes.
+
+The doctrine says: each migration earns its own gate window, and
+the campaign has four migrations. That is the lower bound. Adding
+the locked Increment 1 (Appendix C) and the closeout (Increment 7)
+plus the InvenTree-consumer arc (4.G + 4.F + 4.I, which 4.D blocks)
+puts the floor at 7. **The re-slice corrects bundling errors but
+cannot reduce the count.**
+
+If the operator prioritises a smaller increment count over doctrine
+compliance, the path is to **defer migrations to Phase 14**. For
+example: defer 4.J and HF-1/HF-2 to Phase 14 → Phase 13 closes at 5
+increments (1, 2, 3, 4b, 5, 7 — renumbered). Each deferred
+migration moves its A-012 gate to Phase 14's calendar, not removes
+it. **This is not recommended** — 4.J and HF-1/HF-2 are not blocked
+by anything in Phase 13 except the operator's calendar — but it is
+the available reduction lever, and the operator owns it.
+
+### D.5 — Cross-increment parallelism (revised)
+
+A-011 §parallelism categorises work into read-only (parallelise),
+stateful (serialise), and rate-limited (sequence). Re-applying to
+the re-sliced increments:
+
+- **Increment 1 ‖ 4a or 4b** if a second compute resource exists.
+  D-OP + D-CN don't touch InvenTree or NetBox-dcim; 4a writes
+  NetBox-dcim; 4b writes InvenTree. No conflict.
+- **Increment 2 (4.D) does NOT parallelise with anything that reads
+  InvenTree.** All of 4a/4b/3/5 read or write InvenTree; only
+  Increment 6 (HF) is independent. So if the operator has parallel
+  bandwidth, the only cross-pair is 2 ‖ 6.
+- **Increment 4a (4.J) does NOT parallelise with 3** (both touch
+  NetBox; 4.J writes, 3 reads).
+- **Increment 4b (4.I) does NOT parallelise with 5** (both
+  consume/extend InvenTree).
+- **Increment 5 ‖ 6** is safe (5 = InvenTree plugins; 6 = TS store
+  for fitness; no shared store).
+- **Increment 6 ‖ 1** is safe (no shared store; HF doesn't depend
+  on D-OP/D-CN — but in practice operator runs 1 first because of
+  Q-3 back-fill urgency).
+
+In single-operator mode, all increments execute sequentially per
+the original §8 baseline.
+
+### D.6 — Open questions for operator
+
+#### Q-D-1 — Confirm the 4.J vs 4.I split is acceptable
+
+The original §4 plan bundled them as Increment 4 (with a "split if
+both look long" note). A-012 forces the split as doctrine, not as
+contingency. The operator should confirm this is acceptable;
+calendar impact is one extra inter-increment review window
+(operator effort: ~30 min review time between 4a and 4b).
+
+**Default if no answer:** keep the split per A-012.
+
+#### Q-D-2 — Is 4.E's cross-index actually an A-012 migration?
+
+The cross-index does not *replace* an authoritative store; it
+*joins* multiple authoritative stores into a query surface. A-012's
+canonical case is replacement (A → B with A then deprecated). The
+join case is doctrinally adjacent: if downstream consumers of the
+cross-index begin treating it as authoritative for join-shape
+queries (and stop reading the underlying stores for that shape),
+the cross-index *becomes* a de-facto authoritative source over
+time. The re-slice treats 4.E as A-012-bound on this basis. The
+operator may reasonably push back ("the cross-index is read-only
+view, not authoritative"); if so, 4.E reverts to plain full IV&V
+without `--verify-roundtrip`, saving ~1–2 h on Increment 3.
+
+**Default if no answer:** treat 4.E as A-012-bound. The harness is
+cheap insurance against the cross-index drifting from the underlying
+sources.
+
+#### Q-D-3 — Should HF-1's TS-store choice (Q-10 from §9) gate Increment 6 the way Mouser/DigiKey credentials gate Increment 2?
+
+Q-10 in §9 left TS-store choice as an HF-1 audit-time decision
+(VictoriaMetrics already deployed, TimescaleDB also in-stack via
+Zabbix, dedicated TSDB possible). A-012 demands the choice be made
+*before* the migration script's `--verify-roundtrip` mode is
+authored, because the consumer (the AI-coach-ready data layer)
+shape depends on which store is canonical. Recommend treating
+TS-store choice as a §6 prerequisite (before Increment 6) rather
+than an audit-time decision.
+
+**Default if no answer:** promote TS-store choice from §6
+"prereq #10 (HF-1 audit decision)" to "prereq before Increment 6
+opens".
+
+#### Q-D-4 — Increment 5 ceiling-fit at 4.G discovery surface
+
+Increment 5's high-end estimate is 18 h, which sits exactly on the
+A-013/operating-model ceiling. If 4.G's audit surfaces a discovery
+cluster of 5+ items (plausible — first InvenTree plugin, sandbox
++ signature unknowns), Increment 5 may breach the ceiling. Per
+operating-model §6, the response is to split mid-increment (5a
+= 4.G alone; 5b = 4.F alone), accepting one extra inter-window
+review. The split decision is **at audit close**, not at planning
+time. The operator should pre-acknowledge this as a possibility so
+the split, if it happens, is not a doctrine-violation surprise.
+
+**Default if no answer:** plan as one increment; operator agrees in
+advance to split at 4.G audit close if discovery cluster ≥ 5.
+
+### D.7 — What did NOT change in the re-slice
+
+- The §1 totals (15 blocks, 60–100 h, ~6–10 weeks).
+- The §2 block roster (12 open blocks).
+- The §3 dependency graph and critical path.
+- The §6 external-prerequisites catalogue (Q-D-3 may promote
+  prereq #10 — that's an operator decision).
+- The §7 risk register (every R-1 through R-10 plus R-A/R-B holds).
+- The §8 parallelism plan baseline; D.5 above adds doctrine-cited
+  pairs without invalidating §8.
+- The §9 questions Q-1 through Q-10. Appendix C resolved Q-1, Q-2,
+  Q-3. Q-4 through Q-10 remain open as §9 stated. Appendix D adds
+  Q-D-1, Q-D-2, Q-D-3, Q-D-4 as re-slice-specific questions.
+- Appendix C (operator decisions on Q-1/Q-2/Q-3, locking Increment
+  1).
+
+### D.8 — Bottom line
+
+- **Old increment count:** 7.
+- **New increment count:** 7.
+- **Composition shift:** original Increment 4 splits into 4a + 4b
+  (A-012-forced); original Increments 3 and 6 retain their bundles
+  but acquire explicit intra-increment gate ordering (A-012-forced).
+- **A-012 gates introduced:** 4.D.3, 4.E, 4.J, 4.I, HF-1
+  (5 migration gates total; CL re-runs all 5).
+- **Top open questions:** Q-D-2 (is 4.E really A-012-bound?) and
+  Q-D-4 (split Increment 5 at audit close if 4.G discovery cluster
+  is large?). Both are operator decisions, not planning-time
+  decisions. Q-D-1 and Q-D-3 are confirmations rather than novel
+  questions.
+
+The plan is now doctrine-aligned for all seven increments. Increment 1
+remains execution-ready (Appendix C). Increments 2 onward open in
+sequence as their prerequisites land per §6.
