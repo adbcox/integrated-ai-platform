@@ -12,8 +12,10 @@ Individual ADR files live here. Each file is one decision.
 | [ADR-A-004](ADR-A-004.md) | Aider is an adapter, not a backbone | Accepted |
 | [ADR-A-005](ADR-A-005.md) | Claude Code is supervisory or exceptional | Accepted |
 | [ADR-A-006](ADR-A-006.md) | Repo docs are canonical for architecture and roadmap planning | Accepted |
-| [ADR-A-007](ADR-A-007.md) | External systems should be adopted where commodity fit is strong | Accepted |
+| [ADR-A-007](ADR-A-007-media-sync-syncthing.md) | Syncthing replaces rclone SFTP for seedbox→QNAP transfers | Accepted |
 | [ADR-A-008](ADR-A-008.md) | Branches may not fork the platform | Accepted |
+| [ADR-A-009](ADR-A-009.md) | Vault as authoritative secret store — migration from .env | Accepted |
+| [ADR-A-010](ADR-A-010-external-systems.md) | External systems should be adopted where commodity fit is strong | Accepted |
 
 ## Format
 

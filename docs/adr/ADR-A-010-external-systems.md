@@ -1,7 +1,8 @@
-# ADR-A-007 — External systems should be adopted where commodity fit is strong
+# ADR-A-010 — External systems should be adopted where commodity fit is strong
 **Status:** Accepted
 **Date:** 2026-04-25
 **Source:** docs/architecture/DECISION_REGISTER.md
+**Note:** Originally filed as ADR-A-007; renumbered 2026-04-29 (Block 4.A) to resolve an ID collision with ADR-A-007 (Syncthing replaces rclone SFTP), which retains A-007.
 
 ## Context
 

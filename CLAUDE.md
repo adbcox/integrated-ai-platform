@@ -2,7 +2,7 @@
 
 **Project:** Integrated AI Platform (Enterprise Autonomous AI Infrastructure)
 **Deployment Target:** Mac Mini M5 at 192.168.10.145 (control plane); MacBook Pro M5 parity in Block 3
-**Current Phase:** Phase 13 Block 2 — Mac Mini operator visualization complete (homepage canonical, 6 Grafana dashboards, topology API, Zabbix host, Caddy access logs + metrics)
+**Current Phase:** Phase 13 Blocks 2 + 2.5 + 3 closed (operator visualization, operator control plane at control.internal, Display & Voice platform layer); Block 4.A pre-merge reconciliation in progress
 
 ## Quick Start
 
