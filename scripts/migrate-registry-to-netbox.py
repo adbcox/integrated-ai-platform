@@ -229,7 +229,9 @@ def build_service_payload(svc: dict, device_id: int, tag_ids: dict[str, int]) ->
 
     payload: dict[str, Any] = {
         "name": name,
-        "device": device_id,
+        # NetBox 4.5 generic-FK shape (parent_object_type / parent_object_id)
+        "parent_object_type": "dcim.device",
+        "parent_object_id": device_id,
         "protocol": "tcp",
         "ports": [port] if port > 0 else [],
         "description": description[:200],
