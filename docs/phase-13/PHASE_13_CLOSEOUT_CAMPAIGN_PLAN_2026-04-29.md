@@ -1334,3 +1334,71 @@ advance to split at 4.G audit close if discovery cluster ≥ 5.
 The plan is now doctrine-aligned for all seven increments. Increment 1
 remains execution-ready (Appendix C). Increments 2 onward open in
 sequence as their prerequisites land per §6.
+
+---
+
+## Appendix E — Operator confirmations on Q-D-1 / Q-D-2 / Q-D-3 / Q-D-4
+
+**Date:** 2026-04-29
+**Decided by:** operator, in response to the four re-slice-specific
+questions surfaced in Appendix D §D.6.
+
+The operator accepted all four defaults. The re-slice is now locked.
+This appendix is the authoritative record of those confirmations.
+
+### Decision A-D-1 — 4.J / 4.I split (resolves Q-D-1)
+
+**Decision:** Keep the split per A-012. Original Increment 4 is
+permanently 4a (4.J alone) and 4b (4.I alone).
+
+**Effect on plan:** Appendix D §D.2 stands as written. No re-merge.
+
+### Decision A-D-2 — 4.E as A-012-bound (resolves Q-D-2)
+
+**Decision:** Treat 4.E as A-012-bound. The cross-index ships with a
+`--verify-roundtrip` mode and SHA256-prefix evidence is captured at
+Increment 3 close.
+
+**Effect on plan:** Increment 3's effort estimate stands at 10–17 h
+(no save from skipping the harness). 4.E.exec retains its full IV&V
+gate with A-012 evidentiary requirements per Appendix D §D.2.
+
+### Decision A-D-3 — TS-store choice promoted to prerequisite (resolves Q-D-3)
+
+**Decision:** TS-store choice promotes from §6 prereq #10 ("HF-1
+audit decision") to "**prerequisite before Increment 6 opens**".
+
+**Effect on plan:** §6 prereq #10 should be read as a hard gate
+on Increment 6 kickoff, not an audit-time decision. Operator
+selects between VictoriaMetrics (already deployed), TimescaleDB
+(in-stack via Zabbix), or a dedicated TSDB before HF-1 audit
+opens. The HF-1 migration script's `--verify-roundtrip` mode is
+authored against the chosen store.
+
+### Decision A-D-4 — Increment 5 split-at-audit-close pre-authorised (resolves Q-D-4)
+
+**Decision:** Plan as one increment. Operator pre-authorises a
+mid-increment split into 5a (4.G alone) + 5b (4.F alone) if 4.G's
+audit surfaces a discovery cluster of 5 or more items.
+
+**Effect on plan:** Appendix D §D.2 Increment 5 stands as written.
+At 4.G audit close, the executing session checks the discovery
+count: < 5 → continue as one increment; ≥ 5 → split, taking the
+extra inter-window review without re-asking the operator. The
+split, if it happens, is doctrine-compliant and pre-authorised.
+
+### What did NOT change
+
+- The Appendix D §D.3 per-increment summary table.
+- The Appendix D §D.5 cross-increment parallelism plan.
+- The Appendix C decisions on Q-1/Q-2/Q-3 (Increment 1 locked).
+- The §1–§9 body of the plan.
+- The §6 prerequisites catalogue *except* prereq #10 promotion
+  per A-D-3 above.
+
+### Bottom line
+
+The plan is **fully locked for execution**. Increment 1 is
+execution-ready (per Appendix C); Increments 2 through 7 are
+doctrine-aligned and open as their §6 prerequisites land. No
+further planning-time decisions are pending.
