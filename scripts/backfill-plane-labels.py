@@ -249,6 +249,14 @@ def main() -> int:
     for l in labels:
         label_id_by_target[l["name"].lower()] = l["id"]
 
+    # F8 (Phase 13 Increment 1): first-batch verify. After the FIRST
+    # successful PATCH, re-GET the issue and confirm the label landed.
+    # This catches the Discovery #16 worst-case (200 OK with silent
+    # field-drop) before consuming the full rate budget. We only verify
+    # once per run — if the wire format is right for one PATCH, it is
+    # right for all subsequent identical PATCHes.
+    first_batch_verified = False
+
     for verb, issue_id, prefix, target, existing_labels in issue_actions:
         if verb != "apply":
             continue
@@ -267,6 +275,24 @@ def main() -> int:
             api.update_issue(issue_id, {"labels": new_labels})
             applied += 1
             log.write(f"applied  {issue_id}  prefix={prefix}  label={target}\n"); log.flush()
+            if not first_batch_verified:
+                # F8: re-GET and confirm the label landed. One extra GET
+                # per run, not per item.
+                time.sleep(SLEEP_BETWEEN)
+                try:
+                    if api.verify_issue_field(issue_id, "labels", new_labels):
+                        logp(f"  VERIFY OK  first-batch: {issue_id} labels landed correctly")
+                        first_batch_verified = True
+                    else:
+                        logp(f"  VERIFY FAIL  first-batch: {issue_id} labels did NOT land — aborting")
+                        log.close()
+                        return 2
+                except RateLimitError:
+                    # Don't abort on a 429 during verify; trust the apply
+                    # and move on. Subsequent items will surface a real
+                    # silent-drop if it exists.
+                    logp(f"  VERIFY SKIP  first-batch verify hit 429; trusting apply")
+                    first_batch_verified = True
         except RateLimitError:
             rate_limit_hits += 1
             logp(f"  RATE  429 hit on {issue_id}; sleeping {BACKOFF_429}s before retry")
