@@ -601,3 +601,111 @@ inline credential values. Any inline credential in memory is a
 hygiene defect, regardless of whether it is currently in use.
 This is registered as platform doctrine going forward; the C2/C3/C4
 sweep redacted the only known instance.
+
+---
+
+## Discovery #14: Plane V1 issues API has non-terminating pagination cursor
+
+**Surfaced by:** C4.3 dry-run hung at 43+ minutes, idle on socket to localhost:8000.
+**Severity:** Bug in `framework/plane_connector.py` — affects every consumer of `list_all_issues()`.
+**Resolution:** Patched `list_issues()` to also terminate on `next_page_results=False` or empty `count`. Committed as `651f2f3`.
+
+### What happened
+
+The C4.3 dry-run script ran for 43+ minutes without producing any
+output. Live state probe (no kill, per operator instructions):
+
+- Python process: 0.6% CPU, 8.96s CPU time over 43m elapsed → **idle, not stuck**.
+- One ESTABLISHED TCP connection to `localhost:8000` (Plane API).
+- `docker logs docker-plane-api-1 | tail -60` showed a continuous stream of:
+
+  ```
+  GET /api/v1/.../issues/?per_page=100&cursor=100:NNN:0  →  200
+  ```
+
+  with `NNN` incrementing by 1 each request, ~1 request/second
+  (matching the script's `SLEEP_BETWEEN`). At time of probe, `NNN`
+  was past 2400 — meaning the script had paginated **past 2400
+  pages** of a dataset containing only 7 real pages (604 issues).
+
+### Root cause
+
+Direct probe of the Plane V1 issues endpoint:
+
+```
+GET .../issues/?per_page=100              → results=100, count=100, next_cursor=100:1:0, next_page_results=True
+GET .../issues/?per_page=100&cursor=100:6:0 → results=4,   count=4,   next_cursor=100:7:0, next_page_results=False
+GET .../issues/?per_page=100&cursor=100:7:0 → results=0,   count=0,   next_cursor=100:8:0, next_page_results=False
+```
+
+The Plane V1 API always returns a non-null `next_cursor` (an
+incrementing offset), even past the end of the dataset. The
+*actual* termination signal is `next_page_results=False` (or
+`count=0` / empty `results`).
+
+The connector at `framework/plane_connector.py:296-299` previously
+checked only `data.get("next_cursor")` and stopped when that was
+None/empty — which **never happens**. So `list_all_issues()`
+looped indefinitely, fetching empty pages at 1s pacing.
+
+### Symptom in numbers
+
+- ~2400 wasted GET requests in 43 minutes (script ~2400, API logs corroborate).
+- Each empty-page response is `count=0, results=[]` — no data movement.
+- Server-side: ~64 KB log spam per page (the JSON request log line);
+  ~150 MB of log spam if left running another 24 h.
+- No 429s thrown — every request was inside the 60/min budget by
+  design (1 req/sec floor).
+- **Script never reached the per-prefix planning stage.** The
+  C4.3 gate output never materialised.
+
+### Fix
+
+Patched `list_issues()` to honour the documented Plane contract:
+
+```python
+next_page = data.get("next_page_results")
+count = data.get("count")
+if next_page is False or count == 0 or not results:
+    next_cur = None
+else:
+    next_cur = data.get("next_cursor")
+```
+
+Three checks (any one terminates):
+1. `next_page_results == False` — Plane's documented terminator.
+2. `count == 0` — defensive, in case `next_page_results` ever drops
+   from the response shape.
+3. `not results` — final defensive backstop on empty results array.
+
+The original `data.get("next_cursor")` fallback is preserved for
+endpoints / future API versions that *do* use cursor-null as
+termination.
+
+### C6 follow-up #10
+
+> Audit other consumers of `framework/plane_connector.py` for
+> similar pagination assumptions. The connector is shared
+> infrastructure; the bug may have affected other scripts that
+> use `list_all_issues()` (or any future paginated method that
+> follows the same null-cursor pattern). Known consumers to audit:
+> `bin/sync_roadmap_to_plane.py`, `bin/sync_plane_to_markdown.py`,
+> `mcp/plane_mcp_server.py`. Goal: confirm none rely on the
+> previous (broken) termination behaviour, and that none accumulate
+> empty pages into their result set.
+
+### Lesson
+
+API termination contracts must be tested explicitly. The original
+connector code assumed the conventional cursor-null contract
+without verifying against the real Plane response. The probe that
+caught this — `curl … cursor=100:7:0 → count=0, next_cursor=100:8:0` —
+should have been part of the connector's initial test, not a
+post-incident diagnostic.
+
+**Verification doctrine reminder:** "every claim verified by command
+output or cited source." The original code's behaviour ("stops
+when cursor is null") was a *plausible-sounding claim* that was
+never verified. The fix has been verified directly: a probe of
+the empty-page response now returns `next_cur=None`, ending the
+loop.
