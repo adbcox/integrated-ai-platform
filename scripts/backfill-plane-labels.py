@@ -103,11 +103,40 @@ def main() -> int:
 
     # Build label name → id map (case-insensitive)
     print("── Inventory ─────────────────────────────────────────────")
-    labels = api.list_labels()
+
+    def _with_429_retry(fn, label, max_retries=3):
+        """Wrap a connector call in 429 backoff. The connector raises
+        RateLimitError on 429 without sleeping; we sleep + retry here."""
+        for attempt in range(max_retries + 1):
+            try:
+                return fn()
+            except RateLimitError:
+                if attempt == max_retries:
+                    raise
+                print(f"  RATE  429 on {label}; sleeping {BACKOFF_429}s (attempt {attempt+1}/{max_retries})")
+                time.sleep(BACKOFF_429)
+
+    labels = _with_429_retry(api.list_labels, "labels list")
     label_by_name_ci = {l["name"].lower(): l for l in labels}
     print(f"labels in project: {len(labels)}")
 
-    issues = api.list_all_issues()
+    # Paginate issues with pacing between pages to stay under 60/min.
+    print("paginating issues (1s between pages, 65s backoff on 429)...")
+    issues: list[dict] = []
+    cursor = None
+    page = 0
+    while True:
+        page += 1
+        cur = cursor
+        batch, cursor = _with_429_retry(
+            lambda c=cur: api.list_issues(cursor=c, page_size=100),
+            f"issues page {page}",
+        )
+        issues.extend(batch)
+        print(f"  page {page}: +{len(batch)} (total {len(issues)})")
+        if not cursor:
+            break
+        time.sleep(SLEEP_BETWEEN)
     print(f"issues in project: {len(issues)}")
 
     # Bucket by extracted prefix
