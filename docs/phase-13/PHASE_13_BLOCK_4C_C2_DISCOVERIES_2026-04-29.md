@@ -2,7 +2,7 @@
 
 **Date:** 2026-04-29
 **Block:** Phase 13 Block 4.C C2 (NetBox deployment)
-**Status:** Four discoveries; all resolved.
+**Status:** Six discoveries; all resolved.
 
 ## Index
 
@@ -23,9 +23,22 @@
    rather than declaring via compose `environment:`, the healthcheck
    command runs in a fresh shell that has no access to those vars.
    See **§4 below**; captured as a C6 healthcheck-pattern follow-up.
+5. **Plan deviated from upstream entrypoint flow (`SKIP_SUPERUSER`)**
+   — the original C2 plan specified manual `manage.py createsuperuser`
+   plus separate API-token generation in C2.6/C2.7. Upstream's
+   `docker-entrypoint.sh` already does both automatically when
+   `SUPERUSER_*` env vars are present. Re-architected to use upstream
+   flow: superuser+token created during entrypoint via Vault-rendered
+   env. See **§5 below**; captured as a C6 upstream-flow-default
+   follow-up.
+6. **Housekeeping script path doesn't exist in netbox-docker 4.0.2**
+   — the compose's `exec /opt/netbox/housekeeping.sh` failed with
+   `exec: not found`; netbox-docker 4.0.2 invokes housekeeping as
+   the Django management command `manage.py housekeeping` instead.
+   Fixed with a `while sleep 86400` wrapper. See **§6 below**.
 
 These events all surfaced inside C2 (artifact authoring + first
-two deployment attempts). Each contributes to a C6 closeout
+three deployment attempts). Each contributes to a C6 closeout
 follow-up — the pattern that emerges is "the canonical add-new-
 service pre-check needs strengthening before it survives contact
 with another deployment."
@@ -253,3 +266,162 @@ need a password.
 > they reach the healthcheck shell — violates the platform secrets
 > doctrine and is forbidden. Source the credentials.env in the
 > healthcheck.
+
+## §5 — Plan deviated from upstream entrypoint flow (SKIP_SUPERUSER)
+
+### What happened
+
+The original C2 plan specified two manual post-deployment steps:
+
+- **C2.6**: SSH to Mac Mini, fetch `secret/netbox/admin#password`
+  from Vault, pipe through stdin to a `manage.py shell` heredoc
+  that creates the Django superuser with `make_password`-hashed
+  credentials.
+- **C2.7**: invoke `manage.py shell` again to fetch-or-create the
+  user's `Token`, write the resulting key to
+  `secret/netbox/api_token#token`.
+
+To support this manual flow, the compose set `SKIP_SUPERUSER: "true"`
+on the netbox container — instructing upstream's
+`docker-entrypoint.sh` *not* to run its built-in superuser bootstrap.
+
+After the third C2.5 deployment attempt landed all 7 containers,
+a diagnostic shell against the netbox container showed
+`USER_EXISTS: False`, and the bootstrap log line
+`↩️ Skip creating the superuser` confirmed the
+`SKIP_SUPERUSER` flag had silenced upstream's flow.
+
+Inspection of `/opt/netbox/super_user.py` (the script upstream's
+entrypoint runs unless `SKIP_SUPERUSER=true`) revealed it already
+handles everything the manual C2.6+C2.7 flow was meant to do:
+
+```python
+# super_user.py reads from env (with /run/secrets/* fallback):
+SUPERUSER_NAME       (default "admin")
+SUPERUSER_EMAIL      (default "admin@example.com")
+SUPERUSER_PASSWORD   (default "admin")
+SUPERUSER_API_TOKEN  (default a 40-char hex string)
+
+# Creates user only if not present, using create_superuser().
+# Creates Token alongside, writing the SUPERUSER_API_TOKEN value
+# directly (V2 token version).
+```
+
+The original plan was authored without this knowledge; it copied
+the manual-bootstrap shape from earlier services in the platform
+that don't have an upstream auto-bootstrap.
+
+### Resolution
+
+Per operator approval (2026-04-29, Option B):
+
+1. **Provisioning script extended**:
+   - `secret/netbox/admin` now carries three fields: `password`
+     (existing, random), `username` ("admin"), `email`
+     ("admin@netbox.internal" — `<service>.internal` is the
+     platform addressing convention; in-domain so any
+     entrypoint-emitted email is internally routable rather than
+     bouncing off `example.com`).
+   - `secret/netbox/api_token#token` migrates from a literal
+     `"PLACEHOLDER_REPLACE_IN_C2_7"` placeholder to a 40-char
+     random hex token (matching `super_user.py`'s default token
+     width). `provision_random_secret` was extended to treat
+     values starting with `PLACEHOLDER_` as absent so the
+     migration completes idempotently on re-run.
+   - Two new helpers added: `vault_kv_patch_stdin` (uses
+     `vault kv patch` to update a single field on an existing
+     KVv2 path without disturbing other fields) and
+     `provision_literal_secret` (idempotent literal-value
+     provisioning, e.g., for username/email).
+
+2. **credentials.env.tmpl extended** to render
+   `SUPERUSER_NAME`, `SUPERUSER_EMAIL`, `SUPERUSER_API_TOKEN` from
+   the Vault paths above (in addition to the pre-existing
+   `SUPERUSER_PASSWORD`).
+
+3. **Compose changed**: `SKIP_SUPERUSER: "true"` → `"false"` on
+   the netbox container (worker and housekeeping retain
+   `SKIP_SUPERUSER: "true"` because those containers don't run
+   the bootstrap flow). Comment expanded to record that the
+   upstream entrypoint handles bootstrap automatically.
+
+4. **Vault policy tightened**: `secret/data/netbox/api_token`
+   capabilities `["create", "update", "read"]` →
+   `["read"]`. The api_token is now provisioned by the operator
+   script (root token), not the netbox AppRole; AppRole only
+   needs read.
+
+5. **Verification path simplifies**: instead of running
+   manage.py heredocs in C2.6/C2.7, post-redeploy verification
+   asserts `USER_EXISTS: True` and `TOKEN_EXISTS: True` via a
+   diagnostic shell, and the API-token round-trip uses the value
+   already in Vault. The original plan's C2.6 + C2.7 collapse to
+   "verify the entrypoint did the right thing."
+
+### C6 follow-up registered (upstream-flow default)
+
+> Doctrine for the canonical add-new-service pattern: when an
+> upstream image's entrypoint already handles bootstrap concerns
+> (superuser creation, token generation, schema seeding,
+> migrations), the canonical pattern's default MUST be "use the
+> upstream entrypoint flow." Manual `manage.py`-style post-hoc
+> bootstrap is acceptable only when the operator has documented
+> a specific reason the upstream flow is unsuitable
+> (e.g., upstream flow doesn't support the platform's secret
+> source, or the upstream flow does too much for the deployment
+> shape). Future C1 audits should identify upstream entrypoint
+> behaviour as a first-class question and default to using it.
+
+## §6 — Housekeeping script path doesn't exist in netbox-docker 4.0.2
+
+### What happened
+
+After the third C2.5 deployment landed all 7 containers,
+`netbox-housekeeping` immediately entered a restart loop with:
+
+```
+/bin/sh: 1: exec: /opt/netbox/housekeeping.sh: not found
+```
+
+`docker exec netbox find / -name "housekeeping*"` returned only
+`/opt/netbox/netbox/extras/management/commands/housekeeping.py`
+— the Django management command. There is no
+`/opt/netbox/housekeeping.sh` script in netbox-docker 4.0.2.
+`/opt/netbox/` ships only `docker-entrypoint.sh`,
+`launch-netbox.sh`, and `super_user.py`.
+
+Earlier netbox-docker releases (pre-4.0) shipped a
+`housekeeping.sh` shell script. This was removed in favour of
+running the Django command directly, with operators wrapping it
+in their own scheduling layer (cron/systemd timer). The original
+C2 plan referenced the older path without verifying the
+release-current shape.
+
+### Resolution
+
+Compose `command:` updated to:
+
+```sh
+set -a && . /vault/secrets/credentials.env && set +a && \
+  cd /opt/netbox/netbox && \
+  while true; do
+    /opt/netbox/venv/bin/python manage.py housekeeping
+    sleep 86400
+  done
+```
+
+`while true; do … sleep 86400; done` runs the housekeeping
+command every 24 hours. The container stays alive between
+runs (sleeping shell), so `restart: unless-stopped` semantics
+hold. The healthcheck (`grep -q housekeeping || exit 0`) is a
+no-op (always returns 0) — the container's value is "is the
+wrapping shell alive looping," and `restart` covers crashes.
+
+### Implicit C6 follow-up (covered by §5's upstream-flow rule)
+
+This same defect — referencing a script path that doesn't exist
+in the release-current upstream image — is exactly what §5's
+"default to upstream flow" follow-up addresses. The C1 audit
+should verify "what does the entrypoint expect" and "what
+ancillary files exist" against the actual pinned image, not
+against assumed conventions from earlier releases.

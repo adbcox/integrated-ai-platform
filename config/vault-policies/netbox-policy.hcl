@@ -33,12 +33,14 @@ path "secret/data/netbox/admin" {
   capabilities = ["read"]
 }
 
-# ── API token: read after creation, write once during C2.7 ────────────
-# C2.7 captures the token from `manage.py shell` and writes it via this
-# AppRole (one-shot). Read access stays for migration scripts (C3) and
-# back-fill scripts (C4) that source the token from Vault.
+# ── API token: read-only ──────────────────────────────────────────────
+# Per C2 discovery #5, the API token is provisioned by the operator
+# script (running with the root token, not this AppRole) and then
+# rendered into credentials.env. The netbox AppRole only needs read.
+# Migration scripts (C3) and back-fill scripts (C4) source the token
+# from Vault via this same AppRole.
 path "secret/data/netbox/api_token" {
-  capabilities = ["create", "update", "read"]
+  capabilities = ["read"]
 }
 
 # ── KV metadata for hash-only display tooling ────────────────────────

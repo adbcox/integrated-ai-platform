@@ -229,9 +229,14 @@ services:
       METRICS_ENABLED: "true"
       WEBHOOKS_ENABLED: "true"
       RELEASE_CHECK_URL: ""
-      # Superuser provisioning (handled by C2.6 createsuperuser separately,
-      # not via these env vars; we rely on SKIP_SUPERUSER=true here).
-      SKIP_SUPERUSER: "true"
+      # Superuser provisioning: handled by netbox-docker's
+      # docker-entrypoint.sh which invokes super_user.py to create
+      # the user (and Token) automatically when SKIP_SUPERUSER is
+      # not "true". The four required env vars (SUPERUSER_NAME,
+      # SUPERUSER_EMAIL, SUPERUSER_PASSWORD, SUPERUSER_API_TOKEN)
+      # are rendered into credentials.env from secret/netbox/admin
+      # and secret/netbox/api_token. See C2 discoveries doc §5.
+      SKIP_SUPERUSER: "false"
     volumes:
       - /Users/admin/.vault-agent-secrets/netbox:/vault/secrets:ro
       - netbox-media-files:/opt/netbox/netbox/media:rw
@@ -384,10 +389,15 @@ services:
       - netbox-reports-files:/opt/netbox/netbox/reports:rw
       - netbox-scripts-files:/opt/netbox/netbox/scripts:rw
     user: "netbox:root"
+    # netbox-docker 4.0.2 does not ship a /opt/netbox/housekeeping.sh
+    # — the housekeeping job is the Django management command
+    # `manage.py housekeeping`. Wrap in a sleep loop (24h interval)
+    # to give a long-lived process for `restart: unless-stopped`.
+    # See C2 discoveries doc §6.
     command:
       - /bin/sh
       - -c
-      - "set -a && . /vault/secrets/credentials.env && set +a && exec /opt/netbox/housekeeping.sh"
+      - "set -a && . /vault/secrets/credentials.env && set +a && cd /opt/netbox/netbox && while true; do /opt/netbox/venv/bin/python manage.py housekeeping; sleep 86400; done"
     cap_drop:
       - ALL
     cap_add:
