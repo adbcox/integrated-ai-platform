@@ -14,7 +14,14 @@ set -euo pipefail
 # Ensure Docker CLI is on PATH (macOS Docker Desktop location)
 export PATH="/Applications/Docker.app/Contents/Resources/bin:$PATH"
 
-REGISTRY="$(cd "$(dirname "$0")/.." && pwd)/config/service-registry.yaml"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+REGISTRY="$REPO_ROOT/config/service-registry.yaml"
+# CMDB_SOURCE controls whether the script reads from the legacy
+# YAML registry or from NetBox. Default = yaml during the C5.2
+# migration window; flip to netbox once equivalence is signed off.
+# See scripts/cmdb-equivalence.sh for the contract.
+CMDB_SOURCE="${CMDB_SOURCE:-yaml}"
 TIMEOUT=5
 QUICK="false"
 CATEGORY_FILTER=""
@@ -25,6 +32,7 @@ while [[ $# -gt 0 ]]; do
     --quick)    QUICK="true";      shift ;;
     --category) CATEGORY_FILTER="$2"; shift 2 ;;
     --service)  SERVICE_FILTER="$2";  shift 2 ;;
+    --source)   CMDB_SOURCE="$2";     shift 2 ;;
     *) shift ;;
   esac
 done
@@ -32,6 +40,7 @@ done
 command -v python3 >/dev/null 2>&1 || { echo "ERROR: python3 required"; exit 2; }
 command -v curl    >/dev/null 2>&1 || { echo "ERROR: curl required";    exit 2; }
 python3 -c "import yaml" 2>/dev/null || { echo "ERROR: pip3 install pyyaml"; exit 2; }
+export CMDB_SOURCE
 
 GREEN='\033[0;32m'; RED='\033[0;31m'; YELLOW='\033[0;33m'; CYAN='\033[0;36m'; RESET='\033[0m'
 pass()  { echo -e "${GREEN}  ✅ $1${RESET}"; }
@@ -48,46 +57,48 @@ trap "rm -f $TMP_JSON" EXIT
 
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "  CMDB Validation — $(date '+%Y-%m-%d %H:%M:%S')"
-echo "  Registry: $REGISTRY"
+echo "  Source: $CMDB_SOURCE"
+if [[ "$CMDB_SOURCE" == "yaml" ]]; then
+  echo "  Registry: $REGISTRY"
+else
+  echo "  NetBox: ${NETBOX_URL:-http://localhost:8084}"
+fi
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
 # ── 1. Schema validation ──────────────────────────────────────────────────────
 header "1. Registry Schema"
 
+# Load the service list from the configured source (yaml | netbox).
+# The loader (scripts/cmdb_source.py) emits the same canonical shape
+# from either backend so the rest of this script is source-agnostic.
+if python3 "$SCRIPT_DIR/cmdb_source.py" > "$TMP_JSON" 2>&1; then
+  : # success
+else
+  cat "$TMP_JSON"
+  fail "CMDB source loader failed (CMDB_SOURCE=$CMDB_SOURCE)"
+  exit 1
+fi
+
 if python3 <<PYEOF
-import sys, yaml, json
-
-try:
-    with open("$REGISTRY") as f:
-        reg = yaml.safe_load(f)
-except Exception as e:
-    print(f"SCHEMA_ERROR: Cannot parse YAML: {e}")
-    sys.exit(1)
-
-for key in ['metadata','services']:
-    if key not in reg:
-        print(f"SCHEMA_ERROR: Missing top-level key: {key}")
-        sys.exit(1)
-
-required = ['id','name','category','host','port','health_url']
+import json, sys
+with open("$TMP_JSON") as f:
+    services = json.load(f)
+# Required identity / classification fields. Value-bearing fields
+# (port, health_url) are checked elsewhere with allowance for null
+# (some services have no host port and no health URL by design).
+required = ['id','name','category','host']
 errors = []
-for svc in reg['services']:
+for svc in services:
     for f in required:
-        if f not in svc:
+        if f not in svc or svc.get(f) in (None, ""):
             errors.append(f"{svc.get('id','?')}: missing '{f}'")
-
 if errors:
     [print(f"SCHEMA_ERROR: {e}") for e in errors]
     sys.exit(1)
-
-# Write JSON for downstream use
-with open("$TMP_JSON", 'w') as f:
-    json.dump(reg['services'], f)
-
-print(f"OK: {len(reg['services'])} services, schema valid")
+print(f"OK: {len(services)} services, schema valid")
 PYEOF
-then pass "Registry YAML schema valid"
-else fail "Registry YAML schema invalid"; fi
+then pass "Source schema valid"
+else fail "Source schema invalid"; fi
 
 SERVICE_COUNT=$(python3 -c "import json; print(len(json.load(open('$TMP_JSON'))))" 2>/dev/null || echo "?")
 info "Loaded $SERVICE_COUNT services from registry"
@@ -179,7 +190,8 @@ import json, urllib.request, urllib.error, sys
 with open("$TMP_JSON") as f:
     services = json.load(f)
 
-for svc in services:
+# Sorted by id for stable output across YAML/NetBox sources.
+for svc in sorted(services, key=lambda s: s.get('id','')):
     url = svc.get('health_url')
     if not url or 'localhost' not in url:
         continue
@@ -257,7 +269,8 @@ with open("$TMP_JSON") as f:
 
 drift = []; skipped = []
 
-for svc in services:
+# Sort services by id for stable DRIFT line ordering across runs/sources.
+for svc in sorted(services, key=lambda s: s.get('id','')):
     container = svc.get('container')
     if not container or svc.get('host') != 'mac-mini': continue
     sec = svc.get('security') or {}
@@ -274,9 +287,9 @@ for svc in services:
     except Exception as e:
         skipped.append(f"SKIP: {svc['id']} — {e}")
 
-for s in skipped: print(s)
+for s in sorted(skipped): print(s)
 if drift:
-    for d in drift: print(d)
+    for d in sorted(drift): print(d)
     sys.exit(1)
 else:
     print(f"OK: Security config consistent (checked {len(services) - len(skipped)} containers)")
