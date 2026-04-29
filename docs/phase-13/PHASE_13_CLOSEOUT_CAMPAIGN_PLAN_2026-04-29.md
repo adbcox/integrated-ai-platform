@@ -731,3 +731,141 @@ Effort estimates in §2 reflect this:
 This is the calibration this plan asks the operator to accept. If
 prior 4.A/4.B/4.C effort tracking shows a different pattern, the
 operator should adjust before Increment 2 opens.
+
+---
+
+## Appendix C — Operator decisions on Q-1 / Q-2 / Q-3
+
+**Date:** 2026-04-29
+**Decided by:** operator, in response to the post-plan summary of
+the top three Increment-1-blocking questions surfaced in §9.
+
+These decisions resolve the three questions that blocked execution
+of Increment 1. The body of this plan (§§1–9) was written before
+these answers were given; it remains the canonical scope statement.
+This appendix is the authoritative record of the operator's
+disposition on the three blocking questions.
+
+### Decision A-1 — Increment 1 scope (resolves Q-1)
+
+**Decision:** Bundle D-OP and D-CN into a single Increment 1.
+
+**Effect on plan:** §4 Increment 1 ("Platform stabilisation") stands
+as written. Combined estimate 6–9 h (D-OP 2–3 h + D-CN 4–6 h),
+single execution window, doctrine first then connector hardening.
+Single Increment-1 closeout doc and regression probe at the end.
+
+### Decision A-2 — D-CN audit scope (resolves Q-2)
+
+**Decision:** Audit all six discovered Plane connector consumers,
+not just the three named in C6 follow-up #10.
+
+**The six consumers** (verified by `grep -rln "plane_connector"
+bin scripts mcp framework` during planning research):
+
+1. `bin/configure_plane_agile.py`
+2. `bin/ai_requirement_translator.py`
+3. `bin/sync_roadmap_to_plane.py` *(C6 #10 named)*
+4. `bin/sync_plane_to_markdown.py` *(C6 #10 named)*
+5. `scripts/backfill-plane-labels.py`
+6. `mcp/plane_mcp_server.py` *(C6 #10 named)*
+
+**Effect on plan:** D-CN's effort estimate in §2 (4–6 h) holds at
+the upper end. The audit covers six consumers instead of three;
+the per-consumer audit step is mechanical (read each consumer's
+exception handling around `RateLimitError` and `Exception`, verify
+pagination usage, verify payload-key correctness on any write
+calls, document findings) and the six fit comfortably inside the
+existing window. No re-sizing of Increment 1.
+
+### Decision A-3 — `create_issue` label back-fill scheduling (resolves Q-3)
+
+**Decision:** Schedule the `create_issue` label back-fill inside
+Increment 1, executed **immediately after** the connector
+hardening work (D-CN) and **before** the Increment 1 closeout
+regression probe.
+
+**Why this ordering matters:**
+
+1. The fix to `framework/plane_connector.py:360`
+   (Discovery #14 — `payload["label_ids"]` → `payload["labels"]`)
+   is part of D-CN. Running the back-fill *before* D-CN would
+   re-trigger the same silent-no-op failure that motivated the
+   back-fill (Discovery #16 echoes this — wrong key, HTTP 200,
+   zero mutation).
+2. Running the back-fill *after* the D-CN fix lands but *before*
+   the Increment 1 closeout regression means the regression probe
+   sees a Plane state that reflects both the doctrine update (D-OP)
+   and the consumer correction (D-CN + back-fill) as a single
+   coherent post-Increment-1 state.
+
+**Scope of the back-fill:**
+
+- Identify Plane issues created via `bin/sync_roadmap_to_plane.py`
+  since the `create_issue` line landed (Plane creation timestamp
+  + roadmap-sync-shaped issue identifier are the joinable signals).
+- For each affected issue, recompute the labels the roadmap source
+  declared and apply them via the corrected `update_issue` PATCH
+  path (now using `payload["labels"]` per Discovery #16's fix to
+  `scripts/backfill-plane-labels.py`).
+- Apply the first-batch-verify pattern (Discovery #15) — re-GET
+  the first issue after PATCH and confirm the labels landed before
+  sustaining the run.
+- Idempotent on re-run: if an issue already has the target labels,
+  skip (matches the existing C4 backfill skip-already-labeled path).
+
+**Increment 1 effort revision:**
+
+| Sub-block | Estimate (h) |
+|---|---|
+| D-OP — operating-model doctrine | 2–3 |
+| D-CN — Plane connector hardening (six consumers, all six C6 sub-items) | 4–6 |
+| **Back-fill (newly folded in)** | **1–2** |
+| Increment 1 closeout (regression probe + closeout doc) | 0.5 |
+| **Total Increment 1** | **7.5–11.5 h** |
+
+The back-fill add is scoped at 1–2 h because:
+- The infrastructure already exists (`scripts/backfill-plane-labels.py`
+  is the C4 vehicle and was patched in C5.x to use the correct
+  `payload["labels"]` key per Discovery #16).
+- The work is "identify the affected subset of the 604 issues and
+  re-run a known-good script over that subset" — mechanical pattern
+  application, not novel work.
+- The risk path (R-1 rate-limit storm, R-6 silent no-op) is
+  pre-mitigated by D-CN landing first within the same increment.
+
+**Increment 1 still fits the 12–18 h target window** with margin.
+
+### Updated Increment 1 sequence (post-decisions)
+
+1. **D-OP** — write 3 ADRs (NetBox-as-CMDB, round-trip equivalence,
+   staged-toggle pattern), update DECISION_REGISTER, write
+   `docs/runbooks/migrate-source-of-truth.md`.
+2. **D-CN audit** — read all six consumers, produce a findings
+   table.
+3. **D-CN execution** — apply the six C6 sub-items
+   (Discovery #14 fix, apply-path integration test, rate-limit
+   audit closure, error class hierarchy, pagination contract,
+   first-batch verify helper) plus any consumer-specific fixes
+   surfaced by the six-way audit.
+4. **`create_issue` label back-fill** — identify affected
+   issues, run the corrected back-fill script, sample-verify.
+5. **Increment 1 closeout** — regression probe
+   `increment-1-final`, closeout doc, commit.
+
+### What did NOT change
+
+- The §2 block roster (12 open blocks).
+- The §3 dependency graph.
+- The §4 increment proposal for Increments 2–7.
+- The §5 gate-structure recommendations.
+- The §6 external-prerequisites catalogue.
+- The §7 risk register (R-1, R-6 mitigations are already aligned
+  with this decision; the back-fill landing inside Increment 1 in
+  fact *strengthens* R-6's mitigation by closing the breakage
+  same-window).
+- The §8 parallelism plan.
+- The §9 questions Q-4 through Q-10 (still open, not blocking
+  Increment 1).
+
+The plan is now execution-ready for Increment 1.
