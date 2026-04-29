@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block content %}
+<h1 class="text-2xl font-semibold mb-4">Audit Log Search</h1>
+<div class="flex items-center gap-3 mb-4">
+  <select id="source" class="bg-slate-900 border border-slate-700 rounded px-2 py-1 text-sm"
+          hx-get="/ui/_partials/audit"
+          hx-include="[name='q'],[name='tail']"
+          hx-trigger="change"
+          hx-target="#audit-results"
+          name="source">
+    <option value="actions">Control-plane actions</option>
+    <option value="vault">Vault audit</option>
+    <option value="caddy">Caddy access</option>
+  </select>
+  <input name="q" placeholder="filter (substring)…"
+         class="bg-slate-900 border border-slate-700 rounded px-2 py-1 text-sm flex-1"
+         hx-get="/ui/_partials/audit"
+         hx-include="[name='source'],[name='tail']"
+         hx-trigger="keyup changed delay:500ms"
+         hx-target="#audit-results">
+  <input name="tail" type="number" min="10" max="1000" value="100"
+         class="bg-slate-900 border border-slate-700 rounded px-2 py-1 text-sm w-24"
+         hx-get="/ui/_partials/audit"
+         hx-include="[name='source'],[name='q']"
+         hx-trigger="change"
+         hx-target="#audit-results">
+</div>
+<div id="audit-results" hx-get="/ui/_partials/audit?source=actions&tail=100" hx-trigger="load"></div>
+{% endblock %}

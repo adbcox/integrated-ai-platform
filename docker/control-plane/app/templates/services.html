@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block content %}
+<h1 class="text-2xl font-semibold mb-4">Services (arr)</h1>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+  <div class="rounded border border-slate-800 bg-slate-900 p-4">
+    <h2 class="text-sm uppercase text-slate-400">Sonarr queue</h2>
+    <div hx-get="/ui/_partials/sonarr-queue" hx-trigger="load, every 30s" class="mt-2"></div>
+  </div>
+  <div class="rounded border border-slate-800 bg-slate-900 p-4">
+    <h2 class="text-sm uppercase text-slate-400">Radarr queue</h2>
+    <div hx-get="/ui/_partials/radarr-queue" hx-trigger="load, every 30s" class="mt-2"></div>
+  </div>
+  <div class="rounded border border-slate-800 bg-slate-900 p-4">
+    <h2 class="text-sm uppercase text-slate-400">Prowlarr indexers</h2>
+    <div hx-get="/ui/_partials/prowlarr-indexers" hx-trigger="load, every 60s" class="mt-2"></div>
+  </div>
+</div>
+{% endblock %}

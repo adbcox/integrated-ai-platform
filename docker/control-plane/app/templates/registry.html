@@ -1,0 +1,5 @@
+{% extends "base.html" %}
+{% block content %}
+<h1 class="text-2xl font-semibold mb-4">Service Registry</h1>
+<div hx-get="/ui/_partials/registry" hx-trigger="load, every 30s"></div>
+{% endblock %}

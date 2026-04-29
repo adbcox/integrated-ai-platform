@@ -1,0 +1,19 @@
+{% if not ident.is_tailnet %}
+<span class="rounded bg-red-900/40 border border-red-700 px-2 py-1 text-red-200">
+  off-tailnet
+</span>
+{% else %}
+<span class="rounded bg-emerald-900/40 border border-emerald-700 px-2 py-1 text-emerald-200">
+  tailnet · {{ ident.client_ip }}
+</span>
+{% if ident.tier3_active %}
+<span class="ml-2 rounded bg-amber-900/40 border border-amber-700 px-2 py-1 text-amber-200">
+  T3 · {{ tier3_remaining }}s
+  <button class="ml-2 underline" hx-post="/auth/lock" hx-swap="none"
+          hx-on::after-request="htmx.trigger('#auth-banner','load')">lock</button>
+</span>
+{% else %}
+<button class="ml-2 rounded bg-slate-800 hover:bg-slate-700 border border-slate-600 px-2 py-1"
+        onclick="openTier3Modal()">unlock T3</button>
+{% endif %}
+{% endif %}

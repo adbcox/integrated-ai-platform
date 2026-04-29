@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+  <div class="rounded border border-slate-800 bg-slate-900 p-4">
+    <h2 class="text-sm uppercase text-slate-400">Roster</h2>
+    <div hx-get="/ui/_summary/containers" hx-trigger="load" class="mt-2"></div>
+  </div>
+  <div class="rounded border border-slate-800 bg-slate-900 p-4">
+    <h2 class="text-sm uppercase text-slate-400">Registry health</h2>
+    <div hx-get="/ui/_summary/registry-health" hx-trigger="load" class="mt-2"></div>
+  </div>
+  <div class="rounded border border-slate-800 bg-slate-900 p-4">
+    <h2 class="text-sm uppercase text-slate-400">Last backup</h2>
+    <div hx-get="/ui/_summary/last-backup" hx-trigger="load" class="mt-2"></div>
+  </div>
+</div>
+
+<div class="mt-6 rounded border border-slate-800 bg-slate-900 p-4">
+  <h2 class="text-sm uppercase text-slate-400">Recent actions</h2>
+  <div hx-get="/ui/_summary/recent-actions" hx-trigger="load" class="mt-2"></div>
+</div>
+{% endblock %}

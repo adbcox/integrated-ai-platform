@@ -1,0 +1,200 @@
+{% if kind == "containers" %}
+<table class="w-full text-sm">
+  <thead class="text-xs uppercase text-slate-400">
+    <tr><th class="text-left">Name</th><th class="text-left">State</th>
+        <th class="text-left">Image</th><th></th></tr>
+  </thead>
+  <tbody>
+  {% for c in containers %}
+    <tr class="border-t border-slate-800">
+      <td class="py-1 font-mono">{{ c.names[0] if c.names else c.id }}</td>
+      <td class="py-1">
+        {% if c.state == "running" %}
+          <span class="text-emerald-400">{{ c.state }}</span>
+        {% elif c.state == "exited" %}
+          <span class="text-slate-500">{{ c.state }}</span>
+        {% else %}
+          <span class="text-amber-400">{{ c.state }}</span>
+        {% endif %}
+      </td>
+      <td class="py-1 text-slate-400">{{ c.image }}</td>
+      <td class="py-1 text-right">
+        <button class="text-xs underline mr-2"
+                hx-post="/api/containers/{{ c.id }}/restart"
+                hx-confirm="Restart {{ c.names[0] if c.names else c.id }}?"
+                hx-swap="none">restart</button>
+        <button class="text-xs underline"
+                hx-post="/api/containers/{{ c.id }}/stop"
+                hx-confirm="Stop {{ c.names[0] if c.names else c.id }}?"
+                hx-swap="none">stop</button>
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+
+{% elif kind == "queue" %}
+{% if queue %}
+<table class="w-full text-xs">
+  <thead class="uppercase text-slate-400"><tr>
+    <th class="text-left">Title</th><th class="text-right">Status</th><th></th>
+  </tr></thead>
+  <tbody>
+  {% for it in queue %}
+    <tr class="border-t border-slate-800">
+      <td class="py-1 truncate max-w-xs">{{ it.title }}</td>
+      <td class="py-1 text-right">{{ it.status }}</td>
+      <td class="py-1 text-right">
+        <button class="text-xs underline"
+                hx-delete="/api/services/{{ service }}/queue/{{ it.id }}"
+                hx-confirm="Remove queue item?"
+                hx-swap="none">remove</button>
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p class="text-slate-500 text-xs italic">queue empty</p>
+{% endif %}
+
+{% elif kind == "indexers" %}
+<table class="w-full text-xs">
+  <thead class="uppercase text-slate-400"><tr>
+    <th class="text-left">Name</th><th class="text-left">Enabled</th><th class="text-right">Priority</th>
+  </tr></thead>
+  <tbody>
+  {% for i in indexers %}
+    <tr class="border-t border-slate-800">
+      <td class="py-1">{{ i.name }}</td>
+      <td class="py-1">
+        {% if i.enabled %}<span class="text-emerald-400">yes</span>
+        {% else %}<span class="text-slate-500">no</span>{% endif %}
+      </td>
+      <td class="py-1 text-right">{{ i.priority }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+
+{% elif kind == "registry" %}
+<table class="w-full text-xs">
+  <thead class="uppercase text-slate-400"><tr>
+    <th class="text-left">Service</th><th class="text-left">Category</th>
+    <th class="text-left">Container</th><th class="text-right">Port</th>
+    <th class="text-left">Depends</th>
+  </tr></thead>
+  <tbody>
+  {% for s in services %}
+    <tr class="border-t border-slate-800">
+      <td class="py-1 font-mono">{{ s.id }}</td>
+      <td class="py-1">{{ s.category }}</td>
+      <td class="py-1 text-slate-400">{{ s.container }}</td>
+      <td class="py-1 text-right">{{ s.port }}</td>
+      <td class="py-1 text-slate-500">{{ s.depends_on|join(", ") if s.depends_on else "" }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+
+{% elif kind == "credentials" %}
+<table class="w-full text-sm">
+  <thead class="uppercase text-slate-400"><tr>
+    <th class="text-left">Path</th><th class="text-right">Action</th>
+  </tr></thead>
+  <tbody>
+  {% for ns, paths in namespaces.items() %}
+    {% for p in paths %}
+    <tr class="border-t border-slate-800">
+      <td class="py-1 font-mono text-xs">{{ p }}</td>
+      <td class="py-1 text-right">
+        <button class="text-xs underline"
+                hx-post="/api/credentials/rotate"
+                hx-vals='{"target": "{{ p }}"}'
+                hx-headers='{"Content-Type":"application/json"}'
+                hx-confirm="Rotate {{ p }}? This will mint a new value and update all dependent services."
+                hx-on::response-error="if(event.detail.xhr.status===401){openTier3Modal()}"
+                hx-swap="none">rotate (T3)</button>
+      </td>
+    </tr>
+    {% endfor %}
+  {% endfor %}
+  </tbody>
+</table>
+
+{% elif kind == "audit" %}
+<table class="w-full text-xs font-mono">
+  <thead class="uppercase text-slate-400"><tr>
+    <th class="text-left">ts</th><th class="text-left">summary</th>
+  </tr></thead>
+  <tbody>
+  {% for e in events %}
+    <tr class="border-t border-slate-800 align-top">
+      <td class="py-1 pr-4 text-slate-500 whitespace-nowrap">{{ e.ts or e.time }}</td>
+      <td class="py-1 break-all">
+        {% if e.action %}
+          <span class="text-emerald-400">{{ e.action }}</span>
+          tier={{ e.tier }} outcome={{ e.outcome }} ip={{ e.actor_ip }}
+        {% elif e.path %}
+          <span class="text-cyan-400">{{ e.type }}</span>
+          {{ e.operation }} {{ e.path }} role={{ e.role_name or "—" }}
+        {% elif e.uri %}
+          <span class="text-amber-400">{{ e.method }}</span>
+          {{ e.host }}{{ e.uri }} → {{ e.status }}
+        {% else %}
+          {{ e }}
+        {% endif %}
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+
+{% elif kind == "last-backup" %}
+{% if not data %}
+  <p class="text-slate-500 italic">no backup recorded yet</p>
+{% else %}
+<dl class="text-sm">
+  <dt class="text-slate-400">started</dt><dd>{{ data.started_at }}</dd>
+  <dt class="text-slate-400 mt-1">finished</dt><dd>{{ data.finished_at }}</dd>
+  <dt class="text-slate-400 mt-1">exit</dt>
+  <dd>{% if data.exit_code == 0 %}<span class="text-emerald-400">success</span>
+      {% else %}<span class="text-red-400">fail (code {{ data.exit_code }})</span>{% endif %}</dd>
+</dl>
+{% endif %}
+
+{% elif kind == "last-regression" %}
+{% if not data %}
+  <p class="text-slate-500 italic">no probe run yet</p>
+{% else %}
+<dl class="text-sm">
+  <dt class="text-slate-400">gate</dt><dd>{{ data.gate_id }}</dd>
+  <dt class="text-slate-400 mt-1">counts</dt>
+  <dd>pass={{ data.counts.pass }} fail={{ data.counts.fail }} warn={{ data.counts.warn }}</dd>
+</dl>
+{% endif %}
+
+{% elif kind == "summary-containers" %}
+<p class="text-2xl">{{ counts.running }} <span class="text-base text-slate-400">running</span></p>
+<p class="text-xs text-slate-500">{{ counts.total }} total
+  · {{ counts.exited }} exited · {{ counts.restarting }} restarting</p>
+
+{% elif kind == "summary-registry-health" %}
+<p class="text-2xl">{{ ok }}/{{ total }}</p>
+<p class="text-xs text-slate-500">services healthy</p>
+
+{% elif kind == "summary-recent" %}
+<table class="w-full text-xs font-mono">
+  <tbody>
+  {% for e in events %}
+    <tr class="border-t border-slate-800">
+      <td class="py-1 text-slate-500 whitespace-nowrap pr-3">{{ e.ts }}</td>
+      <td class="py-1">
+        <span class="text-emerald-400">{{ e.action }}</span>
+        T{{ e.tier }} · {{ e.outcome }} · {{ e.actor_ip }}
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endif %}

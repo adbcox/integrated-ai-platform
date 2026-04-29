@@ -1181,3 +1181,45 @@ services:
       Reads service-registry.yaml on every request (file is small enough that re-read latency is negligible).
       Endpoints: /health, /api/topology, /api/topology/nodes, /api/topology/edges.
       Edges derived from each service's depends_on list; orphan deps are dropped silently.
+    # ── Operator Control Plane ─────────────────────────────────────────────────
+  - id: control-plane
+    name: Operator Control Plane
+    category: control-center
+    host: mac-mini
+    container: control-plane
+    image: iap/control-plane:1.0.0
+    port: 8086
+    internal_port: 8086
+    health_url: "http://localhost:8086/healthz"
+    health_method: GET
+    health_expect: 200
+    purpose: |
+      Tailnet-gated operator control plane. Exposes scoped actions
+      (container ops, manual backup trigger, credential rotation,
+      audit + log search, regression probe) over a tier-aware API.
+      Tier 3 actions require operator re-auth (Argon2 against
+      secret/control-plane/operator). Caddy 403's off-tailnet
+      requests at the outer door.
+    depends_on: [vault-server, caddy, sonarr, radarr, prowlarr]
+    security:
+      no_new_privileges: true
+      cap_drop: [ALL]
+      cap_add: [NET_BIND_SERVICE]
+      read_only: true
+    compose_file: docker/control-plane/docker-compose.yml
+    credentials: [operator_argon2_hash, sonarr_api_key, radarr_api_key,
+                  prowlarr_api_key, restic_repository, restic_password,
+                  minio_access_key, minio_secret_key]
+    public_values:
+      port: 8086
+      tailnet_cidr: 100.64.0.0/10
+      tier3_window_seconds: 300
+    notes: |
+      Block 2.5 (2026-04-28): canonical Vault Agent sidecar pattern +
+      dedicated linuxserver/socket-proxy sibling. Elevated operations
+      (manual backup, regression probe, credential rotation) are
+      dispatched via the trigger-file pattern at /Users/admin/iap-triggers/
+      to a launchd-managed host watcher (com.iap.control-plane.trigger-watcher),
+      keeping vault root token and docker exec privileges off the
+      container. Audit log + Caddy access log mounted RO from existing
+      named volumes (vault_vault-logs, caddy-logs).
