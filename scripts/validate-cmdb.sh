@@ -16,7 +16,7 @@ export PATH="/Applications/Docker.app/Contents/Resources/bin:$PATH"
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-REGISTRY="$REPO_ROOT/config/service-registry.yaml"
+REGISTRY="$REPO_ROOT/config/service-registry.yaml.DEPRECATED"
 # CMDB_SOURCE controls whether the script reads from the legacy
 # YAML registry or from NetBox. Default = yaml during the C5.2
 # migration window; flip to netbox once equivalence is signed off.

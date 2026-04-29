@@ -2,7 +2,7 @@
 
 **Project:** Integrated AI Platform (Enterprise Autonomous AI Infrastructure)
 **Deployment Target:** Mac Mini M5 at 192.168.10.145 (control plane); MacBook Pro M5 parity in Block 3
-**Current Phase:** Phase 13 Blocks 2 + 2.5 + 3 closed (operator visualization, operator control plane at control.internal, Display & Voice platform layer); Block 4.A pre-merge reconciliation in progress
+**Current Phase:** Phase 13 Blocks 2 + 2.5 + 3 + 4.A + 4.B + 4.C closed (operator visualization, operator control plane at control.internal, Display & Voice platform layer, registry reconciliation, state-anchoring tooling, NetBox CMDB deployment with homegrown YAML deprecated); ready for Block 4.D
 
 ## Quick Start
 
@@ -56,7 +56,8 @@ This is the "AI workstation" or "platform". Pre-2026 alternative terminology (th
 - 30-day local retention; archived nightly to QNAP via cron.
 
 ### Heterogeneous Architecture
-- Mac Mini M5 is the **control plane** today (Phase 13 Block 2 delivered: operator visualization, Vault, Caddy, observability stack, registry-driven topology API).
+- Mac Mini M5 is the **control plane** today (Phase 13 Block 2 delivered: operator visualization, Vault, Caddy, observability stack, NetBox-driven topology API with YAML fallback during the C5 transition window).
+- **Service inventory authoritative source:** NetBox CMDB at `netbox.internal`. Homegrown `config/service-registry.yaml` retained as fallback during the transition window; `CMDB_SOURCE` env var (`yaml|netbox`, default `yaml` during transition) controls source per consumer.
 - MacBook Pro M5 parity (Ollama + LiteLLM + Open WebUI + Headscale client + smart routing) is **Block 3**, executed when the user is ready.
 - Linux (Threadripper) and Mac Studio M3 are **future blocks** beyond Block 3. Every architectural decision is portability-flagged.
 - Per-host configs in `config/vault-configs/` (`vault-config-macmini.hcl`, `vault-config-linux.hcl`).

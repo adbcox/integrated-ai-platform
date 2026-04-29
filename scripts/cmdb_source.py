@@ -16,7 +16,8 @@ Usage:
 
 Env vars:
     CMDB_SOURCE        yaml | netbox  (default: yaml)
-    CMDB_REGISTRY      override path to service-registry.yaml
+    CMDB_REGISTRY      override path to the deprecated registry YAML
+                       (default: config/service-registry.yaml.DEPRECATED)
     NETBOX_URL         default http://localhost:8084
     NETBOX_API_TOKEN   V2 token (nbt_<key>.<secret>)
                        falls back to /Users/admin/.vault-agent-secrets/netbox/credentials.env
@@ -36,7 +37,7 @@ import urllib.request
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_REGISTRY = REPO_ROOT / "config" / "service-registry.yaml"
+DEFAULT_REGISTRY = REPO_ROOT / "config" / "service-registry.yaml.DEPRECATED"
 DEFAULT_NETBOX_URL = "http://localhost:8084"
 # Vault-Agent rendered token file. Default is the host path; containers
 # (topology-api, control-plane) override via NETBOX_CREDENTIALS_FILE env

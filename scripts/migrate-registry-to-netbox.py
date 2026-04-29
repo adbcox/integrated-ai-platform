@@ -49,7 +49,7 @@ import yaml
 
 NETBOX_URL = os.environ.get("NETBOX_URL", "http://localhost:8084")
 CRED_FILE = Path("/Users/admin/.vault-agent-secrets/netbox/credentials.env")
-REGISTRY_FILE = Path("config/service-registry.yaml")
+REGISTRY_FILE = Path("config/service-registry.yaml.DEPRECATED")
 
 SITE_SLUG = "integrated-ai-platform"
 SITE_NAME = "Integrated AI Platform"

@@ -1104,3 +1104,15 @@ gate will require.
 > diffs the consumed-fields surface. Lossy collapses should be
 > either reversed (extend the target schema) or explicitly
 > declared and signed off as "irreversible by design."
+
+### C6 follow-up #17
+
+> Flip `CMDB_SOURCE` default from `yaml` to `netbox` in
+> topology-api and control-plane after the transition window
+> stability is confirmed (post-4.C operational period). The
+> deprecated YAML can then be retired entirely (next block).
+> Trigger: a quiet operational period (≥1 week) with no
+> NetBox-side incidents that would have demanded a fallback;
+> at that point, change the compose default and remove the
+> bind-mounts of `service-registry.yaml.DEPRECATED` from both
+> stacks.

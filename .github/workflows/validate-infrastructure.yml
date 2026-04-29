@@ -6,14 +6,14 @@ on:
       - "docker/**"
       - "**/docker-compose*.yml"
       - "control-center-stack/**docker-compose*.yml"
-      - "config/service-registry.yaml"
+      - "config/service-registry.yaml.DEPRECATED"
       - "docs/**"
       - "scripts/validate-cmdb.sh"
 
   push:
     branches: [main]
     paths:
-      - "config/service-registry.yaml"
+      - "config/service-registry.yaml.DEPRECATED"
       - "scripts/validate-cmdb.sh"
 
 jobs:
@@ -36,7 +36,7 @@ jobs:
               truthy: {allowed-values: ["true", "false", "null"]},
               comments: disable
             }
-          }' config/service-registry.yaml
+          }' config/service-registry.yaml.DEPRECATED
 
       - name: Lint all docker-compose files
         run: |
@@ -67,7 +67,7 @@ jobs:
           python3 - <<'PYEOF'
           import yaml, sys
 
-          with open("config/service-registry.yaml") as f:
+          with open("config/service-registry.yaml.DEPRECATED") as f:
               registry = yaml.safe_load(f)
 
           assert "metadata" in registry, "Missing 'metadata' key"
@@ -111,7 +111,7 @@ jobs:
           python3 - <<'PYEOF'
           import yaml, sys
 
-          with open("config/service-registry.yaml") as f:
+          with open("config/service-registry.yaml.DEPRECATED") as f:
               registry = yaml.safe_load(f)
 
           port_map = {}
@@ -221,7 +221,7 @@ jobs:
             "docs/architecture/DECISION_REGISTER.md"
             "docs/architecture/AUTHORITY_SURFACES.md"
             "docs/adr/README.md"
-            "config/service-registry.yaml"
+            "config/service-registry.yaml.DEPRECATED"
             "CODEOWNERS"
           )
           missing=0
@@ -257,7 +257,7 @@ jobs:
           python3 - <<'PYEOF'
           import yaml, sys, json
 
-          with open("config/service-registry.yaml") as f:
+          with open("config/service-registry.yaml.DEPRECATED") as f:
               registry = yaml.safe_load(f)
 
           services = registry["services"]

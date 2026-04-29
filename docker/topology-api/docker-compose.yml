@@ -16,7 +16,7 @@ services:
       # Block 4.C C5.2b — CMDB_SOURCE selects backend (yaml|netbox).
       # Default remains yaml during the C5.2 transition window.
       CMDB_SOURCE: "${CMDB_SOURCE:-yaml}"
-      REGISTRY_PATH: /config/service-registry.yaml
+      REGISTRY_PATH: /config/service-registry.yaml.DEPRECATED
       # NetBox in-cluster name; reachable on control-center-net.
       NETBOX_URL: "http://netbox:8080"
       NETBOX_CREDENTIALS_FILE: /run/netbox/credentials.env

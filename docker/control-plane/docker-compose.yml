@@ -122,7 +122,7 @@ services:
       # Service registry (RO) — Phase 3 P3.8 reads this; alternatively
       # the registry module proxies topology-api which is already
       # parsing the same file.
-      - ../../config/service-registry.yaml:/app/service-registry.yaml:ro
+      - ../../config/service-registry.yaml.DEPRECATED:/app/service-registry.yaml:ro
       # Vault Agent rendered NetBox token, needed in CMDB_SOURCE=netbox
       # mode. Read-only file mount; container's root user can read.
       - /Users/admin/.vault-agent-secrets/netbox/credentials.env:/run/netbox/credentials.env:ro

@@ -1,3 +1,25 @@
+# DEPRECATED 2026-04-29 (Block 4.C C5.4)
+#
+# NetBox is now the authoritative source of truth for platform
+# service inventory. Reach NetBox at:
+#   https://netbox.internal (admin login)
+#   /api/dcim/services/ (REST API)
+#
+# All consumers (validate-cmdb.sh, topology-api, control-plane)
+# read from NetBox via cmdb_source.py loader. CMDB_SOURCE=netbox
+# flips them to NetBox-backed; default during transition window
+# is yaml-backed.
+#
+# This file is retained for git history and as a fallback data
+# source during the transition window. Do NOT edit. All updates
+# go through NetBox.
+#
+# Final removal of fallback YAML support: scheduled for a future
+# block after the transition window confirms NetBox stability
+# under operational load.
+#
+# ── Original (pre-deprecation) header below ──────────────────────────
+#
 # Service Registry — Integrated AI Platform
 # Machine-readable CMDB for all platform services.
 # This is the canonical source for port assignments, dependencies, and health checks.
