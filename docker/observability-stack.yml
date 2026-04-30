@@ -41,6 +41,10 @@ services:
       - -httpListenAddr=:8428
       - -search.maxQueryDuration=30s
       - -search.maxUniqueTimeseries=100000
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
     healthcheck:
       test: ["CMD-SHELL", "echo OK"]
       interval: 10s
@@ -65,6 +69,10 @@ services:
     depends_on:
       victoriametrics:
         condition: service_healthy
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
 
   # ── Vault Agent sidecar (renders GF_SECURITY_ADMIN_PASSWORD from secret/grafana/admin)
   vault-agent-grafana-obs:
@@ -155,6 +163,10 @@ services:
       - --path.sysfs=/host/sys
       - --path.rootfs=/rootfs
       - --collector.filesystem.mount-points-exclude=^/(dev|proc|sys|run|snap)($|/)
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
     # Note: host network mode required for accurate CPU/memory/disk on macOS Docker Desktop
 
   # ── Service uptime monitor ───────────────────────────────────────────────────
@@ -166,6 +178,13 @@ services:
       - "3033:3001"
     volumes:
       - uptime-data:/app/data
+    cap_drop:
+      - ALL
+    cap_add:
+      - SETUID
+      - SETGID
+    security_opt:
+      - no-new-privileges:true
     # After starting: http://localhost:3033
     # Add monitors for:
     #   Dashboard: http://localhost:8080/api/status

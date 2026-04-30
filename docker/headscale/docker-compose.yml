@@ -12,6 +12,12 @@ services:
       - ./config:/etc/headscale:ro
       - headscale-data:/var/lib/headscale
     command: serve
+    cap_drop:
+      - ALL
+    cap_add:
+      - DAC_OVERRIDE
+    security_opt:
+      - no-new-privileges:true
     networks:
       - headscale-net
     healthcheck:

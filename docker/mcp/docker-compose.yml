@@ -20,6 +20,10 @@ services:
       RADARR_API_KEY: ${RADARR_API_KEY}
       RADARR_URL: http://host.docker.internal:7878
       TMDB_API_KEY: ${TMDB_API_KEY:-}
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
     command:
       - sh
       - -c

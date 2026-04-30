@@ -41,6 +41,8 @@ services:
       AUTH_TOKEN: "${ANYTHINGLLM_AUTH_TOKEN:-}"
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    cap_drop:
+      - ALL
     security_opt:
       - no-new-privileges:true
     networks:
