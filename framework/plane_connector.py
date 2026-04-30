@@ -299,7 +299,16 @@ class PlaneAPI:
         cursor: str | None = None,
         page_size: int = 100,
     ) -> tuple[list[dict], Optional[str]]:
-        """Return (issues, next_cursor). next_cursor is None when exhausted."""
+        """Return (issues, next_cursor). next_cursor is None when exhausted.
+
+        Pagination termination contract (Discovery #12):
+        - Primary: stop when ``next_page_results`` is False in the response.
+        - Secondary: stop when a page returns 0 results (protects against
+          endpoints that omit ``next_page_results``).
+        - Discovery #14 note: Plane CE V1 always returns a non-null
+          ``next_cursor`` even past the end of the dataset — do NOT use
+          ``next_cursor is None`` as the termination signal.
+        """
         params: dict[str, Any] = {"per_page": page_size}
         if cursor:
             params["cursor"] = cursor
