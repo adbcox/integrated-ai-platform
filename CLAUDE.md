@@ -2,7 +2,7 @@
 
 **Project:** Integrated AI Platform (Enterprise Autonomous AI Infrastructure)
 **Deployment Target:** Mac Mini M5 at 192.168.10.145 (control plane); MacBook Pro M5 parity in Block 3
-**Current Phase:** Phase 14 D-DOC in progress (Phase 13 Increments 1, 1.5, and 2A complete; §6 Vault Agent sidecar rollout done; §7 cap_drop:[ALL] sweep done; CMDB_SOURCE defaulting to netbox)
+**Current Phase:** Phase 14 CLOSED (2026-04-30). Phase 13 Increments 2B–7 in progress (gated on Mouser+DigiKey+CSV). Phase 15 not yet scoped.
 
 ## Quick Start
 
