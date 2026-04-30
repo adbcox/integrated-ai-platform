@@ -1,0 +1,42 @@
+services:
+  seal-vault:
+    image: hashicorp/vault:2.0.0
+    container_name: seal-vault
+    restart: unless-stopped
+    environment:
+      VAULT_ADDR: "http://0.0.0.0:8201"
+      VAULT_API_ADDR: "http://192.168.10.145:8201"
+      VAULT_LOG_LEVEL: "info"
+      SKIP_SETCAP: "true"
+      # D#32: SKIP_CHOWN added 2026-04-30 — cap_drop:ALL breaks chown in entrypoint.sh
+      SKIP_CHOWN: "true"
+    ports:
+      - "8201:8201"
+    volumes:
+      - seal-vault-data:/vault/data
+      - seal-vault-logs:/vault/logs
+      - ./config/vault-config.hcl:/vault/config/vault.hcl:ro
+    # D#32: entrypoint bypasses dumb-init which hangs under Colima VZ after restart
+    entrypoint: ["/bin/sh", "/usr/local/bin/docker-entrypoint.sh"]
+    command: ["server"]
+    # D#32: cap_drop:ALL removed — su-exec requires capability inheritance to switch root→vault user;
+    # cap_drop:ALL prevents this even with cap_add:[SETUID,SETGID]. Documented exception (seal-vault only).
+    # no-new-privileges also removed for same reason. Vault runs as uid 100 (non-root) after su-exec.
+    security_opt:
+      - no-new-privileges:false
+    networks:
+      - control-center-net
+    healthcheck:
+      test: ["CMD-SHELL", "vault status -address=http://127.0.0.1:8201 2>&1 | grep -qE 'Sealed|Initialized'"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 10s
+
+volumes:
+  seal-vault-data:
+  seal-vault-logs:
+
+networks:
+  control-center-net:
+    external: true
