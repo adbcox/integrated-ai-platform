@@ -381,6 +381,9 @@ class PlaneAPI:
             # update path below (upsert_issue).
             payload["labels"] = label_ids
         result = self._post(self._proj_url("/issues/"), payload)
+        # Plane's POST ignores external_id — set it via PATCH after creation
+        if external_id and result.get("id"):
+            result = self._patch(self._proj_url(f"/issues/{result['id']}/"), {"external_id": external_id})
         _cache.invalidate(f"ext:{external_id}")
         return result
 

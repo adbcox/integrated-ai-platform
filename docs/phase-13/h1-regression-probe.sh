@@ -241,6 +241,22 @@ else
   result WARN "$SUSPECT suspicious temp files (review and clean)"
 fi
 
+# (g) Cross-index coherence (ADR → Plane tracking)
+echo ""
+echo "(g) Cross-index coherence (ADR → Plane)"
+if PLANE_API_TOKEN="${PLANE_API_TOKEN:-}" PLANE_PROJECT_ID="${PLANE_PROJECT_ID:-}" \
+   PLANE_WORKSPACE="${PLANE_WORKSPACE:-iap}" \
+   /usr/bin/python3 scripts/cross-index-validate.py > /dev/null 2>&1; then
+  result OK "all accepted ADRs have Plane tracking issues"
+else
+  GAPS=$( PLANE_API_TOKEN="${PLANE_API_TOKEN:-}" PLANE_PROJECT_ID="${PLANE_PROJECT_ID:-}" \
+          PLANE_WORKSPACE="${PLANE_WORKSPACE:-iap}" \
+          /usr/bin/python3 scripts/cross-index-validate.py --json 2>/dev/null \
+          | /usr/bin/python3 -c "import json,sys; d=json.load(sys.stdin); \
+            print(d['adrs_missing_plane_issue'])" 2>/dev/null || echo "?" )
+  result WARN "cross-index gaps: $GAPS ADRs without Plane issue"
+fi
+
 # Summary
 echo ""
 echo "==================================================================="
