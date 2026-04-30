@@ -1,0 +1,53 @@
+services:
+  diun:
+    image: crazymax/diun:latest
+    container_name: upgrade-watcher
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - diun-data:/data
+      - ./diun.yml:/diun.yml:ro
+    environment:
+      - LOG_LEVEL=info
+      - LOG_JSON=false
+    command: ["serve", "--config=/diun.yml"]
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    mem_limit: 128m
+    networks:
+      - control-center-net
+
+  upgrade-receiver:
+    image: python:3.12-slim
+    container_name: upgrade-receiver
+    restart: unless-stopped
+    working_dir: /app
+    volumes:
+      - ../../framework:/app/framework:ro
+      - ../../scripts/webhook-upgrade-receiver.py:/app/receiver.py:ro
+      - /Users/admin/.vault-agent-secrets/mcpo-proxy:/vault/secrets:ro
+    environment:
+      - PORT=8097
+      - PLANE_URL=http://host.docker.internal:3001
+      - PLANE_WORKSPACE=iap
+      - PLANE_PROJECT_ID=dbcd4476-1e37-4812-a443-0914ec8380fc
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - "pip install -q requests && set -a && . /vault/secrets/credentials.env && set +a && exec python3 receiver.py"
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    mem_limit: 256m
+    ports:
+      - "127.0.0.1:8097:8097"
+    networks:
+      - control-center-net
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+volumes:
+  diun-data:
+
+networks:
+  control-center-net:
+    external: true
+    name: control-center-net

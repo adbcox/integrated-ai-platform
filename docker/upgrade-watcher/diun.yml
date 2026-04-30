@@ -1,0 +1,19 @@
+db:
+  path: /data/diun.db
+
+watch:
+  workers: 8
+  schedule: "0 8 * * *"     # daily at 08:00
+  first_check_notif: false   # suppress notification on first run (just populate DB)
+
+notif:
+  webhook:
+    endpoint: http://upgrade-receiver:8097
+    method: POST
+    headers:
+      Content-Type: application/json
+    timeout: 30s
+
+providers:
+  docker:
+    watch_stopped: false
