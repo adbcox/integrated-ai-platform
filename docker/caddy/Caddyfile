@@ -70,12 +70,6 @@ vault.internal {
     reverse_proxy host.docker.internal:8200
 }
 
-dashboard.internal {
-    import access_log
-
-    reverse_proxy host.docker.internal:8080
-}
-
 homarr.internal {
     import access_log
 
@@ -180,82 +174,10 @@ homepage.internal {
     reverse_proxy host.docker.internal:3005
 }
 
-manyfold.internal {
-    import access_log
-
-    reverse_proxy host.docker.internal:3006
-}
-
-gitea.internal {
-    import access_log
-
-    reverse_proxy host.docker.internal:3007
-}
-
-tautulli.internal {
-    import access_log
-
-    reverse_proxy host.docker.internal:8181
-}
-
-overseerr.internal {
-    import access_log
-
-    reverse_proxy host.docker.internal:5055
-}
-
-ragflow.internal {
-    import access_log
-
-    reverse_proxy host.docker.internal:9380
-}
-
 plex-mcp.internal {
     import access_log
 
     reverse_proxy host.docker.internal:8094
-}
-
-portainer.internal {
-    import access_log
-
-    reverse_proxy host.docker.internal:9443
-}
-
-netdata.internal {
-    import access_log
-
-    reverse_proxy host.docker.internal:19999
-}
-
-dozzle.internal {
-    import access_log
-
-    reverse_proxy host.docker.internal:9999
-}
-
-pgadmin.internal {
-    import access_log
-
-    reverse_proxy host.docker.internal:5050
-}
-
-bookstack.internal {
-    import access_log
-
-    reverse_proxy host.docker.internal:6875
-}
-
-n8n.internal {
-    import access_log
-
-    reverse_proxy host.docker.internal:5678
-}
-
-filebrowser.internal {
-    import access_log
-
-    reverse_proxy host.docker.internal:8089
 }
 
 # ── Smart Home (Phase 13 Block 3) ──────────────────────────────────────
