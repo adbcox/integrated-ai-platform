@@ -12,7 +12,7 @@ services:
       - ../../docs:/docs:ro
       - ../../mkdocs.yml:/mkdocs.yml:ro
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:8000/ || exit 1"]
+      test: ["CMD-SHELL", "python3 -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/')\" || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 5
