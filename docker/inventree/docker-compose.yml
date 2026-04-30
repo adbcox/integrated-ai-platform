@@ -116,7 +116,11 @@ services:
     entrypoint:
       - sh
       - -c
-      - "set -a && . /vault/secrets/credentials.env && set +a && exec redis-server --requirepass \"$$REDIS_PASSWORD\""
+      # --save '' disables RDB snapshots (cap_drop:[ALL] strips DAC_OVERRIDE,
+      # so PID-1 root can't write to redis-owned /data; cache-only workload
+      # has no persistence requirement anyway). Mirrors NetBox-redis pattern
+      # but without --appendonly since this is pure cache, not session store.
+      - "set -a && . /vault/secrets/credentials.env && set +a && exec redis-server --save '' --requirepass \"$$REDIS_PASSWORD\""
     cap_drop:
       - ALL
     cap_add:
@@ -171,12 +175,27 @@ services:
     volumes:
       - /Users/admin/.vault-agent-secrets/inventree:/vault/secrets:ro
       - inventree-data:/home/inventree/data
-    # Preserve upstream entrypoint; wrap CMD to source rendered Vault
-    # credentials before invoking gunicorn.
-    command:
-      - /bin/sh
+    # Wrap entrypoint to source Vault-rendered credentials before the
+    # upstream init.sh runs. Image entrypoint is /bin/bash ./init.sh;
+    # we replace it with a shell wrapper that sources credentials.env
+    # and then exec's the upstream init.sh with the original args
+    # (init.sh ends with `exec "$@"` so it forwards CMD).
+    #
+    # This shape lets `docker compose run --rm inventree invoke update`
+    # inherit the same credential-loading entrypoint while allowing CMD
+    # override (image's default CMD launches gunicorn).
+    entrypoint:
+      - /bin/bash
       - -c
-      - "set -a && . /vault/secrets/credentials.env && set +a && exec /home/inventree/entrypoint.sh invoke server -a 0.0.0.0:8000"
+      - 'set -a && . /vault/secrets/credentials.env && set +a && exec /bin/bash /home/inventree/init.sh "$$@"'
+      - --
+    # Image's default CMD is `sh -c "exec gunicorn ..."`; we mirror it
+    # explicitly because overriding `entrypoint:` clears the inherited
+    # CMD-as-args path, leaving init.sh's `exec "$@"` with no arguments.
+    command:
+      - sh
+      - -c
+      - 'exec gunicorn -c ./gunicorn.conf.py InvenTree.wsgi -b 0.0.0.0:8000 --chdir $${INVENTREE_BACKEND_DIR}/InvenTree'
     ports:
       # Host port 8087: 8000 is occupied by docker-plane-api-1; 8001
       # free but reserved for inventree-worker introspection if added
@@ -237,10 +256,14 @@ services:
     volumes:
       - /Users/admin/.vault-agent-secrets/inventree:/vault/secrets:ro
       - inventree-data:/home/inventree/data
-    command:
-      - /bin/sh
+    # Same entrypoint wrapper as the app container; CMD overridden to
+    # `invoke worker` (the canonical django-q runner per `invoke --list`).
+    entrypoint:
+      - /bin/bash
       - -c
-      - "set -a && . /vault/secrets/credentials.env && set +a && exec /home/inventree/entrypoint.sh invoke worker"
+      - 'set -a && . /vault/secrets/credentials.env && set +a && exec /bin/bash /home/inventree/init.sh "$$@"'
+      - --
+    command: ["invoke", "worker"]
     cap_drop:
       - ALL
     cap_add:
@@ -254,7 +277,7 @@ services:
     mem_limit: 1g
     cpus: 1.0
     healthcheck:
-      test: ["CMD-SHELL", "ps -ef | grep -v grep | grep -q 'invoke worker' || exit 1"]
+      test: ["CMD-SHELL", "pgrep -f 'qcluster' >/dev/null || exit 1"]
       interval: 15s
       timeout: 3s
       retries: 5
