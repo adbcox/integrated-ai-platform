@@ -1,0 +1,47 @@
+===================================================================
+H1 §6 regression probe — gate: d-xindex-final
+Timestamp: 2026-04-30T08:31:37-04:00
+===================================================================
+
+(a) Container roster
+  Up count: 62
+  Restarting count: 0
+  ✅ no containers restarting
+
+(b) Service-registry walk (sampled health endpoints)
+  ✅ vaultwarden [shallow] → HTTP 200
+  ✅ openhands-app [shallow] → HTTP 200
+  ✅ litellm-gateway [shallow] → HTTP 200
+  ✅ mcpo-proxy [shallow] → HTTP 200
+  ✅ open-webui [shallow] → HTTP 200
+  ✅ vault-server [shallow] → HTTP 200
+
+  Deep DB-exercising probes:
+  ✅ nextcloud [deep] /ocs/v2.php/cloud/capabilities → HTTP 200 (DB reachable)
+
+(c) Vault health
+  ✅ vault sealed=false
+  ✅ audit log capturing (size 7377928 → 7381265)
+
+(d) Caddy + .internal DNS sample
+  ✅ vaultwarden.internal → HTTP 200 via Caddy
+  ⚠️  openhands.internal: not in macOS DNS cache (may be normal if not actively used)
+  ✅ plane.internal → HTTP 200 via Caddy
+  ✅ vault.internal → HTTP 307 via Caddy
+  ✅ homepage.internal → HTTP 200 via Caddy
+
+(e) Restic backup recency
+  ⚠️  restic snapshot list inaccessible (creds may be Vault-fetched only)
+
+(f) Cross-service dependency probes (gate-specific: d-xindex-final)
+  ⚠️  no gate-specific dependency probes defined for d-xindex-final
+
+(h) Credential exposure heuristic
+  ✅ no credential-shaped temp files in /tmp
+
+(g) Cross-index coherence (ADR → Plane)
+  ✅ all accepted ADRs have Plane tracking issues
+
+===================================================================
+Gate d-xindex-final summary: PASS=16 FAIL=0 WARN=3
+===================================================================
