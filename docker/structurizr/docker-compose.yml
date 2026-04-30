@@ -1,0 +1,24 @@
+services:
+  structurizr:
+    image: structurizr/structurizr@sha256:16af27248e962c97f05f035571e1a1eb1ffc252d96ff128a550f2e0b8d24d8b3
+    container_name: structurizr
+    restart: unless-stopped
+    command: local
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    read_only: false
+    mem_limit: 512m
+    cpus: 0.5
+    environment:
+      STRUCTURIZR_URL: https://structurizr.internal
+    volumes:
+      - ./workspace:/usr/local/structurizr
+    healthcheck:
+      disable: true
+    networks:
+      - caddy-net
+
+networks:
+  caddy-net:
+    external: true
+    name: caddy-net

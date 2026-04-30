@@ -1,0 +1,65 @@
+site_name: Integrated AI Platform
+site_url: https://docs.internal
+docs_dir: docs
+theme:
+  name: material
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+  palette:
+    - scheme: slate
+      primary: indigo
+      accent: indigo
+
+nav:
+  - Home: index.md
+  - Architecture:
+      - Overview: ARCHITECTURE.md
+      - Dependency Graph: architecture/dependency-graph.md
+      - MCP Servers: architecture/mcp-server-architecture.md
+      - Portability: architecture/portability.md
+  - Decision Register: DECISION_REGISTER.md
+  - ADRs:
+      - Index: adr/README.md
+      - ADR-A-001 Retain control plane: adr/ADR-A-001.md
+      - ADR-A-002 Shared runtime substrate: adr/ADR-A-002.md
+      - ADR-A-003 Ollama-first coding: adr/ADR-A-003.md
+      - ADR-A-004 Aider as adapter: adr/ADR-A-004.md
+      - ADR-A-005 Claude Code supervisory: adr/ADR-A-005.md
+      - ADR-A-006 Repo docs canonical: adr/ADR-A-006.md
+      - ADR-A-007 Syncthing media sync: adr/ADR-A-007-media-sync-syncthing.md
+      - ADR-A-008 No branch forks: adr/ADR-A-008.md
+      - ADR-A-009 Vault secret store: adr/ADR-A-009.md
+      - ADR-A-010 External systems: adr/ADR-A-010-external-systems.md
+      - ADR-A-011 IV&V loop: adr/ADR-A-011-ivv-loop-pattern.md
+      - ADR-A-012 Equivalence harness: adr/ADR-A-012-equivalence-harness-doctrine.md
+      - ADR-A-013 Folded gates: adr/ADR-A-013-folded-gates-doctrine.md
+  - Runbooks:
+      - Add New Service: runbooks/add-new-service.md
+      - Add New Host: runbooks/add-new-host.md
+      - Add New MCP Server: runbooks/add-new-mcp-server.md
+      - Restart Services: runbooks/restart-services.md
+      - Rotate Credentials: runbooks/rotate-credentials.md
+      - Vault Unseal: runbooks/vault-unseal.md
+      - Vault Token Rotation: runbooks/vault-token-rotation.md
+      - Vault Rekey: runbooks/vault-rekey.md
+      - Vault Recovery (Shamir): runbooks/vault-recovery-from-shamir.md
+      - Vault Restore from Backup: runbooks/vault-restore-from-backup.md
+      - Drift Detection: runbooks/drift-detection-procedure.md
+      - Regression Probe Failure: runbooks/regression-probe-failure.md
+      - Incident Response: runbooks/incident-response.md
+      - Plane Web Auth: runbooks/plane-web-auth.md
+      - Operating Model: runbooks/operating-model.md
+      - H1 Rollback: runbooks/H1-rollback.md
+      - What Changed (24h): runbooks/what-changed-last-24h.md
+  - Canonical Patterns:
+      - Plane Connector: canonical-patterns/plane-connector-usage.md
+  - Known Issues:
+      - KI-004 mcp-docs-remote: known-issues/KI-004-mcp-docs-remote-startup.md
+
+plugins:
+  - search

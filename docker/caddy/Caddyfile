@@ -214,3 +214,19 @@ catt.internal {
 
     reverse_proxy host.docker.internal:8124
 }
+
+# ── Structurizr Lite (Phase 14 D-STR) ────────────────────────────────
+# C4 architecture diagram workspace. Auth-free for local LAN use.
+structurizr.internal {
+    import access_log
+    reverse_proxy structurizr:8080 {
+        header_up Host "localhost"
+    }
+}
+
+# ── MkDocs Material (Phase 14 D-MKD) ─────────────────────────────────
+# Internal documentation site serving docs/ tree.
+docs.internal {
+    import access_log
+    reverse_proxy mkdocs:8000
+}

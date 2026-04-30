@@ -1,0 +1,26 @@
+services:
+  mkdocs:
+    image: squidfunk/mkdocs-material@sha256:868ad4d39fb5865b72d00173ade00f4eae2b38dde7ff790a011cc44ce4a8ff8e
+    container_name: mkdocs
+    restart: unless-stopped
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    mem_limit: 256m
+    cpus: 0.5
+    command: ["serve", "--dev-addr=0.0.0.0:8000", "--no-livereload", "--config-file=/mkdocs.yml"]
+    volumes:
+      - ../../docs:/docs:ro
+      - ../../mkdocs.yml:/mkdocs.yml:ro
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 45s
+    networks:
+      - caddy-net
+
+networks:
+  caddy-net:
+    external: true
+    name: caddy-net

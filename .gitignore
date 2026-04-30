@@ -58,3 +58,5 @@ data/*.sqlite3
 # Logs
 *.log
 !docs/**/*.log
+docker/structurizr/workspace/workspace.json
+docker/structurizr/workspace/.structurizr/
