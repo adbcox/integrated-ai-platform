@@ -147,6 +147,7 @@ services:
   # ── Remote MCP: Docs (:8093) ─────────────────────────────────────────────────
   # Pre-built image with tree-sitter compiled at build time (CF-4 / D#29).
   # Eliminates 60s+ apt-get/npm cold-start and broad cap_add requirement.
+  # Uses supergateway to wrap docs-mcp-server in streamable-HTTP transport.
   mcp-docs-remote:
     image: local/docs-mcp-server:latest
     container_name: mcp-docs-remote
@@ -161,13 +162,14 @@ services:
       - ALL
     security_opt:
       - no-new-privileges:true
-    command: ["--protocol", "http", "--port", "8093", "--host", "0.0.0.0", "--store-path", "/data"]
+    command:
+      - "supergateway --stdio 'docs-mcp-server --store-path /data' --outputTransport streamableHttp --port 8093 --cors --healthEndpoint /healthz"
     healthcheck:
-      test: ["CMD-SHELL", "node -e \"require('http').get('http://localhost:8093/',r=>r.statusCode<500?process.exit(0):process.exit(1)).on('error',()=>process.exit(1))\""]
+      test: ["CMD-SHELL", "node -e \"require('http').get('http://localhost:8093/healthz',r=>r.statusCode===200?process.exit(0):process.exit(1)).on('error',()=>process.exit(1))\""]
       interval: 20s
       timeout: 10s
       retries: 5
-      start_period: 30s
+      start_period: 60s
 
 volumes:
   obot-data:
