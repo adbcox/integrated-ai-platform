@@ -826,3 +826,156 @@ closes. Beyond-14 items are catalogued for visibility but not
 scheduled — they are hardware- or external-trigger-driven.
 
 No execution begun.
+
+---
+
+## Addendum — Operator decisions on Q-14-1 / Q-14-2 (2026-04-29)
+
+The operator dispositioned the two blocking questions surfaced at the
+end of this plan. This addendum is appended (not woven into the body)
+so the original plan and the operator's directive remain individually
+auditable.
+
+### A.1 Q-14-1 — Increment 1.5 confirmed
+
+**Decision:** YES, fold the doctrine-debt sweep into Phase 13 as
+Increment 1.5, inserted between Increments 1 (CLOSED) and 2
+(InvenTree).
+
+**Operator reasoning** (verbatim):
+> The doctrine codified in Increment 1 (ADRs A-011, A-012, A-013) is
+> being violated by 12 services without Vault sidecars and 22
+> containers without `cap_drop:[ALL]`. Closing Phase 13 without
+> addressing the violation surface means closing on a foundation that
+> doesn't meet the platform's own doctrine. Increment 2 is already
+> gated behind operator-side prereqs (Mouser, DigiKey, CSV) that won't
+> land for days, so Increment 1.5 doesn't actually delay anything not
+> already delayed.
+
+**Scope adjustment — TWO items, not three.** C6 #7/#9 (Plane API token
+revocation) was resolved tonight (2026-04-29) via Django shell delete:
+plaintext token `4d83dff62161` deleted from Plane DB; only
+`b90c7b634be7` remains active. Hash-only verification captured;
+plaintext value not displayed in any artifact, per CLAUDE.md secrets
+discipline.
+
+Increment 1.5 confirmed scope:
+1. **H1 §6 sidecar rollout** — 12 services without Vault Agent
+   sidecars, brought to AppRole+sidecar parity per Block 4.C
+   `c5.4-vault-fix.md` pattern. Doctrine: ADR-A-009.
+2. **H1 §7 container hardening** — 22 containers without
+   `cap_drop:[ALL]` + `no-new-privileges:true`, brought to baseline
+   per CLAUDE.md "Container Hardening" section. Doctrine: CLAUDE.md
+   non-negotiable rule.
+
+**Revised effort estimate:** **12–15 h** (down from 14–18 h with C6
+item removed). At one increment per week cadence per campaign plan
+§1, this is a one-week increment.
+
+**Doctrine binding:**
+- Audit phase (B.1): inventory current state of all 12 services and
+  22 containers; classify each by required cap set per workload class.
+- Execution (B.2): apply the canonical sidecar pattern + cap-drop
+  pattern. Folded gates (ADR-A-013) apply for the mechanical
+  application across services 2..12 once service 1 sets the pattern.
+- Validation (B.3): regression probe must show all 12 services
+  Vault-authenticated and all 22 containers running with the new
+  cap set.
+- Regression (B.4): probe gate ID `increment-1.5-final`; PASS criteria
+  matches Increment 1's bar (FAIL=0; WARN ≤ baseline).
+
+### A.2 Q-14-2 — D-DOC confirmed as Phase 14 entry block
+
+**Decision:** D-DOC first as Phase 14 entry block (ahead of D-LOG,
+D-STR, D-MKD, etc.).
+
+**Operator reasoning** (verbatim):
+> D-DOC is foundation work that benefits every subsequent Phase 14
+> block. Stale runbooks confuse future execution windows; missing
+> vault-restore runbook means recovery scenarios are undocumented;
+> ARCHITECTURE.md retirement and replacement gives Phase 14 a clean
+> reference base. D-LOG is real value but doesn't unblock other
+> blocks. Phase 14 should start with documentation aligned to the
+> Phase 13 doctrine, then add observability later.
+
+D-DOC scope is unchanged from §4.1 of this plan, **plus** the two new
+Phase 14 follow-ups registered in §A.4 below.
+
+### A.3 C6 #7/#9 status — RESOLVED
+
+| Field | Value |
+|---|---|
+| Item | C6 follow-up #7 / #9 — Plane API token plaintext in memory file |
+| Status | **RESOLVED** |
+| Resolution date | 2026-04-29 |
+| Resolution mechanism | Django shell delete on Plane DB; plaintext token row removed; replacement token (`b90c7b634be7…`) confirmed as the only active token. |
+| Verification | Hash-only equality check; plaintext value not displayed in any artifact (CLAUDE.md secrets discipline). |
+| Plan impact | Increment 1.5 scope reduced from 3 items to 2; estimate revised from 14–18 h to **12–15 h**. |
+
+### A.4 New Phase 14 follow-ups registered
+
+Two items surfaced during 2026-04-29 cleanup work. Both registered as
+Phase 14 items (NOT Increment 1.5), because both require platform-
+side decisions (Vault path layout, web-auth backend selection) that
+are out of scope for a doctrine-debt sweep.
+
+| ID | Item | Why Phase 14, not 1.5 | Likely block |
+|---|---|---|---|
+| **NF-14-1** | Plane admin password rotation. The current admin account `admin@local.dev` / `Admin1234!` is stored in plaintext in the `plane_deployment.md` memory file, and the value is weak (default-style). Rotation requires (a) deciding the Vault path under which Plane admin creds will live, (b) likely configuring Plane web auth first so a non-admin operator account can manage the rotation safely. | Vault-path decision needed; Plane web auth is a hard prerequisite. | Probably its own small block adjacent to D-DOC, or folded into D-DOC if scope allows. |
+| **NF-14-2** | Plane CE web UI authentication not configured. Login page surfaces "No authentication methods available". Plane is currently usable only via API tokens; web-UI access is broken. Resolution requires picking an auth backend (local, OIDC via the platform's Keycloak/Authelia path if one is chosen, or magic-link email through SMTP). | Auth-backend decision is platform-architecture-level, not a doctrine sweep. Likely couples to a future SSO/identity decision. | D-DOC (if the resolution is mostly runbook + config), or its own small block (if it requires standing up an OIDC issuer first). |
+
+Both items are **predecessors to NF-14-1**: Plane admin password
+rotation will be much safer once web auth works, because rotation
+mistakes can be recovered from a logged-in admin session rather than
+requiring DB-shell intervention. Recommended Phase 14 ordering:
+**D-DOC → NF-14-2 (web auth) → NF-14-1 (admin rotation)**.
+
+### A.5 Updated Phase 13 sequence
+
+| # | Increment | Status | Notes |
+|---|---|---|---|
+| 1 | Increment 1 (D-OP + D-CN + Phase C) | **CLOSED** at `718a6c2` | Regression PASS=15 FAIL=0 WARN=3. |
+| 1.5 | **Increment 1.5 — H1 §6 + §7 doctrine sweep** | **PLANNED** (this addendum) | 12 services + 22 containers; 12–15 h; gate ID `increment-1.5-final`. |
+| 2 | Increment 2 (Block 4.D — InvenTree) | PLANNED, gated on Mouser+DigiKey+CSV (Q-4, Q-5) | Begins after 1.5 closes AND operator-side prereqs land. |
+| 3 | Increment 3 (Block 4.E + 4.H — state-anchoring + cross-index) | PLANNED | Per campaign plan Appendix E. |
+| 4 | Increment 4 (Block 4.J — security baseline) | PLANNED | Per campaign plan Appendix E. |
+| 5 | Increment 5 (Block 4.I — secret hygiene final pass) | PLANNED | Per campaign plan Appendix E. |
+| 6 | Increment 6 (Block 4.G + 4.F) | PLANNED | Per campaign plan Appendix E. |
+| 7 | Increment 7 (HF-1 + HF-2 hardening + CL — closeout) | PLANNED | Per campaign plan Appendix E. |
+
+Phase 13 close = Increment 7 close. Phase 14 opens with **D-DOC** as
+the entry block.
+
+### A.6 Updated horizon arithmetic
+
+| Scope | Prior estimate | Revised estimate | Delta |
+|---|---|---|---|
+| Phase 13 closeout-backlog cluster | 14–18 h (3 items) | **12–15 h** (2 items, formalized as Increment 1.5) | C6 #7/#9 already done |
+| Phase 13 in-scope (Increments 2–7) | ~85 h | unchanged | — |
+| Phase 14 entry (D-DOC) | 8–12 h | **9–14 h** | +NF-14-1 / NF-14-2 partial absorption |
+| Phase 14 backlog | ~30–45 h | unchanged | — |
+| Beyond Phase 14 | hardware-gated | unchanged | — |
+| **Total horizon point estimate** | ~165 h | **~163 h** | net −2 h |
+
+The horizon barely changes; the *shape* changes (one item resolved,
+one item formalized as a numbered increment, two items registered).
+
+### A.7 Open questions remaining
+
+These are NOT blocking Increment 1.5 planning — they block Increment
+2 and beyond.
+
+| ID | Question | Blocks |
+|---|---|---|
+| Q-4 | Mouser + DigiKey ETA? | Increment 2 (InvenTree) |
+| Q-5 | Components CSV format / availability? | Increment 2 (InvenTree) |
+| Q-14-4 | Hardware ETAs (MBP M5, Mac Studio M3, Threadripper)? | Block 3 + beyond-14 |
+
+Q-14-3 and Q-14-5 from the original plan were judgment-calls that the
+operator can defer until the relevant block opens; not blocking.
+
+---
+
+**Addendum complete.** Increment 1.5 is scoped and ready for kickoff
+on the operator's next execution window. D-DOC is locked as the
+Phase 14 entry block. No execution begun.
