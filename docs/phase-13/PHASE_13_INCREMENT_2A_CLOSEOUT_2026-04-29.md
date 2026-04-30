@@ -223,6 +223,18 @@ External prerequisites still required before 2B can begin:
 | DigiKey OAuth client  | ❌     | developer.digikey.com → Apps → register |
 | 129-component CSV     | ❌     | user-supplied (preferred path or paste) |
 
+### 2B kickoff trigger
+
+Increment 2B opens when ALL three operator-side prereqs land:
+
+1. Mouser API key in Vault at `secret/mouser/api#key`
+2. DigiKey OAuth credentials in Vault at `secret/digikey/api`
+   (`client_id` + `client_secret`)
+3. 129-component CSV at `docs/inventory/components-2026-04.csv`
+
+When all three are present, operator drafts Increment 2B execution
+prompt against Block 4.D.3–4.D.6 scope. **No auto-resumption.**
+
 When all three land:
 
 1. Add Mouser/DigiKey paths to `inventree-policy.hcl` (read-only on
