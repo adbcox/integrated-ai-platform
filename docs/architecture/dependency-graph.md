@@ -1,130 +1,191 @@
 # Service Dependency Graph
 
-Generated from the platform CMDB. Source of truth as of Block 4.C C5
-is NetBox (`http://netbox:8080`); read via `scripts/cmdb_source.py`
-which dispatches on `$CMDB_SOURCE=yaml|netbox` and produces the same
-canonical service shape from either backend. Originally introduced
-in H1 §10 from `config/service-registry.yaml` (now the dual-source
-fallback during C5 transition).
+**Last updated:** 2026-04-29 (Phase 14 D-DOC — refreshed from NetBox, Block 4.C state)
+
+Generated from NetBox CMDB via `scripts/cmdb_source.py`.
+Authoritative source: `netbox.internal`. To regenerate this graph:
+
+```bash
+CMDB_SOURCE=netbox python3 scripts/cmdb_source.py | python3 scripts/generate-dependency-graph.py
+```
 
 ```mermaid
 graph TB
-    litellm-gateway[litellm-gateway]:::ai
-    open-webui[open-webui]:::ai
-    ollama[ollama]:::ai
-    obot[obot]:::ai
-    openhands[openhands]:::ai
-    mcpo-proxy[mcpo-proxy]:::ai
-    iap-dashboard[iap-dashboard]:::platform
-    vault[vault]:::platform
-    plane[plane]:::platform
-    plane-api[plane-api]:::platform
-    plane-db[plane-db]:::platform
-    plane-minio[plane-minio]:::platform
-    homarr[homarr]:::platform
-    grafana[grafana]:::observability
-    victoriametrics[victoriametrics]:::observability
-    vmagent[vmagent]:::observability
-    uptime-kuma[uptime-kuma]:::observability
-    node-exporter[node-exporter]:::observability
-    sonarr[sonarr]:::media
-    radarr[radarr]:::media
-    prowlarr[prowlarr]:::media
-    sportarr[sportarr]:::media
-    plex[plex]:::media
-    homeassistant-container[homeassistant-container]:::automation
-    homeassistant-physical[homeassistant-physical]:::automation
-    anythingllm[anythingllm]:::ai
-    plane-redis[plane-redis]:::platform
-    plane-worker[plane-worker]:::platform
-    plane-beat[plane-beat]:::platform
-    obot-mcp-server[obot-mcp-server]:::ai
-    obot-mcp-shim[obot-mcp-shim]:::ai
-    opnsense[opnsense]:::network
-    zabbix-server[zabbix-server]:::monitoring
-    zabbix-web[zabbix-web]:::monitoring
-    zabbix-agent[zabbix-agent]:::monitoring
-    zabbix-postgres[zabbix-postgres]:::data
-    mcp-filesystem-remote[mcp-filesystem-remote]:::mcp
-    mcp-docker-remote[mcp-docker-remote]:::mcp
-    mcp-docs-remote[mcp-docs-remote]:::mcp
-    obot-shim-postgres[obot-shim-postgres]:::mcp-shim
-    obot-shim-postgres-nanobot[obot-shim-postgres-nanobot]:::mcp-shim
-    obot-shim-github[obot-shim-github]:::mcp-shim
-    obot-shim-github-nanobot[obot-shim-github-nanobot]:::mcp-shim
-    obot-shim-weather[obot-shim-weather]:::mcp-shim
-    obot-shim-weather-nanobot[obot-shim-weather-nanobot]:::mcp-shim
-    obot-shim-fitness[obot-shim-fitness]:::mcp-shim
-    obot-shim-fitness-nanobot[obot-shim-fitness-nanobot]:::mcp-shim
-    obot-shim-semgrep[obot-shim-semgrep]:::mcp-shim
-    obot-shim-semgrep-nanobot[obot-shim-semgrep-nanobot]:::mcp-shim
-    obot-shim-strava[obot-shim-strava]:::mcp-shim
-    obot-shim-strava-nanobot[obot-shim-strava-nanobot]:::mcp-shim
-    obot-shim-homeassistant[obot-shim-homeassistant]:::mcp-shim
-    obot-shim-homeassistant-nanobot[obot-shim-homeassistant-nanobot]:::mcp-shim
-    obot-shim-generic-a[obot-shim-generic-a]:::mcp-shim
-    obot-shim-generic-b[obot-shim-generic-b]:::mcp-shim
-    obot-shim-generic-c[obot-shim-generic-c]:::mcp-shim
-    caddy[caddy]:::infrastructure
-    headscale[headscale]:::infrastructure
-    vaultwarden[vaultwarden]:::platform
-    nextcloud[nextcloud]:::platform
-    nextcloud-db[nextcloud-db]:::data
+    anythingllm["AnythingLLM"]:::ai
+    caddy["Caddy Reverse Proxy"]:::infrastructure
+    cadvisor["cAdvisor"]:::observability
+    catt-controller["Cast-All-The-Things"]:::home-automation
+    control-plane["Operator Control Plane"]:::control-center
+    docker-socket-proxy-control["Docker Socket Proxy"]:::platform
+    grafana["Grafana"]:::observability
+    headscale["Headscale VPN Server"]:::infrastructure
+    homarr["Homarr"]:::platform
+    homeassistant-container["Home Assistant (container)"]:::automation
+    homeassistant-physical["Home Assistant (physical)"]:::automation
+    homepage["Homepage Control Center"]:::control-center
+    litellm-gateway["LiteLLM Gateway"]:::ai
+    mcp-docker-remote["MCP Docker Remote"]:::mcp
+    mcp-docs-remote["MCP Docs Remote"]:::mcp
+    mcp-filesystem-remote["MCP Filesystem Remote"]:::mcp
+    mcpo-proxy["MCPO Proxy"]:::ai
+    netbox["NetBox CMDB"]:::cmdb
+    netbox-housekeeping["NetBox Housekeeping"]:::cmdb
+    netbox-postgres["NetBox PostgreSQL"]:::data
+    netbox-redis["NetBox Valkey DB"]:::data
+    netbox-redis-cache["NetBox Valkey Cache"]:::data
+    netbox-worker["NetBox Worker"]:::cmdb
+    nextcloud["Nextcloud"]:::platform
+    nextcloud-db["Nextcloud PostgreSQL"]:::data
+    node-exporter["Node Exporter"]:::observability
+    obot["Obot"]:::ai
+    obot-mcp-server["Obot MCP Server"]:::ai
+    obot-mcp-shim["Obot MCP Shim"]:::ai
+    obot-shim-fitness["Obot Shim — Health & Fitness"]:::mcp-shim
+    obot-shim-fitness-nanobot["Obot Nanobot — Health & Fitness"]:::mcp-shim
+    obot-shim-generic-a["Obot Shim — Tool A"]:::mcp-shim
+    obot-shim-generic-b["Obot Shim — Tool B"]:::mcp-shim
+    obot-shim-generic-c["Obot Shim — Tool C"]:::mcp-shim
+    obot-shim-github["Obot Shim — GitHub"]:::mcp-shim
+    obot-shim-github-nanobot["Obot Nanobot — GitHub"]:::mcp-shim
+    obot-shim-homeassistant["Obot Shim — Home Assistant"]:::mcp-shim
+    obot-shim-homeassistant-nanobot["Obot Nanobot — Home Assistant"]:::mcp-shim
+    obot-shim-postgres["Obot Shim — PostgreSQL"]:::mcp-shim
+    obot-shim-postgres-nanobot["Obot Nanobot — PostgreSQL"]:::mcp-shim
+    obot-shim-semgrep["Obot Shim — Semgrep"]:::mcp-shim
+    obot-shim-semgrep-nanobot["Obot Nanobot — Semgrep"]:::mcp-shim
+    obot-shim-strava["Obot Shim — Strava"]:::mcp-shim
+    obot-shim-strava-nanobot["Obot Nanobot — Strava"]:::mcp-shim
+    obot-shim-weather["Obot Shim — Weather"]:::mcp-shim
+    obot-shim-weather-nanobot["Obot Nanobot — Weather"]:::mcp-shim
+    ollama["Ollama"]:::ai
+    open-webui["Open WebUI"]:::ai
+    openhands["OpenHands"]:::ai
+    opnsense["OPNsense Firewall"]:::network
+    plane["Plane CE"]:::platform
+    plane-api["Plane API"]:::platform
+    plane-beat["Plane Beat Scheduler"]:::platform
+    plane-db["Plane PostgreSQL"]:::platform
+    plane-minio["MinIO Object Storage"]:::platform
+    plane-redis["Plane Redis"]:::platform
+    plane-worker["Plane Worker"]:::platform
+    plex["Plex Media Server"]:::media
+    plex-mcp["Plex MCP Bridge"]:::integration
+    prowlarr["Prowlarr"]:::media
+    radarr["Radarr"]:::media
+    seal-vault["Vault Auto-Unseal"]:::platform
+    sonarr["Sonarr"]:::media
+    sportarr["Sportarr"]:::media
+    topology-api["Topology API"]:::observability
+    uptime-kuma["Uptime Kuma"]:::visibility
+    vault["HashiCorp Vault"]:::platform
+    vaultwarden["Vaultwarden"]:::platform
+    victoriametrics["VictoriaMetrics"]:::observability
+    vmagent["VMAgent"]:::observability
+    zabbix-agent["Zabbix Agent"]:::monitoring
+    zabbix-postgres["Zabbix PostgreSQL"]:::data
+    zabbix-server["Zabbix Server"]:::monitoring
+    zabbix-web["Zabbix Web UI"]:::monitoring
 
-    open-webui --> litellm-gateway
-    open-webui --> ollama
-    obot --> litellm-gateway
-    openhands --> litellm-gateway
-    plane --> plane-api
-    plane --> plane-db
-    plane --> plane-redis
-    plane --> plane-minio
-    plane-api --> plane-db
-    plane-api --> plane-redis
-    plane-api --> plane-minio
-    grafana --> victoriametrics
-    vmagent --> victoriametrics
-    vmagent --> node-exporter
-    sonarr --> prowlarr
-    radarr --> prowlarr
-    anythingllm --> ollama
-    plane-worker --> plane-db
-    plane-worker --> plane-redis
-    plane-beat --> plane-db
-    plane-beat --> plane-redis
-    obot-mcp-server --> obot
-    obot-mcp-shim --> obot-mcp-server
-    zabbix-server --> zabbix-postgres
-    zabbix-web --> zabbix-server
-    zabbix-web --> zabbix-postgres
-    zabbix-agent --> zabbix-server
-    obot-shim-postgres --> obot
-    obot-shim-postgres-nanobot --> obot-shim-postgres
-    obot-shim-github --> obot
-    obot-shim-github-nanobot --> obot-shim-github
-    obot-shim-weather --> obot
-    obot-shim-weather-nanobot --> obot-shim-weather
-    obot-shim-fitness --> obot
-    obot-shim-fitness-nanobot --> obot-shim-fitness
-    obot-shim-semgrep --> obot
-    obot-shim-semgrep-nanobot --> obot-shim-semgrep
-    obot-shim-strava --> obot
-    obot-shim-strava-nanobot --> obot-shim-strava
-    obot-shim-homeassistant --> obot
-    obot-shim-homeassistant --> homeassistant-container
-    obot-shim-homeassistant-nanobot --> obot-shim-homeassistant
-    obot-shim-generic-a --> obot
-    obot-shim-generic-b --> obot
-    obot-shim-generic-c --> obot
-    nextcloud --> nextcloud-db
+    ollama --> anythingllm
+    vmagent --> cadvisor
+    caddy --> control-plane
+    prowlarr --> control-plane
+    radarr --> control-plane
+    sonarr --> control-plane
+    vault --> control-plane
+    control-plane --> docker-socket-proxy-control
+    victoriametrics --> grafana
+    caddy --> homepage
+    grafana --> homepage
+    plane-api --> homepage
+    prowlarr --> homepage
+    radarr --> homepage
+    sonarr --> homepage
+    uptime-kuma --> homepage
+    vault --> homepage
+    netbox-postgres --> netbox
+    netbox-redis --> netbox
+    netbox-redis-cache --> netbox
+    vault --> netbox
+    netbox --> netbox-housekeeping
+    vault --> netbox-postgres
+    vault --> netbox-redis
+    vault --> netbox-redis-cache
+    netbox --> netbox-worker
+    nextcloud-db --> nextcloud
+    litellm-gateway --> obot
+    obot --> obot-mcp-server
+    obot-mcp-server --> obot-mcp-shim
+    obot --> obot-shim-fitness
+    obot-shim-fitness --> obot-shim-fitness-nanobot
+    obot --> obot-shim-generic-a
+    obot --> obot-shim-generic-b
+    obot --> obot-shim-generic-c
+    obot --> obot-shim-github
+    obot-shim-github --> obot-shim-github-nanobot
+    homeassistant-container --> obot-shim-homeassistant
+    obot --> obot-shim-homeassistant
+    obot-shim-homeassistant --> obot-shim-homeassistant-nanobot
+    obot --> obot-shim-postgres
+    obot-shim-postgres --> obot-shim-postgres-nanobot
+    obot --> obot-shim-semgrep
+    obot-shim-semgrep --> obot-shim-semgrep-nanobot
+    obot --> obot-shim-strava
+    obot-shim-strava --> obot-shim-strava-nanobot
+    obot --> obot-shim-weather
+    obot-shim-weather --> obot-shim-weather-nanobot
+    litellm-gateway --> open-webui
+    ollama --> open-webui
+    litellm-gateway --> openhands
+    plane-api --> plane
+    plane-db --> plane
+    plane-minio --> plane
+    plane-redis --> plane
+    plane-db --> plane-api
+    plane-minio --> plane-api
+    plane-redis --> plane-api
+    plane-db --> plane-beat
+    plane-redis --> plane-beat
+    plane-db --> plane-worker
+    plane-redis --> plane-worker
+    vault --> plex-mcp
+    prowlarr --> radarr
+    prowlarr --> sonarr
+    grafana --> topology-api
+    node-exporter --> vmagent
+    victoriametrics --> vmagent
+    zabbix-server --> zabbix-agent
+    zabbix-postgres --> zabbix-server
+    zabbix-postgres --> zabbix-web
+    zabbix-server --> zabbix-web
 
     classDef ai fill:#e1f5ff,stroke:#0288d1
     classDef platform fill:#f3e5f5,stroke:#7b1fa2
     classDef infrastructure fill:#fff3e0,stroke:#f57c00
     classDef observability fill:#e8f5e9,stroke:#388e3c
-    classDef misc fill:#f5f5f5,stroke:#616161
+    classDef media fill:#fce4ec,stroke:#c62828
+    classDef monitoring fill:#fff9c4,stroke:#f9a825
+    classDef mcp fill:#e0f2f1,stroke:#00695c
+    classDef mcp-shim fill:#f1f8e9,stroke:#558b2f
+    classDef data fill:#e8eaf6,stroke:#283593
+    classDef automation fill:#fbe9e7,stroke:#bf360c
+    classDef home-automation fill:#fbe9e7,stroke:#bf360c
+    classDef network fill:#efebe9,stroke:#4e342e
+    classDef cmdb fill:#e3f2fd,stroke:#0277bd
+    classDef control-center fill:#f9fbe7,stroke:#827717
+    classDef integration fill:#fce4ec,stroke:#880e4f
+    classDef visibility fill:#f3e5f5,stroke:#6a1b9a
 ```
 
-**Foundation services**: vault-server (auto-unsealed via seal-vault), caddy (TLS reverse proxy), all per-service Vault Agent sidecars.
+**Foundation layer (everything depends on these):**
+- `vault` → auto-unsealed by `seal-vault` (Transit)
+- `caddy` → TLS terminator for all `*.internal` domains
+- Per-service Vault Agent sidecars (run once at startup, render `credentials.env`)
 
-**Categories**: 11 distinct categories across 61 services.
+**Key fan-in points:**
+- `obot`: 17+ shims depend on it
+- `vault`: 9+ services have direct dependencies
+- `plane-db`: 4 Plane services depend on it
+- `prowlarr`: fans out to sonarr, radarr, control-plane, homepage
+
+**Categories:** 15 distinct categories across 74 active services (1 deprecated: `iap-dashboard`).

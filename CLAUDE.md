@@ -2,23 +2,22 @@
 
 **Project:** Integrated AI Platform (Enterprise Autonomous AI Infrastructure)
 **Deployment Target:** Mac Mini M5 at 192.168.10.145 (control plane); MacBook Pro M5 parity in Block 3
-**Current Phase:** Phase 13 Blocks 2 + 2.5 + 3 + 4.A + 4.B + 4.C closed (operator visualization, operator control plane at control.internal, Display & Voice platform layer, registry reconciliation, state-anchoring tooling, NetBox CMDB deployment with homegrown YAML deprecated); ready for Block 4.D
+**Current Phase:** Phase 14 D-DOC in progress (Phase 13 Increments 1, 1.5, and 2A complete; §6 Vault Agent sidecar rollout done; §7 cap_drop:[ALL] sweep done; CMDB_SOURCE defaulting to netbox)
 
 ## Quick Start
 
 You are working on a production autonomous AI platform. Before taking any action:
 
-1. **Read the docs first:** All context is in `docs/PLATFORM_OVERVIEW.md`
+1. **Read the docs first:** All context is in `docs/ARCHITECTURE.md` (supersedes `docs/PLATFORM_OVERVIEW.md`)
 2. **Deployment target:** Mac Mini .145 (192.168.10.145)
 3. **All code execution:** Happens ON the Mac Mini, NOT locally
 4. **User preference:** Give complete prompts, don't execute incrementally
 
 ## Core Documentation
 
-- `docs/PLATFORM_OVERVIEW.md` - System overview, architecture, status
+- `docs/ARCHITECTURE.md` - System overview, architecture, service inventory (supersedes PLATFORM_OVERVIEW.md)
 - `docs/DEPLOYMENT_GUIDE.md` - How to operate services
 - `docs/TROUBLESHOOTING.md` - Issue resolution
-- `docs/ARCHITECTURE.md` - Detailed technical architecture
 - `docs/HANDOFF_GUIDE.md` - Session continuity instructions
 
 ## Critical Behavioral Rules
@@ -27,7 +26,7 @@ You are working on a production autonomous AI platform. Before taking any action
 - "Give me a prompt" → Provide complete prompt as text, DON'T execute
 - "How do I deploy X" → Point to `docs/DEPLOYMENT_GUIDE.md`
 - "Service not working" → Point to `docs/TROUBLESHOOTING.md`
-- "What's the architecture" → Point to `docs/PLATFORM_OVERVIEW.md`
+- "What's the architecture" → Point to `docs/ARCHITECTURE.md`
 
 **Never:**
 - Try to execute on local filesystem (everything is on Mac Mini .145)
@@ -57,7 +56,7 @@ This is the "AI workstation" or "platform". Pre-2026 alternative terminology (th
 
 ### Heterogeneous Architecture
 - Mac Mini M5 is the **control plane** today (Phase 13 Block 2 delivered: operator visualization, Vault, Caddy, observability stack, NetBox-driven topology API with YAML fallback during the C5 transition window).
-- **Service inventory authoritative source:** NetBox CMDB at `netbox.internal`. Homegrown `config/service-registry.yaml` retained as fallback during the transition window; `CMDB_SOURCE` env var (`yaml|netbox`, default `yaml` during transition) controls source per consumer.
+- **Service inventory authoritative source:** NetBox CMDB at `netbox.internal`. `CMDB_SOURCE` env var (`yaml|netbox`, **default: netbox** as of Phase 14 D-DOC) controls source per consumer. `config/service-registry.yaml` retained as A-012 deprecation-gate fallback only.
 - MacBook Pro M5 parity (Ollama + LiteLLM + Open WebUI + Headscale client + smart routing) is **Block 3**, executed when the user is ready.
 - Linux (Threadripper) and Mac Studio M3 are **future blocks** beyond Block 3. Every architectural decision is portability-flagged.
 - Per-host configs in `config/vault-configs/` (`vault-config-macmini.hcl`, `vault-config-linux.hcl`).
@@ -83,11 +82,12 @@ This is the "AI workstation" or "platform". Pre-2026 alternative terminology (th
 - `mem_limit` calibrated from baseline (don't undersize; postgres needs shared_buffers headroom).
 - Privileged containers: only cAdvisor with documented rationale.
 - Docker socket mounts: documented per-container (openhands, homarr) with rationale.
+- **Three permanently non-compose-hardened containers (D#30):** `mcp-docker-remote` (bare docker run — Phase H migration target), `sms1obot-mcp-server` (Obot-managed lifecycle), `sms1obot-mcp-server-shim` (Obot-managed lifecycle). These cannot be hardened without Obot configuration API support.
 
 ### Backup Policy
 - Restic backups run nightly via `scripts/backup.sh` authenticated by `backup` AppRole.
 - Vault data: `/vault/data` backed up via Restic.
-- Test restore quarterly. Document in `docs/runbooks/backup-restore.md` (pending Phase 14).
+- Test restore quarterly. Restore procedure: `docs/runbooks/vault-restore-from-backup.md` (authored Phase 14 D-DOC).
 
 ### Anti-patterns (forbidden)
 - `--no-deps` with sidecar pattern (sidecar IS a dependency)
@@ -147,15 +147,18 @@ The orchestrator (Claude Code at the top level) delegates implementation work to
 - No assumptions: command output or cited source.
 - Right way over easy way; document trade-offs.
 - Stop on any unexpected behavior; surface to user.
+- **D#25 operating-model rule:** §6 AppRole provisioning must verify consumer presence before provisioning AppRole/policy. Mechanical provisioning without verifying that a service actually reads credentials creates orphan AppRoles (learned from plane-web Increment 1.5.A audit — plane-web had a policy provisioned but no credential consumption code). Always check the service's entrypoint/env consumption before provisioning.
+- **§6 final state (Increment 1.5.A):** All 16 credential-consuming services have Vault Agent sidecars. 15 were covered by prior block work; plane-web decommissioned as N/A (frontend, no credential consumption). Orphan policy `config/vault-policies/plane-web-policy.hcl` deleted.
+- **§7 final state (Increment 1.5.B):** All compose-manageable containers have `cap_drop:[ALL]`. 3 non-compose containers remain (D#30, see Container Hardening above).
 
 ## Project Structure
 
 ```
-docs/PLATFORM_OVERVIEW.md   — start here
+docs/ARCHITECTURE.md        — start here (supersedes PLATFORM_OVERVIEW.md)
 docs/DEPLOYMENT_GUIDE.md    — operations
 docs/TROUBLESHOOTING.md     — issue resolution
-docs/ARCHITECTURE.md        — technical depth
 docs/HANDOFF_GUIDE.md       — session continuity
+docs/runbooks/              — operational runbooks (add-new-service, rotate-credentials, etc.)
 docs/roadmap/ITEMS/         — 601 roadmap items (canonical truth)
 config/mac_mini/            — Mac Mini M5 node config
 config/mac_studio/          — Mac Studio M3 node config (future)
