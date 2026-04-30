@@ -230,3 +230,10 @@ docs.internal {
     import access_log
     reverse_proxy mkdocs:8000
 }
+
+# ── Loki (Phase 14 D-LOG) ─────────────────────────────────────────────
+# Log aggregation API — used by Grafana for Caddy per-site analysis.
+loki.internal {
+    import access_log
+    reverse_proxy loki:3100
+}

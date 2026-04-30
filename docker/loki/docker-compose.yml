@@ -1,0 +1,57 @@
+services:
+  loki:
+    image: grafana/loki:2.9.0
+    container_name: loki
+    restart: unless-stopped
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    mem_limit: 512m
+    ports:
+      - "127.0.0.1:3100:3100"
+    volumes:
+      - ./loki-config.yaml:/etc/loki/loki-config.yaml:ro
+      - loki-data:/loki
+    command: ["-config.file=/etc/loki/loki-config.yaml"]
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:3100/ready || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks:
+      - observability
+      - caddy-net
+
+  promtail:
+    image: grafana/promtail:2.9.0
+    container_name: promtail
+    restart: unless-stopped
+    cap_drop: [ALL]
+    cap_add: [DAC_READ_SEARCH]   # D#31: required to tail /var/log/caddy/access.log from caddy-logs volume
+    security_opt: [no-new-privileges:true]
+    mem_limit: 128m
+    volumes:
+      - ./promtail-config.yaml:/etc/promtail/promtail-config.yaml:ro
+      - caddy-logs:/var/log/caddy:ro
+      - promtail-positions:/tmp
+    command: ["-config.file=/etc/promtail/promtail-config.yaml"]
+    depends_on:
+      loki:
+        condition: service_healthy
+    networks:
+      - observability
+
+volumes:
+  loki-data:
+  promtail-positions:
+  caddy-logs:
+    external: true
+    name: caddy-logs
+
+networks:
+  observability:
+    external: true
+    name: observability
+  caddy-net:
+    external: true
+    name: caddy-net
