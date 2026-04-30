@@ -88,6 +88,12 @@ netbox.internal {
     reverse_proxy host.docker.internal:8084
 }
 
+inventree.internal {
+    import access_log
+
+    reverse_proxy host.docker.internal:8087
+}
+
 # ── Observability Layer ───────────────────────────────────────────────────────
 grafana.internal {
     import access_log

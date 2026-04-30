@@ -1,0 +1,282 @@
+version: "3.9"
+
+# Phase 13 Increment 2A — InvenTree parts inventory.
+# Canonical Vault Agent sidecar pattern: 3 sidecars, one per credential
+# consumer (inventree app+worker share, inventree-postgres, inventree-redis).
+#
+# Image pinning: inventree/inventree:1.0.9 (latest pinned stable on
+# Docker Hub as of 2026-04-29; "stable" floating tag points at this).
+# Postgres pinned to postgres:17-alpine to match upstream's PG17 support.
+# Redis pinned to redis:7-alpine (InvenTree's optional cache; upstream
+# does not specify Valkey vs Redis — using Redis for cache-only
+# workload to keep parity with the upstream-provided compose example).
+#
+# Hardening: cap_drop[ALL] universally; cap_add minimal per workload;
+# no-new-privileges true universally; mem_limit per CLAUDE.md anti-
+# undersize note (postgres needs shared_buffers headroom).
+#
+# Increment 2A scope: deploy empty. No supplier integration is
+# configured here — that lands in Increment 2B once Mouser/DigiKey
+# Vault paths exist. Plugins are *enabled* (INVENTREE_PLUGINS_ENABLED=true)
+# but plugins.txt is empty until 2B installs the supplier-panel plugin.
+
+x-vault-agent-base: &vault-agent-base
+  image: hashicorp/vault:2.0.0
+  restart: "no"
+  environment:
+    VAULT_ADDR: "http://vault-server:8200"
+    SKIP_SETCAP: "true"
+  command: agent -config=/vault/config/agent.hcl
+  cap_drop:
+    - ALL
+  security_opt:
+    - no-new-privileges:true
+  networks:
+    - control-center-net
+
+services:
+  # ── Vault Agent sidecars (one per credential consumer) ────────────────────
+  vault-agent-inventree:
+    <<: *vault-agent-base
+    container_name: vault-agent-inventree
+    volumes:
+      - /Users/admin/.vault-approle/inventree:/vault/approle:ro
+      - /Users/admin/.vault-agent-secrets/inventree:/vault/secrets
+      - ./vault-agent-inventree/agent.hcl:/vault/config/agent.hcl:ro
+      - ./vault-agent-inventree/credentials.env.tmpl:/vault/agent-config/credentials.env.tmpl:ro
+
+  vault-agent-inventree-postgres:
+    <<: *vault-agent-base
+    container_name: vault-agent-inventree-postgres
+    volumes:
+      - /Users/admin/.vault-approle/inventree:/vault/approle:ro
+      - /Users/admin/.vault-agent-secrets/inventree-postgres:/vault/secrets
+      - ./vault-agent-inventree-postgres/agent.hcl:/vault/config/agent.hcl:ro
+      - ./vault-agent-inventree-postgres/credentials.env.tmpl:/vault/agent-config/credentials.env.tmpl:ro
+
+  vault-agent-inventree-redis:
+    <<: *vault-agent-base
+    container_name: vault-agent-inventree-redis
+    volumes:
+      - /Users/admin/.vault-approle/inventree:/vault/approle:ro
+      - /Users/admin/.vault-agent-secrets/inventree-redis:/vault/secrets
+      - ./vault-agent-inventree-redis/agent.hcl:/vault/config/agent.hcl:ro
+      - ./vault-agent-inventree-redis/credentials.env.tmpl:/vault/agent-config/credentials.env.tmpl:ro
+
+  # ── PostgreSQL (InvenTree-dedicated) ──────────────────────────────────────
+  inventree-postgres:
+    image: docker.io/postgres:17-alpine
+    container_name: inventree-postgres
+    restart: unless-stopped
+    depends_on:
+      vault-agent-inventree-postgres:
+        condition: service_completed_successfully
+    environment:
+      POSTGRES_USER: inventree
+      POSTGRES_DB: inventree
+    volumes:
+      - inventree-postgres-data:/var/lib/postgresql/data
+      - /Users/admin/.vault-agent-secrets/inventree-postgres:/vault/secrets:ro
+    entrypoint:
+      - sh
+      - -c
+      - "set -a && . /vault/secrets/credentials.env && set +a && exec docker-entrypoint.sh \"$$0\" \"$$@\""
+    command: ["postgres"]
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - SETUID
+      - SETGID
+      - DAC_OVERRIDE
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: 1g
+    cpus: 1.0
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -q -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 20s
+    networks:
+      - inventree-net
+
+  # ── Redis cache ───────────────────────────────────────────────────────────
+  inventree-redis:
+    image: docker.io/redis:7-alpine
+    container_name: inventree-redis
+    restart: unless-stopped
+    depends_on:
+      vault-agent-inventree-redis:
+        condition: service_completed_successfully
+    volumes:
+      - inventree-redis-data:/data
+      - /Users/admin/.vault-agent-secrets/inventree-redis:/vault/secrets:ro
+    entrypoint:
+      - sh
+      - -c
+      - "set -a && . /vault/secrets/credentials.env && set +a && exec redis-server --requirepass \"$$REDIS_PASSWORD\""
+    cap_drop:
+      - ALL
+    cap_add:
+      - SETUID
+      - SETGID
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: 256m
+    cpus: 0.5
+    healthcheck:
+      # PID-1 env not inherited by exec-style healthcheck shells;
+      # source credentials.env here. Pattern from netbox-redis healthcheck.
+      test: ["CMD-SHELL", ". /vault/secrets/credentials.env && [ \"$$(redis-cli -a \"$$REDIS_PASSWORD\" --no-auth-warning ping)\" = 'PONG' ]"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks:
+      - inventree-net
+
+  # ── InvenTree app (gunicorn server) ───────────────────────────────────────
+  inventree:
+    image: docker.io/inventree/inventree:1.0.9
+    container_name: inventree
+    restart: unless-stopped
+    depends_on:
+      vault-agent-inventree:
+        condition: service_completed_successfully
+      inventree-postgres:
+        condition: service_healthy
+      inventree-redis:
+        condition: service_healthy
+    environment:
+      # Non-secret operational config; secrets sourced from
+      # /vault/secrets/credentials.env via the wrapper entrypoint.
+      INVENTREE_DB_ENGINE: "postgresql"
+      INVENTREE_DB_NAME: "inventree"
+      INVENTREE_DB_USER: "inventree"
+      INVENTREE_DB_HOST: "inventree-postgres"
+      INVENTREE_DB_PORT: "5432"
+      INVENTREE_CACHE_ENABLED: "true"
+      INVENTREE_CACHE_HOST: "inventree-redis"
+      INVENTREE_CACHE_PORT: "6379"
+      INVENTREE_SITE_URL: "https://inventree.internal"
+      # Plugin support enabled. plugins.txt is empty in 2A; the
+      # supplier-panel + part-import plugins land in 2B.
+      INVENTREE_PLUGINS_ENABLED: "true"
+      INVENTREE_PLUGIN_NOINSTALL: "false"
+      INVENTREE_PLUGIN_FILE: "/home/inventree/data/plugins.txt"
+      # Logging — JSON for log aggregation parity with NetBox.
+      INVENTREE_LOG_LEVEL: "INFO"
+      INVENTREE_DEBUG: "false"
+    volumes:
+      - /Users/admin/.vault-agent-secrets/inventree:/vault/secrets:ro
+      - inventree-data:/home/inventree/data
+    # Preserve upstream entrypoint; wrap CMD to source rendered Vault
+    # credentials before invoking gunicorn.
+    command:
+      - /bin/sh
+      - -c
+      - "set -a && . /vault/secrets/credentials.env && set +a && exec /home/inventree/entrypoint.sh invoke server -a 0.0.0.0:8000"
+    ports:
+      # Host port 8087: 8000 is occupied by docker-plane-api-1; 8001
+      # free but reserved for inventree-worker introspection if added
+      # later; 8087 is the next free port outside the SSH-tunnelled
+      # 8084-8086 cluster. Mirrors NetBox's 8084 host-side binding pattern.
+      - "127.0.0.1:8087:8000"
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - SETUID
+      - SETGID
+      - FOWNER
+      - DAC_OVERRIDE
+      - NET_BIND_SERVICE
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: 2g
+    cpus: 2.0
+    healthcheck:
+      # /api/ root returns 200 with JSON describing the API; load-bearing
+      # for "is the server up" without requiring auth.
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/api/ || exit 1"]
+      interval: 15s
+      timeout: 3s
+      retries: 5
+      start_period: 120s
+    networks:
+      - inventree-net
+      - control-center-net
+    labels:
+      com.iap.service: "inventree"
+      com.iap.tier: "inventory"
+
+  # ── InvenTree worker (django-q background tasks) ──────────────────────────
+  inventree-worker:
+    image: docker.io/inventree/inventree:1.0.9
+    container_name: inventree-worker
+    restart: unless-stopped
+    depends_on:
+      inventree:
+        condition: service_healthy
+    environment:
+      INVENTREE_DB_ENGINE: "postgresql"
+      INVENTREE_DB_NAME: "inventree"
+      INVENTREE_DB_USER: "inventree"
+      INVENTREE_DB_HOST: "inventree-postgres"
+      INVENTREE_DB_PORT: "5432"
+      INVENTREE_CACHE_ENABLED: "true"
+      INVENTREE_CACHE_HOST: "inventree-redis"
+      INVENTREE_CACHE_PORT: "6379"
+      INVENTREE_SITE_URL: "https://inventree.internal"
+      INVENTREE_PLUGINS_ENABLED: "true"
+      INVENTREE_PLUGIN_NOINSTALL: "false"
+      INVENTREE_PLUGIN_FILE: "/home/inventree/data/plugins.txt"
+      INVENTREE_LOG_LEVEL: "INFO"
+      INVENTREE_DEBUG: "false"
+    volumes:
+      - /Users/admin/.vault-agent-secrets/inventree:/vault/secrets:ro
+      - inventree-data:/home/inventree/data
+    command:
+      - /bin/sh
+      - -c
+      - "set -a && . /vault/secrets/credentials.env && set +a && exec /home/inventree/entrypoint.sh invoke worker"
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - SETUID
+      - SETGID
+      - FOWNER
+      - DAC_OVERRIDE
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: 1g
+    cpus: 1.0
+    healthcheck:
+      test: ["CMD-SHELL", "ps -ef | grep -v grep | grep -q 'invoke worker' || exit 1"]
+      interval: 15s
+      timeout: 3s
+      retries: 5
+      start_period: 60s
+    networks:
+      - inventree-net
+    labels:
+      com.iap.service: "inventree-worker"
+      com.iap.tier: "inventory"
+
+volumes:
+  inventree-postgres-data:
+    name: inventree-postgres-data
+  inventree-redis-data:
+    name: inventree-redis-data
+  inventree-data:
+    name: inventree-data
+
+networks:
+  inventree-net:
+    name: inventree-net
+    driver: bridge
+  control-center-net:
+    name: control-center-net
+    external: true
