@@ -167,7 +167,7 @@ services:
     command:
       - sh
       - -c
-      - "apt-get update -qq && apt-get install -y -qq python3 make g++ curl && npm install -g @arabold/docs-mcp-server && npx -y supergateway --stdio 'docs-mcp-server' --outputTransport streamableHttp --port 8093 --cors --healthEndpoint /healthz"
+      - "apt-get update -qq && apt-get install -y -qq python3 make g++ curl && npm install -g --ignore-scripts @arabold/docs-mcp-server && npx -y supergateway --stdio 'docs-mcp-server' --outputTransport streamableHttp --port 8093 --cors --healthEndpoint /healthz"
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:8093/healthz || exit 1"]
       interval: 20s

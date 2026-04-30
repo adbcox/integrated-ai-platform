@@ -1,30 +1,61 @@
-# Phase 13 Block 1 — Plex MCP (Media Server MCP wrapper)
-# Pattern matches mcp-filesystem-remote / mcp-docs-remote (commit 99ca1bd):
-# node:22-slim base + npx supergateway --stdio <mcp> --outputTransport streamableHttp.
-#
-# Credentials are read from Vault by the deploy script and injected as env;
-# this compose file is for documentation + restart-from-disk (not the live source).
+# Plex MCP — Media Server MCP wrapper
+# Phase 14 D-DOC (2026-04-29): migrated from environment: credential injection
+# to Vault Agent sidecar pattern (D#26 doctrine violation remediated).
+# Credentials: Vault paths secret/plex/api, secret/arr/{sonarr,radarr}
 #
 services:
-  plex-mcp:
-    image: node:22-slim
-    container_name: plex-mcp
-    restart: unless-stopped
-    ports:
-      - "0.0.0.0:8094:8094"
+
+  vault-agent-plex-mcp:
+    image: hashicorp/vault:2.0.0
+    container_name: vault-agent-plex-mcp
+    restart: "no"
     environment:
-      PLEX_TOKEN: ${PLEX_TOKEN}
-      PLEX_URL: http://192.168.10.201:32400
-      SONARR_API_KEY: ${SONARR_API_KEY}
-      SONARR_URL: http://host.docker.internal:8989
-      RADARR_API_KEY: ${RADARR_API_KEY}
-      RADARR_URL: http://host.docker.internal:7878
-      TMDB_API_KEY: ${TMDB_API_KEY:-}
+      VAULT_ADDR: "http://vault-server:8200"
+      SKIP_SETCAP: "true"
+    volumes:
+      - /Users/admin/.vault-approle/plex-mcp:/vault/approle:ro
+      - /Users/admin/.vault-agent-secrets/plex-mcp:/vault/secrets
+      - ../vault-agent-plex-mcp/agent.hcl:/vault/config/agent.hcl:ro
+      - ../vault-agent-plex-mcp/credentials.env.tmpl:/vault/agent-config/credentials.env.tmpl:ro
+    command: agent -config=/vault/config/agent.hcl
+    networks:
+      - control-center-net
     cap_drop:
       - ALL
     security_opt:
       - no-new-privileges:true
-    command:
+
+  plex-mcp:
+    image: node:22-slim
+    container_name: plex-mcp
+    restart: unless-stopped
+    depends_on:
+      vault-agent-plex-mcp:
+        condition: service_completed_successfully
+    ports:
+      - "0.0.0.0:8094:8094"
+    volumes:
+      - /Users/admin/.vault-agent-secrets/plex-mcp:/vault/secrets:ro
+    networks:
+      - plex-net
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    entrypoint:
       - sh
       - -c
-      - "npx -y supergateway --stdio 'npx -y @adamwdraper/mcp-server-plex' --outputTransport streamableHttp --port 8094 --cors --healthEndpoint /healthz"
+      - "set -a && . /vault/secrets/credentials.env && set +a && exec npx -y supergateway --stdio 'npx -y @adamwdraper/mcp-server-plex' --outputTransport streamableHttp --port 8094 --cors --healthEndpoint /healthz"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8094/healthz || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 90s
+
+networks:
+  plex-net:
+    name: plex-net
+  control-center-net:
+    external: true
+    name: control-center-net
