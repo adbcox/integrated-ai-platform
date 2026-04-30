@@ -12,10 +12,10 @@ Usage:
 
     # Library use:
     from cmdb_source import load_services
-    services = load_services()  # respects $CMDB_SOURCE; defaults to yaml
+    services = load_services()  # respects $CMDB_SOURCE; defaults to netbox
 
 Env vars:
-    CMDB_SOURCE        yaml | netbox  (default: yaml)
+    CMDB_SOURCE        yaml | netbox  (default: netbox)
     CMDB_REGISTRY      override path to the deprecated registry YAML
                        (default: config/service-registry.yaml.DEPRECATED)
     NETBOX_URL         default http://localhost:8084
@@ -308,7 +308,7 @@ def _load_netbox_services(base_url: str, token: str) -> list[dict]:
 
 
 def load_services() -> list[dict]:
-    src = os.environ.get("CMDB_SOURCE", "yaml").lower()
+    src = os.environ.get("CMDB_SOURCE", "netbox").lower()
     if src == "yaml":
         path = Path(os.environ.get("CMDB_REGISTRY") or DEFAULT_REGISTRY)
         return _load_yaml(path)
