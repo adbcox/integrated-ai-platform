@@ -47,7 +47,7 @@ services:
       - -c
       - "set -a && . /vault/secrets/credentials.env && set +a && exec npx -y supergateway --stdio 'npx -y @adamwdraper/mcp-server-plex' --outputTransport streamableHttp --port 8094 --cors --healthEndpoint /healthz"
     healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://localhost:8094/healthz || exit 1"]
+      test: ["CMD-SHELL", "node -e \"require('http').get('http://localhost:8094/healthz',r=>r.statusCode===200?process.exit(0):process.exit(1)).on('error',()=>process.exit(1))\""]
       interval: 15s
       timeout: 10s
       retries: 5

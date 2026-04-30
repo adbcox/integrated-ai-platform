@@ -1,0 +1,59 @@
+# MCP Docker Remote — mcp-server-docker via supergateway (streamableHttp :8092)
+# Phase 14 D-DOC (2026-04-29): migrated from bare `docker run` to compose.
+#
+# KNOWN LIMITATION (KI-002-mcp-docker-colima-mount.md):
+#   Docker socket mount on macOS/Colima differs from Linux:
+#   - Colima socket lives at ~/.colima/default/docker.sock (not /var/run/docker.sock)
+#   - Container is given /var/run/docker.sock; Colima's dockerd symlinks this
+#     inside the VM, so the service reaches the Colima Docker API
+#   - cap_drop:[ALL] is applied but NET_ADMIN is not needed (socket-only access)
+#
+# HARDENING NOTE (D#30):
+#   Docker socket mount is intentional and documented — mcp-server-docker
+#   needs API access to list/inspect/manage containers. This is the minimal
+#   capability required; no alternative path exists for this service class.
+#   sms1obot-mcp-server and sms1obot-mcp-server-shim are Obot-managed and
+#   cannot be hardened via compose (see CLAUDE.md D#30 Known Limitation).
+#
+# Usage:
+#   docker compose -f docker/mcp/docker-compose.mcp-docker-remote.yml up -d
+#   docker compose -f docker/mcp/docker-compose.mcp-docker-remote.yml down
+#
+# Obot registers as remote runtime → http://host.docker.internal:8092/mcp
+
+services:
+
+  mcp-docker-remote:
+    image: node:22-slim
+    container_name: mcp-docker-remote
+    restart: unless-stopped
+    ports:
+      - "0.0.0.0:8092:8092"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - obot-net
+    cap_drop:
+      - ALL
+    cap_add:
+      - SETUID
+      - SETGID
+      - CHOWN
+      - DAC_OVERRIDE
+    security_opt:
+      - no-new-privileges:true
+    command:
+      - sh
+      - -c
+      - "apt-get update -qq && apt-get install -y -qq python3 python3-pip python3-venv curl && pip3 install --break-system-packages uv && npx -y supergateway --stdio '/root/.local/bin/uvx mcp-server-docker' --outputTransport streamableHttp --port 8092 --cors --healthEndpoint /healthz"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8092/healthz || exit 1"]
+      interval: 20s
+      timeout: 10s
+      retries: 5
+      start_period: 180s
+
+networks:
+  obot-net:
+    external: true
+    name: obot-net
