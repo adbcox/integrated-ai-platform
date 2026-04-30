@@ -37,23 +37,37 @@ docker inspect vault-server --format '{{.State.Status}}'
 
 ---
 
-## Step 2: Get Restic credentials from Vault Agent secrets
+## Step 2: Get Restic credentials via backup AppRole (non-interactive)
 
 The `backup` AppRole credentials are at `~/.vault-approle/backup/`.
-If Vault is completely unrecoverable, the Restic repo password is stored
-offline (USB drive, fire safe) alongside the Shamir keys.
+Vault paths: `secret/restic/backup` (password, repository) and `secret/minio/backup` (access_key, secret_key).
 
 ```bash
-# If Vault is partially accessible (can unseal and auth):
-VAULT_TOKEN=$(cat ~/.vault-token)
-RESTIC_PASSWORD=$(docker exec -e VAULT_TOKEN="$VAULT_TOKEN" vault-server \
-  vault kv get -field=repo_password secret/backup/restic)
-RESTIC_REPOSITORY=$(docker exec -e VAULT_TOKEN="$VAULT_TOKEN" vault-server \
-  vault kv get -field=repository secret/backup/restic)
+# Non-interactive AppRole login (same pattern as scripts/backup.sh):
+VAULT_ADDR="http://127.0.0.1:8200"
+APPROLE_DIR="$HOME/.vault-approle/backup"
+ROLE_ID=$(cat "$APPROLE_DIR/role-id")
+SECRET_ID=$(cat "$APPROLE_DIR/secret-id")
+
+LOGIN_RESP=$(curl -s -X POST \
+  -d "{\"role_id\":\"$ROLE_ID\",\"secret_id\":\"$SECRET_ID\"}" \
+  "$VAULT_ADDR/v1/auth/approle/login")
+VAULT_TOKEN=$(echo "$LOGIN_RESP" | jq -r '.auth.client_token // empty')
+[ -z "$VAULT_TOKEN" ] && echo "ERROR: Vault auth failed" && exit 1
+
+vault_get() { curl -s -H "X-Vault-Token: $VAULT_TOKEN" "$VAULT_ADDR/v1/secret/data/$1" | jq -r ".data.data.$2 // empty"; }
+
+export AWS_ACCESS_KEY_ID=$(vault_get minio/backup access_key)
+export AWS_SECRET_ACCESS_KEY=$(vault_get minio/backup secret_key)
+export RESTIC_PASSWORD=$(vault_get restic/backup password)
+export RESTIC_REPOSITORY=$(vault_get restic/backup repository)
+# Revoke token when done
+curl -s -X POST -H "X-Vault-Token: $VAULT_TOKEN" "$VAULT_ADDR/v1/auth/token/revoke-self" >/dev/null
 
 # If Vault is completely down: retrieve from offline storage
 # RESTIC_PASSWORD=<from USB/fire safe>
-# RESTIC_REPOSITORY=<QNAP path, e.g. sftp:backup@qnap.internal:/backup/iap>
+# RESTIC_REPOSITORY=s3:http://192.168.10.201:9000/backups
+# AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY=<MinIO credentials from offline storage>
 ```
 
 ---
@@ -62,7 +76,7 @@ RESTIC_REPOSITORY=$(docker exec -e VAULT_TOKEN="$VAULT_TOKEN" vault-server \
 
 ```bash
 export RESTIC_PASSWORD RESTIC_REPOSITORY
-restic snapshots --tag vault | head -20
+restic snapshots | head -20
 ```
 
 Identify the target snapshot ID (latest clean backup before the incident).
@@ -167,7 +181,7 @@ bash ~/repos/integrated-ai-platform/docs/phase-13/h1-regression-probe.sh
 ## If restore fails
 
 If the Restic repo is inaccessible or the snapshot is corrupted:
-1. Try the previous snapshot (`restic snapshots --tag vault --last 5`)
+1. Try the previous snapshot (`restic snapshots --latest 5`)
 2. Try the QNAP secondary backup if primary repo is local
 3. Escalate: Vault must be re-initialized from scratch, and all AppRole secrets
    re-provisioned via the individual service provisioning scripts
