@@ -145,39 +145,35 @@ services:
   # NOTE: This service block is a no-op placeholder — actual process runs on host.
 
   # ── Remote MCP: Docs (:8093) ─────────────────────────────────────────────────
-  # Wraps @arabold/docs-mcp-server via supergateway on Node 22 (fixes ABI mismatch
-  # present in phat containers which use Node 25). Needs build tools for tree-sitter.
+  # Pre-built image with tree-sitter compiled at build time (CF-4 / D#29).
+  # Eliminates 60s+ apt-get/npm cold-start and broad cap_add requirement.
   mcp-docs-remote:
-    image: node:22-slim
+    image: local/docs-mcp-server:latest
     container_name: mcp-docs-remote
     restart: unless-stopped
     ports:
       - "8093:8093"
+    volumes:
+      - mcp-docs-data:/data
     networks:
       - obot-net
     cap_drop:
       - ALL
-    cap_add:
-      - SETUID
-      - SETGID
-      - CHOWN
-      - DAC_OVERRIDE
     security_opt:
       - no-new-privileges:true
-    command:
-      - sh
-      - -c
-      - "apt-get update -qq && apt-get install -y -qq python3 make g++ curl && npm install -g --ignore-scripts @arabold/docs-mcp-server && npx -y supergateway --stdio 'docs-mcp-server' --outputTransport streamableHttp --port 8093 --cors --healthEndpoint /healthz"
+    command: ["--protocol", "http", "--port", "8093", "--host", "0.0.0.0", "--store-path", "/data"]
     healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://localhost:8093/healthz || exit 1"]
+      test: ["CMD-SHELL", "node -e \"require('http').get('http://localhost:8093/',r=>r.statusCode<500?process.exit(0):process.exit(1)).on('error',()=>process.exit(1))\""]
       interval: 20s
       timeout: 10s
       retries: 5
-      start_period: 180s
+      start_period: 30s
 
 volumes:
   obot-data:
     name: obot-data
+  mcp-docs-data:
+    name: mcp-docs-data
 
 networks:
   obot-net:
