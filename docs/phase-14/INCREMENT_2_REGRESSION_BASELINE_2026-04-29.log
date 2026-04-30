@@ -1,0 +1,44 @@
+===================================================================
+H1 §6 regression probe — gate: phase-14-doc-final
+Timestamp: 2026-04-29T22:48:02-04:00
+===================================================================
+
+(a) Container roster
+  Up count: 57
+  Restarting count: 0
+  ✅ no containers restarting
+
+(b) Service-registry walk (sampled health endpoints)
+  ✅ vaultwarden [shallow] → HTTP 200
+  ✅ openhands-app [shallow] → HTTP 200
+  ✅ litellm-gateway [shallow] → HTTP 200
+  ✅ mcpo-proxy [shallow] → HTTP 200
+  ✅ open-webui [shallow] → HTTP 200
+  ✅ vault-server [shallow] → HTTP 200
+
+  Deep DB-exercising probes:
+  ✅ nextcloud [deep] /ocs/v2.php/cloud/capabilities → HTTP 200 (DB reachable)
+
+(c) Vault health
+  ✅ vault sealed=false
+  ✅ audit log capturing (size 6868643 → 6871980)
+
+(d) Caddy + .internal DNS sample
+  ✅ vaultwarden.internal → HTTP 200 via Caddy
+  ⚠️  openhands.internal: not in macOS DNS cache (may be normal if not actively used)
+  ✅ plane.internal → HTTP 200 via Caddy
+  ✅ vault.internal → HTTP 307 via Caddy
+  ✅ homepage.internal → HTTP 200 via Caddy
+
+(e) Restic backup recency
+  ⚠️  restic snapshot list inaccessible (creds may be Vault-fetched only)
+
+(f) Cross-service dependency probes (gate-specific: phase-14-doc-final)
+  ⚠️  no gate-specific dependency probes defined for phase-14-doc-final
+
+(h) Credential exposure heuristic
+  ✅ no credential-shaped temp files in /tmp
+
+===================================================================
+Gate phase-14-doc-final summary: PASS=15 FAIL=0 WARN=3
+===================================================================
