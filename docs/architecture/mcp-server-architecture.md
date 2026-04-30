@@ -1,116 +1,148 @@
 # MCP Server Architecture
 
-**Last Updated:** April 27, 2026
-**Phase:** 10 Complete
+**Last updated:** 2026-04-29 (Phase 14 D-DOC rewrite — supersedes Phase 10 version)
+**Phase:** 14 D-DOC (post-Phase-13 state)
+
+---
 
 ## Overview
 
-The MCP (Model Context Protocol) infrastructure consists of 10 servers managed by an Obot gateway. All tool calls from Claude Code or other AI clients route through Obot at `:8090`.
+The MCP (Model Context Protocol) infrastructure routes tool calls from Claude Code
+and other AI clients through an Obot gateway at `:8090`. Obot dispatches to backend
+MCP servers, which run as Docker-managed containers.
 
-## Network Topology
+All credential-bearing MCP servers use the canonical Vault Agent sidecar pattern:
+a one-shot Vault Agent sidecar renders `credentials.env` before the service starts.
+
+---
+
+## Network topology
 
 ```
 Claude Code / AI Client
         │
         ▼
   Obot Gateway (:8090)
-  [Docker container]
+  [Docker: obot-net + plane-net + control-center-net]
+  [Vault Agent sidecar: vault-agent-obot]
         │
-   ┌────┴────────────────────────────────┐
-   │                                     │
-   ▼ NPX (phat containers)              ▼ Remote HTTP
-   ├── Weather                          ├── Filesystem (:8091)
-   ├── PostgreSQL                       │   [Docker: mcp-filesystem-remote]
-   ├── Health & Fitness                 ├── Docker (:8092)
-   ├── Semgrep                          │   [macOS host: nohup process]
-   ├── GitHub                           └── Docs (:8093)
-   ├── Home Assistant                       [Docker: mcp-docs-remote]
-   └── Strava
+   ┌────┴──────────────────────────────────────────────────┐
+   │                                                       │
+   ▼ Remote HTTP (Streamable HTTP/MCP)                     │
+   ├── mcp-filesystem-remote   (:8091)  obot-net           │
+   ├── mcp-docker-remote       (:8092)  macOS host         │
+   ├── mcp-docs-remote         (:8093)  obot-net           │
+   └── plex-mcp                (:8094)  bridge             │
+                                                           │
+   ▼ Obot-managed (internal, lifecycle managed by Obot)    │
+   ├── sms1obot-mcp-server     (:8080)  bridge             │
+   └── sms1obot-mcp-server-shim (:8099) bridge             │
 ```
 
-## Deployment Models
+---
 
-### NPX Phat Containers
-Obot spawns an isolated Docker container (`ghcr.io/obot-platform/mcp-images/phat`) per server.
-- **Cold start:** 20-30 seconds
-- **Use case:** Stateless servers with no host dependencies
-- **Servers:** Weather, PostgreSQL, Health & Fitness, Semgrep, GitHub, Home Assistant, Strava
+## Deployment models
 
-### Remote HTTP (supergateway)
-Server runs as a persistent process (Docker container or macOS host), exposing Streamable HTTP.
-Obot's `remote` runtime proxies to `http://host.docker.internal:<port>/mcp`.
-- **Cold start:** Instant (already running)
-- **Use case:** Servers needing host access (filesystem, Docker socket, native binaries)
-- **Servers:** Filesystem (:8091), Docker (:8092), Docs (:8093)
+### Remote HTTP (Docker-managed, compose-controlled)
 
-## Server Inventory
+Persistent containers exposing Streamable HTTP endpoints. Obot proxies to
+`http://<container-name>:<port>/mcp` (or `http://host.docker.internal:<port>/mcp`
+for host-side processes).
 
-| Server | Runtime | Port | Package | Tools | Auth |
-|--------|---------|------|---------|-------|------|
-| Filesystem | remote | 8091 | @modelcontextprotocol/server-filesystem | 14 | None |
-| Docker | remote | 8092 | mcp-server-docker (uvx) | 19 | None |
-| Docs | remote | 8093 | @arabold/docs-mcp-server | 10 | None |
-| PostgreSQL | npx | — | @modelcontextprotocol/server-postgres | 1 | DSN |
-| GitHub | npx | — | @modelcontextprotocol/server-github | 26 | PAT |
-| Weather | npx | — | open-meteo-mcp-server | 17 | None |
-| Health & Fitness | npx | — | health-fitness-mcp | 17 | None |
-| Semgrep | npx | — | mcp-server-semgrep | 7 | None |
-| Strava | npx | — | strava-mcp-server | 24 | OAuth |
-| Home Assistant | npx | — | home-mcp | 3 | Token |
+| Container | Port | Compose file | Credentials | cap_drop |
+|---|---|---|---|---|
+| mcp-filesystem-remote | 8091 | obot-stack.yml | none | ALL |
+| mcp-docker-remote | 8092 | docker-compose.mcp-docker-remote.yml | none | ALL |
+| mcp-docs-remote | 8093 | obot-stack.yml | none | ALL (+ SETUID/SETGID/CHOWN/DAC_OVERRIDE for startup apt-get) |
+| plex-mcp | 8094 | mcp/docker-compose.yml | Vault Agent sidecar | ALL |
 
-**Total: 138 tools**
+**mcp-docker-remote** runs on the macOS host network (`--network host` equivalent)
+because the Colima Docker socket is not mountable from inside containers.
+It is compose-managed via `docker/mcp/docker-compose.mcp-docker-remote.yml`.
 
-## Credential Management
+**mcp-docs-remote** runs `apt-get` + `npm install -g @arabold/docs-mcp-server` at
+startup due to native `tree-sitter` compilation requirements. This is a known
+fragility (see `docs/known-issues/KI-mcp-docs-remote-startup.md`). Start period: 3 min.
 
-All credentials stored in `docker/.env`:
+### Obot-managed containers
+
+`sms1obot-mcp-server` and `sms1obot-mcp-server-shim` are started dynamically by
+Obot's internal container management. They are not compose-managed; `cap_drop`
+cannot be applied durably without Obot configuration API support.
+See `docs/known-issues/KI-mcp-docs-remote-startup.md` for the Phase 14 tracking issue.
+
+---
+
+## Credential management
+
+All MCP server credentials flow through Vault:
+
 ```
-GITHUB_TOKEN=ghp_...
-HA_TOKEN=...
-HA_BASE_URL=http://192.168.10.141:8123
-STRAVA_CLIENT_ID=225374
-STRAVA_CLIENT_SECRET=...
-STRAVA_ACCESS_TOKEN=...
-STRAVA_REFRESH_TOKEN=...
-POSTGRES_DSN=postgresql://plane:plane@docker-plane-db-1:5432/plane
+Vault KV  →  Vault Agent sidecar  →  /vault/secrets/credentials.env  →  service entrypoint
 ```
 
-Credentials are injected as environment variables by `register_obot_tools.py` into the Obot API at registration time.
+The entrypoint wrapper pattern:
+```sh
+set -a && . /vault/secrets/credentials.env && set +a && exec <binary>
+```
 
-**Note:** `STRAVA_ACCESS_TOKEN` expires every ~6 hours. Manual rotation required until refresh token automation is implemented.
+**No credentials in `environment:` compose blocks or `.env` files.**
+`detect-secrets` pre-commit hook enforces this on tracked files.
 
-## Audit Logging
+### Current credential-bearing MCP servers
 
-Obot writes an audit log to `/data/audit.log` inside the container.
-- Volume-mounted: `obot-data:/data`
-- To read: `docker exec obot cat /data/audit.log`
-- Format: JSON lines, one entry per tool call
+| Server | Vault path(s) |
+|---|---|
+| plex-mcp | `secret/plex/api`, `secret/arr/{sonarr,radarr}` |
+| obot | `secret/obot/{admin,github,plane}` |
 
-## Technology Stack
+---
 
-| Component | Technology | Version |
-|-----------|-----------|---------|
-| Gateway | Obot | latest |
-| Container runtime | Docker via Colima | — |
-| Stdio→HTTP bridge | supergateway | 3.4.3 |
-| NPX phat image | ghcr.io/obot-platform/mcp-images/phat | v0.20.2 |
-| Filesystem server | @modelcontextprotocol/server-filesystem | 0.2.0 |
-| Docker MCP | mcp-server-docker (uvx) | latest |
-| Docs server | @arabold/docs-mcp-server | 0.1.0 |
+## Audit logging
 
-## Key Architectural Decisions
+Obot writes a JSON-lines audit log to `/data/audit.log` (container volume `obot-data`):
 
-### Why Remote HTTP for Filesystem/Docker/Docs?
-Obot's phat containers are isolated — they cannot mount host volumes or access the Colima Docker socket. Remote HTTP lets these servers run where they have the necessary access, then Obot proxies to them.
+```bash
+docker exec obot tail -f /data/audit.log
+```
 
-### Why `host.docker.internal` URLs?
-Phat containers are not on `obot-net`, so they cannot resolve Docker container names. Using `host.docker.internal` routes through the macOS host's loopback, accessible from any container.
+Each entry records: timestamp, tool name, server, caller identity, and input hash.
 
-### Why `npm install -g` for Docs server?
-`@arabold/docs-mcp-server` depends on `tree-sitter`, a native Node.js module. `npx -y` downloads to a temp directory where `node-gyp` cannot compile it. Global install provides the build step needed on linux/arm64 (no prebuilt binary available for ABI 127).
+---
 
-## Integration Points
+## Current server inventory
 
-- **Obot UI:** http://localhost:8090 — manage servers, view audit logs
-- **Registration script:** `bin/register_obot_tools.py`
-- **Stack definition:** `docker/obot-stack.yml`
-- **Credentials:** `docker/.env`
+| Server | Port | Package | Purpose | Auth |
+|---|---|---|---|---|
+| mcp-filesystem-remote | 8091 | @modelcontextprotocol/server-filesystem | Read/write workspace files | None |
+| mcp-docker-remote | 8092 | mcp-server-docker (uvx) | Docker container management | None |
+| mcp-docs-remote | 8093 | @arabold/docs-mcp-server | Tech docs search + fetch | None |
+| plex-mcp | 8094 | @adamwdraper/mcp-server-plex | Plex/Sonarr/Radarr management | Vault sidecar |
+
+Additional servers registered in Obot (Obot-managed lifecycle):
+- PostgreSQL MCP (Plane DB)
+- Sequential Thinking
+- Memory graph
+- SQLite
+- Plane roadmap connector
+- Pipeline monitor
+- arr-orchestration
+
+---
+
+## Hardening
+
+All compose-managed MCP containers have:
+- `cap_drop: [ALL]` (minimal `cap_add` where required — see table above)
+- `security_opt: [no-new-privileges:true]`
+
+Known gaps (Phase 14 D-DOC tracking):
+- `sms1obot-mcp-server*` — Obot-managed; not compose-hardened (D#30)
+- `mcp-docs-remote` — broad `cap_add` required for startup `apt-get`; pre-built image recommended (D#29)
+
+---
+
+## Adding a new MCP server
+
+See `docs/runbooks/add-new-mcp-server.md` for the full procedure including
+Vault provisioning, sidecar template, compose block, and Obot registration.

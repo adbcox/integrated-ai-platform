@@ -1,9 +1,17 @@
 # Integrated AI Platform — Platform Overview
 
+> **ARCHIVED — Phase 14 D-DOC (2026-04-29)**
+> This document is superseded by [`docs/ARCHITECTURE.md`](ARCHITECTURE.md).
+> For live service inventory, query NetBox CMDB at `netbox.internal`
+> or run: `CMDB_SOURCE=netbox python3 scripts/cmdb_source.py`
+> The content below is preserved for historical reference only.
+
+---
+
 **Deployment target:** Mac Mini M4 Pro at 192.168.10.145
 **Current phase:** Phase 13 Blocks 2 + 2.5 + 3 closed (operator visualization, control plane at control.internal, Display & Voice platform layer)
 **Services running:** 60+ across 6 categories
-**Last updated:** 2026-04-29
+**Last updated:** 2026-04-29 (archived)
 
 ---
 
