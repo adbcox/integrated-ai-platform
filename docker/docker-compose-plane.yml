@@ -186,6 +186,11 @@ services:
       NEXT_PUBLIC_DEPLOY_URL:    http://localhost:3001
     ports:
       - "3001:3000"
+    volumes:
+      # NF-14-2 fix: override baked-in nginx.conf to add /api/ and /auth/ proxy rules.
+      # Without this, nginx serves index.html for all paths and the frontend
+      # cannot reach the Django backend, showing "No authentication methods available".
+      - ./plane-nginx/nginx.conf:/etc/nginx/nginx.conf:ro
     cap_drop:
       - ALL
     cap_add:
