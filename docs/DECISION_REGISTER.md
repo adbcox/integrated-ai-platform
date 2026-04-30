@@ -47,6 +47,14 @@ the decision content here.
 | [A-012](adr/ADR-A-012-equivalence-harness-doctrine.md) | Equivalence harness for source-of-truth migrations | Source-of-truth migrations must run a `--verify-roundtrip` probe at migration time, not deprecation time. |
 | [A-013](adr/ADR-A-013-folded-gates-doctrine.md) | Folded gates for mechanical pattern applications | Gates fold to a single review when the pattern is already load-bearing in the same session and the application is mechanical. |
 
+## CMDB and data governance
+
+| ADR | Title | One-line summary |
+|-----|-------|------------------|
+| [A-014](adr/ADR-A-014-netbox-cmdb-authority.md) | NetBox as Authoritative CMDB | NetBox is the single source of truth for service inventory, node inventory, and network topology. |
+| [A-015](adr/ADR-A-015-staged-toggle-migration.md) | Staged-Toggle Pattern for Source-of-Truth Migrations | Migrate data sources via env-var toggle with equivalence harness; never hard-cutover. |
+| [A-016](adr/ADR-A-016-canonical-patterns-registry.md) | Canonical Patterns Registry | `docs/canonical-patterns/` is the authoritative store for reusable cross-cutting patterns. |
+
 ## Conventions
 
 - New ADRs are added to `docs/adr/` and indexed here in the same commit.
