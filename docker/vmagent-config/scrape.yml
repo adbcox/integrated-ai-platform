@@ -29,6 +29,12 @@ scrape_configs:
         labels:
           service: cadvisor
 
+  - job_name: zabbix-exporter
+    static_configs:
+      - targets: ['host.docker.internal:9224']
+        labels:
+          service: zabbix
+
   - job_name: vmagent
     static_configs:
       - targets: ['vmagent:8429']

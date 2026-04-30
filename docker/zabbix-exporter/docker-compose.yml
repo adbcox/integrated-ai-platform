@@ -1,0 +1,53 @@
+services:
+  vault-agent-zabbix-exporter:
+    image: hashicorp/vault:2.0.0
+    container_name: vault-agent-zabbix-exporter
+    restart: "no"
+    environment:
+      VAULT_ADDR: "http://vault-server:8200"
+      SKIP_SETCAP: "true"
+    command: agent -config=/vault/config/agent.hcl
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    volumes:
+      - ./vault-agent/agent.hcl:/vault/config/agent.hcl:ro
+      - ./vault-agent/credentials.env.tmpl:/vault/agent-config/credentials.env.tmpl:ro
+      - /Users/admin/.vault-approle/zabbix-exporter:/vault/approle:ro
+      - /Users/admin/.vault-agent-secrets/zabbix-exporter:/vault/secrets
+    networks:
+      - control-center-net
+
+  zabbix-exporter:
+    image: iap/zabbix-exporter:phase14
+    container_name: zabbix-exporter
+    restart: unless-stopped
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    mem_limit: 128m
+    cpus: 0.25
+    ports:
+      - "127.0.0.1:9224:9224"
+    volumes:
+      - /Users/admin/.vault-agent-secrets/zabbix-exporter:/vault/secrets:ro
+    entrypoint: ["sh", "-c", "set -a && . /vault/secrets/credentials.env && set +a && exec python3 exporter.py"]
+    depends_on:
+      vault-agent-zabbix-exporter:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "python3", "-c",
+             "import urllib.request; urllib.request.urlopen('http://localhost:9224/metrics', timeout=5)"]
+      interval: 30s
+      timeout: 8s
+      retries: 3
+      start_period: 30s
+    networks:
+      - zabbix-net
+      - control-center-net
+
+networks:
+  zabbix-net:
+    external: true
+    name: zabbix-net
+  control-center-net:
+    external: true
+    name: control-center-net
