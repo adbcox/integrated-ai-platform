@@ -195,7 +195,87 @@ Before merging a new script that calls Plane:
 - [ ] Tested against a real Plane instance for the first run; only
   rely on mocks for regression.
 
-## 10. References
+## 10. Token redaction & revocation hygiene
+
+**Doctrine:** when redacting a Plane API token (or any token) from
+plaintext storage, capture and preserve its SHA-256 prefix in the
+redaction-trail comment. The hash is the only value-free handle
+that survives the redaction, and it is the only handle available
+for post-revocation verification, audit-log spot-checks, and
+Plane-UI / API-row identification.
+
+**Why this earns its own pattern entry.** Block 4.C C6 #7/#9
+(memory-file token revocation, 2026-04-29) demonstrated the
+inverse: the plaintext was redacted *first* under Discovery #13's
+resolution, and when revocation came around weeks later, no
+direct API probe with the revoked token was possible — the value
+was gone, and a 401/403 from the Plane API with "the revoked
+token" could not be produced. Verification fell back to the
+pre-delete Django-ORM row (matched against the preserved hash
+prefix `4d83dff62161`), the delete itself, and the post-delete
+row inventory. That worked because the prefix had been preserved
+in the redaction comment. If the prefix had not been preserved,
+the operator would have had to either trust the redaction
+narrative blind, or re-derive the prefix from a backup of the
+plaintext file (which may not exist).
+
+### Required redaction-comment shape
+
+When replacing a plaintext token in any tracked file (memory
+files, configs, scripts, runbooks), the redaction comment must
+include all four of:
+
+1. **Vault path reference** — e.g.,
+   `secret/plane/api#homepage_token`.
+2. **SHA-256 prefix of the redacted value** — first 12 hex
+   chars of `printf '%s' "$VALUE" | shasum -a 256`. Twelve
+   characters is enough to disambiguate against any realistic
+   set of co-existing tokens and short enough to be eyeballed in
+   admin-UI listings.
+3. **Redaction date** in `YYYY-MM-DD` form.
+4. **Redaction reason / source pass** — e.g., `per Block 4.C C4
+   pre-flight` — so the audit trail is self-locating.
+
+Example shape (from `~/.claude/projects/.../memory/plane_deployment.md`
+post-resolution):
+
+> Token reference: `secret/plane/api#homepage_token` (redacted
+> from plaintext on 2026-04-29 per Block 4.C C4 pre-flight; SHA-256
+> prefix `4d83dff62161`)
+
+### Required revocation-comment shape (when adding REVOKED notation)
+
+When the redacted token is later revoked, append a REVOKED line
+to the redaction comment with all five of:
+
+1. **REVOKED date** in `YYYY-MM-DD`.
+2. **Revocation mechanism** — Plane UI, Django shell, API call.
+   This matters when retrospectives ask "was the UI usable?"
+   (See Discovery #18 — UI was *not* usable at C6 #7/#9 time.)
+3. **Token row identity** — `id=<uuid>`, `label=<label>`. This
+   is what the Django shell or admin UI hands back; it lets a
+   later auditor cross-check the deletion record.
+4. **Hash prefix** of the revoked value — same 12 hex chars from
+   the redaction comment, restated for grep-ability.
+5. **Cross-link** to the closeout-doc resolution-detail section
+   so verification artifacts are findable.
+
+### Verification template
+
+Post-revocation verification should attempt all three legs and
+record the result of each (including which legs were
+unavailable):
+
+| Leg | Method | When it works |
+|-----|--------|---------------|
+| Direct API probe | `curl -H "X-API-Key: $REVOKED" .../users/me/` expects 401/403 | Only if plaintext was preserved between redaction and revocation (rare; usually intentionally not preserved). |
+| Admin row inventory | Django shell or admin UI: pre-delete row exists with matching `hash_prefix`, post-delete row absent, count drops by exactly one | Always, given Django-shell or DB access. |
+| Audit-log spot-check | `APIActivityLog` or equivalent shows a `revoked` / `deleted` event with matching prefix | Only when admin auth surface exposes the audit log. Plane CE in this build does not (Discovery #18). |
+
+Record which legs ran and which were unavailable in the
+closeout-doc resolution-detail section, alongside the artifacts.
+
+## 11. References
 
 - `framework/plane_connector.py` — the connector itself.
 - `tests/integration/plane_connector/test_wire_format.py` —

@@ -1116,3 +1116,72 @@ gate will require.
 > at that point, change the compose default and remove the
 > bind-mounts of `service-registry.yaml.DEPRECATED` from both
 > stacks.
+
+## Discovery #18: Plane CE web UI authentication not configured
+
+**Surfaced by:** C6 #7/#9 token-revocation cleanup (2026-04-29).
+**Severity:** Operational gap — blocks operator-driven Plane UI work.
+**Resolution:** Workaround applied for the immediate revocation; Phase 14 task registered to configure auth.
+
+### What happened
+
+Operator attempted to log into `http://plane.internal/` (and
+`http://localhost:3001/`) as `admin@local.dev` to revoke the
+Discovery #13 memory-file token via the API-tokens admin page
+(C6 #7/#9 cleanup). The Plane web UI returned:
+
+> **No authentication methods available.**
+
+No login providers are configured in this Plane CE instance —
+neither magic-link, password, nor OAuth. The web UI is
+effectively unreachable for any auth-gated path. The Plane API
+still authenticates via `X-Api-Key` because tokens are issued
+out-of-band (the original `homepage` token in
+`secret/plane/api`, and the now-revoked `dashboard-sync` token,
+were both created during the 2026-04-25 deployment via Django
+shell, not the UI), but **any operator workflow that requires
+the UI is blocked**.
+
+### Workaround applied (this cleanup)
+
+Token revocation was performed via the plane-api Django shell:
+
+```python
+# inside `docker exec docker-plane-api-1 python3 manage.py shell`
+from plane.db.models import APIToken
+t = APIToken.objects.get(id="38b1dfe4-4065-44ca-a56f-1b38ad3b2eb3")
+# verify hash_prefix == "4d83dff62161" before delete
+t.delete()
+```
+
+The post-delete row inventory plus a control probe with the
+Vault token confirmed the revocation outcome. See
+`PHASE_13_BLOCK_4C_CLOSEOUT_2026-04-29.md` §"#7/#9 resolution
+detail" for full verification artifacts.
+
+### Audit-log impact
+
+Plane CE's `APIActivityLog` model exists in the database, but
+this build does not expose it through any endpoint reachable
+without web auth. The C6 #7/#9 revocation therefore could not
+include an audit-log spot-check. Once auth is configured (Phase
+14, see below), audit-log access becomes available and should
+be added to the post-revocation verification template.
+
+### Phase 14 task (registered, not actioned here)
+
+Configure at minimum email magic-link authentication so
+`admin@local.dev` can log into `plane.internal`:
+
+1. Set `ENABLE_MAGIC_LINK_LOGIN=1` (and any required `EMAIL_HOST*` env vars) on the plane-api service.
+2. Restart plane-api.
+3. Verify operator can log in at `http://192.168.10.145:3001` (or `http://plane.internal/` once Caddy/DNS resolves).
+4. Re-test admin-area access: `Workspace settings → API tokens` and `Workspace settings → Audit log` should both render.
+5. Once available, add audit-log spot-check to the canonical post-revocation verification template (see **Canonical pattern §10**).
+
+### Cross-references
+
+- **Discovery #13** — original two-Plane-tokens divergence; `dashboard-sync` token was the to-be-revoked one.
+- **C6 #7/#9** (consolidated, RESOLVED 2026-04-29) — the cleanup that surfaced this gap.
+- **C6 #18** — Plane admin password rotation, paired with this discovery for Phase 14.
+- **Canonical pattern §10** — doctrine note added based on this work (capture SHA-256 prefix before redaction).
