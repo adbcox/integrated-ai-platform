@@ -4,7 +4,6 @@ db:
 watch:
   workers: 8
   schedule: "0 8 * * *"     # daily at 08:00
-  first_check_notif: false   # suppress notification on first run (just populate DB)
 
 notif:
   webhook:
@@ -15,5 +14,4 @@ notif:
     timeout: 30s
 
 providers:
-  docker:
-    watch_stopped: false
+  docker: {}

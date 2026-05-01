@@ -205,16 +205,6 @@ homeassistant.internal {
     }
 }
 
-# ── CATT Controller (Phase 13 Block 3 P6) ────────────────────────────
-# Cast All The Things HTTP API on Mac Mini. LAN-internal; no auth.
-# Used by HA `rest_command` for arbitrary URL casting that the HA Cast
-# integration doesn't expose cleanly (yt-dlp-resolved sources etc).
-catt.internal {
-    import access_log
-
-    reverse_proxy host.docker.internal:8124
-}
-
 # ── Structurizr Lite (Phase 14 D-STR) ────────────────────────────────
 # C4 architecture diagram workspace. Auth-free for local LAN use.
 structurizr.internal {
