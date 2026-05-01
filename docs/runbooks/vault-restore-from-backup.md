@@ -12,10 +12,23 @@ Vault data lives at `/vault/data` inside the `vault-server` container, backed by
 a named Docker volume (`vault-data` or `vault-server-data`). Restic backs this up
 nightly via `scripts/backup.sh` using the `backup` AppRole.
 
+**Backup source (D-16-04, ADR-A-017):** Restic snapshots contain a
+warm-copy of `/vault/data` at the path
+`/Users/admin/.vault-snapshot/current/`, **not** the raw volume.
+`scripts/vault-snapshot-warm.sh` produces this copy as the first step
+of every backup run via an atomic stage→rename. A restore reads the
+tree from that path inside Restic and writes it into the live volume.
+
+The warm copy is **crash-consistent**, not transaction-consistent —
+on first start after restore Vault's BoltDB recovery semantics roll
+forward/back any partial writes (same recovery path as a power loss).
+No operator action is needed for that recovery; it happens
+transparently.
+
 Restore steps:
 1. Stop vault-server (data must not be written during restore)
 2. Identify the target Restic snapshot
-3. Restore the Vault data directory
+3. Restore the Vault data directory **from `/Users/admin/.vault-snapshot/current/`** inside the snapshot
 4. Start vault-server
 5. Unseal (auto-unseal via seal-vault, or Shamir if seal-vault is also unrecoverable)
 6. Verify
@@ -101,20 +114,31 @@ VOLUME_PATH=$(docker volume inspect vault-server-data --format '{{.Mountpoint}}'
 ## Step 5: Restore Vault data
 
 ```bash
-# Restore to a temp directory first (verify before overwriting)
+# Restore to a temp directory first (verify before overwriting).
+# Source path inside the snapshot is the warm-copy landing zone
+# (D-16-04, ADR-A-017) — NOT the raw /vault/data tree, which Restic
+# never sees from the host.
 RESTORE_TMP=$(mktemp -d)
-restic restore <snapshot-id> --include /vault/data --target "$RESTORE_TMP"
-ls "$RESTORE_TMP/vault/data/"  # verify contents present
+restic restore <snapshot-id> \
+  --include /Users/admin/.vault-snapshot/current \
+  --target "$RESTORE_TMP"
+ls "$RESTORE_TMP/Users/admin/.vault-snapshot/current/"
+# Expected: audit/ auth/ core/ logical/ sys/
 
-# Copy restored data into the volume
-# On macOS/Colima: copy via docker cp into a temporary container
+# Copy restored data into the live Vault volume.
+# On macOS/Colima: write via a temporary alpine container (admin can't
+# touch /var/lib/docker/volumes/... directly — root-owned in Colima).
 docker run --rm \
-  -v vault-server-data:/vault/data \
-  -v "$RESTORE_TMP/vault/data":/restore-src \
+  -v vault_vault-data:/vault/data \
+  -v "$RESTORE_TMP/Users/admin/.vault-snapshot/current":/restore-src \
   alpine sh -c "rm -rf /vault/data/* && cp -a /restore-src/. /vault/data/"
 
 rm -rf "$RESTORE_TMP"
 ```
+
+The restored tree is **crash-consistent**. When vault-server starts
+in Step 6, BoltDB's recovery handles any partial writes from the
+warm-copy moment. No operator action required.
 
 ---
 

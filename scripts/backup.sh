@@ -16,6 +16,13 @@
 
 set -euo pipefail
 
+# Ensure Homebrew binaries are on PATH for cron / minimal-PATH contexts.
+# /opt/homebrew/bin = Apple Silicon; /usr/local/bin = Intel / fallback.
+# Without this, restic / jq / curl resolution fails under cron's stripped
+# PATH and the script either errors with "command not found" or, worse,
+# misattributes the failure to a network problem.
+export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"
+
 VAULT_ADDR="${VAULT_ADDR:-http://127.0.0.1:8200}"
 APPROLE_DIR="/Users/admin/.vault-approle/backup"
 LOG_PREFIX="[backup $(date '+%Y-%m-%d %H:%M:%S')]"
@@ -77,10 +84,28 @@ BACKUP_DIRS=(
   "$HOME/ha-backups"
 )
 
-# Add Vault data to backup if accessible
-VAULT_DATA="/var/lib/docker/volumes/vault_vault-data/_data"
-if [ -r "$VAULT_DATA" ]; then
-  BACKUP_DIRS+=("$VAULT_DATA")
+# D-16-04 — Vault data via warm-copy snapshot (ADR-A-017).
+# The earlier raw-volume read at /var/lib/docker/volumes/vault_vault-data/_data
+# never fired (root-owned in Colima; admin can't read). Replaced by a
+# host-readable warm-copy at $HOME/.vault-snapshot/current produced
+# fresh on every backup run. A failed snapshot is a warn-and-continue —
+# repo + ha-backups must still back up.
+VAULT_SNAPSHOT_DIR="$HOME/.vault-snapshot/current"
+VAULT_SNAPSHOT_HELPER="$HOME/repos/integrated-ai-platform/scripts/vault-snapshot-warm.sh"
+if [ -x "$VAULT_SNAPSHOT_HELPER" ]; then
+  log "Producing warm-copy Vault snapshot"
+  if "$VAULT_SNAPSHOT_HELPER"; then
+    if [ -d "$VAULT_SNAPSHOT_DIR" ]; then
+      BACKUP_DIRS+=("$VAULT_SNAPSHOT_DIR")
+      log "Vault snapshot included in backup set"
+    else
+      log "WARN: $VAULT_SNAPSHOT_DIR missing after helper success — skipping Vault data"
+    fi
+  else
+    log "WARN: vault-snapshot-warm.sh failed; backing up the rest of the set without Vault data"
+  fi
+else
+  log "WARN: $VAULT_SNAPSHOT_HELPER not executable; skipping Vault data"
 fi
 
 log "Starting backup to $RESTIC_REPOSITORY"
