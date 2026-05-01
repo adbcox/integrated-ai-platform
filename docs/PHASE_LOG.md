@@ -5,27 +5,32 @@
 > Entries below this note up to the renumbering line use the current numbering;
 > entries below the renumbering line use the pre-consolidation numbering.
 
-## Phase 15 — IN PROGRESS (opened 2026-04-30)
+## Phase 15 — COMPLETE (closed 2026-05-01)
 
-Mac Studio Day-1 integration scoped + execution script delivered. Phase 13
-Increments 2B-7 still gated on Mouser+DigiKey+CSV.
+Tag: `phase-15-final`. Full closeout: `docs/phase-15/PHASE_15_CLOSEOUT_2026-05-01.md`.
+
+Originally opened for vault cascade recovery + Mac Studio Day-1 integration.
+Mac Studio Day-1 deferred per Path C scope decision; closeout scope shifted
+to audit-driven cleanup of the items raised in the 2026-05-01 comprehensive audit.
 
 - 2026-04-30 13:00-22:00 — Vault cascade incident (Sev-2). 9-hour triage:
-  api_addr network misdiagnosis (postmortem PHASE_15_VAULT_API_ADDR_NETWORK_INCIDENT),
-  KV mount data loss during fresh-init (PHASE_15_KV_LOSS), seal-vault data
-  volume destruction during 5-hour autonomous debug window (PHASE_15_RECOVERY_HANDOFF
-  authored mid-incident with hard 30-min/task constraints). Transit auto-unseal
-  rebuilt 22:18 UTC with VAULT_TOKEN env wrapper around Vault 2.0's dropped
-  `token_file` seal-stanza support.
-- 2026-05-01 — KV rebuild verified 47/47 leaf paths populated by root-token
-  enumeration. Mac Studio M3 Ultra arrived (.146). Comprehensive audit +
-  validation pass committed (3105f07). Six service-removal recommendations from
-  the audit verified non-removable; one stray homeassistant container identified
-  for archive-first removal.
-- Outstanding: Vault audit device re-enable, scripts/backup.sh log redirect fix
-  + backup AppRole re-provision, baseline Restic snapshot, ADR-A-007 dirty-edit
-  resolution, Block 4.D retroactive closeout, Block 4.E cross-index service.
-  Mac Studio Day-1 deferred per Path C (audit closure + 4-app stack work first).
+  api_addr network misdiagnosis, KV mount data loss during fresh-init,
+  seal-vault data volume destruction during 5-hour autonomous debug window.
+  Transit auto-unseal rebuilt 22:18 UTC with VAULT_TOKEN env wrapper around
+  Vault 2.0 dropped `token_file` seal-stanza support.
+- 2026-05-01 — KV rebuild verified 47/47 leaf paths populated. Mac Studio
+  M3 Ultra arrived (.146). Comprehensive audit + validation pass (3105f07).
+  Six audit service-removal recommendations verified non-removable (Section 3
+  cross-reference gap). Nine deliverables closed: D-15-01 audit/validation,
+  D-15-02 IA hygiene, D-15-03 backup chain (R-01) with discovery that the
+  rebuild-populated MinIO key was bogus (driving lessons-learned), D-15-04
+  Vault audit re-enable (R-02), D-15-05 PreToolUse hooks (R-03), D-15-06
+  vault-test (R-08), D-15-07 ADR-A-007 Path B, D-15-09 closeout, D-15-10
+  PROJECT_FRAMEWORK.md doctrine.
+- Carry-overs to Phase 16: Block 4.D closeout, Block 4.E cross-index service
+  (structural blocker for autonomous coding), Mac Studio Day-1, Vault raft-
+  snapshot integration in backup, loose-doc retirement, documentation drift
+  detection automation, recovery-handoff doctrine update.
 
 ## Phase 14 — COMPLETE (2026-04-30)
 

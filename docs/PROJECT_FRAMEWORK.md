@@ -129,31 +129,34 @@ The MPM never bypasses the Execution window for repository changes. The Executio
 
 ---
 
-## 7. Phase 15 — current state
+## 7. Phase 15 — CLOSED 2026-05-01
 
-**Phase 15 — Vault Recovery + Information Architecture Hygiene** (opened 2026-04-30)
+**Phase 15 — Vault Recovery + Information Architecture Hygiene** (opened 2026-04-30, closed 2026-05-01)
 
-Originally chartered for Vault cascade recovery + Mac Studio Day-1 integration. Mac Studio Day-1 deferred per Path C scope decision (operator, 2026-05-01) and re-targeted to Phase 16. Phase 15 closeout scope is now audit-driven.
+Tag: `phase-15-final`. Full closeout: `docs/phase-15/PHASE_15_CLOSEOUT_2026-05-01.md`.
 
 | Deliverable | Status | Reference |
 |---|---|---|
-| D-15-01: Audit + validation committed | DONE | commit 3105f07 |
-| D-15-02: Information architecture hygiene | IN PROGRESS | T2/T3/T4/T5/T6 done; T1+T1' pending |
-| D-15-03: Backup chain repaired | NOT STARTED | R-01 |
-| D-15-04: Vault audit device re-enabled | NOT STARTED | R-02 |
-| D-15-05: PreToolUse hooks shipped | NOT STARTED | R-03 |
-| D-15-06: vault-test instance live | NOT STARTED | R-08 |
-| D-15-07: ADR-A-007 dirty edit resolved (Path B) | NOT STARTED | S9-F3 |
-| D-15-08: Loose-doc retirement pass | NOT STARTED | beyond-audit |
-| D-15-09: Phase 15 closeout doc + tag `phase-15-final` | NOT STARTED | last |
-| D-15-10: This framework doc committed | IN PROGRESS | (this doc) |
+| D-15-01: Audit + validation committed | DONE | 3105f07 |
+| D-15-02: Information architecture hygiene | DONE | 6a18e6c, 818ab3e, 2ce52d8, 3631b62, c2cc83d, a9d4129 |
+| D-15-03: Backup chain repaired (R-01) | DONE | bb5d315 + Vault state + MinIO user + snapshot 784ff718 |
+| D-15-04: Vault audit device re-enabled (R-02) | DONE | Vault config; audit log writing |
+| D-15-05: PreToolUse hooks shipped (R-03) | DONE | 3cc764b |
+| D-15-06: vault-test instance live (R-08) | DONE | a8f3abe |
+| D-15-07: ADR-A-007 dirty edit resolved (Path B) | DONE | 9d50f84 |
+| D-15-08: Loose-doc retirement pass | DEFERRED to Phase 16 | beyond-audit |
+| D-15-09: Phase 15 closeout doc + tag | DONE | (this commit) |
+| D-15-10: PROJECT_FRAMEWORK.md doctrine | DONE | e7d1c5b |
 
-**Phase 15 deferred to Phase 16:**
-- Mac Studio Day-1 (3 pre-actions still apply when re-opened)
-- Block 4.D retroactive closeout (InvenTree)
-- Block 4.E cross-index service (structural blocker for autonomous coding)
+**Phase 16 charter draft** (per closeout doc Section "Phase 16 charter draft"):
 
-When a deliverable closes, this table receives a commit hash and status flips to DONE. The table is the single source of truth for Phase 15 progress; sibling sources (chat history, prior plans) are advisory only.
+- D-16-01 Block 4.D retroactive closeout (InvenTree)
+- D-16-02 Block 4.E cross-index service — autonomous-coding structural enabler
+- D-16-03 Mac Studio Day-1 execution (2 pre-actions remaining)
+- D-16-04 Vault data volume in backup chain (raft snapshot integration)
+- D-16-05 Loose-doc retirement (deferred from D-15-08)
+- D-16-06 Documentation drift detection automation
+- D-16-07 Recovery-handoff doctrine update (value-correctness verification)
 
 ---
 
