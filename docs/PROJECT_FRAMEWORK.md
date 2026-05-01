@@ -186,7 +186,7 @@ Deliverable table:
 | D-16-02.A: Plane bootstrap from PROJECT_FRAMEWORK.md | DONE | 86020ff |
 | D-16-02.1: NetBox source ingestion | DONE | 16971f0 |
 | D-16-02.2: Plane source ingestion | DONE | 3262667 |
-| D-16-02.3: MCP tool wrapper | NOT STARTED | extends D-16-02 |
+| D-16-02.3: MCP tool wrapper | DONE | (this commit) |
 | D-16-03: Mac Studio Day-1 execution | NOT STARTED | from PHASE_ROADMAP |
 | D-16-04: Vault data in backup chain (raft snapshot) | NOT STARTED | discovery |
 | D-16-05: Loose-doc retirement | NOT STARTED | deferred from D-15-08 |

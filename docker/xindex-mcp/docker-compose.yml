@@ -1,0 +1,36 @@
+services:
+  xindex-mcp:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: iap/xindex-mcp:0.1.0
+    container_name: xindex-mcp
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8096:8096"
+    environment:
+      XINDEX_BASE_URL: "http://xindex:8000"
+      XINDEX_HTTP_TIMEOUT: "10"
+    networks:
+      - control-center-net
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: 192m
+    cpus: 0.5
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"require('http').get('http://localhost:8096/healthz',r=>r.statusCode===200?process.exit(0):process.exit(1)).on('error',()=>process.exit(1))\""]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    labels:
+      com.iap.service: "xindex-mcp"
+      com.iap.tier: "control-center"
+      com.iap.deliverable: "D-16-02.3"
+
+networks:
+  control-center-net:
+    name: control-center-net
+    external: true

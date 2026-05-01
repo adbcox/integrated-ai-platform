@@ -94,6 +94,12 @@ xindex.internal {
     reverse_proxy host.docker.internal:8095
 }
 
+mcp-xindex.internal {
+    import access_log
+
+    reverse_proxy host.docker.internal:8096
+}
+
 # ── Observability Layer ───────────────────────────────────────────────────────
 grafana.internal {
     import access_log
