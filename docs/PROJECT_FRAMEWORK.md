@@ -359,8 +359,8 @@ Deliverable table:
 | Deliverable | Status | Reference |
 |---|---|---|
 | 17.A: Stack architecture audit promoted to repo | DONE | 8193014 |
-| 17.B: Capability audit template | NOT STARTED | per Phase 17 plan |
-| 17.C: Physical architecture audit | NOT STARTED | per Phase 17 plan |
+| 17.B: Capability audit template | DONE | f1502f6 |
+| 17.C: Physical architecture audit | DONE | c25c9ac |
 | 17.D: Replace Plane with OpenProject | NOT STARTED | per Phase 17 plan |
 | 17.E: Observability role-clarification | NOT STARTED | per Phase 17 plan |
 | 17.F: Agent surface audit + consolidation | NOT STARTED | per Phase 17 plan |
