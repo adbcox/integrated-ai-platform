@@ -19,6 +19,9 @@ Individual ADR files live here. Each file is one decision.
 | [ADR-A-011](ADR-A-011-ivv-loop-pattern.md) | IV&V loop pattern (audit → execution → validation → regression) | Accepted |
 | [ADR-A-012](ADR-A-012-equivalence-harness-doctrine.md) | Equivalence harness doctrine for source-of-truth migrations | Accepted |
 | [ADR-A-013](ADR-A-013-folded-gates-doctrine.md) | Folded gates for mechanical applications of proven patterns | Accepted |
+| [ADR-A-014](ADR-A-014-netbox-cmdb-authority.md) | NetBox as Authoritative CMDB | Accepted |
+| [ADR-A-015](ADR-A-015-staged-toggle-migration.md) | Staged-Toggle Pattern for Source-of-Truth Migrations | Accepted |
+| [ADR-A-016](ADR-A-016-canonical-patterns-registry.md) | Canonical Patterns Registry | Accepted |
 
 ## Format
 
