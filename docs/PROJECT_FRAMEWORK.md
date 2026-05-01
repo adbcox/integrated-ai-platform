@@ -372,7 +372,7 @@ Deliverable table:
 | 17.L: Gemma 4 + Qwen3-Coder-Next benchmarks | NOT STARTED | per Phase 17 plan |
 | 17.M: Goose agent CLI integration | NOT STARTED | per Phase 17 plan |
 | 17.N: exo distributed inference cluster | NOT STARTED | gated on 17.O |
-| 17.O: Mac Studio Day-1 execution | NOT STARTED | re-parented from D-16-03 |
+| 17.O: Mac Studio Day-1 execution | DONE | ccc02d1 |
 | 17.P: Loose-doc retirement | NOT STARTED | re-parented from D-16-05 |
 | 17.Q: Architecture dashboard | NOT STARTED | re-parented from D-16-08 |
 | 17.R: Structurizr population | NOT STARTED | re-parented from D-16-09 |
