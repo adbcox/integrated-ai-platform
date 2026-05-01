@@ -1,5 +1,76 @@
 # Phase Completion Log
 
+> **Note**: Phase numbering was consolidated at commit a6253c3 (2026-04-29 —
+> "consolidated phase structure — 3 large phases replacing micro-increments").
+> Entries below this note up to the renumbering line use the current numbering;
+> entries below the renumbering line use the pre-consolidation numbering.
+
+## Phase 15 — IN PROGRESS (opened 2026-04-30)
+
+Mac Studio Day-1 integration scoped + execution script delivered. Phase 13
+Increments 2B-7 still gated on Mouser+DigiKey+CSV.
+
+- 2026-04-30 13:00-22:00 — Vault cascade incident (Sev-2). 9-hour triage:
+  api_addr network misdiagnosis (postmortem PHASE_15_VAULT_API_ADDR_NETWORK_INCIDENT),
+  KV mount data loss during fresh-init (PHASE_15_KV_LOSS), seal-vault data
+  volume destruction during 5-hour autonomous debug window (PHASE_15_RECOVERY_HANDOFF
+  authored mid-incident with hard 30-min/task constraints). Transit auto-unseal
+  rebuilt 22:18 UTC with VAULT_TOKEN env wrapper around Vault 2.0's dropped
+  `token_file` seal-stanza support.
+- 2026-05-01 — KV rebuild verified 47/47 leaf paths populated by root-token
+  enumeration. Mac Studio M3 Ultra arrived (.146). Comprehensive audit +
+  validation pass committed (3105f07). Six service-removal recommendations from
+  the audit verified non-removable; one stray homeassistant container identified
+  for archive-first removal.
+- Outstanding: Vault audit device re-enable, scripts/backup.sh log redirect fix
+  + backup AppRole re-provision, baseline Restic snapshot, ADR-A-007 dirty-edit
+  resolution, Block 4.D retroactive closeout, Block 4.E cross-index service.
+  Mac Studio Day-1 deferred per Path C (audit closure + 4-app stack work first).
+
+## Phase 14 — COMPLETE (2026-04-30)
+
+Phase 14 D-DOC closed clean. Final regression: PASS=15 FAIL=0 WARN=3.
+Six tracks delivered:
+
+- D-LOG: Loki + Promtail; Caddy per-site access log analysis via LogQL;
+  `caddy-per-site-p14` Grafana dashboard at grafana.internal. Promtail
+  uses cap_add: [DAC_READ_SEARCH] (D#31 documented exception).
+- D-ZBX: zabbix-exporter container scrapes Zabbix API via Bearer token
+  (Vault Agent sidecar); vmagent ingests; `zabbix-overview-p14` Grafana
+  dashboard provisioned.
+- D-RST: vault-restore-from-backup runbook exercised (PASS) +
+  credential-path corrections.
+- D-STR + D-MKD: Structurizr + MkDocs Material at .internal domains.
+- D-XINDEX: cross-index validator (`scripts/cross-index-validate.py`) +
+  ADR->Plane coherence regression probe section (g).
+- D-CN: connector hardening — apply-path test, rate-limit audit,
+  pagination contract (D#10-#15).
+
+Closed at commit 9acfe6e. Tag: phase-14-final.
+
+## Phase 13 — COMPLETE (2026-04-29)
+
+Block 4 (integration stack) and Block H1 (foundation hardening) closed.
+
+- Block 4.A (foundation): full closeout suite, commit 5077811.
+- Block 4.C (NetBox CMDB authority via ADR-A-014/A-015): full closeout
+  suite (PLAN, C1 audit, C2 discoveries, C3 migration, C4 backfill,
+  C5_2 evidence, CLOSEOUT). NetBox is now the authoritative service
+  inventory; YAML retained as A-012 deprecation-gate fallback.
+- Block 4.D (InvenTree asset inventory): deployed (4 containers running,
+  AppRoles provisioned) but no formal closeout document. Documentation
+  gap flagged in audit-validation 2026-05-01; retroactive closeout
+  scheduled for Phase 16.
+- Block 4.E (cross-index service joining NetBox + InvenTree + Plane +
+  Vault + ADRs): un-built. Validator exists from Phase 14 D-XINDEX;
+  service does not. Structural blocker for autonomous coding; tracked
+  for Phase 16/17.
+- Block H1 (foundation hardening): COMPLETE, commit da3a1a1.
+
+— phase numbering consolidated at commit a6253c3 (2026-04-29) —
+
+[older entries below use pre-consolidation numbering]
+
 ## Phase 16: Vault Architecture Restoration — COMPLETE (2026-04-27)
 - All 10 .env-stored secrets migrated to Vault
 - Corrupted entries cleaned (`secret/strava/oauth`, `secret/seedbox`)
