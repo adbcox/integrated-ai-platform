@@ -176,7 +176,7 @@ Deliverable table:
 | D-16-01: Block 4.D retroactive closeout (InvenTree) | NOT STARTED | beyond-audit |
 | D-16-02: Cross-index service foundation | DONE | a3c198c |
 | D-16-02.0.5: Caddy site block + NetBox registration | DONE | c642034 |
-| D-16-02.A: Plane bootstrap from PROJECT_FRAMEWORK.md | DONE | (this commit) |
+| D-16-02.A: Plane bootstrap from PROJECT_FRAMEWORK.md | DONE | 86020ff |
 | D-16-02.1: NetBox source ingestion | NOT STARTED | extends D-16-02 |
 | D-16-02.2: Plane source ingestion | NOT STARTED | extends D-16-02 |
 | D-16-02.3: MCP tool wrapper | NOT STARTED | extends D-16-02 |
