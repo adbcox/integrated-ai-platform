@@ -5,7 +5,8 @@ xindex `nodes` and `services` tables and emitting entity_links for
 NetBox-known relationships:
 
     service depends_on service     — from custom_field service_dependencies
-    service hosted_on  node        — from ipam.service.device
+    service hosted_on  node        — from ipam.service.device  (legacy)
+                                     or parent_object_type/_id (NetBox 4.5+)
 
 Doctrine: NEVER raises on NetBox failure. The caller (orchestrator)
 inspects the returned summary dict and updates per-source meta. A
@@ -112,14 +113,37 @@ def _device_name(obj: Any) -> str | None:
     return str(name) if name else None
 
 
-def _service_parent(svc: Any) -> tuple[str | None, str | None]:
-    """Return (kind, ref) where kind in {'device','virtual_machine',None}."""
+def _service_parent(
+    svc: Any,
+    *,
+    device_by_id: dict[int, str] | None = None,
+    vm_by_id: dict[int, str] | None = None,
+) -> tuple[str | None, str | None]:
+    """Return (kind, ref) where kind in {'device','virtual_machine',None}.
+
+    Supports both the legacy `device` / `virtual_machine` direct FKs
+    (NetBox <4.5) and the 4.5+ generic `parent_object_type` /
+    `parent_object_id` shape, where the parent comes back as an id
+    that has to be resolved via a lookup map prepared by the caller.
+    """
     dev = getattr(svc, "device", None)
     if dev is not None:
         return ("device", _device_name(dev))
     vm = getattr(svc, "virtual_machine", None)
     if vm is not None:
         return ("virtual_machine", _device_name(vm))
+
+    pot = getattr(svc, "parent_object_type", None)
+    poid = getattr(svc, "parent_object_id", None)
+    if pot and poid:
+        try:
+            pid = int(poid)
+        except (TypeError, ValueError):
+            return (None, None)
+        if pot == "dcim.device" and device_by_id and pid in device_by_id:
+            return ("device", device_by_id[pid])
+        if pot == "virtualization.virtualmachine" and vm_by_id and pid in vm_by_id:
+            return ("virtual_machine", vm_by_id[pid])
     return (None, None)
 
 
@@ -200,8 +224,13 @@ def _row_for_node(dev: Any) -> dict[str, Any]:
     }
 
 
-def _row_for_service(svc: Any) -> dict[str, Any]:
-    pkind, pref = _service_parent(svc)
+def _row_for_service(
+    svc: Any,
+    *,
+    device_by_id: dict[int, str] | None = None,
+    vm_by_id: dict[int, str] | None = None,
+) -> dict[str, Any]:
+    pkind, pref = _service_parent(svc, device_by_id=device_by_id, vm_by_id=vm_by_id)
     raw_ports = getattr(svc, "ports", None) or []
     try:
         ports = [int(p) for p in raw_ports]
@@ -247,6 +276,14 @@ def _persist(
     services: list[Any],
 ) -> tuple[int, int, int]:
     """Write rows + FTS entries + entity_links inside the caller's transaction."""
+    # Build id→name lookups for the NetBox 4.5 generic-FK shape.
+    device_by_id: dict[int, str] = {}
+    for dev in devices:
+        did = _safe_int(getattr(dev, "id", None))
+        dname = _device_name(dev)
+        if did is not None and dname:
+            device_by_id[did] = dname
+
     nodes_written = 0
     for dev in devices:
         row = _row_for_node(dev)
@@ -289,7 +326,7 @@ def _persist(
     services_written = 0
     links_written = 0
     for svc in services:
-        row = _row_for_service(svc)
+        row = _row_for_service(svc, device_by_id=device_by_id)
         if not row["name"]:
             continue
         body = _service_body(row)
