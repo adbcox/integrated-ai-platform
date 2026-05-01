@@ -1,8 +1,8 @@
 # Claude Code - Project Instructions
 
 **Project:** Integrated AI Platform (Enterprise Autonomous AI Infrastructure)
-**Deployment Target:** Mac Mini M5 at 192.168.10.145 (control plane); MacBook Pro M5 parity in Block 3
-**Current Phase:** Phase 14 CLOSED (2026-04-30). Phase 13 Increments 2B–7 in progress (gated on Mouser+DigiKey+CSV). Phase 15 not yet scoped.
+**Deployment Target:** Mac Mini M4 Pro 48 GB at 192.168.10.145 (control plane; verified via `system_profiler` 2026-05-01 — earlier "M5" wording was incorrect); MacBook Pro M5 parity in Block 3; Mac Studio M3 Ultra 96 GB at 192.168.10.146 (compute node, arrived 2026-05-01).
+**Current Phase:** Phase 14 CLOSED (2026-04-30). Phase 15 IN PROGRESS — Mac Studio Day-1 integration pending (execution script: `~/mac-studio-day1-execute.sh`; checklist: `~/mac-studio-day1-checklist.md`). Phase 13 Increments 2B–7 still gated on Mouser+DigiKey+CSV. Vault KV mount data loss incident (Sev-2, 2026-04-30) — postmortem: `docs/phase-15/PHASE_15_KV_LOSS_2026-04-30.md`; ~17 secrets pending rebuild from `phase16-20260427-172029` snapshot.
 
 ## Quick Start
 
@@ -64,10 +64,10 @@ This is the "AI workstation" or "platform". Pre-2026 alternative terminology (th
 - Out-of-repo compose changes (`~/control-center-stack/stacks/*`) require pre/post snapshots in the rewire log because git doesn't track them automatically.
 
 ### Post-Block-2 Follow-up List
-1. **Caddy route hygiene** — prune 12 dead `*.internal` routes from `docker/caddy/Caddyfile` (no backing service): `manyfold`, `gitea`, `tautulli`, `overseerr`, `ragflow`, `portainer`, `netdata`, `dozzle`, `pgadmin`, `bookstack`, `n8n`, `filebrowser`. Each carries the shared `import access_log` snippet which is harmless but inflates the Caddyfile.
+1. ~~Caddy route hygiene — prune 12 dead `*.internal` routes~~ — **DONE 2026-04-29 in commit 3db56c7** (pruned 13 routes: 12 from this list + dashboard.internal).
 2. **Homepage widget completion** — confirm Grafana SA token (provisioned in P2.1) and Uptime Kuma slug config render the expected widgets on `homepage.internal`. Closes if no remaining gaps.
 3. **Block 3** — MacBook Pro M5 parity: Ollama + LiteLLM + Open WebUI + Headscale client + smart routing.
-4. **Phase 14** — Loki for log-based per-site Caddy analysis (unblocks per-host dashboards which Caddy 2.11.2 default Prometheus output cannot provide).
+4. ~~Phase 14 — Loki for log-based per-site Caddy analysis~~ — **DONE Phase 14 D-LOG** (Loki + Promtail deployed, see "Caddy per-site access logs (resolved Phase 14 D-LOG)" under Known Hardening Trade-offs).
 
 ### Verification Doctrine
 - Every claim verified by command output or cited source.
