@@ -188,7 +188,8 @@ Deliverable table:
 | D-16-02.2: Plane source ingestion | DONE | 3262667 |
 | D-16-02.3: MCP tool wrapper | DONE | 6792969 |
 | D-16-03: Mac Studio Day-1 execution | NOT STARTED | from PHASE_ROADMAP |
-| D-16-04: Vault data in backup chain (raft snapshot) | NOT STARTED | discovery |
+| D-16-04: Vault data in backup chain (warm-copy, ADR-A-017) | DONE | 88559fe |
+| D-16-04.1: Silent cron failure remediation | NOT STARTED | KI-005 |
 | D-16-05: Loose-doc retirement | NOT STARTED | deferred from D-15-08 |
 | D-16-06: Documentation drift detection automation | DONE | c49432e |
 | D-16-07: Recovery-handoff doctrine update | NOT STARTED | discovery |
