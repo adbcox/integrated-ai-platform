@@ -252,7 +252,7 @@ Deliverable table:
 
 | Deliverable | Status | Reference |
 |---|---|---|
-| D-16-01: Block 4.D retroactive closeout (InvenTree) | NOT STARTED | beyond-audit |
+| D-16-01: Block 4.D retroactive closeout (InvenTree) | DONE | cecb3ce |
 | D-16-02: Cross-index service foundation | DONE | a3c198c |
 | D-16-02.0.5: Caddy site block + NetBox registration | DONE | c642034 |
 | D-16-02.A: Plane bootstrap from PROJECT_FRAMEWORK.md | DONE | 86020ff |
@@ -261,10 +261,10 @@ Deliverable table:
 | D-16-02.3: MCP tool wrapper | DONE | 6792969 |
 | D-16-03: Mac Studio Day-1 execution | NOT STARTED | from PHASE_ROADMAP |
 | D-16-04: Vault data in backup chain (warm-copy, ADR-A-017) | DONE | 88559fe |
-| D-16-04.1: Silent cron failure remediation | NOT STARTED | KI-005 |
+| D-16-04.1: Silent cron failure remediation | DONE | d344869 |
 | D-16-05: Loose-doc retirement | NOT STARTED | deferred from D-15-08 |
 | D-16-06: Documentation drift detection automation | DONE | c49432e |
-| D-16-07: Recovery-handoff doctrine update | NOT STARTED | discovery |
+| D-16-07: Recovery-handoff doctrine update | DONE | 2075c1c |
 | D-16-08: Unified architecture + health dashboard | NOT STARTED | Grafana + xindex/NetBox |
 | D-16-09: Structurizr population from xindex/NetBox | NOT STARTED | C4 auto-architecture |
 
