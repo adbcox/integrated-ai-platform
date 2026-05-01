@@ -38,6 +38,7 @@ the decision content here.
 |-----|-------|------------------|
 | [A-007](adr/ADR-A-007-media-sync-syncthing.md) | Syncthing replaces rclone SFTP for seedbox→QNAP transfers | Move bulk transfers off SFTP onto Syncthing for reliability and bandwidth telemetry. |
 | [A-009](adr/ADR-A-009.md) | Vault as authoritative secret store — migration from .env | All secrets live in Vault; `.env` files for credentials are forbidden. |
+| [A-017](adr/ADR-A-017-vault-warm-copy-backup-strategy.md) | Vault file-backend warm-copy is the backup strategy | Warm-copy `/vault/data` to a host-readable snapshot for Restic; routine backup never touches Vault's seal cycle. |
 
 ## Operating model (Phase 13 doctrine)
 
