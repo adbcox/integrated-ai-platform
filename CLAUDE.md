@@ -16,17 +16,19 @@ You are working on a production autonomous AI platform. Before taking any action
 ## Core Documentation
 
 - `docs/ARCHITECTURE.md` - System overview, architecture, service inventory (supersedes PLATFORM_OVERVIEW.md)
-- `docs/DEPLOYMENT_GUIDE.md` - How to operate services
-- `docs/TROUBLESHOOTING.md` - Issue resolution
-- `docs/HANDOFF_GUIDE.md` - Session continuity instructions
+- `docs/PROJECT_FRAMEWORK.md` - PMP+ITIL labels, lifecycle, surface format, current Phase state
+- `docs/runbooks/` - Operational runbooks (add-new-service, restart-services, vault-unseal, vault-recovery-from-shamir, rotate-credentials, incident-response, etc.)
+- `docs/troubleshooting/` - Issue resolution (DECISION_TREE.md, common-issues.md, MANDATORY_CHECKLIST.md, plus case-studies/)
+- `docs/PHASE_ROADMAP.md` + most-recent `docs/phase-NN/PHASE_NN_*_CLOSEOUT_*.md` - Session continuity (current phase status + latest closeout)
 
 ## Critical Behavioral Rules
 
 **When user asks for:**
 - "Give me a prompt" → Provide complete prompt as text, DON'T execute
-- "How do I deploy X" → Point to `docs/DEPLOYMENT_GUIDE.md`
-- "Service not working" → Point to `docs/TROUBLESHOOTING.md`
+- "How do I deploy X" → Point to `docs/runbooks/add-new-service.md` and `docs/runbooks/restart-services.md`
+- "Service not working" → Point to `docs/troubleshooting/DECISION_TREE.md` and `docs/troubleshooting/common-issues.md`
 - "What's the architecture" → Point to `docs/ARCHITECTURE.md`
+- "How do we label X / where is Phase NN" → Point to `docs/PROJECT_FRAMEWORK.md`
 
 **Never:**
 - Try to execute on local filesystem (everything is on Mac Mini .145)
@@ -155,12 +157,12 @@ The orchestrator (Claude Code at the top level) delegates implementation work to
 
 ```
 docs/ARCHITECTURE.md        — start here (supersedes PLATFORM_OVERVIEW.md)
-docs/DEPLOYMENT_GUIDE.md    — operations
-docs/TROUBLESHOOTING.md     — issue resolution
-docs/HANDOFF_GUIDE.md       — session continuity
-docs/runbooks/              — operational runbooks (add-new-service, rotate-credentials, etc.)
+docs/PROJECT_FRAMEWORK.md   — PMP+ITIL labels, lifecycle, surface format
+docs/runbooks/              — operational runbooks (add-new-service, restart-services, vault-unseal, etc.)
+docs/troubleshooting/       — issue resolution (DECISION_TREE.md, common-issues.md, MANDATORY_CHECKLIST.md)
+docs/PHASE_ROADMAP.md       — current phase + roadmap; per-phase docs in docs/phase-NN/
 docs/roadmap/ITEMS/         — 601 roadmap items (canonical truth)
-config/mac_mini/            — Mac Mini M5 node config
+config/mac_mini/            — Mac Mini M4 Pro node config
 config/mac_studio/          — Mac Studio M3 node config (future)
 config/qnap/                — QNAP NAS config
 ```
