@@ -53,3 +53,9 @@ repos:
         language: system
         pass_filenames: false
         files: '^docs/PROJECT_FRAMEWORK\.md$'
+      - id: launchd-recency
+        name: launchd plists installed + recently active (D-16-04.1)
+        entry: python3 scripts/check-repo-coherence.py launchd-recency
+        language: system
+        pass_filenames: false
+        files: '^docker/launchd-agents/.*\.plist$'

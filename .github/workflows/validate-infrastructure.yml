@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - "docker/**"
+      - "docker/launchd-agents/**"
       - "**/docker-compose*.yml"
       - "control-center-stack/**docker-compose*.yml"
       - "config/service-registry.yaml.DEPRECATED"
@@ -17,6 +18,7 @@ on:
       - "config/service-registry.yaml.DEPRECATED"
       - "scripts/validate-cmdb.sh"
       - "scripts/check-repo-coherence.py"
+      - "docker/launchd-agents/**"
       - "docs/**"
 
   # D-16-06 advisory: nightly Caddy ↔ DNS parity. Non-blocking — caddy-dns-parity

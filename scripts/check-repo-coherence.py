@@ -12,6 +12,7 @@ Subcommands:
     caddy-internal-domains   list .internal site blocks from Caddyfile
     netbox-services-have-adrs   stub — Phase 17 territory
     framework-table-coherence  PROJECT_FRAMEWORK.md §7+§8 deliverable rows
+    launchd-recency          docker/launchd-agents/*.plist installed + recent
     all                      run everything; exit = max(child exit codes)
 
 Exit codes:
@@ -29,8 +30,11 @@ scripts/phase-deliverable-count.py to avoid duplicating the row regex.
 """
 from __future__ import annotations
 
+import os
 import re
+import subprocess
 import sys
+import time
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -39,6 +43,40 @@ ADR_README = ADR_DIR / "README.md"
 DECISION_REGISTER = REPO_ROOT / "docs" / "DECISION_REGISTER.md"
 CADDYFILE = REPO_ROOT / "docker" / "caddy" / "Caddyfile"
 FRAMEWORK = REPO_ROOT / "docs" / "PROJECT_FRAMEWORK.md"
+LAUNCHD_AGENTS_REPO = REPO_ROOT / "docker" / "launchd-agents"
+LAUNCHD_AGENTS_INSTALLED = Path.home() / "Library" / "LaunchAgents"
+
+# Per-job recency expectations (max age in seconds before considered stale).
+# Recency probes a heartbeat file the plist's wrapper touches AFTER each
+# script run (so silent-success jobs still register), or for KeepAlive
+# jobs, the log file directly (since it gets continuous writes).
+LAUNCHD_RECENCY_EXPECTATIONS: dict[str, dict] = {
+    "com.iap.backup": {
+        "max_age_sec": 36 * 3600,  # daily — 36h grace for sleep + skip days
+        "probe_paths": ["/Users/admin/.platform-logs/backup.heartbeat"],
+    },
+    "com.iap.strava-refresh": {
+        "max_age_sec": 2 * 3600,   # 30-min interval — 2h grace
+        "probe_paths": ["/Users/admin/.platform-logs/strava-refresh.heartbeat"],
+    },
+    "com.iap.strava-sync": {
+        "max_age_sec": 36 * 3600,
+        "probe_paths": ["/Users/admin/.platform-logs/strava-sync.heartbeat"],
+    },
+    "com.iap.vault-audit-rotate": {
+        "max_age_sec": 36 * 3600,
+        "probe_paths": ["/Users/admin/.platform-logs/vault-audit-rotate.heartbeat"],
+    },
+    "com.iap.vault-audit-archive": {
+        "max_age_sec": 36 * 3600,
+        "probe_paths": ["/Users/admin/.platform-logs/vault-audit-archive.heartbeat"],
+    },
+    "com.iap.docker-events": {
+        # KeepAlive — log file gets continuous writes from `docker events`
+        "max_age_sec": 1 * 3600,
+        "probe_paths": ["/Users/admin/.platform-logs/docker-events.log"],
+    },
+}
 
 # Same row regex as scripts/phase-deliverable-count.py — kept inline
 # (importing the script-as-module would require sys.path gymnastics
@@ -257,6 +295,107 @@ def cmd_framework_table_coherence() -> int:
     return 0
 
 
+# ── launchd recency (D-16-04.1) ──────────────────────────────────────────────
+
+def _file_mtime(path: str) -> float | None:
+    try:
+        return os.path.getmtime(path)
+    except OSError:
+        return None
+
+
+def cmd_launchd_recency() -> int:
+    """Verify launchd jobs are installed AND recently active.
+
+    Two checks per job:
+      1. Plist source in docker/launchd-agents/ matches installed plist
+         in ~/Library/LaunchAgents/ (drift detection — repo is canonical)
+      2. The job's most-recently-written log file is younger than its
+         per-job max_age_sec budget (recency — silent failure detection)
+
+    Pre-commit + CI safe: if the installed plist or log directories are
+    inaccessible (e.g., CI runner is not the operator's Mac), the
+    recency check is SKIPPED for that job, not failed. Plist content
+    drift is always checked (plists are in the repo).
+    """
+    issues: list[str] = []
+    skipped: list[str] = []
+    ok_count = 0
+    on_operator_mac = LAUNCHD_AGENTS_INSTALLED.is_dir()
+
+    repo_plists = sorted(LAUNCHD_AGENTS_REPO.glob("com.iap.*.plist"))
+    if not repo_plists:
+        print("FAIL: no com.iap.*.plist found in docker/launchd-agents/")
+        return 1
+
+    expected_labels = set(LAUNCHD_RECENCY_EXPECTATIONS.keys())
+    repo_labels = {p.stem for p in repo_plists}
+
+    missing_in_repo = expected_labels - repo_labels
+    missing_in_expectations = repo_labels - expected_labels
+    if missing_in_repo:
+        for label in sorted(missing_in_repo):
+            issues.append(f"  {label}: in expectations but no plist in docker/launchd-agents/")
+    if missing_in_expectations:
+        for label in sorted(missing_in_expectations):
+            issues.append(f"  {label}: plist in docker/launchd-agents/ but no recency expectation")
+
+    for plist in repo_plists:
+        label = plist.stem
+        installed = LAUNCHD_AGENTS_INSTALLED / plist.name
+        # Drift check: installed copy must match repo copy
+        if on_operator_mac:
+            if not installed.is_file():
+                issues.append(f"  {label}: NOT installed at {installed}")
+                continue
+            if installed.read_bytes() != plist.read_bytes():
+                issues.append(f"  {label}: installed plist DIFFERS from repo (drift)")
+                continue
+        else:
+            skipped.append(f"  {label}: skipped install check (not on operator Mac)")
+
+        # Recency check (operator Mac only)
+        if not on_operator_mac:
+            continue
+        exp = LAUNCHD_RECENCY_EXPECTATIONS.get(label)
+        if exp is None:
+            continue
+        max_age = exp["max_age_sec"]
+        probe_paths = exp["probe_paths"]
+        mtimes = [m for m in (_file_mtime(p) for p in probe_paths) if m is not None]
+        if not mtimes:
+            issues.append(
+                f"  {label}: no probe file exists yet at {probe_paths} "
+                f"(job has never run, or probe was deleted)"
+            )
+            continue
+        most_recent = max(mtimes)
+        age_sec = time.time() - most_recent
+        if age_sec > max_age:
+            age_h = age_sec / 3600
+            max_h = max_age / 3600
+            issues.append(
+                f"  {label}: probe is {age_h:.1f}h old, "
+                f"exceeds {max_h:.1f}h budget — possible silent failure"
+            )
+        else:
+            ok_count += 1
+
+    if skipped:
+        for s in skipped:
+            print(s)
+    if issues:
+        print(f"FAIL: launchd-recency — {len(issues)} issue(s) of {len(repo_plists)} plists checked:")
+        for i in issues:
+            print(i)
+        return 1
+    if not on_operator_mac:
+        print(f"SKIP: launchd-recency — not on operator Mac, drift checks skipped for {len(repo_plists)} plists")
+        return 0
+    print(f"OK: launchd-recency — {ok_count}/{len(repo_plists)} jobs installed + recent")
+    return 0
+
+
 # ── all ─────────────────────────────────────────────────────────────────────
 
 CHECKS = {
@@ -265,6 +404,7 @@ CHECKS = {
     "caddy-internal-domains": cmd_caddy_internal_domains,
     "netbox-services-have-adrs": cmd_netbox_services_have_adrs,
     "framework-table-coherence": cmd_framework_table_coherence,
+    "launchd-recency": cmd_launchd_recency,
 }
 
 

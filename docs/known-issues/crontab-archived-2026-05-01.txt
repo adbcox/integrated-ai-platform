@@ -1,0 +1,34 @@
+# Archived crontab — pre-migration snapshot for D-16-04.1
+#
+# Captured: 2026-05-01 by D-16-04.1 (cron → launchd migration)
+# Migrated to: ~/Library/LaunchAgents/com.iap.*.plist (6 plists)
+# Tracked copies: docker/launchd-agents/com.iap.*.plist (this repo)
+#
+# WHY MIGRATED: KI-005 silent-cron-failure investigation showed daily
+# fixed-time cron entries (0 N * * *) fail silently on macOS Tahoe —
+# likely because Mac sleeps at 02:00 and cron has no make-up semantics
+# for missed slots. Interval entries (*/30) and @reboot fired normally.
+# launchd's StartCalendarInterval fires the next time the system is
+# awake after a missed slot, which is the correct semantics for a
+# 24x7-expected job on a machine that may sleep.
+#
+# RESTORE PROCEDURE (if needed):
+#   1. Bootout all 6 com.iap.* launchd plists:
+#        for p in com.iap.backup com.iap.strava-refresh com.iap.strava-sync \
+#                 com.iap.vault-audit-rotate com.iap.vault-audit-archive \
+#                 com.iap.docker-events; do
+#          launchctl bootout gui/$(id -u)/$p
+#        done
+#   2. Re-install crontab from this file:
+#        crontab < docs/known-issues/crontab-archived-2026-05-01.txt
+#   3. Note: the lines below this header are the actual crontab content
+#      to be restored — strip the header before piping to crontab.
+#
+# === ORIGINAL CRONTAB CONTENT BEGINS ===
+0 2 * * * /Users/admin/repos/integrated-ai-platform/scripts/backup.sh >> /Users/admin/logs/restic-backup.log 2>&1
+*/30 * * * * /Users/admin/repos/integrated-ai-platform/scripts/refresh-strava-token.sh >> /Users/admin/logs/strava-refresh.log 2>&1
+0 6 * * * /Users/admin/repos/integrated-ai-platform/scripts/sync-strava-to-calendar.py >> /Users/admin/logs/strava-sync.log 2>&1
+# H1 §4.7 — Vault audit log rotation + QNAP archive
+0 3 * * * /Users/admin/.platform-scripts/vault-audit-rotate.sh >> /Users/admin/.platform-logs/vault-audit-rotate.log 2>> /Users/admin/.platform-logs/vault-audit-rotate.err
+30 3 * * * /Users/admin/.platform-scripts/vault-audit-archive.sh >> /Users/admin/.platform-logs/vault-audit-archive.log 2>> /Users/admin/.platform-logs/vault-audit-archive.err
+@reboot /opt/homebrew/bin/docker events --format json >> /Users/admin/.platform-logs/docker-events.log 2>> /Users/admin/.platform-logs/docker-events.err &

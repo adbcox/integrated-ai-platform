@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.iap.strava-refresh</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/bash</string>
+        <string>-c</string>
+        <string>/Users/admin/repos/integrated-ai-platform/scripts/refresh-strava-token.sh; rc=$?; touch /Users/admin/.platform-logs/strava-refresh.heartbeat; exit $rc</string>
+    </array>
+    <key>StartInterval</key>
+    <integer>1800</integer>
+    <key>StandardOutPath</key>
+    <string>/Users/admin/logs/strava-refresh.log</string>
+    <key>StandardErrorPath</key>
+    <string>/Users/admin/logs/strava-refresh.log</string>
+</dict>
+</plist>
