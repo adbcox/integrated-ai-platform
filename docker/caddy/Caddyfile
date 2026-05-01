@@ -88,6 +88,12 @@ inventree.internal {
     reverse_proxy host.docker.internal:8087
 }
 
+xindex.internal {
+    import access_log
+
+    reverse_proxy host.docker.internal:8095
+}
+
 # ── Observability Layer ───────────────────────────────────────────────────────
 grafana.internal {
     import access_log

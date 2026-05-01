@@ -1,11 +1,14 @@
 # xindex — Cross-Index Service Runbook
 
-**Status:** Live (D-16-02, opened 2026-05-01)
+**Status:** Live (D-16-02 + D-16-02.0.5, opened 2026-05-01)
 **Service location:** `docker/xindex/`
-**Endpoint:** `http://127.0.0.1:8095` (loopback only; no Caddy / .internal yet)
+**Canonical URL:** `https://xindex.internal/` (Caddy reverse proxy + local-CA TLS)
+**Loopback fallback:** `http://127.0.0.1:8095/` (preserved for local debugging)
 **Container port:** 8000
+**Host port:** `127.0.0.1:8095`
 **Image:** `iap/xindex:0.1.0`
 **Network:** `control-center-net`
+**NetBox CMDB entry:** `ipam.service` id 76 (`name=xindex`, `parent=mac-mini`)
 **Ingestion sources (D-16-02 scope):** repo files only — `docs/adr/`,
 `docs/DECISION_REGISTER.md`, `docs/runbooks/`. NetBox / Plane / MCP wrapper
 follow in D-16-02.1 / .2 / .3.
@@ -27,7 +30,10 @@ docs/  ──read-only mount──▶  xindex container  ──FTS5──▶  /d
                                   │
                                   └──FastAPI (uvicorn) on :8000
                                        ▲
-                                       │  127.0.0.1:8095
+                                       │  host.docker.internal:8095 (Caddy)
+                                       │  127.0.0.1:8095 (loopback)
+                                  Caddy ◀─── https://xindex.internal/
+                                       ▲
                                   operator / MCP client
 ```
 
@@ -36,26 +42,44 @@ docs/  ──read-only mount──▶  xindex container  ──FTS5──▶  /d
 - Ingest: full rebuild on startup if DB is empty; explicit `POST /refresh`
   thereafter. The schema + content are small enough that partial upserts
   are not worth the complexity.
+- TLS: Caddy fronts xindex on `https://xindex.internal/` using its built-in
+  local CA. Trust the CA on the client by extracting it once:
+  `docker exec caddy cat /data/caddy/pki/authorities/local/root.crt > caddy-local-ca.crt`
+  (header comment in `docker/caddy/Caddyfile`). The loopback URL stays
+  available for local debugging without TLS.
+- DNS: `xindex.internal` is provisioned in OPNsense Unbound (same place as
+  every other `*.internal` hostname). If a host can resolve `grafana.internal`
+  but not `xindex.internal`, the Unbound A-record is missing — add it under
+  Services → Unbound DNS → Overrides pointing at `192.168.10.145`.
 
 ## 3. Endpoints
 
+Canonical URL is `https://xindex.internal/`. The loopback URL
+`http://127.0.0.1:8095/` is preserved as a debug fallback (no TLS, no
+Caddy in the path).
+
 ```bash
 # liveness + counts + last_ingest_at
-curl -s http://127.0.0.1:8095/healthz | jq
+curl -ksS https://xindex.internal/healthz | jq
+# fallback: curl -s http://127.0.0.1:8095/healthz | jq
 
 # Full ADR detail (accepts both A-014 and ADR-A-014 forms)
-curl -s http://127.0.0.1:8095/adr/A-014 | jq
-curl -s http://127.0.0.1:8095/adr/ADR-A-014 | jq
+curl -ksS https://xindex.internal/adr/A-014 | jq
+curl -ksS https://xindex.internal/adr/ADR-A-014 | jq
 
 # Runbook detail (filename without .md)
-curl -s http://127.0.0.1:8095/runbook/vault-recovery-from-shamir | jq
+curl -ksS https://xindex.internal/runbook/vault-recovery-from-shamir | jq
 
 # Search (FTS5 ranked); type ∈ {all, adr, runbook, register}
-curl -s "http://127.0.0.1:8095/search?q=NetBox&type=adr&limit=5" | jq
+curl -ksS "https://xindex.internal/search?q=NetBox&type=adr&limit=5" | jq
 
 # Trigger background re-ingest. Poll /healthz to see updated last_ingest_at.
-curl -s -X POST http://127.0.0.1:8095/refresh | jq
+curl -ksS -X POST https://xindex.internal/refresh | jq
 ```
+
+The `-k` flag bypasses validation of the Caddy local CA certificate.
+Once the CA is added to the client trust store (see §2 Architecture),
+drop `-k` and use `curl -sS`.
 
 ## 4. Refresh cadence
 
@@ -70,14 +94,17 @@ follow-up if the manual cadence proves operationally insufficient.
 
 ```bash
 # What does ADR-A-014 actually decide?
-curl -s http://127.0.0.1:8095/adr/A-014 | jq -r '.sections.Decision'
+curl -ksS https://xindex.internal/adr/A-014 | jq -r '.sections.Decision'
 
 # Which runbook covers Shamir recovery?
-curl -s "http://127.0.0.1:8095/search?q=shamir&type=runbook" | jq
+curl -ksS "https://xindex.internal/search?q=shamir&type=runbook" | jq
 
 # Which ADRs touch the vault?
-curl -s "http://127.0.0.1:8095/search?q=vault&type=adr" | jq '.results[].ref'
+curl -ksS "https://xindex.internal/search?q=vault&type=adr" | jq '.results[].ref'
 ```
+
+(Loopback equivalents — `http://127.0.0.1:8095/...` — work the same way
+when the Caddy / DNS path is unavailable.)
 
 ## 6. Adding a new source ingester
 
@@ -164,5 +191,7 @@ review. They are deferred to:
 - **D-16-02.2** — Plane ingestion (issues, projects)
 - **D-16-02.3** — MCP tool wrapper so Claude Code agents can query xindex
 
-A small pre-step **D-16-02.0.5** adds Caddy + `xindex.internal` so the
-service is reachable from non-loopback consumers.
+**D-16-02.0.5 — DONE 2026-05-01.** Caddy site block at
+`docker/caddy/Caddyfile` reverse-proxies `https://xindex.internal/` to
+`host.docker.internal:8095`. xindex registered in NetBox CMDB as
+`ipam.service` id 76 on the `mac-mini` device.
