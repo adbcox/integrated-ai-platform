@@ -290,6 +290,94 @@ class PlaneAPI:
                 time.sleep(1.1)  # respect 60/min rate limit
         return result
 
+    # ── Modules ───────────────────────────────────────────────────────────────
+    #
+    # Modules are project sub-groupings. Plane V1 supports `external_id` on
+    # modules (verified empirically 2026-05-01); the sync uses it as the
+    # idempotency key, just like issues.
+    #
+    # Module/issue association lives at the nested `module-issues/` endpoint
+    # and is set with a list of issue IDs in `{"issues": [...]}`.
+
+    def list_modules(self, use_cache: bool = True) -> list[dict]:
+        key = f"modules:{self.project_id}"
+        if use_cache:
+            cached = _cache.get(key)
+            if cached is not None:
+                return cached
+        result = self._get(self._proj_url("/modules/"))
+        results = result.get("results", result) if isinstance(result, dict) else result
+        _cache.set(key, results, ttl=300)
+        return results
+
+    def get_module_by_external_id(self, external_id: str) -> Optional[dict]:
+        for m in self.list_modules():
+            if (m.get("external_id") or "") == external_id:
+                return m
+        return None
+
+    def get_module_by_name(self, name: str) -> Optional[dict]:
+        for m in self.list_modules():
+            if (m.get("name") or "").lower() == name.lower():
+                return m
+        return None
+
+    def create_module(
+        self,
+        name: str,
+        description: str = "",
+        external_id: str | None = None,
+    ) -> dict:
+        payload: dict[str, Any] = {"name": name, "description": description}
+        created = self._post(self._proj_url("/modules/"), payload)
+        # Plane's module POST also ignores external_id — set via PATCH.
+        # The PATCH response on /modules/{id}/ omits the `id` field, so
+        # merge the patched fields back onto the create response rather
+        # than replacing it wholesale (mirrors the same gotcha already
+        # handled for issues elsewhere).
+        if external_id and created.get("id"):
+            patched = self._patch(
+                self._proj_url(f"/modules/{created['id']}/"),
+                {"external_id": external_id},
+            )
+            created = {**created, **patched}
+        _cache.invalidate(f"modules:{self.project_id}")
+        return created
+
+    def update_module(self, module_id: str, updates: dict) -> dict:
+        result = self._patch(self._proj_url(f"/modules/{module_id}/"), updates)
+        _cache.invalidate(f"modules:{self.project_id}")
+        return result
+
+    def ensure_module(
+        self,
+        external_id: str,
+        name: str,
+        description: str = "",
+    ) -> tuple[dict, bool]:
+        """Get-or-create a module keyed by external_id. Returns (module, created)."""
+        existing = self.get_module_by_external_id(external_id)
+        if existing:
+            return existing, False
+        created = self.create_module(name=name, description=description, external_id=external_id)
+        return created, True
+
+    def list_module_issues(self, module_id: str) -> list[str]:
+        """Return the list of issue IDs currently associated with a module."""
+        url = self._proj_url(f"/modules/{module_id}/module-issues/")
+        data = self._get(url)
+        results = data.get("results", data) if isinstance(data, dict) else data
+        # The nested endpoint returns module-issue link objects with `issue` FK.
+        return [r.get("issue") for r in results if r.get("issue")]
+
+    def add_issues_to_module(self, module_id: str, issue_ids: list[str]) -> dict:
+        """POST a list of issue IDs onto a module. Idempotent on Plane's side
+        (re-adding an already-linked issue is a no-op)."""
+        if not issue_ids:
+            return {}
+        url = self._proj_url(f"/modules/{module_id}/module-issues/")
+        return self._post(url, {"issues": issue_ids})
+
     # ── Issues ────────────────────────────────────────────────────────────────
 
     def list_issues(
