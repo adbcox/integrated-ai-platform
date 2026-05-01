@@ -376,7 +376,7 @@ Deliverable table:
 | 17.P: Loose-doc retirement | NOT STARTED | re-parented from D-16-05 |
 | 17.Q: Architecture dashboard | NOT STARTED | re-parented from D-16-08 |
 | 17.R: Structurizr population | NOT STARTED | re-parented from D-16-09 |
-| 17.S: Article-intake findings consolidated to repo | NOT STARTED | Bundle A.5 commit 4 pending operator surface |
+| 17.S: Article-intake findings consolidated to repo | DONE | 4ece268 |
 | 17.T: D#17/D#18/D#19/D#20/D#21 codified | DONE | b86bc55 |
 
 Sequencing: 17.A → 17.B → 17.C (foundation) before Tier 2; 17.B before
