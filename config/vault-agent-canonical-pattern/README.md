@@ -1,6 +1,6 @@
 # Vault Agent canonical pattern (H1 §6, vaultwarden as exemplar)
 
-**Status**: pattern designed and templated. **NOT YET APPLIED** to any service. Use this template as the starting point when rolling out §6 sidecars.
+**Status**: in production use. As of 2026-05-01, 18 services apply the pattern (verified `docs/phase-15/COMPREHENSIVE_AUDIT_VALIDATION_2026-05-01.md` §8.1). For current count run: `git grep -l "exit_after_auth" -- "docker/*/vault-agent/agent.hcl" "docker/*/vault-agent-*/agent.hcl" | wc -l`. Use this template as the starting point when rolling out new §6 sidecars.
 
 ## Files
 
