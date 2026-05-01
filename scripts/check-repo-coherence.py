@@ -396,6 +396,48 @@ def cmd_launchd_recency() -> int:
     return 0
 
 
+# ── mac-studio-reachable ────────────────────────────────────────────────────
+
+MAC_STUDIO_IP = "192.168.10.142"
+
+
+def cmd_mac_studio_reachable() -> int:
+    """Day-1 (17.O) reachability check for the Mac Studio compute node.
+
+    One ICMP echo, 2-second timeout. Exits 0 reachable, 1 unreachable.
+    Treated as drift because a Day-1 node going dark means either the
+    node is down or its DHCP lease moved — both warrant operator attention.
+
+    GitHub-hosted runners can't reach the home LAN; the check skips
+    when GITHUB_ACTIONS=true (same pattern as validate-plane-sync-dryrun
+    in the validate-infrastructure workflow).
+    """
+    if os.environ.get("GITHUB_ACTIONS") == "true":
+        print(f"SKIP: mac-studio-reachable — GitHub-hosted runner can't reach {MAC_STUDIO_IP}")
+        print("       runs locally on mac-mini (pre-commit + cron-driven coherence sweep)")
+        return 0
+    # `ping -W` units differ: macOS expects ms, Linux expects seconds.
+    # Use the macOS-native value and rely on the subprocess timeout for
+    # safety; this script only runs on operator-side macOS or in CI
+    # (which we just skipped above).
+    try:
+        result = subprocess.run(
+            ["ping", "-c", "1", "-W", "2000", MAC_STUDIO_IP],
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+    except subprocess.TimeoutExpired:
+        print(f"FAIL: mac-studio-reachable — ping subprocess timed out ({MAC_STUDIO_IP})")
+        return 1
+    if result.returncode != 0:
+        print(f"FAIL: mac-studio-reachable — {MAC_STUDIO_IP} did not respond")
+        print(result.stdout.strip() or result.stderr.strip())
+        return 1
+    print(f"OK: mac-studio-reachable — {MAC_STUDIO_IP} responded")
+    return 0
+
+
 # ── all ─────────────────────────────────────────────────────────────────────
 
 CHECKS = {
@@ -405,6 +447,7 @@ CHECKS = {
     "netbox-services-have-adrs": cmd_netbox_services_have_adrs,
     "framework-table-coherence": cmd_framework_table_coherence,
     "launchd-recency": cmd_launchd_recency,
+    "mac-studio-reachable": cmd_mac_studio_reachable,
 }
 
 
