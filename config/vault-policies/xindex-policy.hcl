@@ -18,6 +18,13 @@ path "secret/data/netbox/api_token" {
   capabilities = ["read"]
 }
 
+# ── Plane API token (read-only consumption, D-16-02.2) ────────────────
+# Same path as plane-sync reads. xindex consumes only the api_token
+# field; ADR-A-006 forbids xindex from writing to Plane.
+path "secret/data/plane/api" {
+  capabilities = ["read"]
+}
+
 # ── Vault status reads ────────────────────────────────────────────────
 path "sys/health" {
   capabilities = ["read"]

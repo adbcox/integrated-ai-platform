@@ -30,6 +30,9 @@ from .models import (
     LinksResponse,
     NodeDetail,
     PerSourceHealth,
+    PlaneIssueDetail,
+    PlaneIssueRef,
+    PlaneModuleDetail,
     RegisterRef,
     RefreshAccepted,
     RunbookDetail,
@@ -61,10 +64,12 @@ async def lifespan(app: FastAPI):  # noqa: ARG001
 
 app = FastAPI(
     title="xindex",
-    version="0.2.0",
+    version="0.3.0",
     description=(
-        "Cross-index of ADRs, Decision Register, runbooks (D-16-02) and "
-        "NetBox services + nodes + entity_links (D-16-02.1)."
+        "Cross-index of ADRs, Decision Register, runbooks (D-16-02), "
+        "NetBox services + nodes + entity_links (D-16-02.1), and Plane "
+        "issues + modules + tracked_in links (D-16-02.2). Plane data is "
+        "read-only (ADR-A-006)."
     ),
     lifespan=lifespan,
 )
@@ -142,6 +147,8 @@ def get_adr(adr_id: str, conn: ConnDep) -> ADRDetail:
         else None
     )
 
+    plane_tracking = _plane_tracking_for_adr(conn, canonical)
+
     return ADRDetail(
         id=row["id"],
         short_id=row["short_id"],
@@ -154,6 +161,35 @@ def get_adr(adr_id: str, conn: ConnDep) -> ADRDetail:
         body=row["body"],
         sections=json.loads(row["sections_json"] or "{}"),
         register_entry=register_entry,
+        plane_tracking=plane_tracking,
+    )
+
+
+def _plane_tracking_for_adr(
+    conn: sqlite3.Connection, adr_id: str
+) -> PlaneIssueRef | None:
+    """Resolve the Plane issue tracking this ADR via tracked_in entity_link."""
+    row = conn.execute(
+        """
+        SELECT pi.external_id, pi.name, pi.state_name, pi.module_name,
+               pi.updated_at
+        FROM entity_links el
+        JOIN plane_issues pi ON pi.external_id = el.to_ref
+        WHERE el.from_kind='adr' AND el.from_ref=?
+          AND el.to_kind='plane_issue' AND el.link_type='tracked_in'
+          AND el.source='plane'
+        LIMIT 1
+        """,
+        (adr_id,),
+    ).fetchone()
+    if row is None:
+        return None
+    return PlaneIssueRef(
+        external_id=row["external_id"],
+        name=row["name"],
+        state_name=row["state_name"],
+        module_name=row["module_name"],
+        updated_at=row["updated_at"],
     )
 
 
@@ -230,6 +266,65 @@ def get_node(name: str, conn: ConnDep) -> NodeDetail:
     )
 
 
+@app.get("/plane/{external_id}", response_model=PlaneIssueDetail)
+def get_plane_issue(external_id: str, conn: ConnDep) -> PlaneIssueDetail:
+    row = conn.execute(
+        "SELECT external_id, plane_id, name, state_name, module_name, "
+        "project_id, description, updated_at, source FROM plane_issues "
+        "WHERE external_id = ?",
+        (external_id,),
+    ).fetchone()
+    if row is None:
+        raise HTTPException(404, detail=f"Plane issue not found: {external_id}")
+    return PlaneIssueDetail(
+        external_id=row["external_id"],
+        plane_id=row["plane_id"],
+        name=row["name"],
+        state_name=row["state_name"],
+        module_name=row["module_name"],
+        project_id=row["project_id"],
+        description=row["description"] or "",
+        updated_at=row["updated_at"],
+        source=row["source"],
+        links=_links_for(conn, "plane_issue", row["external_id"]),
+    )
+
+
+@app.get("/plane/module/{name}", response_model=PlaneModuleDetail)
+def get_plane_module(name: str, conn: ConnDep) -> PlaneModuleDetail:
+    row = conn.execute(
+        "SELECT name, plane_id, external_id, description, source "
+        "FROM plane_modules WHERE name = ?",
+        (name,),
+    ).fetchone()
+    if row is None:
+        raise HTTPException(404, detail=f"Plane module not found: {name}")
+    issue_rows = conn.execute(
+        "SELECT external_id, name, state_name, module_name, updated_at "
+        "FROM plane_issues WHERE module_name = ? "
+        "ORDER BY external_id",
+        (row["name"],),
+    ).fetchall()
+    issues = [
+        PlaneIssueRef(
+            external_id=r["external_id"],
+            name=r["name"],
+            state_name=r["state_name"],
+            module_name=r["module_name"],
+            updated_at=r["updated_at"],
+        )
+        for r in issue_rows
+    ]
+    return PlaneModuleDetail(
+        name=row["name"],
+        plane_id=row["plane_id"],
+        external_id=row["external_id"],
+        description=row["description"] or "",
+        source=row["source"],
+        issues=issues,
+    )
+
+
 @app.get("/links", response_model=LinksResponse)
 def list_links(
     conn: ConnDep,
@@ -290,7 +385,7 @@ def search(
     conn: ConnDep,
     q: str = Query(..., min_length=1, max_length=200),
     type: str = Query(
-        "all", pattern="^(all|adr|runbook|register|service|node)$"
+        "all", pattern="^(all|adr|runbook|register|service|node|plane_issue)$"
     ),
     limit: int = Query(20, ge=1, le=100),
 ) -> SearchResponse:

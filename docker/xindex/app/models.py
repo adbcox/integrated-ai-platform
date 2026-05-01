@@ -29,6 +29,14 @@ class RegisterRef(BaseModel):
     summary: str
 
 
+class PlaneIssueRef(BaseModel):
+    external_id: str
+    name: str
+    state_name: str | None = None
+    module_name: str | None = None
+    updated_at: str | None = None
+
+
 class ADRDetail(BaseModel):
     id: str
     short_id: str
@@ -41,6 +49,7 @@ class ADRDetail(BaseModel):
     body: str
     sections: dict[str, str] = Field(default_factory=dict)
     register_entry: RegisterRef | None = None
+    plane_tracking: PlaneIssueRef | None = None
 
 
 class RunbookDetail(BaseModel):
@@ -90,6 +99,28 @@ class LinksResponse(BaseModel):
     results: list[EntityLink]
 
 
+class PlaneIssueDetail(BaseModel):
+    external_id: str
+    plane_id: str
+    name: str
+    state_name: str | None = None
+    module_name: str | None = None
+    project_id: str | None = None
+    description: str = ""
+    updated_at: str | None = None
+    source: str = "plane"
+    links: list[EntityLink] = Field(default_factory=list)
+
+
+class PlaneModuleDetail(BaseModel):
+    name: str
+    plane_id: str
+    external_id: str | None = None
+    description: str = ""
+    source: str = "plane"
+    issues: list[PlaneIssueRef] = Field(default_factory=list)
+
+
 class SearchHit(BaseModel):
     kind: str
     ref: str
@@ -118,6 +149,8 @@ class IngestSummary(BaseModel):
     services: int = 0
     nodes: int = 0
     entity_links: int = 0
+    plane_issues: int = 0
+    plane_modules: int = 0
     last_ingest_at: str
 
     def as_meta(self) -> dict[str, Any]:

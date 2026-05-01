@@ -11,6 +11,7 @@ services:
       - /Users/admin/.vault-agent-secrets/xindex:/vault/secrets
       - ../vault-agent-xindex/agent.hcl:/vault/config/agent.hcl:ro
       - ../vault-agent-xindex/netbox-credentials.env.tmpl:/vault/agent-config/netbox-credentials.env.tmpl:ro
+      - ../vault-agent-xindex/plane-credentials.env.tmpl:/vault/agent-config/plane-credentials.env.tmpl:ro
     command: agent -config=/vault/config/agent.hcl
     networks:
       - control-center-net
@@ -21,13 +22,13 @@ services:
     labels:
       com.iap.service: "vault-agent-xindex"
       com.iap.tier: "control-center"
-      com.iap.deliverable: "D-16-02.1"
+      com.iap.deliverable: "D-16-02.2"
 
   xindex:
     build:
       context: .
       dockerfile: Dockerfile
-    image: iap/xindex:0.2.0
+    image: iap/xindex:0.3.0
     container_name: xindex
     restart: unless-stopped
     depends_on:
@@ -64,7 +65,7 @@ services:
     labels:
       com.iap.service: "xindex"
       com.iap.tier: "control-center"
-      com.iap.deliverable: "D-16-02.1"
+      com.iap.deliverable: "D-16-02.2"
 
 volumes:
   xindex_data:

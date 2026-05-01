@@ -1,25 +1,29 @@
 # xindex — Cross-Index Service Runbook
 
-**Status:** Live (D-16-02 + D-16-02.0.5 + D-16-02.1, opened 2026-05-01)
+**Status:** Live (D-16-02 + D-16-02.0.5 + D-16-02.1 + D-16-02.2, opened 2026-05-01)
 **Service location:** `docker/xindex/`
 **Canonical URL:** `https://xindex.internal/` (Caddy reverse proxy + local-CA TLS)
 **Loopback fallback:** `http://127.0.0.1:8095/` (preserved for local debugging)
 **Container port:** 8000
 **Host port:** `127.0.0.1:8095`
-**Image:** `iap/xindex:0.2.0`
+**Image:** `iap/xindex:0.3.0`
 **Network:** `control-center-net`
-**Vault dependency (D-16-02.1):** `vault-agent-xindex` sidecar renders
-NetBox API token to `/run/secrets/netbox-credentials.env` via the
-`xindex` AppRole (policy: `xindex-policy`, read-only on
-`secret/data/netbox/api_token`). xindex `depends_on:
-service_completed_successfully` of the sidecar.
+**Vault dependency:** `vault-agent-xindex` sidecar renders NetBox + Plane
+API tokens to `/run/secrets/netbox-credentials.env` and
+`/run/secrets/plane-credentials.env` via the `xindex` AppRole (policy:
+`xindex-policy`, read-only on `secret/data/netbox/api_token` and
+`secret/data/plane/api`). xindex `depends_on: service_completed_successfully`
+of the sidecar.
 **NetBox CMDB entry:** `ipam.service` id 76 (`name=xindex`, `parent=mac-mini`)
 **Ingestion sources:**
 - **Repo-local (atomic rebuild):** `docs/adr/`, `docs/DECISION_REGISTER.md`,
   `docs/runbooks/`
-- **External (per-source partial refresh):** NetBox (`dcim.devices`,
-  `ipam.services` + `service_dependencies` custom field links). Plane
-  ingestion is D-16-02.2; MCP wrapper is D-16-02.3.
+- **External (per-source partial refresh):**
+  - NetBox (`dcim.devices`, `ipam.services` + `service_dependencies`
+    custom field links).
+  - Plane (project modules + issues; emits `tracked_in` links from local
+    ADRs / deliverables / phases keyed by Plane `external_id`).
+  MCP wrapper is D-16-02.3.
 
 ## 1. Purpose
 
@@ -104,13 +108,20 @@ curl -ksS https://xindex.internal/runbook/vault-recovery-from-shamir | jq
 curl -ksS https://xindex.internal/service/xindex     | jq
 curl -ksS https://xindex.internal/node/mac-mini      | jq
 
-# Entity-link query (D-16-02.1) — any subset of the filters is optional
-curl -ksS "https://xindex.internal/links?from_kind=service&link_type=depends_on" | jq
-curl -ksS "https://xindex.internal/links?to_kind=node&to_ref=mac-mini" | jq
+# Plane issue / module detail (D-16-02.2 — sourced from Plane, READ-ONLY)
+# external_id is the human-stable key (e.g. ADR-A-006, D-16-02.2, Phase-16)
+curl -ksS https://xindex.internal/plane/D-16-02.2          | jq
+curl -ksS "https://xindex.internal/plane/module/Phase%2016" | jq
 
-# Search (FTS5 ranked); type ∈ {all, adr, runbook, register, service, node}
-curl -ksS "https://xindex.internal/search?q=NetBox&type=adr&limit=5" | jq
-curl -ksS "https://xindex.internal/search?q=caddy&type=service" | jq
+# Entity-link query (D-16-02.1+) — any subset of the filters is optional
+curl -ksS "https://xindex.internal/links?from_kind=service&link_type=depends_on" | jq
+curl -ksS "https://xindex.internal/links?to_kind=node&to_ref=mac-mini"           | jq
+curl -ksS "https://xindex.internal/links?link_type=tracked_in&source=plane"      | jq
+
+# Search (FTS5 ranked); type ∈ {all, adr, runbook, register, service, node, plane_issue}
+curl -ksS "https://xindex.internal/search?q=NetBox&type=adr&limit=5"  | jq
+curl -ksS "https://xindex.internal/search?q=caddy&type=service"       | jq
+curl -ksS "https://xindex.internal/search?q=Plane&type=plane_issue"   | jq
 
 # Trigger background re-ingest. Poll /healthz to see updated last_ingest_at
 # (and per-source status flips if NetBox was unreachable).
@@ -242,18 +253,25 @@ python3.12 -m venv .venv
 .venv/bin/python -m pytest app/tests/ -v
 ```
 
-26 tests cover:
+41 tests cover:
 - ADR parsing (both header styles), runbook ingest, decision-register
   parsing
 - The HTTP endpoints (healthz, adr, runbook, search, refresh) on
   repo-local data
 - NetBox ingester (`test_ingest_netbox.py` — pynetbox stubbed via the
   `fetcher=` injection point)
+- Plane ingester (`test_ingest_plane.py` — Plane HTTP stubbed via
+  the `fetcher=` injection point; covers external_id mapping,
+  rate-limit error path, missing-credentials skip)
 - The partial-refresh doctrine (`test_partial_refresh.py` — proves a
-  NetBox failure on a re-ingest preserves prior NetBox rows AND does
-  not affect ADR/runbook/register data)
-- The new `/service`, `/node`, `/links` endpoints + per-source
-  health on `/healthz`
+  NetBox or Plane failure on a re-ingest preserves prior rows AND
+  does not affect any other source, including the ADR/runbook/register
+  triple)
+- The `/service`, `/node`, `/links` endpoints + per-source health
+  on `/healthz`
+- The `/plane/{external_id}` and `/plane/module/{name}` endpoints
+  plus ADR `plane_tracking` populated from the `tracked_in`
+  entity_link.
 
 Tests build a synthetic `/docs` tree and never touch the real repo
 content or NetBox.
@@ -271,7 +289,11 @@ into the same review. They are deferred to:
   + `ipam.services` + entity_links derived from the
   `service_dependencies` custom field. Vault AppRole `xindex` reads
   `secret/data/netbox/api_token` only.
-- **D-16-02.2** — Plane ingestion (issues, projects, modules).
+- **D-16-02.2 — DONE 2026-05-01.** Plane ingestion (modules + issues,
+  read-only per ADR-A-006). Emits `tracked_in` entity_links from
+  local ADRs/deliverables/phases to Plane issues, keyed by Plane
+  `external_id`. `xindex-policy` extended with `secret/data/plane/api`
+  read; rendered to `/run/secrets/plane-credentials.env`.
 - **D-16-02.3** — MCP tool wrapper so Claude Code agents can query
   xindex.
 
@@ -357,3 +379,77 @@ vault read -field=role_id auth/approle/role/xindex/role-id
 vault write -f -field=secret_id auth/approle/role/xindex/secret-id
 ```
 and re-write the files at the same paths.
+
+## 13. Plane source (D-16-02.2)
+
+xindex consumes Plane state but never writes back. ADR-A-006 fixes
+the project framework markdown (`docs/PROJECT_FRAMEWORK.md`) as the
+sole source of truth for deliverable rollup; Plane is the operational
+overlay populated by `scripts/plane-sync-from-framework.py`. xindex
+is a third reader downstream of both.
+
+### What gets ingested
+
+- **Modules** (`plane_modules` table) — every module in the project,
+  keyed by `name` with `external_id` (e.g. `Phase-16`) carried over.
+- **Issues** (`plane_issues` table) — every issue with a non-empty
+  `external_id`. Issues without an `external_id` are skipped (they
+  are operational-only and have no canonical local artifact). The
+  state UUID is denormalized to its name; the first matching module
+  is denormalized to `module_name`.
+- **Tracked-in links** (`entity_links` rows with
+  `link_type='tracked_in'`, `source='plane'`) for issues whose
+  `external_id` matches one of:
+  - `ADR-A-NNN`     → `from_kind='adr'`
+  - `D-NN-MM[.x]`   → `from_kind='deliverable'`
+  - `Phase-NN`      → `from_kind='phase'`
+
+  Other prefixes are ingested into `plane_issues` but emit no link.
+
+### Rate limits and failure isolation
+
+Plane CE V1 enforces 60 req/min per token. The ingester walks
+`/modules/`, `/states/`, `/issues/` (paged at 100/page) sequentially,
+no parallelism — the request budget for a project of our size is
+well under the limit. A 429 is treated as an error: the prior Plane
+rows are restored and `set_source_status('plane', 'error', ...)` is
+recorded. On retry (the next `/refresh`), if the call succeeds, the
+status flips back to `ok` and rows refresh.
+
+The same isolation applies to network errors and any uncaught
+exception inside `_default_fetcher`: the ingester never raises, the
+`_ingest_plane()` snapshot/restore wrapper rewrites the prior data,
+and other sources (ADRs, runbooks, register, NetBox) are unaffected.
+
+### Why no `deliverables` table
+
+A natural temptation is to give xindex its own deliverables table
+populated from Plane. We deliberately don't: `docs/PROJECT_FRAMEWORK.md`
+is the canonical record for deliverable scope and status (ADR-A-006).
+Adding a second authoritative deliverable list inside xindex would
+make Plane drift visible but ambiguous about which side is correct.
+Instead, xindex parses the framework markdown for nothing (yet) and
+emits `tracked_in` links so consumers can look up "for ADR-A-006,
+which Plane issue, in which state?" without ever calling Plane.
+
+If a future deliverable-aware view is needed, the right shape is
+parsing `PROJECT_FRAMEWORK.md` directly (a fourth repo-local source),
+NOT mirroring Plane's rollup. That would preserve repo-canonical
+truth and reduce Plane to what it already is — an operational layer.
+
+### Health output
+
+`/healthz` reports `plane` alongside the other sources:
+
+```jsonc
+{
+  "sources": [
+    {"source": "plane",  "status": "ok",      "last_ingest_at": "2026-05-01T..."},
+    {"source": "plane",  "status": "error",   "error": "rate-limited: 429 on /issues/"},
+    {"source": "plane",  "status": "unknown", "error": "no Plane credentials available"}
+  ]
+}
+```
+
+`unknown` means the credential file was not rendered (sidecar issue
+or policy mismatch) — see §12.

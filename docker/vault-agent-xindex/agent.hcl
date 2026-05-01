@@ -35,4 +35,10 @@ template {
   perms       = "0444"
 }
 
+template {
+  source      = "/vault/agent-config/plane-credentials.env.tmpl"
+  destination = "/vault/secrets/plane-credentials.env"
+  perms       = "0444"
+}
+
 exit_after_auth = true

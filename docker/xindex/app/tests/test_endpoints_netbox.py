@@ -46,6 +46,14 @@ def client(
 ):
     monkeypatch.setenv("XINDEX_DOCS_ROOT", str(fixture_docs))
     monkeypatch.setenv("NETBOX_API_TOKEN", "fake-token")
+    # Ensure no Plane creds leak in from the host env; the Plane
+    # ingester should skip cleanly in this fixture.
+    for k in ("PLANE_API_TOKEN", "PLANE_URL", "PLANE_WORKSPACE", "PLANE_PROJECT_ID"):
+        monkeypatch.delenv(k, raising=False)
+    from app.ingest import plane as _pl
+    monkeypatch.setattr(
+        _pl, "CREDENTIALS_PATH", _pl.Path("/nonexistent/plane.env")
+    )
 
     from app import main as main_mod
     importlib.reload(main_mod)

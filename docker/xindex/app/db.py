@@ -21,7 +21,7 @@ DEFAULT_DB_PATH = os.environ.get("XINDEX_DB", "/data/xindex.db")
 # atomically; external sources are isolated so partial failures don't
 # wipe healthy data.
 LOCAL_SOURCES = ("adr", "runbook", "register")
-EXTERNAL_SOURCES = ("netbox",)
+EXTERNAL_SOURCES = ("netbox", "plane")
 ALL_SOURCES = LOCAL_SOURCES + EXTERNAL_SOURCES
 
 
@@ -79,6 +79,30 @@ CREATE TABLE IF NOT EXISTS nodes (
     source          TEXT NOT NULL DEFAULT 'netbox'
 );
 
+-- Plane (D-16-02.2). Read-only mirror per ADR-A-006: xindex never
+-- writes to Plane. external_id is the human-stable key set by
+-- plane-sync (e.g. 'D-16-02.2', 'ADR-A-006'); state_name and
+-- module_name are denormalized so the UI can avoid an extra hop.
+CREATE TABLE IF NOT EXISTS plane_issues (
+    external_id     TEXT PRIMARY KEY,        -- 'D-NN-MM' / 'ADR-A-NNN' / ...
+    plane_id        TEXT NOT NULL,           -- Plane issue UUID
+    name            TEXT NOT NULL,
+    state_name      TEXT,                    -- resolved from state UUID
+    module_name     TEXT,                    -- first module's name (if any)
+    project_id      TEXT,
+    description     TEXT NOT NULL DEFAULT '',
+    updated_at      TEXT,
+    source          TEXT NOT NULL DEFAULT 'plane'
+);
+
+CREATE TABLE IF NOT EXISTS plane_modules (
+    name            TEXT PRIMARY KEY,        -- module.name
+    plane_id        TEXT NOT NULL,           -- module UUID
+    external_id     TEXT,                    -- e.g. 'Phase-16'
+    description     TEXT NOT NULL DEFAULT '',
+    source          TEXT NOT NULL DEFAULT 'plane'
+);
+
 -- Entity links: M:N junction. Untyped enough to carry future ADR
 -- linkages, runbook references, etc., without schema churn.
 CREATE TABLE IF NOT EXISTS entity_links (
@@ -101,7 +125,7 @@ CREATE TABLE IF NOT EXISTS meta (
 );
 
 CREATE VIRTUAL TABLE IF NOT EXISTS xindex_fts USING fts5(
-    kind,            -- 'adr' | 'runbook' | 'register' | 'service' | 'node'
+    kind,            -- 'adr' | 'runbook' | 'register' | 'service' | 'node' | 'plane_issue'
     ref,             -- pk in source table
     title,
     body,
@@ -161,6 +185,12 @@ def reset_source(conn: sqlite3.Connection, source: str) -> None:
         conn.execute(
             "DELETE FROM xindex_fts WHERE kind IN ('service','node');"
         )
+    elif source == "plane":
+        conn.execute("DELETE FROM plane_issues WHERE source=?", (source,))
+        conn.execute("DELETE FROM plane_modules WHERE source=?", (source,))
+        conn.execute(
+            "DELETE FROM xindex_fts WHERE kind = 'plane_issue';"
+        )
     conn.execute("DELETE FROM entity_links WHERE source=?", (source,))
 
 
@@ -214,6 +244,8 @@ def counts(conn: sqlite3.Connection) -> dict[str, int]:
         "services",
         "nodes",
         "entity_links",
+        "plane_issues",
+        "plane_modules",
     ):
         row = conn.execute(f"SELECT COUNT(*) AS n FROM {table}").fetchone()
         out[table] = int(row["n"])
