@@ -217,7 +217,40 @@ bypassed and why.
 If a check is permanently wrong, fix the script — don't add a
 per-file ignore. The hook is supposed to be authoritative.
 
-## §8 — References
+## §8 — Doctrine D#15: pre-deliverable cleanliness gate
+
+Doctrine D#15 (`docs/PROJECT_FRAMEWORK.md` §3.5) mandates that the
+checks in §1–§5 of this runbook be run at the **start of every
+deliverable** as preflight #0, BEFORE any substantive work begins.
+
+The gate has two acceptable resolutions on failure:
+
+1. Fix the drift as preflight #0 with explicit explanation in the
+   resulting commit message, OR
+2. Operator explicitly waives with a written reason, captured verbatim
+   in the deliverable's commit message under a
+   `Cleanliness gate waiver:` header.
+
+Carrying drift silently into substantive work is treated as Sev-3
+minimum. The gate result is surfaced before substantive work in the
+form:
+
+```
+PREFLIGHT #0:
+  git status:                    clean | <list>
+  check-repo-coherence:          PASS | FAIL <detail>
+  cross-index-validate:          PASS | FAIL <detail>
+  phase-deliverable-count <N>:   <X of Y> | FAIL
+  plane-sync --dry-run:          clean (exit 0) | drift (exit 1)
+  xindex /healthz:               <N>/<N> sources ok | <detail>
+  inherited KI:                  <list or "none">
+GATE: PASS | FAIL — <action>
+```
+
+See also ADR-A-006 (single source of truth) and `docs/PROJECT_FRAMEWORK.md`
+§3.5 (D#15 + D#16 doctrine entries).
+
+## §9 — References
 
 - ADR-A-006 — repo docs are canonical for architecture and roadmap planning
 - `scripts/check-repo-coherence.py` — local checks (this deliverable)
@@ -225,4 +258,5 @@ per-file ignore. The hook is supposed to be authoritative.
 - `scripts/plane-sync-from-framework.py` — repo → Plane one-way sync
 - `.github/workflows/validate-infrastructure.yml` — CI runner
 - `.pre-commit-config.yaml` — local hooks
+- `docs/PROJECT_FRAMEWORK.md` §3.5 — D#15 + D#16 doctrine entries
 - `docs/PROJECT_FRAMEWORK.md` §4 — surface format the dry-run feeds

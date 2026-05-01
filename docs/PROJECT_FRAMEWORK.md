@@ -79,6 +79,78 @@ Labels are stable once issued. If scope changes, the label is closed (`SUPERSEDE
 
 ---
 
+## 3.5 Doctrine register
+
+Doctrine points are durable platform rules captured during phase work
+under the `D#NN` label. Older D# entries (D#01 through D#14) are
+recorded inline in CLAUDE.md, ADRs, or phase closeout docs at their
+point of capture. New doctrine from Phase 16 forward is enumerated
+here so it cannot be lost between conversations.
+
+### D#15 — Pre-deliverable cleanliness gate (MANDATORY HARD STOP)
+
+Every deliverable's first task is **preflight #0**: verify the working
+tree, repo, and operational state are clean before any substantive
+work begins. The operator and the executor (Claude Code or any other
+agent) BOTH must observe this.
+
+**Cleanliness checks:**
+
+- `git status --short` returns empty
+- `python3 scripts/check-repo-coherence.py all` → exit 0
+- `python3 scripts/cross-index-validate.py` → exit 0
+- `python3 scripts/phase-deliverable-count.py <N>` → no error
+- `/Users/admin/.venv-block-4c/bin/python scripts/plane-sync-from-framework.py --dry-run` → exit 0
+- `xindex /healthz` → all sources `status=ok`
+- No new known-issues created in the prior session that haven't been
+  triaged into a deliverable
+
+On any failure, the deliverable does **NOT** proceed to substantive
+work. Two acceptable resolutions:
+
+1. **Fix the failure as preflight #0** with explicit explanation in
+   the resulting commit message; OR
+2. **Operator explicitly waives** with a written reason, captured
+   verbatim in the deliverable's commit message under a
+   `Cleanliness gate waiver:` header.
+
+Drift carried silently into substantive work is treated as a Sev-3
+incident at minimum. This doctrine point commits the rule into the PM
+system so it cannot be bypassed by accident.
+
+See `docs/runbooks/drift-detection.md` §8 for the runbook this gate
+invokes.
+
+### D#16 — Per-deliverable compaction boundary
+
+Agent runtimes with compactable context (Claude Code, others)
+**compact at the close of every deliverable**, AFTER the final
+commit + Plane sync + surface emit. Compaction never happens
+mid-deliverable.
+
+**Compaction summary preserves:**
+
+- Deliverable IDs that closed in this session + their commit hashes
+- Any KIs created or closed
+- Any waivers granted under D#15 (with reasons)
+- Outstanding state pointers (e.g., "vault-snapshot helper has known
+  limitation X documented in KI-007")
+- Any drift surfaced and not yet resolved
+
+The compaction summary becomes the working context for the next
+deliverable's preflight #0.
+
+**Pairs with D#15:** D#15 verifies repo state is clean before new
+work; D#16 verifies agent context state is clean before new work.
+Same doctrine, two surfaces.
+
+Operators using runtimes without `/compact`-equivalent functionality
+follow the spirit of the rule: at deliverable close, summarize state,
+discard exploratory threads, retain only the durable record captured
+in commits + KIs + runbooks.
+
+---
+
 ## 4. Surface format template
 
 When a work package runs, the execution-window surface format is mandatory:
