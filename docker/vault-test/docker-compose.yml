@@ -1,0 +1,24 @@
+services:
+  vault-test:
+    image: hashicorp/vault:latest
+    container_name: vault-test
+    restart: unless-stopped
+    cap_drop:
+      - ALL
+    environment:
+      VAULT_DEV_ROOT_TOKEN_ID: "root-test-token"
+      VAULT_DEV_LISTEN_ADDRESS: "0.0.0.0:8200"
+      SKIP_SETCAP: "1"
+    ports:
+      - "8210:8200"
+    networks:
+      - vault-test-net
+    healthcheck:
+      test: ["CMD-SHELL", "VAULT_ADDR=http://127.0.0.1:8200 vault status > /dev/null 2>&1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+networks:
+  vault-test-net:
+    name: vault-test-net
