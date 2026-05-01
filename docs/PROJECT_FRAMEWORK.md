@@ -190,7 +190,7 @@ Deliverable table:
 | D-16-03: Mac Studio Day-1 execution | NOT STARTED | from PHASE_ROADMAP |
 | D-16-04: Vault data in backup chain (raft snapshot) | NOT STARTED | discovery |
 | D-16-05: Loose-doc retirement | NOT STARTED | deferred from D-15-08 |
-| D-16-06: Documentation drift detection automation | NOT STARTED | discovery |
+| D-16-06: Documentation drift detection automation | DONE | c49432e |
 | D-16-07: Recovery-handoff doctrine update | NOT STARTED | discovery |
 | D-16-08: Unified architecture + health dashboard | NOT STARTED | Grafana + xindex/NetBox |
 | D-16-09: Structurizr population from xindex/NetBox | NOT STARTED | C4 auto-architecture |
