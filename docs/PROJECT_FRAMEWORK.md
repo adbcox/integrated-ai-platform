@@ -149,6 +149,55 @@ follow the spirit of the rule: at deliverable close, summarize state,
 discard exploratory threads, retain only the durable record captured
 in commits + KIs + runbooks.
 
+### D#17 — Memory recency window for transient findings
+
+Memory captures findings during ongoing intake (article evaluation,
+research, exploratory chats). Findings persist in memory only until
+the next clean boundary (deliverable close + compaction). At the
+boundary, findings either (a) graduate to repo as scope notes,
+deliverables, or pattern docs, or (b) are explicitly deemed
+not-actionable and discarded. Memory is not the long-term store.
+The repo is. Memory entries older than ~30 days that don't match
+a repo artifact are candidates for triage on principle — orphan
+memory items represent debt.
+
+### D#18 — Cross-index participation
+
+Any new service proposal must answer: "does this participate in
+xindex?" (i.e., is it ingestable into the cross-index, or does it
+expose itself via MCP). If no, the proposal must justify why this
+service is acceptable as an island. Defaults to rejection without
+justification.
+
+### D#19 — Stack-level audit at Phase boundaries
+
+Every Phase opens with a stack-level architectural audit using
+`docs/STACK_ARCHITECTURE_AUDIT_2026-05-01.md` as the template.
+Catches "evaluated individually" damage before it accumulates
+into a Phase's scope.
+
+### D#20 — Capability evidence for retirement recommendations
+
+Before recommending retirement of any service, exhaustively
+enumerate its actual capabilities (probed from running state, not
+inferred from documentation) and verify each is replaceable by
+something else in the stack. Pattern-matched "this looks redundant"
+recommendations get rejected at audit review. Reference:
+Zabbix vs VictoriaMetrics analysis, 2026-05-01, where vibes-based
+"retire Zabbix" recommendation was reversed after probing showed
+4,593 SNMP items + 510 JMX items + 55 hosts that VictoriaMetrics
+cannot natively monitor.
+
+### D#21 — Three-plane architecture audits
+
+Architecture audits cover three planes: physical (hardware nodes,
+network topology, storage topology, capability ceilings), logical
+(containers/services and nominal roles), capability (what each tool
+actually does in this deployment, probed from running state).
+Verdicts on any tool require evidence at all three planes.
+Single-plane reasoning ("logical-only: two metrics tools = redundant")
+is invalid. This rule is the codification of the Zabbix lesson.
+
 ---
 
 ## 4. Surface format template
