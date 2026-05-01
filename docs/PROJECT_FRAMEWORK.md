@@ -365,6 +365,9 @@ Sequencing: 17.A → 17.B → 17.C (foundation) before Tier 2; 17.B before
 Phase 16 carry-overs (D-16-03/05/08/09) marked DEFERRED to Phase 17
 in §8 — see Phase 17 IDs 17.O/P/Q/R for new tracking.
 
+**Plane mirror:** `https://plane.internal/iap/projects/dbcd4476-1e37-4812-a443-0914ec8380fc/modules/f4d9a8ee-94a3-4402-a475-3b3514c21569/`
+(Phase-17 module created in Bundle A.5 commit 5; 20 deliverable issues + 1 phase-issue mirrored.)
+
 ---
 
 ## 10. References
