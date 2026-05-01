@@ -114,12 +114,21 @@ class Phase:
 
 # ── Markdown parsing ─────────────────────────────────────────────────────────
 
-# A row looks like:
+# A row looks like one of:
 #   | D-15-08: Loose-doc retirement pass | DEFERRED to Phase 16 | beyond-audit |
 #   | D-16-02.A: Plane bootstrap from PROJECT_FRAMEWORK.md | IN PROGRESS | (this commit) |
+#   | 17.A: Stack architecture audit promoted to repo | DONE | 8193014 |
+#
+# Two ID formats supported:
+#   D-NN-XX   (Phase 15, 16 — historical convention)
+#   NN.X      (Phase 17+ — tier-letter convention)
 ROW_RE = re.compile(
     r"^\|\s*"
-    r"(?P<extid>D-(?P<phase>\d+)-[\w.\-]+)\s*:\s*(?P<title>.+?)\s*"
+    r"(?P<extid>"
+    r"D-(?P<phase_d>\d+)-[\w.\-]+"
+    r"|"
+    r"(?P<phase_t>\d+)\.[A-Z]"
+    r")\s*:\s*(?P<title>.+?)\s*"
     r"\|\s*(?P<status>[^|]+?)\s*"
     r"\|\s*(?P<reference>[^|]+?)\s*\|\s*$"
 )
@@ -145,7 +154,7 @@ def parse_framework(md_path: Path) -> list[Phase]:
         m = ROW_RE.match(line)
         if not m:
             continue
-        row_phase = int(m.group("phase"))
+        row_phase = int(m.group("phase_d") or m.group("phase_t"))
         # Anchor each row to the closest preceding phase heading. If a row's
         # ID disagrees with the surrounding heading (e.g. the "Phase 16
         # charter draft" preview rows under §7), trust the ID — it is the

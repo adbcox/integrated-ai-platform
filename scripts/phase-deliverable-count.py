@@ -29,7 +29,16 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).parent.parent
 FRAMEWORK = REPO_ROOT / "docs" / "PROJECT_FRAMEWORK.md"
 
-ROW = re.compile(r"^\|\s*(D-\d+-[\w.]+)\s*:\s*(.*?)\s*\|\s*([\w \-]+?)\s*\|\s*(.*?)\s*\|\s*$")
+# Two ID formats supported:
+#   D-NN-XX   (Phase 15, 16 — historical convention)
+#   NN.X      (Phase 17+ — tier-letter convention)
+ROW = re.compile(
+    r"^\|\s*("
+    r"D-\d+-[\w.]+"        # D-16-02.3 form
+    r"|"
+    r"\d+\.[A-Z]"          # 17.A form
+    r")\s*:\s*(.*?)\s*\|\s*([\w \-().]+?)\s*\|\s*(.*?)\s*\|\s*$"
+)
 
 
 def main() -> int:
@@ -43,7 +52,8 @@ def main() -> int:
         if not m:
             continue
         del_id, title, status, ref = m.groups()
-        if not del_id.startswith(f"D-{phase}-"):
+        # Match either D-{phase}- prefix or {phase}. prefix
+        if not (del_id.startswith(f"D-{phase}-") or del_id.startswith(f"{phase}.")):
             continue
         rows.append((del_id, title, status.strip(), ref.strip()))
 

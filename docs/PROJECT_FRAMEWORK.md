@@ -308,21 +308,66 @@ Deliverable table:
 | D-16-02.1: NetBox source ingestion | DONE | 16971f0 |
 | D-16-02.2: Plane source ingestion | DONE | 3262667 |
 | D-16-02.3: MCP tool wrapper | DONE | 6792969 |
-| D-16-03: Mac Studio Day-1 execution | NOT STARTED | from PHASE_ROADMAP |
+| D-16-03: Mac Studio Day-1 execution | DEFERRED to Phase 17 (17.O) | re-parented 2026-05-01 |
 | D-16-04: Vault data in backup chain (warm-copy, ADR-A-017) | DONE | 88559fe |
 | D-16-04.1: Silent cron failure remediation | DONE | d344869 |
-| D-16-05: Loose-doc retirement | NOT STARTED | deferred from D-15-08 |
+| D-16-05: Loose-doc retirement | DEFERRED to Phase 17 (17.P) | re-parented 2026-05-01 |
 | D-16-06: Documentation drift detection automation | DONE | c49432e |
 | D-16-07: Recovery-handoff doctrine update | DONE | 2075c1c |
-| D-16-08: Unified architecture + health dashboard | NOT STARTED | Grafana + xindex/NetBox |
-| D-16-09: Structurizr population from xindex/NetBox | NOT STARTED | C4 auto-architecture |
+| D-16-08: Unified architecture + health dashboard | DEFERRED to Phase 17 (17.Q) | re-parented 2026-05-01 |
+| D-16-09: Structurizr population from xindex/NetBox | DEFERRED to Phase 17 (17.R) | re-parented 2026-05-01 |
 
 Sequencing: D-16-02 first (structural enabler), then D-16-01 (small),
 then 02.1/02.2/02.3 expansions, then Mac Studio + remaining items.
 
 ---
 
-## 9. References
+## 9. Phase 17 — current state
+
+Phase 17 — Three-plane architecture corrections + local AI stack (opened 2026-05-01)
+
+Charter and full deliverable narrative: `docs/phase-17/PHASE_17_PLAN_2026-05-01.md`.
+
+Tier 1 (foundation audits) → Tier 2 (architectural corrections) →
+Tier 3 (local AI stack) → Tier 4 (Phase 16 carry-overs) → Tier 5
+(doctrine + intake codification). Tier 5 lands in Bundle A.5 (this
+opening); all other tiers are deliverable-scoped.
+
+Deliverable table:
+
+| Deliverable | Status | Reference |
+|---|---|---|
+| 17.A: Stack architecture audit promoted to repo | DONE | 8193014 |
+| 17.B: Capability audit template | NOT STARTED | per Phase 17 plan |
+| 17.C: Physical architecture audit | NOT STARTED | per Phase 17 plan |
+| 17.D: Replace Plane with OpenProject | NOT STARTED | per Phase 17 plan |
+| 17.E: Observability role-clarification | NOT STARTED | per Phase 17 plan |
+| 17.F: Agent surface audit + consolidation | NOT STARTED | per Phase 17 plan |
+| 17.G: topology-api audit | NOT STARTED | per Phase 17 plan |
+| 17.H: Sportarr fix-or-retire | NOT STARTED | per Phase 17 plan |
+| 17.I: OPNsense API integration for DNS-parity | NOT STARTED | per Phase 17 plan |
+| 17.J: Cisco Provenance Kit | NOT STARTED | per Phase 17 plan |
+| 17.K: Local LLM system prompt library | NOT STARTED | per Phase 17 plan |
+| 17.L: Gemma 4 + Qwen3-Coder-Next benchmarks | NOT STARTED | per Phase 17 plan |
+| 17.M: Goose agent CLI integration | NOT STARTED | per Phase 17 plan |
+| 17.N: exo distributed inference cluster | NOT STARTED | gated on 17.O |
+| 17.O: Mac Studio Day-1 execution | NOT STARTED | re-parented from D-16-03 |
+| 17.P: Loose-doc retirement | NOT STARTED | re-parented from D-16-05 |
+| 17.Q: Architecture dashboard | NOT STARTED | re-parented from D-16-08 |
+| 17.R: Structurizr population | NOT STARTED | re-parented from D-16-09 |
+| 17.S: Article-intake findings consolidated to repo | NOT STARTED | Bundle A.5 commit 4 pending operator surface |
+| 17.T: D#17/D#18/D#19/D#20/D#21 codified | DONE | b86bc55 |
+
+Sequencing: 17.A → 17.B → 17.C (foundation) before Tier 2; 17.B before
+17.E/F/G/H (template consumed); 17.D before 17.Q + 17.R; 17.O before
+17.N; 17.J before 17.L/M/N.
+
+Phase 16 carry-overs (D-16-03/05/08/09) marked DEFERRED to Phase 17
+in §8 — see Phase 17 IDs 17.O/P/Q/R for new tracking.
+
+---
+
+## 10. References
 
 - `docs/PHASE_LOG.md` — historical phase records (pre and post consolidation)
 - `docs/PHASE_ROADMAP.md` — upcoming roadmap
