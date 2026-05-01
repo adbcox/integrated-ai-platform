@@ -160,7 +160,36 @@ Tag: `phase-15-final`. Full closeout: `docs/phase-15/PHASE_15_CLOSEOUT_2026-05-0
 
 ---
 
-## 8. References
+## 8. Phase 16 — current state
+
+Phase 16 — Autonomous Coding Enablement (opened 2026-05-01)
+
+Original PHASE_ROADMAP.md framing was capability-centric (Mac Studio compute,
+InvenTree real data, cross-index). Phase 15 closeout reframed priority: the
+cross-index service is the structural enabler for autonomous coding (operator
+meta-goal), so it leads. Mac Studio + InvenTree real-data work follow.
+
+Deliverable table:
+
+| Deliverable | Status | Reference |
+|---|---|---|
+| D-16-01: Block 4.D retroactive closeout (InvenTree) | NOT STARTED | beyond-audit |
+| D-16-02: Cross-index service foundation (this commit) | IN PROGRESS | Block 4.E |
+| D-16-02.1: NetBox source ingestion | NOT STARTED | extends D-16-02 |
+| D-16-02.2: Plane source ingestion | NOT STARTED | extends D-16-02 |
+| D-16-02.3: MCP tool wrapper | NOT STARTED | extends D-16-02 |
+| D-16-03: Mac Studio Day-1 execution | NOT STARTED | from PHASE_ROADMAP |
+| D-16-04: Vault data in backup chain (raft snapshot) | NOT STARTED | discovery |
+| D-16-05: Loose-doc retirement | NOT STARTED | deferred from D-15-08 |
+| D-16-06: Documentation drift detection automation | NOT STARTED | discovery |
+| D-16-07: Recovery-handoff doctrine update | NOT STARTED | discovery |
+
+Sequencing: D-16-02 first (structural enabler), then D-16-01 (small),
+then 02.1/02.2/02.3 expansions, then Mac Studio + remaining items.
+
+---
+
+## 9. References
 
 - `docs/PHASE_LOG.md` — historical phase records (pre and post consolidation)
 - `docs/PHASE_ROADMAP.md` — upcoming roadmap

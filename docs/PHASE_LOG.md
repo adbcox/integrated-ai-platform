@@ -5,6 +5,12 @@
 > Entries below this note up to the renumbering line use the current numbering;
 > entries below the renumbering line use the pre-consolidation numbering.
 
+## Phase 16 — IN PROGRESS (opened 2026-05-01)
+
+Autonomous Coding Enablement. Cross-index service leads (D-16-02). Original
+PHASE_ROADMAP capability work (Mac Studio, InvenTree real data) follows.
+See docs/PROJECT_FRAMEWORK.md Section 8 for deliverable table.
+
 ## Phase 15 — COMPLETE (closed 2026-05-01)
 
 Tag: `phase-15-final`. Full closeout: `docs/phase-15/PHASE_15_CLOSEOUT_2026-05-01.md`.

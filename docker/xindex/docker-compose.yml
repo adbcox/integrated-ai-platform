@@ -1,0 +1,44 @@
+services:
+  xindex:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: iap/xindex:0.1.0
+    container_name: xindex
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8095:8000"
+    volumes:
+      - /Users/admin/repos/integrated-ai-platform/docs:/docs:ro
+      - xindex_data:/data
+    networks:
+      - control-center-net
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: 256m
+    cpus: 0.5
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/healthz', timeout=3).status==200 else 1)"
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    labels:
+      com.iap.service: "xindex"
+      com.iap.tier: "control-center"
+      com.iap.deliverable: "D-16-02"
+
+volumes:
+  xindex_data:
+    name: xindex_data
+
+networks:
+  control-center-net:
+    name: control-center-net
+    external: true
