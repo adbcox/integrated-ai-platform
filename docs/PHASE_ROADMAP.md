@@ -119,7 +119,33 @@ Phase 16 CLOSED. Platform has two compute nodes, supplier data, and autonomous w
 
 ---
 
-## Phase 17 — Health Stack + Long-Horizon Infrastructure
+## Phase 17 — Three-plane architecture corrections + local AI stack
+
+> **Phase 17 was renumbered during Bundle A.5 (2026-05-01).** The
+> original "Phase 17 — Health Stack + Long-Horizon Infrastructure"
+> scope (a6253c3, bd6a844) is now Phase 18 (see below). The
+> audit-surfaced architectural corrections in this Phase 17 must
+> close before Phase 18 work can build on a clean foundation. See
+> `docs/STACK_ARCHITECTURE_AUDIT_2026-05-01.md` for rationale and
+> `docs/phase-17/PHASE_17_PLAN_2026-05-01.md` for the canonical
+> 20-deliverable plan across 5 tiers.
+
+**Capability milestone:** Stack-level architecture audited and
+corrected. Per-tool capability template established. Plane replaced
+by OpenProject. Agent surfaces consolidated. Local AI stack
+matured behind a provenance gate.
+
+**Effort:** ~75–110h across 20 deliverables (17.A–T).
+**Canonical plan:** `docs/phase-17/PHASE_17_PLAN_2026-05-01.md`.
+**Status (this file is a pointer; framework §9 is the live tracker):**
+3 of 20 done at Bundle A.5 close (17.A, 17.S, 17.T).
+
+Phase 17 is intentionally NOT expanded inline here — single source
+of truth lives in the plan doc to avoid drift between two locations.
+
+---
+
+## Phase 18 — Health Stack + Long-Horizon Infrastructure
 
 **Capability milestone:** Personal health data flows into VictoriaMetrics alongside
 platform metrics. Threadripper/Linux arrives and joins the topology. Platform
@@ -130,9 +156,26 @@ evaluated against OpenBao and Backstage.
 - Oura OAuth client registered (`secret/oura/oauth` in Vault)
 - Garmin auth path decided (garth / FIT export / Health API)
 - BLE label printer hardware on hand (model confirmed)
-- Linux/Threadripper physically present (for 17.C)
+- Linux/Threadripper physically present (for 18.C)
 
-### 17.A — Health & Fitness Stack (~20–30h)
+> **Scope notes from 17.S article-intake (awaiting specific 18.X parents):**
+>
+> *(a) License-aware Manyfold + Gitea LFS schema.* When a 3D-model
+> database deliverable is scoped under Phase 18, the schema must
+> include SPDX license ID per model, source URL + retrieval date
+> for provenance, and license-compatibility checks at ingest.
+> Manyfold as the cataloging surface; Gitea LFS as the binary
+> store. See `docs/architecture-patterns/strategic-watch.md` for
+> source-platform risk context.
+>
+> *(b) AI 3D generation license provenance.* If/when InstantMesh,
+> TripoSR, or similar AI 3D-generation tools enter the platform,
+> outputs must carry license provenance derived from the input
+> training corpus (where known) and the operator's intended
+> downstream use. Default to most-restrictive applicable license
+> when corpus provenance is uncertain.
+
+### 18.A — Health & Fitness Stack (~20–30h)
 
 **Scope:**
 - HF-1 Oura Ring 4: `scripts/oura-ingest.py` → VictoriaMetrics metrics
@@ -149,12 +192,12 @@ evaluated against OpenBao and Backstage.
 - Oura + Garmin unified Grafana dashboard: combined panels, 30-day trends,
   correlation view (sleep quality vs activity score)
 
-**Gate:** `phase-17-17A` — health metrics appearing in VictoriaMetrics;
+**Gate:** `phase-18-18A` — health metrics appearing in VictoriaMetrics;
 Grafana health dashboard rendering. PASS count stable.
 
 ---
 
-### 17.B — Linux/Threadripper Integration (~35–50h)
+### 18.B — Linux/Threadripper Integration (~35–50h)
 
 Adds the Threadripper + RTX 4070 as a GPU compute node. This is the
 biggest topology change since the Mac Mini was the only node.
@@ -177,12 +220,12 @@ biggest topology change since the Mac Mini was the only node.
 - ADR-A-017: GPU workload routing policy — when to prefer Linux/CUDA vs Mac/ANE
 - Architecture diagram update: add Threadripper box to network map
 
-**Gate:** `phase-17-17B` — Linux Ollama answers inference requests.
+**Gate:** `phase-18-18B` — Linux Ollama answers inference requests.
 GPU inference benchmark vs Mac Studio documented.
 
 ---
 
-### 17.C — Platform Evaluation + Hardening (~25–50h)
+### 18.C — Platform Evaluation + Hardening (~25–50h)
 
 Long-horizon evaluation items and platform hardening that improve the
 foundation rather than adding features.
@@ -209,13 +252,13 @@ foundation rather than adding features.
   that doesn't need public issue tracking to Nextcloud Deck (lighter-weight alternative
   for personal tracking)
 
-**Gate:** `phase-17-final` — PASS≥18 FAIL=0 WARN≤3.
+**Gate:** `phase-18-final` — PASS≥18 FAIL=0 WARN≤3.
 OpenBao + Backstage ADRs committed. YAML deprecation complete. Platform hardening applied.
-Phase 17 CLOSED.
+Phase 18 CLOSED.
 
 ---
 
-### 17.D — Network flow collection + visualization (deferred from Phase 16)
+### 18.D — Network flow collection + visualization (deferred from Phase 16)
 
 Live NetFlow / IPFIX from OPNsense → flow collector container
 (akvorado, ntopng, or pmacct candidate) → Grafana visualization.
@@ -223,18 +266,18 @@ Addresses live network-flow visibility for security and
 troubleshooting; deferred from Phase 16 because the operator's
 "what is each system, IP, connections" requirement was determined
 to be satisfied by NetBox + xindex (configured topology), not
-requiring NetFlow (live flows). 17.D remains a valid future option.
+requiring NetFlow (live flows). 18.D remains a valid future option.
 
 Effort: ~6-8h (collector choice is a separate research turn).
 
 ---
 
-## What does NOT fit in these three phases
+## What does NOT fit in these phases
 
 **Intentionally deferred indefinitely:**
 - Kubernetes migration: platform doctrine is Docker + Colima. No k8s until
   operator explicitly wants it. Would require rewriting every compose file.
-- Training / fine-tuning pipelines: GPU compute for inference (Phase 17)
+- Training / fine-tuning pipelines: GPU compute for inference (Phase 18)
   is not fine-tuning. Fine-tuning requires dataset curation, training infra,
   model registry — a dedicated phase if the operator pursues it.
 - Multi-tenant / team access: current platform is single-operator.
@@ -249,8 +292,9 @@ Effort: ~6-8h (collector choice is a separate research turn).
 |---|---|---|---|
 | 15 A–G (done) | CF-1–4, D-OP, D-CN, Studio day-1, 4.H, 4.J, Plane curation | ~23–38h | ✅ Complete |
 | **16** | Mac Studio AI stack, InvenTree suppliers, cross-index, Phase 13 CL | **~85–130h** | Studio productive; Phase 13 closed |
-| **17** | Health stack, Threadripper/Linux, platform hardening + evaluations | **~80–130h** | GPU compute; health metrics; platform matured |
-| **Total remaining** | | **~165–260h** | |
+| **17** | Three-plane architecture corrections + local AI stack (20 deliverables 17.A–T) | **~75–110h** | Stack corrected; OpenProject migration; agent surfaces consolidated |
+| **18** | Health stack, Threadripper/Linux, platform hardening + evaluations | **~80–130h** | GPU compute; health metrics; platform matured |
+| **Total remaining** | | **~240–370h** | |
 
 Point estimate: **~210h** at historical +50% discovery overhead on novel-pattern blocks.
 Calendar at one 12–18h execution window per week: **~12–18 months**.
@@ -266,10 +310,10 @@ Calendar at one 12–18h execution window per week: **~12–18 months**.
 | DigiKey OAuth (`secret/digikey/api`) | 16.B | Pending operator |
 | 129-component CSV | 16.B | Pending operator |
 | Gmail OAuth (`secret/gmail/oauth`) | 16.B/16.C | Pending operator |
-| Oura OAuth (`secret/oura/oauth`) | 17.A | Pending operator |
-| Garmin auth path decision | 17.A | Pending operator |
-| BLE label printer hardware | 17.A | Pending operator |
-| Linux/Threadripper physically present | 17.B | Future hardware |
+| Oura OAuth (`secret/oura/oauth`) | 18.A | Pending operator |
+| Garmin auth path decision | 18.A | Pending operator |
+| BLE label printer hardware | 18.A | Pending operator |
+| Linux/Threadripper physically present | 18.B | Future hardware |
 
 ---
 
@@ -288,4 +332,5 @@ Calendar at one 12–18h execution window per week: **~12–18 months**.
 - Phase 15 Blocks A–G: `docs/phase-15/PHASE_15_EXECUTION_HANDOFF_2026-04-30.md` (committed `249a941`)
 - Phase 15 Blocks H–O (now Phase 16 scope): procedures are in the same handoff doc; import them into the Phase 16 execution handoff when that phase opens
 - Phase 16 execution handoff: to be written at Phase 16 kickoff
-- Phase 17 execution handoff: to be written at Phase 17 kickoff
+- Phase 17 execution handoff: to be written at Phase 17 kickoff (canonical plan: `docs/phase-17/PHASE_17_PLAN_2026-05-01.md`)
+- Phase 18 execution handoff: to be written at Phase 18 kickoff

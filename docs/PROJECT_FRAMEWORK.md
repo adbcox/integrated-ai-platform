@@ -77,6 +77,27 @@ A change record is the unit of work-package execution; when a WP runs, it IS a c
 
 Labels are stable once issued. If scope changes, the label is closed (`SUPERSEDED by`, `DEFERRED to`) and a new label is issued. Re-using a label for new scope creates traceability rot and is forbidden.
 
+### 3.1 Local model stack prioritization (T1–T4)
+
+When a deliverable consumes local LLM capacity, prefer models in
+this priority order. The tier reflects fitness for routine
+platform work, not absolute model quality.
+
+| Tier | Examples | Use for |
+|---|---|---|
+| **T1** | Claude Code via local Ollama orchestrator (qwen2.5-coder:32b) | Default. Routine implementation, refactoring, doc work, exploration. Free; no quota. |
+| **T2** | Subagent chain: decomposer (32b) → implementer (14b) → reviewer (7b) | Multi-step work that benefits from explicit decomposition. Runs entirely on Mac Mini Ollama under `claude-local`. |
+| **T3** | Specialty models (Gemma 4 26B MoE, Qwen3-Coder-Next 80B) on Mac Studio | Workloads where T1/T2 are clearly under-powered (long context windows, code-heavy multi-file refactors). Gated on 17.J (Provenance Kit) and 17.L (benchmarks) before adoption. |
+| **T4** | Anthropic Pro via `claude-pro` shell function | High-judgment tasks where T1–T3 demonstrably fall short. Pro quota is finite — treat as expensive. |
+
+**Rules:**
+- Platform services NEVER depend on Anthropic API access (see CLAUDE.md "LLM Access Doctrine").
+- T3 model adoption requires 17.J Provenance Kit gate to pass first; 17.L benchmark evidence must demonstrate the workload-specific win over T1/T2 before any deliverable adopts a T3 model as default.
+- T4 escalation is operator-discretion, not automated. Subagents do not call out to T4.
+- The T1–T2 split is a runtime decision: the Claude Code orchestrator decides per-task whether to delegate; the user does not need to think about it.
+
+This sequencing protects two things: cost (T4 quota stays for genuinely-hard work) and provenance (T3 model pulls go through Cisco Provenance Kit governance before landing on any compute node).
+
 ---
 
 ## 3.5 Doctrine register
