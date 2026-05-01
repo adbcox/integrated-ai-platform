@@ -29,3 +29,27 @@ repos:
     hooks:
       - id: yamllint
         args: ['-c=.yamllint.yml']
+
+  # ── Local repo-coherence drift checks (D-16-06) ────────────────────────
+  # Each hook is scoped via `files:` so it only runs when the inputs it
+  # depends on are staged. stdlib-only python; no install step.
+  - repo: local
+    hooks:
+      - id: adr-readme-sync
+        name: ADR files <-> docs/adr/README.md index
+        entry: python3 scripts/check-repo-coherence.py adr-readme-sync
+        language: system
+        pass_filenames: false
+        files: '^docs/adr/.*\.md$'
+      - id: decision-register-sync
+        name: ADR files <-> docs/DECISION_REGISTER.md
+        entry: python3 scripts/check-repo-coherence.py decision-register-sync
+        language: system
+        pass_filenames: false
+        files: '^docs/(adr/.*|DECISION_REGISTER)\.md$'
+      - id: framework-table-coherence
+        name: PROJECT_FRAMEWORK.md deliverable-table sanity
+        entry: python3 scripts/check-repo-coherence.py framework-table-coherence
+        language: system
+        pass_filenames: false
+        files: '^docs/PROJECT_FRAMEWORK\.md$'
