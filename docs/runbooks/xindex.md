@@ -1,17 +1,25 @@
 # xindex — Cross-Index Service Runbook
 
-**Status:** Live (D-16-02 + D-16-02.0.5, opened 2026-05-01)
+**Status:** Live (D-16-02 + D-16-02.0.5 + D-16-02.1, opened 2026-05-01)
 **Service location:** `docker/xindex/`
 **Canonical URL:** `https://xindex.internal/` (Caddy reverse proxy + local-CA TLS)
 **Loopback fallback:** `http://127.0.0.1:8095/` (preserved for local debugging)
 **Container port:** 8000
 **Host port:** `127.0.0.1:8095`
-**Image:** `iap/xindex:0.1.0`
+**Image:** `iap/xindex:0.2.0`
 **Network:** `control-center-net`
+**Vault dependency (D-16-02.1):** `vault-agent-xindex` sidecar renders
+NetBox API token to `/run/secrets/netbox-credentials.env` via the
+`xindex` AppRole (policy: `xindex-policy`, read-only on
+`secret/data/netbox/api_token`). xindex `depends_on:
+service_completed_successfully` of the sidecar.
 **NetBox CMDB entry:** `ipam.service` id 76 (`name=xindex`, `parent=mac-mini`)
-**Ingestion sources (D-16-02 scope):** repo files only — `docs/adr/`,
-`docs/DECISION_REGISTER.md`, `docs/runbooks/`. NetBox / Plane / MCP wrapper
-follow in D-16-02.1 / .2 / .3.
+**Ingestion sources:**
+- **Repo-local (atomic rebuild):** `docs/adr/`, `docs/DECISION_REGISTER.md`,
+  `docs/runbooks/`
+- **External (per-source partial refresh):** NetBox (`dcim.devices`,
+  `ipam.services` + `service_dependencies` custom field links). Plane
+  ingestion is D-16-02.2; MCP wrapper is D-16-02.3.
 
 ## 1. Purpose
 
@@ -26,7 +34,20 @@ different scope and is not replaced by this service.
 ## 2. Architecture
 
 ```
+                        Vault (vault-server :8200)
+                              ▲
+                              │  approle login
+                              │
+                  vault-agent-xindex (one-shot, exit_after_auth=true)
+                              │  renders
+                              ▼
+              /Users/admin/.vault-agent-secrets/xindex/
+                  netbox-credentials.env  (NETBOX_API_TOKEN)
+                              │  bind-mounted ro at /run/secrets/
+                              ▼
 docs/  ──read-only mount──▶  xindex container  ──FTS5──▶  /data/xindex.db
+                                  │   │
+                                  │   └──pynetbox──▶ host.docker.internal:8084
                                   │
                                   └──FastAPI (uvicorn) on :8000
                                        ▲
@@ -39,9 +60,18 @@ docs/  ──read-only mount──▶  xindex container  ──FTS5──▶  /d
 
 - Database: SQLite + FTS5 (porter unicode61 tokenizer)
 - Persistence: named Docker volume `xindex_data`
-- Ingest: full rebuild on startup if DB is empty; explicit `POST /refresh`
-  thereafter. The schema + content are small enough that partial upserts
-  are not worth the complexity.
+- Ingest semantics:
+  - Repo-local sources (adr/runbook/register) — atomic full rebuild
+    via `db.reset_for_ingest()`. Small and fast.
+  - External sources (netbox; plane in D-16-02.2) — partial refresh
+    per source via a snapshot-then-restore pattern (see §11). A
+    failure in one external source NEVER wipes another's data.
+- NetBox token: rendered by the `vault-agent-xindex` sidecar from
+  `secret/data/netbox/api_token`. xindex reads it from
+  `/run/secrets/netbox-credentials.env` at ingest time. The AppRole
+  has read access to that one path only — adding new external
+  sources extends `xindex-policy.hcl` with additional read paths,
+  never broader capabilities.
 - TLS: Caddy fronts xindex on `https://xindex.internal/` using its built-in
   local CA. Trust the CA on the client by extracting it once:
   `docker exec caddy cat /data/caddy/pki/authorities/local/root.crt > caddy-local-ca.crt`
@@ -59,7 +89,7 @@ Canonical URL is `https://xindex.internal/`. The loopback URL
 Caddy in the path).
 
 ```bash
-# liveness + counts + last_ingest_at
+# liveness + counts + last_ingest_at + per-source health (sources[])
 curl -ksS https://xindex.internal/healthz | jq
 # fallback: curl -s http://127.0.0.1:8095/healthz | jq
 
@@ -70,10 +100,20 @@ curl -ksS https://xindex.internal/adr/ADR-A-014 | jq
 # Runbook detail (filename without .md)
 curl -ksS https://xindex.internal/runbook/vault-recovery-from-shamir | jq
 
-# Search (FTS5 ranked); type ∈ {all, adr, runbook, register}
-curl -ksS "https://xindex.internal/search?q=NetBox&type=adr&limit=5" | jq
+# Service / node detail (D-16-02.1 — sourced from NetBox)
+curl -ksS https://xindex.internal/service/xindex     | jq
+curl -ksS https://xindex.internal/node/mac-mini      | jq
 
-# Trigger background re-ingest. Poll /healthz to see updated last_ingest_at.
+# Entity-link query (D-16-02.1) — any subset of the filters is optional
+curl -ksS "https://xindex.internal/links?from_kind=service&link_type=depends_on" | jq
+curl -ksS "https://xindex.internal/links?to_kind=node&to_ref=mac-mini" | jq
+
+# Search (FTS5 ranked); type ∈ {all, adr, runbook, register, service, node}
+curl -ksS "https://xindex.internal/search?q=NetBox&type=adr&limit=5" | jq
+curl -ksS "https://xindex.internal/search?q=caddy&type=service" | jq
+
+# Trigger background re-ingest. Poll /healthz to see updated last_ingest_at
+# (and per-source status flips if NetBox was unreachable).
 curl -ksS -X POST https://xindex.internal/refresh | jq
 ```
 
@@ -108,22 +148,50 @@ when the Caddy / DNS path is unavailable.)
 
 ## 6. Adding a new source ingester
 
-Pattern (mirrors `app/ingest/runbook.py`):
+There are two patterns depending on whether the source is repo-local
+or external. The split is doctrine — see §11 for the partial-refresh
+contract that external sources MUST honour.
 
-1. Add a module under `docker/xindex/app/ingest/<source>.py` that exposes
-   `ingest(conn, root) -> int`. It is responsible for upserting into a
-   content table and inserting the searchable text into `xindex_fts`.
-2. If the source is non-tabular, add a content table to `app/db.py`'s
-   `SCHEMA` constant. Keep the schema additive; don't touch existing tables.
-3. Wire the new ingester into `app/ingest/__init__.py:ingest_all`.
-4. Extend `app/db.py:counts` and the `/healthz` response so operators can
-   see the new source populated.
-5. Add a fixture and a `test_ingest_<source>.py` mirroring the existing
-   tests.
+### Repo-local source (mirrors `app/ingest/runbook.py`)
 
-External-source ingesters (NetBox, Plane, Vault, InvenTree) follow this
-shape, but additionally need credentials via Vault Agent sidecars and a
-`control-center-net` neighbour — covered in D-16-02.1/.2/.3.
+1. Add a module under `docker/xindex/app/ingest/<source>.py` that
+   exposes `ingest(conn, root) -> int`. Upsert into a content table
+   and insert the searchable text into `xindex_fts`.
+2. Add the content table to `app/db.py`'s `SCHEMA` constant if needed;
+   keep the schema additive.
+3. Wire the new ingester into `_ingest_local()` in
+   `app/ingest/__init__.py`.
+4. Extend `app/db.py:counts()` and the `/healthz` response.
+5. Add a fixture and a `test_ingest_<source>.py`.
+
+### External source (mirrors `app/ingest/netbox.py` — D-16-02.1)
+
+External sources are credentialed and may be unreachable; they MUST
+NOT raise on failure and MUST NOT wipe other sources' data on
+failure.
+
+1. Add the consumer's secret path (read-only) to
+   `config/vault-policies/xindex-policy.hcl`. NEVER broaden
+   capabilities; NEVER add policy/AppRole modify paths.
+2. Add a `<source>-credentials.env.tmpl` template under
+   `docker/vault-agent-xindex/` and append a `template { ... }`
+   block to `agent.hcl`. Token is rendered to
+   `/run/secrets/<source>-credentials.env`.
+3. Add a module `app/ingest/<source>.py` exposing
+   `ingest(conn, *, fetcher=None) -> <Result>`. The function MUST:
+   - read the token from the rendered env file (not argv);
+   - return a result object on failure rather than raising;
+   - never log token values;
+   - inject all I/O via `fetcher` so unit tests don't hit the network.
+4. Add `_ingest_<source>()` to `app/ingest/__init__.py` using the
+   snapshot-then-restore pattern (see `_snapshot_netbox` /
+   `_restore_netbox`). On failure: restore the snapshot, set
+   `set_source_status('<source>', 'error', error=...)`, return.
+5. Extend `db.LOCAL_SOURCES` / `EXTERNAL_SOURCES`, `reset_source()`,
+   and `db.counts()` with any new tables.
+6. Add `test_ingest_<source>.py` and (critically) extend
+   `test_partial_refresh.py` with a "<source> failure preserves
+   prior rows + does not affect other sources" case.
 
 ## 7. Debugging ingest failures
 
@@ -174,24 +242,118 @@ python3.12 -m venv .venv
 .venv/bin/python -m pytest app/tests/ -v
 ```
 
-11 tests cover ADR parsing (both header styles), runbook ingest, and the
-five HTTP endpoints. The tests build a synthetic `/docs` tree and never
-touch the real repo content.
+26 tests cover:
+- ADR parsing (both header styles), runbook ingest, decision-register
+  parsing
+- The HTTP endpoints (healthz, adr, runbook, search, refresh) on
+  repo-local data
+- NetBox ingester (`test_ingest_netbox.py` — pynetbox stubbed via the
+  `fetcher=` injection point)
+- The partial-refresh doctrine (`test_partial_refresh.py` — proves a
+  NetBox failure on a re-ingest preserves prior NetBox rows AND does
+  not affect ADR/runbook/register data)
+- The new `/service`, `/node`, `/links` endpoints + per-source
+  health on `/healthz`
 
-## 10. Why repo-files-only in this deliverable
+Tests build a synthetic `/docs` tree and never touch the real repo
+content or NetBox.
 
-D-16-02 ships the foundation. The autonomous-coding meta-goal needs the
-*structural* piece — a queryable index that exists, persists, and serves
-JSON — before extending it to remote sources. Each external source needs
-its own credential plumbing and rate-limit story; bundling them into the
-foundation deliverable would force four un-hardened paths into the same
-review. They are deferred to:
+## 10. Why repo-files-only was the foundation
 
-- **D-16-02.1** — NetBox ingestion (services, devices, IPs)
-- **D-16-02.2** — Plane ingestion (issues, projects)
-- **D-16-02.3** — MCP tool wrapper so Claude Code agents can query xindex
+D-16-02 shipped the foundation. The autonomous-coding meta-goal needs
+the *structural* piece — a queryable index that exists, persists, and
+serves JSON — before extending it to remote sources. Each external
+source needs its own credential plumbing and rate-limit story;
+bundling them into the foundation would force three un-hardened paths
+into the same review. They are deferred to:
+
+- **D-16-02.1 — DONE 2026-05-01.** NetBox ingestion: `dcim.devices`
+  + `ipam.services` + entity_links derived from the
+  `service_dependencies` custom field. Vault AppRole `xindex` reads
+  `secret/data/netbox/api_token` only.
+- **D-16-02.2** — Plane ingestion (issues, projects, modules).
+- **D-16-02.3** — MCP tool wrapper so Claude Code agents can query
+  xindex.
 
 **D-16-02.0.5 — DONE 2026-05-01.** Caddy site block at
 `docker/caddy/Caddyfile` reverse-proxies `https://xindex.internal/` to
 `host.docker.internal:8095`. xindex registered in NetBox CMDB as
 `ipam.service` id 76 on the `mac-mini` device.
+
+## 11. Partial-refresh doctrine
+
+External sources refresh independently. Each external ingester runs
+under a snapshot-then-restore wrapper in `_ingest_netbox()` /
+`_ingest_<source>()` — the prior rows are captured, the source rows
+are wiped, and the ingester runs. On any failure (network outage,
+auth error, schema mismatch, mid-run exception) the snapshot is
+restored verbatim and `set_source_status('<source>', 'error', ...)`
+records the failure for `/healthz`.
+
+Three guarantees follow:
+
+1. **No external source ever wipes another's data.** Two external
+   sources never share a snapshot.
+2. **A failed external never wipes its own healthy data.** Stale rows
+   survive the failure and are visible to consumers, with the staleness
+   surfaced through `/healthz`'s `sources[].status` field.
+3. **An external failure never breaks repo-local ingest.** Local
+   sources are atomic and run before any external; their ingest is
+   independent of any external outcome.
+
+This is the inverse of D-16-02's foundation, which used a single
+`reset_for_ingest()` wipe across all sources. That model was correct
+for the foundation (only repo files; rebuilds are cheap and atomic)
+and incorrect once externals enter — a NetBox outage during a refresh
+would otherwise drop the ADR index too. D-16-02.1 separated the two
+concerns explicitly.
+
+`/healthz` returns:
+```jsonc
+{
+  "status": "ok",
+  "last_ingest_at": "2026-05-01T12:34:56Z",
+  "counts": {"adrs": 14, "runbooks": 32, ..., "services": 17, "nodes": 4},
+  "sources": [
+    {"source": "adr",     "last_ingest_at": "...", "status": "ok",    "error": ""},
+    {"source": "netbox",  "last_ingest_at": "...", "status": "error", "error": "netbox unreachable or auth failed"}
+  ]
+}
+```
+
+A `status` of `error` means the most recent re-ingest of that source
+failed; the rows shown are from the previous successful run.
+
+## 12. Vault-agent dependency
+
+The xindex container `depends_on: vault-agent-xindex` with
+`condition: service_completed_successfully`, so xindex starts only
+after the sidecar has authenticated and rendered
+`/Users/admin/.vault-agent-secrets/xindex/netbox-credentials.env`.
+The sidecar is `restart: "no"` and exits cleanly after rendering.
+
+If the sidecar fails (Vault sealed, AppRole revoked, template error)
+xindex never starts. To diagnose:
+
+```bash
+docker logs vault-agent-xindex --tail 50
+ls -la /Users/admin/.vault-agent-secrets/xindex/
+# Expect: .vault-token (sink) + netbox-credentials.env (template).
+# Token value never appears in logs or stdout.
+```
+
+Restart sequence (when re-rendering credentials after a Vault rotation):
+```bash
+docker compose -f docker/xindex/docker-compose.yml down
+docker compose -f docker/xindex/docker-compose.yml up -d
+# Sidecar runs, exits 0, then xindex starts.
+```
+
+The AppRole role-id and secret-id live at
+`/Users/admin/.vault-approle/xindex/{role-id,secret-id}` (mode 0600).
+If they are lost, re-issue via the Vault root token:
+```bash
+vault read -field=role_id auth/approle/role/xindex/role-id
+vault write -f -field=secret_id auth/approle/role/xindex/secret-id
+```
+and re-write the files at the same paths.

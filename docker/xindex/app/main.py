@@ -1,9 +1,12 @@
-"""xindex FastAPI app (D-16-02).
+"""xindex FastAPI app.
 
 Endpoints:
-    GET  /healthz                          — liveness + last_ingest_at + counts
+    GET  /healthz                          — liveness + per-source health
     GET  /adr/{id}                         — full ADR detail (id or short id)
     GET  /runbook/{topic}                  — full runbook detail
+    GET  /service/{name}                   — service detail + entity links
+    GET  /node/{name}                      — node detail + entity links
+    GET  /links?from_kind=&from_ref=&...   — entity-link query
     GET  /search?q=&type=&limit=           — FTS5 search across all sources
     POST /refresh                          — re-ingest in the background
 """
@@ -22,12 +25,17 @@ from . import db as _db
 from . import ingest as _ingest
 from .models import (
     ADRDetail,
+    EntityLink,
     Health,
+    LinksResponse,
+    NodeDetail,
+    PerSourceHealth,
     RegisterRef,
     RefreshAccepted,
     RunbookDetail,
     SearchHit,
     SearchResponse,
+    ServiceDetail,
 )
 
 
@@ -53,8 +61,11 @@ async def lifespan(app: FastAPI):  # noqa: ARG001
 
 app = FastAPI(
     title="xindex",
-    version="0.1.0",
-    description="Repo-local cross-index of ADRs, Decision Register, and runbooks (D-16-02).",
+    version="0.2.0",
+    description=(
+        "Cross-index of ADRs, Decision Register, runbooks (D-16-02) and "
+        "NetBox services + nodes + entity_links (D-16-02.1)."
+    ),
     lifespan=lifespan,
 )
 
@@ -77,6 +88,21 @@ def _normalize_adr_id(raw: str) -> str:
     return f"ADR-A-{m.group(1).zfill(3)}"
 
 
+def _per_source_health(conn: sqlite3.Connection) -> list[PerSourceHealth]:
+    out: list[PerSourceHealth] = []
+    for src in _db.ALL_SOURCES:
+        st = _db.get_source_status(conn, src)
+        out.append(
+            PerSourceHealth(
+                source=st["source"],
+                last_ingest_at=st["last_ingest_at"],
+                status=st["status"],
+                error=st["error"],
+            )
+        )
+    return out
+
+
 @app.get("/healthz", response_model=Health)
 def healthz(conn: ConnDep) -> Health:
     return Health(
@@ -85,6 +111,7 @@ def healthz(conn: ConnDep) -> Health:
         counts=_db.counts(conn),
         docs_root=DOCS_ROOT,
         db_path=DB_PATH,
+        sources=_per_source_health(conn),
     )
 
 
@@ -144,6 +171,100 @@ def get_runbook(topic: str, conn: ConnDep) -> RunbookDetail:
     )
 
 
+def _links_for(conn: sqlite3.Connection, kind: str, ref: str) -> list[EntityLink]:
+    rows = conn.execute(
+        """
+        SELECT from_kind, from_ref, to_kind, to_ref, link_type, source
+        FROM entity_links
+        WHERE (from_kind=? AND from_ref=?) OR (to_kind=? AND to_ref=?)
+        ORDER BY link_type, to_kind, to_ref
+        """,
+        (kind, ref, kind, ref),
+    ).fetchall()
+    return [EntityLink(**dict(r)) for r in rows]
+
+
+@app.get("/service/{name}", response_model=ServiceDetail)
+def get_service(name: str, conn: ConnDep) -> ServiceDetail:
+    row = conn.execute(
+        "SELECT name, netbox_id, protocol, ports_json, parent_kind, parent_ref, "
+        "description, custom_json, source FROM services WHERE name = ?",
+        (name,),
+    ).fetchone()
+    if row is None:
+        raise HTTPException(404, detail=f"Service not found: {name}")
+    return ServiceDetail(
+        name=row["name"],
+        netbox_id=row["netbox_id"],
+        protocol=row["protocol"],
+        ports=json.loads(row["ports_json"] or "[]"),
+        parent_kind=row["parent_kind"],
+        parent_ref=row["parent_ref"],
+        description=row["description"] or "",
+        custom=json.loads(row["custom_json"] or "{}"),
+        source=row["source"],
+        links=_links_for(conn, "service", row["name"]),
+    )
+
+
+@app.get("/node/{name}", response_model=NodeDetail)
+def get_node(name: str, conn: ConnDep) -> NodeDetail:
+    row = conn.execute(
+        "SELECT name, netbox_id, role, site, status, primary_ip, "
+        "description, custom_json, source FROM nodes WHERE name = ?",
+        (name,),
+    ).fetchone()
+    if row is None:
+        raise HTTPException(404, detail=f"Node not found: {name}")
+    return NodeDetail(
+        name=row["name"],
+        netbox_id=row["netbox_id"],
+        role=row["role"],
+        site=row["site"],
+        status=row["status"],
+        primary_ip=row["primary_ip"],
+        description=row["description"] or "",
+        custom=json.loads(row["custom_json"] or "{}"),
+        source=row["source"],
+        links=_links_for(conn, "node", row["name"]),
+    )
+
+
+@app.get("/links", response_model=LinksResponse)
+def list_links(
+    conn: ConnDep,
+    from_kind: str | None = Query(None, max_length=32),
+    from_ref: str | None = Query(None, max_length=128),
+    to_kind: str | None = Query(None, max_length=32),
+    to_ref: str | None = Query(None, max_length=128),
+    link_type: str | None = Query(None, max_length=32),
+    source: str | None = Query(None, max_length=32),
+    limit: int = Query(200, ge=1, le=2000),
+) -> LinksResponse:
+    clauses: list[str] = []
+    params: list = []
+    for col, val in (
+        ("from_kind", from_kind),
+        ("from_ref", from_ref),
+        ("to_kind", to_kind),
+        ("to_ref", to_ref),
+        ("link_type", link_type),
+        ("source", source),
+    ):
+        if val:
+            clauses.append(f"{col} = ?")
+            params.append(val)
+    where = " WHERE " + " AND ".join(clauses) if clauses else ""
+    params.append(limit)
+    rows = conn.execute(
+        "SELECT from_kind, from_ref, to_kind, to_ref, link_type, source "
+        f"FROM entity_links{where} ORDER BY from_kind, from_ref, link_type LIMIT ?",
+        params,
+    ).fetchall()
+    links = [EntityLink(**dict(r)) for r in rows]
+    return LinksResponse(count=len(links), results=links)
+
+
 _FTS_QUOTE_RE = re.compile(r"[^A-Za-z0-9_\-]+")
 
 
@@ -168,7 +289,9 @@ def _build_fts_query(q: str) -> str:
 def search(
     conn: ConnDep,
     q: str = Query(..., min_length=1, max_length=200),
-    type: str = Query("all", pattern="^(all|adr|runbook|register)$"),
+    type: str = Query(
+        "all", pattern="^(all|adr|runbook|register|service|node)$"
+    ),
     limit: int = Query(20, ge=1, le=100),
 ) -> SearchResponse:
     fts_q = _build_fts_query(q)

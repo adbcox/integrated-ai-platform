@@ -6,12 +6,20 @@ from typing import Any
 from pydantic import BaseModel, Field
 
 
+class PerSourceHealth(BaseModel):
+    source: str
+    last_ingest_at: str
+    status: str            # 'ok' | 'error' | 'stale' | 'unknown'
+    error: str = ""
+
+
 class Health(BaseModel):
     status: str
     last_ingest_at: str | None = None
     counts: dict[str, int] = Field(default_factory=dict)
     docs_root: str
     db_path: str
+    sources: list[PerSourceHealth] = Field(default_factory=list)
 
 
 class RegisterRef(BaseModel):
@@ -42,6 +50,46 @@ class RunbookDetail(BaseModel):
     body: str
 
 
+class ServiceDetail(BaseModel):
+    name: str
+    netbox_id: int | None = None
+    protocol: str | None = None
+    ports: list[int] = Field(default_factory=list)
+    parent_kind: str | None = None
+    parent_ref: str | None = None
+    description: str = ""
+    custom: dict[str, Any] = Field(default_factory=dict)
+    source: str = "netbox"
+    links: list["EntityLink"] = Field(default_factory=list)
+
+
+class NodeDetail(BaseModel):
+    name: str
+    netbox_id: int | None = None
+    role: str | None = None
+    site: str | None = None
+    status: str | None = None
+    primary_ip: str | None = None
+    description: str = ""
+    custom: dict[str, Any] = Field(default_factory=dict)
+    source: str = "netbox"
+    links: list["EntityLink"] = Field(default_factory=list)
+
+
+class EntityLink(BaseModel):
+    from_kind: str
+    from_ref: str
+    to_kind: str
+    to_ref: str
+    link_type: str
+    source: str
+
+
+class LinksResponse(BaseModel):
+    count: int
+    results: list[EntityLink]
+
+
 class SearchHit(BaseModel):
     kind: str
     ref: str
@@ -67,7 +115,15 @@ class IngestSummary(BaseModel):
     adrs: int
     runbooks: int
     decision_register_entries: int
+    services: int = 0
+    nodes: int = 0
+    entity_links: int = 0
     last_ingest_at: str
 
     def as_meta(self) -> dict[str, Any]:
         return self.model_dump()
+
+
+# Resolve forward refs for self-referencing models.
+ServiceDetail.model_rebuild()
+NodeDetail.model_rebuild()

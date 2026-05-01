@@ -1,16 +1,48 @@
 services:
+  vault-agent-xindex:
+    image: hashicorp/vault:2.0.0
+    container_name: vault-agent-xindex
+    restart: "no"
+    environment:
+      VAULT_ADDR: "http://vault-server:8200"
+      SKIP_SETCAP: "true"
+    volumes:
+      - /Users/admin/.vault-approle/xindex:/vault/approle:ro
+      - /Users/admin/.vault-agent-secrets/xindex:/vault/secrets
+      - ../vault-agent-xindex/agent.hcl:/vault/config/agent.hcl:ro
+      - ../vault-agent-xindex/netbox-credentials.env.tmpl:/vault/agent-config/netbox-credentials.env.tmpl:ro
+    command: agent -config=/vault/config/agent.hcl
+    networks:
+      - control-center-net
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    labels:
+      com.iap.service: "vault-agent-xindex"
+      com.iap.tier: "control-center"
+      com.iap.deliverable: "D-16-02.1"
+
   xindex:
     build:
       context: .
       dockerfile: Dockerfile
-    image: iap/xindex:0.1.0
+    image: iap/xindex:0.2.0
     container_name: xindex
     restart: unless-stopped
+    depends_on:
+      vault-agent-xindex:
+        condition: service_completed_successfully
     ports:
       - "127.0.0.1:8095:8000"
+    environment:
+      NETBOX_URL: "http://host.docker.internal:8084"
     volumes:
       - /Users/admin/repos/integrated-ai-platform/docs:/docs:ro
       - xindex_data:/data
+      - /Users/admin/.vault-agent-secrets/xindex:/run/secrets:ro
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     networks:
       - control-center-net
     cap_drop:
@@ -32,7 +64,7 @@ services:
     labels:
       com.iap.service: "xindex"
       com.iap.tier: "control-center"
-      com.iap.deliverable: "D-16-02"
+      com.iap.deliverable: "D-16-02.1"
 
 volumes:
   xindex_data:

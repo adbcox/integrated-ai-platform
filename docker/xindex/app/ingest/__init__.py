@@ -1,12 +1,23 @@
 """Ingest orchestrator — runs each source ingester and refreshes meta.
 
-Sources in this deliverable (D-16-02) are repo-local files only:
-    - ADRs                          (docs/adr/ADR-A-*.md)
-    - Decision Register             (docs/DECISION_REGISTER.md)
-    - Runbooks                      (docs/runbooks/*.md)
+Two source classes:
 
-External sources (NetBox, Plane, Vault, InvenTree) are explicitly
-deferred to D-16-02.1 / .2 / .3.
+  Local (repo files)        — adr, runbook, register
+                              Atomic full rebuild via reset_for_ingest().
+                              Failure here is unusual (file-system level).
+
+  External (D-16-02.1+)     — netbox  (D-16-02.2 will add plane)
+                              Per-source partial refresh via reset_source().
+                              Each runs in its own savepoint; a failure
+                              flips that source's status to 'error' and
+                              rolls back its savepoint, leaving the prior
+                              successful ingest's rows intact (stale).
+                              No external source ever wipes another's data.
+
+D-16-02.1 doctrine: external-source failures must NEVER cause the
+HTTP API to return 500 from /refresh, and must NEVER reduce
+counts of unrelated kinds. Stale-survival is preferred over
+data loss.
 """
 from __future__ import annotations
 
@@ -18,6 +29,7 @@ import sqlite3
 from .. import db as _db
 from . import adr as _adr
 from . import decision_register as _reg
+from . import netbox as _netbox
 from . import runbook as _rb
 
 
@@ -25,30 +37,137 @@ def _now_iso() -> str:
     return _dt.datetime.now(_dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
-def ingest_all(conn: sqlite3.Connection, docs_root: str) -> dict:
-    """Full re-ingest from disk. Returns summary counts."""
+def _ingest_local(conn: sqlite3.Connection, docs_root: str) -> dict[str, int]:
+    """Atomic rebuild of the three repo-local sources."""
     _db.reset_for_ingest(conn)
-
     adr_count = _adr.ingest(conn, os.path.join(docs_root, "adr"))
     rb_count = _rb.ingest(conn, os.path.join(docs_root, "runbooks"))
-    reg_count = _reg.ingest(conn, os.path.join(docs_root, "DECISION_REGISTER.md"))
-
-    ts = _now_iso()
-    _db.set_meta(conn, "last_ingest_at", ts)
-    _db.set_meta(
-        conn,
-        "counts",
-        json.dumps(
-            {
-                "adrs": adr_count,
-                "runbooks": rb_count,
-                "decision_register_entries": reg_count,
-            }
-        ),
+    reg_count = _reg.ingest(
+        conn, os.path.join(docs_root, "DECISION_REGISTER.md")
     )
+    ts = _now_iso()
+    for src in ("adr", "runbook", "register"):
+        _db.set_source_status(conn, src, "ok", timestamp=ts)
     return {
         "adrs": adr_count,
         "runbooks": rb_count,
         "decision_register_entries": reg_count,
+    }
+
+
+def _ingest_netbox(
+    conn: sqlite3.Connection,
+    *,
+    fetcher=None,
+) -> _netbox.NetboxIngestResult:
+    """Partial refresh of the NetBox source.
+
+    Snapshot-then-restore: rather than relying on SAVEPOINT semantics
+    (which interact awkwardly with the stdlib sqlite3 module's
+    autocommit/legacy transaction handling), we capture the prior
+    rows, run the ingest, and on failure restore the snapshot. This
+    keeps the partial-refresh guarantee testable and portable across
+    Python's sqlite3 isolation modes.
+    """
+    ts = _now_iso()
+    snapshot = _snapshot_netbox(conn)
+    try:
+        _db.reset_source(conn, "netbox")
+        result = _netbox.ingest(conn, fetcher=fetcher)
+    except Exception as exc:  # defensive
+        _restore_netbox(conn, snapshot)
+        _db.set_source_status(
+            conn, "netbox", "stale", error=f"unhandled: {exc!r}"
+        )
+        return _netbox.NetboxIngestResult(ok=False, error=f"unhandled: {exc!r}")
+
+    if not result.ok:
+        _restore_netbox(conn, snapshot)
+        # Status: 'error' if we tried and failed, 'unknown' if we
+        # explicitly skipped (no token). Prior data survives because
+        # the snapshot was restored.
+        status = "error" if not result.skipped else "unknown"
+        _db.set_source_status(conn, "netbox", status, error=result.error)
+        return result
+
+    _db.set_source_status(conn, "netbox", "ok", timestamp=ts)
+    return result
+
+
+def _snapshot_netbox(conn: sqlite3.Connection) -> dict:
+    return {
+        "services": [
+            tuple(r) for r in conn.execute(
+                "SELECT name, netbox_id, protocol, ports_json, parent_kind, "
+                "parent_ref, description, custom_json, source FROM services"
+            )
+        ],
+        "nodes": [
+            tuple(r) for r in conn.execute(
+                "SELECT name, netbox_id, role, site, status, primary_ip, "
+                "description, custom_json, source FROM nodes"
+            )
+        ],
+        "links": [
+            tuple(r) for r in conn.execute(
+                "SELECT from_kind, from_ref, to_kind, to_ref, link_type, source "
+                "FROM entity_links WHERE source='netbox'"
+            )
+        ],
+        "fts": [
+            tuple(r) for r in conn.execute(
+                "SELECT kind, ref, title, body FROM xindex_fts "
+                "WHERE kind IN ('service','node')"
+            )
+        ],
+    }
+
+
+def _restore_netbox(conn: sqlite3.Connection, snap: dict) -> None:
+    _db.reset_source(conn, "netbox")
+    conn.executemany(
+        "INSERT INTO services(name, netbox_id, protocol, ports_json, "
+        "parent_kind, parent_ref, description, custom_json, source) "
+        "VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        snap["services"],
+    )
+    conn.executemany(
+        "INSERT INTO nodes(name, netbox_id, role, site, status, primary_ip, "
+        "description, custom_json, source) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        snap["nodes"],
+    )
+    conn.executemany(
+        "INSERT INTO entity_links(from_kind, from_ref, to_kind, to_ref, "
+        "link_type, source) VALUES(?, ?, ?, ?, ?, ?)",
+        snap["links"],
+    )
+    conn.executemany(
+        "INSERT INTO xindex_fts(kind, ref, title, body) VALUES(?, ?, ?, ?)",
+        snap["fts"],
+    )
+
+
+def ingest_all(
+    conn: sqlite3.Connection,
+    docs_root: str,
+    *,
+    netbox_fetcher=None,
+) -> dict:
+    """Full re-ingest. Local sources atomic, externals partial.
+
+    `netbox_fetcher` is dependency-injectable for tests.
+    """
+    local_counts = _ingest_local(conn, docs_root)
+    nb_result = _ingest_netbox(conn, fetcher=netbox_fetcher)
+
+    ts = _now_iso()
+    _db.set_meta(conn, "last_ingest_at", ts)
+    summary = {
+        **local_counts,
+        "services": nb_result.services,
+        "nodes": nb_result.nodes,
+        "entity_links": nb_result.entity_links,
         "last_ingest_at": ts,
     }
+    _db.set_meta(conn, "counts", json.dumps(summary))
+    return summary
