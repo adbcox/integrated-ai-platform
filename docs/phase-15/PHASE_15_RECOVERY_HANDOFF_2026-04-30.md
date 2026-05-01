@@ -339,3 +339,62 @@ TIME ELAPSED: <minutes>
 ```
 
 Then halt. Do not proceed to next task.
+
+---
+
+## Addendum — Lessons Learned (added 2026-05-01 by D-16-07)
+
+This addendum is appended after the historical record. It does NOT modify
+the recovery procedure as executed; it captures what the recovery taught
+us, for future handoffs.
+
+### What this handoff verified
+
+R-1 through R-8 walked through the cascade rebuild and confirmed that:
+
+- 47/47 enumerated leaf paths in Vault were populated after rebuild
+- All AppRoles re-provisioned
+- Audit log re-enabled and capturing
+
+The handoff was declared complete on this basis.
+
+### What this handoff did NOT verify
+
+**No end-to-end auth probe against any live target.** Path population
+was checked; value correctness was not. Specifically:
+
+- `secret/minio/backup` was rebuilt from a `.env` snapshot. The
+  snapshot's `MINIO_ROOT_PASSWORD` value was an 11-character placeholder
+  (matching the expected length but not the actual MinIO user's
+  credential). The path appeared correct (`access_key` and `secret_key`
+  fields both populated), but the credential was wrong.
+- The bug surfaced 5 days later during D-15-03 testing when Restic
+  retried with exponential backoff and ultimately reported auth failure.
+  The window between handoff and detection cost real backup coverage.
+
+### The doctrine update (D-16-07)
+
+Future Vault recovery handoffs require **value-correctness verification**
+in addition to path-population checks. See:
+
+- `docs/runbooks/vault-recovery-from-shamir.md` "Verification" section
+- `docs/runbooks/vault-restore-from-backup.md` Step 8b
+- `scripts/vault-handoff-verify.sh` — automated probe helper
+
+The probe attempts a real auth/no-op operation against each critical
+target service (MinIO via Restic or `mc`, Vault auth surface via root
+token, audit-log writability). A failed probe REJECTS the handoff
+regardless of how many paths were populated.
+
+### How this would have caught the original incident
+
+`scripts/vault-handoff-verify.sh` Check 1 invokes
+`restic snapshots --no-cache` against the live MinIO endpoint using the
+`secret/minio/backup` credentials. The bogus 11-character access key
+would have failed this probe at handoff time, surfacing the issue
+before R-8 sign-off rather than 5 days into Phase 15.
+
+### Scope of the change
+
+This addendum does not re-open Phase 15. The historical record stands.
+Future recovery work — under Phase 16 or beyond — runs the new gate.

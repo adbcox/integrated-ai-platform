@@ -169,6 +169,8 @@ See `docs/runbooks/vault-recovery-from-shamir.md`.
 
 ## Step 8: Verify post-restore
 
+### 8a — Population check (necessary but insufficient)
+
 ```bash
 VAULT_TOKEN=$(cat ~/.vault-token)
 
@@ -187,6 +189,28 @@ docker exec -e VAULT_TOKEN="$VAULT_TOKEN" vault-server \
 bash ~/repos/integrated-ai-platform/docs/phase-13/h1-regression-probe.sh
 ```
 
+### 8b — Value-correctness check (REQUIRED, D-16-07)
+
+A path that exists with a value the consumer cannot use is worse than a
+missing path — silent failures are how the 2026-04-30 cascade incident
+hid for 5 days. Restore is **NOT** complete until this check passes:
+
+```bash
+VAULT_TOKEN=$(cat ~/.vault-token) \
+  bash ~/repos/integrated-ai-platform/scripts/vault-handoff-verify.sh
+```
+
+The helper performs end-to-end auth probes against live targets:
+
+- `secret/minio/backup` → `restic snapshots --no-cache` against MinIO
+  (or `mc ls` fallback) must succeed
+- root token → `vault list auth/approle/role` must succeed
+- `vault audit list` must show `file/` enabled
+
+Exit 0 = restore accepted. Exit 1 = restore REJECTED — values incorrect,
+even if all paths are populated. See `docs/runbooks/vault-recovery-from-shamir.md`
+"Verification" section for the full doctrine.
+
 ---
 
 ## Post-restore checklist
@@ -199,6 +223,7 @@ bash ~/repos/integrated-ai-platform/docs/phase-13/h1-regression-probe.sh
 - [ ] Regression probe: FAIL=0
 - [ ] Incident documented in `docs/runbooks/rewire-log/`
 - [ ] Restic snapshot post-restore taken (`restic backup /vault/data --tag vault-post-restore`)
+- [ ] **D-16-07 value-correctness verification passed** (`scripts/vault-handoff-verify.sh` exit 0)
 
 ---
 

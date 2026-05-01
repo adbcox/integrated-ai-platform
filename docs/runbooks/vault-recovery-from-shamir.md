@@ -92,6 +92,59 @@ If `true`, seal-vault has a problem — see vault-unseal.md Step 3.
 - [ ] Move offline keys back to safe location
 - [ ] Verify ~/seal-vault-init-keys-MOVE-OFFLINE.txt is NOT on Mac Mini disk
 
+## Verification (D-16-07 — REQUIRED before declaring handoff complete)
+
+Recovery is NOT complete when paths are populated. It is complete when
+**values are correct**. The two are not the same — see "Why this section
+exists" below.
+
+### Population check (necessary but insufficient)
+
+For each expected vault path, verify `vault kv get <path>` succeeds:
+
+```bash
+# Example for the 47 paths from the 2026-04-30 cascade rebuild:
+for p in $(cat docs/phase-15/expected-vault-paths.txt); do
+  $DOCKER exec vault-server vault kv get "$p" >/dev/null 2>&1 && echo "OK $p" || echo "MISSING $p"
+done
+```
+
+Count: N of M paths populated. This proves the WRITE worked.
+
+### Value-correctness check (REQUIRED for handoff acceptance)
+
+For at least one secret per CRITICAL service category, perform an
+**end-to-end auth attempt against the live target** using the Vault-stored
+credentials. Run:
+
+```bash
+VAULT_TOKEN=$(cat ~/.vault-token) bash scripts/vault-handoff-verify.sh
+```
+
+The helper checks:
+
+1. **minio/backup**: `restic snapshots --no-cache` (or `mc ls` fallback)
+   succeeds against MinIO at 192.168.10.201:9000 — proves the access_key
+   and secret_key in `secret/minio/backup` are the actual MinIO user
+   credentials, not stale or bogus values.
+2. **AppRole surface alive**: root token can `vault list auth/approle/role`
+   — proves the auth mount is present and the token is valid.
+3. **Audit device writing**: `vault audit list` returns `file/` —
+   proves the audit-log write path is intact.
+
+A failed value-correctness check = handoff **REJECTED** until remediated,
+even if all paths are populated. The helper exits 1 on any failure with
+detail per failed check.
+
+### Why this section exists
+
+The 2026-04-30 Vault cascade post-recovery verification only counted
+leaf-path population (47/47 paths populated). The bogus 11-character
+MinIO access key in `secret/minio/backup` survived rebuild and only
+surfaced when Restic auth retried with exponential backoff during
+D-15-03 testing **five days later**. Recovery doctrine now requires
+value-correctness verification.
+
 ## When this fails
 
 If 3 keys don't unseal: keys are wrong/corrupt. Try other 2. If none work, Vault data is recoverable from Restic backup (see vault-restore-from-backup.md, scheduled for Phase 14).
