@@ -169,6 +169,13 @@ InvenTree real data, cross-index). Phase 15 closeout reframed priority: the
 cross-index service is the structural enabler for autonomous coding (operator
 meta-goal), so it leads. Mac Studio + InvenTree real-data work follow.
 
+D-16-08 and D-16-09 were added 2026-05-01 to address the operator's
+"real-time architecture visibility" requirement. Both depend on the
+cross-index foundation (D-16-02 + 02.1 + 02.2) and could not be scoped
+earlier — they consume xindex's normalized topology (NetBox devices /
+services + Plane state) to project current architecture into Grafana
+dashboards (D-16-08) and a Structurizr C4 model (D-16-09).
+
 Deliverable table:
 
 | Deliverable | Status | Reference |
@@ -185,6 +192,8 @@ Deliverable table:
 | D-16-05: Loose-doc retirement | NOT STARTED | deferred from D-15-08 |
 | D-16-06: Documentation drift detection automation | NOT STARTED | discovery |
 | D-16-07: Recovery-handoff doctrine update | NOT STARTED | discovery |
+| D-16-08: Unified architecture + health dashboard | NOT STARTED | Grafana + xindex/NetBox |
+| D-16-09: Structurizr population from xindex/NetBox | NOT STARTED | C4 auto-architecture |
 
 Sequencing: D-16-02 first (structural enabler), then D-16-01 (small),
 then 02.1/02.2/02.3 expansions, then Mac Studio + remaining items.

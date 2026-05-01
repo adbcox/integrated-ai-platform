@@ -215,6 +215,20 @@ Phase 17 CLOSED.
 
 ---
 
+### 17.D — Network flow collection + visualization (deferred from Phase 16)
+
+Live NetFlow / IPFIX from OPNsense → flow collector container
+(akvorado, ntopng, or pmacct candidate) → Grafana visualization.
+Addresses live network-flow visibility for security and
+troubleshooting; deferred from Phase 16 because the operator's
+"what is each system, IP, connections" requirement was determined
+to be satisfied by NetBox + xindex (configured topology), not
+requiring NetFlow (live flows). 17.D remains a valid future option.
+
+Effort: ~6-8h (collector choice is a separate research turn).
+
+---
+
 ## What does NOT fit in these three phases
 
 **Intentionally deferred indefinitely:**
