@@ -2,7 +2,7 @@
 
 **Date:** 2026-05-01
 **Auditor:** Claude session (operator decision: KEEP)
-**Trigger:** 17.F agent UI consolidation audit (9 candidates probed for
+**Trigger:** D-17-06 agent UI consolidation audit (9 candidates probed for
 overlap, redundancy, retirement opportunity).
 
 ---
@@ -34,7 +34,7 @@ overlap, redundancy, retirement opportunity).
   5.42 kB tx in the stats sample window — light per-snapshot, but the
   service is the canonical chat surface and operator uses it
   interactively.
-- **Stack-coverage hypothesis (from 17.A):** open-webui is the LLM chat
+- **Stack-coverage hypothesis (from D-17-01):** open-webui is the LLM chat
   UI; no overlap with obot (agent-runner), openhands (autonomous coding),
   or anythingllm (RAG-over-docs). **Confirmed.**
 
@@ -77,7 +77,7 @@ N/A — KEEP verdict.
 
 ## Section 6 — Decision log
 
-- **17.A stack-audit hypothesis:** "primary chat UI" — **CONFIRMED**.
+- **D-17-01 stack-audit hypothesis:** "primary chat UI" — **CONFIRMED**.
 - **Operator decision (2026-05-01):** KEEP.
 - **Re-audit trigger:** if the platform later standardises on a
   different chat front-end (LibreChat, etc.), or if local Ollama is

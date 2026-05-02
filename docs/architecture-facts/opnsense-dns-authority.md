@@ -2,7 +2,7 @@
 
 **Status:** PROVISIONAL. Asserted as fact in commit 237396b on
 2026-05-01; that assertion was overconfident and is corrected here.
-Definitive resolution: deliverable 17.U.
+Definitive resolution: deliverable D-17-21.
 
 ## What is verified
 
@@ -55,7 +55,7 @@ Definitive resolution: deliverable 17.U.
   this platform had silent DNS-routing contribution that was
   misdiagnosed at the time. (Operator-flagged as worth checking.)
 
-## What 17.U will resolve
+## What D-17-21 will resolve
 
 The audit deliverable will:
 
@@ -100,14 +100,14 @@ curl -s -k -u "$KEY:$SEC" "https://192.168.10.1/api/dnsmasq/settings/get" | \
 
 Probe results are observable facts. The interpretation that one is
 "the authority" is operator-intent, not probe-derivable. Both
-probe non-zero is normal during a transition state. Wait for 17.U
+probe non-zero is normal during a transition state. Wait for D-17-21
 output before drawing authority conclusions.
 
 ## Operator-side note
 
 Do NOT make DNS configuration changes via OPNsense GUI based on
 this file's earlier content (the 237396b version that asserted
-"Dnsmasq is the authority"). Wait for 17.U to determine the
+"Dnsmasq is the authority"). Wait for D-17-21 to determine the
 operator-intended architecture and execute corrections.
 
 ## History of this fact's evolution
@@ -115,7 +115,7 @@ operator-intended architecture and execute corrections.
 | Date       | Event                                          |
 |------------|------------------------------------------------|
 | 2026-04-26 | First Unbound-vs-Dnsmasq misdiagnosis caught   |
-| 2026-05-01 | 17.I shipped with Unbound-only parity check    |
+| 2026-05-01 | D-17-09 shipped with Unbound-only parity check    |
 | 2026-05-01 | 237396b corrected to "Dnsmasq is authority"    |
 | 2026-05-01 | This amend: corrects 237396b overclaim         |
-| 17.U close | Will replace this file with verified facts     |
+| D-17-21 close | Will replace this file with verified facts     |

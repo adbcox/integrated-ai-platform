@@ -1,7 +1,7 @@
 # Candidate Tools
 
 Tools observed in the 2026-04-30→05-01 article-intake window
-(deliverable 17.S) that may warrant evaluation against a specific
+(deliverable D-17-19) that may warrant evaluation against a specific
 platform need. Listed here so the option exists when the need
 matures — not endorsed, not committed.
 

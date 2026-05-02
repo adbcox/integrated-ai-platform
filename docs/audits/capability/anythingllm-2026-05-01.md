@@ -2,7 +2,7 @@
 
 **Date:** 2026-05-01
 **Auditor:** Claude session (operator decision: PARK-RETIRE)
-**Trigger:** 17.F agent UI consolidation audit. anythingllm was
+**Trigger:** D-17-06 agent UI consolidation audit. anythingllm was
 flagged as a possible retirement candidate based on minimal observed
 usage.
 
@@ -81,7 +81,7 @@ between them with **no current consumer**.
 ## Section 5 — Migration / retirement plan
 
 **Pattern:** PARK-RETIRE per established platform doctrine
-(matches 17.E zabbix-exporter bridge, 17.H sportarr).
+(matches D-17-05 zabbix-exporter bridge, D-17-08 sportarr).
 
 **Steps:**
 
@@ -134,7 +134,7 @@ docker compose -f docker/knowledge-stack.yml up -d anythingllm
 
 ## Section 6 — Decision log
 
-- **17.A stack-audit hypothesis:** "RAG-over-docs candidate;
+- **D-17-01 stack-audit hypothesis:** "RAG-over-docs candidate;
   utilization unknown" — **CONFIRMED unused via D#20 probe (0 docs,
   0 chat).**
 - **Operator decision (2026-05-01):** PARK-RETIRE.

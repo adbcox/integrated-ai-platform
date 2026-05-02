@@ -5,7 +5,7 @@ being immediate action items. Recorded so future-self knows the
 context if/when these mature into something requiring response.
 
 Surfaced during the 2026-04-30→05-01 article-intake window
-(deliverable 17.S).
+(deliverable D-17-19).
 
 ---
 

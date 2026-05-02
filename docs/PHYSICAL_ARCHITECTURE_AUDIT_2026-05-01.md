@@ -3,8 +3,8 @@
 **Purpose.** D#21 establishes three audit planes — physical, logical,
 capability — and requires each to have a current artifact. The
 logical-plane audit exists (`docs/STACK_ARCHITECTURE_AUDIT_2026-05-01.md`,
-17.A); the capability-plane methodology exists
-(`docs/templates/capability-audit-template.md`, 17.B). This document
+D-17-01); the capability-plane methodology exists
+(`docs/templates/capability-audit-template.md`, D-17-02). This document
 is the missing third leg: a physical-plane audit grounded in probed
 hardware, network, and storage state as of 2026-05-01.
 
@@ -14,7 +14,7 @@ are. Not: what services run on the hardware (logical plane) or what
 the hardware is theoretically capable of (capability plane).
 
 **Probe context.** Probes executed from mac-mini (192.168.10.145) on
-2026-05-01. Mac Studio data captured Day-1 (17.O). LAN topology from
+2026-05-01. Mac Studio data captured Day-1 (D-17-15). LAN topology from
 ARP table at probe time. QNAP from active SMB mount. Threadripper
 data from prior inventory (host offline at probe time).
 
@@ -63,11 +63,11 @@ peer is 10GbE-capable; QNAP is 10GbE-capable. Until a 10GbE adapter
 or TB5 direct-link is added on the Mini side, all north-south traffic
 to/from this node is gated at 1 Gb/s. This is acceptable for
 control-plane work today; it will not be acceptable for distributed
-inference (17.N) or for storage workloads that move large objects.
+inference (D-17-14) or for storage workloads that move large objects.
 
 ### 1.2 — mac-studio (192.168.10.142)
 
-Onboarded 2026-05-01 via 17.O. Day-1 scope only — no workload yet.
+Onboarded 2026-05-01 via D-17-15. Day-1 scope only — no workload yet.
 
 | Field | Value | Source |
 |---|---|---|
@@ -95,7 +95,7 @@ runbook open follow-up).
 | Ethernet | 1 GbE (bottleneck) | 10 GbE |
 | TB buses | 3 × TB5 | 5 × TB5 |
 | Role today | control plane (66 containers) | identity-only Day-1 |
-| Role planned | control plane + orchestration | inference (Phase 17.N exo cluster), specialty model serving |
+| Role planned | control plane + orchestration | inference (Phase D-17-14 exo cluster), specialty model serving |
 
 The two Macs are complementary, not redundant — different
 generations, different memory ceilings, different roles.
@@ -214,12 +214,12 @@ No action.
 | mac-mini ↔ switch | 1 GbE | mini en0 is 1G; switch 10G |
 | mac-studio ↔ switch | 10 GbE | already at endpoint speed |
 | qnap ↔ switch | 10 GbE | already at endpoint speed |
-| mac-mini ↔ mac-studio | 1 GbE (via switch) | both have TB5 (120 Gb/s) — direct link is 17.N target |
+| mac-mini ↔ mac-studio | 1 GbE (via switch) | both have TB5 (120 Gb/s) — direct link is D-17-14 target |
 | OPNsense ↔ switch | unknown from this side | (operator can confirm) |
 
 The Mac Mini's 1 GbE is the only documented bottleneck on the
 hot-path between platform compute and storage. The TB5-direct option
-(Mac Mini ↔ Mac Studio) is reserved for 17.N (exo cluster).
+(Mac Mini ↔ Mac Studio) is reserved for D-17-14 (exo cluster).
 
 ---
 
@@ -271,7 +271,7 @@ Out of scope for this revision. Future passes should capture:
 - UPS coverage (which hosts are on battery, runtime budget)
 - Rack/shelf placement (so a physical incident — leak, fall — can be
   scoped quickly)
-- Cable inventory (TB5 cables on hand for 17.N)
+- Cable inventory (TB5 cables on hand for D-17-14)
 
 These are operator-domain facts not derivable from probes; capture
 on the next physical visit.
@@ -284,7 +284,7 @@ Numbered for cross-reference:
 
 1. **Mac Mini en0 is 1 GbE.** Bottleneck for distributed-inference
    and large object I/O. Resolution paths: (a) USB/TB 10GbE adapter,
-   (b) TB5 direct link to Mac Studio (17.N target).
+   (b) TB5 direct link to Mac Studio (D-17-14 target).
 2. **Mac Studio IP is DHCP, not reserved.** Static reservation
    pending operator decision (logged in Day-1 runbook).
 3. **20 unidentified active LAN nodes** (§3.3) need disposition —
@@ -329,12 +329,12 @@ occasionally load-bearing for incident scoping.
 - **Probe context:** see Section 0
 - **Linked artifacts:**
   - `docs/STACK_ARCHITECTURE_AUDIT_2026-05-01.md` (logical plane,
-    17.A)
+    D-17-01)
   - `docs/templates/capability-audit-template.md` (capability plane
-    methodology, 17.B)
+    methodology, D-17-02)
   - `docs/audits/capability/zabbix-2026-05-01.md` (capability plane
-    first worked example, 17.B)
+    first worked example, D-17-02)
   - `docs/runbooks/mac-studio-day-1.md` (Mac Studio physical record,
-    17.O)
+    D-17-15)
   - D#21 (three-plane audit doctrine)
-- **Phase deliverable:** 17.C
+- **Phase deliverable:** D-17-03

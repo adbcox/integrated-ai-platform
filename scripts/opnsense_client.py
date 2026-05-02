@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""17.I — OPNsense API client (Dnsmasq host records + health).
+"""D-17-09 — OPNsense API client (Dnsmasq host records + health).
 
 Reads `secret/opnsense/api` (fields: api_key, api_secret, host) via the
 `opnsense-api-reader` Vault AppRole and exposes two functions used by
-drift detection (D-16-06 + 17.I):
+drift detection (D-16-06 + D-17-09):
 
     opnsense_get_host_records() -> list[dict]
         Each row: {"hostname": str, "domain": str, "fqdn": str,
@@ -83,7 +83,7 @@ def _approle_login() -> str:
     if not ROLE_ID_FILE.is_file() or not SECRET_ID_FILE.is_file():
         raise OPNsenseClientError(
             f"AppRole creds missing under {APPROLE_DIR}. "
-            "Run T1 of 17.I to provision."
+            "Run T1 of D-17-09 to provision."
         )
     role_id = ROLE_ID_FILE.read_text().strip()
     secret_id = SECRET_ID_FILE.read_text().strip()

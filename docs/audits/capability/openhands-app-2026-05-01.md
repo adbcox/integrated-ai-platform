@@ -2,7 +2,7 @@
 
 **Date:** 2026-05-01
 **Auditor:** Claude session (operator decision: KEEP)
-**Trigger:** 17.F agent UI consolidation audit. The 17.A stack-audit
+**Trigger:** D-17-06 agent UI consolidation audit. The D-17-01 stack-audit
 hypothesis ("looks like a Grafana clone — possibly redundant") was
 flagged for verification. **This audit reverses that hypothesis.**
 
@@ -34,7 +34,7 @@ flagged for verification. **This audit reverses that hypothesis.**
   - Image label: `org.opencontainers.image.source` =
     `https://github.com/All-Hands-AI/OpenHands` (canonical project
     name verified against image metadata).
-- **17.A hypothesis ("Grafana-like UI, redundant"):** **REJECTED.**
+- **D-17-01 hypothesis ("Grafana-like UI, redundant"):** **REJECTED.**
   The "dashboard-like" URLs in earlier surface inspection are
   OpenHands' own conversation/event endpoints, not Grafana clones.
   This is the autonomous coding agent — a distinct capability from
@@ -79,7 +79,7 @@ N/A — KEEP verdict.
 
 ## Section 6 — Decision log
 
-- **17.A stack-audit hypothesis:** "Grafana-like UI, redundant" —
+- **D-17-01 stack-audit hypothesis:** "Grafana-like UI, redundant" —
   **REJECTED via D#20 probe (uvicorn:3000 + Ollama LLM_BASE_URL +
   github.com/All-Hands-AI/OpenHands image source)**.
 - **Operator decision (2026-05-01):** KEEP.

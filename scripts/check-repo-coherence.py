@@ -10,7 +10,7 @@ Subcommands:
     adr-readme-sync          docs/adr/ADR-A-*.md ↔ docs/adr/README.md
     decision-register-sync   docs/adr/ADR-A-*.md ↔ docs/DECISION_REGISTER.md
     caddy-internal-domains   list .internal site blocks from Caddyfile
-    caddy-dns-parity         each Caddy .internal site has matching DNS host record (17.I)
+    caddy-dns-parity         each Caddy .internal site has matching DNS host record (D-17-09)
     caddy-unbound-parity     deprecated alias for caddy-dns-parity (one-cycle)
     netbox-services-have-adrs   stub — Phase 17 territory
     framework-table-coherence  PROJECT_FRAMEWORK.md §7+§8 deliverable rows
@@ -49,7 +49,7 @@ FRAMEWORK = REPO_ROOT / "docs" / "PROJECT_FRAMEWORK.md"
 LAUNCHD_AGENTS_REPO = REPO_ROOT / "docker" / "launchd-agents"
 LAUNCHD_AGENTS_INSTALLED = Path.home() / "Library" / "LaunchAgents"
 
-# 17.I — Caddy↔Unbound parity (status-file pattern). The check is run
+# D-17-09 — Caddy↔Unbound parity (status-file pattern). The check is run
 # on the operator Mac (cron/launchd or manual) by invoking this script
 # with subcommand `caddy-unbound-parity --refresh`; that mode queries
 # OPNsense via scripts/opnsense_client.py and writes a status JSON to
@@ -91,7 +91,7 @@ LAUNCHD_RECENCY_EXPECTATIONS: dict[str, dict] = {
         "probe_paths": ["/Users/admin/.platform-logs/docker-events.log"],
     },
     "com.iap.caddy-unbound-parity": {
-        # Daily refresh of the parity status file (17.I). 36h grace mirrors
+        # Daily refresh of the parity status file (D-17-09). 36h grace mirrors
         # the per-job pattern used for other daily jobs.
         "max_age_sec": 36 * 3600,
         "probe_paths": ["/Users/admin/.platform-logs/caddy-unbound-parity.heartbeat"],
@@ -102,8 +102,13 @@ LAUNCHD_RECENCY_EXPECTATIONS: dict[str, dict] = {
 # (importing the script-as-module would require sys.path gymnastics
 # given the hyphen in its name). The duplication is one line; the
 # framework-table-coherence check exercises the same parser.
+#
+# WP-17-04-01.5 (2026-05-02): tolerate "(historical: NN.X)"
+# annotation that may appear between the canonical D-NN-NN ID and the
+# colon during the migration grace period. The status column also now
+# admits parentheses so "DEFERRED to Phase 17 (D-17-15)" parses cleanly.
 FRAMEWORK_ROW_RE = re.compile(
-    r"^\|\s*(D-\d+-[\w.]+)\s*:\s*(.*?)\s*\|\s*([\w \-]+?)\s*\|\s*(.*?)\s*\|\s*$"
+    r"^\|\s*(D-\d+-[\w.]+)[^:|]*:\s*(.*?)\s*\|\s*([\w \-()]+?)\s*\|\s*(.*?)\s*\|\s*$"
 )
 
 VALID_STATUS_PREFIXES = {"DONE", "IN PROGRESS", "NOT STARTED", "DEFERRED"}
@@ -256,7 +261,7 @@ def cmd_caddy_internal_domains() -> int:
     return 0
 
 
-# ── Caddy ↔ DNS parity (17.I) ───────────────────────────────────────────────
+# ── Caddy ↔ DNS parity (D-17-09) ───────────────────────────────────────────────
 # Renamed 2026-05-01 from caddy-unbound-parity. Dnsmasq, not Unbound, is the
 # DNS authority on this platform — see
 # docs/architecture-facts/opnsense-dns-authority.md and KI-009.
@@ -650,7 +655,7 @@ MAC_STUDIO_IP = "192.168.10.142"
 
 
 def cmd_mac_studio_reachable() -> int:
-    """Day-1 (17.O) reachability check for the Mac Studio compute node.
+    """Day-1 (D-17-15) reachability check for the Mac Studio compute node.
 
     One ICMP echo, 2-second timeout. Exits 0 reachable, 1 unreachable.
     Treated as drift because a Day-1 node going dark means either the

@@ -70,7 +70,7 @@ Expected: ICMP replies via the Tailscale interface
 | Node | Date | Status | Notes |
 |---|---|---|---|
 | mac-mini | (Phase 13) | Done | Headscale server itself; runs in `headscale` container |
-| mac-studio | 2026-05-01 | Pending operator install | Onboarded via 17.O Day-1; Tailscale install + Headscale approval pending |
+| mac-studio | 2026-05-01 | Pending operator install | Onboarded via D-17-15 Day-1; Tailscale install + Headscale approval pending |
 
 When a node onboards, append a row above. Don't delete completed
 rows — the table is the audit trail.

@@ -353,7 +353,7 @@ jobs:
           echo "This job intentionally does not call Plane from CI. The exit-code-2"
           echo "drift contract is exercised by the cron job on the operator's host."
 
-  # ── Job 7: Caddy ↔ Unbound parity (17.I — enforced via status-file) ────────
+  # ── Job 7: Caddy ↔ Unbound parity (D-17-09 — enforced via status-file) ────────
   # Reads ~/.platform-logs/caddy-unbound-parity.json written by the operator-
   # Mac launchd job (docker/launchd-agents/com.iap.caddy-unbound-parity.plist —
   # T3.1 follow-up). On GitHub-hosted runners that path doesn't exist, so the
@@ -377,7 +377,7 @@ jobs:
         run: |
           python3 scripts/check-repo-coherence.py caddy-internal-domains | tee /tmp/caddy-domains.txt
           n=$(grep -c '\.internal' /tmp/caddy-domains.txt || true)
-          echo "::notice::Caddy serves $n .internal sites — parity to Unbound enforced via 17.I"
+          echo "::notice::Caddy serves $n .internal sites — parity to Unbound enforced via D-17-09"
 
       - name: Run parity check (status-file mode)
         run: |

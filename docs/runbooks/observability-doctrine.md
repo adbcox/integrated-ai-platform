@@ -65,7 +65,7 @@ new service. Override it only with documented reason.
 bridge Zabbix → VictoriaMetrics so PromQL could query Zabbix state
 (trigger counts by severity, host availability counts).
 
-**Status at 17.E (2026-05-01):** the bridge is unreliable. It
+**Status at D-17-05 (2026-05-01):** the bridge is unreliable. It
 intermittently times out on the underlying Zabbix API calls
 (`trigger.get` with `monitored:1` returns 7,198 records;
 `host.get` returns 55 records — both can exceed the exporter's
@@ -161,12 +161,12 @@ template edit — not a stack-architecture decision.
 
 ## Decision log
 
-- **Authored:** 2026-05-01 (17.E)
+- **Authored:** 2026-05-01 (D-17-05)
 - **Reviewed by operator:** yes
 - **Linked artifacts:**
-  - `docs/audits/capability/zabbix-2026-05-01.md` (17.B / 17.E)
-  - `docs/audits/capability/victoriametrics-2026-05-01.md` (17.E)
-  - `docs/STACK_ARCHITECTURE_AUDIT_2026-05-01.md` Layer 8 (17.A)
+  - `docs/audits/capability/zabbix-2026-05-01.md` (D-17-02 / D-17-05)
+  - `docs/audits/capability/victoriametrics-2026-05-01.md` (D-17-05)
+  - `docs/STACK_ARCHITECTURE_AUDIT_2026-05-01.md` Layer 8 (D-17-01)
   - D#20 (capability evidence)
 - **Refresh trigger:** when either stack changes role, when a third
   metrics tool is proposed, or at phase boundary (D#19).

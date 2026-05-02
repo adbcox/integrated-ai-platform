@@ -1,7 +1,7 @@
 # Observed Architecture Patterns
 
 Patterns surfaced during the 2026-04-30→05-01 article-intake window
-(deliverable 17.S). Recorded here as observed-in-the-wild patterns
+(deliverable D-17-19). Recorded here as observed-in-the-wild patterns
 worth knowing about — not endorsements, not roadmap commitments.
 
 When a pattern matures into adoption, it gets a proper deliverable
@@ -24,11 +24,11 @@ already follows this shape implicitly. Symphony makes the
 "coordinator owns the graph" property *enforced* rather than
 emergent — sub-agents can't accidentally grow lateral coupling.
 
-**When to consider.** If the agent-surface audit (17.F) finds
+**When to consider.** If the agent-surface audit (D-17-06) finds
 multiple agents with overlapping concerns or unclear boundaries,
 the Symphony pattern is one resolution: collapse the overlap into
 a coordinator and explicit children. Don't apply pre-emptively;
-wait for 17.F evidence.
+wait for D-17-06 evidence.
 
 **Watch-out.** Coordinator becomes a bottleneck and a single point
 of failure. Worth it when the alternative is uncoordinated
@@ -51,7 +51,7 @@ deliverable-prompt step into a repo artifact rather than a chat
 turn — which means it survives compaction, can be cited from
 commits, and can be mechanically diffed when behavior changes.
 
-**When to consider.** If 17.B's capability audit template proves
+**When to consider.** If D-17-02's capability audit template proves
 load-bearing across several deliverables, the natural next step is
 "every deliverable produces a spec artifact, not just a prompt."
 That's Spec Kit. Don't introduce it as a separate tool — fold it
@@ -76,8 +76,8 @@ ingests from configured sources (NetBox, Plane, framework docs) —
 not from the services themselves. OpenShell would invert that:
 services declare themselves; xindex collects.
 
-**When to consider.** If the topology-api audit (17.G) and the
-agent-surface audit (17.F) both find significant configuration
+**When to consider.** If the topology-api audit (D-17-07) and the
+agent-surface audit (D-17-06) both find significant configuration
 drift between declared (NetBox) and actual (running) state,
 OpenShell-style self-declaration is one resolution. Probably worth
 prototyping on a single service first (candidate: a service we'd

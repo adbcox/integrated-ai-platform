@@ -8,7 +8,7 @@
 
 `scripts/check-repo-coherence.py caddy-unbound-parity` reports 8 (or 9)
 "missing" Unbound host overrides for `.internal` Caddy sites. The check
-has reported FAIL since shipped (17.I, 2026-05-01).
+has reported FAIL since shipped (D-17-09, 2026-05-01).
 
 ## Root cause
 
@@ -73,10 +73,10 @@ The function rename (`opnsense_get_unbound_overrides` →
 `opnsense_get_host_records`) and subcommand rename
 (`caddy-unbound-parity` → `caddy-dns-parity`) remain correct because
 the new names are accurate REGARDLESS of which service turns out
-to be the actual authority post-17.U.
+to be the actual authority post-D-17-21.
 
 Severity unchanged (Sev-3). Remediation deliverable updated:
-17.U scope expanded from "find resolution mechanism" to "audit
+D-17-21 scope expanded from "find resolution mechanism" to "audit
 DNS state, back out unintended Unbound, ensure operator-intended
 authority is sole, retroactively review whether DNS state
 contributed to recent Vault troubleshooting incident."

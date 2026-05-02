@@ -8,7 +8,7 @@ recommendation, OR document why a tool has a unique role and stays.
 IS the artifact; the template is the methodology.
 
 **When to trigger.**
-- Stack audit (e.g. 17.A) flagged a tool for review
+- Stack audit (e.g. D-17-01) flagged a tool for review
 - New service proposed; capability check ensures non-overlap (D#18)
 - Phase-boundary review surfaced a tool that hasn't been audited
 - Operator skepticism (always valid — see 2026-05-01 Zabbix lesson:
@@ -117,9 +117,9 @@ broke.
 
 ### Audit discipline rule
 
-The logical-plane (17.A) stack audit's "quiet duplicate" or
+The logical-plane (D-17-01) stack audit's "quiet duplicate" or
 "retire candidate" findings are HYPOTHESES TO TEST, not verdicts.
-Each must go through this template to verify. The 17.G topology-api
+Each must go through this template to verify. The D-17-07 topology-api
 review (2026-05-01) reversed an initial retire-candidate flag after
 probing revealed unique Grafana-Node-Graph adapter capability
 (field-shape transform + `depends_on`-edge computation that no
@@ -128,9 +128,9 @@ is required before retirement, even when logical analysis suggests
 redundancy.
 
 Two reversals so far (2026-05-01):
-- 17.B: Zabbix "retire as redundant with VictoriaMetrics" → KEEP
+- D-17-02: Zabbix "retire as redundant with VictoriaMetrics" → KEEP
   WITH ROLE-CLARIFICATION (4,593 SNMP + 510 JMX items unique).
-- 17.G: topology-api "quiet duplicate of xindex_get_service" →
+- D-17-07: topology-api "quiet duplicate of xindex_get_service" →
   KEEP WITH ROLE-CLARIFICATION (Grafana Node Graph adapter unique).
 
 The template is doing its job.

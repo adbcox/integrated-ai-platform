@@ -87,12 +87,12 @@ platform work, not absolute model quality.
 |---|---|---|
 | **T1** | Claude Code via local Ollama orchestrator (qwen2.5-coder:32b) | Default. Routine implementation, refactoring, doc work, exploration. Free; no quota. |
 | **T2** | Subagent chain: decomposer (32b) → implementer (14b) → reviewer (7b) | Multi-step work that benefits from explicit decomposition. Runs entirely on Mac Mini Ollama under `claude-local`. |
-| **T3** | Specialty models (Gemma 4 26B MoE, Qwen3-Coder-Next 80B) on Mac Studio | Workloads where T1/T2 are clearly under-powered (long context windows, code-heavy multi-file refactors). Gated on 17.J (Provenance Kit) and 17.L (benchmarks) before adoption. |
+| **T3** | Specialty models (Gemma 4 26B MoE, Qwen3-Coder-Next 80B) on Mac Studio | Workloads where T1/T2 are clearly under-powered (long context windows, code-heavy multi-file refactors). Gated on D-17-10 (Provenance Kit) and D-17-12 (benchmarks) before adoption. |
 | **T4** | Anthropic Pro via `claude-pro` shell function | High-judgment tasks where T1–T3 demonstrably fall short. Pro quota is finite — treat as expensive. |
 
 **Rules:**
 - Platform services NEVER depend on Anthropic API access (see CLAUDE.md "LLM Access Doctrine").
-- T3 model adoption requires 17.J Provenance Kit gate to pass first; 17.L benchmark evidence must demonstrate the workload-specific win over T1/T2 before any deliverable adopts a T3 model as default.
+- T3 model adoption requires D-17-10 Provenance Kit gate to pass first; D-17-12 benchmark evidence must demonstrate the workload-specific win over T1/T2 before any deliverable adopts a T3 model as default.
 - T4 escalation is operator-discretion, not automated. Subagents do not call out to T4.
 - The T1–T2 split is a runtime decision: the Claude Code orchestrator decides per-task whether to delegate; the user does not need to think about it.
 
@@ -343,14 +343,14 @@ Deliverable table:
 | D-16-02.1: NetBox source ingestion | DONE | 16971f0 |
 | D-16-02.2: Plane source ingestion | DONE | 3262667 |
 | D-16-02.3: MCP tool wrapper | DONE | 6792969 |
-| D-16-03: Mac Studio Day-1 execution | DEFERRED to Phase 17 (17.O) | re-parented 2026-05-01 |
+| D-16-03: Mac Studio Day-1 execution | DEFERRED to Phase 17 (D-17-15) | re-parented 2026-05-01 |
 | D-16-04: Vault data in backup chain (warm-copy, ADR-A-017) | DONE | 88559fe |
 | D-16-04.1: Silent cron failure remediation | DONE | d344869 |
-| D-16-05: Loose-doc retirement | DEFERRED to Phase 17 (17.P) | re-parented 2026-05-01 |
+| D-16-05: Loose-doc retirement | DEFERRED to Phase 17 (D-17-16) | re-parented 2026-05-01 |
 | D-16-06: Documentation drift detection automation | DONE | c49432e |
 | D-16-07: Recovery-handoff doctrine update | DONE | 2075c1c |
-| D-16-08: Unified architecture + health dashboard | DEFERRED to Phase 17 (17.Q) | re-parented 2026-05-01 |
-| D-16-09: Structurizr population from xindex/NetBox | DEFERRED to Phase 17 (17.R) | re-parented 2026-05-01 |
+| D-16-08: Unified architecture + health dashboard | DEFERRED to Phase 17 (D-17-17) | re-parented 2026-05-01 |
+| D-16-09: Structurizr population from xindex/NetBox | DEFERRED to Phase 17 (D-17-18) | re-parented 2026-05-01 |
 
 Sequencing: D-16-02 first (structural enabler), then D-16-01 (small),
 then 02.1/02.2/02.3 expansions, then Mac Studio + remaining items.
@@ -372,38 +372,48 @@ Deliverable table:
 
 | Deliverable | Status | Reference |
 |---|---|---|
-| 17.A: Stack architecture audit promoted to repo | DONE | 8193014 |
-| 17.B: Capability audit template | DONE | f1502f6 |
-| 17.C: Physical architecture audit | DONE | c25c9ac |
-| 17.D: Replace Plane with OpenProject | NOT STARTED | per Phase 17 plan |
-| 17.E: Observability role-clarification | DONE | 9393785+9390c11 |
-| 17.F: Agent surface audit + consolidation | DONE | 62b595d+57d7399 |
-| 17.G: topology-api audit | DONE | 5698f30 |
-| 17.H: Sportarr fix-or-retire | DONE | 4ae00a2 |
-| 17.I: OPNsense API integration for DNS-parity | DONE | ecd7274 |
-| 17.J: Cisco Provenance Kit | NOT STARTED | per Phase 17 plan |
-| 17.K: Local LLM system prompt library | NOT STARTED | per Phase 17 plan |
-| 17.L: Gemma 4 + Qwen3-Coder-Next benchmarks | NOT STARTED | per Phase 17 plan |
-| 17.M: Goose agent CLI integration | NOT STARTED | per Phase 17 plan |
-| 17.N: exo distributed inference cluster | NOT STARTED | gated on 17.O |
-| 17.O: Mac Studio Day-1 execution | DONE | ccc02d1 |
-| 17.P: Loose-doc retirement | NOT STARTED | re-parented from D-16-05 |
-| 17.Q: Logical service architecture dashboard with live utilization (replaces original OpenProject framing) | NOT STARTED | re-parented from D-16-08 |
-| 17.R: Physical architecture visualization (Structurizr + network/storage paths; original Structurizr-only framing now T1 of this deliverable) | NOT STARTED | re-parented from D-16-09 |
-| 17.S: Article-intake findings consolidated to repo | DONE | 4ece268 |
-| 17.T: D#17/D#18/D#19/D#20/D#21 codified | DONE | b86bc55 |
-| 17.U: OPNsense DNS state audit + Unbound disable + retroactive Vault incident review (KI-009 follow-up; estimated 6-8h) | NOT STARTED | per Phase 17 plan |
+| D-17-01 (historical: 17.A): Stack architecture audit promoted to repo | DONE | 8193014 |
+| D-17-02 (historical: 17.B): Capability audit template | DONE | f1502f6 |
+| D-17-03 (historical: 17.C): Physical architecture audit | DONE | c25c9ac |
+| D-17-04 (historical: 17.D): Replace Plane with OpenProject | IN PROGRESS | per Phase 17 plan |
+| D-17-05 (historical: 17.E): Observability role-clarification | DONE | 9393785+9390c11 |
+| D-17-06 (historical: 17.F): Agent surface audit + consolidation | DONE | 62b595d+57d7399 |
+| D-17-07 (historical: 17.G): topology-api audit | DONE | 5698f30 |
+| D-17-08 (historical: 17.H): Sportarr fix-or-retire | DONE | 4ae00a2 |
+| D-17-09 (historical: 17.I): OPNsense API integration for DNS-parity | DONE | ecd7274 |
+| D-17-10 (historical: 17.J): Cisco Provenance Kit | NOT STARTED | per Phase 17 plan |
+| D-17-11 (historical: 17.K): Local LLM system prompt library | NOT STARTED | per Phase 17 plan |
+| D-17-12 (historical: 17.L): Gemma 4 + Qwen3-Coder-Next benchmarks | NOT STARTED | per Phase 17 plan |
+| D-17-13 (historical: 17.M): Goose agent CLI integration | NOT STARTED | per Phase 17 plan |
+| D-17-14 (historical: 17.N): exo distributed inference cluster | NOT STARTED | gated on D-17-15 |
+| D-17-15 (historical: 17.O): Mac Studio Day-1 execution | DONE | ccc02d1 |
+| D-17-16 (historical: 17.P): Loose-doc retirement | NOT STARTED | re-parented from D-16-05 |
+| D-17-17 (historical: 17.Q): Logical service architecture dashboard with live utilization (replaces original OpenProject framing) | NOT STARTED | re-parented from D-16-08 |
+| D-17-18 (historical: 17.R): Physical architecture visualization (Structurizr + network/storage paths; original Structurizr-only framing now T1 of this deliverable) | NOT STARTED | re-parented from D-16-09 |
+| D-17-19 (historical: 17.S): Article-intake findings consolidated to repo | DONE | 4ece268 |
+| D-17-20 (historical: 17.T): D#17/D#18/D#19/D#20/D#21 codified | DONE | b86bc55 |
+| D-17-21 (historical: 17.U): OPNsense DNS state audit + Unbound disable + retroactive Vault incident review (KI-009 follow-up; estimated 6-8h) | NOT STARTED | per Phase 17 plan |
 
-Sequencing: 17.A → 17.B → 17.C (foundation) before Tier 2; 17.B before
-17.E/F/G/H (template consumed); 17.F before 17.Q (KEEP/RETIRE verdicts
-must settle before topology overlay surfaces utilization on retired
-services); 17.Q before 17.R (logical-layer overlay informs physical
-visualization); 17.O before 17.N; 17.J before 17.L/M/N. 17.U gates the
-.internal route in 17.D's WP-01 (IP+port deploy proceeds; Caddy site
+Identifier-convention note: Phase 17 was originally authored using
+shorthand "17.X" deliverable IDs and "WP-17-D-NN" work-package IDs.
+Migrated to canonical D-NN-MM and WP-NN-MM-XX form (per §1
+vocabulary) on 2026-05-02 in WP-17-04-01.5, before WP-17-04-02 (Plane
+data export) preserved old IDs as historical primary keys. Canonical
+mapping in `docs/architecture-facts/identifier-conventions.md`. The
+`(historical: 17.X)` annotations remain for one cycle to support
+grep-by-old-form during the grace period.
+
+Sequencing: D-17-01 → D-17-02 → D-17-03 (foundation) before Tier 2;
+D-17-02 before D-17-05/06/07/08 (template consumed); D-17-06 before
+D-17-17 (KEEP/RETIRE verdicts must settle before topology overlay
+surfaces utilization on retired services); D-17-17 before D-17-18
+(logical-layer overlay informs physical visualization); D-17-15 before
+D-17-14; D-17-10 before D-17-12/13/14. D-17-21 gates the .internal
+route in D-17-04's WP-17-04-01 (IP+port deploy proceeds; Caddy site
 binding waits on DNS authority resolution).
 
 Phase 16 carry-overs (D-16-03/05/08/09) marked DEFERRED to Phase 17
-in §8 — see Phase 17 IDs 17.O/P/Q/R for new tracking.
+in §8 — see Phase 17 IDs D-17-15/16/17/18 for new tracking.
 
 **Plane mirror:** `https://plane.internal/iap/projects/dbcd4476-1e37-4812-a443-0914ec8380fc/modules/f4d9a8ee-94a3-4402-a475-3b3514c21569/`
 (Phase-17 module created in Bundle A.5 commit 5; 20 deliverable issues + 1 phase-issue mirrored.)

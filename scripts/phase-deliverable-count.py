@@ -29,15 +29,25 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).parent.parent
 FRAMEWORK = REPO_ROOT / "docs" / "PROJECT_FRAMEWORK.md"
 
-# Two ID formats supported:
-#   D-NN-XX   (Phase 15, 16 — historical convention)
-#   NN.X      (Phase 17+ — tier-letter convention)
+# Two ID formats supported during the WP-17-04-01.5 migration grace period:
+#   D-NN-XX   (canonical PMP+ITIL convention; ALL phases including Phase 17
+#              post-2026-05-02 — see docs/architecture-facts/identifier-conventions.md)
+#   NN.X      (legacy shorthand used during Phase 17 authoring; phased out)
+# Both forms accepted so that:
+#   (a) historical commits remain greppable
+#   (b) the canonical D-17-NN rows added in PROJECT_FRAMEWORK on
+#       2026-05-02 are now the primary match path
+# After Phase 17 closeout, the NN.X branch can be retired.
+#
+# The D-NN-NN row may also include a parenthesized "(historical: NN.X)"
+# annotation between the ID and colon — the regex tolerates this via
+# the [^:|]* segment after the ID.
 ROW = re.compile(
     r"^\|\s*("
-    r"D-\d+-[\w.]+"        # D-16-02.3 form
+    r"D-\d+-[\w.]+"        # D-16-02.3 / D-17-01 canonical form
     r"|"
-    r"\d+\.[A-Z]"          # 17.A form
-    r")\s*:\s*(.*?)\s*\|\s*([\w \-().]+?)\s*\|\s*(.*?)\s*\|\s*$"
+    r"\d+\.[A-Z]"          # 17.A legacy shorthand (grace period)
+    r")[^:|]*:\s*(.*?)\s*\|\s*([\w \-().]+?)\s*\|\s*(.*?)\s*\|\s*$"
 )
 
 

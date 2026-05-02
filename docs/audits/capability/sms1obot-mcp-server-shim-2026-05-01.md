@@ -2,7 +2,7 @@
 
 **Date:** 2026-05-01
 **Auditor:** Claude session (operator decision: KEEP)
-**Trigger:** 17.F agent UI consolidation audit (probe of obot trio
+**Trigger:** D-17-06 agent UI consolidation audit (probe of obot trio
 members for completeness).
 
 ---
@@ -29,7 +29,7 @@ members for completeness).
   - Originating IP `.19.0.9` of POST /mcp and DELETE /mcp requests
     arriving at sms1obot-mcp-server confirms this container is the
     live client.
-- **Stack-coverage hypothesis (from 17.A):** "obot trio member —
+- **Stack-coverage hypothesis (from D-17-01):** "obot trio member —
   shim" — **CONFIRMED.**
 
 ---
@@ -61,7 +61,7 @@ N/A — KEEP verdict.
 
 ## Section 6 — Decision log
 
-- **17.A stack-audit hypothesis:** "obot trio member (shim)" —
+- **D-17-01 stack-audit hypothesis:** "obot trio member (shim)" —
   **CONFIRMED.**
 - **Operator decision (2026-05-01):** KEEP.
 - **D#30 cross-reference:** non-compose-hardened by design.

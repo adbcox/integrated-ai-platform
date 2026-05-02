@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 17.D WP-01 — provision Vault policy, AppRole, and credentials for
+# D-17-04 WP-17-04-01 — provision Vault policy, AppRole, and credentials for
 # OpenProject (the canonical PM substrate replacing Plane CE).
 #
 # Idempotent: safe to re-run. Will not regenerate existing secret values
@@ -158,8 +158,8 @@ provision_literal_secret "secret/openproject/admin" "email" "admin@openproject.i
 
 # ── Step 7: API token placeholder ─────────────────────────────────────
 # OpenProject generates the API token after the admin user logs in
-# (My Account → Access tokens → Generate). WP-01 leaves this empty;
-# step 1.5 of WP-01 populates it after first boot. The
+# (My Account → Access tokens → Generate). WP-17-04-01 leaves this empty;
+# step 1.5 of WP-17-04-01 populates it after first boot. The
 # credentials.env.tmpl guards on `if .Data.data.token` so empty
 # renders nothing — safe.
 log "step 7: API token placeholder (populated post-deploy)"
@@ -208,4 +208,4 @@ fi
 ${DOCKER} exec -e VAULT_TOKEN="${OP_TOKEN}" vault-server \
   vault token revoke -self >/dev/null 2>&1 || true
 
-log "17.D WP-01 OpenProject provisioning complete"
+log "D-17-04 WP-17-04-01 OpenProject provisioning complete"

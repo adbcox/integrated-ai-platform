@@ -2,7 +2,7 @@
 
 **Date:** 2026-05-01
 **Auditor:** Claude session (operator decision: KEEP)
-**Trigger:** 17.F agent UI consolidation audit. The 17.A stack-audit
+**Trigger:** D-17-06 agent UI consolidation audit. The D-17-01 stack-audit
 hypothesis ("possibly redundant with check-repo-coherence.py") was
 flagged for verification. **This audit reverses that hypothesis.**
 
@@ -32,7 +32,7 @@ flagged for verification. **This audit reverses that hypothesis.**
     by `bin/selfheal.py`.
   - `bin/selfheal.py` operates the **media pipeline** (MediaHealthChecker,
     AutoFixer, *arr stack, QNAP free-space monitoring, rclone health).
-- **17.A hypothesis ("redundant with check-repo-coherence.py"):**
+- **D-17-01 hypothesis ("redundant with check-repo-coherence.py"):**
   **REJECTED.** check-repo-coherence is a *static* CLI checker for
   repo state at commit time. ai-platform-dashboard is a *runtime*
   daemon for media-pipeline self-healing. **Different surface, no
@@ -75,7 +75,7 @@ N/A — KEEP verdict.
 
 ## Section 6 — Decision log
 
-- **17.A stack-audit hypothesis:** "redundant with
+- **D-17-01 stack-audit hypothesis:** "redundant with
   check-repo-coherence.py" — **REJECTED via D#20 probe (selfheal.py
   daemon, MediaHealthChecker, AutoFixer, arr-stack integration).**
 - **Operator decision (2026-05-01):** KEEP.

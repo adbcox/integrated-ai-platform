@@ -60,7 +60,7 @@ repos:
         pass_filenames: false
         files: '^docker/launchd-agents/.*\.plist$'
       - id: mac-studio-reachable
-        name: Mac Studio reachability (17.O Day-1 node)
+        name: Mac Studio reachability (D-17-15 Day-1 node)
         entry: python3 scripts/check-repo-coherence.py mac-studio-reachable
         language: system
         pass_filenames: false
@@ -69,7 +69,7 @@ repos:
         # operator maintenance. CI runs the full suite unconditionally.
         files: '^(docs/runbooks/mac-studio-day-1\.md|docs/runbooks/headscale-client-onboarding\.md|scripts/check-repo-coherence\.py)$'
       - id: caddy-unbound-parity
-        name: Caddy <-> Unbound DNS parity (17.I, status-file mode)
+        name: Caddy <-> Unbound DNS parity (D-17-09, status-file mode)
         entry: python3 scripts/check-repo-coherence.py caddy-unbound-parity
         language: system
         pass_filenames: false

@@ -2,7 +2,7 @@
 
 **Date:** 2026-05-01
 **Auditor:** Claude session (operator decision: KEEP)
-**Trigger:** 17.F agent UI consolidation audit (probe of obot trio
+**Trigger:** D-17-06 agent UI consolidation audit (probe of obot trio
 members for completeness, even though they are not independently
 hardenable per D#30).
 
@@ -30,7 +30,7 @@ hardenable per D#30).
     shim).
   - Bidirectional traffic confirms the obot agent runtime is using
     this MCP server live.
-- **Stack-coverage hypothesis (from 17.A):** "obot trio member —
+- **Stack-coverage hypothesis (from D-17-01):** "obot trio member —
   active" — **CONFIRMED.**
 
 ---
@@ -62,7 +62,7 @@ configuration API for compose hardening — D#30 closes that gap.)
 
 ## Section 6 — Decision log
 
-- **17.A stack-audit hypothesis:** "obot trio member" — **CONFIRMED**
+- **D-17-01 stack-audit hypothesis:** "obot trio member" — **CONFIRMED**
   via traffic probe.
 - **Operator decision (2026-05-01):** KEEP.
 - **D#30 cross-reference:** non-compose-hardened by design (Obot

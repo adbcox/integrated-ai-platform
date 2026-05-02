@@ -2,7 +2,7 @@
 
 **Audit type:** Stack-level (NOT tool-by-tool)
 **Trigger:** Operator skepticism after Plane misfit discovery; concern that prior individual-tool evaluations created overlap and gaps invisible at the stack level
-**Status:** Promoted to repo 2026-05-01 as deliverable 17.A. Layer 8 verdict revised under D#20 (capability evidence) — original "retire Zabbix" recommendation reversed.
+**Status:** Promoted to repo 2026-05-01 as deliverable D-17-01. Layer 8 verdict revised under D#20 (capability evidence) — original "retire Zabbix" recommendation reversed.
 
 ---
 
@@ -65,7 +65,7 @@ Caddy auto-internal-TLS with 31 .internal sites. Headscale VPN. OPNsense firewal
 
 **Gap (recurring across deliverables):** Caddy ↔ OPNsense Unbound DNS parity. xindex.internal, mcp-xindex.internal, netbox.internal all have Caddy site blocks but no Unbound A-record. D-16-06 nightly check is advisory-only because CI runner cannot query OPNsense.
 
-**Recommendation:** Phase 17 should include OPNsense API integration (17.I). Makes the parity check enforced rather than advisory.
+**Recommendation:** Phase 17 should include OPNsense API integration (D-17-09). Makes the parity check enforced rather than advisory.
 
 ---
 
@@ -77,16 +77,16 @@ Caddy auto-internal-TLS with 31 .internal sites. Headscale VPN. OPNsense firewal
 
 NetBox is correct: agent-queryable, ADR-A-014 ratified, GraphQL+REST, custom fields, mature.
 
-**Quiet overlap with topology-api (port 8300, NOT 8090 — original audit had wrong port):** topology-api is a small stdlib HTTP service that ALSO reads service inventory. The 17.A first draft suspected duplication with xindex_get_service.
+**Quiet overlap with topology-api (port 8300, NOT 8090 — original audit had wrong port):** topology-api is a small stdlib HTTP service that ALSO reads service inventory. The D-17-01 first draft suspected duplication with xindex_get_service.
 
-**17.G ratification (2026-05-01):** verdict reversed under D#20 — topology-api is **NOT a duplicate**. It is the **Grafana Node Graph adapter** for the inventory: reads NetBox/YAML, computes service→service edges from each service's `depends_on`, emits the exact field shape (`mainStat`, `secondaryStat`, `arc__primary`, `detail__*`) that the Grafana Node Graph panel consumes. The whole-graph endpoint `/api/topology` has no equivalent in xindex.
+**D-17-07 ratification (2026-05-01):** verdict reversed under D#20 — topology-api is **NOT a duplicate**. It is the **Grafana Node Graph adapter** for the inventory: reads NetBox/YAML, computes service→service edges from each service's `depends_on`, emits the exact field shape (`mainStat`, `secondaryStat`, `arc__primary`, `detail__*`) that the Grafana Node Graph panel consumes. The whole-graph endpoint `/api/topology` has no equivalent in xindex.
 
 **Verdict: KEEP WITH ROLE-CLARIFICATION.**
 - NetBox owns: authoritative service inventory.
 - xindex owns: single-service lookups + cross-source linking.
 - topology-api owns: graph-shaped projection for Grafana Node Graph dashboards.
 
-Audit: `docs/audits/capability/topology-api-2026-05-01.md`. Two follow-ups (compose `CMDB_SOURCE` default flip to `netbox`; image-tag drift `1.1.0` vs `1.0.0`) tracked there but not in 17.G commit.
+Audit: `docs/audits/capability/topology-api-2026-05-01.md`. Two follow-ups (compose `CMDB_SOURCE` default flip to `netbox`; image-tag drift `1.1.0` vs `1.0.0`) tracked there but not in D-17-07 commit.
 
 ---
 
@@ -104,7 +104,7 @@ Repo + xindex + xindex-mcp = the knowledge surface. Working as intended after Ph
 - structurizr = architecture visualization
 - NOT a real duplication.
 
-**Concerning observation:** Structurizr cloud service has EOL of 2026-09-30 per startup logs. Self-hosted Structurizr OnPremises is the right path; verify the deployment is not cloud-tethered before Phase 17 17.R work depends on it.
+**Concerning observation:** Structurizr cloud service has EOL of 2026-09-30 per startup logs. Self-hosted Structurizr OnPremises is the right path; verify the deployment is not cloud-tethered before Phase 17 D-17-18 work depends on it.
 
 ---
 
@@ -123,7 +123,7 @@ Migration to OpenProject scoped at ~13-15h.
 - **Change records:** OpenProject has built-in change management workflow. Plane does not. Your CR-NN-NNN framework is currently un-modeled in Plane.
 - **xindex integration:** D-16-02.2 (Plane source) works but the schema mapping is constrained by Plane's flat issue model. OpenProject's richer model would let xindex expose deliverables, work packages, and change records as distinct queryable kinds.
 
-**The OpenProject migration is not just a tooling preference — it is a stack-level correctness fix.** Scoped as Phase 17 deliverable 17.D.
+**The OpenProject migration is not just a tooling preference — it is a stack-level correctness fix.** Scoped as Phase 17 deliverable D-17-04.
 
 ---
 
@@ -173,16 +173,16 @@ VictoriaMetrics is the container/host metrics + Grafana time-series
 backend. The Phase 14 D-ZBX bridge correctly brings Zabbix data into
 the VM/Grafana surface — that is integration, not duplication.
 
-**Recommendation 17.E (revised):** Document the role split, fix any
+**Recommendation D-17-05 (revised):** Document the role split, fix any
 broken bridge state, audit narrow overlap on host metrics where both
 stacks may scrape the same node. **Not a retirement deliverable.**
 
-**17.E ratification (2026-05-01):** doctrine codified in
+**D-17-05 ratification (2026-05-01):** doctrine codified in
 `docs/runbooks/observability-doctrine.md` (canonical role-split,
 boundary rule for new services, bridge-component RETIRE decision,
 706-item narrow-overlap disposition). Capability audits supporting
-the doctrine: `docs/audits/capability/zabbix-2026-05-01.md` (17.B)
-and `docs/audits/capability/victoriametrics-2026-05-01.md` (17.E).
+the doctrine: `docs/audits/capability/zabbix-2026-05-01.md` (D-17-02)
+and `docs/audits/capability/victoriametrics-2026-05-01.md` (D-17-05).
 
 Loki + Promtail and Uptime-Kuma have distinct roles (logs and uptime probing). Not duplicated.
 
@@ -201,7 +201,7 @@ Loki + Promtail and Uptime-Kuma have distinct roles (logs and uptime probing). N
 
 No duplication. Phase 17 work (Gemma 4, Qwen3-Coder evaluation, Cisco Provenance Kit) operates within this layer cleanly.
 
-NOTE: AnythingLLM appears in BOTH this layer (RAG role) and Layer 13 (chat UI surface). Verify usage data before retiring it as part of 17.F — its role here is real if used.
+NOTE: AnythingLLM appears in BOTH this layer (RAG role) and Layer 13 (chat UI surface). Verify usage data before retiring it as part of D-17-06 — its role here is real if used.
 
 ---
 
@@ -213,7 +213,7 @@ NOTE: AnythingLLM appears in BOTH this layer (RAG role) and Layer 13 (chat UI su
 
 Restic + MinIO@QNAP correct. ADR-A-017 just ratified warm-copy. D-16-04 just landed.
 
-**Quiet overlap:** Plane stack ships its OWN MinIO container (`docker-plane-minio-1`) for issue attachments. Total platform now has TWO MinIO instances. The Plane MinIO retires when Plane is replaced (17.D). Symptom of Plane being wrong tool, not real architectural duplication.
+**Quiet overlap:** Plane stack ships its OWN MinIO container (`docker-plane-minio-1`) for issue attachments. Total platform now has TWO MinIO instances. The Plane MinIO retires when Plane is replaced (D-17-04). Symptom of Plane being wrong tool, not real architectural duplication.
 
 ---
 
@@ -225,7 +225,7 @@ Restic + MinIO@QNAP correct. ADR-A-017 just ratified warm-copy. D-16-04 just lan
 
 *arr stack standard pattern. plex-mcp is the agent integration.
 
-**Orphan:** Sportarr logs show "Maximum retries... URL Fetching failed" continuously — actively broken. Per memory: "config issue not removable" — but it is clearly malfunctioning. Phase 17 deliverable (17.H) to fix or retire — apply 17.B capability template before deciding.
+**Orphan:** Sportarr logs show "Maximum retries... URL Fetching failed" continuously — actively broken. Per memory: "config issue not removable" — but it is clearly malfunctioning. Phase 17 deliverable (D-17-08) to fix or retire — apply D-17-02 capability template before deciding.
 
 ---
 
@@ -257,7 +257,7 @@ Each is fine alone; together they create operator cognitive load.
 - openhands-app — coding agent; LLM_MODEL=openai/qwen2.5-coder:32b
 - sms1obot-mcp-server + shim — appears obot-related; presence suggests obot integration not fully retired
 
-**Recommendation:** Phase 17 deliverable (17.F) for "agent surface consolidation." Apply 17.B capability template per tool:
+**Recommendation:** Phase 17 deliverable (D-17-06) for "agent surface consolidation." Apply D-17-02 capability template per tool:
 1. Audit obot's actual usage. If overlaps Open WebUI, retire.
 2. Audit openhands-app — if Claude Code + xindex-mcp serves the same use case, retire.
 3. Reduce dashboards to ONE (homepage seems most general; homarr is specific to *arr stack — fold into homepage).
@@ -276,7 +276,7 @@ This is the layer with the most "kept around because it was installed" decisions
 
 xindex aggregates ADRs, runbooks, decision register, NetBox services, NetBox nodes, Plane issues. xindex-mcp wraps for native agent calls. MCP-* containers expose Docker, filesystem, docs operations.
 
-**This layer is the answer to "the AI knowledge layer needs to be queryable."** The cross-index work (D-16-02 chain) was correctly prioritized. 17.Q and 17.R extend cleanly.
+**This layer is the answer to "the AI knowledge layer needs to be queryable."** The cross-index work (D-16-02 chain) was correctly prioritized. D-17-17 and D-17-18 extend cleanly.
 
 ---
 
@@ -284,14 +284,14 @@ xindex aggregates ADRs, runbooks, decision register, NetBox services, NetBox nod
 
 ### Finding 1 — TWO categories of "evaluated individually" damage
 
-- **Plane (Layer 5):** Migration to OpenProject ~13-15h (17.D).
-- **Agent UIs (Layer 13):** ~10-15h to audit usage and retire surfaces (17.F). Lower urgency than Plane.
+- **Plane (Layer 5):** Migration to OpenProject ~13-15h (D-17-04).
+- **Agent UIs (Layer 13):** ~10-15h to audit usage and retire surfaces (D-17-06). Lower urgency than Plane.
 
 ### Finding 2 — Observability role-clarification (REVISED under D#20)
 
 The first draft called Zabbix + VictoriaMetrics "one stack too many."
 That recommendation was reversed after capability probing — see Layer 8.
-The actual deliverable (17.E) is role documentation + bridge fix +
+The actual deliverable (D-17-05) is role documentation + bridge fix +
 narrow-overlap audit, not retirement. ~3-5h.
 
 ### Finding 3 — Knowledge layer is the SUCCESS pattern
@@ -310,14 +310,14 @@ After auditing, no layers are missing critical capabilities. The 66 containers c
 
 | ID | Scope | Effort |
 |---|---|---|
-| 17.D | Replace Plane with OpenProject (Layer 5) | ~13-15h |
-| 17.E | Observability role-clarification (Layer 8 — NOT retirement) | ~3-5h |
-| 17.F | Agent surface consolidation (Layer 13) | ~10-15h |
-| 17.G | topology-api evaluation (Layer 3) | ~3-5h |
-| 17.H | Sportarr fix-or-retire (Layer 11) | ~2-4h |
-| 17.I | OPNsense API integration (Layer 2) | ~6-8h |
+| D-17-04 | Replace Plane with OpenProject (Layer 5) | ~13-15h |
+| D-17-05 | Observability role-clarification (Layer 8 — NOT retirement) | ~3-5h |
+| D-17-06 | Agent surface consolidation (Layer 13) | ~10-15h |
+| D-17-07 | topology-api evaluation (Layer 3) | ~3-5h |
+| D-17-08 | Sportarr fix-or-retire (Layer 11) | ~2-4h |
+| D-17-09 | OPNsense API integration (Layer 2) | ~6-8h |
 
-Doctrine codification (D#18, D#19, D#20, D#21) lives in PROJECT_FRAMEWORK.md §3.5 — see 17.T.
+Doctrine codification (D#18, D#19, D#20, D#21) lives in PROJECT_FRAMEWORK.md §3.5 — see D-17-20.
 
 ---
 
@@ -326,18 +326,18 @@ Doctrine codification (D#18, D#19, D#20, D#21) lives in PROJECT_FRAMEWORK.md §3
 | Layer | Tools | Verdict | Action |
 |---|---|---|---|
 | 1 Identity | Vault + Vaultwarden | HEALTHY | none |
-| 2 Network | Caddy + Headscale | HEALTHY core | 17.I |
-| 3 CMDB | NetBox | HEALTHY | 17.G |
+| 2 Network | Caddy + Headscale | HEALTHY core | D-17-09 |
+| 3 CMDB | NetBox | HEALTHY | D-17-07 |
 | 4 Knowledge | Repo + xindex + mkdocs + structurizr | HEALTHY | none |
-| 5 PM/change | Plane | **WRONG** | **17.D** |
+| 5 PM/change | Plane | **WRONG** | **D-17-04** |
 | 6 Component | InvenTree | HEALTHY | (D-16-01 closed) |
 | 7 Personal cloud | Nextcloud | HEALTHY | none |
-| 8 Observability | VM/Grafana + Zabbix | ROLE-CLARIFICATION NEEDED | **17.E (NOT retirement)** |
+| 8 Observability | VM/Grafana + Zabbix | ROLE-CLARIFICATION NEEDED | **D-17-05 (NOT retirement)** |
 | 9 AI inference | Ollama + LiteLLM + AnythingLLM + Open WebUI | HEALTHY | none |
 | 10 Backup | Restic + MinIO@QNAP | HEALTHY | none |
-| 11 Media | *arr + Plex + plex-mcp | HEALTHY | 17.H |
+| 11 Media | *arr + Plex + plex-mcp | HEALTHY | D-17-08 |
 | 12 Smart home | Home Assistant | HEALTHY | none |
-| 13 Agent UIs | obot + openhands + 3 dashboards + chat UIs | **OVERLAPPING** | **17.F** |
+| 13 Agent UIs | obot + openhands + 3 dashboards + chat UIs | **OVERLAPPING** | **D-17-06** |
 | 14 Cross-cutting glue | xindex + MCP servers | HEALTHY (success pattern) | none |
 
 **Net:** 1 wrong tool (Plane), 1 role-clarification need (observability), 1 surface bloat (agent UIs), 1 broken orphan (sportarr), 1 architectural drift candidate (topology-api). Everything else is on the right track.
@@ -348,7 +348,7 @@ Doctrine codification (D#18, D#19, D#20, D#21) lives in PROJECT_FRAMEWORK.md §3
 
 **The stack is mostly correct.** The cross-index work has actually paid off — Layer 14 makes Layers 1-13 queryable and that is the whole point.
 
-The two real corrections (Plane and agent UI consolidation) are exactly the kinds of "evaluated individually" mistakes the operator named in the audit request. Catching them now, before 17.Q/17.R build on these surfaces, is the right move.
+The two real corrections (Plane and agent UI consolidation) are exactly the kinds of "evaluated individually" mistakes the operator named in the audit request. Catching them now, before D-17-17/D-17-18 build on these surfaces, is the right move.
 
 The Layer 8 reversal is itself the meta-lesson. The first draft pattern-matched two metrics tools as redundant; the D#20 probe surfaced 4,593 SNMP items + 510 JMX items + 55 hosts that one of them carries and the other cannot. That is the exact failure mode D#20 codifies: vibes-based retirement recommendations get rejected at audit review unless the capability evidence supports them.
 

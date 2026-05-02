@@ -2,8 +2,8 @@
 
 **Date:** 2026-05-01
 **Auditor:** Claude session (operator-reviewed)
-**Trigger:** 17.E observability role-clarification — peer audit to
-the 17.B Zabbix audit, so the role-split doctrine has evidence on
+**Trigger:** D-17-05 observability role-clarification — peer audit to
+the D-17-02 Zabbix audit, so the role-split doctrine has evidence on
 both sides of the boundary.
 
 ---
@@ -69,8 +69,8 @@ vmagent:         1 target,  health=up
 ```
 
 Six scrape jobs. mcp-docs target is currently down — separate
-follow-up (not 17.E scope). zabbix-exporter target is the bridge
-audited in 17.B / decided in 17.E §below.
+follow-up (not D-17-05 scope). zabbix-exporter target is the bridge
+audited in D-17-02 / decided in D-17-05 §below.
 
 ### 2.4 — What each scrape job collects
 
@@ -131,10 +131,10 @@ For each load-bearing capability from Section 2:
 
 - **What other tool covers this?** Zabbix-agent on mac-mini collects
   ~706 type-0 items that overlap heavily (CPU load, swap, proc count,
-  context switches, boot time, hostname — see 17.E
+  context switches, boot time, hostname — see D-17-05
   observability-doctrine §"Narrow overlap").
 - **Verdict:** OVERLAPPING. The 706 items are the queued cleanup
-  from the 17.B Zabbix audit; this audit confirms node-exporter is
+  from the D-17-02 Zabbix audit; this audit confirms node-exporter is
   the cleaner home for those items in this stack.
 
 ### 3.4 — PromQL exposition for arbitrary services
@@ -164,7 +164,7 @@ PromQL query, time-series retention. No other tool in the stack
 covers PromQL-native time-series storage. The role is durable.
 
 The role split between VictoriaMetrics and Zabbix is codified in
-`docs/runbooks/observability-doctrine.md` (17.E output).
+`docs/runbooks/observability-doctrine.md` (D-17-05 output).
 
 ---
 
@@ -178,7 +178,7 @@ N/A — verdict is KEEP.
 
 - **Auditor:** Claude session
 - **Date:** 2026-05-01
-- **Verdict reviewed by operator:** yes (17.E parent deliverable)
+- **Verdict reviewed by operator:** yes (D-17-05 parent deliverable)
 - **Source of capabilities probed:**
   - `curl :8428/api/v1/series/count` (cardinality)
   - `curl :8428/api/v1/query?query=count({__name__!=""})` (active set)
@@ -188,6 +188,6 @@ N/A — verdict is KEEP.
   - D#20 (capability evidence requirement) — peer audit to
     `docs/audits/capability/zabbix-2026-05-01.md`
   - D#21 (three-plane audits) — capability plane evidence
-  - 17.B (template + Zabbix worked example)
-  - 17.E (observability doctrine consuming this audit)
+  - D-17-02 (template + Zabbix worked example)
+  - D-17-05 (observability doctrine consuming this audit)
   - `docs/runbooks/observability-doctrine.md` (canonical role-split)

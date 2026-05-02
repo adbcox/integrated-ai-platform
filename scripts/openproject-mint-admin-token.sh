@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 17.D WP-01 T1.7 — mint OpenProject admin API token via Rails service
+# D-17-04 WP-17-04-01 T1.7 — mint OpenProject admin API token via Rails service
 # and rotate into Vault at secret/openproject/api#token.
 #
 # Replaces the prior operator-UI workflow (My Account → Access tokens
@@ -16,9 +16,9 @@
 #   - Token never lands in shell history (no user paste)
 #   - Run on Mac Mini
 #
-# WP-04 prerequisite (still applies, see docker/openproject/README.md
+# WP-17-04-04 prerequisite (still applies, see docker/openproject/README.md
 # "Connector authoring prerequisites"): the token minted here is
-# admin-scoped. WP-04 must replace it with an iap-sync user-scoped
+# admin-scoped. WP-17-04-04 must replace it with an iap-sync user-scoped
 # token before the connector ships.
 
 set -euo pipefail

@@ -15,12 +15,12 @@
 
 ## Onboarded
 - Date:          2026-05-01
-- Deliverable:   17.O — Mac Studio Day-1 execution
+- Deliverable:   D-17-15 — Mac Studio Day-1 execution
 - Operator pre-work completed:
     - Remote Login enabled
     - SSH key auth from Mac Mini (id_ed25519)
     - Hostname renamed across all 4 macOS locations
-    - macOS version verified ≥26.2 (passes 17.N gating)
+    - macOS version verified ≥26.2 (passes D-17-14 gating)
 - NetBox device ID:  5
 - Vault path:        secret/mac-studio/_meta
 - Headscale:         pending operator install per
@@ -31,7 +31,7 @@
 Identity, network, CMDB, secrets initialization. NOT YET:
 - Workload assignment
 - Orchestration role
-- exo cluster peering (gated on 17.N)
+- exo cluster peering (gated on D-17-14)
 - Service deployments
 
 ## Capability ceiling (per D#21 capability plane)
@@ -46,8 +46,8 @@ What this node CAN do today (verified Day-1):
 
 What this node WILL do (assigned in subsequent deliverables):
 - GPU compute via Metal (Ollama, MLX inference)
-- exo cluster peer with Mac Mini for distributed inference (17.N)
-- Possibly orchestration secondary (TBD; depends on 17.D OpenProject migration outcome)
+- exo cluster peer with Mac Mini for distributed inference (D-17-14)
+- Possibly orchestration secondary (TBD; depends on D-17-04 OpenProject migration outcome)
 
 What this node is NOT (explicit non-goals):
 - Linux compute (Threadripper's role — Phase 18.B)
@@ -134,9 +134,9 @@ The Mac Mini ↔ Mac Studio link can be:
 |---|---|---|
 | **1G Ethernet** (current) | 1 Gb/s | Goes through OPNsense-routed 192.168.10.0/24. Works today. |
 | **10G Ethernet** | 10 Gb/s on Studio side | Mac Mini's 10GbE port, if added, would unblock. Bottleneck is currently the Mini side. |
-| **TB5 direct** | 120 Gb/s | Bypasses LAN routing; needs TB5 cable + manual addressing on the new TB5 interface. **17.N (exo cluster) target.** |
+| **TB5 direct** | 120 Gb/s | Bypasses LAN routing; needs TB5 cable + manual addressing on the new TB5 interface. **D-17-14 (exo cluster) target.** |
 
-Day-1 stays on Ethernet. TB5 evaluation belongs to 17.N when that
+Day-1 stays on Ethernet. TB5 evaluation belongs to D-17-14 when that
 deliverable opens.
 
 ## Open follow-ups (NOT KIs — normal pending operator actions)
@@ -154,14 +154,14 @@ deliverable opens.
 - **mac-studio.internal subdomain** — allocate when first web
   service lands on the node. Caddy registration pattern in
   `docs/runbooks/add-new-service.md`.
-- **TB5 direct-link cable** — order when 17.N opens (exo cluster
+- **TB5 direct-link cable** — order when D-17-14 opens (exo cluster
   needs the high-bandwidth interconnect).
 
 ## Related
 
 - `docs/PHASE_ROADMAP.md` — Phase 17 / 18 context
 - `docs/phase-17/PHASE_17_PLAN_2026-05-01.md` — full Phase 17
-  deliverable list including 17.O parent + 17.N future use
+  deliverable list including D-17-15 parent + D-17-14 future use
 - `docs/runbooks/headscale-client-onboarding.md` — Tailscale +
   Headscale install procedure
 - `docs/PROJECT_FRAMEWORK.md` §3.1 — T1–T4 local model stack

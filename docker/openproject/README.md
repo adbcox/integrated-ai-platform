@@ -1,15 +1,15 @@
 # OpenProject — canonical PM substrate
 
-**Deployed:** 2026-05-01 (Phase 17 deliverable 17.D)
-**Replaces:** Plane CE (retired 2026-05-01 in 17.D WP-06)
-**ADR:** TBD (authored in 17.D WP-05)
+**Deployed:** 2026-05-01 (Phase 17 deliverable D-17-04)
+**Replaces:** Plane CE (retired 2026-05-01 in D-17-04 WP-17-04-06)
+**ADR:** TBD (authored in D-17-04 WP-17-04-05)
 
 ---
 
 ## Why OpenProject
 
-Plane CE's stack-level mismatch (documented in 17.A stack-audit and
-17.D plan):
+Plane CE's stack-level mismatch (documented in D-17-01 stack-audit and
+D-17-04 plan):
 
 - API rate limits — 60/min hit during D-16-02.A
 - No work-package primitive — PMP+ITIL framework uses WP-NN-MM-XX
@@ -92,7 +92,7 @@ This script:
 
 No operator UI interaction required. Safe to re-run after rebuilds.
 
-**Token implementation surprise (recorded for WP-04 author):**
+**Token implementation surprise (recorded for WP-17-04-04 author):**
 
 OpenProject 15 emits an `INFO -- : Increasing database pool size`
 line directly to stdout during Rails boot — bypasses
@@ -106,7 +106,7 @@ container.
 
 ---
 
-## Connector authoring prerequisites (WP-17-D-04)
+## Connector authoring prerequisites (WP-17-04-04)
 
 **Read before writing `framework/openproject_connector.py`.**
 
@@ -124,12 +124,12 @@ Before authoring the connector auth flow:
    read/write. No admin, no user-management, no project-create.
 2. **Reset that user's API key** and capture the value.
 3. **Store at `secret/openproject/api`** under the `token` field
-   (replacing the admin-scoped token populated in WP-01 T1.7).
+   (replacing the admin-scoped token populated in WP-17-04-01 T1.7).
 4. **Reset the admin user's API key** (regenerate, do not store) so
    the broad-scope token from T1.7 stops being a long-lived
    high-privilege credential floating around.
 
-Reasoning: WP-04 is the right time to switch because that's when
+Reasoning: WP-17-04-04 is the right time to switch because that's when
 the connector's exact API surface is first known — scoping the
 role to actual usage avoids both over-permissioning (security) and
 under-permissioning (forced re-grants mid-development).
@@ -143,11 +143,11 @@ See:
 - `docs/_archive/plane-final-snapshot-2026-05-01.sql` — forensic
   Plane DB dump
 - `framework/openproject_connector.py` — Plane connector replacement
-  (17.D WP-04)
+  (D-17-04 WP-17-04-04)
 - `scripts/openproject-sync-from-framework.py` — sync replacement
-  (17.D WP-04)
+  (D-17-04 WP-17-04-04)
 - `docker/_retired/plane/README.md` — Plane retirement record
-  (17.D WP-06)
+  (D-17-04 WP-17-04-06)
 
 ---
 

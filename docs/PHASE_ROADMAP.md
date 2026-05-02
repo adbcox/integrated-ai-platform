@@ -135,10 +135,10 @@ corrected. Per-tool capability template established. Plane replaced
 by OpenProject. Agent surfaces consolidated. Local AI stack
 matured behind a provenance gate.
 
-**Effort:** ~75–110h across 20 deliverables (17.A–T).
+**Effort:** ~75–110h across 20 deliverables (D-17-01–T).
 **Canonical plan:** `docs/phase-17/PHASE_17_PLAN_2026-05-01.md`.
 **Status (this file is a pointer; framework §9 is the live tracker):**
-3 of 20 done at Bundle A.5 close (17.A, 17.S, 17.T).
+3 of 20 done at Bundle A.5 close (D-17-01, D-17-19, D-17-20).
 
 Phase 17 is intentionally NOT expanded inline here — single source
 of truth lives in the plan doc to avoid drift between two locations.
@@ -158,7 +158,7 @@ evaluated against OpenBao and Backstage.
 - BLE label printer hardware on hand (model confirmed)
 - Linux/Threadripper physically present (for 18.C)
 
-> **Scope notes from 17.S article-intake (awaiting specific 18.X parents):**
+> **Scope notes from D-17-19 article-intake (awaiting specific 18.X parents):**
 >
 > *(a) License-aware Manyfold + Gitea LFS schema.* When a 3D-model
 > database deliverable is scoped under Phase 18, the schema must
@@ -292,7 +292,7 @@ Effort: ~6-8h (collector choice is a separate research turn).
 |---|---|---|---|
 | 15 A–G (done) | CF-1–4, D-OP, D-CN, Studio day-1, 4.H, 4.J, Plane curation | ~23–38h | ✅ Complete |
 | **16** | Mac Studio AI stack, InvenTree suppliers, cross-index, Phase 13 CL | **~85–130h** | Studio productive; Phase 13 closed |
-| **17** | Three-plane architecture corrections + local AI stack (20 deliverables 17.A–T) | **~75–110h** | Stack corrected; OpenProject migration; agent surfaces consolidated |
+| **17** | Three-plane architecture corrections + local AI stack (20 deliverables D-17-01–T) | **~75–110h** | Stack corrected; OpenProject migration; agent surfaces consolidated |
 | **18** | Health stack, Threadripper/Linux, platform hardening + evaluations | **~80–130h** | GPU compute; health metrics; platform matured |
 | **Total remaining** | | **~240–370h** | |
 

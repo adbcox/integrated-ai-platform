@@ -1,5 +1,5 @@
 # OpenProject — canonical PM substrate (replaces Plane CE)
-# Deployed by 17.D WP-01 (2026-05-01)
+# Deployed by D-17-04 WP-17-04-01 (2026-05-01)
 #
 # Plane retirement context:
 #   - Plane is a Linear-clone marketed as Jira-replacement
@@ -128,16 +128,16 @@ services:
       - /Users/admin/.vault-agent-secrets/openproject:/vault/secrets:ro
     environment:
       OPENPROJECT_HTTPS: "false"
-      # INTERIM: HOST__NAME set to IP+port until 17.U resolves DNS
+      # INTERIM: HOST__NAME set to IP+port until D-17-21 resolves DNS
       # authority and openproject.internal becomes resolvable. Flip
-      # to "openproject.internal" as part of WP-17-D-01 completion
-      # post-17.U. Rails host_authorization rejects mismatched Host
+      # to "openproject.internal" as part of WP-17-04-01 completion
+      # post-D-17-21. Rails host_authorization rejects mismatched Host
       # headers with HTTP 400, hence the IP form here.
       OPENPROJECT_HOST__NAME: "192.168.10.145:8086"
       OPENPROJECT_RAILS__CACHE__STORE: "memcache"
       OPENPROJECT_CACHE__MEMCACHE__SERVER: "openproject-cache:11211"
       OPENPROJECT_DEFAULT__LANGUAGE: "en"
-      OPENPROJECT_SEED_ADMIN_USER_PASSWORD_RESET: "false"
+      OPENPROJECT_SEED_ADMIN_USER_PASSWORD_RESET: "false"  # pragma: allowlist secret
       # web script reads these — production mode + run pending
       # migrations on boot. First boot also seeds the admin user
       # from OPENPROJECT_ADMIN_* env (rendered by Vault Agent).

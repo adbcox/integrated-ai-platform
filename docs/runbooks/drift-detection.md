@@ -250,12 +250,12 @@ GATE: PASS | FAIL — <action>
 See also ADR-A-006 (single source of truth) and `docs/PROJECT_FRAMEWORK.md`
 §3.5 (D#15 + D#16 doctrine entries).
 
-## §9 — Caddy ↔ Unbound DNS parity (D-16-06 + 17.I)
+## §9 — Caddy ↔ Unbound DNS parity (D-16-06 + D-17-09)
 
 The original D-16-06 caddy-internal-domains check was advisory: it
 listed the `*.internal` site blocks declared in `docker/caddy/Caddyfile`
 and asked the operator to verify each had a matching Unbound override.
-17.I made the check **enforced** by integrating the OPNsense API into
+D-17-09 made the check **enforced** by integrating the OPNsense API into
 the existing drift-detection layer.
 
 ### How it works (status-file pattern)
@@ -359,11 +359,11 @@ extra_internal informational).
 
 - ADR-A-006 — repo docs are canonical for architecture and roadmap planning
 - `scripts/check-repo-coherence.py` — local checks (this deliverable)
-- `scripts/opnsense_client.py` — OPNsense API client (17.I T2)
+- `scripts/opnsense_client.py` — OPNsense API client (D-17-09 T2)
 - `scripts/cross-index-validate.py` — ADR ↔ Plane validator
 - `scripts/plane-sync-from-framework.py` — repo → Plane one-way sync
 - `.github/workflows/validate-infrastructure.yml` — CI runner
 - `.pre-commit-config.yaml` — local hooks
-- `docs/_audit/caddy-unbound-parity-2026-05-01.md` — initial reconciliation report (17.I T4)
+- `docs/_audit/caddy-unbound-parity-2026-05-01.md` — initial reconciliation report (D-17-09 T4)
 - `docs/PROJECT_FRAMEWORK.md` §3.5 — D#15 + D#16 doctrine entries
 - `docs/PROJECT_FRAMEWORK.md` §4 — surface format the dry-run feeds

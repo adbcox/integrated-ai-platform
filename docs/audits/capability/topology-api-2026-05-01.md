@@ -2,8 +2,8 @@
 
 **Date:** 2026-05-01
 **Auditor:** Claude session (operator-reviewed)
-**Trigger:** Stack audit (17.A) flagged topology-api as a "quiet
-duplicate" of NetBox + xindex_get_service. 17.G applies the 17.B
+**Trigger:** Stack audit (D-17-01) flagged topology-api as a "quiet
+duplicate" of NetBox + xindex_get_service. D-17-07 applies the D-17-02
 template to render an evidence-based verdict.
 
 ---
@@ -161,7 +161,7 @@ For each capability from Section 2:
 
 **KEEP WITH ROLE-CLARIFICATION + reconfig.**
 
-The "quiet duplicate" framing in the 17.A audit was wrong. topology-
+The "quiet duplicate" framing in the D-17-01 audit was wrong. topology-
 api is **not** a NetBox/xindex replicate — it's a **Grafana Node
 Graph adapter** that sits on top of the same data. Its load-bearing
 capabilities (dependency-edge computation, Node-Graph field shaping,
@@ -181,7 +181,7 @@ Going forward:
 
 ### Reconfig required
 
-Two follow-up corrections, NOT in 17.G's commit (separate cleanups):
+Two follow-up corrections, NOT in D-17-07's commit (separate cleanups):
 
 1. **Flip `CMDB_SOURCE` default to `netbox`** (compose +
    redeploy). The current `${CMDB_SOURCE:-yaml}` was missed in the
@@ -192,7 +192,7 @@ Two follow-up corrections, NOT in 17.G's commit (separate cleanups):
    says `1.0.0`). Update NetBox custom field; or rebuild image at
    the recorded version. Operator decision; not load-bearing.
 
-These are documented here as follow-ups but **not executed in 17.G's
+These are documented here as follow-ups but **not executed in D-17-07's
 commit** because they're not "audit verdict" actions — they're
 ordinary maintenance unblocked by the verdict.
 
@@ -208,7 +208,7 @@ N/A — verdict is KEEP WITH ROLE-CLARIFICATION.
 
 - **Auditor:** Claude session
 - **Date:** 2026-05-01
-- **Verdict reviewed by operator:** yes (17.G surfaced verdict
+- **Verdict reviewed by operator:** yes (D-17-07 surfaced verdict
   before any container action)
 - **Source of capabilities probed:**
   - `docker stats topology-api --no-stream` (resource cost)
@@ -219,12 +219,12 @@ N/A — verdict is KEEP WITH ROLE-CLARIFICATION.
   - `grep -rE 'topology-api|:8300|/api/topology'` (consumer
     enumeration)
 - **Linked artifacts:**
-  - 17.A stack audit (the "quiet duplicate" claim this audit
+  - D-17-01 stack audit (the "quiet duplicate" claim this audit
     reverses)
-  - 17.B (template)
+  - D-17-02 (template)
   - D#20 (capability evidence)
   - `docker/grafana-provisioning/dashboards/topology.json` (the
     consumer that justifies KEEP)
-- **Follow-ups (not in 17.G commit):**
+- **Follow-ups (not in D-17-07 commit):**
   1. Flip compose `CMDB_SOURCE` default to `netbox`
   2. Reconcile `1.1.0` vs `1.0.0` image tag

@@ -1,9 +1,9 @@
-# Rewire-log — 2026-05-01 — homarr retirement (17.F PARK-RETIRE)
+# Rewire-log — 2026-05-01 — homarr retirement (D-17-06 PARK-RETIRE)
 
 **File touched (out-of-repo):**
 `/Users/admin/control-center-stack/stacks/ai-control/docker-compose.yml`
 
-**Reason:** 17.F PARK-RETIRE of homarr (zero traffic 7d, redundant
+**Reason:** D-17-06 PARK-RETIRE of homarr (zero traffic 7d, redundant
 with homepage; full audit at
 `docs/audits/capability/homarr-2026-05-01.md`).
 
@@ -54,7 +54,7 @@ service block volume usage). Key blocks after edit:
 ```yaml
 volumes:
   open-webui-data:
-  # ── Retired 2026-05-01 (17.F PARK-RETIRE) — DO NOT REMOVE ─────────────
+  # ── Retired 2026-05-01 (D-17-06 PARK-RETIRE) — DO NOT REMOVE ─────────────
   # Volumes preserved (declared but unused) so they are not GC'd; they
   # contain the parked homarr state. Restoration recipe at
   # docker/_retired/homarr/README.md (in iap repo).
@@ -64,7 +64,7 @@ volumes:
 ```
 
 ```yaml
-  # ── Homarr — RETIRED 2026-05-01 (17.F PARK-RETIRE) ─────────────────────────
+  # ── Homarr — RETIRED 2026-05-01 (D-17-06 PARK-RETIRE) ─────────────────────────
   # Reason: zero traffic over 7 days (D#20). Service-portal surface is
   # covered by `homepage` (homepage.internal). Service block parked at
   # docker/_retired/homarr/docker-compose.parked.yml in the iap repo.
@@ -81,7 +81,7 @@ volumes:
 --- pre
 +++ post
 @@ volumes block
-+  # ── Retired 2026-05-01 (17.F PARK-RETIRE) — DO NOT REMOVE ─────────────
++  # ── Retired 2026-05-01 (D-17-06 PARK-RETIRE) — DO NOT REMOVE ─────────────
 +  # Volumes preserved (declared but unused) so they are not GC'd; they
 +  # contain the parked homarr state. Restoration recipe at
 +  # docker/_retired/homarr/README.md (in iap repo).
@@ -109,7 +109,7 @@ volumes:
 -    security_opt: [no-new-privileges:true]
 -    networks: [control-center-net]
 -    healthcheck: …
-+  # ── Homarr — RETIRED 2026-05-01 (17.F PARK-RETIRE) ──────────────────────
++  # ── Homarr — RETIRED 2026-05-01 (D-17-06 PARK-RETIRE) ──────────────────────
 +  # Reason: zero traffic 7d (D#20). homepage covers the surface.
 +  # Parked at docker/_retired/homarr/docker-compose.parked.yml.
 +  # Volumes preserved (see volumes block above).
