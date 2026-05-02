@@ -399,7 +399,7 @@ Deliverable table:
 | D-17-08 (historical: 17.H): Sportarr fix-or-retire | DONE | 4ae00a2 |
 | D-17-09 (historical: 17.I): OPNsense API integration for DNS-parity | DONE | ecd7274 |
 | D-17-10 (historical: 17.J): Cisco Provenance Kit | DONE | b6a78f1+29dfec1+bc9d77f |
-| D-17-11 (historical: 17.K): Local LLM system prompt library | NOT STARTED | per Phase 17 plan |
+| D-17-11 (historical: 17.K): Local LLM system prompt library | DONE | cc9df44 |
 | D-17-12 (historical: 17.L): Gemma 4 + Qwen3-Coder-Next benchmarks | NOT STARTED | per Phase 17 plan |
 | D-17-13 (historical: 17.M): Goose agent CLI integration | NOT STARTED | per Phase 17 plan |
 | D-17-14 (historical: 17.N): exo distributed inference cluster | NOT STARTED | gated on D-17-15 |
