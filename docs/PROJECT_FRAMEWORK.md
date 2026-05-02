@@ -233,6 +233,23 @@ chronicled as a permanent file thereafter. Failure mode prevented:
 "Claude argues with operator about platform configuration that
 operator has already corrected in a previous session."
 
+### D#23 — Capability self-knowledge is suspect by default
+
+AI capability self-knowledge is unreliable. False negatives
+("I can't do that" when the AI in fact can) are common across at
+least four distinct failure modes: training-data gap (Flavor A),
+tool-surface gap (Flavor B), cautious framing (Flavor C),
+over-constraint inference (Flavor D). Operators MUST verify before
+accepting a declared blocker as real, working through the
+six-step diagnostic in `docs/runbooks/capability-discovery.md`
+(registry hit → tool-surface → training-data → cautious framing →
+over-constraint → real limitation). Canonical reference:
+`docs/architecture-facts/capability-self-knowledge.md`. Working
+registry: `docs/architecture-facts/known-capabilities.md`. Failure
+mode prevented: "operator accepts a phantom limitation as
+canonical and rebuilds workflow around an AI false negative
+that a five-minute unblock would have resolved."
+
 ---
 
 ## 4. Surface format template
