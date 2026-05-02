@@ -393,6 +393,14 @@ Deliverable table:
 | D-17-19 (historical: 17.S): Article-intake findings consolidated to repo | DONE | 4ece268 |
 | D-17-20 (historical: 17.T): D#17/D#18/D#19/D#20/D#21 codified | DONE | b86bc55 |
 | D-17-21 (historical: 17.U): OPNsense DNS state audit + Unbound disable + retroactive Vault incident review (KI-009 follow-up; estimated 6-8h) | NOT STARTED | per Phase 17 plan |
+| D-17-23: Capability self-knowledge + workaround surfacing | NOT STARTED | per Phase 17 plan |
+
+ID-reservation note: D-17-22 (multi-session role + intake architecture)
+is RESERVED but not yet framework-authored. Discussed in a prior
+session; lives as a parking-lot item pending its own intake doc +
+framework-add commit. Reserving the ID preserves the parking-lot
+reference without forcing premature scope authoring. Sized similar
+to D-17-23 (~2-3h doctrine-shaped) when it lands.
 
 Identifier-convention note: Phase 17 was originally authored using
 shorthand "17.X" deliverable IDs and "WP-17-D-NN" work-package IDs.
@@ -408,9 +416,11 @@ D-17-02 before D-17-05/06/07/08 (template consumed); D-17-06 before
 D-17-17 (KEEP/RETIRE verdicts must settle before topology overlay
 surfaces utilization on retired services); D-17-17 before D-17-18
 (logical-layer overlay informs physical visualization); D-17-15 before
-D-17-14; D-17-10 before D-17-12/13/14. D-17-21 gates the .internal
-route in D-17-04's WP-17-04-01 (IP+port deploy proceeds; Caddy site
-binding waits on DNS authority resolution).
+D-17-14; D-17-10 before D-17-12/13/14. D-17-23 before D-17-11
+(capability-permission slot must be defined before the system prompt
+library fills it). D-17-21 gates the .internal route in D-17-04's
+WP-17-04-01 (IP+port deploy proceeds; Caddy site binding waits on
+DNS authority resolution).
 
 Phase 16 carry-overs (D-16-03/05/08/09) marked DEFERRED to Phase 17
 in §8 — see Phase 17 IDs D-17-15/16/17/18 for new tracking.
