@@ -13,7 +13,7 @@ procedure for home-lab-scale incidents (single operator, no on-call rotation).
 | Severity | Definition | Response time |
 |---|---|---|
 | R-CRITICAL | Data loss risk, Vault unsealed but inaccessible, complete platform down | Immediate |
-| R-HIGH | Core service (Vault, Obot, Plane) unhealthy, credential exposure risk | Within 1 hour |
+| R-HIGH | Core service (Vault, Obot, OpenProject) unhealthy, credential exposure risk | Within 1 hour |
 | R-MEDIUM | Single non-core service down, probe FAIL=1 | Within 4 hours |
 | R-LOW | WARN increase, degraded but functional, cosmetic | Best effort |
 
@@ -229,7 +229,7 @@ If everything is down (power cycle, host crash):
 
 3. Start platform services:
    ```bash
-   docker compose -f docker-compose-plane.yml up -d
+   docker compose -f openproject/docker-compose.yml up -d
    docker compose -f netbox/docker-compose.yml up -d
    ```
 

@@ -4,11 +4,11 @@
 |------------------|--------------------------------------------------------|
 | Deliverable      | D-16-06                                                |
 | Script (local)   | `scripts/check-repo-coherence.py`                      |
-| Script (Plane)   | `scripts/cross-index-validate.py`                      |
+| Script (PM sync) | `scripts/cross-index-validate.py`                      |
 | Pre-commit cfg   | `.pre-commit-config.yaml` (6 local hooks)              |
 | CI workflow      | `.github/workflows/validate-infrastructure.yml`        |
 | Local cron       | mac-mini, nightly — see §2                             |
-| Status           | LIVE 2026-05-01                                        |
+| Status           | LIVE 2026-05-01 (PM substrate: OpenProject post-D-17-04) |
 
 ## §1 — Purpose
 
@@ -16,10 +16,12 @@ Three-leg model for keeping the platform coherent (per ADR-A-006):
 
   1. **Single source of truth — repo.** Architecture, deliverables,
      decisions live in `docs/`. Anything else is derived.
-  2. **One-way sync repo → operational tools.** `plane-sync-from-
-     framework.py` mirrors the markdown deliverable tables into Plane.
-     `netbox-register-*.py` registers services into NetBox. Both write
-     repo → tool only — never the other direction.
+  2. **One-way sync repo → operational tools.** `openproject-sync-
+     from-framework.py` mirrors the markdown deliverable tables into
+     OpenProject (D-17-04 substrate; replaced `plane-sync-from-
+     framework.py` 2026-05-01). `netbox-register-*.py` registers
+     services into NetBox. Both write repo → tool only — never the
+     other direction.
   3. **Drift detection — this deliverable.** Catches when leg 2 has
      been bypassed or when an artefact has drifted within the repo
      (an ADR added without an index update, a status word that breaks
@@ -28,10 +30,10 @@ Three-leg model for keeping the platform coherent (per ADR-A-006):
 Detection runs at three points:
 
   - **Pre-commit** — fast, repo-only, **blocking**. Runs on staged files.
-  - **CI on PR + push to main** — medium, no Plane network access,
+  - **CI on PR + push to main** — medium, no OpenProject network access,
     **blocking**.
   - **Scheduled CI nightly** — slow, advisory, **non-blocking**.
-  - **Local cron on mac-mini nightly** — slow, queries live Plane,
+  - **Local cron on mac-mini nightly** — slow, queries live OpenProject,
     **alerts on drift**.
 
 ## §2 — Architecture
@@ -47,7 +49,7 @@ Detection runs at three points:
   ┌──────────┐            ┌────────────────────┐      ┌────────────────┐
   │pre-commit│            │   GitHub Actions   │      │ mac-mini cron  │
   │  hooks   │            │ validate-infra.yml │      │  (nightly)     │
-  │ (local)  │            │ pull_request/push  │      │  full Plane    │
+  │ (local)  │            │ pull_request/push  │      │ full OpenProj  │
   │ blocking │            │     blocking       │      │  dry-run       │
   └──────────┘            └────────────────────┘      └────────────────┘
         │                            │                         │
@@ -58,20 +60,20 @@ Detection runs at three points:
   committing                      merge to main               + email/log
 ```
 
-Plane-touching dry-run (`scripts/plane-sync-from-framework.py
---dry-run`) **does not run in GitHub-hosted CI** — it requires Vault +
-Plane network access on mac-mini, and a deploy-key path adds a
-credential surface that the simpler local-cron pattern avoids. Wiring
-the cron entry on mac-mini:
+OpenProject-touching dry-run (`scripts/openproject-sync-from-
+framework.py --dry-run`) **does not run in GitHub-hosted CI** — it
+requires Vault + OpenProject network access on mac-mini, and a
+deploy-key path adds a credential surface that the simpler local-cron
+pattern avoids. Wiring the cron entry on mac-mini:
 
 ```bash
 # crontab -e (mac-mini, operator's user)
-# Nightly Plane drift check at 03:42 local. Exit 2 = drift; cron's
-# default mailer surfaces the body.
+# Nightly OpenProject drift check at 03:42 local. Exit 2 = drift;
+# cron's default mailer surfaces the body.
 42 3 * * * cd /Users/admin/repos/integrated-ai-platform && \
-  /Users/admin/.venv-block-4c/bin/python scripts/plane-sync-from-framework.py --dry-run \
-    > /tmp/plane-drift-$(date +\%F).log 2>&1 || \
-  cat /tmp/plane-drift-$(date +\%F).log | mail -s "Plane drift detected" $LOGNAME
+  /Users/admin/.venv-block-4c/bin/python scripts/openproject-sync-from-framework.py --dry-run \
+    > /tmp/openproject-drift-$(date +\%F).log 2>&1 || \
+  cat /tmp/openproject-drift-$(date +\%F).log | mail -s "OpenProject drift detected" $LOGNAME
 ```
 
 `cross-index-validate.py` runs in the same cron block (its harness fix
@@ -87,8 +89,8 @@ contract).
 | `framework-table-coherence` | PROJECT_FRAMEWORK row with bad status word or empty reference | pre-commit + CI |
 | `caddy-internal-domains` | Inventory only — feeds `caddy-dns-parity` advisory job | scheduled CI |
 | `netbox-services-have-adrs` | Phase 17 stub — exits 0 with NotImplemented note | CI (pass-through) |
-| `cross-index-validate.py` | ADR not tracked in Plane | mac-mini cron |
-| `plane-sync-from-framework.py --dry-run` | Plane state diverged from PROJECT_FRAMEWORK.md | mac-mini cron |
+| `cross-index-validate.py` | ADR not tracked in OpenProject | mac-mini cron |
+| `openproject-sync-from-framework.py --dry-run` | OpenProject state diverged from PROJECT_FRAMEWORK.md | mac-mini cron |
 
 ## §4 — How to run a check locally
 
@@ -103,13 +105,13 @@ python3 scripts/check-repo-coherence.py framework-table-coherence
 python3 scripts/check-repo-coherence.py caddy-internal-domains
 python3 scripts/check-repo-coherence.py netbox-services-have-adrs
 
-# Plane-touching checks (need Vault running on mac-mini)
+# OpenProject-touching checks (need Vault running on mac-mini)
 /Users/admin/.venv-block-4c/bin/python scripts/cross-index-validate.py
 /Users/admin/.venv-block-4c/bin/python scripts/cross-index-validate.py --json
 /Users/admin/.venv-block-4c/bin/python scripts/cross-index-validate.py --quiet  # CI-friendly
 
-/Users/admin/.venv-block-4c/bin/python scripts/plane-sync-from-framework.py --dry-run
-# Exit 0 = clean, exit 2 = drift pending, exit 3 = Plane saturated
+/Users/admin/.venv-block-4c/bin/python scripts/openproject-sync-from-framework.py --dry-run
+# Exit 0 = clean, exit 2 = drift pending, exit 3 = OpenProject saturated
 ```
 
 ## §5 — What to do when a check fails
@@ -157,11 +159,15 @@ or `pending`.
 GAP: ADR-A-017 (Accepted) — Foo bar widget
 ```
 
-Fix: backfill a Plane stub for the ADR using the same pattern as
-`scripts/backfill-plane-labels.py`. The cron alert will clear on the
-next run after the stub lands.
+Fix: backfill an OpenProject stub for the ADR (the cross-index
+validator looks for an OpenProject WorkPackage with the ADR's
+External ID). The cron alert will clear on the next run after the
+stub lands. Historical Plane-era helper `scripts/backfill-plane-
+labels.py` is retired; the WP-17-04-04 bootstrap chain
+(`openproject-bootstrap-ext-id-field.sh` + the sync script) now
+covers stub creation as a side effect of normal sync.
 
-### `plane-sync-from-framework.py --dry-run` failure (exit 2)
+### `openproject-sync-from-framework.py --dry-run` failure (exit 2)
 
 The dry-run prints exactly which deliverables drifted and why:
 
@@ -169,10 +175,10 @@ The dry-run prints exactly which deliverables drifted and why:
 ~ deliverable-issue D-16-04        drift=[state]                   [D-16-04] Vault data in backup chain (raft snapshot)
 ```
 
-Resolution path is **always: edit the markdown, re-run**. If the Plane
-state was changed manually in the UI, the next APPLY run rewrites it
-back to the markdown's truth (per ADR-A-006). To accept the Plane
-edit, copy the new state into the markdown table first.
+Resolution path is **always: edit the markdown, re-run**. If the
+OpenProject state was changed manually in the UI, the next APPLY run
+rewrites it back to the markdown's truth (per ADR-A-006). To accept
+the UI edit, copy the new state into the markdown table first.
 
 ### `caddy-dns-parity` advisory annotation
 
@@ -241,7 +247,7 @@ PREFLIGHT #0:
   check-repo-coherence:          PASS | FAIL <detail>
   cross-index-validate:          PASS | FAIL <detail>
   phase-deliverable-count <N>:   <X of Y> | FAIL
-  plane-sync --dry-run:          clean (exit 0) | drift (exit 1)
+  openproject-sync --dry-run:    clean (exit 0) | drift (exit 1)
   xindex /healthz:               <N>/<N> sources ok | <detail>
   inherited KI:                  <list or "none">
 GATE: PASS | FAIL — <action>
@@ -360,8 +366,8 @@ extra_internal informational).
 - ADR-A-006 — repo docs are canonical for architecture and roadmap planning
 - `scripts/check-repo-coherence.py` — local checks (this deliverable)
 - `scripts/opnsense_client.py` — OPNsense API client (D-17-09 T2)
-- `scripts/cross-index-validate.py` — ADR ↔ Plane validator
-- `scripts/plane-sync-from-framework.py` — repo → Plane one-way sync
+- `scripts/cross-index-validate.py` — ADR ↔ OpenProject validator
+- `scripts/openproject-sync-from-framework.py` — repo → OpenProject one-way sync (replaced `plane-sync-from-framework.py` 2026-05-01)
 - `.github/workflows/validate-infrastructure.yml` — CI runner
 - `.pre-commit-config.yaml` — local hooks
 - `docs/_audit/caddy-unbound-parity-2026-05-01.md` — initial reconciliation report (D-17-09 T4)
