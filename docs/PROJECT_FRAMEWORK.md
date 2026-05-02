@@ -410,7 +410,7 @@ Deliverable table:
 | D-17-19 (historical: 17.S): Article-intake findings consolidated to repo | DONE | 4ece268 |
 | D-17-20 (historical: 17.T): D#17/D#18/D#19/D#20/D#21 codified | DONE | b86bc55 |
 | D-17-21 (historical: 17.U): OPNsense DNS state audit + Unbound disable + retroactive Vault incident review (KI-009 follow-up; estimated 6-8h) | NOT STARTED | per Phase 17 plan |
-| D-17-23: Capability self-knowledge + workaround surfacing | NOT STARTED | per Phase 17 plan |
+| D-17-23: Capability self-knowledge + workaround surfacing | DONE | dcc2ca4 |
 
 ID-reservation note: D-17-22 (multi-session role + intake architecture)
 is RESERVED but not yet framework-authored. Discussed in a prior
