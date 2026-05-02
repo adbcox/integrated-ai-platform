@@ -392,12 +392,15 @@ Deliverable table:
 | 17.R: Physical architecture visualization (Structurizr + network/storage paths; original Structurizr-only framing now T1 of this deliverable) | NOT STARTED | re-parented from D-16-09 |
 | 17.S: Article-intake findings consolidated to repo | DONE | 4ece268 |
 | 17.T: D#17/D#18/D#19/D#20/D#21 codified | DONE | b86bc55 |
+| 17.U: OPNsense DNS state audit + Unbound disable + retroactive incident review (KI-009 follow-up; estimated 4-6h) | NOT STARTED | per Phase 17 plan |
 
 Sequencing: 17.A → 17.B → 17.C (foundation) before Tier 2; 17.B before
 17.E/F/G/H (template consumed); 17.F before 17.Q (KEEP/RETIRE verdicts
 must settle before topology overlay surfaces utilization on retired
 services); 17.Q before 17.R (logical-layer overlay informs physical
-visualization); 17.O before 17.N; 17.J before 17.L/M/N.
+visualization); 17.O before 17.N; 17.J before 17.L/M/N. 17.U gates the
+.internal route in 17.D's WP-01 (IP+port deploy proceeds; Caddy site
+binding waits on DNS authority resolution).
 
 Phase 16 carry-overs (D-16-03/05/08/09) marked DEFERRED to Phase 17
 in §8 — see Phase 17 IDs 17.O/P/Q/R for new tracking.

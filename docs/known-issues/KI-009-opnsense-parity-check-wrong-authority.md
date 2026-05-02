@@ -53,3 +53,42 @@ host entries living at `/api/dnsmasq/settings/get` → `.dnsmasq.hosts`.
   not noise. The April 26 correction should have been chronicled
   in the repo as an architecture fact (this commit's File 1
   belatedly does so).
+
+## Update 2026-05-01 (post-237396b)
+
+The 237396b commit asserted in `opnsense-dns-authority.md` that
+"Dnsmasq is the active DNS authority." That assertion went beyond
+what the probe evidence supported. Correct interpretation:
+
+- Dnsmasq daemon is running on port 53053 (verified)
+- Unbound daemon is running on port 53 (verified)
+- The OPERATOR-INTENDED authority is suspected to be Dnsmasq + Kea
+  (and possibly AdGuard Home), per OPNsense 26.1 modern defaults
+  and per the operator's GUI not surfacing Unbound
+- The CURRENTLY-OBSERVED authority answering port 53 is Unbound,
+  but this is suspected to be unintended state from a prior
+  session enabling Unbound's daemon
+
+The function rename (`opnsense_get_unbound_overrides` →
+`opnsense_get_host_records`) and subcommand rename
+(`caddy-unbound-parity` → `caddy-dns-parity`) remain correct because
+the new names are accurate REGARDLESS of which service turns out
+to be the actual authority post-17.U.
+
+Severity unchanged (Sev-3). Remediation deliverable updated:
+17.U scope expanded from "find resolution mechanism" to "audit
+DNS state, back out unintended Unbound, ensure operator-intended
+authority is sole, retroactively review whether DNS state
+contributed to recent Vault troubleshooting incident."
+
+### Lessons reinforced (D#20 + D#22)
+
+- "Probe shows Unbound has 0 entries and Dnsmasq has 6 entries"
+  is observation, not authority-determination. Authority is an
+  operator-intent question, not a probe-result question. The
+  probe data is consistent with multiple architectural
+  interpretations; the right one is determined by what the
+  operator INTENDED, not what the daemons currently report.
+- Architecture-fact files MUST distinguish "verified observable"
+  from "suspected interpretation." The 237396b file conflated
+  the two.
