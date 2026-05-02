@@ -1,0 +1,159 @@
+# OpenProject — canonical PM substrate (replaces Plane CE)
+# Deployed by 17.D WP-01 (2026-05-01)
+#
+# Plane retirement context:
+#   - Plane is a Linear-clone marketed as Jira-replacement
+#   - Stack-level mismatch: no work-package primitive, no change-record
+#     workflow, 60/min API rate limits, constrained xindex schema
+#   - OpenProject covers all gaps: WP first-class, change management
+#     built-in, Versions=Phases, ~100 req/sec API, PostgreSQL backend
+#   - Migration cost bounded: Plane was a projection of repo state
+#     (plane-sync-from-framework.py reads PROJECT_FRAMEWORK.md).
+#     Replacing the target = tooling swap, not data migration.
+#
+# Reachable at:
+#   - openproject.internal (via Caddy; see docker/caddy/Caddyfile)
+#   - http://192.168.10.145:8086 (direct host port)
+#
+# All credentials sourced from Vault via vault-agent-openproject sidecar.
+# AppRole: openproject (policy: config/vault-policies/openproject-policy.hcl)
+
+networks:
+  control-center-net:
+    external: true
+
+volumes:
+  openproject-data:    # /var/openproject/assets — uploads, attachments
+  openproject-pgdata:  # PostgreSQL data
+  openproject-logs:
+
+services:
+
+  # ── Vault Agent sidecar — renders /vault/secrets/credentials.env ───────
+  vault-agent-openproject:
+    image: hashicorp/vault:2.0.0
+    container_name: vault-agent-openproject
+    restart: "no"
+    environment:
+      VAULT_ADDR: "http://vault-server:8200"
+      SKIP_SETCAP: "true"
+    volumes:
+      - /Users/admin/.vault-approle/openproject:/vault/approle:ro
+      - /Users/admin/.vault-agent-secrets/openproject:/vault/secrets
+      - ./vault-agent-openproject/agent.hcl:/vault/config/agent.hcl:ro
+      - ./vault-agent-openproject/credentials.env.tmpl:/vault/agent-config/credentials.env.tmpl:ro
+    command: agent -config=/vault/config/agent.hcl
+    networks:
+      - control-center-net
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+
+  # ── Database (isolated; not the platform Postgres) ─────────────────────
+  openproject-db:
+    image: postgres:16-alpine
+    container_name: openproject-db
+    restart: unless-stopped
+    depends_on:
+      vault-agent-openproject:
+        condition: service_completed_successfully
+    volumes:
+      - openproject-pgdata:/var/lib/postgresql/data
+      - /Users/admin/.vault-agent-secrets/openproject:/vault/secrets:ro
+    environment:
+      POSTGRES_DB: "openproject"
+    entrypoint: ["sh", "-c", "set -a && . /vault/secrets/credentials.env && set +a && export POSTGRES_USER=$$OPENPROJECT_DB_USER POSTGRES_PASSWORD=$$OPENPROJECT_DB_PASSWORD && exec docker-entrypoint.sh postgres"]
+    mem_limit: 512m
+    networks:
+      - control-center-net
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - DAC_READ_SEARCH
+      - FOWNER
+      - SETGID
+      - SETUID
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      # POSTGRES_USER is set in the entrypoint shell only; a fresh
+      # CMD-SHELL doesn't inherit it. Hardcode the db name (matches
+      # POSTGRES_DB above + provisioned secret/openproject/db username).
+      test: ["CMD-SHELL", "pg_isready -d openproject || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  # ── In-memory cache (memcached per OpenProject docs) ───────────────────
+  openproject-cache:
+    image: memcached:1.6-alpine
+    container_name: openproject-cache
+    restart: unless-stopped
+    command: ["-m", "64"]
+    mem_limit: 96m
+    networks:
+      - control-center-net
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD-SHELL", "echo stats | nc -w 1 localhost 11211 | grep -q version || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+
+  # ── OpenProject app (all-in-one image) ─────────────────────────────────
+  # Image: openproject/openproject:15-slim
+  # Slim variant = no SVN/Subversion server (we don't use it).
+  openproject:
+    image: openproject/openproject:15-slim
+    container_name: openproject
+    restart: unless-stopped
+    depends_on:
+      vault-agent-openproject:
+        condition: service_completed_successfully
+      openproject-db:
+        condition: service_healthy
+      openproject-cache:
+        condition: service_healthy
+    ports:
+      - "8086:8080"
+    volumes:
+      - openproject-data:/var/openproject/assets
+      - openproject-logs:/var/log/supervisor
+      - /Users/admin/.vault-agent-secrets/openproject:/vault/secrets:ro
+    environment:
+      OPENPROJECT_HTTPS: "false"
+      # INTERIM: HOST__NAME set to IP+port until 17.U resolves DNS
+      # authority and openproject.internal becomes resolvable. Flip
+      # to "openproject.internal" as part of WP-17-D-01 completion
+      # post-17.U. Rails host_authorization rejects mismatched Host
+      # headers with HTTP 400, hence the IP form here.
+      OPENPROJECT_HOST__NAME: "192.168.10.145:8086"
+      OPENPROJECT_RAILS__CACHE__STORE: "memcache"
+      OPENPROJECT_CACHE__MEMCACHE__SERVER: "openproject-cache:11211"
+      OPENPROJECT_DEFAULT__LANGUAGE: "en"
+      OPENPROJECT_SEED_ADMIN_USER_PASSWORD_RESET: "false"
+      # web script reads these — production mode + run pending
+      # migrations on boot. First boot also seeds the admin user
+      # from OPENPROJECT_ADMIN_* env (rendered by Vault Agent).
+      RAILS_ENV: "production"
+      MIGRATE: "true"
+    entrypoint: ["sh", "-c", "set -a && . /vault/secrets/credentials.env && set +a && exec /app/docker/prod/entrypoint.sh /app/docker/prod/web"]
+    mem_limit: 2g
+    networks:
+      - control-center-net
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080/health_checks/default || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s

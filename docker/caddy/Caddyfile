@@ -27,6 +27,14 @@
 }
 
 # ── AI Layer ──────────────────────────────────────────────────────────────────
+# openproject.internal — canonical PM substrate (replaces plane; 17.D)
+# Plane co-listed during migration window; both routes valid until 17.D WP-06.
+openproject.internal {
+    import access_log
+
+    reverse_proxy host.docker.internal:8086
+}
+
 plane.internal {
     import access_log
 
