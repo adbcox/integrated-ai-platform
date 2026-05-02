@@ -374,14 +374,16 @@ Deliverable table:
 | 17.N: exo distributed inference cluster | NOT STARTED | gated on 17.O |
 | 17.O: Mac Studio Day-1 execution | DONE | ccc02d1 |
 | 17.P: Loose-doc retirement | NOT STARTED | re-parented from D-16-05 |
-| 17.Q: Architecture dashboard | NOT STARTED | re-parented from D-16-08 |
-| 17.R: Structurizr population | NOT STARTED | re-parented from D-16-09 |
+| 17.Q: Logical service architecture dashboard with live utilization (replaces original OpenProject framing) | NOT STARTED | re-parented from D-16-08 |
+| 17.R: Physical architecture visualization (Structurizr + network/storage paths; original Structurizr-only framing now T1 of this deliverable) | NOT STARTED | re-parented from D-16-09 |
 | 17.S: Article-intake findings consolidated to repo | DONE | 4ece268 |
 | 17.T: D#17/D#18/D#19/D#20/D#21 codified | DONE | b86bc55 |
 
 Sequencing: 17.A → 17.B → 17.C (foundation) before Tier 2; 17.B before
-17.E/F/G/H (template consumed); 17.D before 17.Q + 17.R; 17.O before
-17.N; 17.J before 17.L/M/N.
+17.E/F/G/H (template consumed); 17.F before 17.Q (KEEP/RETIRE verdicts
+must settle before topology overlay surfaces utilization on retired
+services); 17.Q before 17.R (logical-layer overlay informs physical
+visualization); 17.O before 17.N; 17.J before 17.L/M/N.
 
 Phase 16 carry-overs (D-16-03/05/08/09) marked DEFERRED to Phase 17
 in §8 — see Phase 17 IDs 17.O/P/Q/R for new tracking.
