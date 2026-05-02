@@ -12,7 +12,12 @@
 set -euo pipefail
 
 DOCKER=/opt/homebrew/bin/docker
-VAULT_TOKEN=${VAULT_TOKEN:-$(/bin/cat ~/.vault-token)}
+# Resolve admin Vault token via shared helper (handles post-rebuild key
+# files, ~/.vault-token migration, and env override). Replaces the
+# previous direct read of ~/.vault-token which broke after the
+# 2026-04-30 KV rebuild left that file stale.
+source "$(dirname "$0")/lib/vault-admin-token.sh"
+VAULT_TOKEN=$(resolve_admin_vault_token) || exit 2
 SERVICE=netbox
 APPROLE_DIR="/Users/admin/.vault-approle/${SERVICE}"
 SECRETS_BASE="/Users/admin/.vault-agent-secrets"
