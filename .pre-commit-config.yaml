@@ -68,9 +68,14 @@ repos:
         # don't false-positive every commit when the node is offline for
         # operator maintenance. CI runs the full suite unconditionally.
         files: '^(docs/runbooks/mac-studio-day-1\.md|docs/runbooks/headscale-client-onboarding\.md|scripts/check-repo-coherence\.py)$'
-      - id: caddy-unbound-parity
-        name: Caddy <-> Unbound DNS parity (D-17-09, status-file mode)
-        entry: python3 scripts/check-repo-coherence.py caddy-unbound-parity
+      - id: caddy-dns-parity
+        name: Caddy <-> Dnsmasq DNS parity (D-17-09, status-file mode)
+        # Pre-commit treats any non-zero exit as failure. The subcommand
+        # returns 2 (advisory) while KI-009 is open and 1 (fail) once
+        # strict mode resumes. Bash wrapper translates 2 → 0 so advisory
+        # findings surface their output but don't block commits; true
+        # failures (1) and unexpected errors (other) still block.
+        entry: bash -c 'python3 scripts/check-repo-coherence.py caddy-dns-parity; rc=$?; [ "$rc" = "2" ] && exit 0 || exit "$rc"'
         language: system
         pass_filenames: false
         # Scoped to inputs that change the parity surface: Caddyfile (left
@@ -81,4 +86,9 @@ repos:
         #   - status file missing  -> SKIP (operator hasn't refreshed yet)
         #   - status file stale    -> FAIL (silent-failure detection)
         #   - status reports drift -> FAIL with concrete gap report
+        # While KI-009 is open the underlying DNS-authority check is
+        # structurally suspect; the subcommand returns exit 2 (advisory)
+        # so pre-commit doesn't block on suspect data. Strict-fail
+        # resumes automatically when KI-009 → RESOLVED (post-D-17-21).
         files: '^(docker/caddy/Caddyfile|scripts/(check-repo-coherence|opnsense_client)\.py)$'
+        verbose: true

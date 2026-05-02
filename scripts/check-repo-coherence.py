@@ -60,6 +60,14 @@ PARITY_STATUS_FILE = Path.home() / ".platform-logs" / "caddy-unbound-parity.json
 PARITY_MAX_AGE_SEC = 36 * 3600   # 36h grace (daily-ish check on operator Mac)
 MAC_MINI_IP = "192.168.10.145"   # Caddy host; all .internal A-records target this
 
+# KI-009 advisory-mode gate. The parity check is structurally suspect
+# until D-17-21 closes (KI-009 documents the suspect underlying check).
+# While KI-009 is open, drift findings are reported but do NOT block
+# commits or fail the rollup — exit 2 (advisory) instead of 1 (fail).
+# Strict mode resumes automatically when KI-009 status reads RESOLVED.
+# (D#22 — architecture facts in the repo, not in memory.)
+KI009_FILE = REPO_ROOT / "docs" / "known-issues" / "KI-009-opnsense-parity-check-wrong-authority.md"
+
 # Per-job recency expectations (max age in seconds before considered stale).
 # Recency probes a heartbeat file the plist's wrapper touches AFTER each
 # script run (so silent-success jobs still register), or for KeepAlive
@@ -268,6 +276,30 @@ def cmd_caddy_internal_domains() -> int:
 # launchd plist + status file path keep the old name for one cycle (rename
 # requires launchctl reload + cron coordination; deferred to follow-up).
 
+
+def _ki009_open() -> bool:
+    """Return True iff KI-009 exists and its Status field is not RESOLVED.
+
+    Drives advisory-mode gating: while KI-009 is open, the underlying
+    DNS-authority check is structurally suspect (queries the wrong
+    daemon), so reported drift is noise rather than signal. We still
+    print the findings (operators benefit from seeing the report), but
+    return exit 2 (advisory) instead of 1 (fail) so pre-commit doesn't
+    block on suspect data. D-17-21 is the corrective deliverable; on
+    its close, the closer flips KI-009's Status to RESOLVED and this
+    function returns False, restoring strict-fail behavior.
+    """
+    if not KI009_FILE.is_file():
+        return False
+    try:
+        for line in KI009_FILE.read_text().splitlines()[:20]:
+            if line.lower().startswith("**status:**"):
+                return "resolved" not in line.lower()
+    except OSError:
+        return False
+    return False
+
+
 def _dns_match(caddy_fqdn: str, records: list[dict]) -> dict | None:
     """Return the matching Dnsmasq record for `caddy_fqdn` (e.g.
     "openproject.internal"), or None.
@@ -441,12 +473,21 @@ def cmd_caddy_dns_parity() -> int:
     wrong_target = status.get("wrong_target", [])
     extra = status.get("extra_internal", [])
 
+    advisory = _ki009_open()
+
     if missing or wrong_target:
+        label = "ADVISORY" if advisory else "FAIL"
         print(
-            f"FAIL: caddy-dns-parity — {len(missing)} missing, "
+            f"{label}: caddy-dns-parity — {len(missing)} missing, "
             f"{len(wrong_target)} wrong_target "
             f"(of {status.get('caddy_count')} Caddy sites)"
         )
+        if advisory:
+            print(
+                "  KI-009 (open) + D-17-21 (NOT STARTED): underlying DNS-"
+                "authority check is structurally suspect; reporting findings "
+                "in advisory mode. Strict-fail resumes when KI-009 → RESOLVED."
+            )
         if missing:
             print("  Missing Dnsmasq host record:")
             for d in missing:
@@ -459,7 +500,7 @@ def cmd_caddy_dns_parity() -> int:
             print(f"  (informational) {len(extra)} Dnsmasq .internal records not in Caddy:")
             for d in extra:
                 print(f"    - {d}")
-        return 1
+        return 2 if advisory else 1
 
     print(
         f"OK: caddy-dns-parity — "
@@ -712,14 +753,31 @@ DEPRECATED_ALIASES = {
 
 
 def cmd_all() -> int:
-    rc = 0
+    """Run every check; rollup exit = 1 iff any child exited 1.
+
+    Exit code 2 from a child is "advisory" (per the top-of-file
+    convention) and does not fail the rollup. This keeps pre-commit
+    + CI green while still surfacing the advisory output.
+    """
+    saw_fail = False
+    saw_advisory = False
     for name, fn in CHECKS.items():
         print(f"── {name} " + "─" * (60 - len(name)))
-        rc = max(rc, fn())
+        rc = fn()
+        if rc == 1:
+            saw_fail = True
+        elif rc == 2:
+            saw_advisory = True
         print()
     print("=" * 64)
-    print(f"all: exit {rc}")
-    return rc
+    if saw_fail:
+        print("all: exit 1 (one or more checks failed)")
+        return 1
+    if saw_advisory:
+        print("all: exit 0 (advisory findings present — see above; not blocking)")
+    else:
+        print("all: exit 0 (clean)")
+    return 0
 
 
 def main() -> int:
