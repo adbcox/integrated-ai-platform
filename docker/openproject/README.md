@@ -140,8 +140,11 @@ under-permissioning (forced re-grants mid-development).
 
 See:
 
-- `docs/_archive/plane-final-snapshot-2026-05-01.sql` — forensic
-  Plane DB dump
+- `~/plane-final-snapshot/plane-final-snapshot-2026-05-02.sql.gz` —
+  forensic Plane DB dump (out-of-repo, contains credentials; integrity
+  verified via `docs/_archive/plane-final-snapshot-2026-05-02.manifest`)
+- `docs/_archive/plane-export-2026-05-02.json` — structured Plane API
+  export, primary input to WP-17-04-03 mapping work
 - `framework/openproject_connector.py` — Plane connector replacement
   (D-17-04 WP-17-04-04)
 - `scripts/openproject-sync-from-framework.py` — sync replacement

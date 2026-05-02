@@ -1,0 +1,32 @@
+plane-final-snapshot manifest
+date: 2026-05-02
+sql_path: plane-final-snapshot-2026-05-02.sql.gz
+sql_size: 653734
+sql_sha256: e52245931e9e71939cc90507154b0474c3e6aa75124e1ebb4540b34247b3da78
+
+row counts:
+  public.issue_activities                            3484
+  public.issues                                      1505
+  public.issue_sequences                             54
+  public.module_issues                               45
+  public.django_celery_beat_periodictask             13
+  public.modules                                     4
+  public.api_tokens                                  2
+
+json_export:
+  path: plane-export-2026-05-02.json
+  size: 1043553
+  sha256: b8aa0db7aa9cc9d4b60bb792fa81224f092a880f94eb50f7147ec7aa5d664725
+
+reconciliation_notes:
+  db_total_issues: 1505
+    project_Roadmap: 1498  (id=dbcd4476-1e37-4812-a443-0914ec8380fc)
+      live: 670  (deleted_at IS NULL — captured in JSON export)
+      soft_deleted: 828  (deleted_at IS NOT NULL — in SQL dump only)
+    project_IAP: 7        (id=93efb197-3b03-4f77-9611-5dd64ac8c737)
+      not in JSON export — abandoned project, full state preserved in SQL dump
+  json_export_scope: live issues from Roadmap project only — matches the
+    canonical PROJECT_ID hardcoded in scripts/plane-sync-from-framework.py
+    and operator-side Plane usage. WP-17-04-03 maps these 670 issues into
+    OpenProject work packages. The 828 soft-deleted issues and 7 IAP-project
+    issues are forensic-only; they do not migrate.
