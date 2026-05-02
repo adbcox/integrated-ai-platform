@@ -23,6 +23,7 @@ Individual ADR files live here. Each file is one decision.
 | [ADR-A-015](ADR-A-015-staged-toggle-migration.md) | Staged-Toggle Pattern for Source-of-Truth Migrations | Accepted |
 | [ADR-A-016](ADR-A-016-canonical-patterns-registry.md) | Canonical Patterns Registry | Accepted |
 | [ADR-A-017](ADR-A-017-vault-warm-copy-backup-strategy.md) | Vault file-backend warm-copy is the backup strategy | Accepted |
+| [ADR-A-018](ADR-A-018-replace-plane-with-openproject.md) | Replace Plane CE with OpenProject CE as PM substrate | Accepted |
 
 ## Format
 

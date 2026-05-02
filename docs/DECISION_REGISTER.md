@@ -31,6 +31,7 @@ the decision content here.
 |-----|-------|------------------|
 | [A-006](adr/ADR-A-006.md) | Repo docs are canonical for architecture and roadmap planning | The repo is the source of truth; external surfaces (Notion, OpenProject, etc.) are derived views. |
 | [A-010](adr/ADR-A-010-external-systems.md) | External systems should be adopted where commodity fit is strong | Adopt commodity tools (Vault, NetBox, OpenProject, Grafana) rather than building from scratch. |
+| [A-018](adr/ADR-A-018-replace-plane-with-openproject.md) | Replace Plane CE with OpenProject CE as PM substrate | OpenProject's work-package primitive + HAL JSON API fit the PMP+ITIL framework where Plane CE's Issue model did not; xindex schema renamed `plane_*` → `op_*`. |
 
 ## Operations and security
 

@@ -375,7 +375,7 @@ Deliverable table:
 | D-17-01 (historical: 17.A): Stack architecture audit promoted to repo | DONE | 8193014 |
 | D-17-02 (historical: 17.B): Capability audit template | DONE | f1502f6 |
 | D-17-03 (historical: 17.C): Physical architecture audit | DONE | c25c9ac |
-| D-17-04 (historical: 17.D): Replace Plane with OpenProject | IN PROGRESS | per Phase 17 plan |
+| D-17-04 (historical: 17.D): Replace Plane with OpenProject | DONE | 8819861+a184202+3a30c6f+51b012e+f8e23ba+37f874c+d283fa1+abbbba8+cf0ff61+32b7ad0+2f6cc32 (ADR-A-018) |
 | D-17-05 (historical: 17.E): Observability role-clarification | DONE | 9393785+9390c11 |
 | D-17-06 (historical: 17.F): Agent surface audit + consolidation | DONE | 62b595d+57d7399 |
 | D-17-07 (historical: 17.G): topology-api audit | DONE | 5698f30 |
