@@ -55,10 +55,23 @@ else
   echo "[ollama] LaunchAgent already exists"
 fi
 
-# 4. Pull default models
-echo "[ollama] Pulling models (this takes a while)..."
-ollama pull qwen2.5-coder:14b
-ollama pull qwen2.5-coder:32b
+# 4. Pull default models — gated by Cisco Provenance Kit (D-17-10).
+# Uses scripts/ollama-pull-verified.sh to verify HF source before pull.
+# If verify fails (e.g. model not in Cisco catalog), the wrapper blocks
+# unless PROVENANCE_OVERRIDE_REASON is set; see docs/runbooks/pull-new-model.md.
+echo "[ollama] Pulling models via provenance-gated wrapper (this takes a while)..."
+# REPO_DIR is set in step 7 below; pre-set it here (and reused later) so the
+# gate wrapper is reachable. Step 7 is idempotent on re-assignment.
+REPO_DIR=~/repos/integrated-ai-platform
+GATE="$REPO_DIR/scripts/ollama-pull-verified.sh"
+if [[ ! -x "$GATE" ]]; then
+  echo "[ollama] WARN: gate wrapper $GATE not found (repo not yet cloned?); falling back to ungated pull"
+  ollama pull qwen2.5-coder:14b
+  ollama pull qwen2.5-coder:32b
+else
+  "$GATE" Qwen/Qwen2.5-Coder-14B-Instruct qwen2.5-coder:14b
+  "$GATE" Qwen/Qwen2.5-Coder-32B-Instruct qwen2.5-coder:32b
+fi
 
 # 5. uv (for aider)
 if ! command -v uv &>/dev/null; then
