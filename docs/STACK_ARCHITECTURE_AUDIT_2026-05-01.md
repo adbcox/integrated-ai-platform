@@ -170,6 +170,13 @@ the VM/Grafana surface — that is integration, not duplication.
 broken bridge state, audit narrow overlap on host metrics where both
 stacks may scrape the same node. **Not a retirement deliverable.**
 
+**17.E ratification (2026-05-01):** doctrine codified in
+`docs/runbooks/observability-doctrine.md` (canonical role-split,
+boundary rule for new services, bridge-component RETIRE decision,
+706-item narrow-overlap disposition). Capability audits supporting
+the doctrine: `docs/audits/capability/zabbix-2026-05-01.md` (17.B)
+and `docs/audits/capability/victoriametrics-2026-05-01.md` (17.E).
+
 Loki + Promtail and Uptime-Kuma have distinct roles (logs and uptime probing). Not duplicated.
 
 ---
