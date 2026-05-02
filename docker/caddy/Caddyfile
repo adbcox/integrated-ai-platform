@@ -35,12 +35,6 @@ openproject.internal {
     reverse_proxy host.docker.internal:8086
 }
 
-plane.internal {
-    import access_log
-
-    reverse_proxy host.docker.internal:3001
-}
-
 obot.internal {
     import access_log
 
