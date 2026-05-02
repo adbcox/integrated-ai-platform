@@ -77,9 +77,16 @@ Caddy auto-internal-TLS with 31 .internal sites. Headscale VPN. OPNsense firewal
 
 NetBox is correct: agent-queryable, ADR-A-014 ratified, GraphQL+REST, custom fields, mature.
 
-**Quiet overlap with topology-api (port 8090):** topology-api is a separate FastAPI service that ALSO exposes service inventory. It predates xindex's NetBox ingestion (D-16-02.1) which now provides the same data via xindex_get_service. Risk: agent does not know which to query. Drift between topology-api and NetBox is silent.
+**Quiet overlap with topology-api (port 8300, NOT 8090 — original audit had wrong port):** topology-api is a small stdlib HTTP service that ALSO reads service inventory. The 17.A first draft suspected duplication with xindex_get_service.
 
-**Recommendation:** Phase 17 deliverable to evaluate topology-api's remaining role (17.G). Likely retire or merge with xindex.
+**17.G ratification (2026-05-01):** verdict reversed under D#20 — topology-api is **NOT a duplicate**. It is the **Grafana Node Graph adapter** for the inventory: reads NetBox/YAML, computes service→service edges from each service's `depends_on`, emits the exact field shape (`mainStat`, `secondaryStat`, `arc__primary`, `detail__*`) that the Grafana Node Graph panel consumes. The whole-graph endpoint `/api/topology` has no equivalent in xindex.
+
+**Verdict: KEEP WITH ROLE-CLARIFICATION.**
+- NetBox owns: authoritative service inventory.
+- xindex owns: single-service lookups + cross-source linking.
+- topology-api owns: graph-shaped projection for Grafana Node Graph dashboards.
+
+Audit: `docs/audits/capability/topology-api-2026-05-01.md`. Two follow-ups (compose `CMDB_SOURCE` default flip to `netbox`; image-tag drift `1.1.0` vs `1.0.0`) tracked there but not in 17.G commit.
 
 ---
 
