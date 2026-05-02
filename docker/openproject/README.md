@@ -67,15 +67,42 @@ docker compose down          # stop (volumes preserved)
 
 ## Initial admin + API token
 
-After first start:
+The admin user is seeded from `secret/openproject/admin` on first
+boot (Vault Agent renders `OPENPROJECT_ADMIN_*` env into the
+container's credentials.env).
 
-1. Visit https://openproject.internal — log in as
-   `admin@example.net` with the password from
-   `secret/openproject/admin`.
-2. Generate API token: My Account → Access tokens → Generate.
-3. Store under `secret/openproject/api` as `{token: "<value>"}`.
-4. Restart `openproject` so the Vault Agent re-renders
-   `credentials.env` with `OPENPROJECT_API_TOKEN`.
+The admin API token is minted programmatically via:
+
+```bash
+./scripts/openproject-mint-admin-token.sh
+```
+
+This script:
+
+1. Resolves an admin Vault token via `scripts/lib/vault-admin-token.sh`
+2. Checks `secret/openproject/api#token` — if present and validates
+   against `/api/v3/users/me`, exits 0 (idempotent).
+3. Otherwise, mints a fresh token via `APITokens::CreateService`
+   inside the `openproject` container (Rails runner), captures the
+   plaintext `plain_value` (only available at creation time), and
+   patches it into Vault.
+4. Verifies the new token authenticates against `/api/v3/users/me`.
+5. Hash-only logging throughout (sha256[12]); token never appears
+   in argv, shell history, or stdout.
+
+No operator UI interaction required. Safe to re-run after rebuilds.
+
+**Token implementation surprise (recorded for WP-04 author):**
+
+OpenProject 15 emits an `INFO -- : Increasing database pool size`
+line directly to stdout during Rails boot — bypasses
+`Rails.logger.level=FATAL` (the message is from OpenProject itself,
+not Rails.logger). Rails-runner-based tooling that captures token
+output via `STDOUT.write(plain)` will get a contaminated capture.
+The mint script wraps the token in `__IAP_TOKEN_BEGIN__` /
+`__IAP_TOKEN_END__` sentinels and extracts shell-side. Use the same
+pattern in `openproject_connector.py` if it ever shells into the
+container.
 
 ---
 
