@@ -33,14 +33,30 @@ network or scheduling hiccup affects latency.
   come and go.
 
 **Tier-specific notes.**
-- T4 is gated on D-17-14 (exo distributed inference cluster), which
-  is itself gated on D-17-15 (Mac Studio Day-1) and macOS 26.2.
-  Until D-17-14 lands, this tier's prompt is documentation-only —
-  no consumer should select T4 in routing because no T4 backend
-  exists yet.
-- macOS 26.2 prerequisite tracks an exo upstream issue with prior
-  macOS releases; verify the cluster is on the supported macOS
-  version before treating T4 as available.
+- T4 is gated on D-17-14 (exo distributed inference cluster).
+  D-17-14 closed 2026-05-02 with the cluster substrate operational
+  but **distributed inference NOT operational** — see
+  `docs/architecture-facts/exo-cluster.md` for the precise
+  boundary. As of D-17-14 close this tier's prompt remains
+  **documentation-only**; no consumer should route T4 today
+  because no T4 backend exists yet. The deliverable's "DONE"
+  status applies to substrate + single-node + platform integration,
+  NOT to the cluster-distributed-inference capability this tier
+  describes.
+- Multi-node MLX backend connectivity over TB5 is upstream-blocked
+  (Finding O — exo upstream `MISSED_THINGS.md` + TODO items 15–16).
+  T4-as-a-routable-target requires either an upstream exo fix or
+  D-17-25 macOS-alignment hypothesis confirmation.
 - Capability ceilings per node (D-17-03 / D-17-18) define which
-  models the cluster can host: Mac Mini 48 GB, Mac Studio 96 GB,
-  total addressable model size depends on layer split and overhead.
+  models the cluster *would* host once distributed inference
+  unlocks: Mac Mini 48 GB, Mac Studio 96 GB, total addressable
+  model size depends on layer split and overhead. Combined pool:
+  144 GB.
+- **Single-node baseline reference (NOT a T4 figure).** Single-node
+  inference of `mlx-community/Qwen2.5-Coder-7B-Instruct-4bit` on
+  Mac Mini through the exo runtime measured TTFT 0.659s,
+  throughput ~55 chunks/sec, runner RSS 4.56 GB at WP-17-14-04
+  close (2026-05-02). This is a single-node-via-cluster-substrate
+  number, useful only as a baseline for future comparison once
+  distributed inference unlocks. Do NOT publish this as a T4
+  latency figure.

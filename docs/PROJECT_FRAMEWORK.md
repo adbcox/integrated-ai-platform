@@ -250,6 +250,33 @@ mode prevented: "operator accepts a phantom limitation as
 canonical and rebuilds workflow around an AI false negative
 that a five-minute unblock would have resolved."
 
+### D#24 — Install the full set on developer toolchain decisions
+
+When two install options exist for a developer-toolchain component
+(CLT-only vs full Xcode, minimal Python vs full uv/pip stack,
+single-package vs full-toolchain bundle, etc.), default to the
+full set unless there is a specific reason to constrain. Toolchain
+is permanent infrastructure; the platform has substantial capacity
+(Mac Mini at 625 GB free at decision time, comparable on Mac
+Studio). Disk space and download time are NOT the dominant cost —
+mid-deliverable surface-back round-trips for "we constrained too
+hard, now we need the missing piece" are. Codified from the
+T1.0/T1.5/Xcode escalation rounds in D-17-14 (2026-05-02), each of
+which cost a surface-back round-trip that a default-to-full
+posture would have skipped. Failure mode prevented: "deliverable
+under-installs the toolchain on first pass, then pays for the
+missing component in escalation rounds that fragment the
+operator's attention." Apply to: Xcode-vs-CLT decisions, Python
+toolchain (uv full vs piecemeal pip), Rust (full toolchain vs
+single-target), Node (LTS-with-tools vs minimal). Does NOT apply
+to: runtime-image dependencies (where minimal-base-image discipline
+remains correct), production-container packages (where principle
+of least installed software still wins), data-store install
+options (where each capability has runtime cost and operational
+surface). The doctrine is specific to *developer-machine
+toolchains*, where the cost of having an unused tool is dominated
+by the cost of not having a tool you turn out to need.
+
 ---
 
 ## 4. Surface format template
@@ -402,7 +429,7 @@ Deliverable table:
 | D-17-11 (historical: 17.K): Local LLM system prompt library | DONE | cc9df44 |
 | D-17-12 (historical: 17.L): Gemma 4 + Qwen3-Coder-Next benchmarks | NOT STARTED | per Phase 17 plan |
 | D-17-13 (historical: 17.M): Goose agent CLI integration | NOT STARTED | per Phase 17 plan |
-| D-17-14 (historical: 17.N): exo distributed inference cluster | NOT STARTED | gated on D-17-15 |
+| D-17-14 (historical: 17.N): exo distributed inference cluster | DONE (PARTIAL — distributed inference not operational; see `docs/architecture-facts/exo-cluster.md`) | 86600b8+0d6ebf3+a025827+1dc2f3b+ede9480+726725a |
 | D-17-15 (historical: 17.O): Mac Studio Day-1 execution | DONE | ccc02d1 |
 | D-17-16 (historical: 17.P): Loose-doc retirement | NOT STARTED | re-parented from D-16-05 |
 | D-17-17 (historical: 17.Q): Logical service architecture dashboard with live utilization (replaces original OpenProject framing) | NOT STARTED | re-parented from D-16-08 |
