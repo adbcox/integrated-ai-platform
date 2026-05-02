@@ -429,7 +429,7 @@ Deliverable table:
 | D-17-11 (historical: 17.K): Local LLM system prompt library | DONE | cc9df44 |
 | D-17-12 (historical: 17.L): Gemma 4 + Qwen3-Coder-Next benchmarks | NOT STARTED | per Phase 17 plan |
 | D-17-13 (historical: 17.M): Goose agent CLI integration | NOT STARTED | per Phase 17 plan |
-| D-17-14 (historical: 17.N): exo distributed inference cluster | DONE (PARTIAL — distributed inference not operational; see `docs/architecture-facts/exo-cluster.md`) | 86600b8+0d6ebf3+a025827+1dc2f3b+ede9480+726725a |
+| D-17-14 (historical: 17.N): exo distributed inference cluster | DONE (PARTIAL — distributed inference not operational; see `docs/architecture-facts/exo-cluster.md`) | 86600b8+0d6ebf3+a025827+1dc2f3b+ede9480+726725a+f90ce04 |
 | D-17-15 (historical: 17.O): Mac Studio Day-1 execution | DONE | ccc02d1 |
 | D-17-16 (historical: 17.P): Loose-doc retirement | NOT STARTED | re-parented from D-16-05 |
 | D-17-17 (historical: 17.Q): Logical service architecture dashboard with live utilization (replaces original OpenProject framing) | NOT STARTED | re-parented from D-16-08 |
