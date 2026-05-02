@@ -73,6 +73,68 @@ into `docs/architecture-facts/exo-cluster.md` and this file is deleted.**
 
 ---
 
+### WP-17-14-04 — Model loading via provenance gate (DONE 2026-05-02, single-node scope per Finding O)
+
+**Scope reframe.** Original WP-04 intent: load Qwen2.5-Coder-7B via
+the D-17-10 provenance gate, distribute layers across the cluster
+via MlxRing. Reframed mid-execution to single-node placement on
+Mac Mini (where the model is cached) per Finding O — multi-node
+MLX backends are upstream-blocked.
+
+**Model selected.** `mlx-community/Qwen2.5-Coder-7B-Instruct-4bit`
+- HF cache path:
+  `~/.cache/huggingface/hub/models--mlx-community--Qwen2.5-Coder-7B-Instruct-4bit/snapshots/019cc73c45c770444708a6dd8690c66243cc5c80/`
+- On-disk size: 4.0 GB (4,284,263,424 bytes per exo storageSize)
+- Layers: 28, hiddenSize: 3584, contextLength: 32768
+- Provenance gate exit: 3 (verified-base-family — canonical for
+  mlx-community re-quants per Finding M); proceeded under doctrine,
+  no override required
+
+**Download path.** `scripts/hf-download-verified.sh
+mlx-community/Qwen2.5-Coder-7B-Instruct-4bit` after wrapper patch
+in commit `1dc2f3b` (Finding N).
+
+**Instance + runner state (verified via /state API at port 52416):**
+- Instance ID: `ac2f1124-c147-401e-b9bc-beedc18d6680`
+- Variant: `MlxRingInstance`
+- Runner ID: `2dadb879-c3ab-41c6-8ca9-20d355e724d9`
+- Runner state: `RunnerReady`
+- Node placement: Mac Mini
+  (peer-id `12D3KooWRDCXYqaWCGKn9maRvfZcJ5wUi4QUDUq3mX84ZPdYy1PS`)
+- Worker port: ephemeral 54929
+- World size: 1 (single-node)
+
+**Inference benchmark (streaming /v1/chat/completions, 256 max
+tokens, temperature 0.2):**
+- Prompt: "Write a Python function to compute the Fibonacci
+  sequence iteratively. Include a docstring."
+- Time-to-first-token: **0.659s**
+- Total wall time: **4.391s**
+- Generation time: **3.731s**
+- Throughput: **55.21 chunks/sec** (token-delta events)
+- Output token-deltas: 206
+- Output quality: coherent, syntactically correct Python with
+  docstring; matches prompt intent
+
+**Memory footprint (Mac Mini, single-node placement):**
+- exo master process (PID 49152): 0.16 GB RSS
+- MLX runner subprocess (PID 49396): **4.56 GB RSS**
+- macOS pages_wired delta during inference: minimal
+  (~117 pages over baseline)
+
+**Network footprint.** Single-node placement → no inter-node
+tensor traffic on TB-Bridge during this inference. Cluster
+heartbeat traffic on TB-Bridge `169.254.169.73:5679 ↔
+169.254.35.30:5678` continues at libp2p baseline.
+
+**Deferred to WP-05/T5.** Multi-node distributed inference figures
+(per-node memory split, TB-Bridge tensor-pass utilization) cannot
+be measured against a working backend until upstream fixes
+MLXRing/Jaccl over TB5 (Finding O). T5 must NOT publish T4-tier
+latency figures based on this single-node WP-04 run.
+
+---
+
 ### Chronicle findings (toolchain prep — to be folded into T5 doctrine)
 
 These findings emerged during WP-17-14-01/02 toolchain prep. Each one
@@ -221,6 +283,120 @@ forms and runs anyway (graceful degradation — the missing-dir error
 is in a peripheral monitoring loop, not the critical path). Hygiene
 step for runbook: `mkdir -p ~/.exo/models` before launch on every
 node.
+
+**Finding L — CLAUDE.md "Current Phase:" staleness causes
+auto-prioritization drift across sessions.** A /loop wakeup prompt
+captured at session-compact time can carry a deliverable identifier
+(here: D-16-04.1) that has since closed; combined with a
+CLAUDE.md "Current Phase:" line that lags the active deliverable,
+the resumed session begins working on stale context before any
+operator interaction. Detected this session when the /loop fired
+"continue D-16-04.1 backup wait …" while D-17-14 was the active
+deliverable. Mitigation: address as separate deliverable D-17-24
+(post-D-17-14) — refactor "Current Phase:" line into something that
+self-updates from PROJECT_FRAMEWORK active-row state, so a stale
+CLAUDE.md cannot mislead resumed sessions. Do NOT edit CLAUDE.md
+mid-deliverable (operator doctrine: deliverables don't get
+substrate-level edits during their own execution window).
+
+**Finding M — exit 3 IS the only achievable success state for the
+exo path through the D-17-10 provenance gate.** mlx-community
+re-quantizes upstream PyTorch weights for MLX consumption; the
+re-quantized SHA differs from the upstream-catalog SHA, so the
+gate's exact-fingerprint check (exit 0) cannot match. The
+base-family verification (exit 3) confirms lineage to the upstream
+attested model and IS the canonical success state for any MLX
+consumer. The wrapper's case statement (`0|3) … run_download`)
+already encodes this — but operator-facing prose must not frame
+exit 3 as "weaker than exit 0" or as something requiring override.
+For exo, exit 3 is the state to expect. Captured for T5
+exo-cluster.md "Provenance gate semantics" section.
+
+**Finding N — `huggingface-cli` deprecated in huggingface_hub>=1.0;
+canonical CLI is `hf`.** D-17-10's `hf-download-verified.sh` was
+authored against the older CLI name. Wrapper updated to invoke
+`hf download` (same subcommand syntax, different binary name).
+Doctrine integrity preserved by patching the wrapper rather than
+adding a workaround inside D-17-14. Commit `1dc2f3b` carries the
+fix and references this finding. Pattern: when an upstream tool
+deprecates an interface that a platform wrapper depends on, fix the
+wrapper at-source rather than working around it in the consuming
+deliverable; otherwise the workaround becomes permanent debt.
+
+**Finding O — exo distributed inference (multi-node MLX backends)
+is upstream-blocked, not operator-blocked.** Both MlxRing and
+MlxJaccl backends fail to instantiate across nodes over TB5:
+- MlxRing: "MLX ring backend requires connectivity between
+  neighbouring nodes" — backend's neighbour-graph check rejects the
+  TB-Bridge link's reachability semantics.
+- MlxJaccl: "jaccl backend requires all participating devices to
+  be able to communicate" — same class of rejection.
+Cross-referenced with exo upstream `MISSED_THINGS.md` ("Jaccl
+coordinator over TB5 is unstable") and TODO items 15–16 (TB5
+prioritization not implemented). This is a known upstream
+limitation, not a misconfiguration on this cluster. **Scope
+implication for D-17-14:** WP-04 reframed as single-node
+validation; WP-05 re-scoped from "distributed 70B" to "single-node
+32B-class on Mac Studio's 96 GB pool"; WP-06 (litellm + Open WebUI)
+unchanged. Multi-node distributed inference is deferred — likely
+requires either an upstream MLX-backend fix or the OS-version
+alignment hypothesized in Finding I-refinement (RDMA-over-TB5
+gating).
+
+**Finding P — Configuration bugs compound; canonical config must
+be doctrine-correct.** Mac Studio exo was started during WP-03
+with `--no-downloads` as a defensive default ("don't pull anything
+unsanctioned"). When the master scheduled the WP-04 model onto the
+Studio, the worker rejected DownloadModel tasks silently because
+the DownloadCoordinator subsystem was disabled by the flag. The
+debugging window cost a surface-back round-trip. Operator decision
+was to restart the Studio cleanly rather than rsync-pre-stage the
+model (rejected as motivated reasoning — "production pattern"
+framing rationalizing what is actually a workaround for a
+configuration mistake). Pattern: defensive-default flags applied
+without thinking through which subsystems they disable can produce
+silent failure modes that look like infrastructure bugs. The
+canonical exo cmdline for runbook should NOT include
+`--no-downloads`; provenance is gated at the wrapper layer
+(`hf-download-verified.sh`), not at the runner.
+
+**Finding Q — exo libp2p peer-id is ephemeral, NOT persistent
+across restarts.** Verified empirically (operator control window):
+exo CLI exposes no peer-id-persistence mechanism. None of
+`--bootstrap-peers`, `--libp2p-port`, `--api-port`, or
+`EXO_LIBP2P_NAMESPACE` persist node identity. Each restart
+regenerates a fresh libp2p peer-id. **Implication for runbook
+shape:** cluster bring-up is a PROCEDURE, not a CONFIG FILE.
+Each bring-up cycle:
+1. Start Mac Studio (listening peer; no `--bootstrap-peers`).
+2. Grep peer-id from Mac Studio's log.
+3. Construct Mac Mini's `--bootstrap-peers` multiaddr from the
+   current Studio peer-id.
+4. Start Mac Mini with that bootstrap config.
+T5's `docs/runbooks/exo-cluster-operations.md` MUST reflect this —
+NOT a static config file with hardcoded peer-ids that becomes
+stale on first restart. **Refines Finding H:** static-peer choice
+remains correct for deterministic-routing intent (TB5 vs LAN), but
+the operational pattern is dynamic-discovery-then-pin-per-session,
+not config-file-driven.
+
+**Finding R — Process-management kill patterns must account for
+asymmetric cmdlines per node-role.** During WP-03 reform,
+`pkill -f 'exo --libp2p-port'` matched the Studio cmdline (which
+starts `exo --libp2p-port …`) but did NOT match the Mini cmdline
+(which starts `exo --bootstrap-peers … --libp2p-port …`).
+Asymmetric cmdline-prefix substring matching missed the master node
+and required PID-based kill. **Canonical pattern for runbook:**
+either `pkill -f '\.venv/bin/exo'` (matches the venv path that
+both nodes share) or PID-file-based shutdown. Avoid cmdline-flag-
+substring matching, which is fragile to argument-order differences
+between roles.
+
+**Chronicle count check.** A–R = 18 InvenTree-pattern findings in
+this single deliverable. Pattern of "state appears established but
+working-system substrate isn't actually present" is structurally
+recurrent in exo bring-up; T5 must surface this as a deliverable-
+level lesson, not just per-finding remediation.
 
 ---
 

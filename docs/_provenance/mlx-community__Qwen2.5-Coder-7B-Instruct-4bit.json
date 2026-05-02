@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "repo": "mlx-community/Qwen2.5-Coder-7B-Instruct-4bit",
+  "verdict": "verified-base-family",
+  "exit_code": 3,
+  "threshold": 0.7,
+  "kit_version": "1.0.0",
+  "timestamp_utc": "2026-05-02T19:56:44Z",
+  "top_matches": [
+    {
+      "model_id": "NextCoder-7B",
+      "family_id": "microsoft--nextcoder",
+      "pipeline_score": 1.0,
+      "match_type": "exact_arch",
+      "provenance_decision": "Confirmed Match"
+    },
+    {
+      "model_id": "Qwen2-7B-Instruct",
+      "family_id": "qwen--qwen",
+      "pipeline_score": 1.0,
+      "match_type": "exact_arch",
+      "provenance_decision": "Confirmed Match"
+    },
+    {
+      "model_id": "Qwen2.5-7B-Instruct",
+      "family_id": "qwen--qwen",
+      "pipeline_score": 1.0,
+      "match_type": "exact_arch",
+      "provenance_decision": "Confirmed Match"
+    },
+    {
+      "model_id": "Qwen2.5-Coder-7B-Instruct",
+      "family_id": "qwen--qwen",
+      "pipeline_score": 1.0,
+      "match_type": "exact_arch",
+      "provenance_decision": "Confirmed Match"
+    },
+    {
+      "model_id": "Qwen2.5-7B",
+      "family_id": "qwen--qwen",
+      "pipeline_score": 0.9,
+      "match_type": "family_hash",
+      "provenance_decision": "Confirmed Match"
+    }
+  ],
+  "model_info": {
+    "architectures": [
+      "Qwen2ForCausalLM"
+    ],
+    "model_type": "qwen2",
+    "hidden_size": 3584,
+    "num_hidden_layers": 28
+  },
+  "scan_elapsed_ms": 57009.22
+}
