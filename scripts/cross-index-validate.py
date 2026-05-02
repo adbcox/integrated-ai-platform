@@ -1,29 +1,32 @@
 #!/usr/bin/env python3
 """
-Cross-index validator: ADR <-> Plane coherence check.
+Cross-index validator: ADR <-> OpenProject coherence check.
 Read-only. Emits gap report and exits 0 (no gaps) or 1 (gaps found).
+
+Replaces the prior Plane-based validator (D-17-04 WP-17-04-05.5,
+2026-05-02). The structure is identical — only the source-of-truth
+project tracker changed.
 
 Usage:
     python3 scripts/cross-index-validate.py [--json] [--verbose] [--quiet]
 
 Environment:
-    The script self-bootstraps Plane connection via the same path as
-    scripts/plane-sync-from-framework.py — pulls the API token from
-    Vault (`secret/plane/api#homepage_token`) using the running
+    The script self-bootstraps OpenProject connection via the same path
+    as scripts/openproject-sync-from-framework.py — pulls the API token
+    from Vault (`secret/openproject/api#token`) using the running
     `vault-server` container, then sets the env vars
-    PlaneAPI() expects:
-        PLANE_URL         http://localhost:8000
-        PLANE_API_TOKEN   (from Vault)
-        PLANE_WORKSPACE   iap
-        PLANE_PROJECT_ID  dbcd4476-1e37-4812-a443-0914ec8380fc
+    OpenProjectAPI() expects:
+        OPENPROJECT_URL          http://192.168.10.145:8086
+        OPENPROJECT_API_TOKEN    (from Vault)
+        OPENPROJECT_PROJECT      roadmap
 
     If a caller has already set these vars (e.g. CI shell that brought
-    in its own PLANE_API_TOKEN), the existing values are honoured.
+    in its own OPENPROJECT_API_TOKEN), the existing values are honoured.
 
 Exit codes:
     0  no gaps
-    1  gaps detected (or unrecoverable Plane rate-limit during fetch)
-    2  Plane connection failed (token/URL unreachable)
+    1  gaps detected
+    2  OpenProject connection failed (token/URL unreachable)
 """
 import argparse
 import json
@@ -38,11 +41,10 @@ sys.path.insert(0, str(REPO_ROOT))
 
 DECISION_REGISTER = REPO_ROOT / "docs" / "DECISION_REGISTER.md"
 
-# Match scripts/plane-sync-from-framework.py defaults so the two stay in
-# step. If the operator moves Plane, both scripts get updated together.
-PLANE_URL_DEFAULT = "http://localhost:8000"
-PLANE_WORKSPACE_DEFAULT = "iap"
-PLANE_PROJECT_ID_DEFAULT = "dbcd4476-1e37-4812-a443-0914ec8380fc"
+# Match scripts/openproject-sync-from-framework.py defaults so the two stay in
+# step. If the operator moves OpenProject, both scripts get updated together.
+OPENPROJECT_URL_DEFAULT = "http://192.168.10.145:8086"
+OPENPROJECT_PROJECT_DEFAULT = "roadmap"
 
 
 def load_adrs() -> list:
@@ -60,9 +62,9 @@ def load_adrs() -> list:
     return adrs
 
 
-def fetch_plane_token() -> str:
-    """Pull the Plane API token from Vault via the running vault-server
-    container. Mirrors scripts/plane-sync-from-framework.py.fetch_token().
+def fetch_openproject_token() -> str:
+    """Pull the OpenProject API token from Vault via the running vault-server
+    container. Mirrors scripts/openproject-sync-from-framework.py.
     """
     vt = Path.home() / ".vault-token"
     candidate_tokens: list[str] = []
@@ -85,7 +87,7 @@ def fetch_plane_token() -> str:
                     "-e", f"VAULT_TOKEN={tok}",
                     "-e", "VAULT_ADDR=http://127.0.0.1:8200",
                     "vault-server",
-                    "vault", "kv", "get", "-field=homepage_token", "secret/plane/api",
+                    "vault", "kv", "get", "-field=token", "secret/openproject/api",
                 ],
                 text=True,
                 stderr=subprocess.PIPE,
@@ -96,38 +98,36 @@ def fetch_plane_token() -> str:
             last_err = (exc.stderr or "").strip()
             continue
     sys.exit(
-        "ERROR: could not read Plane API token from Vault. "
+        "ERROR: could not read OpenProject API token from Vault. "
         f"Last error: {last_err or '(none)'}"
     )
 
 
-def ensure_plane_env(quiet: bool = False) -> None:
-    """Populate PLANE_* env vars if the caller didn't set them.
-    PLANE_API_TOKEN comes from Vault when missing; the rest get
-    sensible defaults that match plane-sync-from-framework.py."""
-    if not os.environ.get("PLANE_URL"):
-        os.environ["PLANE_URL"] = PLANE_URL_DEFAULT
-    if not os.environ.get("PLANE_WORKSPACE"):
-        os.environ["PLANE_WORKSPACE"] = PLANE_WORKSPACE_DEFAULT
-    if not os.environ.get("PLANE_PROJECT_ID"):
-        os.environ["PLANE_PROJECT_ID"] = PLANE_PROJECT_ID_DEFAULT
-    if not os.environ.get("PLANE_API_TOKEN"):
+def ensure_openproject_env(quiet: bool = False) -> None:
+    """Populate OPENPROJECT_* env vars if the caller didn't set them.
+    OPENPROJECT_API_TOKEN comes from Vault when missing; the rest get
+    sensible defaults that match openproject-sync-from-framework.py."""
+    if not os.environ.get("OPENPROJECT_URL"):
+        os.environ["OPENPROJECT_URL"] = OPENPROJECT_URL_DEFAULT
+    if not os.environ.get("OPENPROJECT_PROJECT"):
+        os.environ["OPENPROJECT_PROJECT"] = OPENPROJECT_PROJECT_DEFAULT
+    if not os.environ.get("OPENPROJECT_API_TOKEN"):
         if not quiet:
-            print("  (fetching Plane API token from Vault …)")
-        os.environ["PLANE_API_TOKEN"] = fetch_plane_token()
+            print("  (fetching OpenProject API token from Vault …)")
+        os.environ["OPENPROJECT_API_TOKEN"] = fetch_openproject_token()
 
 
-def load_plane_adr_issues() -> dict:
-    from framework.plane_connector import PlaneAPI, RateLimitError
-    api = PlaneAPI()
+def load_openproject_adr_workpackages() -> dict:
+    from framework.openproject_connector import OpenProjectAPI
+    api = OpenProjectAPI()
     try:
-        issues = api.list_all_issues()
-    except RateLimitError as exc:
-        print(f"RATE-LIMIT: {exc}", file=sys.stderr)
-        sys.exit(1)
-    return {i["external_id"]: i
-            for i in issues
-            if (i.get("external_id") or "").startswith("ADR-")}
+        wps = api.list_all_issues()
+    except Exception as exc:
+        print(f"OPENPROJECT-FETCH-FAILED: {exc}", file=sys.stderr)
+        sys.exit(2)
+    return {wp["external_id"]: wp
+            for wp in wps
+            if (wp.get("external_id") or "").startswith("ADR-")}
 
 
 def main() -> int:
@@ -138,24 +138,24 @@ def main() -> int:
                     help="suppress progress output (CI use)")
     args = ap.parse_args()
 
-    ensure_plane_env(quiet=args.quiet or args.json)
+    ensure_openproject_env(quiet=args.quiet or args.json)
 
-    adrs             = load_adrs()
-    plane_adr_issues = load_plane_adr_issues()
+    adrs        = load_adrs()
+    op_adr_wps  = load_openproject_adr_workpackages()
 
     gaps, covered = [], []
     for adr in adrs:
         if adr["status"].lower() not in ("accepted", "superseded"):
             continue
-        if adr["id"] in plane_adr_issues:
+        if adr["id"] in op_adr_wps:
             covered.append(adr["id"])
         else:
             gaps.append(adr)
 
     report = {
-        "adrs_checked":             len(adrs),
-        "adrs_covered_in_plane":    len(covered),
-        "adrs_missing_plane_issue": len(gaps),
+        "adrs_checked":                  len(adrs),
+        "adrs_covered_in_openproject":   len(covered),
+        "adrs_missing_workpackage":      len(gaps),
         "gaps":    gaps,
         "covered": covered,
     }
@@ -163,9 +163,9 @@ def main() -> int:
     if args.json:
         print(json.dumps(report, indent=2))
     elif not args.quiet:
-        print(f"ADRs checked:         {report['adrs_checked']}")
-        print(f"Tracked in Plane:     {report['adrs_covered_in_plane']}")
-        print(f"Missing Plane issue:  {report['adrs_missing_plane_issue']}")
+        print(f"ADRs checked:                {report['adrs_checked']}")
+        print(f"Tracked in OpenProject:      {report['adrs_covered_in_openproject']}")
+        print(f"Missing OpenProject WP:      {report['adrs_missing_workpackage']}")
         if args.verbose or gaps:
             for g in gaps:
                 print(f"  GAP: {g['id']} ({g['status']}) — {g['title']}")

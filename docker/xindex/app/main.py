@@ -30,15 +30,15 @@ from .models import (
     LinksResponse,
     NodeDetail,
     PerSourceHealth,
-    PlaneIssueDetail,
-    PlaneIssueRef,
-    PlaneModuleDetail,
     RegisterRef,
     RefreshAccepted,
     RunbookDetail,
     SearchHit,
     SearchResponse,
     ServiceDetail,
+    VersionDetail,
+    WorkPackageDetail,
+    WorkPackageRef,
 )
 
 
@@ -64,12 +64,13 @@ async def lifespan(app: FastAPI):  # noqa: ARG001
 
 app = FastAPI(
     title="xindex",
-    version="0.3.0",
+    version="0.4.0",
     description=(
         "Cross-index of ADRs, Decision Register, runbooks (D-16-02), "
-        "NetBox services + nodes + entity_links (D-16-02.1), and Plane "
-        "issues + modules + tracked_in links (D-16-02.2). Plane data is "
-        "read-only (ADR-A-006)."
+        "NetBox services + nodes + entity_links (D-16-02.1), and "
+        "OpenProject work packages + versions + tracked_in links "
+        "(D-17-04 WP-17-04-05.5; replaces D-16-02.2 Plane substrate). "
+        "OpenProject data is read-only (ADR-A-006)."
     ),
     lifespan=lifespan,
 )
@@ -147,7 +148,7 @@ def get_adr(adr_id: str, conn: ConnDep) -> ADRDetail:
         else None
     )
 
-    plane_tracking = _plane_tracking_for_adr(conn, canonical)
+    workpackage_tracking = _workpackage_tracking_for_adr(conn, canonical)
 
     return ADRDetail(
         id=row["id"],
@@ -161,34 +162,34 @@ def get_adr(adr_id: str, conn: ConnDep) -> ADRDetail:
         body=row["body"],
         sections=json.loads(row["sections_json"] or "{}"),
         register_entry=register_entry,
-        plane_tracking=plane_tracking,
+        workpackage_tracking=workpackage_tracking,
     )
 
 
-def _plane_tracking_for_adr(
+def _workpackage_tracking_for_adr(
     conn: sqlite3.Connection, adr_id: str
-) -> PlaneIssueRef | None:
-    """Resolve the Plane issue tracking this ADR via tracked_in entity_link."""
+) -> WorkPackageRef | None:
+    """Resolve the OpenProject WP tracking this ADR via tracked_in link."""
     row = conn.execute(
         """
-        SELECT pi.external_id, pi.name, pi.state_name, pi.module_name,
-               pi.updated_at
+        SELECT wp.external_id, wp.name, wp.status_name, wp.version_name,
+               wp.updated_at
         FROM entity_links el
-        JOIN plane_issues pi ON pi.external_id = el.to_ref
+        JOIN op_workpackages wp ON wp.external_id = el.to_ref
         WHERE el.from_kind='adr' AND el.from_ref=?
-          AND el.to_kind='plane_issue' AND el.link_type='tracked_in'
-          AND el.source='plane'
+          AND el.to_kind='workpackage' AND el.link_type='tracked_in'
+          AND el.source='openproject'
         LIMIT 1
         """,
         (adr_id,),
     ).fetchone()
     if row is None:
         return None
-    return PlaneIssueRef(
+    return WorkPackageRef(
         external_id=row["external_id"],
         name=row["name"],
-        state_name=row["state_name"],
-        module_name=row["module_name"],
+        status_name=row["status_name"],
+        version_name=row["version_name"],
         updated_at=row["updated_at"],
     )
 
@@ -266,62 +267,62 @@ def get_node(name: str, conn: ConnDep) -> NodeDetail:
     )
 
 
-@app.get("/plane/{external_id}", response_model=PlaneIssueDetail)
-def get_plane_issue(external_id: str, conn: ConnDep) -> PlaneIssueDetail:
+@app.get("/workpackage/{external_id}", response_model=WorkPackageDetail)
+def get_workpackage(external_id: str, conn: ConnDep) -> WorkPackageDetail:
     row = conn.execute(
-        "SELECT external_id, plane_id, name, state_name, module_name, "
-        "project_id, description, updated_at, source FROM plane_issues "
+        "SELECT external_id, op_id, name, status_name, version_name, "
+        "project_id, description, updated_at, source FROM op_workpackages "
         "WHERE external_id = ?",
         (external_id,),
     ).fetchone()
     if row is None:
-        raise HTTPException(404, detail=f"Plane issue not found: {external_id}")
-    return PlaneIssueDetail(
+        raise HTTPException(404, detail=f"Work package not found: {external_id}")
+    return WorkPackageDetail(
         external_id=row["external_id"],
-        plane_id=row["plane_id"],
+        op_id=row["op_id"],
         name=row["name"],
-        state_name=row["state_name"],
-        module_name=row["module_name"],
+        status_name=row["status_name"],
+        version_name=row["version_name"],
         project_id=row["project_id"],
         description=row["description"] or "",
         updated_at=row["updated_at"],
         source=row["source"],
-        links=_links_for(conn, "plane_issue", row["external_id"]),
+        links=_links_for(conn, "workpackage", row["external_id"]),
     )
 
 
-@app.get("/plane/module/{name}", response_model=PlaneModuleDetail)
-def get_plane_module(name: str, conn: ConnDep) -> PlaneModuleDetail:
+@app.get("/version/{name}", response_model=VersionDetail)
+def get_version(name: str, conn: ConnDep) -> VersionDetail:
     row = conn.execute(
-        "SELECT name, plane_id, external_id, description, source "
-        "FROM plane_modules WHERE name = ?",
+        "SELECT name, op_id, external_id, description, source "
+        "FROM op_versions WHERE name = ?",
         (name,),
     ).fetchone()
     if row is None:
-        raise HTTPException(404, detail=f"Plane module not found: {name}")
-    issue_rows = conn.execute(
-        "SELECT external_id, name, state_name, module_name, updated_at "
-        "FROM plane_issues WHERE module_name = ? "
+        raise HTTPException(404, detail=f"Version not found: {name}")
+    wp_rows = conn.execute(
+        "SELECT external_id, name, status_name, version_name, updated_at "
+        "FROM op_workpackages WHERE version_name = ? "
         "ORDER BY external_id",
         (row["name"],),
     ).fetchall()
-    issues = [
-        PlaneIssueRef(
+    wps = [
+        WorkPackageRef(
             external_id=r["external_id"],
             name=r["name"],
-            state_name=r["state_name"],
-            module_name=r["module_name"],
+            status_name=r["status_name"],
+            version_name=r["version_name"],
             updated_at=r["updated_at"],
         )
-        for r in issue_rows
+        for r in wp_rows
     ]
-    return PlaneModuleDetail(
+    return VersionDetail(
         name=row["name"],
-        plane_id=row["plane_id"],
+        op_id=row["op_id"],
         external_id=row["external_id"],
         description=row["description"] or "",
         source=row["source"],
-        issues=issues,
+        workpackages=wps,
     )
 
 
@@ -385,7 +386,7 @@ def search(
     conn: ConnDep,
     q: str = Query(..., min_length=1, max_length=200),
     type: str = Query(
-        "all", pattern="^(all|adr|runbook|register|service|node|plane_issue)$"
+        "all", pattern="^(all|adr|runbook|register|service|node|workpackage)$"
     ),
     limit: int = Query(20, ge=1, le=100),
 ) -> SearchResponse:

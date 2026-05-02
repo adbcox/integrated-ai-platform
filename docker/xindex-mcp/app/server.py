@@ -11,14 +11,17 @@ http://127.0.0.1:8095 for a host-side stdio invocation).
 
 Tools (all read-only; xindex itself is canonical-repo-mirroring per ADR-A-006):
 
-    xindex_search        FTS5 across adr/runbook/register/service/node/plane_issue
-    xindex_get_adr       full ADR detail by id (A-NNN or ADR-A-NNN)
-    xindex_get_runbook   runbook content by topic
-    xindex_get_service   NetBox service detail
-    xindex_get_node      NetBox device detail
-    xindex_get_plane     Plane issue by external_id
-    xindex_get_links     filtered entity_links
-    xindex_health        per-source freshness / status
+    xindex_search          FTS5 across adr/runbook/register/service/node/workpackage
+    xindex_get_adr         full ADR detail by id (A-NNN or ADR-A-NNN)
+    xindex_get_runbook     runbook content by topic
+    xindex_get_service     NetBox service detail
+    xindex_get_node        NetBox device detail
+    xindex_get_workpackage OpenProject work package by external_id
+    xindex_get_plane       DEPRECATED alias for xindex_get_workpackage
+                           (one-cycle compatibility shim; D-17-04 WP-17-04-05.5,
+                           remove after consumers migrate)
+    xindex_get_links       filtered entity_links
+    xindex_health          per-source freshness / status
 
 The server NEVER writes to xindex (no /refresh tool exposed by design — a
 periodic refresh is the platform's job, not the consumer agent's).
@@ -100,7 +103,7 @@ TOOLS: list[dict] = [
                 "type":  {"type": "string",
                           "description": "Result kind filter",
                           "enum": ["all", "adr", "runbook", "register",
-                                   "service", "node", "plane_issue"],
+                                   "service", "node", "workpackage"],
                           "default": "all"},
                 "limit": {"type": "integer", "default": 20,
                           "minimum": 1, "maximum": 100},
@@ -112,8 +115,8 @@ TOOLS: list[dict] = [
         "name": "xindex_get_adr",
         "description": (
             "Fetch full ADR detail by id. Accepts 'A-NNN' or 'ADR-A-NNN'. "
-            "Returns body, sections, register_entry, and plane_tracking when "
-            "the ADR has a Plane stub. "
+            "Returns body, sections, register_entry, and workpackage_tracking "
+            "when the ADR has an OpenProject work package. "
             "Use after xindex_search has identified the ADR you need to read in full. "
             "Example: xindex_get_adr(adr_id='A-006')."
         ),
@@ -178,19 +181,36 @@ TOOLS: list[dict] = [
         },
     },
     {
-        "name": "xindex_get_plane",
+        "name": "xindex_get_workpackage",
         "description": (
-            "Fetch a Plane issue by external_id (e.g. 'D-16-02.2', "
-            "'ADR-A-006', 'Phase-16'). Returns state, module, description, "
+            "Fetch an OpenProject work package by external_id (e.g. 'D-17-04', "
+            "'ADR-A-006', 'Phase-17'). Returns status, version, description, "
             "and inbound tracked_in entity_links. "
-            "Use to check operational status of work tracked in Plane. "
-            "Example: xindex_get_plane(external_id='D-16-02.2')."
+            "Use to check operational status of work tracked in OpenProject. "
+            "Example: xindex_get_workpackage(external_id='D-17-04')."
         ),
         "inputSchema": {
             "type": "object",
             "properties": {
                 "external_id": {"type": "string",
-                                "description": "Plane external_id"},
+                                "description": "OpenProject WP external_id"},
+            },
+            "required": ["external_id"],
+        },
+    },
+    {
+        "name": "xindex_get_plane",
+        "description": (
+            "DEPRECATED — use xindex_get_workpackage. Forwards to the "
+            "OpenProject work package endpoint for one-cycle compatibility "
+            "after the D-17-04 WP-17-04-05.5 substrate flip. Will be "
+            "removed in the next xindex-mcp release."
+        ),
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "external_id": {"type": "string",
+                                "description": "external_id (forwards to /workpackage)"},
             },
             "required": ["external_id"],
         },
@@ -200,10 +220,10 @@ TOOLS: list[dict] = [
         "description": (
             "Filter the entity_links table. All filters optional — when none "
             "supplied returns the first 100 rows. Use to traverse cross-source "
-            "relations: which ADRs govern service X, which Plane issues track "
-            "deliverable D-16-02.2, etc. "
+            "relations: which ADRs govern service X, which work packages track "
+            "deliverable D-17-04, etc. "
             "from_kind/to_kind ∈ {adr,runbook,deliverable,phase,service,node,"
-            "plane_issue}. link_type ∈ {hosted_on,depends_on,governs,tracked_in,...}. "
+            "workpackage}. link_type ∈ {hosted_on,depends_on,governs,tracked_in,...}. "
             "Example: xindex_get_links(from_kind='adr', from_ref='ADR-A-006')."
         ),
         "inputSchema": {
@@ -224,8 +244,8 @@ TOOLS: list[dict] = [
         "description": (
             "Return /healthz: per-source last_ingest_at + status, plus row "
             "counts. Use BEFORE relying on a query result to confirm the "
-            "data is fresh — netbox or plane may be in 'error' state if their "
-            "last refresh failed. "
+            "data is fresh — netbox or openproject may be in 'error' state "
+            "if their last refresh failed. "
             "Example: xindex_health()."
         ),
         "inputSchema": {"type": "object", "properties": {}},
@@ -267,8 +287,19 @@ def _tool_get_node(args: dict) -> Any:
     return _xindex_get(f"/node/{urllib.parse.quote(args['name'], safe='')}")
 
 
+def _tool_get_workpackage(args: dict) -> Any:
+    return _xindex_get(
+        f"/workpackage/{urllib.parse.quote(args['external_id'], safe='')}"
+    )
+
+
 def _tool_get_plane(args: dict) -> Any:
-    return _xindex_get(f"/plane/{urllib.parse.quote(args['external_id'], safe='')}")
+    """Deprecated alias — forwards to xindex_get_workpackage.
+
+    One-cycle compatibility shim per D-17-04 WP-17-04-05.5; remove
+    after consumers migrate.
+    """
+    return _tool_get_workpackage(args)
 
 
 def _tool_get_links(args: dict) -> Any:
@@ -287,14 +318,15 @@ def _tool_health(_args: dict) -> Any:
 
 
 TOOL_HANDLERS = {
-    "xindex_search":      _tool_search,
-    "xindex_get_adr":     _tool_get_adr,
-    "xindex_get_runbook": _tool_get_runbook,
-    "xindex_get_service": _tool_get_service,
-    "xindex_get_node":    _tool_get_node,
-    "xindex_get_plane":   _tool_get_plane,
-    "xindex_get_links":   _tool_get_links,
-    "xindex_health":      _tool_health,
+    "xindex_search":          _tool_search,
+    "xindex_get_adr":         _tool_get_adr,
+    "xindex_get_runbook":     _tool_get_runbook,
+    "xindex_get_service":     _tool_get_service,
+    "xindex_get_node":        _tool_get_node,
+    "xindex_get_workpackage": _tool_get_workpackage,
+    "xindex_get_plane":       _tool_get_plane,  # deprecated alias
+    "xindex_get_links":       _tool_get_links,
+    "xindex_health":          _tool_health,
 }
 
 

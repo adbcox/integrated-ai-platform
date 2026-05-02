@@ -6,7 +6,7 @@ Two source classes:
                               Atomic full rebuild via reset_for_ingest().
                               Failure here is unusual (file-system level).
 
-  External (D-16-02.1+)     — netbox, plane (D-16-02.2)
+  External (D-16-02.1+)     — netbox, openproject
                               Per-source partial refresh via reset_source().
                               Each runs through snapshot-then-restore; a
                               failure flips that source's status to 'error'
@@ -18,6 +18,11 @@ D-16-02.1 doctrine: external-source failures must NEVER cause the
 HTTP API to return 500 from /refresh, and must NEVER reduce
 counts of unrelated kinds. Stale-survival is preferred over
 data loss.
+
+PM substrate: OpenProject (D-17-04 WP-17-04-05.5, 2026-05-02).
+Replaced the legacy Plane CE ingester; the prior plane_issues /
+plane_modules tables are dropped idempotently on first refresh via
+db.drop_legacy_plane_tables().
 """
 from __future__ import annotations
 
@@ -30,7 +35,7 @@ from .. import db as _db
 from . import adr as _adr
 from . import decision_register as _reg
 from . import netbox as _netbox
-from . import plane as _plane
+from . import openproject as _openproject
 from . import runbook as _rb
 
 
@@ -148,83 +153,87 @@ def _restore_netbox(conn: sqlite3.Connection, snap: dict) -> None:
     )
 
 
-def _ingest_plane(
+def _ingest_openproject(
     conn: sqlite3.Connection,
     *,
     fetcher=None,
-) -> _plane.PlaneIngestResult:
-    """Partial refresh of the Plane source.
+) -> _openproject.OpenProjectIngestResult:
+    """Partial refresh of the OpenProject source.
 
-    Same snapshot-then-restore guarantee as NetBox: a 429, network
-    error, or any other failure leaves the prior plane_issues /
-    plane_modules / tracked_in entity_links intact (stale), while
+    Same snapshot-then-restore guarantee as NetBox: a network error,
+    auth failure, or any other failure leaves the prior op_workpackages
+    / op_versions / tracked_in entity_links intact (stale), while
     NetBox + local source data is unaffected.
+
+    Replaces the prior _ingest_plane (D-17-04 WP-17-04-05.5).
     """
     ts = _now_iso()
-    snapshot = _snapshot_plane(conn)
+    snapshot = _snapshot_openproject(conn)
     try:
-        _db.reset_source(conn, "plane")
-        result = _plane.ingest(conn, fetcher=fetcher)
+        _db.reset_source(conn, "openproject")
+        result = _openproject.ingest(conn, fetcher=fetcher)
     except Exception as exc:  # defensive
-        _restore_plane(conn, snapshot)
+        _restore_openproject(conn, snapshot)
         _db.set_source_status(
-            conn, "plane", "stale", error=f"unhandled: {exc!r}"
+            conn, "openproject", "stale", error=f"unhandled: {exc!r}"
         )
-        return _plane.PlaneIngestResult(ok=False, error=f"unhandled: {exc!r}")
+        return _openproject.OpenProjectIngestResult(
+            ok=False, error=f"unhandled: {exc!r}"
+        )
 
     if not result.ok:
-        _restore_plane(conn, snapshot)
+        _restore_openproject(conn, snapshot)
         # 'error' if we tried and failed, 'unknown' if we explicitly
         # skipped (no creds). Prior data survives via the snapshot.
         status = "error" if not result.skipped else "unknown"
-        _db.set_source_status(conn, "plane", status, error=result.error)
+        _db.set_source_status(conn, "openproject", status, error=result.error)
         return result
 
-    _db.set_source_status(conn, "plane", "ok", timestamp=ts)
+    _db.set_source_status(conn, "openproject", "ok", timestamp=ts)
     return result
 
 
-def _snapshot_plane(conn: sqlite3.Connection) -> dict:
+def _snapshot_openproject(conn: sqlite3.Connection) -> dict:
     return {
-        "issues": [
+        "workpackages": [
             tuple(r) for r in conn.execute(
-                "SELECT external_id, plane_id, name, state_name, module_name, "
-                "project_id, description, updated_at, source FROM plane_issues"
+                "SELECT external_id, op_id, name, status_name, version_name, "
+                "project_id, description, updated_at, source FROM op_workpackages"
             )
         ],
-        "modules": [
+        "versions": [
             tuple(r) for r in conn.execute(
-                "SELECT name, plane_id, external_id, description, source "
-                "FROM plane_modules"
+                "SELECT name, op_id, external_id, description, source "
+                "FROM op_versions"
             )
         ],
         "links": [
             tuple(r) for r in conn.execute(
                 "SELECT from_kind, from_ref, to_kind, to_ref, link_type, source "
-                "FROM entity_links WHERE source='plane'"
+                "FROM entity_links WHERE source='openproject'"
             )
         ],
         "fts": [
             tuple(r) for r in conn.execute(
                 "SELECT kind, ref, title, body FROM xindex_fts "
-                "WHERE kind = 'plane_issue'"
+                "WHERE kind = 'workpackage'"
             )
         ],
     }
 
 
-def _restore_plane(conn: sqlite3.Connection, snap: dict) -> None:
-    _db.reset_source(conn, "plane")
+def _restore_openproject(conn: sqlite3.Connection, snap: dict) -> None:
+    _db.reset_source(conn, "openproject")
     conn.executemany(
-        "INSERT INTO plane_issues(external_id, plane_id, name, state_name, "
-        "module_name, project_id, description, updated_at, source) "
+        "INSERT INTO op_workpackages(external_id, op_id, name, status_name, "
+        "version_name, project_id, description, updated_at, source) "
         "VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)",
-        snap["issues"],
+        snap["workpackages"],
     )
     conn.executemany(
-        "INSERT INTO plane_modules(name, plane_id, external_id, description, "
+        "INSERT INTO op_versions(name, op_id, external_id, description, "
         "source) VALUES(?, ?, ?, ?, ?)",
-        snap["modules"],
+        snap["versions"],
     )
     conn.executemany(
         "INSERT INTO entity_links(from_kind, from_ref, to_kind, to_ref, "
@@ -242,15 +251,20 @@ def ingest_all(
     docs_root: str,
     *,
     netbox_fetcher=None,
-    plane_fetcher=None,
+    openproject_fetcher=None,
 ) -> dict:
     """Full re-ingest. Local sources atomic, externals partial.
 
-    `netbox_fetcher` and `plane_fetcher` are dependency-injectable for tests.
+    `netbox_fetcher` and `openproject_fetcher` are dependency-injectable
+    for tests.
+
+    First-call side effect: drops the legacy plane_* tables (idempotent;
+    a no-op once the migration has happened).
     """
+    _db.drop_legacy_plane_tables(conn)
     local_counts = _ingest_local(conn, docs_root)
     nb_result = _ingest_netbox(conn, fetcher=netbox_fetcher)
-    pl_result = _ingest_plane(conn, fetcher=plane_fetcher)
+    op_result = _ingest_openproject(conn, fetcher=openproject_fetcher)
 
     ts = _now_iso()
     _db.set_meta(conn, "last_ingest_at", ts)
@@ -258,9 +272,9 @@ def ingest_all(
         **local_counts,
         "services": nb_result.services,
         "nodes": nb_result.nodes,
-        "entity_links": nb_result.entity_links + pl_result.entity_links,
-        "plane_issues": pl_result.plane_issues,
-        "plane_modules": pl_result.plane_modules,
+        "entity_links": nb_result.entity_links + op_result.entity_links,
+        "op_workpackages": op_result.op_workpackages,
+        "op_versions": op_result.op_versions,
         "last_ingest_at": ts,
     }
     _db.set_meta(conn, "counts", json.dumps(summary))

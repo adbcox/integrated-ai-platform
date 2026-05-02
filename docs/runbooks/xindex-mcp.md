@@ -17,10 +17,11 @@
 
 Closes the cross-index foundation chain (D-16-02 → 02.0.5 → 02.A → 02.1
 → 02.2 → 02.3). xindex itself exposes a normalized HTTP surface over the
-repo's docs + NetBox + Plane state; xindex-mcp wraps that surface as an
-MCP (Model Context Protocol) server so any MCP-aware agent — Claude
-Code, Claude.ai, Obot — can query it natively via tool calls without any
-prior knowledge of the URL or curl.
+repo's docs + NetBox + OpenProject state (Plane was the original project
+tracker; substrate flipped 2026-05-02 in WP-17-04-05.5); xindex-mcp
+wraps that surface as an MCP (Model Context Protocol) server so any
+MCP-aware agent — Claude Code, Claude.ai, Obot — can query it natively
+via tool calls without any prior knowledge of the URL or curl.
 
 This is the structural enabler for autonomous coding: an agent fixing a
 bug or extending a feature first needs to *understand* the system, and
@@ -29,12 +30,12 @@ the system's truth lives in xindex.
 ## §2 — Architecture
 
 ```
-┌─────────────────┐         ┌──────────┐         ┌──────────────────┐
-│  Agent (Claude  │ stdio   │  xindex- │ HTTP    │  xindex          │
-│  Code, Obot,    │ ──────▶ │  mcp     │ ──────▶ │  127.0.0.1:8095  │
-│  Claude.ai)     │ JSONRPC │  server  │ /search │  /adr, /service, │
-└─────────────────┘         └──────────┘ /adr…   │  /plane, /links… │
-                                  ▲              └──────────────────┘
+┌─────────────────┐         ┌──────────┐         ┌─────────────────────┐
+│  Agent (Claude  │ stdio   │  xindex- │ HTTP    │  xindex             │
+│  Code, Obot,    │ ──────▶ │  mcp     │ ──────▶ │  127.0.0.1:8095     │
+│  Claude.ai)     │ JSONRPC │  server  │ /search │  /adr, /service,    │
+└─────────────────┘         └──────────┘ /adr…   │  /workpackage, ...  │
+                                  ▲              └─────────────────────┘
                             ┌─────┴─────┐
                             │supergateway│  for non-stdio clients (Obot,
                             │stdio→HTTP  │  Caddy-fronted /mcp endpoint)
@@ -49,8 +50,9 @@ the system's truth lives in xindex.
   `isError: true` with the underlying HTTP failure surfaced — calling
   agents back off rather than retrying.
 - xindex-mcp is **read-only by design** (ADR-A-006: xindex never writes
-  to Plane; xindex-mcp's MCP surface inherits that). No `/refresh` tool
-  is exposed; periodic refresh is the platform's job.
+  to OpenProject — and never wrote to Plane before the substrate flip;
+  xindex-mcp's MCP surface inherits that). No `/refresh` tool is
+  exposed; periodic refresh is the platform's job.
 
 ## §3 — Tool reference
 
@@ -59,7 +61,7 @@ All tools accept JSON arguments and return a JSON body inside the MCP
 
 ### `xindex_search(query, type='all', limit=20)`
 FTS5 search. `type ∈ {all, adr, runbook, register, service, node,
-plane_issue}`. Returns ranked SearchResult rows.
+workpackage}`. Returns ranked SearchResult rows.
 
 ```json
 {"name": "xindex_search", "arguments":
@@ -68,8 +70,8 @@ plane_issue}`. Returns ranked SearchResult rows.
 
 ### `xindex_get_adr(adr_id)`
 Full ADR detail. Accepts `A-NNN` or `ADR-A-NNN`. Includes
-`register_entry` (DECISION_REGISTER row) and `plane_tracking` (Plane
-issue state) when present.
+`register_entry` (DECISION_REGISTER row) and `workpackage_tracking`
+(OpenProject WP state) when present.
 
 ```json
 {"name": "xindex_get_adr", "arguments": {"adr_id": "A-006"}}
@@ -85,9 +87,14 @@ NetBox service detail with custom fields and entity_links
 ### `xindex_get_node(name)`
 NetBox device with services hosted on it.
 
-### `xindex_get_plane(external_id)`
-Plane issue (e.g. `D-16-02.2`, `ADR-A-006`, `Phase-16`) — state, module,
-description, inbound `tracked_in` links.
+### `xindex_get_workpackage(external_id)`
+OpenProject work package (e.g. `D-17-04`, `ADR-A-006`, `Phase-17`) —
+status, version, description, inbound `tracked_in` links.
+
+A deprecated alias `xindex_get_plane(external_id)` is retained for one
+release cycle and forwards to `xindex_get_workpackage`. Update callers
+before the next deliverable; the alias will be removed in a follow-up
+deliverable.
 
 ### `xindex_get_links(from_kind?, from_ref?, to_kind?, to_ref?, link_type?, source?)`
 Filter `entity_links`. All filters optional; with no filters returns
@@ -158,8 +165,9 @@ internal CA — see `docs/runbooks/caddy-tls.md`).
     python3 docker/xindex-mcp/app/server.py
 ```
 
-Should print two JSON-RPC reply lines — `serverInfo` and the eight tool
-definitions.
+Should print two JSON-RPC reply lines — `serverInfo` and the nine tool
+definitions (the ninth is the deprecated `xindex_get_plane` alias that
+forwards to `xindex_get_workpackage`).
 
 ### HTTP transport test
 
@@ -228,7 +236,7 @@ Captured here so they aren't re-discovered later:
 - `xindex_traverse_links(start_kind, start_ref, depth=2)` — multi-hop
   link traversal in one call (today is N+1 round-trips)
 - `xindex_get_phase(name)` — phase deliverable rollup (counts by
-  status); already in xindex via `/plane/module/{name}` but a phase-
+  status); already in xindex via `/version/{name}` but a phase-
   centric tool would be clearer to the agent
 - `xindex_get_decision_register_entry(adr_id)` — the DR row alone, when
   the full ADR body is too much context
@@ -248,7 +256,8 @@ revisit once a second consumer host (Mac Studio) needs the same wiring.
 ## §8 — References
 
 - `docs/adr/ADR-A-006-plane-and-repo-sources-of-truth.md` — read-only
-  doctrine (xindex consumes Plane, never writes)
+  doctrine (xindex consumes the project tracker, never writes; the
+  current substrate is OpenProject after the WP-17-04-05.5 flip)
 - `docs/runbooks/xindex.md` — backend HTTP service runbook
 - `docs/runbooks/add-new-service.md` — generic service onboarding
   template (xindex-mcp followed it)

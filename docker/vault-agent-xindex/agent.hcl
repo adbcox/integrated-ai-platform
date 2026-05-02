@@ -5,9 +5,10 @@
 # depends on this sidecar with `service_completed_successfully` so it
 # only starts after credentials are on disk.
 #
-# Scope is intentionally narrow: only NetBox in this deliverable.
-# Future external sources (Plane in D-16-02.2) extend this config
-# with additional templates — never with a broader policy.
+# Scope is intentionally narrow: NetBox + OpenProject (D-17-04 WP-17-04-05.5;
+# replaces the prior Plane template after Plane CE retirement). Future
+# external sources extend this config with additional templates — never
+# with a broader policy.
 
 vault {
   address = "http://vault-server:8200"
@@ -36,8 +37,8 @@ template {
 }
 
 template {
-  source      = "/vault/agent-config/plane-credentials.env.tmpl"
-  destination = "/vault/secrets/plane-credentials.env"
+  source      = "/vault/agent-config/openproject-credentials.env.tmpl"
+  destination = "/vault/secrets/openproject-credentials.env"
   perms       = "0444"
 }
 

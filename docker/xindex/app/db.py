@@ -3,8 +3,12 @@
 One DB file, several content tables, one FTS5 virtual table that
 mirrors their searchable bodies. Repo-local sources (adrs, runbooks,
 decision register) are wiped and rebuilt on every refresh; external
-sources (NetBox, future Plane) refresh per-source via reset_source()
+sources (NetBox, OpenProject) refresh per-source via reset_source()
 so a failure in one external source never wipes another's data.
+
+PM substrate is OpenProject as of D-17-04 WP-17-04-05.5 (2026-05-02);
+op_workpackages / op_versions replaced the legacy plane_issues /
+plane_modules tables when Plane CE was retired.
 """
 from __future__ import annotations
 
@@ -21,7 +25,7 @@ DEFAULT_DB_PATH = os.environ.get("XINDEX_DB", "/data/xindex.db")
 # atomically; external sources are isolated so partial failures don't
 # wipe healthy data.
 LOCAL_SOURCES = ("adr", "runbook", "register")
-EXTERNAL_SOURCES = ("netbox", "plane")
+EXTERNAL_SOURCES = ("netbox", "openproject")
 ALL_SOURCES = LOCAL_SOURCES + EXTERNAL_SOURCES
 
 
@@ -79,28 +83,31 @@ CREATE TABLE IF NOT EXISTS nodes (
     source          TEXT NOT NULL DEFAULT 'netbox'
 );
 
--- Plane (D-16-02.2). Read-only mirror per ADR-A-006: xindex never
--- writes to Plane. external_id is the human-stable key set by
--- plane-sync (e.g. 'D-16-02.2', 'ADR-A-006'); state_name and
--- module_name are denormalized so the UI can avoid an extra hop.
-CREATE TABLE IF NOT EXISTS plane_issues (
+-- OpenProject (D-17-04 WP-17-04-05.5; replaced plane_issues /
+-- plane_modules when Plane CE was retired). Read-only mirror per
+-- ADR-A-006: xindex never writes to OpenProject. external_id is the
+-- human-stable key written by openproject-sync (e.g. 'D-16-02.2',
+-- 'ADR-A-006', 'Phase-16') into the WP's "External ID" custom field;
+-- status_name and version_name are denormalized so the UI can avoid
+-- an extra hop.
+CREATE TABLE IF NOT EXISTS op_workpackages (
     external_id     TEXT PRIMARY KEY,        -- 'D-NN-MM' / 'ADR-A-NNN' / ...
-    plane_id        TEXT NOT NULL,           -- Plane issue UUID
-    name            TEXT NOT NULL,
-    state_name      TEXT,                    -- resolved from state UUID
-    module_name     TEXT,                    -- first module's name (if any)
+    op_id           TEXT NOT NULL,           -- WorkPackage numeric id
+    name            TEXT NOT NULL,           -- WP subject
+    status_name     TEXT,                    -- resolved from status id
+    version_name    TEXT,                    -- WP's version (Phase) name
     project_id      TEXT,
-    description     TEXT NOT NULL DEFAULT '',
+    description     TEXT NOT NULL DEFAULT '', -- markdown raw
     updated_at      TEXT,
-    source          TEXT NOT NULL DEFAULT 'plane'
+    source          TEXT NOT NULL DEFAULT 'openproject'
 );
 
-CREATE TABLE IF NOT EXISTS plane_modules (
-    name            TEXT PRIMARY KEY,        -- module.name
-    plane_id        TEXT NOT NULL,           -- module UUID
-    external_id     TEXT,                    -- e.g. 'Phase-16'
+CREATE TABLE IF NOT EXISTS op_versions (
+    name            TEXT PRIMARY KEY,        -- version.name (== external_id)
+    op_id           TEXT NOT NULL,           -- version numeric id
+    external_id     TEXT,                    -- alias of name (Versions lack native ext_id)
     description     TEXT NOT NULL DEFAULT '',
-    source          TEXT NOT NULL DEFAULT 'plane'
+    source          TEXT NOT NULL DEFAULT 'openproject'
 );
 
 -- Entity links: M:N junction. Untyped enough to carry future ADR
@@ -125,7 +132,7 @@ CREATE TABLE IF NOT EXISTS meta (
 );
 
 CREATE VIRTUAL TABLE IF NOT EXISTS xindex_fts USING fts5(
-    kind,            -- 'adr' | 'runbook' | 'register' | 'service' | 'node' | 'plane_issue'
+    kind,            -- 'adr' | 'runbook' | 'register' | 'service' | 'node' | 'workpackage'
     ref,             -- pk in source table
     title,
     body,
@@ -185,11 +192,11 @@ def reset_source(conn: sqlite3.Connection, source: str) -> None:
         conn.execute(
             "DELETE FROM xindex_fts WHERE kind IN ('service','node');"
         )
-    elif source == "plane":
-        conn.execute("DELETE FROM plane_issues WHERE source=?", (source,))
-        conn.execute("DELETE FROM plane_modules WHERE source=?", (source,))
+    elif source == "openproject":
+        conn.execute("DELETE FROM op_workpackages WHERE source=?", (source,))
+        conn.execute("DELETE FROM op_versions WHERE source=?", (source,))
         conn.execute(
-            "DELETE FROM xindex_fts WHERE kind = 'plane_issue';"
+            "DELETE FROM xindex_fts WHERE kind = 'workpackage';"
         )
     conn.execute("DELETE FROM entity_links WHERE source=?", (source,))
 
@@ -244,9 +251,28 @@ def counts(conn: sqlite3.Connection) -> dict[str, int]:
         "services",
         "nodes",
         "entity_links",
-        "plane_issues",
-        "plane_modules",
+        "op_workpackages",
+        "op_versions",
     ):
         row = conn.execute(f"SELECT COUNT(*) AS n FROM {table}").fetchone()
         out[table] = int(row["n"])
     return out
+
+
+def drop_legacy_plane_tables(conn: sqlite3.Connection) -> None:
+    """Idempotent cleanup of the pre-D-17-04-05.5 plane_* tables.
+
+    Called from init_schema's caller path on first start after the
+    rename so an existing live DB sheds the dead tables on next refresh.
+    Safe to call repeatedly; a no-op if the tables do not exist.
+    """
+    conn.execute("DROP TABLE IF EXISTS plane_issues;")
+    conn.execute("DROP TABLE IF EXISTS plane_modules;")
+    # Stale FTS rows under the old kind label. Guard for callers that
+    # invoke this before init_schema has created xindex_fts (e.g. fresh
+    # test DBs).
+    has_fts = conn.execute(
+        "SELECT 1 FROM sqlite_master WHERE type='table' AND name='xindex_fts'"
+    ).fetchone()
+    if has_fts:
+        conn.execute("DELETE FROM xindex_fts WHERE kind = 'plane_issue';")

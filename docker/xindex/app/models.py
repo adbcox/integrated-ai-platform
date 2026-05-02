@@ -29,11 +29,12 @@ class RegisterRef(BaseModel):
     summary: str
 
 
-class PlaneIssueRef(BaseModel):
+class WorkPackageRef(BaseModel):
+    """Compact reference to an OpenProject work package (D-17-04)."""
     external_id: str
     name: str
-    state_name: str | None = None
-    module_name: str | None = None
+    status_name: str | None = None
+    version_name: str | None = None
     updated_at: str | None = None
 
 
@@ -49,7 +50,7 @@ class ADRDetail(BaseModel):
     body: str
     sections: dict[str, str] = Field(default_factory=dict)
     register_entry: RegisterRef | None = None
-    plane_tracking: PlaneIssueRef | None = None
+    workpackage_tracking: WorkPackageRef | None = None
 
 
 class RunbookDetail(BaseModel):
@@ -99,26 +100,28 @@ class LinksResponse(BaseModel):
     results: list[EntityLink]
 
 
-class PlaneIssueDetail(BaseModel):
+class WorkPackageDetail(BaseModel):
+    """OpenProject work package detail (D-17-04 substrate)."""
     external_id: str
-    plane_id: str
+    op_id: str
     name: str
-    state_name: str | None = None
-    module_name: str | None = None
+    status_name: str | None = None
+    version_name: str | None = None
     project_id: str | None = None
     description: str = ""
     updated_at: str | None = None
-    source: str = "plane"
+    source: str = "openproject"
     links: list[EntityLink] = Field(default_factory=list)
 
 
-class PlaneModuleDetail(BaseModel):
+class VersionDetail(BaseModel):
+    """OpenProject version (replaces Plane Module; D-17-04)."""
     name: str
-    plane_id: str
+    op_id: str
     external_id: str | None = None
     description: str = ""
-    source: str = "plane"
-    issues: list[PlaneIssueRef] = Field(default_factory=list)
+    source: str = "openproject"
+    workpackages: list[WorkPackageRef] = Field(default_factory=list)
 
 
 class SearchHit(BaseModel):
@@ -149,8 +152,8 @@ class IngestSummary(BaseModel):
     services: int = 0
     nodes: int = 0
     entity_links: int = 0
-    plane_issues: int = 0
-    plane_modules: int = 0
+    op_workpackages: int = 0
+    op_versions: int = 0
     last_ingest_at: str
 
     def as_meta(self) -> dict[str, Any]:

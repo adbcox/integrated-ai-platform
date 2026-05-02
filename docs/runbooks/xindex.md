@@ -1,18 +1,19 @@
 # xindex — Cross-Index Service Runbook
 
-**Status:** Live (D-16-02 + D-16-02.0.5 + D-16-02.1 + D-16-02.2, opened 2026-05-01)
+**Status:** Live (D-16-02 + D-16-02.0.5 + D-16-02.1 + D-16-02.2, opened 2026-05-01;
+WP-17-04-05.5 flipped the project-tracker source from Plane to OpenProject 2026-05-02)
 **Service location:** `docker/xindex/`
 **Canonical URL:** `https://xindex.internal/` (Caddy reverse proxy + local-CA TLS)
 **Loopback fallback:** `http://127.0.0.1:8095/` (preserved for local debugging)
 **Container port:** 8000
 **Host port:** `127.0.0.1:8095`
-**Image:** `iap/xindex:0.3.0`
+**Image:** `iap/xindex:0.4.0`
 **Network:** `control-center-net`
-**Vault dependency:** `vault-agent-xindex` sidecar renders NetBox + Plane
+**Vault dependency:** `vault-agent-xindex` sidecar renders NetBox + OpenProject
 API tokens to `/run/secrets/netbox-credentials.env` and
-`/run/secrets/plane-credentials.env` via the `xindex` AppRole (policy:
+`/run/secrets/openproject-credentials.env` via the `xindex` AppRole (policy:
 `xindex-policy`, read-only on `secret/data/netbox/api_token` and
-`secret/data/plane/api`). xindex `depends_on: service_completed_successfully`
+`secret/data/openproject/api`). xindex `depends_on: service_completed_successfully`
 of the sidecar.
 **NetBox CMDB entry:** `ipam.service` id 76 (`name=xindex`, `parent=mac-mini`)
 **Ingestion sources:**
@@ -21,8 +22,8 @@ of the sidecar.
 - **External (per-source partial refresh):**
   - NetBox (`dcim.devices`, `ipam.services` + `service_dependencies`
     custom field links).
-  - Plane (project modules + issues; emits `tracked_in` links from local
-    ADRs / deliverables / phases keyed by Plane `external_id`).
+  - OpenProject (project versions + work packages; emits `tracked_in` links from
+    local ADRs / deliverables / phases keyed by the WP `external_id` custom field).
   MCP wrapper is D-16-02.3.
 
 ## 1. Purpose
@@ -32,8 +33,9 @@ queryable view over the repo's authoritative documentation surface (ADRs,
 the decision register, runbooks) so an automated coding loop can answer
 "what does the platform say about X?" without re-walking markdown by hand.
 
-The existing `scripts/cross-index-validate.py` (ADR↔Plane probe) is a
-different scope and is not replaced by this service.
+The existing `scripts/cross-index-validate.py` (ADR ↔ OpenProject probe;
+Plane-based predecessor retired in WP-17-04-05.5) is a different scope and
+is not replaced by this service.
 
 ## 2. Architecture
 
@@ -67,9 +69,10 @@ docs/  ──read-only mount──▶  xindex container  ──FTS5──▶  /d
 - Ingest semantics:
   - Repo-local sources (adr/runbook/register) — atomic full rebuild
     via `db.reset_for_ingest()`. Small and fast.
-  - External sources (netbox; plane in D-16-02.2) — partial refresh
-    per source via a snapshot-then-restore pattern (see §11). A
-    failure in one external source NEVER wipes another's data.
+  - External sources (netbox; openproject — was Plane in D-16-02.2,
+    flipped to OpenProject in WP-17-04-05.5) — partial refresh per
+    source via a snapshot-then-restore pattern (see §11). A failure in
+    one external source NEVER wipes another's data.
 - NetBox token: rendered by the `vault-agent-xindex` sidecar from
   `secret/data/netbox/api_token`. xindex reads it from
   `/run/secrets/netbox-credentials.env` at ingest time. The AppRole
@@ -108,20 +111,21 @@ curl -ksS https://xindex.internal/runbook/vault-recovery-from-shamir | jq
 curl -ksS https://xindex.internal/service/xindex     | jq
 curl -ksS https://xindex.internal/node/mac-mini      | jq
 
-# Plane issue / module detail (D-16-02.2 — sourced from Plane, READ-ONLY)
-# external_id is the human-stable key (e.g. ADR-A-006, D-16-02.2, Phase-16)
-curl -ksS https://xindex.internal/plane/D-16-02.2          | jq
-curl -ksS "https://xindex.internal/plane/module/Phase%2016" | jq
+# OpenProject work-package / version detail (was D-16-02.2 Plane endpoints;
+# flipped in WP-17-04-05.5 — READ-ONLY per ADR-A-006).
+# external_id is the human-stable key on the WP (e.g. ADR-A-006, D-17-04, Phase-17)
+curl -ksS https://xindex.internal/workpackage/ADR-A-006      | jq
+curl -ksS https://xindex.internal/version/Phase-17           | jq
 
 # Entity-link query (D-16-02.1+) — any subset of the filters is optional
-curl -ksS "https://xindex.internal/links?from_kind=service&link_type=depends_on" | jq
-curl -ksS "https://xindex.internal/links?to_kind=node&to_ref=mac-mini"           | jq
-curl -ksS "https://xindex.internal/links?link_type=tracked_in&source=plane"      | jq
+curl -ksS "https://xindex.internal/links?from_kind=service&link_type=depends_on"   | jq
+curl -ksS "https://xindex.internal/links?to_kind=node&to_ref=mac-mini"             | jq
+curl -ksS "https://xindex.internal/links?link_type=tracked_in&source=openproject"  | jq
 
-# Search (FTS5 ranked); type ∈ {all, adr, runbook, register, service, node, plane_issue}
-curl -ksS "https://xindex.internal/search?q=NetBox&type=adr&limit=5"  | jq
-curl -ksS "https://xindex.internal/search?q=caddy&type=service"       | jq
-curl -ksS "https://xindex.internal/search?q=Plane&type=plane_issue"   | jq
+# Search (FTS5 ranked); type ∈ {all, adr, runbook, register, service, node, workpackage}
+curl -ksS "https://xindex.internal/search?q=NetBox&type=adr&limit=5"   | jq
+curl -ksS "https://xindex.internal/search?q=caddy&type=service"        | jq
+curl -ksS "https://xindex.internal/search?q=OpenProject&type=workpackage" | jq
 
 # Trigger background re-ingest. Poll /healthz to see updated last_ingest_at
 # (and per-source status flips if NetBox was unreachable).
@@ -260,17 +264,17 @@ python3.12 -m venv .venv
   repo-local data
 - NetBox ingester (`test_ingest_netbox.py` — pynetbox stubbed via the
   `fetcher=` injection point)
-- Plane ingester (`test_ingest_plane.py` — Plane HTTP stubbed via
-  the `fetcher=` injection point; covers external_id mapping,
-  rate-limit error path, missing-credentials skip)
+- OpenProject ingester (`test_ingest_openproject.py` — OpenProject
+  HAL JSON stubbed via the `fetcher=` injection point; covers
+  external_id mapping, missing-credentials skip, no-link path)
 - The partial-refresh doctrine (`test_partial_refresh.py` — proves a
-  NetBox or Plane failure on a re-ingest preserves prior rows AND
-  does not affect any other source, including the ADR/runbook/register
-  triple)
+  NetBox or OpenProject failure on a re-ingest preserves prior rows
+  AND does not affect any other source, including the ADR / runbook /
+  register triple)
 - The `/service`, `/node`, `/links` endpoints + per-source health
   on `/healthz`
-- The `/plane/{external_id}` and `/plane/module/{name}` endpoints
-  plus ADR `plane_tracking` populated from the `tracked_in`
+- The `/workpackage/{external_id}` and `/version/{name}` endpoints
+  plus ADR `workpackage_tracking` populated from the `tracked_in`
   entity_link.
 
 Tests build a synthetic `/docs` tree and never touch the real repo
@@ -289,11 +293,15 @@ into the same review. They are deferred to:
   + `ipam.services` + entity_links derived from the
   `service_dependencies` custom field. Vault AppRole `xindex` reads
   `secret/data/netbox/api_token` only.
-- **D-16-02.2 — DONE 2026-05-01.** Plane ingestion (modules + issues,
+- **D-16-02.2 — DONE 2026-05-01; substrate flipped 2026-05-02 in
+  WP-17-04-05.5.** OpenProject ingestion (versions + work packages,
   read-only per ADR-A-006). Emits `tracked_in` entity_links from
-  local ADRs/deliverables/phases to Plane issues, keyed by Plane
-  `external_id`. `xindex-policy` extended with `secret/data/plane/api`
-  read; rendered to `/run/secrets/plane-credentials.env`.
+  local ADRs / deliverables / phases to OpenProject work packages,
+  keyed by the WP `external_id` custom field. `xindex-policy`
+  extended with `secret/data/openproject/api` read; rendered to
+  `/run/secrets/openproject-credentials.env`. Plane was the original
+  substrate (D-16-02.2); see WP-17-04-05.5 + ADR-A-006 for the flip
+  rationale.
 - **D-16-02.3** — MCP tool wrapper so Claude Code agents can query
   xindex.
 
@@ -350,8 +358,9 @@ failed; the rows shown are from the previous successful run.
 
 The xindex container `depends_on: vault-agent-xindex` with
 `condition: service_completed_successfully`, so xindex starts only
-after the sidecar has authenticated and rendered
-`/Users/admin/.vault-agent-secrets/xindex/netbox-credentials.env`.
+after the sidecar has authenticated and rendered both
+`/Users/admin/.vault-agent-secrets/xindex/netbox-credentials.env` and
+`/Users/admin/.vault-agent-secrets/xindex/openproject-credentials.env`.
 The sidecar is `restart: "no"` and exits cleanly after rendering.
 
 If the sidecar fails (Vault sealed, AppRole revoked, template error)
@@ -360,8 +369,9 @@ xindex never starts. To diagnose:
 ```bash
 docker logs vault-agent-xindex --tail 50
 ls -la /Users/admin/.vault-agent-secrets/xindex/
-# Expect: .vault-token (sink) + netbox-credentials.env (template).
-# Token value never appears in logs or stdout.
+# Expect: .vault-token (sink) + netbox-credentials.env +
+#         openproject-credentials.env (templates).
+# Token values never appear in logs or stdout.
 ```
 
 Restart sequence (when re-rendering credentials after a Vault rotation):
@@ -380,73 +390,78 @@ vault write -f -field=secret_id auth/approle/role/xindex/secret-id
 ```
 and re-write the files at the same paths.
 
-## 13. Plane source (D-16-02.2)
+## 13. OpenProject source (D-16-02.2; substrate flipped in WP-17-04-05.5)
 
-xindex consumes Plane state but never writes back. ADR-A-006 fixes
-the project framework markdown (`docs/PROJECT_FRAMEWORK.md`) as the
-sole source of truth for deliverable rollup; Plane is the operational
-overlay populated by `scripts/plane-sync-from-framework.py`. xindex
-is a third reader downstream of both.
+xindex consumes OpenProject state but never writes back. ADR-A-006
+fixes the project framework markdown (`docs/PROJECT_FRAMEWORK.md`) as
+the sole source of truth for deliverable rollup; OpenProject is the
+operational overlay populated by
+`scripts/openproject-sync-from-framework.py`. xindex is a third reader
+downstream of both. (Plane was the original operational substrate —
+D-16-02.2 — and was retired together with this flip; see
+WP-17-04-05.5 and ADR-A-006 for the migration rationale.)
 
 ### What gets ingested
 
-- **Modules** (`plane_modules` table) — every module in the project,
-  keyed by `name` with `external_id` (e.g. `Phase-16`) carried over.
-- **Issues** (`plane_issues` table) — every issue with a non-empty
-  `external_id`. Issues without an `external_id` are skipped (they
-  are operational-only and have no canonical local artifact). The
-  state UUID is denormalized to its name; the first matching module
-  is denormalized to `module_name`.
+- **Versions** (`op_versions` table) — every version in the project,
+  keyed by `name` with the OpenProject id carried over. Versions
+  replace the Plane Modules surface; the WP↔version association is
+  parsed from `_links.version.href`.
+- **Work packages** (`op_workpackages` table) — every WP whose
+  `external_id` custom field is non-empty. WPs without an
+  `external_id` are skipped (they are operational-only and have no
+  canonical local artifact). The status link is denormalized to its
+  name; the version link is denormalized to `version_name`.
 - **Tracked-in links** (`entity_links` rows with
-  `link_type='tracked_in'`, `source='plane'`) for issues whose
+  `link_type='tracked_in'`, `source='openproject'`) for WPs whose
   `external_id` matches one of:
   - `ADR-A-NNN`     → `from_kind='adr'`
   - `D-NN-MM[.x]`   → `from_kind='deliverable'`
   - `Phase-NN`      → `from_kind='phase'`
 
-  Other prefixes are ingested into `plane_issues` but emit no link.
+  Other prefixes are ingested into `op_workpackages` but emit no link.
 
-### Rate limits and failure isolation
+### Failure isolation
 
-Plane CE V1 enforces 60 req/min per token. The ingester walks
-`/modules/`, `/states/`, `/issues/` (paged at 100/page) sequentially,
-no parallelism — the request budget for a project of our size is
-well under the limit. A 429 is treated as an error: the prior Plane
-rows are restored and `set_source_status('plane', 'error', ...)` is
-recorded. On retry (the next `/refresh`), if the call succeeds, the
-status flips back to `ok` and rows refresh.
-
-The same isolation applies to network errors and any uncaught
-exception inside `_default_fetcher`: the ingester never raises, the
-`_ingest_plane()` snapshot/restore wrapper rewrites the prior data,
-and other sources (ADRs, runbooks, register, NetBox) are unaffected.
+The OpenProject ingester walks the project's `/versions`, system-wide
+`/statuses`, and the project-filtered `/work_packages` (paged at
+100/page) sequentially, no parallelism. Network errors, auth
+failures, schema mismatches, or any uncaught exception inside
+`_default_fetcher` are caught: the ingester never raises, the
+`_ingest_openproject()` snapshot/restore wrapper rewrites the prior
+data, and `set_source_status('openproject', 'error', ...)` is
+recorded for `/healthz`. Other sources (ADRs, runbooks, register,
+NetBox) are unaffected. On the next `/refresh` cycle, if the call
+succeeds, the status flips back to `ok` and rows refresh.
 
 ### Why no `deliverables` table
 
 A natural temptation is to give xindex its own deliverables table
-populated from Plane. We deliberately don't: `docs/PROJECT_FRAMEWORK.md`
-is the canonical record for deliverable scope and status (ADR-A-006).
-Adding a second authoritative deliverable list inside xindex would
-make Plane drift visible but ambiguous about which side is correct.
-Instead, xindex parses the framework markdown for nothing (yet) and
-emits `tracked_in` links so consumers can look up "for ADR-A-006,
-which Plane issue, in which state?" without ever calling Plane.
+populated from OpenProject. We deliberately don't:
+`docs/PROJECT_FRAMEWORK.md` is the canonical record for deliverable
+scope and status (ADR-A-006). Adding a second authoritative
+deliverable list inside xindex would make OpenProject drift visible
+but ambiguous about which side is correct. Instead, xindex parses the
+framework markdown for nothing (yet) and emits `tracked_in` links so
+consumers can look up "for ADR-A-006, which OpenProject WP, in which
+state?" without ever calling OpenProject directly.
 
 If a future deliverable-aware view is needed, the right shape is
 parsing `PROJECT_FRAMEWORK.md` directly (a fourth repo-local source),
-NOT mirroring Plane's rollup. That would preserve repo-canonical
-truth and reduce Plane to what it already is — an operational layer.
+NOT mirroring OpenProject's rollup. That would preserve
+repo-canonical truth and reduce OpenProject to what it already is —
+an operational layer.
 
 ### Health output
 
-`/healthz` reports `plane` alongside the other sources:
+`/healthz` reports `openproject` alongside the other sources:
 
 ```jsonc
 {
   "sources": [
-    {"source": "plane",  "status": "ok",      "last_ingest_at": "2026-05-01T..."},
-    {"source": "plane",  "status": "error",   "error": "rate-limited: 429 on /issues/"},
-    {"source": "plane",  "status": "unknown", "error": "no Plane credentials available"}
+    {"source": "openproject", "status": "ok",      "last_ingest_at": "2026-05-02T..."},
+    {"source": "openproject", "status": "error",   "error": "openproject /work_packages: HTTP 502"},
+    {"source": "openproject", "status": "unknown", "error": "no OpenProject credentials available"}
   ]
 }
 ```

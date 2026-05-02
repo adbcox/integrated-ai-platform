@@ -269,6 +269,12 @@ class OpenProjectAPI:
                 return s["id"]
         return None
 
+    def list_statuses(self) -> list[dict]:
+        """Public accessor for system statuses. Read-only consumers (xindex
+        ingester) need id→name resolution without depending on the private
+        `_list_statuses` symbol."""
+        return list(self._list_statuses())
+
     def ensure_states(self) -> dict[str, int]:
         """Compatibility shim — returns the canonical Plane-era state names
         mapped to the OpenProject status IDs they map onto. Sync code that
@@ -491,6 +497,8 @@ class OpenProjectAPI:
                     ext = wp.get(legacy_key)
                 state_link = wp.get("_links", {}).get("status", {}).get("href", "")
                 state_id = state_link.rsplit("/", 1)[-1] if state_link else ""
+                version_link = wp.get("_links", {}).get("version", {}).get("href", "") or ""
+                version_id = version_link.rsplit("/", 1)[-1] if version_link else ""
                 out.append({
                     "id": int(wp["id"]),
                     "external_id": ext or "",
@@ -498,6 +506,9 @@ class OpenProjectAPI:
                     "description_html": (wp.get("description") or {}).get("html", ""),
                     "description_raw": (wp.get("description") or {}).get("raw", ""),
                     "state": int(state_id) if state_id.isdigit() else None,
+                    "version_id": int(version_id) if version_id.isdigit() else None,
+                    "updated_at": wp.get("updatedAt", "") or "",
+                    "project_id": self._project_id_resolved(),
                     "_lock": int(wp.get("lockVersion", 0)),
                 })
             total = data.get("total", 0)

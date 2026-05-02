@@ -57,9 +57,15 @@ def test_get_node_passthrough(captured_calls):
     assert captured_calls[-1][0] == "/node/mac-mini"
 
 
-def test_get_plane_passthrough(captured_calls):
+def test_get_workpackage_passthrough(captured_calls):
+    server._tool_get_workpackage({"external_id": "D-17-04"})
+    assert captured_calls[-1][0] == "/workpackage/D-17-04"
+
+
+def test_get_plane_alias_forwards_to_workpackage(captured_calls):
+    """Deprecated alias must hit the new endpoint, not the retired /plane/ one."""
     server._tool_get_plane({"external_id": "D-16-02.2"})
-    assert captured_calls[-1][0] == "/plane/D-16-02.2"
+    assert captured_calls[-1][0] == "/workpackage/D-16-02.2"
 
 
 def test_get_links_drops_none_filters(captured_calls):
@@ -82,11 +88,15 @@ def test_health_passthrough(captured_calls):
 
 
 def test_tool_count_matches_handler_count():
-    """Every TOOLS entry has a TOOL_HANDLERS entry, and vice versa."""
+    """Every TOOLS entry has a TOOL_HANDLERS entry, and vice versa.
+
+    9 = 8 canonical tools + 1 deprecated `xindex_get_plane` alias retained
+    for one cycle after WP-17-04-05.5.
+    """
     tool_names    = {t["name"] for t in server.TOOLS}
     handler_names = set(server.TOOL_HANDLERS.keys())
     assert tool_names == handler_names
-    assert len(tool_names) == 8
+    assert len(tool_names) == 9
 
 
 def test_initialize_returns_advertised_capabilities():
@@ -101,7 +111,8 @@ def test_initialize_returns_advertised_capabilities():
     assert result["capabilities"]["tools"] == {"listChanged": False}
 
 
-def test_tools_list_emits_eight_tools():
+def test_tools_list_emits_nine_tools():
+    """8 canonical tools + 1 deprecated `xindex_get_plane` alias."""
     srv = server.MCPServer()
     sent: list[dict] = []
     srv._send = sent.append  # type: ignore[method-assign]
@@ -109,7 +120,8 @@ def test_tools_list_emits_eight_tools():
     tools = sent[0]["result"]["tools"]
     assert {t["name"] for t in tools} == {
         "xindex_search", "xindex_get_adr", "xindex_get_runbook",
-        "xindex_get_service", "xindex_get_node", "xindex_get_plane",
+        "xindex_get_service", "xindex_get_node", "xindex_get_workpackage",
+        "xindex_get_plane",  # deprecated alias
         "xindex_get_links", "xindex_health",
     }
 

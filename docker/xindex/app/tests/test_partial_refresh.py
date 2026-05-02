@@ -1,9 +1,9 @@
-"""Partial-refresh doctrine tests (D-16-02.1, extended D-16-02.2).
+"""Partial-refresh doctrine tests (D-16-02.1, extended D-17-04 WP-17-04-05.5).
 
 Covers the core invariant: a failure in one external source on a
 re-ingest must not wipe healthy rows from the previous run for that
 source, and must not affect local sources or other external sources
-at all. Both NetBox and Plane share this contract.
+at all. Both NetBox and OpenProject share this contract.
 """
 from __future__ import annotations
 
@@ -14,10 +14,7 @@ import pytest
 
 from app import db as _db
 from app import ingest as _ingest
-from app.ingest import plane as _pl
-
-
-PROJ = "00000000-0000-0000-0000-000000000abc"
+from app.ingest import openproject as _op
 
 
 def _dev(name):
@@ -55,29 +52,28 @@ def _broken_fetcher_returns_none():
     return lambda token, url: None
 
 
-def _good_plane_fetcher():
+def _good_op_fetcher():
     def fetch(creds):
-        modules = [{"name": "Phase 16", "id": "mod-16",
-                    "external_id": "Phase-16", "description": ""}]
-        states = [{"name": "Backlog", "id": "st-bl"}]
-        issues = [{
-            "external_id": "D-16-02.2",
-            "name": "[D-16-02.2] Plane source ingestion",
-            "id": "iss-1",
-            "state": "st-bl",
-            "module_ids": ["mod-16"],
+        versions = [{"name": "Phase-17", "id": 16,
+                     "external_id": "Phase-17", "description": ""}]
+        statuses = [{"name": "New", "id": 1, "is_closed": False}]
+        wps = [{
+            "external_id": "D-17-04",
+            "name": "[D-17-04] Replace Plane CE with OpenProject",
+            "id": 601,
+            "state": 1,
+            "version_id": 16,
             "description_html": "",
-            "updated_at": "2026-05-01T12:00:00Z",
-            "project": PROJ,
+            "description_raw": "",
+            "updated_at": "2026-05-02T12:00:00Z",
+            "project_id": 1,
         }]
-        return modules, states, issues
+        return versions, statuses, wps
     return fetch
 
 
-def _plane_429_fetcher():
-    def fetch(creds):
-        raise _pl._RateLimitError("429 on /issues/")
-    return fetch
+def _broken_op_fetcher():
+    return lambda creds: None
 
 
 @pytest.fixture()
@@ -87,12 +83,11 @@ def env(
     monkeypatch: pytest.MonkeyPatch,
 ):
     monkeypatch.setenv("NETBOX_API_TOKEN", "fake-token")
-    monkeypatch.setenv("PLANE_API_TOKEN", "plane-fake-token")
-    monkeypatch.setenv("PLANE_URL", "http://plane.example")
-    monkeypatch.setenv("PLANE_WORKSPACE", "iap")
-    monkeypatch.setenv("PLANE_PROJECT_ID", PROJ)
+    monkeypatch.setenv("OPENPROJECT_API_TOKEN", "op-fake-token")
+    monkeypatch.setenv("OPENPROJECT_URL", "http://openproject.example")
+    monkeypatch.setenv("OPENPROJECT_PROJECT", "roadmap")
     monkeypatch.setattr(
-        _pl, "CREDENTIALS_PATH", _pl.Path("/nonexistent/plane.env")
+        _op, "CREDENTIALS_PATH", _op.Path("/nonexistent/openproject.env")
     )
     return fixture_docs, db_path
 
@@ -103,19 +98,19 @@ def test_first_run_populates_all_sources(env) -> None:
         summary = _ingest.ingest_all(
             conn, str(fixture_docs),
             netbox_fetcher=_good_fetcher(),
-            plane_fetcher=_good_plane_fetcher(),
+            openproject_fetcher=_good_op_fetcher(),
         )
     assert summary["adrs"] == 2
     assert summary["nodes"] == 1
     assert summary["services"] == 1
-    assert summary["plane_issues"] == 1
-    assert summary["plane_modules"] == 1
+    assert summary["op_workpackages"] == 1
+    assert summary["op_versions"] == 1
 
     with _db.connect(db_path) as conn:
         st = _db.get_source_status(conn, "netbox")
         assert st["status"] == "ok"
-        pst = _db.get_source_status(conn, "plane")
-        assert pst["status"] == "ok"
+        opst = _db.get_source_status(conn, "openproject")
+        assert opst["status"] == "ok"
         local = _db.get_source_status(conn, "adr")
         assert local["status"] == "ok"
 
@@ -127,7 +122,7 @@ def test_netbox_failure_preserves_prior_netbox_rows(env) -> None:
         _ingest.ingest_all(
             conn, str(fixture_docs),
             netbox_fetcher=_good_fetcher(),
-            plane_fetcher=_good_plane_fetcher(),
+            openproject_fetcher=_good_op_fetcher(),
         )
         before = _db.counts(conn)
 
@@ -135,7 +130,7 @@ def test_netbox_failure_preserves_prior_netbox_rows(env) -> None:
         summary = _ingest.ingest_all(
             conn, str(fixture_docs),
             netbox_fetcher=_broken_fetcher_returns_none(),
-            plane_fetcher=_good_plane_fetcher(),
+            openproject_fetcher=_good_op_fetcher(),
         )
         after = _db.counts(conn)
         st = _db.get_source_status(conn, "netbox")
@@ -145,8 +140,8 @@ def test_netbox_failure_preserves_prior_netbox_rows(env) -> None:
     # external survival: NetBox rows kept
     assert after["services"] == before["services"] == 1
     assert after["nodes"] == before["nodes"] == 1
-    # plane unaffected
-    assert after["plane_issues"] == before["plane_issues"] == 1
+    # openproject unaffected
+    assert after["op_workpackages"] == before["op_workpackages"] == 1
     # but NetBox status reflects the failure
     assert st["status"] == "error"
     assert "unreachable" in st["error"] or "auth" in st["error"]
@@ -159,7 +154,7 @@ def test_netbox_failure_does_not_affect_local_sources(env) -> None:
             conn,
             str(fixture_docs),
             netbox_fetcher=_broken_fetcher_returns_none(),
-            plane_fetcher=_good_plane_fetcher(),
+            openproject_fetcher=_good_op_fetcher(),
         )
     # local sources still ingested even though netbox failed
     assert summary["adrs"] == 2
@@ -174,7 +169,7 @@ def test_recovery_from_failure(env) -> None:
         _ingest.ingest_all(
             conn, str(fixture_docs),
             netbox_fetcher=_broken_fetcher_returns_none(),
-            plane_fetcher=_good_plane_fetcher(),
+            openproject_fetcher=_good_op_fetcher(),
         )
         st1 = _db.get_source_status(conn, "netbox")
         assert st1["status"] == "error"
@@ -182,21 +177,21 @@ def test_recovery_from_failure(env) -> None:
         _ingest.ingest_all(
             conn, str(fixture_docs),
             netbox_fetcher=_good_fetcher(),
-            plane_fetcher=_good_plane_fetcher(),
+            openproject_fetcher=_good_op_fetcher(),
         )
         st2 = _db.get_source_status(conn, "netbox")
         assert st2["status"] == "ok"
         assert st2["error"] == ""
 
 
-def test_plane_429_preserves_prior_plane_rows_and_netbox(env) -> None:
-    """Plane 429 on re-run: prior plane data survives, NetBox unaffected."""
+def test_openproject_failure_preserves_prior_op_rows_and_netbox(env) -> None:
+    """OpenProject down on re-run: prior op data survives, NetBox unaffected."""
     fixture_docs, db_path = env
     with _db.connect(db_path) as conn:
         _ingest.ingest_all(
             conn, str(fixture_docs),
             netbox_fetcher=_good_fetcher(),
-            plane_fetcher=_good_plane_fetcher(),
+            openproject_fetcher=_good_op_fetcher(),
         )
         before = _db.counts(conn)
 
@@ -204,17 +199,17 @@ def test_plane_429_preserves_prior_plane_rows_and_netbox(env) -> None:
         _ingest.ingest_all(
             conn, str(fixture_docs),
             netbox_fetcher=_good_fetcher(),
-            plane_fetcher=_plane_429_fetcher(),
+            openproject_fetcher=_broken_op_fetcher(),
         )
         after = _db.counts(conn)
-        plane_st = _db.get_source_status(conn, "plane")
+        op_st = _db.get_source_status(conn, "openproject")
         nb_st = _db.get_source_status(conn, "netbox")
 
-    # Plane data preserved
-    assert after["plane_issues"] == before["plane_issues"] == 1
-    assert after["plane_modules"] == before["plane_modules"] == 1
+    # OpenProject data preserved
+    assert after["op_workpackages"] == before["op_workpackages"] == 1
+    assert after["op_versions"] == before["op_versions"] == 1
     # NetBox survived independently
     assert nb_st["status"] == "ok"
-    # Plane status reflects rate-limit failure
-    assert plane_st["status"] == "error"
-    assert "rate-limited" in plane_st["error"]
+    # OpenProject status reflects unreachable failure
+    assert op_st["status"] == "error"
+    assert "unreachable" in op_st["error"] or "auth" in op_st["error"]

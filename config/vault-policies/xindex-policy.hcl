@@ -7,9 +7,10 @@
 # Read-only on consumed secrets; explicit-deny on policy/AppRole
 # modification (belt-and-suspenders).
 #
-# Scope is intentionally narrow: only NetBox API token in this
-# deliverable. D-16-02.2 (Plane source) and future sources extend
-# this policy with additional read paths — never broader capabilities.
+# Scope is intentionally narrow: NetBox + OpenProject (D-17-04
+# WP-17-04-05.5; the OpenProject path replaces the prior Plane path
+# retired with Plane CE). Future sources extend with additional read
+# paths — never broader capabilities.
 
 # ── NetBox API token (read-only consumption) ──────────────────────────
 # Same path as scripts/netbox-custom-fields.py reads. Token assembled
@@ -18,10 +19,11 @@ path "secret/data/netbox/api_token" {
   capabilities = ["read"]
 }
 
-# ── Plane API token (read-only consumption, D-16-02.2) ────────────────
-# Same path as plane-sync reads. xindex consumes only the api_token
-# field; ADR-A-006 forbids xindex from writing to Plane.
-path "secret/data/plane/api" {
+# ── OpenProject API token (read-only consumption, D-17-04 WP-17-04-05.5) ──
+# Same path as scripts/openproject-sync-from-framework.py reads. xindex
+# consumes only the `token` field of secret/openproject/api; ADR-A-006
+# forbids xindex from writing to OpenProject.
+path "secret/data/openproject/api" {
   capabilities = ["read"]
 }
 
