@@ -1,13 +1,28 @@
 #!/usr/bin/env bash
 # vault-admin-token.sh — resolve a Vault admin (root-equivalent) token for
-# provision-*.sh scripts that need to create policies, AppRoles, and
-# secrets paths.
+# provision-*.sh scripts AND for ad-hoc operator admin work that needs
+# to create policies, AppRoles, and secrets paths.
 #
-# Source this file from a provision script:
+# ── Usage from a provision script ─────────────────────────────────────
 #     source "$(dirname "$0")/lib/vault-admin-token.sh"
-#     VAULT_TOKEN=$(resolve_admin_vault_token)
+#     VAULT_TOKEN=$(resolve_admin_vault_token) || exit 2
 #
-# Lookup precedence:
+# ── Usage from an interactive operator shell ──────────────────────────
+# Source via absolute path (works from any cwd) and capture into the
+# environment. The function writes the token to stdout and status to
+# stderr, so command substitution captures only the token:
+#
+#     source /Users/admin/repos/integrated-ai-platform/scripts/lib/vault-admin-token.sh
+#     export VAULT_TOKEN=$(resolve_admin_vault_token)
+#
+# Then run vault commands inside the vault-server container:
+#     docker exec -e VAULT_TOKEN="$VAULT_TOKEN" vault-server vault kv get secret/<path>
+#
+# Do NOT call `resolve_admin_vault_token` bare in an interactive shell
+# — that prints the token to your terminal. Always capture via $(...).
+# When done, `unset VAULT_TOKEN` to clear it from the environment.
+#
+# ── Lookup precedence ─────────────────────────────────────────────────
 #   1. ${VAULT_TOKEN} already exported (CI / operator override)
 #   2. Newest ~/vault-init-keys-NEW-*.txt (post-rebuild canonical keys file,
 #      mtime-sorted to survive future rebuilds without code change)
@@ -17,7 +32,7 @@
 # Fails loudly if no source resolves a valid admin token. Never falls
 # back to a token that doesn't validate. Never echoes token values.
 #
-# Doctrine alignment:
+# ── Doctrine alignment ────────────────────────────────────────────────
 #   - Root-token use is acceptable for one-shot admin work like policy
 #     creation (see CLAUDE.md "Vault Operations").
 #   - Per-service runtime auth uses AppRoles minted BY this script, not
