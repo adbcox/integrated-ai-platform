@@ -1,16 +1,21 @@
 #!/usr/bin/env python3
-"""17.I — OPNsense API client (Unbound overrides + health).
+"""17.I — OPNsense API client (Dnsmasq host records + health).
 
 Reads `secret/opnsense/api` (fields: api_key, api_secret, host) via the
 `opnsense-api-reader` Vault AppRole and exposes two functions used by
 drift detection (D-16-06 + 17.I):
 
-    opnsense_get_unbound_overrides() -> list[dict]
+    opnsense_get_host_records() -> list[dict]
         Each row: {"hostname": str, "domain": str, "fqdn": str,
                    "ip": str, "rr": str, "enabled": bool, "uuid": str}
     opnsense_health() -> dict
         {"ok": bool, "vault_ok": bool, "api_ok": bool,
-         "override_count": int|None, "error": str|None}
+         "record_count": int|None, "error": str|None}
+
+Note: queries Dnsmasq, NOT Unbound. Dnsmasq is the DNS authority on
+this platform — see docs/architecture-facts/opnsense-dns-authority.md
+and KI-009. The deprecated alias opnsense_get_unbound_overrides() is
+retained for one cycle.
 
 Credentials are loaded via the AppRole (NOT the root token) so this
 script can be run from cron/launchd without exposing privileged tokens.
@@ -157,47 +162,93 @@ def _opnsense_get(
         ) from None
 
 
-def opnsense_get_unbound_overrides() -> list[dict]:
-    """Returns Unbound host overrides as a list of normalized dicts.
+def opnsense_get_host_records() -> list[dict]:
+    """Returns Dnsmasq host records as a list of normalized dicts.
 
-    Endpoint: /api/unbound/settings/searchHostOverride
-    Source row keys (probed 2026-05-01):
-        hostname, domain, server, rr, enabled, uuid, aliases, description,
-        ttl, mx, mxprio, txtdata, addptr, isAlias, %rr
+    Endpoint: /api/dnsmasq/settings/get
+    Source map shape: payload[".dnsmasq.hosts"] is a {uuid: row} dict
+    (not a list). Each row's `ip` field is itself a dict whose key is
+    the IP and whose value carries `selected`/`value`. We pull out the
+    selected IP.
 
-    Returned shape (subset, normalized):
+    Dnsmasq is the DNS authority on this platform; Unbound's host
+    override module is unused. See
+    docs/architecture-facts/opnsense-dns-authority.md and KI-009.
+
+    Returned shape (subset, normalized — same as the prior Unbound
+    helper so consumers don't need to change):
         {"hostname": "plane", "domain": "internal",
          "fqdn": "plane.internal", "ip": "192.168.10.145",
          "rr": "A", "enabled": True, "uuid": "..."}
     """
     key, secret, host = _load_credentials()
-    payload = _opnsense_get(
-        key, secret, host, "/api/unbound/settings/searchHostOverride"
-    )
-    rows = payload.get("rows", [])
+    payload = _opnsense_get(key, secret, host, "/api/dnsmasq/settings/get")
+    hosts_map = ((payload.get("dnsmasq") or {}).get("hosts") or {})
     out: list[dict] = []
-    for r in rows:
-        hostname = (r.get("hostname") or "").strip()
+    for uuid, r in hosts_map.items():
+        if not isinstance(r, dict):
+            continue
+        hostname = (r.get("host") or "").strip()
+        if not hostname:
+            continue
         domain = (r.get("domain") or "").strip()
-        fqdn = f"{hostname}.{domain}" if hostname else domain
+        # Strip any accidental trailing dots; treat `host=foo.internal,domain=`
+        # as a bare-FQDN entry for downstream matching.
+        if hostname.endswith("."):
+            hostname = hostname.rstrip(".")
+        ip = ""
+        ip_field = r.get("ip")
+        if isinstance(ip_field, dict):
+            for ip_key, meta in ip_field.items():
+                if isinstance(meta, dict) and str(meta.get("selected") or "0") == "1":
+                    ip = (meta.get("value") or ip_key or "").strip()
+                    break
+            if not ip:
+                # Fallback: first key (some OPNsense versions emit a flat dict)
+                first = next(iter(ip_field), None)
+                if first:
+                    ip = first.strip()
+        elif isinstance(ip_field, str):
+            ip = ip_field.strip()
+        fqdn = f"{hostname}.{domain}" if domain else hostname
         out.append({
             "hostname": hostname,
             "domain": domain,
             "fqdn": fqdn,
-            "ip": (r.get("server") or "").strip(),
-            "rr": (r.get("rr") or "").strip(),
-            "enabled": str(r.get("enabled") or "0") == "1",
-            "uuid": r.get("uuid", ""),
+            "ip": ip,
+            "rr": "A",  # Dnsmasq host entries are A records
+            "enabled": str(r.get("enabled") or "1") == "1",
+            "uuid": uuid,
         })
     return out
 
 
+def opnsense_get_unbound_overrides(*args, **kwargs):
+    """Deprecated alias. Renamed because Dnsmasq, not Unbound, is the
+    authority on this platform. See
+    docs/architecture-facts/opnsense-dns-authority.md."""
+    import warnings
+    warnings.warn(
+        "opnsense_get_unbound_overrides is deprecated; "
+        "use opnsense_get_host_records (queries Dnsmasq, the actual "
+        "authority on this platform). Will be removed in cleanup pass.",
+        DeprecationWarning, stacklevel=2,
+    )
+    return opnsense_get_host_records(*args, **kwargs)
+
+
 def opnsense_health() -> dict:
     """Returns connectivity + auth status without raising.
-    Suitable for status-file pattern (D-16-06)."""
+    Suitable for status-file pattern (D-16-06).
+
+    Probes the Dnsmasq settings endpoint (the authority on this
+    platform; see docs/architecture-facts/opnsense-dns-authority.md).
+    `override_count` is retained as a stable alias for `record_count`
+    so downstream readers of the status file don't break in this
+    one-cycle deprecation window."""
     result = {
         "ok": False, "vault_ok": False, "api_ok": False,
-        "override_count": None, "error": None,
+        "record_count": None, "override_count": None, "error": None,
     }
     try:
         key, secret, host = _load_credentials()
@@ -206,11 +257,15 @@ def opnsense_health() -> dict:
         result["error"] = f"vault: {exc}"
         return result
     try:
-        payload = _opnsense_get(
-            key, secret, host, "/api/unbound/settings/searchHostOverride"
+        payload = _opnsense_get(key, secret, host, "/api/dnsmasq/settings/get")
+        hosts_map = ((payload.get("dnsmasq") or {}).get("hosts") or {})
+        count = sum(
+            1 for r in hosts_map.values()
+            if isinstance(r, dict) and (r.get("host") or "").strip()
         )
         result["api_ok"] = True
-        result["override_count"] = int(payload.get("total", 0))
+        result["record_count"] = count
+        result["override_count"] = count  # deprecated alias (one cycle)
         result["ok"] = True
     except OPNsenseClientError as exc:
         result["error"] = f"api: {exc}"
@@ -225,8 +280,8 @@ def _smoke() -> int:
     if not h["ok"]:
         return 1
     print()
-    print("== opnsense_get_unbound_overrides() (first 5) ==")
-    rows = opnsense_get_unbound_overrides()
+    print("== opnsense_get_host_records() (first 5) ==")
+    rows = opnsense_get_host_records()
     print(f"Total: {len(rows)}")
     for r in rows[:5]:
         print(f"  {r['fqdn']:40s} -> {r['ip']:18s} {r['rr']:5s} en={r['enabled']}")
@@ -236,13 +291,15 @@ def _smoke() -> int:
 def main(argv: list[str]) -> int:
     p = argparse.ArgumentParser(
         prog="opnsense_client",
-        description="OPNsense API client — Unbound overrides + health.",
+        description="OPNsense API client — Dnsmasq host records + health.",
     )
     sub = p.add_subparsers(dest="cmd", required=False)
     sub.add_parser("health", help="Print health JSON; exit 0 if ok else 1")
-    sub.add_parser("overrides", help="Print Unbound host overrides as JSON")
+    sub.add_parser("records", help="Print Dnsmasq host records as JSON")
+    sub.add_parser("overrides",
+                   help="(deprecated alias for `records`) prints Dnsmasq host records as JSON")
     p.add_argument("--smoke", action="store_true",
-                   help="Run smoke check (health + first 5 overrides)")
+                   help="Run smoke check (health + first 5 records)")
     args = p.parse_args(argv)
 
     if args.smoke:
@@ -251,9 +308,9 @@ def main(argv: list[str]) -> int:
         h = opnsense_health()
         print(json.dumps(h, indent=2))
         return 0 if h["ok"] else 1
-    if args.cmd == "overrides":
+    if args.cmd in ("records", "overrides"):
         try:
-            rows = opnsense_get_unbound_overrides()
+            rows = opnsense_get_host_records()
         except OPNsenseClientError as exc:
             print(f"ERROR: {exc}", file=sys.stderr)
             return 1

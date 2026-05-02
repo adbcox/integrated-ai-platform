@@ -10,7 +10,8 @@ Subcommands:
     adr-readme-sync          docs/adr/ADR-A-*.md ↔ docs/adr/README.md
     decision-register-sync   docs/adr/ADR-A-*.md ↔ docs/DECISION_REGISTER.md
     caddy-internal-domains   list .internal site blocks from Caddyfile
-    caddy-unbound-parity     each Caddy .internal site has Unbound override (17.I)
+    caddy-dns-parity         each Caddy .internal site has matching DNS host record (17.I)
+    caddy-unbound-parity     deprecated alias for caddy-dns-parity (one-cycle)
     netbox-services-have-adrs   stub — Phase 17 territory
     framework-table-coherence  PROJECT_FRAMEWORK.md §7+§8 deliverable rows
     launchd-recency          docker/launchd-agents/*.plist installed + recent
@@ -255,13 +256,49 @@ def cmd_caddy_internal_domains() -> int:
     return 0
 
 
-# ── Caddy ↔ Unbound parity (17.I) ───────────────────────────────────────────
+# ── Caddy ↔ DNS parity (17.I) ───────────────────────────────────────────────
+# Renamed 2026-05-01 from caddy-unbound-parity. Dnsmasq, not Unbound, is the
+# DNS authority on this platform — see
+# docs/architecture-facts/opnsense-dns-authority.md and KI-009.
+# launchd plist + status file path keep the old name for one cycle (rename
+# requires launchctl reload + cron coordination; deferred to follow-up).
+
+def _dns_match(caddy_fqdn: str, records: list[dict]) -> dict | None:
+    """Return the matching Dnsmasq record for `caddy_fqdn` (e.g.
+    "openproject.internal"), or None.
+
+    Dnsmasq host entries on this platform appear in three shapes:
+      1) host=<x>, domain=internal              → fqdn = "<x>.internal"
+      2) host=<x>.internal, domain=""           → fqdn = "<x>.internal"
+      3) host=<x>, domain=""                    → bare hostname; resolves
+         via Dnsmasq's domain-suffix or expand-hosts setting. We accept
+         these as a parity match when <x> matches the Caddy stem
+         ("openproject" matches "openproject.internal") because the
+         operator's network treats them as equivalent.
+    """
+    stem, _, _ = caddy_fqdn.partition(".")
+    for r in records:
+        if not r.get("enabled"):
+            continue
+        rec_host = (r.get("hostname") or "").strip()
+        rec_domain = (r.get("domain") or "").strip()
+        # Shape 1: host=stem, domain=internal
+        if rec_host == stem and rec_domain == "internal":
+            return r
+        # Shape 2: host=stem.internal, domain=""
+        if rec_host == caddy_fqdn and rec_domain == "":
+            return r
+        # Shape 3: host=stem, domain="" (bare hostname)
+        if rec_host == stem and rec_domain == "":
+            return r
+    return None
+
 
 def _refresh_parity_status() -> int:
     """Operator-Mac mode: query OPNsense, compute parity, write status JSON.
 
     Imports scripts/opnsense_client.py at call time so that pre-commit/CI
-    invocations of `caddy-unbound-parity` (which never call this function)
+    invocations of `caddy-dns-parity` (which never call this function)
     don't pay the import cost or trip on missing AppRole files.
     """
     sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -277,7 +314,7 @@ def _refresh_parity_status() -> int:
         return 1
 
     try:
-        overrides = opnsense_client.opnsense_get_unbound_overrides()
+        records = opnsense_client.opnsense_get_host_records()
     except opnsense_client.OPNsenseClientError as exc:
         # Write a status file recording the failure so pre-commit/CI surface it
         status = {
@@ -286,7 +323,8 @@ def _refresh_parity_status() -> int:
             "ok": False,
             "error": str(exc),
             "caddy_count": len(caddy_domains),
-            "override_count": None,
+            "record_count": None,
+            "override_count": None,  # deprecated alias (one cycle)
             "missing": [],
             "extra_internal": [],
             "wrong_target": [],
@@ -297,22 +335,43 @@ def _refresh_parity_status() -> int:
         print(f"  status written to {PARITY_STATUS_FILE}")
         return 1
 
-    # Build {fqdn: ip} for enabled .internal records only
-    unbound_internal = {
-        o["fqdn"]: o["ip"]
-        for o in overrides
-        if o["enabled"] and o["domain"] == "internal" and o["rr"] == "A"
-    }
+    missing: list[str] = []
+    wrong_target: list[str] = []
+    matched_record_keys: set[str] = set()
+    for caddy_fqdn in caddy_domains:
+        match = _dns_match(caddy_fqdn, records)
+        if match is None:
+            missing.append(caddy_fqdn)
+            continue
+        # Track which Dnsmasq records were used so we can compute the
+        # informational "extra" list below.
+        matched_record_keys.add(match.get("uuid") or match.get("fqdn") or "")
+        if match.get("ip") and match["ip"] != MAC_MINI_IP:
+            wrong_target.append(caddy_fqdn)
 
-    caddy_set = set(caddy_domains)
-    unbound_set = set(unbound_internal.keys())
+    # Informational: enabled .internal-shaped records that didn't match
+    # any Caddy site (Dnsmasq has more entries than just the .internal
+    # web tier — DHCP reservations like `qnap`, `mac-mini-eth` show up).
+    extra_internal: list[str] = []
+    for r in records:
+        if not r.get("enabled"):
+            continue
+        # Only flag entries that LOOK like .internal web records (either
+        # explicit domain=internal or host ending in .internal). Bare
+        # DHCP reservations are out of scope for this informational list.
+        domain = (r.get("domain") or "").strip()
+        host = (r.get("hostname") or "").strip()
+        is_internal_shape = (domain == "internal") or host.endswith(".internal")
+        if not is_internal_shape:
+            continue
+        key = r.get("uuid") or r.get("fqdn") or ""
+        if key in matched_record_keys:
+            continue
+        extra_internal.append(r.get("fqdn") or host)
+    extra_internal.sort()
 
-    missing = sorted(caddy_set - unbound_set)
-    extra_internal = sorted(unbound_set - caddy_set)
-    wrong_target = sorted(
-        fqdn for fqdn in (caddy_set & unbound_set)
-        if unbound_internal[fqdn] != MAC_MINI_IP
-    )
+    missing.sort()
+    wrong_target.sort()
 
     status = {
         "schema": 1,
@@ -320,7 +379,8 @@ def _refresh_parity_status() -> int:
         "ok": not (missing or wrong_target),  # extra_internal is informational
         "error": None,
         "caddy_count": len(caddy_domains),
-        "override_count": len(overrides),
+        "record_count": len(records),
+        "override_count": len(records),  # deprecated alias (one cycle)
         "missing": missing,
         "extra_internal": extra_internal,
         "wrong_target": wrong_target,
@@ -328,12 +388,12 @@ def _refresh_parity_status() -> int:
     PARITY_STATUS_FILE.parent.mkdir(parents=True, exist_ok=True)
     PARITY_STATUS_FILE.write_text(json.dumps(status, indent=2) + "\n")
     print(f"OK: parity status refreshed → {PARITY_STATUS_FILE}")
-    print(f"  Caddy sites: {len(caddy_domains)}, Unbound .internal A-records: {len(unbound_internal)}")
+    print(f"  Caddy sites: {len(caddy_domains)}, Dnsmasq host records: {len(records)}")
     print(f"  missing: {len(missing)}, wrong_target: {len(wrong_target)}, extra_internal: {len(extra_internal)}")
     return 0 if status["ok"] else 1
 
 
-def cmd_caddy_unbound_parity() -> int:
+def cmd_caddy_dns_parity() -> int:
     """Default (read) mode — pre-commit + CI safe.
 
     Reads PARITY_STATUS_FILE produced by `--refresh` mode.
@@ -347,14 +407,14 @@ def cmd_caddy_unbound_parity() -> int:
         return _refresh_parity_status()
 
     if not PARITY_STATUS_FILE.is_file():
-        print(f"SKIP: caddy-unbound-parity — no status file at {PARITY_STATUS_FILE}")
-        print("  Run on operator Mac: scripts/check-repo-coherence.py caddy-unbound-parity --refresh")
+        print(f"SKIP: caddy-dns-parity — no status file at {PARITY_STATUS_FILE}")
+        print("  Run on operator Mac: scripts/check-repo-coherence.py caddy-dns-parity --refresh")
         return 0
 
     try:
         status = json.loads(PARITY_STATUS_FILE.read_text())
     except (OSError, json.JSONDecodeError) as exc:
-        print(f"FAIL: caddy-unbound-parity — cannot parse {PARITY_STATUS_FILE}: {exc}")
+        print(f"FAIL: caddy-dns-parity — cannot parse {PARITY_STATUS_FILE}: {exc}")
         return 1
 
     age_sec = time.time() - status.get("generated_at", 0)
@@ -362,14 +422,14 @@ def cmd_caddy_unbound_parity() -> int:
         age_h = age_sec / 3600
         max_h = PARITY_MAX_AGE_SEC / 3600
         print(
-            f"FAIL: caddy-unbound-parity — status is {age_h:.1f}h old, "
+            f"FAIL: caddy-dns-parity — status is {age_h:.1f}h old, "
             f"exceeds {max_h:.1f}h budget (silent-failure detection)"
         )
-        print(f"  Refresh: scripts/check-repo-coherence.py caddy-unbound-parity --refresh")
+        print(f"  Refresh: scripts/check-repo-coherence.py caddy-dns-parity --refresh")
         return 1
 
     if status.get("error"):
-        print(f"FAIL: caddy-unbound-parity — last refresh errored: {status['error']}")
+        print(f"FAIL: caddy-dns-parity — last refresh errored: {status['error']}")
         return 1
 
     missing = status.get("missing", [])
@@ -378,33 +438,50 @@ def cmd_caddy_unbound_parity() -> int:
 
     if missing or wrong_target:
         print(
-            f"FAIL: caddy-unbound-parity — {len(missing)} missing, "
+            f"FAIL: caddy-dns-parity — {len(missing)} missing, "
             f"{len(wrong_target)} wrong_target "
             f"(of {status.get('caddy_count')} Caddy sites)"
         )
         if missing:
-            print("  Missing Unbound override:")
+            print("  Missing Dnsmasq host record:")
             for d in missing:
-                print(f"    - {d}  (operator: add A-record → {MAC_MINI_IP} in OPNsense)")
+                print(f"    - {d}  (operator: add Dnsmasq host → {MAC_MINI_IP} in OPNsense)")
         if wrong_target:
             print(f"  Wrong A-record target (expected {MAC_MINI_IP}):")
             for d in wrong_target:
                 print(f"    - {d}")
         if extra:
-            print(f"  (informational) {len(extra)} Unbound .internal records not in Caddy:")
+            print(f"  (informational) {len(extra)} Dnsmasq .internal records not in Caddy:")
             for d in extra:
                 print(f"    - {d}")
         return 1
 
     print(
-        f"OK: caddy-unbound-parity — "
-        f"{status.get('caddy_count')} Caddy sites all have Unbound A-records"
+        f"OK: caddy-dns-parity — "
+        f"{status.get('caddy_count')} Caddy sites all have Dnsmasq host records"
     )
     if extra:
-        print(f"  (informational) {len(extra)} Unbound .internal records not in Caddy:")
+        print(f"  (informational) {len(extra)} Dnsmasq .internal records not in Caddy:")
         for d in extra:
             print(f"    - {d}")
     return 0
+
+
+def cmd_caddy_unbound_parity() -> int:
+    """Deprecated alias — forwards to cmd_caddy_dns_parity for one cycle.
+
+    The check was originally built against Unbound's host-override table,
+    which is empty by design on this platform. Dnsmasq is the actual
+    DNS authority. See docs/architecture-facts/opnsense-dns-authority.md
+    and KI-009.
+    """
+    print(
+        "DEPRECATED: caddy-unbound-parity has been renamed to caddy-dns-parity "
+        "because Dnsmasq (not Unbound) is the DNS authority on this platform. "
+        "Forwarding for one cycle.",
+        file=sys.stderr,
+    )
+    return cmd_caddy_dns_parity()
 
 
 # ── NetBox services have ADRs (stub) ────────────────────────────────────────
@@ -615,11 +692,17 @@ CHECKS = {
     "adr-readme-sync": cmd_adr_readme_sync,
     "decision-register-sync": cmd_decision_register_sync,
     "caddy-internal-domains": cmd_caddy_internal_domains,
-    "caddy-unbound-parity": cmd_caddy_unbound_parity,
+    "caddy-dns-parity": cmd_caddy_dns_parity,
     "netbox-services-have-adrs": cmd_netbox_services_have_adrs,
     "framework-table-coherence": cmd_framework_table_coherence,
     "launchd-recency": cmd_launchd_recency,
     "mac-studio-reachable": cmd_mac_studio_reachable,
+}
+
+# Deprecated subcommand aliases (one-cycle). Callable from the CLI but
+# not run by `all`. See KI-009.
+DEPRECATED_ALIASES = {
+    "caddy-unbound-parity": cmd_caddy_unbound_parity,
 }
 
 
@@ -641,14 +724,20 @@ def main() -> int:
         for name in CHECKS:
             print(f"  {name}", file=sys.stderr)
         print("  all", file=sys.stderr)
+        if DEPRECATED_ALIASES:
+            print("Deprecated aliases (one-cycle):", file=sys.stderr)
+            for name in DEPRECATED_ALIASES:
+                print(f"  {name}", file=sys.stderr)
         return 2
     name = sys.argv[1]
     if name == "all":
         return cmd_all()
-    if name not in CHECKS:
-        print(f"ERROR: unknown subcommand {name!r}", file=sys.stderr)
-        return 2
-    return CHECKS[name]()
+    if name in CHECKS:
+        return CHECKS[name]()
+    if name in DEPRECATED_ALIASES:
+        return DEPRECATED_ALIASES[name]()
+    print(f"ERROR: unknown subcommand {name!r}", file=sys.stderr)
+    return 2
 
 
 if __name__ == "__main__":

@@ -219,6 +219,20 @@ Verdicts on any tool require evidence at all three planes.
 Single-plane reasoning ("logical-only: two metrics tools = redundant")
 is invalid. This rule is the codification of the Zabbix lesson.
 
+### D#22 — Architecture facts in docs/architecture-facts/, not memory
+
+Architectural facts that have been forgotten and re-learned across
+sessions (operator-confirmed corrections, platform-specific service
+choices that diverge from defaults, etc.) MUST be persisted as
+artifacts under `docs/architecture-facts/`. Memory and chat-transcripts
+are insufficient — they don't survive compaction reliably and are
+not searched by future sessions before assuming. The
+`opnsense-dns-authority.md` fact (Dnsmasq, not Unbound) is the
+prototype: forgotten on 2026-04-26, refought on 2026-05-01,
+chronicled as a permanent file thereafter. Failure mode prevented:
+"Claude argues with operator about platform configuration that
+operator has already corrected in a previous session."
+
 ---
 
 ## 4. Surface format template
