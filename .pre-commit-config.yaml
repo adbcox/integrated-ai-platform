@@ -68,3 +68,17 @@ repos:
         # don't false-positive every commit when the node is offline for
         # operator maintenance. CI runs the full suite unconditionally.
         files: '^(docs/runbooks/mac-studio-day-1\.md|docs/runbooks/headscale-client-onboarding\.md|scripts/check-repo-coherence\.py)$'
+      - id: caddy-unbound-parity
+        name: Caddy <-> Unbound DNS parity (17.I, status-file mode)
+        entry: python3 scripts/check-repo-coherence.py caddy-unbound-parity
+        language: system
+        pass_filenames: false
+        # Scoped to inputs that change the parity surface: Caddyfile (left
+        # side) and the parity-check code itself. The hook is read-only —
+        # it consumes a status file written by the operator-Mac refresh
+        # job (cron/launchd), so pre-commit needs no OPNsense reachability
+        # and no Vault credentials. Behavior:
+        #   - status file missing  -> SKIP (operator hasn't refreshed yet)
+        #   - status file stale    -> FAIL (silent-failure detection)
+        #   - status reports drift -> FAIL with concrete gap report
+        files: '^(docker/caddy/Caddyfile|scripts/(check-repo-coherence|opnsense_client)\.py)$'

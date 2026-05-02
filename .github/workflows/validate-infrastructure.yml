@@ -353,15 +353,18 @@ jobs:
           echo "This job intentionally does not call Plane from CI. The exit-code-2"
           echo "drift contract is exercised by the cron job on the operator's host."
 
-  # ── Job 7: Caddy ↔ DNS parity (advisory, scheduled-only, non-blocking) ─────
-  # Extracts .internal domains from Caddyfile + reports them. CI runners can't
-  # reach OPNsense Unbound, so this is a manual-check helper: prints the
-  # canonical Caddy site list and the domains operators must verify in
-  # OPNsense. Treated as workflow annotations; exits 0 even on gaps.
+  # ── Job 7: Caddy ↔ Unbound parity (17.I — enforced via status-file) ────────
+  # Reads ~/.platform-logs/caddy-unbound-parity.json written by the operator-
+  # Mac launchd job (docker/launchd-agents/com.iap.caddy-unbound-parity.plist —
+  # T3.1 follow-up). On GitHub-hosted runners that path doesn't exist, so the
+  # subcommand emits SKIP — that's the correct behavior for the status-file
+  # pattern. The enforcement happens on the operator Mac (cron + pre-commit
+  # local hook). This CI job exists to:
+  #   - run the same code path on PRs that touch the parity surface (smoke)
+  #   - surface the canonical .internal site list as a workflow annotation
   validate-caddy-dns-parity:
-    name: Caddy DNS Parity (advisory)
+    name: Caddy ↔ Unbound Parity (status-file mode)
     runs-on: ubuntu-latest
-    if: github.event_name == 'schedule'
     steps:
       - uses: actions/checkout@v4
 
@@ -373,14 +376,16 @@ jobs:
       - name: List Caddy .internal sites
         run: |
           python3 scripts/check-repo-coherence.py caddy-internal-domains | tee /tmp/caddy-domains.txt
-          # Surface the count as a workflow annotation
           n=$(grep -c '\.internal' /tmp/caddy-domains.txt || true)
-          echo "::notice::Caddy serves $n .internal sites — verify each has an Unbound override pointing to 192.168.10.145"
+          echo "::notice::Caddy serves $n .internal sites — parity to Unbound enforced via 17.I"
 
-      - name: Caddy ↔ DNS parity reminder
+      - name: Run parity check (status-file mode)
         run: |
-          echo "::notice::OPNsense Unbound is operator-managed. CI runner can't query it."
-          echo "::notice::Operator action: confirm each domain above resolves to 192.168.10.145 internally."
+          # CI has no status file → SKIP exits 0. Real enforcement is on
+          # the operator Mac (pre-commit hook + cron-driven refresh).
+          # If the status file ever ships in the repo (it shouldn't), this
+          # would also catch drift in CI.
+          python3 scripts/check-repo-coherence.py caddy-unbound-parity
 
   # ── Summary gate ───────────────────────────────────────────────────────────
   validation-gate:

@@ -10,6 +10,7 @@ Subcommands:
     adr-readme-sync          docs/adr/ADR-A-*.md ↔ docs/adr/README.md
     decision-register-sync   docs/adr/ADR-A-*.md ↔ docs/DECISION_REGISTER.md
     caddy-internal-domains   list .internal site blocks from Caddyfile
+    caddy-unbound-parity     each Caddy .internal site has Unbound override (17.I)
     netbox-services-have-adrs   stub — Phase 17 territory
     framework-table-coherence  PROJECT_FRAMEWORK.md §7+§8 deliverable rows
     launchd-recency          docker/launchd-agents/*.plist installed + recent
@@ -30,6 +31,7 @@ scripts/phase-deliverable-count.py to avoid duplicating the row regex.
 """
 from __future__ import annotations
 
+import json
 import os
 import re
 import subprocess
@@ -45,6 +47,17 @@ CADDYFILE = REPO_ROOT / "docker" / "caddy" / "Caddyfile"
 FRAMEWORK = REPO_ROOT / "docs" / "PROJECT_FRAMEWORK.md"
 LAUNCHD_AGENTS_REPO = REPO_ROOT / "docker" / "launchd-agents"
 LAUNCHD_AGENTS_INSTALLED = Path.home() / "Library" / "LaunchAgents"
+
+# 17.I — Caddy↔Unbound parity (status-file pattern). The check is run
+# on the operator Mac (cron/launchd or manual) by invoking this script
+# with subcommand `caddy-unbound-parity --refresh`; that mode queries
+# OPNsense via scripts/opnsense_client.py and writes a status JSON to
+# the path below. The default (no --refresh) mode reads the status JSON
+# and reports drift — pre-commit and CI run this default mode, so they
+# never need OPNsense reachability.
+PARITY_STATUS_FILE = Path.home() / ".platform-logs" / "caddy-unbound-parity.json"
+PARITY_MAX_AGE_SEC = 36 * 3600   # 36h grace (daily-ish check on operator Mac)
+MAC_MINI_IP = "192.168.10.145"   # Caddy host; all .internal A-records target this
 
 # Per-job recency expectations (max age in seconds before considered stale).
 # Recency probes a heartbeat file the plist's wrapper touches AFTER each
@@ -75,6 +88,12 @@ LAUNCHD_RECENCY_EXPECTATIONS: dict[str, dict] = {
         # KeepAlive — log file gets continuous writes from `docker events`
         "max_age_sec": 1 * 3600,
         "probe_paths": ["/Users/admin/.platform-logs/docker-events.log"],
+    },
+    "com.iap.caddy-unbound-parity": {
+        # Daily refresh of the parity status file (17.I). 36h grace mirrors
+        # the per-job pattern used for other daily jobs.
+        "max_age_sec": 36 * 3600,
+        "probe_paths": ["/Users/admin/.platform-logs/caddy-unbound-parity.heartbeat"],
     },
 }
 
@@ -233,6 +252,158 @@ def cmd_caddy_internal_domains() -> int:
     print(f"OK: {len(domains)} .internal site blocks in Caddyfile")
     for d in domains:
         print(f"  {d}")
+    return 0
+
+
+# ── Caddy ↔ Unbound parity (17.I) ───────────────────────────────────────────
+
+def _refresh_parity_status() -> int:
+    """Operator-Mac mode: query OPNsense, compute parity, write status JSON.
+
+    Imports scripts/opnsense_client.py at call time so that pre-commit/CI
+    invocations of `caddy-unbound-parity` (which never call this function)
+    don't pay the import cost or trip on missing AppRole files.
+    """
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    try:
+        import opnsense_client  # type: ignore[import-not-found]
+    except ImportError as exc:
+        print(f"FAIL: could not import opnsense_client: {exc}")
+        return 1
+
+    caddy_domains = _caddy_internal_domains()
+    if not caddy_domains:
+        print("FAIL: no .internal sites in Caddyfile — refusing to write status")
+        return 1
+
+    try:
+        overrides = opnsense_client.opnsense_get_unbound_overrides()
+    except opnsense_client.OPNsenseClientError as exc:
+        # Write a status file recording the failure so pre-commit/CI surface it
+        status = {
+            "schema": 1,
+            "generated_at": int(time.time()),
+            "ok": False,
+            "error": str(exc),
+            "caddy_count": len(caddy_domains),
+            "override_count": None,
+            "missing": [],
+            "extra_internal": [],
+            "wrong_target": [],
+        }
+        PARITY_STATUS_FILE.parent.mkdir(parents=True, exist_ok=True)
+        PARITY_STATUS_FILE.write_text(json.dumps(status, indent=2) + "\n")
+        print(f"FAIL: OPNsense query failed: {exc}")
+        print(f"  status written to {PARITY_STATUS_FILE}")
+        return 1
+
+    # Build {fqdn: ip} for enabled .internal records only
+    unbound_internal = {
+        o["fqdn"]: o["ip"]
+        for o in overrides
+        if o["enabled"] and o["domain"] == "internal" and o["rr"] == "A"
+    }
+
+    caddy_set = set(caddy_domains)
+    unbound_set = set(unbound_internal.keys())
+
+    missing = sorted(caddy_set - unbound_set)
+    extra_internal = sorted(unbound_set - caddy_set)
+    wrong_target = sorted(
+        fqdn for fqdn in (caddy_set & unbound_set)
+        if unbound_internal[fqdn] != MAC_MINI_IP
+    )
+
+    status = {
+        "schema": 1,
+        "generated_at": int(time.time()),
+        "ok": not (missing or wrong_target),  # extra_internal is informational
+        "error": None,
+        "caddy_count": len(caddy_domains),
+        "override_count": len(overrides),
+        "missing": missing,
+        "extra_internal": extra_internal,
+        "wrong_target": wrong_target,
+    }
+    PARITY_STATUS_FILE.parent.mkdir(parents=True, exist_ok=True)
+    PARITY_STATUS_FILE.write_text(json.dumps(status, indent=2) + "\n")
+    print(f"OK: parity status refreshed → {PARITY_STATUS_FILE}")
+    print(f"  Caddy sites: {len(caddy_domains)}, Unbound .internal A-records: {len(unbound_internal)}")
+    print(f"  missing: {len(missing)}, wrong_target: {len(wrong_target)}, extra_internal: {len(extra_internal)}")
+    return 0 if status["ok"] else 1
+
+
+def cmd_caddy_unbound_parity() -> int:
+    """Default (read) mode — pre-commit + CI safe.
+
+    Reads PARITY_STATUS_FILE produced by `--refresh` mode.
+    Behavior:
+      - File missing → SKIP (operator hasn't run the refresh yet)
+      - File older than PARITY_MAX_AGE_SEC → FAIL (silent-failure detection)
+      - File reports ok=False → FAIL with the gap report
+      - File reports ok=True  → OK
+    """
+    if "--refresh" in sys.argv:
+        return _refresh_parity_status()
+
+    if not PARITY_STATUS_FILE.is_file():
+        print(f"SKIP: caddy-unbound-parity — no status file at {PARITY_STATUS_FILE}")
+        print("  Run on operator Mac: scripts/check-repo-coherence.py caddy-unbound-parity --refresh")
+        return 0
+
+    try:
+        status = json.loads(PARITY_STATUS_FILE.read_text())
+    except (OSError, json.JSONDecodeError) as exc:
+        print(f"FAIL: caddy-unbound-parity — cannot parse {PARITY_STATUS_FILE}: {exc}")
+        return 1
+
+    age_sec = time.time() - status.get("generated_at", 0)
+    if age_sec > PARITY_MAX_AGE_SEC:
+        age_h = age_sec / 3600
+        max_h = PARITY_MAX_AGE_SEC / 3600
+        print(
+            f"FAIL: caddy-unbound-parity — status is {age_h:.1f}h old, "
+            f"exceeds {max_h:.1f}h budget (silent-failure detection)"
+        )
+        print(f"  Refresh: scripts/check-repo-coherence.py caddy-unbound-parity --refresh")
+        return 1
+
+    if status.get("error"):
+        print(f"FAIL: caddy-unbound-parity — last refresh errored: {status['error']}")
+        return 1
+
+    missing = status.get("missing", [])
+    wrong_target = status.get("wrong_target", [])
+    extra = status.get("extra_internal", [])
+
+    if missing or wrong_target:
+        print(
+            f"FAIL: caddy-unbound-parity — {len(missing)} missing, "
+            f"{len(wrong_target)} wrong_target "
+            f"(of {status.get('caddy_count')} Caddy sites)"
+        )
+        if missing:
+            print("  Missing Unbound override:")
+            for d in missing:
+                print(f"    - {d}  (operator: add A-record → {MAC_MINI_IP} in OPNsense)")
+        if wrong_target:
+            print(f"  Wrong A-record target (expected {MAC_MINI_IP}):")
+            for d in wrong_target:
+                print(f"    - {d}")
+        if extra:
+            print(f"  (informational) {len(extra)} Unbound .internal records not in Caddy:")
+            for d in extra:
+                print(f"    - {d}")
+        return 1
+
+    print(
+        f"OK: caddy-unbound-parity — "
+        f"{status.get('caddy_count')} Caddy sites all have Unbound A-records"
+    )
+    if extra:
+        print(f"  (informational) {len(extra)} Unbound .internal records not in Caddy:")
+        for d in extra:
+            print(f"    - {d}")
     return 0
 
 
@@ -444,6 +615,7 @@ CHECKS = {
     "adr-readme-sync": cmd_adr_readme_sync,
     "decision-register-sync": cmd_decision_register_sync,
     "caddy-internal-domains": cmd_caddy_internal_domains,
+    "caddy-unbound-parity": cmd_caddy_unbound_parity,
     "netbox-services-have-adrs": cmd_netbox_services_have_adrs,
     "framework-table-coherence": cmd_framework_table_coherence,
     "launchd-recency": cmd_launchd_recency,
@@ -463,8 +635,8 @@ def cmd_all() -> int:
 
 
 def main() -> int:
-    if len(sys.argv) != 2:
-        print("Usage: check-repo-coherence.py <subcommand>", file=sys.stderr)
+    if len(sys.argv) < 2:
+        print("Usage: check-repo-coherence.py <subcommand> [flags]", file=sys.stderr)
         print("Subcommands:", file=sys.stderr)
         for name in CHECKS:
             print(f"  {name}", file=sys.stderr)
