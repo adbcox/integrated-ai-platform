@@ -79,6 +79,36 @@ After first start:
 
 ---
 
+## Connector authoring prerequisites (WP-17-D-04)
+
+**Read before writing `framework/openproject_connector.py`.**
+
+OpenProject 15 has a single per-user API access key (no per-token
+scopes — the `Reset` action regenerates the user's one key, and that
+key acts with the user's full permissions). The only way to scope
+down a connector's blast radius is at the **user-account** level,
+not at the token level.
+
+Before authoring the connector auth flow:
+
+1. **Create a dedicated low-privilege user** `iap-sync` with a
+   custom role granting only the minimum permissions the sync
+   actually needs — work-package CRUD, version create, custom-field
+   read/write. No admin, no user-management, no project-create.
+2. **Reset that user's API key** and capture the value.
+3. **Store at `secret/openproject/api`** under the `token` field
+   (replacing the admin-scoped token populated in WP-01 T1.7).
+4. **Reset the admin user's API key** (regenerate, do not store) so
+   the broad-scope token from T1.7 stops being a long-lived
+   high-privilege credential floating around.
+
+Reasoning: WP-04 is the right time to switch because that's when
+the connector's exact API surface is first known — scoping the
+role to actual usage avoids both over-permissioning (security) and
+under-permissioning (forced re-grants mid-development).
+
+---
+
 ## Migration from Plane
 
 See:
