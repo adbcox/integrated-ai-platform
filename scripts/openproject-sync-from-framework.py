@@ -113,15 +113,24 @@ class Phase:
     deliverables: list[Deliverable]
 
 
-# ── Markdown parsing (verbatim from plane-sync) ──────────────────────────────
+# ── Markdown parsing (forked from plane-sync; extended for Phase 17 rows) ────
 
+# Phase 17 framework rows carry a "(historical: 17.X)" annotation between
+# the extid and the colon, added in WP-17-04-01.5 when the identifier
+# convention was corrected from shorthand "17.X" to canonical D-NN-MM.
+# The original plane-sync ROW_RE didn't tolerate this, so Phase 17 rows
+# parsed as 0 deliverables — silent no-op since 51b012e. The optional
+# non-capturing group below restores Phase 17 visibility while preserving
+# backward compat for Phase 16 and earlier rows (no parenthetical).
 ROW_RE = re.compile(
     r"^\|\s*"
     r"(?P<extid>"
     r"D-(?P<phase_d>\d+)-[\w.\-]+"
     r"|"
     r"(?P<phase_t>\d+)\.[A-Z]"
-    r")\s*:\s*(?P<title>.+?)\s*"
+    r")"
+    r"(?:\s+\(historical:[^)]+\))?"
+    r"\s*:\s*(?P<title>.+?)\s*"
     r"\|\s*(?P<status>[^|]+?)\s*"
     r"\|\s*(?P<reference>[^|]+?)\s*\|\s*$"
 )
