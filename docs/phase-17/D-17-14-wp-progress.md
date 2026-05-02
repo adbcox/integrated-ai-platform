@@ -135,6 +135,143 @@ latency figures based on this single-node WP-04 run.
 
 ---
 
+### WP-17-14-06 — litellm route operational; Open WebUI deferred (DONE 2026-05-02, narrowed scope per operator decision)
+
+**Scope as delivered.** litellm-gateway carries a sixth route,
+`exo-qwen-coder-7b`, pointing at exo's OpenAI-compatible API at
+`host.docker.internal:52416/v1`. The route is callable by any
+litellm-authed client (subagents, MCP servers, platform scripts,
+autonomous-coding agents) using the `LITELLM_MASTER_KEY` Bearer
+token. End-to-end verified: client → litellm:4000 → exo:52416 →
+loaded MLX runner on Mac Mini → coherent OpenAI-shaped response.
+
+**Scope explicitly deferred.** Open WebUI's interactive-chat surface
+for the exo route. Requires its own follow-up deliverable; see
+Finding S.
+
+**Why narrower than original brief.** The original WP-06 brief
+included "operator can chat with cluster-routed model via Open
+WebUI." That requires Open WebUI to authenticate against
+litellm-gateway, which it currently cannot — `OPENAI_API_KEY` in
+the Open WebUI container is effectively empty (length=1; SHA-256
+hash matches the empty-string hash). Today the platform routes
+Open WebUI directly to Ollama via `OLLAMA_BASE_URL`, bypassing
+litellm entirely; the empty `OPENAI_API_KEY` had been latent.
+Reaching exo through Open WebUI requires populating
+`OPENAI_API_KEY` from Vault — a Vault-Agent-sidecar wiring that is
+the right technical answer but the wrong scope answer mid-D-17-14
+(operator-rejected as scope expansion against tonight's
+discipline).
+
+**litellm config change applied.**
+File: `~/control-center-stack/stacks/gateways/litellm_config.yaml`
+Change shape: ADDITION only (no modification to the five existing
+Ollama routes). Block:
+
+```yaml
+  - model_name: exo-qwen-coder-7b
+    litellm_params:
+      model: openai/mlx-community/Qwen2.5-Coder-7B-Instruct-4bit
+      api_base: http://host.docker.internal:52416/v1
+      api_key: "sk-no-key-required"  # pragma: allowlist secret
+```
+
+Notes on the literal `api_key` value: this is NOT a credential.
+exo runs local with no auth; litellm's openai-provider client
+mandates *some* `api_key` to satisfy client-side schema validation.
+If exo ever introduces auth, this moves to a Vault-Agent-rendered
+template — flagged for runbook.
+
+**Reload mechanism.** `docker restart litellm-gateway`; healthy in
+6s. Container restart picks up the YAML diff (litellm reads config
+on startup; no hot-reload needed for config additions).
+
+**End-to-end verification.**
+- `/v1/models` registers six routes (5 ollama + `exo-qwen-coder-7b`)
+- `POST /v1/chat/completions` with `model=exo-qwen-coder-7b`,
+  Bearer `$LITELLM_MASTER_KEY`, returns `{content:'ack'}` from the
+  loaded model in <1s; `usage` block populated correctly.
+- Authentication uses LITELLM_MASTER_KEY rendered by litellm's
+  existing Vault Agent sidecar at `/vault/secrets/credentials.env`
+  (no new Vault path required, no new sidecar required).
+
+**Hash-only verification on token operations.** LITELLM_MASTER_KEY
+extracted from container's Vault-Agent-rendered file for testing;
+no value displayed in transcript. SHA-256 hash comparison used to
+diagnose the empty `OPENAI_API_KEY` in Open WebUI (both hashes
+shown to operator; values never exposed). Per platform doctrine.
+
+**Forward-compatibility with WP-05 unblock.** When/if multi-node
+distributed inference becomes available (upstream exo fix or D-17-25
+macOS-alignment hypothesis confirmed), no litellm config change is
+required: exo's OpenAI API surface is identical whether the
+underlying placement is single-node or distributed. The
+`exo-qwen-coder-7b` route stays as-is; the runner just becomes
+multi-node behind the same endpoint.
+
+---
+
+### WP-17-14-05 — DEFERRED at WP-04+WP-06 closeout (operator decision 2026-05-02)
+
+**Original scope.** Distributed inference of a pool-sized
+(70B-class) model across the 144 GB cluster pool to validate that
+the unified pool unlocks models that don't fit on either node
+alone. This is the original D-17-14 thesis: cluster-as-aggregate-
+capacity, not cluster-as-model-zoo.
+
+**Deferral reason.** Upstream-blocked per Finding O. exo's MLX
+backends (MlxRing, MlxJaccl) cannot establish multi-node
+connectivity over TB5; cross-referenced with exo upstream
+`MISSED_THINGS.md` ("Jaccl coordinator over TB5 is unstable") and
+TODO items 15–16 (TB5 prioritization not implemented).
+
+**Why NOT re-scope WP-05 to a single-node model on Mac Studio.**
+Operator-rejected. Single-node Mac-Studio inference does not
+validate the pool capability; it validates Mac Studio alone (which
+could be done without ever setting up a cluster). Re-scope would be
+"changing the question to fit the answer." Mac Studio capability
+characterization, if needed, belongs in a future deliverable with
+its own framework row, not bolted onto D-17-14.
+
+**Why NOT re-scope WP-05 to model-zoo / cross-node API routing.**
+Operator-rejected. Validates a different cluster-value axis (model-
+zoo capacity vs unified-pool capacity) and represents motivated-
+momentum scope expansion mid-deliverable. Worth a future
+deliverable; not appropriate as a substitute for the original
+WP-05.
+
+**Revisit triggers (either-of):**
+- (a) Upstream exo TB5 prioritization + Jaccl coordinator
+  stabilization lands (track exo upstream `MISSED_THINGS.md` and
+  TODO items 15–16).
+- (b) D-17-25 macOS alignment hypothesis test confirms
+  RDMA-as-primary-path fixes the MLX-backend issue (Finding I
+  refinement).
+
+**Independence of WP-04 / WP-06.** WP-05 deferred status does NOT
+affect WP-04 single-node baseline (already DONE) or WP-06 platform
+integration (in progress). Both are independent deliverables that
+close at full scope.
+
+**T5 framing requirement.** D-17-14 closes with PARTIAL realization
+of original goal:
+- Achieved: cluster substrate (libp2p, peer discovery, 144 GB
+  topology reporting, dashboard, OpenAI API surface), single-node
+  inference benchmarked, platform integration via litellm + Open
+  WebUI.
+- NOT achieved: distributed inference across the 144 GB unified
+  pool.
+- Reason: upstream-blocked (Finding O, upstream-acknowledged in
+  MISSED_THINGS.md).
+
+`docs/architecture-facts/exo-cluster.md` (T5) MUST EXPLICITLY state
+that distributed inference is NOT operational at D-17-14 close.
+State what works and what doesn't with clear boundaries — future
+Claude sessions reading the framework must NOT read D-17-14's
+"DONE" status as "distributed inference is operational."
+
+---
+
 ### Chronicle findings (toolchain prep — to be folded into T5 doctrine)
 
 These findings emerged during WP-17-14-01/02 toolchain prep. Each one
@@ -392,11 +529,45 @@ both nodes share) or PID-file-based shutdown. Avoid cmdline-flag-
 substring matching, which is fragile to argument-order differences
 between roles.
 
-**Chronicle count check.** A–R = 18 InvenTree-pattern findings in
+**Finding S — Open WebUI's OpenAI-compatible client path is
+unwired (latent until exercised).** Detected during WP-06: Open
+WebUI container has `OPENAI_API_BASE_URL=http://litellm-gateway:4000/v1`
+set, BUT `OPENAI_API_KEY` is effectively empty (length=1; SHA-256
+matches the empty-string hash). The platform has worked through
+Open WebUI for months because Open WebUI takes the
+`OLLAMA_BASE_URL=http://host.docker.internal:11434` path for local
+models and never exercised the OpenAI-compatible client. The empty
+key was latent — invisible until WP-06 introduced the first
+use-case (exo via litellm) that actually needed it. **Wiring path
+when the platform wants the litellm-routed UI surface:**
+1. LITELLM_MASTER_KEY value at known Vault path (already exists at
+   the path consumed by litellm-gateway's own Vault Agent sidecar).
+2. Vault Agent sidecar for `open-webui` container rendering the
+   key into a credentials file at
+   `/Users/admin/.vault-agent-secrets/open-webui/`.
+3. Compose rewire for `open-webui` to source `OPENAI_API_KEY` from
+   that file (NOT a Docker `environment:` variable, per
+   credential-supply doctrine).
+This is its own deliverable scope (provisional D-17-26 or wherever
+it slots) when the platform actually wants the Open WebUI UI surface
+for litellm-routed models. Deferred from D-17-14 because mid-
+deliverable scope expansion against tonight's discipline; Vault-
+Agent-sidecar work has its own doctrine-clean implementation pattern
+that deserves its own scope. **Meta-instance note for T5:** Finding
+S is itself an InvenTree-pattern instance — state appeared present
+(`OPENAI_API_KEY` env var was set) but working-system substrate
+wasn't actually established (the value was empty). Fits the same
+"appears established but isn't" pattern as Findings A, K, L, P; the
+new wrinkle is that the gap surfaced only when a new consumer
+exercised the previously-latent path.
+
+**Chronicle count check.** A–S = 19 InvenTree-pattern findings in
 this single deliverable. Pattern of "state appears established but
 working-system substrate isn't actually present" is structurally
-recurrent in exo bring-up; T5 must surface this as a deliverable-
-level lesson, not just per-finding remediation.
+recurrent in exo bring-up AND in the broader platform integration
+surface (Finding S extends the pattern outside the exo install
+itself); T5 must surface this as a deliverable-level lesson, not
+just per-finding remediation.
 
 ---
 

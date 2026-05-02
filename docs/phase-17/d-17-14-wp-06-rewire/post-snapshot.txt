@@ -1,0 +1,89 @@
+## Post-snapshot — D-17-14 WP-06 litellm config rewire (2026-05-02)
+
+**File:** ~/control-center-stack/stacks/gateways/litellm_config.yaml
+**Post-state captured after adding `exo-qwen-coder-7b` route + container restart.**
+
+Captured 2026-05-02 ~16:35 local.
+
+### Live file content
+```yaml
+model_list:
+  # Local models via Ollama (native on host at :11434)
+  - model_name: qwen-coder-32b
+    litellm_params:
+      model: ollama/qwen2.5-coder:32b
+      api_base: http://host.docker.internal:11434
+
+  - model_name: qwen-coder-14b
+    litellm_params:
+      model: ollama/qwen2.5-coder:14b
+      api_base: http://host.docker.internal:11434
+
+  - model_name: qwen-coder-7b
+    litellm_params:
+      model: ollama/qwen2.5-coder:7b
+      api_base: http://host.docker.internal:11434
+
+  - model_name: devstral
+    litellm_params:
+      model: ollama/devstral:latest
+      api_base: http://host.docker.internal:11434
+
+  - model_name: deepseek-coder
+    litellm_params:
+      model: ollama/deepseek-coder-v2:latest
+      api_base: http://host.docker.internal:11434
+
+  # exo cluster — single-node MLX inference (D-17-14 WP-06)
+  # Routes to the exo runner currently hosting the model. As of D-17-14
+  # close, multi-node distribution is upstream-blocked (Finding O); the
+  # runner is single-node on Mac Mini. exo's API surface is identical
+  # whether the underlying placement is single-node or distributed, so
+  # no litellm config change is required if WP-05 unblocks later.
+  # api_key is a literal placeholder — exo runs local with no auth;
+  # litellm's openai-provider client requires some api_key to satisfy
+  # client-side schema validation. NOT a real credential.
+  - model_name: exo-qwen-coder-7b
+    litellm_params:
+      model: openai/mlx-community/Qwen2.5-Coder-7B-Instruct-4bit
+      api_base: http://host.docker.internal:52416/v1
+      api_key: "sk-no-key-required"  # pragma: allowlist secret
+
+general_settings:
+  master_key: os.environ/LITELLM_MASTER_KEY
+  # No database in config — use file-based mode for homelab simplicity
+
+router_settings:
+  num_retries: 2
+  retry_after: 5
+```
+
+### Container state post-rewire
+
+- `litellm-gateway`: restarted, reached `healthy` in 6s
+- `/v1/models` returns 6 routes; new entry `exo-qwen-coder-7b` present
+- End-to-end smoke test: POST /v1/chat/completions with
+  `model=exo-qwen-coder-7b` returns OpenAI-shaped response from the
+  loaded mlx-community/Qwen2.5-Coder-7B-Instruct-4bit runner on
+  Mac Mini in <1s.
+
+### Diff vs pre-snapshot
+
+Single addition between the existing `deepseek-coder` block and the
+"Cloud models removed Phase 13.5" comment — a new model_list entry
+plus a 9-line documentation comment explaining placement, the
+`api_key` placeholder, and forward-compatibility with WP-05 unblock.
+
+NO modification to existing routes; NO modification to
+`general_settings` or `router_settings`; NO change to the Vault
+Agent sidecar; NO change to `docker-compose.yml`; NO new env vars
+or secrets introduced.
+
+### Rollback procedure (unchanged from pre-snapshot)
+
+1. `cd ~/control-center-stack/stacks/gateways`
+2. Edit `litellm_config.yaml`: delete the `exo-qwen-coder-7b` block
+   (and the 9-line comment block above it).
+3. `docker restart litellm-gateway`
+4. Wait for `healthy` (typically <10s).
+5. Verify `/v1/models` returns 5 routes (not 6).
