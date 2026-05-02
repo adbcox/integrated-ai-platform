@@ -159,6 +159,69 @@ Current identifier on this platform:
 future Metal Toolchain updates, requiring `.zshenv` re-edit. This is a
 **permanent per-session workaround**, not a one-time fix.
 
+**Finding H — Multi-path topology requires explicit static-peer
+multiaddr to deterministically route cluster traffic over TB5 vs LAN.**
+exo's libp2p layer auto-discovers via UDP broadcast (mDNS) by default;
+on a topology with two reachable paths between nodes (10 GbE LAN
+192.168.10.x/24 and TB-Bridge link-local 169.254.x.x/16), auto-discovery
+forms a cluster over whichever path broadcasts first — typically LAN,
+since 192.168 is broadcast-routable while 169.254 link-local sometimes
+isn't. That's a silent perf trap: cluster works, inference functions,
+but uses the 8x slower path. Resolution: pass an explicit
+`--bootstrap-peers /ip4/<TB-IP>/tcp/<port>/p2p/<peer-id>` multiaddr to
+the dialing node, with the OS routing table determining the path
+(verified via `route -n get <TB-IP>` resolving to bridge0). Confirmed
+via lsof showing the established TCP connection on bridge0 IPs only.
+Operator framing: hospitality-TV analogy — two paths exist for a
+reason; cluster traffic must use the path it was built for, not by
+happy accident of broadcast timing.
+
+**Finding I — exo `topology.connections` fields label RDMA interfaces
+even when RDMA is not active.** The `/state` JSON returned by exo's
+HTTP API includes
+`connections.<peer>.<peer>.[{sourceRdmaIface, sinkRdmaIface}]`. These
+strings (e.g. `rdma_en3`, `rdma_en5`) name the RDMA-capable interface
+exo would use **if** RDMA were negotiated; they do NOT confirm RDMA is
+active transport. Authoritative answer for active-transport status is
+the dashboard banner ("⚠️ RDMA NOT ENABLED ✕") or the established
+TCP socket via lsof. Doctrine for runbook: don't trust the
+`*RdmaIface` fields as evidence of RDMA-active transport — verify via
+dashboard banner or socket-level inspection.
+
+**Finding I (refinement) — RDMA over TB5 requires aligned macOS
+versions on both nodes; this platform currently does not satisfy
+that.** Mac Mini at macOS 26.3 (build 25D125), Mac Studio at 26.4.1
+(build 25E253). exo gracefully falls back to TCP-over-TB-Bridge
+(positive validation of exo's robustness — cluster forms and works
+without RDMA). Aligning macOS versions (Mac Mini upgrade to 26.4.1)
+would potentially unlock RDMA-class throughput. **NOT in D-17-14
+scope**; this is a known performance unlock for a separate deliverable
+(framework row to be authored). Implication for T4 tier prompt: the
+"latency vs single-node" trade-off currently quoted in
+`docs/system-prompts/tiers/T4-distributed.md` reflects TCP-over-TB
+throughput; RDMA unlock would shift that math favorably.
+
+**Finding J — exo's HTTP API binds to all interfaces by default
+(LAN-reachable).** Mac Studio's exo API listens on `*:52415` (lsof
+verified IPv4 wildcard). Anyone on `192.168.10.0/24` can reach
+`http://192.168.10.142:52415` and submit inference requests to the
+cluster. Mac Mini's API on port 52416 was observed only on
+`127.0.0.1:52416` in lsof — possibly because it's the dialing
+peer, possibly transient state during cluster formation; reconfirm at
+WP-06 when integrating with litellm/Open WebUI. Currently the LAN is
+internal-only behind OPNsense with no untrusted devices, so this is
+not an active risk — but it's a real architectural fact requiring
+firewall posture (Caddy or OPNsense rule) once cluster is
+production-traffic-bearing. T5 runbook to document.
+
+**Finding K — `~/.exo/models` directory must exist before exo starts.**
+exo's info-gatherer probes disk usage at `~/.exo/models` on startup;
+if missing, logs a non-fatal `FileNotFoundError` traceback. Cluster
+forms and runs anyway (graceful degradation — the missing-dir error
+is in a peripheral monitoring loop, not the critical path). Hygiene
+step for runbook: `mkdir -p ~/.exo/models` before launch on every
+node.
+
 ---
 
 ### Operator decision doctrine — captured here for T5 codification
