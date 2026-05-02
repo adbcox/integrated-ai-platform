@@ -1,0 +1,1 @@
+2026-05-02T15:55:27Z	repo=nomic-ai/nomic-embed-text-v1.5	ollama_tag=d-17-10-test-bogus-tag-do-not-use:test	verify_exit=2	reason=D-17-10 T6 validation test: synthetic override-path exercise to confirm log-entry write. Not a real pull; bogus tag intentional.

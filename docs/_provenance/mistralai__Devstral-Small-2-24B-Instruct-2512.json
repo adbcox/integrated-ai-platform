@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "repo": "mistralai/Devstral-Small-2-24B-Instruct-2512",
+  "verdict": "verified-specific",
+  "exit_code": 0,
+  "threshold": 0.7,
+  "kit_version": "1.0.0",
+  "timestamp_utc": "2026-05-02T15:43:47Z",
+  "top_matches": [
+    {
+      "model_id": "Devstral-Small-2-24B-Instruct-2512",
+      "family_id": "mistralai--ministral",
+      "pipeline_score": 1.0,
+      "match_type": "exact_arch",
+      "provenance_decision": "Confirmed Match"
+    },
+    {
+      "model_id": "Magistral-Small-2506",
+      "family_id": "mistralai--mistral",
+      "pipeline_score": 0.9919,
+      "match_type": "mfi_only",
+      "provenance_decision": "High-Confidence Match (metadata only)"
+    },
+    {
+      "model_id": "Mistral-Nemo-Instruct-2407",
+      "family_id": "mistralai--mistral",
+      "pipeline_score": 0.9919,
+      "match_type": "mfi_only",
+      "provenance_decision": "High-Confidence Match (metadata only)"
+    },
+    {
+      "model_id": "Mistral-Small-24B-Instruct-2501",
+      "family_id": "mistralai--mistral",
+      "pipeline_score": 0.9919,
+      "match_type": "mfi_only",
+      "provenance_decision": "High-Confidence Match (metadata only)"
+    },
+    {
+      "model_id": "Ministral-8B-Instruct-2410",
+      "family_id": "mistralai--ministral",
+      "pipeline_score": 0.8468,
+      "match_type": "mfi_only",
+      "provenance_decision": "High-Confidence Match (metadata only)"
+    }
+  ],
+  "model_info": {
+    "architectures": [
+      "Mistral3ForConditionalGeneration"
+    ],
+    "model_type": "mistral3",
+    "hidden_size": 5120,
+    "num_hidden_layers": 40
+  },
+  "scan_elapsed_ms": 1583.82
+}

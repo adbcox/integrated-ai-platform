@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "repo": "HuggingFaceTB/SmolLM2-135M-Instruct",
+  "verdict": "verified-base-family",
+  "exit_code": 3,
+  "threshold": 0.7,
+  "kit_version": "1.0.0",
+  "timestamp_utc": "2026-05-02T15:55:03Z",
+  "top_matches": [
+    {
+      "model_id": "SmolLM2-135M",
+      "family_id": "huggingfacetb--smollm",
+      "pipeline_score": 1.0,
+      "match_type": "exact_arch",
+      "provenance_decision": "Confirmed Match"
+    },
+    {
+      "model_id": "gpt2-xl",
+      "family_id": "openaicommunity--gpt",
+      "pipeline_score": 0.7081,
+      "match_type": "similarity",
+      "provenance_decision": "Weak Match"
+    },
+    {
+      "model_id": "gpt2",
+      "family_id": "openaicommunity--gpt",
+      "pipeline_score": 0.69,
+      "match_type": "similarity",
+      "provenance_decision": "Weak Match"
+    },
+    {
+      "model_id": "SmolLM2-1.7B",
+      "family_id": "huggingfacetb--smollm",
+      "pipeline_score": 0.6845,
+      "match_type": "similarity",
+      "provenance_decision": "Weak Match"
+    },
+    {
+      "model_id": "DeepSeek-R1-Distill-Qwen-1.5B",
+      "family_id": "deepseekai--deepseek",
+      "pipeline_score": 0.6491,
+      "match_type": "similarity",
+      "provenance_decision": "Not Matched"
+    }
+  ],
+  "model_info": {
+    "architectures": [
+      "LlamaForCausalLM"
+    ],
+    "model_type": "llama",
+    "hidden_size": 576,
+    "num_hidden_layers": 30
+  },
+  "scan_elapsed_ms": 13452.47
+}
