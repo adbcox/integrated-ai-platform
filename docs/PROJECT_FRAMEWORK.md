@@ -363,10 +363,10 @@ Deliverable table:
 | 17.C: Physical architecture audit | DONE | c25c9ac |
 | 17.D: Replace Plane with OpenProject | NOT STARTED | per Phase 17 plan |
 | 17.E: Observability role-clarification | DONE | 9393785+9390c11 |
-| 17.F: Agent surface audit + consolidation | NOT STARTED | per Phase 17 plan |
+| 17.F: Agent surface audit + consolidation | DONE | 62b595d+57d7399 |
 | 17.G: topology-api audit | DONE | 5698f30 |
 | 17.H: Sportarr fix-or-retire | DONE | 4ae00a2 |
-| 17.I: OPNsense API integration for DNS-parity | NOT STARTED | per Phase 17 plan |
+| 17.I: OPNsense API integration for DNS-parity | DONE | ecd7274 |
 | 17.J: Cisco Provenance Kit | NOT STARTED | per Phase 17 plan |
 | 17.K: Local LLM system prompt library | NOT STARTED | per Phase 17 plan |
 | 17.L: Gemma 4 + Qwen3-Coder-Next benchmarks | NOT STARTED | per Phase 17 plan |
