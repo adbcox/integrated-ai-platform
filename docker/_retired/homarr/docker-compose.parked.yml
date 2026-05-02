@@ -1,0 +1,56 @@
+# PARKED — homarr — 2026-05-01 (17.F PARK-RETIRE)
+#
+# Reason: zero traffic over 7-day window (D#20 probe). Service-portal
+# surface is fully covered by `homepage` (homepage.internal). homarr
+# was redundant.
+#
+# Original location: ~/control-center-stack/stacks/ai-control/docker-compose.yml
+#   (out-of-repo per D#15 — rewire-log entry at
+#    docker/_rewire-log/2026-05-01-homarr-retirement.md)
+#
+# Volumes preserved (NOT garbage-collected):
+#   - ai-control_homarr-config
+#   - ai-control_homarr-icons
+#   - ai-control_homarr-data
+#
+# Restoration: see docker/_retired/homarr/README.md (recipe)
+# Audit:       docs/audits/capability/homarr-2026-05-01.md
+
+# Volume declarations (must be present in the live compose for the
+# named volumes to be recognized — they remain declared in the live
+# compose with retirement comments; this block is the parked copy).
+volumes:
+  homarr-config:
+  homarr-icons:
+  homarr-data:
+
+services:
+
+  # ── Homarr — service dashboard with Docker auto-discovery ──────────────────
+  # No credentials; not rewired (A.7 scope: only services consuming creds)
+  homarr:
+    image: ghcr.io/ajnart/homarr:latest
+    container_name: homarr
+    restart: unless-stopped
+    ports:
+      - "7575:7575"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - homarr-config:/app/data/configs
+      - homarr-icons:/app/public/icons
+      - homarr-data:/data
+    environment:
+      TZ: "America/New_York"
+      DEFAULT_COLOR_SCHEME: "dark"
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - control-center-net
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"const h=require('http'),o=require('os');h.get('http://'+o.hostname()+':7575/',r=>process.exit(r.statusCode<500?0:1)).on('error',()=>process.exit(1))\""]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 20s
