@@ -29,8 +29,8 @@ the decision content here.
 
 | ADR | Title | One-line summary |
 |-----|-------|------------------|
-| [A-006](adr/ADR-A-006.md) | Repo docs are canonical for architecture and roadmap planning | The repo is the source of truth; external surfaces (Notion, Plane, etc.) are derived views. |
-| [A-010](adr/ADR-A-010-external-systems.md) | External systems should be adopted where commodity fit is strong | Adopt commodity tools (Vault, NetBox, Plane, Grafana) rather than building from scratch. |
+| [A-006](adr/ADR-A-006.md) | Repo docs are canonical for architecture and roadmap planning | The repo is the source of truth; external surfaces (Notion, OpenProject, etc.) are derived views. |
+| [A-010](adr/ADR-A-010-external-systems.md) | External systems should be adopted where commodity fit is strong | Adopt commodity tools (Vault, NetBox, OpenProject, Grafana) rather than building from scratch. |
 
 ## Operations and security
 

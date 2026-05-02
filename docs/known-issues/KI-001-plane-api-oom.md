@@ -3,6 +3,10 @@
 ## Status
 RESOLVED — Real cause was gunicorn `WORKER TIMEOUT` (default 30s), not memory pressure. Set `GUNICORN_TIMEOUT=120` and added `mem_limit: 2G` to plane-api in docker-compose-plane.yml. Container observed for 150s with 0 restart events and 0 SIGKILL/SIGABRT log entries.
 
+**Moot 2026-05-01:** Plane CE itself was retired in D-17-04 WP-17-04-06.
+The fix above is preserved as historical record only — plane-api no
+longer runs on the platform.
+
 ## Observation
 docker-plane-api-1 logs show recurring:
 ```

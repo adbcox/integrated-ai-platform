@@ -43,7 +43,7 @@ Future nodes (not yet deployed):
   │  │                                                          │    │
   │  │  AI / LLM        Observability       Platform            │    │
   │  │  ─────────────   ───────────────     ─────────────────   │    │
-  │  │  Ollama :11434   Grafana :3030       Plane :3001        │    │
+  │  │  Ollama :11434   Grafana :3030       OpenProject :8086 │    │
   │  │  LiteLLM :4000   VictoriaMetrics     Nextcloud :8085    │    │
   │  │  OpenWebUI :3002   :8428             Vaultwarden :8083  │    │
   │  │  Obot :8090      VMAgent :8429       Homarr :7575       │    │
@@ -122,9 +122,8 @@ See `docs/architecture/mcp-server-architecture.md` for full MCP topology.
 |---|---|---|
 | HashiCorp Vault | 8200 | Credential store; server mode; file backend |
 | Vault Auto-Unseal (Transit) | 8201 | seal-vault container |
-| Plane CE | 3001 | Project management |
-| Plane API | 8000 | Plane backend API |
-| Plane PostgreSQL | 5433 | Plane DB |
+| OpenProject | 8086 | Project management (replaced Plane CE 2026-05-01, D-17-04) |
+| OpenProject PostgreSQL | (internal) | OpenProject DB (internal to compose network) |
 | Nextcloud | 8085 | Calendar/files |
 | Vaultwarden | 8083 | Password manager |
 | Homarr | 7575 | Alternate dashboard |
@@ -230,7 +229,7 @@ Known hardening gaps (Phase 14 D-DOC tracking):
 | Observability | `docker/observability-stack.yml` | vm, vmagent, grafana, uptime-kuma, node-exporter, cadvisor |
 | Knowledge | `docker/knowledge-stack.yml` | anythingllm |
 | Obot + MCP | `docker/obot-stack.yml` | obot, mcp-filesystem-remote, mcp-docs-remote |
-| Plane CE | `docker/docker-compose-plane.yml` | plane-api, plane-web, plane-worker, plane-beat, plane-db, plane-redis |
+| OpenProject | `docker/openproject/docker-compose.yml` | openproject, openproject-db, openproject-cache (Plane CE retired 2026-05-01, D-17-04) |
 | NetBox CMDB | `docker/netbox/docker-compose.yml` | netbox, netbox-worker, netbox-housekeeping, netbox-db, netbox-redis |
 | MCP (plex) | `docker/mcp/docker-compose.yml` | plex-mcp, vault-agent-plex-mcp |
 | MCP Docker | `docker/mcp/docker-compose.mcp-docker-remote.yml` | mcp-docker-remote |

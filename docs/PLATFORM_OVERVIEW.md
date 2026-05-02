@@ -5,6 +5,12 @@
 > For live service inventory, query NetBox CMDB at `netbox.internal`
 > or run: `CMDB_SOURCE=netbox python3 scripts/cmdb_source.py`
 > The content below is preserved for historical reference only.
+>
+> **Plane CE retired 2026-05-01 (D-17-04).** The Plane CE / Plane API /
+> Plane PostgreSQL / MinIO-for-Plane references in the inventory and
+> ports tables below describe the pre-D-17-04 state. The replacement
+> is OpenProject at `http://192.168.10.145:8086`. See `docs/ARCHITECTURE.md`
+> for the live inventory.
 
 ---
 

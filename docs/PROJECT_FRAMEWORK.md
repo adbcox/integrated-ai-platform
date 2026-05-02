@@ -121,7 +121,7 @@ agent) BOTH must observe this.
 - `python3 scripts/check-repo-coherence.py all` → exit 0
 - `python3 scripts/cross-index-validate.py` → exit 0
 - `python3 scripts/phase-deliverable-count.py <N>` → no error
-- `/Users/admin/.venv-block-4c/bin/python scripts/plane-sync-from-framework.py --dry-run` → exit 0
+- `/Users/admin/.venv-block-4c/bin/python scripts/openproject-sync-from-framework.py --dry-run` → exit 0
 - `xindex /healthz` → all sources `status=ok`
 - No new known-issues created in the prior session that haven't been
   triaged into a deliverable
@@ -146,7 +146,7 @@ invokes.
 
 Agent runtimes with compactable context (Claude Code, others)
 **compact at the close of every deliverable**, AFTER the final
-commit + Plane sync + surface emit. Compaction never happens
+commit + OpenProject sync + surface emit. Compaction never happens
 mid-deliverable.
 
 **Compaction summary preserves:**
@@ -329,7 +329,7 @@ D-16-08 and D-16-09 were added 2026-05-01 to address the operator's
 "real-time architecture visibility" requirement. Both depend on the
 cross-index foundation (D-16-02 + 02.1 + 02.2) and could not be scoped
 earlier — they consume xindex's normalized topology (NetBox devices /
-services + Plane state) to project current architecture into Grafana
+services + OpenProject state) to project current architecture into Grafana
 dashboards (D-16-08) and a Structurizr C4 model (D-16-09).
 
 Deliverable table:
@@ -415,8 +415,9 @@ binding waits on DNS authority resolution).
 Phase 16 carry-overs (D-16-03/05/08/09) marked DEFERRED to Phase 17
 in §8 — see Phase 17 IDs D-17-15/16/17/18 for new tracking.
 
-**Plane mirror:** `https://plane.internal/iap/projects/dbcd4476-1e37-4812-a443-0914ec8380fc/modules/f4d9a8ee-94a3-4402-a475-3b3514c21569/`
-(Phase-17 module created in Bundle A.5 commit 5; 20 deliverable issues + 1 phase-issue mirrored.)
+**OpenProject mirror:** `http://192.168.10.145:8086/projects/roadmap/work_packages?query_props=...&filters=customField2:Phase-17`
+(Phase-17 Version + 670 imported WPs; canonical PM substrate as of D-17-04 2026-05-01.
+ Plane CE retired 2026-05-01 in WP-17-04-06 — historical mirror URL no longer reachable.)
 
 ---
 

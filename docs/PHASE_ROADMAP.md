@@ -30,8 +30,16 @@ didn't have before it opened.
 
 **Capability milestone:** Mac Studio is a productive AI/ML compute node.
 InvenTree holds real supplier data and talks to Mouser/DigiKey. The
-platform has a unified cross-index spanning NetBox + InvenTree + Plane + ADRs.
+platform has a unified cross-index spanning NetBox + InvenTree + OpenProject + ADRs.
 Phase 13 is formally closed.
+
+> **Plane → OpenProject (D-17-04, 2026-05-01).** Items below that
+> reference "Plane" as the project-management surface predate the
+> retirement and are preserved as historical scope. Where the text
+> describes still-active forward intent (Phase 16/17/18 prereqs,
+> webhook receivers, cross-index members, Nextcloud Deck migration),
+> read "Plane" as "OpenProject"; mechanical work to point the
+> integrations at OpenProject is tracked under D-17-04 / D-17-09.
 
 **Effort:** ~85–130h
 **Hard prerequisites before opening:**

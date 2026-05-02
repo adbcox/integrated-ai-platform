@@ -52,12 +52,13 @@ nav:
       - Drift Detection: runbooks/drift-detection-procedure.md
       - Regression Probe Failure: runbooks/regression-probe-failure.md
       - Incident Response: runbooks/incident-response.md
-      - Plane Web Auth: runbooks/plane-web-auth.md
+      - OpenProject Sync: runbooks/openproject-sync.md
+      - Plane Web Auth (retired): runbooks/plane-web-auth.md
       - Operating Model: runbooks/operating-model.md
       - H1 Rollback: runbooks/H1-rollback.md
       - What Changed (24h): runbooks/what-changed-last-24h.md
   - Canonical Patterns:
-      - Plane Connector: canonical-patterns/plane-connector-usage.md
+      - OpenProject Connector: canonical-patterns/openproject-connector-usage.md
   - Known Issues:
       - KI-004 mcp-docs-remote: known-issues/KI-004-mcp-docs-remote-startup.md
 

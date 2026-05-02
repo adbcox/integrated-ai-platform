@@ -42,7 +42,7 @@ python3 bin/ingest-docs.py --dir architecture --workspace engineering
 |---------|-----|
 | AnythingLLM (knowledge base) | http://192.168.10.145:3004 |
 | Open WebUI | http://192.168.10.145:3002 |
-| Plane (roadmap) | http://192.168.10.145:3001 |
+| OpenProject (roadmap) | http://192.168.10.145:8086 |
 | Grafana | http://192.168.10.145:3030 |
 | Uptime Kuma | http://192.168.10.145:3033 |
 | Ollama | http://192.168.10.145:11434 |
@@ -50,7 +50,7 @@ python3 bin/ingest-docs.py --dir architecture --workspace engineering
 ## Repository Structure
 
 ```
-bin/                    Scripts (ingest-docs.py, import_all_to_plane.py, ...)
+bin/                    Scripts (ingest-docs.py, ...)
 config/
   service-registry.yaml CMDB — 32 services, machine-readable
 docker/                 Compose stacks for all services
@@ -64,7 +64,7 @@ CODEOWNERS              Protection rules for critical paths
 
 ## Roadmap
 
-680 items tracked in Plane (http://192.168.10.145:3001) and searchable via AnythingLLM.
+670+ work packages tracked in OpenProject (http://192.168.10.145:8086) and searchable via AnythingLLM. (Plane CE retired 2026-05-01 — see D-17-04 in PROJECT_FRAMEWORK.md.)
 
 ```bash
 # Search roadmap via API
