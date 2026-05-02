@@ -35,25 +35,17 @@ _vat_validate_token() {
         vault token lookup >/dev/null 2>&1
 }
 
-_vat_read_from_init_keys_file() {
-    # Find newest ~/vault-init-keys-NEW-*.txt by mtime; extract Initial
-    # Root Token line. Globs (not hardcoded date) so future post-loss
-    # rebuilds work without editing this helper.
-    local newest
-    newest=$(/bin/ls -t "${HOME}"/vault-init-keys-NEW-*.txt 2>/dev/null | /usr/bin/head -n 1)
-    if [ -z "$newest" ] || [ ! -r "$newest" ]; then
-        return 1
-    fi
-    # Extract token from "Initial Root Token: hvs.XXX" line
-    local token
-    token=$(/usr/bin/awk -F': ' '/Initial Root Token/{print $2; exit}' "$newest")
-    if [ -z "$token" ]; then
-        return 1
-    fi
-    printf '%s' "$token"
-    # Source path for log only
-    _VAT_LAST_SOURCE="$newest"
-    return 0
+_vat_newest_init_keys_file() {
+    # Echo path to newest ~/vault-init-keys-NEW-*.txt (mtime order),
+    # or empty if none exist. Globs (not hardcoded date) so future
+    # post-loss rebuilds work without editing this helper.
+    /bin/ls -t "${HOME}"/vault-init-keys-NEW-*.txt 2>/dev/null | /usr/bin/head -n 1
+}
+
+_vat_read_root_token_from_file() {
+    # Extract "Initial Root Token: hvs.XXX" value from the given file.
+    local file="$1"
+    /usr/bin/awk -F': ' '/Initial Root Token/{print $2; exit}' "$file"
 }
 
 resolve_admin_vault_token() {
@@ -72,12 +64,16 @@ resolve_admin_vault_token() {
     fi
 
     # 2. Newest vault-init-keys-NEW-*.txt
-    token=$(_vat_read_from_init_keys_file 2>/dev/null) || token=""
-    if [ -n "$token" ] && _vat_validate_token "$token"; then
-        _vat_log "loaded admin token from ${_VAT_LAST_SOURCE} (validated)"
-        printf '%s' "$token"
-        unset token
-        return 0
+    local keys_file
+    keys_file=$(_vat_newest_init_keys_file)
+    if [ -n "$keys_file" ] && [ -r "$keys_file" ]; then
+        token=$(_vat_read_root_token_from_file "$keys_file")
+        if [ -n "$token" ] && _vat_validate_token "$token"; then
+            _vat_log "loaded admin token from ${keys_file} (validated)"
+            printf '%s' "$token"
+            unset token
+            return 0
+        fi
     fi
 
     # 3. ~/.vault-token (legacy) — accept ONLY if it validates
