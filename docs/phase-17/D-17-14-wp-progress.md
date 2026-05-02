@@ -34,12 +34,42 @@ into `docs/architecture-facts/exo-cluster.md` and this file is deleted.**
 
 ---
 
-### WP-17-14-02 — exo install on Mac Studio peer (PENDING)
+### WP-17-14-02 — exo install on Mac Studio peer (DONE 2026-05-02)
 
-**Status at this commit:** Mac Studio has Xcode 26.4.1 + Metal Toolchain
-+ TOOLCHAINS env var + Homebrew + CLT installed by operator. Still
-needs: rustup + nightly, macmon (vladkens fork), exo clone + uv sync.
-All steps unattended via SSH after toolchain prep.
+**Install location:** `~/repos/external-tools/exo/` on Mac Studio
+(reachable via `ssh mac-studio` → mac-studio.local on TB-Bridge en6).
+
+**Pinned versions on Mac Studio (parity with Mac Mini):**
+- exo: `v1.0.71` at commit `fd707de30b42db4211d15da96b9052e1dc280ed1`
+- MLX: `0.31.2.dev20260502+ec49d18e` (rltakashige
+  `mlx-jaccl-fix-small-recv` @ `ec49d18e`, source-built)
+- mlx-lm: rltakashige fork at commit
+  `c7010341e1f41ac15815feb5dc55134f44e3b044` (see Finding C
+  refinement below — exo pins TWO rltakashige forks, not one)
+- macmon: `0.7.0` from vladkens fork @
+  `a1cd06b6cc0d5e61db24fd8832e74cd992097a7d`
+- rustup toolchains: stable + nightly (minimal profile)
+- Apple toolchain: Xcode `26.4.1` build `17E202`, Metal Toolchain
+  `com.apple.dt.toolchain.Metal.32023.883`, target
+  `air64-apple-darwin25.4.0` (Mac Studio is on macOS 25.4.0;
+  Mac Mini on 25.3.0 — minor OS version drift between nodes)
+
+**Verification (control window probed 2026-05-02 ~15:13 local):**
+- `~/repos/external-tools/exo/.venv/bin/exo` present and executable
+- `python -c "import mlx.core as mx; print(mx.default_device())"` →
+  `Device(gpu, 0)` — Metal GPU is the default backend on M3 Ultra.
+
+**Bootstrap sequence (all unattended via SSH, no sudo prompts):**
+1. `brew install uv node` — clean install
+2. `rustup` install via curl — stable 1.95.0
+3. `rustup toolchain install nightly --profile minimal` — 1.97.0
+4. `cargo install --git ... --rev a1cd06b6 macmon` — 0.7.0 from
+   vladkens fork at pinned commit
+5. `git clone exo + git checkout fd707de3` — pinned to v1.0.71
+6. `cd dashboard && npm install && npm run build` — built in 4.50s
+7. `uv sync` — MLX + mlx-lm source-built (Metal shaders compiled
+   under the TOOLCHAINS env var inherited from Mac Studio's
+   `~/.zshenv`); EXIT=0
 
 ---
 
@@ -69,13 +99,21 @@ fix; flagged for separate troubleshooting. Workaround used here:
 toolchain operations. Documents that SSH-only install paths are
 achievable and may be preferable when GUI access is uncertain.
 
-**Finding C — exo MLX dependency is a custom git fork.** exo
-`pyproject.toml` pins MLX to `rltakashige/mlx-jaccl-fix-small-recv` at
-a specific commit, not upstream `ml-explore/mlx`. This means every node
-must source-build MLX (Metal shader compilation across many `.metal`
-files), with the consequent ~15-45 min build time and full Metal
-toolchain prerequisite. Cannot use `pip install mlx` — exo's lockfile
-will reject it.
+**Finding C — exo MLX dependencies are TWO custom git forks (refined
+2026-05-02 during Mac Studio build).** exo `pyproject.toml` pins:
+- `mlx` → `rltakashige/mlx-jaccl-fix-small-recv` @
+  `ec49d18ec4cfba0e0c7a37f20d1cf4d75fe56731`
+- `mlx-lm` → `rltakashige/mlx-lm` @
+  `c7010341e1f41ac15815feb5dc55134f44e3b044`
+
+Both are custom forks of the upstream `ml-explore/mlx` and
+`ml-explore/mlx-lm` projects. Both are source-built per node (Metal
+shader compilation across many `.metal` files). Cannot substitute
+`pip install mlx mlx-lm` — exo's lockfile will reject upstream
+versions. Total per-node build time: ~15-45 min depending on node
+parallelism. Implication for upgrades: `rltakashige` fork commits
+are unilateral — no upstream coordination — so exo upgrades will
+generally bring two new pinned commits to verify.
 
 **Finding D — App Store is not a supply path on this platform.** Both
 admin accounts (Mac Mini, Mac Studio) are intentionally walled off from
