@@ -478,7 +478,7 @@ Deliverable table:
 | D-17-14 (historical: 17.N): exo distributed inference cluster | DONE | 86600b8+0d6ebf3+a025827+1dc2f3b+ede9480+726725a+f90ce04 |
 | D-17-15 (historical: 17.O): Mac Studio Day-1 execution | DONE | ccc02d1 |
 | D-17-16 (historical: 17.P): Loose-doc retirement | NOT STARTED | re-parented from D-16-05 |
-| D-17-17 (historical: 17.Q): Logical service architecture dashboard with live utilization (replaces original OpenProject framing) | NOT STARTED | re-parented from D-16-08 |
+| D-17-17 (historical: 17.Q): Logical service architecture dashboard with live utilization (replaces original OpenProject framing) | IN PROGRESS | demo-prep deliverable for Saturday 2026-05-09; static HTML rendered from `~/.platform-registry/inventory.json` (D-17-29 substrate) — services grouped by stack swim lanes, dependency arrows, health colour, hover detail; live `docker stats` snapshot embedded at generation time. Output to `docs/dashboards/logical-service-architecture.html`, served via `architecture.internal` Caddy route. Hard cap 2h. |
 | D-17-18 (historical: 17.R): Physical architecture visualization (Structurizr + network/storage paths; original Structurizr-only framing now T1 of this deliverable) | NOT STARTED | re-parented from D-16-09 |
 | D-17-19 (historical: 17.S): Article-intake findings consolidated to repo | DONE | 4ece268 |
 | D-17-20 (historical: 17.T): D#17/D#18/D#19/D#20/D#21 codified | DONE | b86bc55 |
