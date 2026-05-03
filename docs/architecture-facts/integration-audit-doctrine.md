@@ -869,3 +869,116 @@ runtime configuration correctness:
 - Finding 12 (observable-but-inert sibling pattern)
 - §18.G component 3 (Cleanuparr Seeker consolidation)
 - §18.L prerequisite chain (credentials before remediation enablement)
+
+---
+
+## Finding 14 — DNS authority and DNS cache-invalidation are sibling concerns; both must be correct for end-to-end resolution
+
+**Date:** 2026-05-03
+**Originating WP:** D-17-13 WP-03
+**Severity:** Medium (silent multi-minute resolution failure on
+hosts that queried a hostname pre-creation; confused initial
+diagnosis between "Dnsmasq broken" vs "consumer cache stuck")
+
+### What
+
+D-17-21 established Dnsmasq on OPNsense as the sole DNS authority
+for `*.internal`. That doctrine is necessary but not sufficient:
+records added on the authority side don't propagate to consumers
+that have a cached negative response.
+
+Worked example (D-17-13 WP-03): the `mac-studio.internal` Shape 1
+record was added on OPNsense Dnsmasq via API. Resolver state on
+Mac Mini after the record was live:
+
+| Probe | Result |
+|---|---|
+| `dig mac-studio.internal @192.168.10.1` | ✅ 192.168.10.142 |
+| `dns-sd -q mac-studio.internal` | ❌ `0.0.0.0 No Such Record` (cached) |
+| `python3 socket.gethostbyname` | ❌ `gaierror: nodename...` |
+| `curl http://mac-studio.internal:11434` | ❌ `Could not resolve host` |
+| `dscacheutil -flushcache` | ❌ no effect |
+
+`dig` queries Dnsmasq directly and is correct. Everything else
+funnels through `mDNSResponder`, which had cached an NXDOMAIN from a
+query that landed before the record was created. macOS's
+`mDNSResponder` cache is **independent** from the legacy
+`DirectoryService` cache that `dscacheutil` flushes.
+
+Fix:
+
+```bash
+sudo killall -HUP mDNSResponder
+```
+
+Verifies immediately:
+
+```bash
+python3 -c "import socket; print(socket.gethostbyname('mac-studio.internal'))"
+# 192.168.10.142
+```
+
+### Doctrine
+
+When adding a `.internal` record via OPNsense Dnsmasq, treat
+**consumer-side cache invalidation as part of the record-creation
+runbook**, not a separate operator concern. The authority side
+(Dnsmasq host entry) is necessary; the consumer side
+(`mDNSResponder` HUP for macOS, `systemd-resolve --flush-caches`
+for Linux, `nscd -i hosts` or `systemctl restart dnsmasq` for
+Linux nscd/dnsmasq-local) closes the loop.
+
+This is a sibling of D-17-21's authority doctrine (`opnsense-dns-
+authority.md`), not a duplicate of it:
+
+- **D-17-21 = authority surface.** *Who answers `*.internal`?*
+  Dnsmasq, sole; Unbound forbidden.
+- **Finding 14 = cache-invalidation surface.** *How do consumers
+  learn the answer changed?* Authority-side flush is not enough;
+  per-consumer flush per OS family.
+
+Both must be correct. The interesting failure mode is when only
+one is correct: `dig` works (authority is right) but `curl` fails
+(consumer cache is wrong), which produces ambiguous symptoms
+unless an operator explicitly probes both surfaces.
+
+### Operational pattern (extends `opnsense-dns-authority.md`
+"Where to add a new `.internal` record")
+
+After adding the host entry on OPNsense:
+
+```bash
+# macOS consumers (Mac Mini, Mac Studio, MacBook)
+sudo killall -HUP mDNSResponder
+
+# Linux consumers (Threadripper future, Docker host VMs)
+sudo systemd-resolve --flush-caches    # systemd-resolved hosts
+sudo nscd -i hosts                     # nscd hosts (older distros)
+sudo systemctl restart dnsmasq         # local-dnsmasq hosts
+```
+
+Cross-reference: `opnsense-dns-authority.md` "Consumer-side cache
+invalidation" section, added concurrently with this finding.
+
+### Why this matters beyond D-17-13
+
+Future deliverables that add `.internal` records (any new
+caddy-fronted service, any new bare-hostname DHCP reservation
+that other services need to resolve) will hit this same failure
+mode if the consumer-side flush is skipped. Specifically: any
+Day-N node that has previously been on the LAN and may have
+queried a hostname before the OPNsense record was added —
+mDNSResponder will hold the NXDOMAIN until manually flushed or
+the cache TTL expires (typically 15 minutes for negative
+responses).
+
+### Cross-references
+
+- Finding 9 (config-audit doctrine; sibling rule about state vs
+  intent) — same shape: running state can hide what's actually
+  authoritative
+- D-17-21 chronicle: `opnsense-dns-authority.md`
+- D-17-21 migration script: `scripts/d-17-21-dns-migration.sh`
+  (worked example for cross-daemon record migration; future
+  successor scripts should incorporate the consumer-flush step
+  per this finding)

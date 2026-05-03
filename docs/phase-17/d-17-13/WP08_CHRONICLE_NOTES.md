@@ -1,9 +1,31 @@
 # D-17-13 WP-08 chronicle — pending findings/notes
 
-Scratchpad for WP-08 close. Promote into the canonical chronicle docs
-(`docs/architecture-facts/integration-audit-doctrine.md`,
-`docs/architecture-facts/local-tool-calling.md`,
-`docs/architecture-facts/opnsense-dns-authority.md`) at WP-08 finalize.
+**Status: PROMOTED 2026-05-03.** Scratchpad retained as audit trail
+of what was promoted where.
+
+| Item | Promoted to |
+|---|---|
+| Finding 14 candidate (mDNSResponder negative-cache) | `integration-audit-doctrine.md` Finding 14 + `opnsense-dns-authority.md` "Consumer-side cache invalidation" section |
+| F1.B refinement (qwen3-coder × Ollama 0.22.1 streaming) | `local-tool-calling.md` Finding 1.B (between F1 and F2) |
+| F1.B.1 sub-finding (`<function` token leak in prose) | `local-tool-calling.md` Finding 1.B sub-section |
+| WP-06 75/25 split + Phase-A baseline | `goose-capability-boundary.md` "Observed behavior" section |
+| WP-06 cautious-by-default pattern | `goose-capability-boundary.md` "Patterns to preserve at Phase-A re-enable" |
+| WP-06 padding tendency / self-blind to encountered failures | `goose-capability-boundary.md` "Patterns to correct via prompt engineering" |
+| WP-06 cost/economics datapoint | `goose-capability-boundary.md` "Cost / economics observation" |
+| smart_approve headless gotcha | `goose-capability-boundary.md` "Headless invocation gotcha" + `docs/runbooks/goose-operations.md` §1 + §3.4 |
+| WP-07 PM-side dual-review observations | folded into the `goose-capability-boundary.md` sections above |
+
+Backlog (not promoted; not D-17-13-blocking):
+
+| Item | Where it should land |
+|---|---|
+| Framework script gap: `roadmap-create.sh --reopen` for DONE→IN PROGRESS | OpenProject backlog (RM-17 or follow-on) |
+| D-17-12 WP-07/WP-08 unparking | Awaiting operator hand-grade returns |
+| Mac Studio Ollama launchd plist registration | D-17-51 (separate deliverable) |
+
+The original scratchpad content is preserved below for audit trail.
+
+---
 
 ## Finding 14 candidate — macOS mDNSResponder negative-response cache
 
@@ -121,6 +143,64 @@ goose-capability-boundary.md). Pure read+author, zero enaction.
    goose-operations.md §1; sub-doctrine: per-invocation override is
    correct (don't change config default), so interactive sessions
    keep the approval gate.
+
+## WP-07 — Dual-review observation (PM-side)
+
+**Date:** 2026-05-03 (D-17-13 WP-07)
+**Method:** No separate artifact; observations folded into WP-08
+chronicle per operator decision. The "dual-review" is the WP-06
+test packet itself: Goose proposed → operator reviewed → frontier
+authored → operator approved.
+
+### PM-side observations (operator + frontier shared view)
+
+1. **Surface-back fidelity: high.** Goose's draft surfaced its own
+   defects at the same grain as Codex/Claude Code surface-backs —
+   padding sections + missing GOOSE_MODE failure mode were both
+   findable in the draft without operator running the script
+   themselves. This matters for promotion: it means operator can
+   review Goose output as a *peer* of frontier output rather than
+   needing a different review modality.
+
+2. **Reasoning quality: 75/25 split.** Goose-draft / frontier-
+   correction. Acceptable Phase-A baseline. Track over N=5+ to
+   confirm directionality (toward Goose-dominant = capability-
+   validation working; flat or regressing = either model ceiling
+   or work-class mismatch).
+
+3. **Cost delta validates §18.O migration economics.** 51 seconds
+   wall-clock + local compute on Mac Studio = meaningfully cheaper
+   than the equivalent Codex/Claude Code invocation for the same
+   work-class (read 3 files, draft a runbook). The §18.O thesis —
+   migrate execution surface progressively to local T3-B with
+   frontier doing correctness review — has its first measured
+   data point on this side of the move.
+
+4. **Cautious-by-default pattern is dual-confirmed.** Goose ran
+   `list_allowed_directories` autonomously in BOTH WP-03 (smoke
+   test) and WP-06 (runbook draft) without instruction. Two
+   datapoints isn't proof of habit, but it's enough to mark this
+   as a behavior-to-preserve when re-enabling `developer` at
+   Phase-A: capability scope-checks before write/exec are the
+   model's own posture, not just operator-imposed.
+
+5. **Prompt-engineering opportunity: standard Goose preamble.**
+   Goose's tendency to pad uncertain sections (§5/§6 in the
+   runbook draft) suggests a recurring corrective instruction
+   should live in a standard prompt preamble rather than each
+   per-task brief: "If uncertain about whether a section is
+   necessary, omit rather than pad. Reference-style runbooks are
+   concise; sections-because-runbooks-have-them is wrong." Track
+   as Phase-A prompt-construction sub-doctrine.
+
+### What this adds to F1.B
+
+F1.B (qwen3-coder:30b structured tool_calls in streaming mode) is
+the substrate-level unblocker. WP-07 observations are the
+*workflow-level* corollary: at the substrate level the model emits
+correctly; at the workflow level the model also surfaces its own
+defects at frontier-grade resolution. Both are needed for
+capability-validation phase to clear; neither alone is sufficient.
 
 ## Other items pending for WP-08
 

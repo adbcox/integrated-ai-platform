@@ -99,6 +99,95 @@ Either fix unblocks Goose adoption.
 
 ---
 
+## Finding 1.B — qwen3-coder family emits structured `tool_calls` in streaming mode (Ollama 0.22.1)
+
+**Date:** 2026-05-03
+**Originating WP:** D-17-13 (reopened) WP-03 + WP-06
+**Severity:** Resolves D-17-13 reopening blocker — Goose+T3-B path
+unblocked.
+
+### What
+
+Finding 1 ("Ollama drops `tool_calls` in streaming mode") was correct
+as written for `qwen2.5-coder` family on Ollama 0.20.7. It does **not**
+hold for `qwen3-coder` family on Ollama 0.22.1. The dichotomy is along
+**(model-family × Ollama-version)** axis, not "Ollama" alone.
+
+Direct evidence — qwen3-coder:30b, Ollama 0.22.1 on Mac Studio
+(192.168.10.142:11434), `stream:true`, tools=[get_weather]:
+
+```bash
+curl -sN -X POST http://192.168.10.142:11434/api/chat -d '{
+  "model": "qwen3-coder:30b",
+  "stream": true,
+  "messages":[{"role":"user","content":"What is the weather in Paris?
+              Use the get_weather tool."}],
+  "tools":[{"type":"function","function":{"name":"get_weather",
+    "description":"Get current weather for a city",
+    "parameters":{"type":"object","properties":{
+      "city":{"type":"string"}},"required":["city"]}}}]
+}'
+```
+
+First SSE chunk:
+
+```json
+{"model":"qwen3-coder:30b","created_at":"2026-05-03T21:14:26.570427Z",
+ "message":{"role":"assistant","content":"",
+   "tool_calls":[{"id":"call_uhvjy6re",
+                  "function":{"index":0,"name":"get_weather",
+                             "arguments":{"city":"Paris"}}}]},
+ "done":false}
+```
+
+Structured `tool_calls` array is populated in the streaming chunk.
+Refines the Finding 1 matrix:
+
+| Backend × Mode  | Non-streaming | Streaming |
+|-----------------|---------------|-----------|
+| Ollama 0.20.7 + qwen2.5-coder | ✅ ok | ❌ drops `tool_calls` (F1) |
+| Ollama 0.22.1 + qwen3-coder   | ✅ ok | **✅ ok (F1.B)** |
+| exo (MLX) + qwen2.5           | ❌ text (F2) | ❌ text |
+
+### Production verification (Goose+T3-B end-to-end)
+
+D-17-13 WP-03 smoke test against Goose 1.33.1 → ollama provider →
+qwen3-coder:30b on Mac Studio Ollama 0.22.1: full tool-loop verified
+(filesystem-mcp `read_text_file` + `list_allowed_directories`),
+structured `tool_calls` round-trip end-to-end. Goose's ollama provider
+hard-codes streaming on, so this verification stresses the same code
+path that F1 originally identified as broken.
+
+WP-06 first-test deliverable (Goose drafts a runbook from 3 source
+files): 6 tool calls, 51s wall-clock, all structurally valid.
+
+### Sub-finding F1.B.1 — qwen3-coder:30b emission noise in extended-prose contexts
+
+During WP-06 the model emitted a stray `<functionI'll draft...` token
+prefix that mixed prose continuation with a partial function-call
+token. The actual `tool_calls` JSON was structurally valid; the noise
+appeared only in the prose stream. Occasional, not a blocking defect.
+Track recurrence over Phase-A executions; if rate exceeds ~5% of
+sessions, escalate to upstream Ollama issue.
+
+### Implication for adoption
+
+Local-Ollama as the agent backend is unblocked **provided** the
+model is qwen3-coder family (or another model the platform later
+verifies on the `(family × version)` axis) and Ollama is ≥0.22.1.
+Pre-flight check before adopting any new model+version pairing for
+agentic use: run the curl probe above against the candidate, confirm
+structured `tool_calls` in the streaming chunk.
+
+### Status
+
+**Resolved for the qwen3-coder × 0.22.1 cell.** Cells outside this
+require their own probe before adoption — the F1.B unblocking does
+not generalize to other model families on the same Ollama version,
+or to qwen3-coder on older Ollama versions, until separately verified.
+
+---
+
 ## Finding 2 — exo's OpenAI-compat layer does not translate Qwen's native tool-call markers
 
 **Date:** 2026-05-03

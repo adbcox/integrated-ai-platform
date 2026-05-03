@@ -136,6 +136,84 @@ Revisit per-extension only on operator request.
 
 ---
 
+## Observed behavior — capability-validation phase, sessions 1–2
+
+**Status:** First two measured sessions (D-17-13 WP-03 smoke test +
+WP-06 first test deliverable). Track ongoing through Phase-A
+promotion gate's N≥5 criterion.
+
+### Session 1 — WP-03 smoke test (read /etc/hosts equivalent)
+
+- 2 tool calls: `read_text_file` (CLAUDE.md head=50)
+- All structurally valid; tool-loop closed cleanly
+- Model autonomously ran no scope-check (first session, simple prompt)
+
+### Session 2 — WP-06 first test deliverable (draft runbook from 3 sources)
+
+- 6 tool calls: 4× `read_text_file`, 1× `list_allowed_directories`,
+  1× `todo_write`
+- All structurally valid; all paths within scope
+- Model **autonomously** ran `list_allowed_directories` before
+  reads — no instruction to do so
+- Wall-clock: 51 seconds
+- Output split: ~75% Goose draft / ~25% frontier correction
+
+### Patterns to preserve at Phase-A re-enable
+
+1. **Cautious-by-default scope check.** Two of two sessions where
+   the model could verify scope before reading, it did. When
+   `developer` re-enables (write/exec), the corresponding pattern
+   is "verify path, run dry-run, then commit" — Phase-A re-enable
+   design must not regress this.
+2. **Tool-call structural validity.** 8/8 tool calls across two
+   sessions emitted as structured `tool_calls` (F1.B substrate).
+   Re-enabling write tools should not change this; the substrate
+   is independent of capability surface.
+
+### Patterns to correct via prompt engineering
+
+1. **Padding tendency.** WP-06 draft included two padding sections
+   (Security checklist, Backups) that didn't fit the runbook
+   reference-style. Standard prompt preamble for Phase-A briefs:
+   *"If uncertain about whether a section is necessary, omit
+   rather than pad. Reference docs are concise; sections-because-
+   docs-have-them is wrong."*
+2. **Self-blind to encountered failure modes.** WP-06 draft
+   omitted the `GOOSE_MODE=auto` headless invocation pattern even
+   though that was the exact failure encountered while running
+   the test. Standard prompt preamble: *"If a failure mode was
+   encountered during the work itself, document it explicitly
+   even if it feels like meta-information about the run."*
+
+### Cost / economics observation
+
+WP-06 work-class (read 3 files + draft a runbook) completed in 51s
+on local Mac Studio compute vs the equivalent frontier-API
+invocation. First measured data point validating the §18.O
+execution-surface migration thesis: progressive migration of
+work-classes to local T3-B with frontier doing correctness review.
+
+Re-measure at N=5 sessions to confirm directionality (cost,
+quality, defect rate).
+
+### Headless invocation gotcha
+
+`GOOSE_MODE=smart_approve` (the config default) blocks **any**
+non-interactive run that triggers a tool-approval prompt — even
+read-only tools like `todo_write` (which writes only to internal
+session state). Headless invocation requires per-invocation
+`GOOSE_MODE=auto` env override. Do NOT change the config default;
+the approval gate is correct for interactive sessions.
+
+```bash
+# Headless / scripted run
+GOOSE_MODE=auto goose run --no-session --instructions /path/to/prompt.txt
+```
+
+This is documented in `docs/runbooks/goose-operations.md` §1.
+
+---
+
 ## Why this lives in `architecture-facts/` and not in a phase doc
 
 Capability-boundary policy outlives D-17-13. Future deliverables that

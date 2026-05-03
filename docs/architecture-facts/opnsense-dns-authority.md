@@ -79,6 +79,42 @@ A new Caddy `*.internal` site without a matching Dnsmasq host record will be fla
 
 ---
 
+## Consumer-side cache invalidation (added 2026-05-03 per F14)
+
+Adding the host entry on OPNsense Dnsmasq is necessary but not sufficient. Any consumer that has previously queried the hostname before the record existed will have a cached NXDOMAIN that does not refresh on its own for tens of minutes.
+
+After adding a host entry, run the appropriate flush on every consumer that may have queried the hostname pre-creation:
+
+```bash
+# macOS (Mac Mini, Mac Studio, MacBook)
+sudo killall -HUP mDNSResponder
+
+# Linux — systemd-resolved hosts (most modern distros)
+sudo systemd-resolve --flush-caches
+
+# Linux — nscd hosts (older distros)
+sudo nscd -i hosts
+
+# Linux — local dnsmasq running as resolver
+sudo systemctl restart dnsmasq
+```
+
+Verify resolution works through the full path, not just `dig`:
+
+```bash
+# dig queries Dnsmasq directly — will succeed even when the local cache is stuck
+dig myservice.internal @192.168.10.1 +short
+
+# This goes through the local resolver and reflects what apps actually see
+python3 -c "import socket; print(socket.gethostbyname('myservice.internal'))"
+```
+
+Symptom of skipping the flush: `dig` returns the right IP but `curl`/`python socket.gethostbyname`/applications report "Could not resolve host." `dscacheutil -flushcache` does **not** clear macOS `mDNSResponder` — only the legacy DirectoryService cache.
+
+Doctrine: `integration-audit-doctrine.md` Finding 14.
+
+---
+
 ## What the D-17-21 migration did
 
 1. Snapshotted Unbound + Dnsmasq state to `~/.platform-logs/d-17-21/*-pre-*.json`.

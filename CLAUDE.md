@@ -216,6 +216,20 @@ Use `claude-pro` ONLY for high-judgment tasks where Anthropic-quality reasoning 
 
 The orchestrator (Claude Code at the top level) delegates implementation work to subagents to minimize its own quota usage when running under `claude-pro`. Under `claude-local`, the entire chain runs on the Mac Mini's Ollama.
 
+### Execution surfaces
+
+Execution surface = the runtime that drives a coding/operations session: reads files, calls tools, edits the repo, runs commands. This is a *different axis* from "LLM Access Doctrine" above (which is about which model answers a single inference). One execution surface can be paired with multiple LLM-access modes; one LLM-access mode can drive multiple execution surfaces.
+
+Three surfaces are in use as of 2026-05-03:
+
+- **Claude Code** — Anthropic's CLI. Default for high-judgment work, frontier-PM, multi-step workflows. Pairs with `claude-local` (Ollama-backed via litellm) or `claude-pro` (Anthropic API). All capability surfaces enabled.
+- **Codex** — OpenAI's CLI. Used in parallel for cross-check / second-opinion review. Capability surface broadly enabled.
+- **Goose** (D-17-13) — Block's open-source agent CLI, Apache 2.0. Paired with native Ollama provider + qwen3-coder:30b on Mac Studio (no litellm hop). **Currently in capability-validation phase** — `developer` (shell exec + file write), `summon`, `apps`, `chatrecall`, `summarize`, `tom`, `code_execution`, `orchestrator` extensions disabled. Read-only via `filesystem-mcp` + `xindex` only. Operator review mandatory on all output. See `docs/architecture-facts/goose-capability-boundary.md` for posture + Phase-A promotion gate (N≥5 clean reviewed executions).
+
+The intended trajectory (§18.O migration framework): progressive migration of execution-surface work-classes from frontier-cost surfaces (Claude Code under `claude-pro`, Codex) to local-cost Goose+T3-B, with frontier surfaces doing correctness review on Goose output. First measured economics datapoint (D-17-13 WP-06): drafting a runbook from 3 source files completed in 51 seconds on local Mac Studio compute, ~75% Goose-authored / ~25% frontier-corrected on review.
+
+Operating rule during capability-validation phase: **Goose proposes; operator (or frontier surface) enacts.** Anything Goose-authored that lands on disk lands via operator copy-paste / git operations, never via Goose's own write tools. Commit-identity question (separate `goose-bot` git author) is deferred to Phase-A promotion.
+
 ### Known Hardening Trade-offs
 
 - **ICMP/fping monitoring not available**: zabbix-server uses `cap_drop:[ALL]` which excludes `NET_RAW`. ICMP items will be in unsupported state. Use TCP-based health checks (telnet item type, agent.ping, http.test) instead. Adding `NET_RAW` `cap_add` was rejected as exceeding minimal-cap doctrine.
