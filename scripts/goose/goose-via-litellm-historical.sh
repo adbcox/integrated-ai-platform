@@ -1,5 +1,14 @@
 #!/usr/bin/env bash
-# D-17-13 — Goose launcher with platform-litellm provider injection.
+# D-17-13 (HISTORICAL) — Goose launcher with platform-litellm provider injection.
+#
+# OBSOLETED 2026-05-03 by D-17-13 reopening (Goose+T3-B direct-Ollama path).
+# Preserved for historical reference until next phase rollover.
+#
+# To run Goose against the current T3-B path: invoke `goose` directly (no
+# launcher needed). Config at ~/.config/goose/config.yaml; OLLAMA_HOST is
+# read from the config file's top-level field at startup.
+#
+# Original purpose (when D-17-13 first landed):
 #
 # Reads the litellm master key from Vault (secret/litellm/master#master_key)
 # and exports it as OPENAI_API_KEY for Goose's openai provider, which is

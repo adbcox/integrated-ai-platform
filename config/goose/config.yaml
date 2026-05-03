@@ -1,0 +1,163 @@
+# D-17-13 (reopened 2026-05-03) — Goose against Mac Studio Ollama (T3-B).
+#
+# Provider: ollama (native, direct — no litellm hop).
+# Model: qwen3-coder:30b (D-17-12 F1.B confirmed structured tool_calls in
+#        BOTH stream:false and stream:true modes).
+# Host: mac-studio.internal:11434 (D-17-21 Dnsmasq Shape 1 record).
+#       Direct connection; OLLAMA_HOST is read from env at goose startup.
+#
+# WHY this differs from prior eval (10bc41f):
+#   - Prior path was openai-provider → litellm-gateway → cloud LLM. Cloud
+#     LLM routes were deprecated platform-side per Phase 13.5; that path
+#     produced a working tool-loop but on out-of-policy infrastructure.
+#   - The local-Ollama path was blocked at 10bc41f because Ollama dropped
+#     tool_calls in streaming mode (Goose's ollama provider hard-codes
+#     streaming on). D-17-12 F1.B verified qwen3-coder:30b on Ollama 0.22.1
+#     emits structured tool_calls in stream:true mode, unblocking this path.
+#   - Net: switch from openai+litellm to ollama+direct. Fewer layers, no
+#     credential surface, lower latency.
+#
+# Capability boundary (WP-05): see goose-capability-boundary.md.
+#   `developer` extension is DISABLED (provides shell exec; out-of-scope
+#   for capability-validation phase per operator constraint "no docker/ssh/
+#   Vault access initially").
+#
+# Historical config: ~/.config/goose/config.yaml.litellm-historical
+# Historical launcher: scripts/goose/goose-via-litellm-historical.sh
+
+GOOSE_PROVIDER: "ollama"
+GOOSE_MODEL: "qwen3-coder:30b"
+OLLAMA_HOST: "http://mac-studio.internal:11434"
+GOOSE_MODE: "smart_approve"
+# qwen3-coder:30b native context: 256K. Conservative cap to limit per-turn
+# memory pressure during capability validation. Raise after WP-08 close.
+GOOSE_CONTEXT_LIMIT: 32768
+
+extensions:
+  # D-17-13 — repo read access only. Filesystem MCP scoped to the repo root.
+  filesystem-mcp:
+    name: filesystem-mcp
+    cmd: npx
+    args: ["-y", "@modelcontextprotocol/server-filesystem", "/Users/admin/repos/integrated-ai-platform"]
+    enabled: true
+    envs: {}
+    type: stdio
+    timeout: 60
+
+  # D-17-13 — service registry / catalog access (read-only).
+  xindex:
+    name: xindex
+    cmd: python3
+    args: ["/Users/admin/repos/integrated-ai-platform/docker/xindex-mcp/app/server.py"]
+    enabled: true
+    envs:
+      XINDEX_BASE_URL: "http://127.0.0.1:8095"
+    type: stdio
+    timeout: 60
+
+  # Built-in extensions kept ENABLED (low-risk):
+  todo:
+    enabled: true
+    type: platform
+    name: todo
+    description: Enable a todo list for goose so it can keep track of what it is doing
+    display_name: Todo
+    bundled: true
+    available_tools: []
+  analyze:
+    enabled: true
+    type: platform
+    name: analyze
+    description: 'Analyze code structure with tree-sitter: directory overviews, file details, symbol call graphs'
+    display_name: Analyze
+    bundled: true
+    available_tools: []
+  skills:
+    enabled: true
+    type: platform
+    name: skills
+    description: Discover and provide skill instructions from filesystem and builtins
+    display_name: Skills
+    bundled: true
+    available_tools: []
+  extensionmanager:
+    enabled: true
+    type: platform
+    name: Extension Manager
+    description: Enable extension management tools for discovering, enabling, and disabling extensions
+    display_name: Extension Manager
+    bundled: true
+    available_tools: []
+
+  # Built-in extensions DISABLED for capability-validation phase
+  # (re-enable after WP-08 + N>=5 clean Phase-A executions per §18.O):
+  developer:
+    # SHELL EXEC + FILE WRITE — disabled per "no docker/ssh/Vault access
+    # initially" boundary. Re-enable when promoting to Phase-A active.
+    enabled: false
+    type: platform
+    name: developer
+    description: Write and edit files, and execute shell commands
+    display_name: Developer
+    bundled: true
+    available_tools: []
+  summon:
+    # Subagent delegation — out of scope for first-execution validation;
+    # operator wants to observe Goose's own behavior, not delegated chains.
+    enabled: false
+    type: platform
+    name: summon
+    description: Load knowledge and delegate tasks to subagents
+    display_name: Summon
+    bundled: true
+    available_tools: []
+  apps:
+    # Sandboxed HTML/CSS/JS apps — out of scope for repo-execution work.
+    enabled: false
+    type: platform
+    name: apps
+    description: Create and manage custom Goose apps through chat. Apps are HTML/CSS/JavaScript and run in sandboxed windows.
+    display_name: Apps
+    bundled: true
+    available_tools: []
+  chatrecall:
+    enabled: false
+    type: platform
+    name: chatrecall
+    description: Search past conversations and load session summaries for contextual memory
+    display_name: Chat Recall
+    bundled: true
+    available_tools: []
+  summarize:
+    enabled: false
+    type: platform
+    name: summarize
+    description: Load files/directories and get an LLM summary in a single call
+    display_name: Summarize
+    bundled: true
+    available_tools: []
+  tom:
+    # Top-of-mind context injection — not used in this phase.
+    enabled: false
+    type: platform
+    name: tom
+    description: Inject custom context into every turn via GOOSE_MOIM_MESSAGE_TEXT and GOOSE_MOIM_MESSAGE_FILE environment variables
+    display_name: Top Of Mind
+    bundled: true
+    available_tools: []
+  code_execution:
+    enabled: false
+    type: platform
+    name: code_execution
+    description: Goose will make extension calls through code execution, saving tokens
+    display_name: Code Mode
+    bundled: true
+    available_tools: []
+  orchestrator:
+    enabled: false
+    type: platform
+    name: orchestrator
+    description: 'Manage agent sessions: list, view, start, send messages, interrupt, and stop agents'
+    display_name: Orchestrator
+    bundled: true
+    available_tools: []
