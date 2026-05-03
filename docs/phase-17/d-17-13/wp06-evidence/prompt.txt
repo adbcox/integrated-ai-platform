@@ -1,0 +1,24 @@
+You are drafting an operator-facing runbook for the Goose CLI execution surface. The audience is a platform operator who knows the system architecture but may not have set Goose up themselves.
+
+Your task: read these three source files, then write a draft of `docs/runbooks/goose-operations.md`.
+
+Sources (read all three before drafting — use the filesystem-mcp `read_text_file` tool):
+
+1. `/Users/admin/repos/integrated-ai-platform/config/goose/config.yaml` — the canonical config (provider, model, host, enabled/disabled extensions)
+2. `/Users/admin/repos/integrated-ai-platform/scripts/goose/README.md` — the launcher-directory pointer doc
+3. `/Users/admin/repos/integrated-ai-platform/docs/architecture-facts/goose-capability-boundary.md` — the durable doctrine on what's enabled and why, plus the Phase-A promotion gate
+
+Pattern-match the style of existing runbooks under `docs/runbooks/` if helpful — you can read `/Users/admin/repos/integrated-ai-platform/docs/runbooks/zabbix-operations.md` for tone reference (concise, command-driven, troubleshooting-oriented).
+
+The runbook should cover:
+
+- How to invoke (just `goose`; no launcher needed; provider/model/host come from config)
+- Where the config lives (operator-local at `~/.config/goose/config.yaml`; repo-tracked at `config/goose/config.yaml`; manual cp workflow)
+- Capability-validation posture: which extensions are enabled, which disabled, why operator review is mandatory on output
+- Common failure modes and fixes (e.g. DNS cache for mac-studio.internal — `sudo killall -HUP mDNSResponder`; Ollama unreachable; tool-loop hang)
+- Pointers to the substrate facts (Mac Studio at 192.168.10.142, Ollama 0.22.1, qwen3-coder:30b)
+- Phase-A promotion gate reference (don't restate it in full — link to the chronicle)
+
+Output the runbook in markdown. Do NOT use the developer extension (it's disabled anyway). Just produce the markdown text in your final response — the operator will copy it from your reply and land it via git.
+
+Be terse. Operator runbooks are reference material, not tutorials.

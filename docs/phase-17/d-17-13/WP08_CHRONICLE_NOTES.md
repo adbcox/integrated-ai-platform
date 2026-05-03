@@ -54,6 +54,74 @@ sudo systemd-resolve --flush-caches # systemd-resolved consumers (Linux)
 against `mac-studio.internal:11434` was blocked until operator ran
 `sudo killall -HUP mDNSResponder` on Mac Mini.
 
+## WP-06 observations — Goose first test deliverable
+
+**Date:** 2026-05-03 (D-17-13 WP-06)
+**Test:** Goose drafts `docs/runbooks/goose-operations.md` from 3
+source files (config/goose/config.yaml + scripts/goose/README.md +
+goose-capability-boundary.md). Pure read+author, zero enaction.
+
+**Session metrics:**
+- Wall-clock: 51 seconds
+- Tool calls: 6 (4× read_text_file, 1× list_allowed_directories,
+  1× todo_write)
+- All tool calls structurally valid; all paths within scope
+- Capability-validation autonomous pattern held: model invoked
+  list_allowed_directories before reads (same as WP-03 smoke test)
+
+**Output split (empirical Phase-A baseline candidate):**
+- ~75% of corrected runbook content originated in Goose's draft
+- ~25% added/restructured during operator+frontier review:
+  - Dropped padding sections (§5 Security checklist, §6 Backups)
+  - Added GOOSE_MODE=auto headless invocation pattern (§1) — Goose
+    didn't surface this even though it's the failure mode I just
+    hit running the test itself
+  - Deepened §3.3 (three distinct hang causes vs "Ctrl+C, restart")
+  - Dropped redundant capability list, kept chronicle link only
+  - Added (D-17-13) provenance suffix to title
+  - Added §4 operator-review-obligation section (not in draft)
+
+**Sub-findings to promote at WP-08:**
+
+1. **Phase-A promotion baseline:** 75/25 Goose/frontier split is the
+   first measured data point. Promotion gate criterion 1 ("N>=5
+   clean reviewed executions") should track this ratio over N=5+
+   sessions; if the ratio doesn't move toward Goose-dominant, that
+   itself is a signal capability-validation should extend or the
+   model is at its ceiling for this work-class.
+
+2. **F1.B sub-finding — emission-noise glitch:** During WP-06,
+   qwen3-coder:30b emitted a stray `<functionI'll draft...` prefix
+   that mixed prose continuation with a partial function-call
+   token. Did NOT corrupt the actual tool_calls JSON (those were
+   structurally valid). This is occasional emission noise specific
+   to qwen3-coder:30b in extended-prose contexts, not a blocking
+   defect. Append to local-tool-calling.md under F1.B.
+
+3. **Padding-section tendency:** Goose's draft added §5 Security
+   checklist and §6 Backups that weren't asked for and didn't fit
+   the runbook's reference-style. Prompt-engineering opportunity:
+   future briefs should explicitly instruct "if uncertain about a
+   section, omit rather than pad." Track in capability-boundary
+   chronicle as a posture note for Phase-A prompt construction.
+
+4. **Capability-validation autonomous pattern (positive signal):**
+   Model autonomously runs list_allowed_directories before reads
+   despite no instruction to do so. This cautious-by-default
+   posture is exactly what capability-validation wants to *preserve*
+   when promoting to Phase-A — re-enabling `developer` should not
+   regress this pattern. Note in goose-capability-boundary.md
+   "Posture 2 — Phase-A active" section when authored.
+
+5. **Headless-invocation gotcha (smart_approve mode):** Goose's
+   default `smart_approve` mode blocks any non-interactive run that
+   triggers a tool-approval prompt. Even read-only tools (todo_write
+   to internal state) fire the gate. Headless invocation requires
+   `GOOSE_MODE=auto` env override per-invocation. Documented in
+   goose-operations.md §1; sub-doctrine: per-invocation override is
+   correct (don't change config default), so interactive sessions
+   keep the approval gate.
+
 ## Other items pending for WP-08
 
 - F1.B refinement: qwen3-coder:30b emits structured tool_calls in

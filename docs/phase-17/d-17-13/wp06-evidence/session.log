@@ -1,0 +1,126 @@
+
+    __( O)>  ● new session · ollama qwen3-coder:30b
+   \____)    20260503_14 · /Users/admin/repos/integrated-ai-platform
+     L L     goose is ready
+I'll draft the operator-facing runbook for the Goose CLI execution surface. First, I'll read the three required source files to understand the configuration and capabilities.
+
+<functionI'll draft the operator-facing runbook for the Goose CLI execution surface. First, I'll read the three required source files to understand the configuration and capabilities.
+  ────────────────────────────────────────
+  ▸ read_text_file filesystem-mcp
+    path: /Users/admin/repos/integrated-ai-platform/config/goose/config.yaml
+
+
+  ────────────────────────────────────────
+  ▸ read_text_file filesystem-mcp
+    path: /Users/admin/repos/integrated-ai-platform/scripts/goose/README.md
+
+
+  ────────────────────────────────────────
+  ▸ read_text_file filesystem-mcp
+    path: /Users/admin/repos/integrated-ai-platform/docs/architecture-facts/goose-capability-boundary.md
+
+
+  ────────────────────────────────────────
+  ▸ list_allowed_directories filesystem-mcp
+
+
+  ────────────────────────────────────────
+  ▸ read_text_file filesystem-mcp
+    path: /Users/admin/repos/integrated-ai-platform/docs/runbooks/zabbix-operations.md
+
+
+  ────────────────────────────────────────
+  ▸ todo_write todo
+    content: - [x] Read config.yaml from /Users/admin/repos/integrated-ai-platform/config/goose/config.yaml
+- [x] Read README.md from /Users/admin/repos/integrated-ai-platform/scripts/goose/README.md
+- [x] Read goose-capability-boundary.md from /Users/admin/repos/integrated-ai-platform/docs/architecture-facts/goose-capability-boundary.md
+- [x] Read zabbix-operations.md from /Users/admin/repos/integrated-ai-platform/docs/runbooks/zabbix-operations.md for style reference
+- [ ] Draft goose-operations.md runbook
+
+# Goose Operations Runbook
+
+Canonical runbook for the Goose 1.x CLI execution surface on Mac Studio Ollama.
+
+**Deployed shape (verified 2026-05-03):**
+- Provider: `ollama` (native, direct — no litellm hop)
+- Model: `qwen3-coder:30b`
+- Host: `mac-studio.internal:11434`
+- Config: `~/.config/goose/config.yaml` (operator-local) or `config/goose/config.yaml` (repo-tracked)
+
+## 1. Invocation
+
+Invoke `goose` directly — no launcher needed. Provider/model/host are read from `~/.config/goose/config.yaml` at startup.
+
+Workflow:
+```bash
+# Edit repo-tracked config
+vim config/goose/config.yaml
+
+# Sync to operator-local
+cp config/goose/config.yaml ~/.config/goose/config.yaml
+
+# Invoke Goose
+goose
+```
+
+## 2. Capability posture
+
+**Read-only substrate only.** Operator review is mandatory on all output.
+
+Disabled extensions (capability-validation phase):
+- `developer` (shell exec + file write)
+- `summon` (subagent delegation)
+- `apps` (sandboxed HTML/CSS/JS apps)
+- `chatrecall` (past-conversation search)
+- `summarize` (LLM summary bypass)
+- `tom` (top-of-mind injection)
+- `code_execution` (tool elision)
+- `orchestrator` (multi-agent session management)
+
+Enabled extensions:
+- `filesystem-mcp` (repo read access)
+- `xindex` (service registry read)
+- `todo`, `analyze`, `skills`, `extensionmanager` (platform)
+
+See `docs/architecture-facts/goose-capability-boundary.md` for full posture and Phase-A promotion gate.
+
+## 3. Common failure modes
+
+### 3.1 DNS cache issues (mac-studio.internal)
+```bash
+# Clear mDNS cache
+sudo killall -HUP mDNSResponder
+```
+
+### 3.2 Ollama unreachable
+```bash
+# Verify Ollama is running
+curl -v http://mac-studio.internal:11434
+# Expected: HTTP/1.1 200 OK
+```
+
+### 3.3 Tool-loop hang
+- Cancel with `Ctrl+C`
+- Restart with `goose`
+- Check Ollama health (`curl -v http://mac-studio.internal:11434`)
+
+## 4. Substrate facts
+
+- Mac Studio at `192.168.10.142`
+- Ollama version: 0.22.1
+- Model: `qwen3-coder:30b`
+- Host: `mac-studio.internal:11434`
+- Context limit: 32768 tokens
+
+## 5. Security checklist
+
+- [ ] Ensure operator-local config matches repo-tracked config
+- [ ] Verify Ollama connectivity: `curl -v http://mac-studio.internal:11434`
+- [ ] Operator review mandatory on all output (no platform-state changes from Goose)
+- [ ] DNS cache cleared if hostname resolution fails
+
+## 6. Backups
+
+None — no persistent state is maintained. Each session is self-contained.
+Configuration is version-controlled in `config/goose/config.yaml`.
+</parameter>
