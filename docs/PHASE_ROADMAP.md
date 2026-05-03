@@ -272,26 +272,6 @@ foundation rather than adding features.
   Investigate: explicit cipher suite pinning, OpenSSL config override, QNAP cert
   re-issue with modern key/sig profile, or replace HTTPS path with QTS-native
   CLI over SSH (would need publickey auth provisioned — QNAP rejects password SSH).
-- **D-17-41 candidate (logged 2026-05-03 by operator intake):** HACS evaluation
-  + supply-chain doctrine for HA plugins. Scope: evaluate HACS deployment on
-  the .141 HA hub; author plugin-vetting doctrine as a sibling to D-17-10
-  (model provenance kit) — reverse-engineered API plugins flagged as a
-  separate ACL/risk class; identify specific plugin needs vs. native HA
-  capability gaps; license compliance review per D-17-37 substrate.
-  Prerequisites: HA on .141 stable (post D-17-34 confirmed ✓); a specific
-  capability gap that HACS solves (no current trigger). **Defer until
-  concrete need surfaces — do not add HACS speculatively.**
-- **D-17-42 candidate (logged 2026-05-03 by operator intake):** Tautulli
-  playback analytics + alerting deployment. Scope: Tautulli on Mac Mini,
-  point at Plex via Vault-managed token (D-17-38 credential pattern),
-  optional Discord/Slack alert integration if operator wants, basic
-  dashboard for who/what/when/transcode-vs-direct-play visibility — sibling
-  observability surface to the D-17-38 health-check substrate, not a
-  replacement. Prerequisites: Plex stable ✓; Vault credential pattern
-  proven (D-17-38 ✓); D-17-38 health-check substrate landed ✓. **Defer
-  until concrete signal that Plex usage analytics matter to operator
-  workflow.**
-
 **Gate:** `phase-18-final` — PASS≥18 FAIL=0 WARN≤3.
 OpenBao + Backstage ADRs committed. YAML deprecation complete. Platform hardening applied.
 Phase 18 CLOSED.
@@ -477,6 +457,496 @@ has solved most of these; we integrate rather than invent.
 operator picks one of the candidate projects to activate first. Do not
 add an ESP32 node speculatively — each one costs hardware + ongoing
 maintenance + firmware update overhead.
+
+---
+
+### 18.G — arr-stack ecosystem expansion (multi-deliverable family)
+
+Backlog from D-17-36 + D-17-38 close work. The arr-stack today (Sonarr,
+Radarr, Prowlarr, Sportarr, qBittorrent) covers the "find + grab" half
+of the pipeline but has structural gaps the chronicle work has surfaced:
+no observability beyond container health (Finding 1 / F5), no declarative
+configuration substrate (config-as-code is absent — candidate F11
+territory; would graduate to a numbered finding when first formal
+worked example lands), no automated bad-download removal or missing-content hunting
+(would have caught the Radarr paused-torrent + F1 episode-4-of-9 missing
+scenarios), no AI-orchestration surface (forcing this session into
+ad-hoc curl loops against `localhost:9696`/`localhost:7878`).
+
+This is a **multi-deliverable family** — not a single deliverable.
+Each component below becomes its own `D-NN-NN` at scope time.
+
+**Components and prereq order** (later components depend on earlier
+ones being stable):
+
+1. **Scraparr / Exportarr → existing VictoriaMetrics**
+   *(observability before expansion — adding components to a stack
+   you can't observe is exactly the F5 silence-mechanism trap that
+   D-17-38 closed.)* Prowlarr-side metrics, per-indexer success/fail
+   rates, queue depth, import-import lag. Vault-managed API tokens
+   per service (D-17-38 credential pattern). Grafana dashboards
+   `arr-stack-overview-p18` + per-service drill-downs.
+
+2. **Buildarr config-as-code** *(declarative state lock-in;
+   would establish the worked example for the candidate F11
+   config-drift finding).* All
+   Sonarr/Radarr/Prowlarr/Sportarr indexer + quality-profile +
+   custom-format definitions live in `config/arr-stack/buildarr/`
+   and are applied by a launchd-driven sync. Manual UI edits become
+   either ratified into the YAML or reverted on next run. Locks the
+   D-17-36-style retirement-record-as-restoration-playbook problem
+   structurally — the YAML IS the playbook.
+
+3. **Cleanuparr + Huntarr** *(closes F10 family at the runtime
+   layer — bad-download removal + missing-content hunting).*
+   Cleanuparr scans qBittorrent for stalled / bad-state / paused
+   torrents and triggers replacement searches. Huntarr scans
+   Sonarr/Radarr libraries for missing episodes/movies and queues
+   active searches against rate-limited indexers with backoff.
+   Both run as scheduled tasks (launchd or in-container cron).
+   Worked-example coverage: would have caught (a) Radarr's
+   paused-torrent state during D-17-38 (manually surfaced via
+   selfheal logs); (b) the F1 Australia season missing
+   episode-4-of-9 scenario.
+
+4. **Lidarr** *(operator-stated music interest, 2026-05-03).*
+   Music-library equivalent of Sonarr/Radarr. Same Prowlarr
+   integration pattern. Vault-managed API key. Bind-mount canonical
+   per the arr-stack pattern (`/data/media/music`). Apple
+   Music / Spotify metadata source decision gates this — needs
+   operator pick before scope.
+
+5. **Bazarr** *(subtitle automation, universal value across Sonarr
+   + Radarr + Sportarr).* Subtitle providers configured per Vault.
+   Auto-pull on download, language preference per series.
+   Operator's hearing/accessibility considerations should drive
+   default-language + forced-subtitle policy at scope time.
+
+6. **arr-suite-mcp-server** *(AI orchestration surface — replaces
+   ad-hoc Claude Code direct-API curl loops with a typed MCP tool
+   surface).* Tools: `get_queue`, `search_movie/show/song`,
+   `get_indexer_health`, `get_calendar`, `get_library_stats`,
+   plus mutation tools (gated): `force_search`, `delete_indexer`,
+   `update_application_url`. Critical for D-17-36-style operations
+   to become repeatable + audit-logged rather than ad-hoc shell
+   loops. Vault AppRole per consumer (Claude Code sessions, Obot
+   agents). Docker-compose service on Mac Mini, registered in
+   `~/.platform-registry/inventory.json` per D-17-29.
+
+7. **Autobrr** *(latency reduction via IRC announce channels —
+   moves grab-decision from periodic-RSS to push-on-announce).*
+   For private-tracker users only. Cuts time-to-grab on new
+   releases from minutes (RSS interval) to seconds (announce push).
+   Sportarr is the highest-value consumer (live-event windows are
+   tight). Prerequisites: at least one private tracker registered
+   that supports IRC announce (operator gate).
+
+8. **Profilarr OR Recyclarr** *(TRaSH-Guides automation — quality
+   profile + custom format curation. Operator picks GUI vs CLI.)*
+   Recyclarr = CLI, fits the Buildarr-as-config-as-code pattern;
+   Profilarr = GUI, easier ad-hoc tuning. Decision deferred to
+   operator at scope time. Both deliver the same outcome:
+   Sonarr/Radarr quality profiles stay in sync with the TRaSH
+   community guidelines without manual UI maintenance.
+
+**Doctrine cross-references:**
+- Finding 1 (F5) — observability before expansion
+- Candidate F11 (config-as-code / declarative state) — would
+  graduate to a numbered finding once Buildarr lands and the
+  first config-drift incident is post-mortemed against it
+- Finding 6 (F10) — retirement-record-as-restoration-playbook is
+  structurally unsound; Buildarr structurally closes this
+- D-17-29 (service-registry MVP) — every new component registers
+- D-17-37 + D-17-39 (artifact substrate + ingestion flow) — vendor
+  docs for each new component go through the canonical surface
+- D-17-38 (Vault Agent sidecar credential pattern) — every new
+  component uses the pattern, never `.env` credentials
+
+**Family-wide hard prerequisites:**
+- D-17-29 service-registry stable (DONE — registry refresh chained)
+- D-17-37 + D-17-39 artifact substrate + ingestion flow (DONE)
+- D-17-38 health-check substrate stable (closed 2026-05-03)
+- arr-stack baseline post-D-17-36 stable (Sportarr unparked, dups
+  cleared, Prowlarr Application URLs canonicalized — DONE
+  2026-05-03)
+
+**Defer activation until** the family-wide prereqs are met (DONE
+above) AND operator picks the first component to scope. Components
+1 (observability) and 2 (Buildarr) are the recommended first picks
+because they de-risk every later component. Components 3–8 are
+parallelizable once 1+2 land.
+
+**Effort estimate at family level:** 50–80h spread across 8 sub-
+deliverables, of which 1+2 (~20h combined) are the structural prereqs
+for the rest. Individual sub-deliverables per scope at 4–10h each.
+
+---
+
+### 18.H — HACS evaluation + plugin-vetting doctrine
+
+Promoted from D-17-41 candidate intake (2026-05-03). HACS (Home
+Assistant Community Store) is a third-party plugin ecosystem on the
+Home Assistant hub at .141. Evaluating HACS is partly a feature
+question (does HACS unlock capability gaps in the operator's
+home-automation surface?) and partly a **supply-chain doctrine**
+question (HACS plugins are community-maintained, often reverse-
+engineered against vendor APIs, and carry a risk profile distinct
+from official HA integrations).
+
+**Scope:**
+- HACS deployment on the .141 HA hub (`apt`-installed Home Assistant
+  Core; HACS install via the standard `wget`-from-GitHub-release
+  pattern). Snapshot HA config pre-install per HA backup procedure.
+- Plugin-vetting doctrine authored as `docs/architecture-facts/
+  hacs-supply-chain-doctrine.md`. Sibling to D-17-10 model-provenance
+  kit. Doctrine fields per plugin: source repo URL, last commit
+  date, maintainer count, vendor-API-reverse-engineered flag,
+  license, ACL risk class (`vendor-official` < `community-vetted` <
+  `reverse-engineered-api` < `unmaintained`).
+- ACL risk class enforcement: reverse-engineered-API plugins are
+  capability-isolated where HA's permission model allows; never
+  granted credentials beyond what the underlying vendor API
+  exposes (e.g. a reverse-engineered Tesla plugin gets the
+  operator's Tesla credential, never platform-wide secrets).
+- Capability gap inventory: enumerate the *specific* HA features
+  HACS plugins are needed for. If the inventory is empty, HACS
+  installation is deferred — speculative plugin ecosystems are a
+  supply-chain attack surface without a feature trigger.
+
+**Prerequisites:**
+- HA hub on .141 stable (post-D-17-34 confirmed ✅)
+- Concrete capability gap that HACS solves (operator-confirmed at
+  scope time; **no current trigger**)
+
+**Doctrine cross-references:**
+- D-17-10 (model-provenance kit — sibling supply-chain pattern)
+- D-17-37 (artifact substrate — HACS plugin source code goes
+  through the canonical surface as `vendor-docs` ACL class for
+  audit purposes)
+- Finding 9 (configuration audits verify against operator-stated
+  intent) — the plugin-vetting doctrine IS the operator-stated
+  intent against which a plugin inventory is later audited
+
+**Defer until** a concrete capability gap surfaces. **Do not add
+HACS speculatively.** Estimated effort when triggered: 6–10h
+(deployment 2h + doctrine authoring 3h + first plugin vetting 2h
++ documentation 1–3h).
+
+---
+
+### 18.I — OpenCode evaluation as agentic frontend alternative
+
+Operator-confirmed candidate (2026-05-03). OpenCode (formerly an
+agentic-coding frontend in the Goose / Continue / Aider category) is
+evaluated against the same harness as D-17-13 Goose: tool-call
+protocol behavior against the local Ollama + litellm + exo cluster
+substrate.
+
+**Scope:**
+- OpenCode deployment in a sandbox path (Mac Mini, isolated from the
+  primary Claude Code session). Configured against local Ollama
+  endpoint (no Anthropic/cloud routes per LLM Access Doctrine).
+- Tool-call protocol probe: does OpenCode handle streaming tool
+  calls in a way that bypasses the D-17-13 Goose blocker?
+  (Goose's tool-call streaming was the architectural sticking
+  point — if OpenCode's protocol differs and works against local
+  models, it's a candidate replacement.)
+- Comparison matrix vs D-17-13 Goose, Continue, Aider, and
+  Claude Code (via subagents). Axes: streaming-tool-call support,
+  multi-file edit reliability, context window utilization, local-
+  model compatibility (Ollama / litellm), token-discipline
+  posture.
+- Decision: adopt / defer / skip per the same ADR pattern as
+  D-17-13. Adoption requires: streaming tool calls work, local
+  model parity, no cloud-route dependencies.
+
+**Prerequisites:**
+- D-17-13 Goose evaluation closed (provides the comparison
+  baseline)
+- Local Ollama + litellm stack stable (confirmed)
+- exo cluster reachable from Mac Mini (Phase 16 close
+  confirmed)
+
+**Decision criteria (gate):**
+- IF streaming tool calls work against local models → adopt
+  candidate, schedule full ADR
+- IF streaming tool calls fail in the same way Goose's did →
+  document the structural blocker, skip
+- IF tool calls work but local-model parity is missing → defer
+  pending model upgrade
+
+**Lower-priority deferral note:** if the Saturday demo proves
+Claude Code (Pro subscription) + decomposer/implementer/reviewer
+subagents under `claude-local` covers the agentic-coding workflow
+adequately, OpenCode evaluation drops in priority. The driver for
+this evaluation is "is there a substrate gap in the current
+agentic-coding posture?" If the answer is no, defer indefinitely.
+
+**Effort estimate:** 8–12h (deployment 2h + protocol probe 3h +
+comparison matrix 3h + ADR 2–4h).
+
+---
+
+### 18.J — Tautulli playback analytics + alerting
+
+Promoted from D-17-42 candidate intake (2026-05-03). Tautulli is a
+Plex monitoring substrate that exposes playback analytics, transcode-
+vs-direct-play visibility, and alerting hooks Plex doesn't provide
+natively.
+
+**Scope:**
+- Tautulli deployment on Mac Mini as a Docker compose service.
+  Bind-mount config volume; security_opt + cap_drop per platform
+  doctrine. Registered in `~/.platform-registry/inventory.json`
+  per D-17-29.
+- Plex API token via Vault Agent sidecar (D-17-38 credential
+  pattern — never `.env`, never environment variables).
+- Optional alert integrations (operator picks at scope time):
+  Discord webhook, Slack webhook, email-via-Nextcloud-mail. None
+  enabled by default — alert fatigue is real.
+- Dashboard surfaces:
+  - Who-is-playing-what-when (concurrent-stream visibility)
+  - Transcode load (CPU / GPU pressure indicator — informs Mac
+    Studio compute-node placement decisions)
+  - Top-watched shows / movies (informs Sonarr/Radarr quality-
+    profile + custom-format tuning)
+  - Stream interruption / buffering events (informs network /
+    storage troubleshooting)
+- Sibling observability surface to the D-17-38 health-check
+  substrate, NOT a replacement. Tautulli answers "is anyone
+  watching"; D-17-38 selfheal answers "are services healthy".
+
+**Prerequisites:**
+- Plex stable ✅
+- Vault Agent sidecar credential pattern proven (D-17-38) ✅
+- D-17-38 health-check substrate landed ✅
+
+**Doctrine cross-references:**
+- D-17-38 — sibling observability surface (not replacement)
+- D-17-29 — service-registry registration mandatory
+- Finding 1 (F5) — Tautulli adds a new probe shape
+  (application-level analytics) above the integration-health
+  layer; classify failures correctly
+
+**Defer until** concrete operator signal that Plex usage analytics
+matter to workflow. **Do not deploy Tautulli speculatively** — the
+substrate lands cleanly when there's a signal, but adding it without
+a signal means another service to maintain. Estimated effort when
+triggered: 4–6h.
+
+---
+
+### 18.K — CMDB reconciliation deliverable
+
+Three-substrate drift problem surfaced repeatedly during Phase 17
+chronicle work and Finding 4 (configuration audit doctrine). The
+platform's "where do services live, what ports do they use, what
+depends on what" question has THREE substrates today, each with a
+different authority claim:
+
+| Substrate | Authority claim | Status |
+|---|---|---|
+| NetBox CMDB at `netbox.internal` | Declared authoritative per ADR-A-014 | Active, primary |
+| `config/service-registry.yaml.DEPRECATED` | A-012 deprecation-gate fallback | Deprecated, retained for fallback-only |
+| `~/.platform-registry/inventory.json` | D-17-29 runtime substrate (canonical for ports / internal IPs / depends_on / Caddy routes / credential file metadata) | Active, primary at the runtime layer |
+
+NetBox and `inventory.json` are BOTH authoritative — at different
+layers (NetBox for declarative service catalog, inventory.json for
+runtime state). The reconciliation question is: when do they
+diverge, and what is the canonical resolution path?
+
+**Scope:**
+- Drift-detection probe: scheduled comparison of NetBox service list
+  vs `inventory.json` service list. Diff surfaces as a Grafana
+  panel + structured log. Drift cases:
+  - Service in NetBox not in inventory → service declared but not
+    deployed (or not registered correctly)
+  - Service in inventory not in NetBox → service deployed but not
+    declared (CMDB drift)
+  - Service in both, attribute drift (port, internal IP, network
+    membership) — surfaces which substrate is wrong
+- Reconciliation doctrine authored as `docs/architecture-facts/
+  cmdb-reconciliation-doctrine.md`. Authority hierarchy:
+  inventory.json wins for *runtime* attributes (port, IP, healthy);
+  NetBox wins for *declarative* attributes (capability, owner,
+  ADR linkage). Drift between them is always a bug; the doctrine
+  documents which way the fix flows per attribute class.
+- YAML deletion gate: `service-registry.yaml.DEPRECATED` is
+  deleted when (a) drift-detection probe shows zero NetBox ↔
+  inventory.json drift for ≥30 days AND (b) the A-012 deprecation-
+  gate harness passes. This is the existing 18.C bullet
+  "`service-registry.yaml.DEPRECATED` deletion" elevated to a
+  formal sub-deliverable of CMDB reconciliation.
+- NetBox automation: CRUD operations on NetBox driven by
+  inventory.json refresh (not the other way) — runtime substrate
+  is the source of truth for attributes inventory.json owns;
+  NetBox is the source of truth for attributes inventory.json
+  doesn't model (capability, owner, ADR).
+
+**Prerequisites:**
+- NetBox CMDB stable ✅ (Phase 13 D-DOC close)
+- `inventory.json` D-17-29 substrate stable ✅
+- Caddy ↔ Dnsmasq parity check stable ✅ (D-17-21 close)
+- Grafana panel substrate ✅
+
+**Doctrine cross-references:**
+- ADR-A-012 (service-registry deprecation gate)
+- ADR-A-014 (NetBox as declared CMDB authority)
+- D-17-29 (service-registry MVP — runtime substrate)
+- Finding 4 (configuration audit doctrine — authority hierarchy
+  is per-attribute, not per-substrate)
+- Finding 9 (audits verify against operator-stated intent — the
+  reconciliation doctrine IS the operator-stated intent against
+  which both substrates are audited)
+
+**Effort estimate:** 12–18h (drift probe 4h + doctrine authoring
+4h + NetBox automation hook 4h + 30-day stabilization window
+zero-effort + YAML deletion 1h + documentation 2–4h). Probe lands
+first; doctrine + automation gated on probe-clean state.
+
+---
+
+### 18.L — Credential rotation deliverable
+
+Triggered when stability baseline reached. Credential exposures
+accumulated during Phase 17 incident-response and chronicle work
+form a deferred-rotation queue; all are operator-acknowledged Sev-3
+incidental (no values published, no third-party exposure), but the
+queue should clear in a single coordinated rotation rather than
+piecemeal. Operator framing: **the rotation itself is a system-
+stability test** — if a coordinated rotation across all arr-stack +
+infrastructure secrets succeeds without breakage, that's evidence
+the Vault Agent sidecar pattern (D-17-38) and the credential-flow
+discipline are robust.
+
+**Burned-credentials queue** (chronological):
+- **Sonarr / Radarr / Prowlarr API keys** — D-17-38 deferred
+  (hash-only verification was followed; values appeared in transit
+  through diagnostic command output during D-17-38 execution; no
+  third-party exposure but the substrate doctrine treats this as
+  rotation-required at next opportunity).
+- **QNAP admin password** — D-17-38 Sev-3 incident (credential
+  appeared in command output during NAS storage-stats probe
+  diagnosis; identical posture to the API-key class above).
+- **Torznab apiKey (Prowlarr-issued)** — D-17-36 follow-on Sev-3
+  incident (2026-05-03; curl heredoc pipe failure during WP-2c
+  duplicate-indexer identification streamed apiKey value to
+  terminal stdout; recovered via switch to file-based handling;
+  no re-display).
+- **Seedbox credentials** — operator-acknowledged deferred (date
+  / circumstance not chronicled; flagged here as part of the
+  coordinated-rotation queue).
+
+**Scope:**
+- Pre-rotation snapshot: enumerate every consumer of every
+  rotating credential. `~/.platform-registry/inventory.json`
+  credential_files metadata (D-17-29) is the inventory; verify
+  against live state per service before rotation.
+- Rotation runbook authored as `docs/runbooks/coordinated-
+  credential-rotation.md`. Steps per credential class:
+  generate-new → write-to-Vault → trigger-Vault-Agent-sidecar-
+  refresh → verify-consumer-reads-new → invalidate-old-on-source.
+  Order matters: consumer must be reading new before old is
+  invalidated, or the service breaks.
+- Rotation execution window scheduled with pre/post snapshots
+  in the rewire log per platform doctrine.
+- Post-rotation verification: every consumer service health-
+  green; D-17-38 selfheal cycle clean (4/4 services healthy
+  on next iteration; zero auth-warning escalations).
+- Doctrine update: D-17-38 hash-only-verification near-miss
+  list cleared; chronicle entry "deferred-rotation queue
+  closed YYYY-MM-DD".
+
+**Prerequisites (stability gate):**
+- All Phase 17 deliverables closed (D-17-XX status table in
+  PROJECT_FRAMEWORK.md §9 shows zero open items)
+- D-17-38 selfheal substrate stable for ≥7 days (zero auth-
+  warning false positives)
+- arr-stack baseline post-D-17-36 stable for ≥7 days (no Sportarr
+  / Radarr / Prowlarr operational incidents)
+- Vault Agent sidecar refresh path tested non-destructively
+  (synthetic credential rotation in dev path before production)
+
+**Doctrine cross-references:**
+- D-17-38 (hash-only-verification doctrine; this deliverable is
+  the rotation half of the pair — the doctrine prevents new
+  exposures, the rotation clears the existing queue)
+- D-17-29 (credential_files metadata in inventory.json — the
+  consumer inventory)
+- Finding 1 (F5) — selfheal is the post-rotation verification
+  surface
+
+**Operator framing — rotation as stability test:** if the
+coordinated rotation breaks any consumer, that's a finding about
+the Vault Agent sidecar pattern, NOT just a rotation execution
+issue. The deliverable is dual-purpose: clears the queue AND
+exercises the substrate end-to-end.
+
+**Effort estimate:** 8–14h (pre-rotation snapshot 2h + runbook
+authoring 3h + execution 2h + verification 2h + chronicle
+authoring 1–5h depending on what surfaces).
+
+---
+
+### 18.M — Eve + Nanoleaf Matter-over-Thread brand candidates
+
+Tier-2 brand candidates for the Matter-over-Thread sensor expansion
+footprint. The current §18.F DIY-electronics track has the IKEA
+MYGGSPRAY pilot referenced as the Tier-1 occupancy / illuminance
+substrate (see §18.F candidate 2 — ultrasonic node use case
+description). This section catalogs vendor-finished-product
+alternatives evaluated as Tier-2 candidates after the MYGGSPRAY
+pilot completes.
+
+**Scope:**
+- **Eve** (vendor-finished Matter-over-Thread sensors): door /
+  window contact, motion, weather (temperature + humidity), energy
+  monitor strips. Strengths: HomeKit-native, high build quality,
+  long battery life. Weaknesses: price premium, vendor lock-in for
+  some firmware features that gate behind the Eve app.
+- **Nanoleaf** (vendor-finished Matter-over-Thread): primarily
+  lighting (light strips, panels, bulbs) with motion-sensing
+  variants. Strengths: Matter standard adherence, robust HA
+  integration. Weaknesses: lighting-only product line is narrower
+  than Eve's sensor catalog.
+- Evaluation matrix at `docs/phase-18/18M/matter-brand-evaluation.md`
+  produced before any Tier-2 hardware purchase: device class
+  coverage, price-per-sensor, HA integration depth (native / via
+  Matter / via vendor-cloud), firmware update transparency,
+  vendor lock-in risk, Thread border router compatibility (HA
+  hub on .141 vs. Apple TV / HomePod as alternative border router).
+- Tier-2 activation gates: **only after** the MYGGSPRAY pilot
+  (§18.F candidate 2 territory) has run for ≥30 days with stable
+  HA integration. Tier-2 candidates exist to fill capability gaps
+  the IKEA Tier-1 set doesn't cover (e.g. door/window contact —
+  IKEA's coverage is uneven), NOT to duplicate Tier-1 functionality
+  with premium brands.
+
+**Prerequisites:**
+- §18.F asset-registry substrate (Deliverable A) landed
+- IKEA MYGGSPRAY pilot run ≥30 days (Tier-1 baseline established)
+- Concrete capability gap that Tier-2 brands fill (no current
+  trigger — defer until pilot reveals gaps)
+
+**Doctrine cross-references:**
+- §18.F (DIY-electronics track — sibling deliverable family;
+  Tier-2 vendor-finished is the inverse approach to Tier-1
+  community DIY)
+- D-17-37 (artifact substrate — vendor docs go through canonical
+  surface as `vendor-docs` ACL class)
+- Finding 9 (configuration audits verify against operator-stated
+  intent — Tier-2 evaluation matrix IS the intent against which a
+  later inventory is audited)
+
+**Defer activation until** MYGGSPRAY Tier-1 pilot stable for ≥30
+days AND specific capability gap identified. **Do not purchase
+Tier-2 hardware speculatively** — vendor-finished products carry
+ongoing firmware-update overhead and vendor-lock-in risk that DIY
+ESP32 nodes don't.
+
+**Effort estimate:** 4–6h evaluation matrix; per-device deployment
+when triggered is 1–2h each (HA Matter pairing + asset-registry
+record).
 
 ---
 
