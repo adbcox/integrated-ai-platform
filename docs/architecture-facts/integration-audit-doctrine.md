@@ -467,3 +467,48 @@ Sportarr's release-parser is upstream-frozen (linuxserver/sportarr image; we don
 **Active doctrine.** Worked example: D-17-36 WP-07 Miami Qualifying misclassification, remediated by manual `UPDATE EventFiles SET EventId = 1597 WHERE Id = 1` + `UPDATE Events SET HasFile=0, FilePath=NULL WHERE Id=1572` + `UPDATE Events SET HasFile=1, FilePath=...` for Event 1597. DB snapshot pre-relink at `/Users/admin/sportarr-db-pre-wp07-relink-2026-05-03.snapshot`. Plex library 4 (Sports) post-relink shows both Sprint AND Qualifying at canonical paths.
 
 Cross-references: D-17-36 (the worked example), Finding 1 (Gap F5 family — integration health checks; correctness layer is a new sub-family), Finding 6 / F10 (retirement-audit phase coverage; this defect would not have been caught by a more thorough retirement audit because it's a runtime-internal failure mode). Backlog: filename-vs-event-title mismatch probe (~3-4h, Phase 18 candidate); Plex movie-mode hierarchy reconfig (Plex agent change, ~1-2h, Phase 18 candidate — the unpark used `tv.plex.agents.none` + `Plex Video Files` scanner because Sportarr's flat-per-sport storage does not match TV-shows agent expectations).
+
+---
+
+## Finding 8 — Integration health check failures cluster at three distinct layers; conflating them produces wrong remediations
+
+D-17-38 worked example. Self-heal cycle reported `5 issues, 0 fixes` indefinitely; symptoms looked like one failure ("services unhealthy") but were three independent failures that happened to share an output channel.
+
+### Layer taxonomy (D-17-38)
+
+| Layer | Failure mode | Right probe | Wrong probe |
+|---|---|---|---|
+| **L1 network** | host/IP unreachable, port closed | TCP connect to advertised port | HTTPS GET (might fail for L3 reasons) |
+| **L2 transport** | TLS handshake failure, cert untrusted | `openssl s_client` from same execution context | `requests.get(verify=True)` (conflates with L3) |
+| **L3 application** | API returns 401/403/5xx, parser fails | HTTP GET with auth + status classification | TCP connect (says "alive", misses auth bug) |
+| **L4 semantic** | API returns 200 but data is wrong / stale | application-specific (e.g. arr `/api/health` reports per-indexer) | any reachability probe |
+
+D-17-38 baseline had: arr-stack failing at L3 (stale credentials) but reported as "unreachable" (L1 framing); QNAP failing at L2 (TLS handshake) reported as L1; selfheal classifying L3 auth failures as warnings (silence-mechanism F5).
+
+### Root causes (all three present simultaneously)
+
+1. **Vault credential drift.** `secret/arr/{sonarr,radarr,prowlarr}` held URL values that resolved on the host (`mac-mini.internal`) but not from inside containers — appeared as L1 unreachable from the dashboard. Plus stale API keys: drift accumulates because Vault writes are infrequent and operator-driven, while service config updates from inside the container (Sonarr regenerates ApiKey on certain version upgrades).
+2. **Selfheal severity misclassification.** `framework/health_checker.py` `_classify_http_exc` treated 401/403 as warning (F5 silence mechanism). Auth failures must be critical — if the credential layer is broken, every downstream metric is meaningless.
+3. **TLS environment incompatibility (Debian 13 OpenSSL 3.5.5 vs QNAP).** Container TLS handshake to QNAP returns alert 80 ("internal error") regardless of TLS version, SNI, or cipher hint. Same handshake from macOS host succeeds. Workaround: bare TCP-connect fallback for reachability classification (D-17-40 is the deeper investigation).
+
+### Remediation pattern (D-17-38 close)
+
+Order matters:
+
+1. Fix selfheal severity first (`_classify_http_exc`) — without this, no other remediation is observable.
+2. Plumb credentials end-to-end (Vault Agent sidecar + shell-sourced entrypoint) — value never lands in image `Config.Env`, only in PID 1 environ via `set -a && . /vault/secrets/credentials.env && set +a && exec ...`.
+3. Harvest live credentials from running services, write to Vault, verify via hash read-back (`vault kv get -field=api_key | shasum -a 256 | cut -c1-12`). Never display value.
+4. For L2-incompatible appliance probes, use a layered fallback: app-probe → TCP-connect. The TCP fallback is doctrine-clean reachability proof without conflating with the L2/L3 layers.
+
+### Doctrine takeaways
+
+- **Hash-only verification means hash-only — even during diagnostics.** D-17-38 produced one near-miss this turn: `tr "\0" "\n" < /proc/1/environ | grep ^QNAP_` emitted `QNAP_PASS=<value>` to the conversation transcript (twice, before redaction was applied). Correct form: `... | sed 's/=.*/=<set>/'` for presence-only, or `... | grep -c ^VAR=` for count. The QNAP password is now considered burned-and-deferred under operator-stated stability-baseline rotation policy. This is a Sev-3 incident on the deferred-rotation list, not an immediate-action incident.
+- **Vault credential drift is a sibling F-class** (candidate F13). Vault is a write-and-trust store; live service config drifts from Vault. Refresh procedure must verify against live, not write-and-trust-Vault. For services where the live config IS the source of truth (Sonarr ApiKey), the Vault record is a cache, not the canonical.
+- **Container-side TLS environment is not the host TLS environment.** Validating an appliance is reachable from the host does not validate it is reachable from a containerized consumer. Always test from the actual consumer execution context. Debian 13 + OpenSSL 3.5.5 vs older OpenSSL/LibreSSL is a real divergence; D-17-40 will investigate the workaround.
+- **Layered probe patterns close ambiguity.** `health_check()` should return True when *any* of (L1 TCP, L2/L3 HTTPS) succeeds, with the classification feeding back into the issue severity. A connector that only does HTTP and has no fallback will misclassify L2 failures as L1 unreachability forever.
+
+### Status
+
+**Active doctrine, F5 closed.** Worked example: D-17-38 close 2026-05-03. Selfheal cycle post-close: 4/5 services up (sonarr/radarr/prowlarr/qnap), correctly-classified upstream warnings (per-indexer failures, QNAP storage stats deferred under L2 chase), seedbox warning operator-deferred. Critical count: 4 → 2 (both criticals are real upstream — radarr/prowlarr "all indexers unavailable", a third-party state, not platform misconfiguration).
+
+Cross-references: Finding 1 (Gap F5 family, now empirically closed at the silence-mechanism layer), D-17-40 candidate in PHASE_ROADMAP §18.C (QNAP TLS root-cause + workaround), D-17-26 Finding DD (container env inspection — extended this turn with the redactor-discipline sub-doctrine).

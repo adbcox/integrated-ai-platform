@@ -7,8 +7,14 @@ import xml.etree.ElementTree as ET
 from typing import Dict, Any
 
 import requests
+import urllib3
 
 from .base import BaseConnector
+
+# QNAP appliances ship with a self-signed cert; the operator-accepted
+# posture is to skip TLS verification on the LAN. Silence the per-call
+# InsecureRequestWarning to keep selfheal logs readable.
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 
 class QNAPConnector(BaseConnector):
@@ -38,6 +44,7 @@ class QNAPConnector(BaseConnector):
                 f"{self.base_url}/cgi-bin/authLogin.cgi",
                 params={"user": self.username, "pwd": pwd_hash, "serviceKey": "1"},
                 timeout=8,
+                verify=False,
             )
             r.raise_for_status()
             root = ET.fromstring(r.text)
@@ -50,6 +57,7 @@ class QNAPConnector(BaseConnector):
                 f"{self.base_url}/cgi-bin/authLogin.cgi",
                 params={"user": self.username, "pwd": self.password, "serviceKey": "1"},
                 timeout=8,
+                verify=False,
             )
             root2 = ET.fromstring(r2.text)
             sid2 = root2.findtext("authSid") or ""
@@ -64,9 +72,29 @@ class QNAPConnector(BaseConnector):
     # ── Health check ──────────────────────────────────────────────────────────
 
     def health_check(self) -> bool:
+        """Reachability probe: HTTPS first, TCP-connect fallback.
+
+        D-17-38 finding: container-side TLS handshakes to QNAP fail with
+        alert 80 (Debian 13 + OpenSSL 3.5.5 vs QNAP TLS config — see
+        D-17-40 candidate). SSH fallback rejected too (publickey-only,
+        no key provisioned). A bare TCP connect to 443 still proves
+        the appliance is alive on the network.
+        """
         try:
-            r = requests.get(self.base_url, timeout=5)
+            r = requests.get(self.base_url, timeout=5, verify=False)
             return r.status_code < 500
+        except Exception:
+            pass
+        try:
+            import socket
+            from urllib.parse import urlparse
+            u = urlparse(self.base_url)
+            host = u.hostname or ""
+            port = u.port or (443 if u.scheme == "https" else 80)
+            if not host:
+                return False
+            with socket.create_connection((host, port), timeout=4):
+                return True
         except Exception:
             return False
 
@@ -87,6 +115,7 @@ class QNAPConnector(BaseConnector):
                 f"{self.base_url}/cgi-bin/filemanager/utilRequest.cgi",
                 params={"func": "stat_file_system", "sid": self._sid},
                 timeout=10,
+                verify=False,
             )
             r.raise_for_status()
             root = ET.fromstring(r.text)

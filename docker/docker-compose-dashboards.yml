@@ -67,6 +67,32 @@ services:
       - socket-proxy-net
     ports: []  # Not exposed externally
 
+  # ── Vault Agent sidecar for ai-platform-dashboard (D-17-38 §A1) ──────────
+  # Renders arr-stack + qnap credentials to /vault/secrets/credentials.env,
+  # consumed by ai-platform-dashboard via shell-sourced entrypoint.
+  # Closes Gap F5 silence mechanism: empty SONARR_API_KEY/RADARR_API_KEY/
+  # PROWLARR_API_KEY/QNAP_PASS in PID 1 environ → 401s downgraded to warnings
+  # → selfheal cycle reports "0 fixes" indefinitely.
+  vault-agent-dashboard:
+    image: hashicorp/vault:2.0.0
+    container_name: vault-agent-dashboard
+    restart: "no"
+    environment:
+      VAULT_ADDR: "http://vault-server:8200"
+      SKIP_SETCAP: "true"
+    volumes:
+      - /Users/admin/.vault-approle/dashboard:/vault/approle:ro
+      - /Users/admin/.vault-agent-secrets/dashboard:/vault/secrets
+      - ./vault-agent-dashboard/agent.hcl:/vault/config/agent.hcl:ro
+      - ./vault-agent-dashboard/credentials.env.tmpl:/vault/agent-config/credentials.env.tmpl:ro
+    command: agent -config=/vault/config/agent.hcl
+    networks:
+      - control-center-net
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+
   # ── AI Platform Dashboard ─────────────────────────────────────────────────
   ai-platform-dashboard:
     build:
@@ -75,12 +101,16 @@ services:
     image: integrated-ai-platform/dashboard:latest
     container_name: ai-platform-dashboard
     restart: unless-stopped
+    depends_on:
+      vault-agent-dashboard:
+        condition: service_completed_successfully
     ports:
       - "${DASHBOARD_PORT:-8080}:8080"
     volumes:
       - ../docs/roadmap/ITEMS:/app/docs/roadmap/ITEMS:ro
       - ../.git:/app/.git:ro
       - ${LOG_DIR:-/tmp}:/app/logs
+      - /Users/admin/.vault-agent-secrets/dashboard:/vault/secrets:ro
     environment:
       REPO_ROOT: /app
       ITEMS_DIR: /app/docs/roadmap/ITEMS
@@ -88,16 +118,17 @@ services:
       EXECUTOR_HOST: ${EXECUTOR_HOST:-}
       REMOTE_REPO_ROOT: ${REMOTE_REPO_ROOT:-~/repos/integrated-ai-platform}
       OLLAMA_HOST: ${OLLAMA_HOST:-127.0.0.1:11434}
-      SONARR_URL: ${SONARR_URL:-http://192.168.10.201:8989}
-      RADARR_URL: ${RADARR_URL:-http://192.168.10.201:7878}
-      PROWLARR_URL: ${PROWLARR_URL:-http://192.168.10.201:9696}
+      # SONARR_URL/RADARR_URL/PROWLARR_URL/QNAP_URL/SONARR_API_KEY/
+      # RADARR_API_KEY/PROWLARR_API_KEY/QNAP_USER/QNAP_PASS now sourced
+      # from /vault/secrets/credentials.env at entrypoint (D-17-38 §A1).
+      # PLEX_URL/PLEX_TOKEN deferred — Plex coverage is a separate
+      # sibling deliverable per WP-04 surface-back.
       PLEX_URL: ${PLEX_URL:-http://192.168.10.201:32400}
-      SONARR_API_KEY: ${SONARR_API_KEY:-}
-      RADARR_API_KEY: ${RADARR_API_KEY:-}
-      PROWLARR_API_KEY: ${PROWLARR_API_KEY:-}
       PLEX_TOKEN: ${PLEX_TOKEN:-}
+    entrypoint: ["sh", "-c", "set -a && . /vault/secrets/credentials.env && set +a && exec python3 web/dashboard/server.py --port 8080 --host 0.0.0.0"]
     networks:
       - mcp-net
+      - control-center-net
     labels:
       traefik.enable: "true"
       traefik.http.routers.ai-dashboard.rule: "Host(`ai.${DOMAIN:-local}`)"
@@ -155,3 +186,6 @@ networks:
   socket-proxy-net:
     name: socket-proxy-net
     internal: true  # Docker socket proxy not reachable from outside
+  control-center-net:
+    name: control-center-net
+    external: true  # Owned by control-center-stack — vault-server lives here

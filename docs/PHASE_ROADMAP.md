@@ -259,6 +259,19 @@ foundation rather than adding features.
 - Nextcloud: enable Talk (video), Notes, and Deck apps; migrate any Plane project-tracking
   that doesn't need public issue tracking to Nextcloud Deck (lighter-weight alternative
   for personal tracking)
+- **D-17-40 candidate (logged 2026-05-03 from D-17-38 close):** Container-side TLS
+  handshake failure to QNAP appliance — root-cause + workaround. Symptom: every
+  `requests.get(https://192.168.10.201, verify=False)` from inside Debian-13
+  containers returns `tlsv1 alert internal error` (TLS alert 80) regardless of
+  TLS version (1.2/1.3) or SNI. Host (macOS native LibreSSL) negotiates TLSv1.3
+  + AEAD-CHACHA20-POLY1305-SHA256 cleanly. Working hypothesis: Debian 13 OpenSSL
+  3.5.5 default cipher suite or X.509 verification stricture incompatible with
+  QNAP QTS TLS config. D-17-38 worked around at the reachability layer with a
+  bare TCP-connect fallback in `connectors/qnap.py:health_check`; storage stats
+  via `_storage_via_qts` still impacted (warns "Storage check failed: error").
+  Investigate: explicit cipher suite pinning, OpenSSL config override, QNAP cert
+  re-issue with modern key/sig profile, or replace HTTPS path with QTS-native
+  CLI over SSH (would need publickey auth provisioned — QNAP rejects password SSH).
 
 **Gate:** `phase-18-final` — PASS≥18 FAIL=0 WARN≤3.
 OpenBao + Backstage ADRs committed. YAML deprecation complete. Platform hardening applied.

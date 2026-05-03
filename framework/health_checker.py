@@ -74,6 +74,19 @@ class MediaHealthChecker:
     # Issues we can surface but not auto-fix
     KNOWN_NOISE = {"UpdateCheck", "RemovedMovieCheck"}
 
+    # D-17-38 §B1 — credentials sourced from Vault Agent sidecar render dir
+    # (/vault/secrets/credentials.env) via shell-sourced entrypoint. Empty
+    # values now indicate a *real* configuration outage, not a missing dev
+    # secret — surface them as the credential check below instead of letting
+    # downstream HTTP 401s be downgraded to "warning" by the catch-all
+    # exception path.
+    REQUIRED_CREDS = (
+        ("SONARR_API_KEY",  "sonarr",   "secret/arr/sonarr"),
+        ("RADARR_API_KEY",  "radarr",   "secret/arr/radarr"),
+        ("PROWLARR_API_KEY","prowlarr", "secret/arr/prowlarr"),
+        ("QNAP_PASS",       "qnap",     "secret/qnap/admin"),
+    )
+
     def __init__(self) -> None:
         from connectors.arr_stack import ArrStackConnector
         from connectors.qnap import QNAPConnector
@@ -91,6 +104,47 @@ class MediaHealthChecker:
             os.environ.get("QNAP_URL",  "http://192.168.10.201"),
             os.environ.get("QNAP_USER", "admin"),
             os.environ.get("QNAP_PASS", ""))
+
+    @classmethod
+    def _credential_issues(cls) -> list[Issue]:
+        out: list[Issue] = []
+        for env_key, svc, kv_path in cls.REQUIRED_CREDS:
+            if not os.environ.get(env_key):
+                out.append(Issue(
+                    svc, "critical", "auth",
+                    f"{svc} credential missing — {env_key} empty in environ",
+                    f"Vault Agent sidecar may not have rendered {kv_path} "
+                    f"into /vault/secrets/credentials.env. "
+                    f"Check vault-agent-{svc}/dashboard exit status and approle material.",
+                    fixable=False, fix_action="check_vault_agent_render",
+                ))
+        return out
+
+    @staticmethod
+    def _classify_http_exc(svc: str, source: str, exc: Exception, context: str = "") -> Issue:
+        """D-17-38 §B1 — classify HTTP-call exception into Issue with right severity.
+
+        Auth (401/403) → critical (auth axis is dark; downstream checks meaningless).
+        Network (Connection/Timeout) → warning (transient or service down).
+        Other → warning (unknown; inspect detail).
+        """
+        import requests  # local import to avoid hard dep at module load
+        msg_prefix = context or f"Could not fetch {svc} {source}"
+        if isinstance(exc, requests.HTTPError):
+            status = getattr(exc.response, "status_code", None)
+            if status in (401, 403):
+                return Issue(svc, "critical", "auth",
+                             f"{svc} {source} auth failed (HTTP {status}) — credentials missing or invalid",
+                             f"Verify {svc.upper()}_API_KEY (or QNAP_PASS) sourced from "
+                             f"/vault/secrets/credentials.env; check vault-agent-dashboard exit status.",
+                             fixable=False, fix_action="check_vault_agent_render")
+            return Issue(svc, "warning", source,
+                         f"{msg_prefix}: HTTP {status}", str(exc)[:120], fixable=False)
+        if isinstance(exc, (requests.ConnectionError, requests.Timeout)):
+            return Issue(svc, "warning", "reachability",
+                         f"{svc} unreachable: {type(exc).__name__}", str(exc)[:120], fixable=False)
+        return Issue(svc, "warning", source,
+                     f"{msg_prefix}: {type(exc).__name__}", str(exc)[:120], fixable=False)
 
     def _check_seedbox(self) -> list[Issue]:
         """Check seedbox connectivity — isolated with timeout so DNS failures don't cascade."""
@@ -134,8 +188,19 @@ class MediaHealthChecker:
         issues: list[Issue] = []
         services: dict[str, bool] = {}
 
+        # D-17-38 §B1 — credential check first. If a credential is empty,
+        # surface as critical and skip the corresponding service's HTTP
+        # checks (avoid emitting confusing "auth failed" cascades on top
+        # of the root cause).
+        cred_issues = self._credential_issues()
+        issues.extend(cred_issues)
+        missing_creds = {i.service for i in cred_issues}
+
         for svc, connector in [("sonarr", self._sonarr), ("radarr", self._radarr),
                                 ("prowlarr", self._prowlarr)]:
+            if svc in missing_creds:
+                services[svc] = False
+                continue
             up = connector.health_check()
             services[svc] = up
             if not up:
@@ -148,14 +213,17 @@ class MediaHealthChecker:
                 issues.extend(self._check_rootfolders(connector, svc))
                 issues.extend(self._check_remote_path_mappings(connector, svc))
 
-        up_qnap = self._qnap.health_check()
-        services["qnap"] = up_qnap
-        if up_qnap:
-            issues.extend(self._check_qnap_storage())
-            issues.extend(self._check_rclone())
+        if "qnap" in missing_creds:
+            services["qnap"] = False
         else:
-            issues.append(Issue("qnap", "critical", "reachability",
-                                "QNAP NAS is unreachable", fixable=False))
+            up_qnap = self._qnap.health_check()
+            services["qnap"] = up_qnap
+            if up_qnap:
+                issues.extend(self._check_qnap_storage())
+                issues.extend(self._check_rclone())
+            else:
+                issues.append(Issue("qnap", "critical", "reachability",
+                                    "QNAP NAS is unreachable", fixable=False))
 
         # Seedbox: always check last — isolated with timeout, never blocks other checks
         seedbox_issues = self._check_seedbox()
@@ -180,8 +248,10 @@ class MediaHealthChecker:
             r.raise_for_status()
             items = r.json()
         except Exception as exc:
-            return [Issue(svc, "warning", "arr_health",
-                          f"Could not fetch {svc} health: {exc}", fixable=False)]
+            # D-17-38 §B1 — was: single warning Issue regardless of cause
+            # (silent on 401). Now classifies by exception type so auth
+            # failures escalate to critical.
+            return [self._classify_http_exc(svc, "arr_health", exc)]
         out = []
         for item in items:
             source = item.get("source", "")
@@ -211,8 +281,11 @@ class MediaHealthChecker:
         out = []
         try:
             items = connector.get_queue_details()
-        except Exception:
-            return []
+        except Exception as exc:
+            # D-17-38 §B1 — was: silent return []. Now classify so 401
+            # surfaces; non-auth errors stay warning-tier (queue is one
+            # of several signals; missing queue alone shouldn't page).
+            return [self._classify_http_exc(svc, "queue", exc)]
         for item in items:
             tracked = item.get("trackedDownloadStatus", "ok")
             status  = item.get("status", "")
@@ -248,8 +321,9 @@ class MediaHealthChecker:
             r = connector.session.get(f"{connector.base_url}/api/{v}/rootfolder", timeout=8)
             r.raise_for_status()
             folders = r.json()
-        except Exception:
-            return []
+        except Exception as exc:
+            # D-17-38 §B1 — escalate 401, keep other failures as warnings
+            return [self._classify_http_exc(svc, "rootfolder", exc)]
         out = []
         for folder in folders:
             path = folder.get("path", "")
@@ -276,8 +350,9 @@ class MediaHealthChecker:
                 f"{connector.base_url}/api/{v}/remotepathmapping", timeout=8)
             r.raise_for_status()
             mappings = r.json()
-        except Exception:
-            return []
+        except Exception as exc:
+            # D-17-38 §B1 — escalate 401, keep other failures as warnings
+            return [self._classify_http_exc(svc, "path", exc)]
         out = []
         # Validate each mapping: remotePath must not look like a local path
         for m in mappings:
