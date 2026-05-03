@@ -982,3 +982,43 @@ responses).
   (worked example for cross-daemon record migration; future
   successor scripts should incorporate the consumer-flush step
   per this finding)
+
+---
+
+## Finding 15 — Headless macOS launchd requires user-domain bootstrap with privileged registration path (Finding Y)
+
+**Date:** 2026-05-03  
+**Originating WP:** D-17-51 WP-02..WP-05  
+**Severity:** Medium-High (unattended automation blocked across multiple agents)
+
+### What was observed
+
+- `launchctl print gui/<uid>` fails with `Domain does not support specified action` on the Mac Mini headless posture (no active GUI login session).
+- `launchctl print user/<uid>` succeeds (domain exists, `session = Background`).
+- `launchctl bootstrap user/<uid> <plist>` from non-root shell fails with `Bootstrap failed: 5: Input/output error` (reproduced on both production and minimal probe plists), and services remain absent from `launchctl print user/<uid>/<label>`.
+
+### Canonical pattern
+
+For headless server operation, **`user/<uid>` is canonical** and `gui/<uid>` is non-canonical.
+Registration is performed with privileged bootstrap:
+
+1. `launchctl bootout user/<uid>/<label>` (best-effort)
+2. `launchctl bootstrap user/<uid> <plist>`
+3. `launchctl enable user/<uid>/<label>`
+4. `launchctl kickstart -k user/<uid>/<label>`
+5. `launchctl print user/<uid>/<label>` + heartbeat recency verification
+
+### Deliverable state
+
+D-17-51 shipped operator-run scripts:
+
+- `scripts/d-17-51-launchagents-bootstrap-user-domain.sh`
+- `scripts/d-17-51-launchagents-verify.sh`
+
+Status is **PARTIAL** until one root-run execution is performed on-host and verification confirms affected agents are loaded and executing within heartbeat budgets.
+
+### Cross-references
+
+- D-17-29 (platform-registry LaunchAgent known blocked by Finding Y)
+- D-17-44 (`--no-verify` commit path due to stale launchd recency checks)
+- D-17-50 (arr-apikey-sweep deployed but registration blocked pending Y)
