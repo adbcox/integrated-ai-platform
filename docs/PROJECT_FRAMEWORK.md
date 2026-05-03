@@ -438,6 +438,7 @@ Deliverable table:
 | D-17-20 (historical: 17.T): D#17/D#18/D#19/D#20/D#21 codified | DONE | b86bc55 |
 | D-17-21 (historical: 17.U): OPNsense DNS state audit + Unbound disable + retroactive Vault incident review (KI-009 follow-up; estimated 6-8h) | NOT STARTED | per Phase 17 plan |
 | D-17-23: Capability self-knowledge + workaround surfacing | DONE | dcc2ca4 |
+| D-17-25: macOS alignment + RDMA hypothesis test (D-17-14 follow-on) | IN PROGRESS | per D-17-25 brief 2026-05-02; cross-referenced from `docs/architecture-facts/exo-cluster.md` lines 80–89 |
 
 ID-reservation note: D-17-22 (multi-session role + intake architecture)
 is RESERVED but not yet framework-authored. Discussed in a prior
@@ -464,7 +465,8 @@ D-17-14; D-17-10 before D-17-12/13/14. D-17-23 before D-17-11
 (capability-permission slot must be defined before the system prompt
 library fills it). D-17-21 gates the .internal route in D-17-04's
 WP-17-04-01 (IP+port deploy proceeds; Caddy site binding waits on
-DNS authority resolution).
+DNS authority resolution). D-17-14 before D-17-25 (test follows the
+partial-close it interrogates).
 
 Phase 16 carry-overs (D-16-03/05/08/09) marked DEFERRED to Phase 17
 in §8 — see Phase 17 IDs D-17-15/16/17/18 for new tracking.
