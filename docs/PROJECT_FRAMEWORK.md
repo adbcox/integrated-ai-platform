@@ -439,6 +439,7 @@ Deliverable table:
 | D-17-21 (historical: 17.U): OPNsense DNS state audit + Unbound disable + retroactive Vault incident review (KI-009 follow-up; estimated 6-8h) | NOT STARTED | per Phase 17 plan |
 | D-17-23: Capability self-knowledge + workaround surfacing | DONE | dcc2ca4 |
 | D-17-25: macOS alignment + RDMA hypothesis test (D-17-14 follow-on) | DONE | 7bdb537 — Outcome C: alignment necessary but not sufficient; Findings U+V surfaced. Reproducer evidence at `docs/phase-17/d-17-25-wp-05-multinode-evidence/`; chronicle in `docs/architecture-facts/exo-cluster.md` (Findings U, V + updated "Not operational" + revisit triggers); runbook in `docs/runbooks/exo-cluster-operations.md` updated. |
+| D-17-29: Service Registry MVP — port-discovery archaeology unlock + autonomous-coding substrate | IN PROGRESS | per `docs/architecture-patterns/service-registry-mvp.md` (commit c34d48f); prereqs D-17-14, D-17-25, D-17-28 closed; closes Finding CC |
 
 ID-reservation note: D-17-22 (multi-session role + intake architecture)
 is RESERVED but not yet framework-authored. Discussed in a prior
