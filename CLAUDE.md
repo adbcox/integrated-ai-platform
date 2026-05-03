@@ -77,6 +77,14 @@ This is the "AI workstation" or "platform". Pre-2026 alternative terminology (th
 - Pass-or-fail gates on every phase. Phases do not progress until gates pass.
 - Regression probe (`docs/phase-13/h1-regression-probe.sh` — checks a-h) at every gate close.
 
+### Service Registry Consultation Doctrine (D-17-29)
+- **Before any operation involving container ports, internal addresses, dependencies, or external routing**, AI sessions MUST consult `~/.platform-registry/inventory.json` (or `~/.platform-registry/by-service/<service>.json` for a single record).
+- Convenience reader: `python3 -c "import sys; sys.path.insert(0,'/Users/admin/repos/integrated-ai-platform/scripts/platform-registry/lib'); import registry_writer as rw; import json; print(json.dumps(rw.query('seal-vault'), indent=2))"`
+- The registry is the canonical source for: container_name ↔ service_id, host_port ↔ container_port mapping, internal IPs per network, depends_on/depended_on_by graph, attached Caddy routes, credential file metadata (paths + fingerprints, never values).
+- If the registry is stale (`last-refresh.json` older than 30 minutes), run `scripts/platform-registry/refresh.sh` before proceeding.
+- **Failure to consult before guessing is a doctrine violation.** Tonight's seal-vault recovery (D-17-28) cost ~3 hours because AI guessed port 8200 instead of looking up 8201. The registry exists to eliminate that failure mode permanently.
+- Spec: `docs/architecture-patterns/service-registry-mvp.md`. Builder code: `scripts/platform-registry/lib/`.
+
 ### Container Hardening
 - `cap_drop: [ALL]` with minimal `cap_add` per workload class.
 - `security_opt: [no-new-privileges:true]` universally.

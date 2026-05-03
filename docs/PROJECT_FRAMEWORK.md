@@ -277,6 +277,36 @@ surface). The doctrine is specific to *developer-machine
 toolchains*, where the cost of having an unused tool is dominated
 by the cost of not having a tool you turn out to need.
 
+### D#25 — Service Registry consultation before port/dependency operations
+
+Before any operation involving container ports, internal addresses,
+service dependencies, or external (Caddy) routing, AI sessions MUST
+consult the Service Registry at `~/.platform-registry/inventory.json`
+(or `by-service/<service>.json` for a single record). The registry is
+the canonical source of truth for: container_name ↔ service_id,
+host_port ↔ container_port mapping, internal IPs per docker network,
+depends_on/depended_on_by graph, attached Caddy routes, and credential
+file metadata (paths + fingerprints, never values).
+
+Convenience reader:
+```python
+import sys; sys.path.insert(0,'/Users/admin/repos/integrated-ai-platform/scripts/platform-registry/lib')
+import registry_writer as rw
+rw.query('seal-vault')  # → dict, or None if unknown
+```
+
+If `last-refresh.json` is older than 30 minutes, run
+`scripts/platform-registry/refresh.sh` before consulting (full refresh
+is ~1 second on this platform). Stale registry data is a doctrine
+violation in itself.
+
+**Failure mode prevented:** D-17-28 (2026-05-02) — seal-vault recovery
+cost ~3 hours because AI guessed port 8200 (the Vault default) instead
+of 8201 (the actual binding established earlier). The registry
+mechanically eliminates this archaeology pattern. Spec:
+`docs/architecture-patterns/service-registry-mvp.md`. Builder code:
+`scripts/platform-registry/lib/`. Closed by D-17-29.
+
 ---
 
 ## 4. Surface format template
