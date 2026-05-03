@@ -1,8 +1,27 @@
 # Claude Code - Project Instructions
 
 **Project:** Integrated AI Platform (Enterprise Autonomous AI Infrastructure)
-**Deployment Target:** Mac Mini M4 Pro 48 GB at 192.168.10.145 (control plane; verified via `system_profiler` 2026-05-01 — earlier "M5" wording was incorrect); MacBook Pro M5 parity in Block 3; Mac Studio M3 Ultra 96 GB at 192.168.10.146 (compute node, arrived 2026-05-01).
-**Current Phase:** Phase 14 CLOSED (2026-04-30). Phase 15 CLOSED (2026-05-01) — see `docs/phase-15/PHASE_15_CLOSEOUT_2026-05-01.md` and tag `phase-15-final`. Phase 13 Increments 2B–7 still gated on Mouser+DigiKey+CSV. Vault KV mount data loss incident (Sev-2, 2026-04-30) — postmortem: `docs/phase-15/PHASE_15_KV_LOSS_2026-04-30.md`. KV rebuild completed: 47/47 enumerated leaf paths populated as of 2026-05-01 (verified by root-token enumeration); naming scheme differs from postmortem (e.g. `inventree/postgres` not `inventree/db`). Phase 16 open items: Block 4.D closeout, Block 4.E cross-index service (autonomous-coding structural enabler), Mac Studio Day-1 execution, Vault data volume in backup chain, loose-doc retirement, drift-detection automation, recovery-handoff doctrine update. (Six previously-listed phantom paths closed 2026-05-01 per validation §4.)
+
+**Hardware:**
+- Mac Mini M4 Pro 48 GB at 192.168.10.145 — control plane (`system_profiler`-verified 2026-05-01; earlier "M5" framing was wrong)
+- Mac Studio M3 Ultra 96 GB at 192.168.10.146 — compute node (arrived 2026-05-01)
+- MacBook Pro M5 — local-parity node (Phase 13 Block 3 vocabulary; tracked in current phase plan)
+- QNAP NAS — backup target
+
+## Phase / deliverable state — DO NOT duplicate here
+
+**Canonical sources (read these, do not infer from this file):**
+- `docs/PROJECT_FRAMEWORK.md` §9 — current phase deliverable table (status of every D-NN-MM)
+- `docs/PHASE_ROADMAP.md` — open phase + roadmap pointers
+- `docs/phase-NN/PHASE_NN_PLAN_<date>.md` — current phase charter (find via `ls -t docs/phase-*/PHASE_*_PLAN_*.md | head -1`)
+- `docs/phase-NN/PHASE_NN_*_CLOSEOUT_<date>.md` — closeout for the most recently closed phase
+- `git log --oneline -20 docs/PROJECT_FRAMEWORK.md` — recent deliverable flips
+
+**Auto-prioritization rule:** never auto-prioritize a deliverable from staleness in *this* file. Always reconcile against PROJECT_FRAMEWORK.md §9 first. Phase rollovers (Phase 16 → 17, etc.) re-parent open items into new D-NN-MM IDs in §9, and the old phase's "open items" become invalid pointers. If a deliverable looks important but is not in §9 of the latest framework, treat it as closed-or-superseded until proven otherwise.
+
+**Postmortem / incident pointers (historical, do not confuse with active state):**
+- Vault KV mount data loss (Sev-2, 2026-04-30): `docs/phase-15/PHASE_15_KV_LOSS_2026-04-30.md` — KV rebuild closed 2026-05-01
+- Other phase-specific incidents live under `docs/phase-NN/`
 
 ## Quick Start
 
@@ -13,13 +32,15 @@ You are working on a production autonomous AI platform. Before taking any action
 3. **All code execution:** Happens ON the Mac Mini, NOT locally
 4. **User preference:** Give complete prompts, don't execute incrementally
 
-## Core Documentation
+## Core Documentation (canonical sources)
 
-- `docs/ARCHITECTURE.md` - System overview, architecture, service inventory (supersedes PLATFORM_OVERVIEW.md)
-- `docs/PROJECT_FRAMEWORK.md` - PMP+ITIL labels, lifecycle, surface format, current Phase state
-- `docs/runbooks/` - Operational runbooks (add-new-service, restart-services, vault-unseal, vault-recovery-from-shamir, rotate-credentials, incident-response, etc.)
-- `docs/troubleshooting/` - Issue resolution (DECISION_TREE.md, common-issues.md, MANDATORY_CHECKLIST.md, plus case-studies/)
-- `docs/PHASE_ROADMAP.md` + most-recent `docs/phase-NN/PHASE_NN_*_CLOSEOUT_*.md` - Session continuity (current phase status + latest closeout)
+- `docs/ARCHITECTURE.md` — system overview, architecture, service inventory (supersedes PLATFORM_OVERVIEW.md)
+- `docs/PROJECT_FRAMEWORK.md` — PMP+ITIL labels, lifecycle, surface format, AND **canonical phase/deliverable state** (§9 for current phase)
+- `docs/runbooks/` — operational runbooks (add-new-service, restart-services, vault-unseal, vault-recovery-from-shamir, rotate-credentials, incident-response, etc.)
+- `docs/troubleshooting/` — issue resolution (DECISION_TREE.md, common-issues.md, MANDATORY_CHECKLIST.md, plus case-studies/)
+- `docs/PHASE_ROADMAP.md` + most-recent `docs/phase-NN/PHASE_NN_*_CLOSEOUT_*.md` — session continuity (current phase status + latest closeout)
+- `~/.platform-registry/inventory.json` — runtime service registry (D#25 substrate; canonical for ports, internal IPs, depends_on, Caddy routes, credential file metadata)
+- `docs/architecture-facts/` — durable findings + per-subsystem chronicles (e.g. exo-cluster.md)
 
 ## Critical Behavioral Rules
 
@@ -59,17 +80,22 @@ This is the "AI workstation" or "platform". Pre-2026 alternative terminology (th
 ### Heterogeneous Architecture
 - Mac Mini M4 Pro is the **control plane** today (Phase 13 Block 2 delivered: operator visualization, Vault, Caddy, observability stack, NetBox-driven topology API with YAML fallback during the C5 transition window).
 - **Service inventory authoritative source:** NetBox CMDB at `netbox.internal`. `CMDB_SOURCE` env var (`yaml|netbox`, **default: netbox** as of Phase 14 D-DOC) controls source per consumer. `config/service-registry.yaml` retained as A-012 deprecation-gate fallback only.
-- MacBook Pro M5 parity (Ollama + LiteLLM + Open WebUI + Headscale client + smart routing) is **Block 3**, executed when the user is ready.
-- Linux (Threadripper) and Mac Studio M3 are **future blocks** beyond Block 3. Every architectural decision is portability-flagged.
+- **Runtime service substrate:** `~/.platform-registry/inventory.json` (D#25). Source of truth for ports / internal IPs / depends_on / Caddy routes / credential file metadata. Always consult before guessing.
+- Mac Studio M3 Ultra (.146) is a **compute node** as of 2026-05-01 (Day-1 in D-17-15). Distributed inference is upstream-blocked (D-17-25 Findings U+V); single-node placement on Mac Mini works and is the demo path.
+- MacBook Pro M5 parity (Ollama + LiteLLM + Open WebUI + Headscale client + smart routing) is the original "Block 3" framing — current scope tracking lives in `docs/PROJECT_FRAMEWORK.md` §9.
+- Linux (Threadripper) is a **future host**. Every architectural decision is portability-flagged.
 - Per-host configs in `config/vault-configs/` (`vault-config-macmini.hcl`, `vault-config-linux.hcl`).
 - Avoid Mac-only patterns unless explicitly approved as platform-specific (KNOWN-LIMITATION).
 - Out-of-repo compose changes (`~/control-center-stack/stacks/*`) require pre/post snapshots in the rewire log because git doesn't track them automatically.
 
-### Post-Block-2 Follow-up List
-1. ~~Caddy route hygiene — prune 12 dead `*.internal` routes~~ — **DONE 2026-04-29 in commit 3db56c7** (pruned 13 routes: 12 from this list + dashboard.internal).
-2. **Homepage widget completion** — confirm Grafana SA token (provisioned in P2.1) and Uptime Kuma slug config render the expected widgets on `homepage.internal`. Closes if no remaining gaps.
-3. **Block 3** — MacBook Pro M5 parity: Ollama + LiteLLM + Open WebUI + Headscale client + smart routing.
-4. ~~Phase 14 — Loki for log-based per-site Caddy analysis~~ — **DONE Phase 14 D-LOG** (Loki + Promtail deployed, see "Caddy per-site access logs (resolved Phase 14 D-LOG)" under Known Hardening Trade-offs).
+### Active follow-up lists
+
+Phase-specific follow-up lists live in their phase plan / closeout
+docs, NOT here. To find what is open: `docs/PROJECT_FRAMEWORK.md` §9
+(current phase deliverable table) plus the latest
+`docs/phase-NN/PHASE_NN_*_PLAN_*.md`. Cross-phase parking-lot items
+that survive a phase rollover are re-parented into the new phase's
+deliverable table with a fresh D-NN-MM ID.
 
 ### Verification Doctrine
 - Every claim verified by command output or cited source.
@@ -166,15 +192,23 @@ The orchestrator (Claude Code at the top level) delegates implementation work to
 
 ```
 docs/ARCHITECTURE.md        — start here (supersedes PLATFORM_OVERVIEW.md)
-docs/PROJECT_FRAMEWORK.md   — PMP+ITIL labels, lifecycle, surface format
+docs/PROJECT_FRAMEWORK.md   — PMP+ITIL labels, lifecycle, surface format, §9 deliverable table
 docs/runbooks/              — operational runbooks (add-new-service, restart-services, vault-unseal, etc.)
 docs/troubleshooting/       — issue resolution (DECISION_TREE.md, common-issues.md, MANDATORY_CHECKLIST.md)
 docs/PHASE_ROADMAP.md       — current phase + roadmap; per-phase docs in docs/phase-NN/
-docs/roadmap/ITEMS/         — 601 roadmap items (canonical truth)
+docs/architecture-facts/    — durable per-subsystem chronicles (findings, dependencies)
+docs/architecture-patterns/ — reusable patterns (e.g. service-registry-mvp.md)
 config/mac_mini/            — Mac Mini M4 Pro node config
-config/mac_studio/          — Mac Studio M3 node config (future)
+config/mac_studio/          — Mac Studio M3 node config
 config/qnap/                — QNAP NAS config
 ```
+
+OpenProject (D-17-04) is the **PM substrate / operational mirror** of
+the framework's §9 table — synced one-way from PROJECT_FRAMEWORK.md
+via `scripts/openproject-sync-from-framework.py`. Manual edits in
+the OpenProject UI to synced WPs are overwritten on the next run; the
+markdown is canonical, the UI is for comments and operational links.
+Plane CE was retired 2026-05-01.
 
 ## Phase Document Storage Convention
 
