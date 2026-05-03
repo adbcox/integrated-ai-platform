@@ -324,15 +324,13 @@ that should not block the unpark close:
   consumer indexer rows (Sportarr exhibited 8 rows for 5 Prowlarr slots before fix); sweep
   must include "consumer indexer count > Prowlarr indexer count for same Application"
   duplicate-detection probe.
-- **Per-consumer Prowlarr-key-freshness probe** (F10 sub-finding, D-17-36 follow-on
-  2026-05-03, ~1h): hash-compare `apiKey` field on each consumer indexer row against
-  `<Prowlarr config.xml>.ApiKey` (the indexer-proxy validation key, distinct from
-  `Application.apiKey`). Drift indicates the consumer's rows are pre-rotation survivors
-  that ApplicationIndexerSync forceSync does NOT auto-refresh. Confirmed live drift on
-  2026-05-03: Radarr's 2 indexer rows hold pre-rotation key while Sportarr's 5 rows hold
-  the live key (Sportarr rows were re-created during D-17-36 unpark; Radarr rows predate
-  the rotation). Probe surfaces drift as a Grafana panel + structured log; remediation is
-  per-consumer indexer apiKey rewrite via the consumer's API.
+- **Per-consumer Prowlarr auth-freshness sweep** (F10 worked example #6, D-17-50 DONE
+  2026-05-03): moved from single-master hash comparison to implementation-aware functional
+  probes. Sonarr/Radarr and Sportarr can validly present different Prowlarr-proxy key
+  hashes (`07ab59f4731b` vs `a3051e37707a` observed live), so hash mismatch alone is not
+  a remediation trigger. Canonical trigger is functional auth failure (`HTTP 401`) on
+  consumer release probe. Canonical fix path is Prowlarr-side Application recreate +
+  forced `ApplicationIndexerSync`, then functional re-probe.
 
 **Prerequisites:**
 - D-17-36 closed (Sportarr stable baseline) — DONE 2026-05-03.
@@ -503,17 +501,22 @@ ones being stable):
    `scripts/buildarr-run.sh`. Manual UI edits become either ratified
    into the YAML or reverted on next run. YAML IS the playbook.
 
-3. **Cleanuparr + Huntarr** *(closes F10 family at the runtime
-   layer — bad-download removal + missing-content hunting).*
-   Cleanuparr scans qBittorrent for stalled / bad-state / paused
-   torrents and triggers replacement searches. Huntarr scans
-   Sonarr/Radarr libraries for missing episodes/movies and queues
-   active searches against rate-limited indexers with backoff.
-   Both run as scheduled tasks (launchd or in-container cron).
-   Worked-example coverage: would have caught (a) Radarr's
-   paused-torrent state during D-17-38 (manually surfaced via
-   selfheal logs); (b) the F1 Australia season missing
-   episode-4-of-9 scenario.
+3. **Cleanuparr deployment (Huntarr role consolidated into
+   Cleanuparr Seeker module)** *(DEPLOYED; structural closure
+   pending credentials + first-pass enablement).*
+   Cleanuparr queue/remediation modules target stalled/bad-state
+   downloads and trigger replacement searches; Cleanuparr Seeker
+   covers missing-content and upgrade hunts with pacing controls.
+   Original two-tool prereq order revised when
+   `plexguide/Huntarr.io` image became unreachable during
+   deployment on 2026-05-03. Worked-example coverage: would have
+   caught (a) Radarr's paused-torrent state during D-17-38
+   (manually surfaced via selfheal logs); (b) the F1 Australia
+   season missing episode-4-of-9 scenario. Current state (D-17-49):
+   observable-but-inert deployment in dry-run/monitoring posture;
+   destructive cleanup and active Seeker hunting remain gated until
+   §18.L provisions download-client credentials and operator
+   authorizes first-pass enablement.
 
 4. **Lidarr** *(operator-stated music interest, 2026-05-03).*
    Music-library equivalent of Sonarr/Radarr. Same Prowlarr
@@ -883,6 +886,11 @@ discipline are robust.
   / Radarr / Prowlarr operational incidents)
 - Vault Agent sidecar refresh path tested non-destructively
   (synthetic credential rotation in dev path before production)
+- D-17-49 Cleanuparr dependency chain satisfied before closure
+  claims: populate `secret/downloads/qbittorrent` and
+  `secret/downloads/sabnzbd`, then run first-pass Seeker enablement
+  under operator gate. Until then, component 3 remains
+  DEPLOYED/observable and not F10-closure-DONE.
 
 **Doctrine cross-references:**
 - D-17-38 (hash-only-verification doctrine; this deliverable is

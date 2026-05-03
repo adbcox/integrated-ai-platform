@@ -458,7 +458,14 @@ D-17-36 fixed Sportarr's consumer-side wiring (`Indexers.Url` + `Indexers.ApiKey
 
 If the two diverge, the upstream record is presumptively the drift source (because the upstream is what writes the consumer side on sync; the consumer side gets refreshed on every fullSync, the upstream side only on operator edit). Verify both, fix both. Worked example: D-17-36 follow-on 2026-05-03 — `prowlarrUrl=http://localhost:9696` + `baseUrl=http://mac-mini.internal:1867` → `prowlarrUrl=http://prowlarr:9696` + `baseUrl=http://sportarr:1867`; DELETE 3 duplicate indexer rows; re-fullSync confirms idempotent state.
 
-**Sub-finding — fullSync does not refresh stale apiKeys on existing consumer rows.** During the same 2026-05-03 audit, Radarr's 2 indexer rows were observed holding apiKey hash `07ab59f4731b` while Prowlarr's main API key (the value the indexer-proxy endpoint validates against) was hash `a3051e37707a`. Both sides were aware (Radarr stored the same key Prowlarr stored under Application.apiKey), but the **proxy-validation key** is Prowlarr's own `config.xml` ApiKey, which had rotated since Radarr's rows were last keyed. ApplicationIndexerSync forceSync did not refresh the apiKey on existing Radarr rows. Implication: apiKey drift is a third independent failure surface beyond URL drift and content drift; restoration audits must check apiKey hash equality between consumer rows and `<Prowlarr config.xml>.ApiKey`, not just `Application.apiKey`. Sportarr's 5 indexer rows held the canonical hash because they were re-created by fullSync after D-17-36 (new rows pick up the live key); Radarr's rows are pre-rotation survivors. Captured for Phase 18 18.E (Prowlarr Application URL canonicalization sweep) — adding apiKey-freshness check as a sibling probe.
+**Sub-finding revision (D-17-50, 2026-05-03) — two-key auth model, not single-master drift.** The earlier single-master comparison frame was incorrect for Sonarr/Radarr. Empirical recovery sequence in D-17-50 showed:
+- Sonarr and Radarr were functionally broken (`release query` empty/error + indexer-unavailable health), then recovered after Prowlarr-side `Application` DELETE+recreate + forced `ApplicationIndexerSync`.
+- Post-recovery, Sonarr/Radarr consumer indexer-row apiKey hashes remained `07ab59f4731b` (did **not** converge to Prowlarr master hash `a3051e37707a`) while functional probes returned data again.
+- Sportarr rows remained `a3051e37707a`, indicating implementation-dependent key-path behavior across application types.
+
+**Doctrine update:** per-consumer apiKey freshness checks must use **functional auth probes** as the remediation trigger (consumer release endpoint via proxied indexers; `HTTP 401` is actionable). Hash audits remain useful observability, but only with per-implementation expected-key resolution; hash mismatch to Prowlarr master alone is not sufficient evidence of drift for Sonarr/Radarr-class applications.
+
+**Mechanism doctrine (D-17-50 worked example #6):** consumer-side indexer-row edits are not authoritative when Prowlarr owns sync. Structural remediation must originate Prowlarr-side (recreate or equivalent rewrite of the `Application` record), then force `ApplicationIndexerSync`, then re-probe functionally.
 
 ### Status
 
@@ -814,3 +821,51 @@ dashboard (`arr-stack-overview-p18`).
 - Finding 11 (declarative config control layer)
 - §18.G component 1 (observability) and component 2 (Buildarr) as
   sibling structural prerequisites before arr-stack expansion
+
+---
+
+## Finding 13 — Container image provenance/availability is a sibling structural risk to model provenance for community tooling
+
+**D-17-49 chronicle note, 2026-05-03.**
+
+### Observation
+
+During §18.G component 3 deployment, the planned Huntarr image
+(`huntarr/huntarr`) became unreachable from the runtime host
+(no pullable current or historical tested tags). The functional scope
+was preserved by consolidating to Cleanuparr-only (Seeker module),
+but the event exposed a supply-chain failure mode independent from
+runtime configuration correctness:
+
+- the repository and docs can still exist while image distribution
+  becomes unavailable;
+- deployment plans that assume mutable `:latest` continuity can fail
+  mid-deliverable without any local regression;
+- fallback pressure can push operators toward low-provenance forks.
+
+### Doctrine
+
+- **Treat container-image provenance/availability as a first-class
+  pre-flight gate** for arr-stack expansion deliverables.
+- **Pin to verified, pullable references** (tag+digest when possible)
+  before integration work depends on them.
+- **Prefer role-consolidation in trusted tools** over introducing
+  unproven forks under deployment pressure.
+- **Model provenance and container provenance are sibling controls:**
+  both protect platform continuity against upstream disappearance or
+  trust breaks.
+
+### Worked result (D-17-49)
+
+- Huntarr role was consolidated into Cleanuparr Seeker.
+- Huntarr scaffolding was moved to deferred state:
+  `docker/_deferred/huntarr-upstream-unreachable-2026-05-03/`.
+- Component status explicitly recorded as DEPLOYED (observable/inert)
+  pending credential-chain completion and operator-gated enablement.
+
+### Cross-references
+
+- Finding 10 (F10 family closure mechanics; reactive -> structural)
+- Finding 12 (observable-but-inert sibling pattern)
+- §18.G component 3 (Cleanuparr Seeker consolidation)
+- §18.L prerequisite chain (credentials before remediation enablement)
