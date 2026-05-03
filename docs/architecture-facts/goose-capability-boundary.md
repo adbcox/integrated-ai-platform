@@ -136,11 +136,13 @@ Revisit per-extension only on operator request.
 
 ---
 
-## Observed behavior — capability-validation phase, sessions 1–2
+## Observed behavior — capability-validation phase, sessions 1–3
 
-**Status:** First two measured sessions (D-17-13 WP-03 smoke test +
-WP-06 first test deliverable). Track ongoing through Phase-A
-promotion gate's N≥5 criterion.
+**Status:** Three measured sessions (D-17-13 WP-03 smoke test +
+WP-06 first test deliverable + D-17-54 session 2). Cell
+(Goose+qwen3-coder:30b × C1 — reference-doc draft from N sources)
+is at **3/5** toward the N=5 promotion gate per
+`promotion-criteria.md`. Track ongoing.
 
 ### Session 1 — WP-03 smoke test (read /etc/hosts equivalent)
 
@@ -158,43 +160,134 @@ promotion gate's N≥5 criterion.
 - Wall-clock: 51 seconds
 - Output split: ~75% Goose draft / ~25% frontier correction
 
+### Session 3 — D-17-54 dual-runbook draft (2 net-new runbooks from 5 sources)
+
+- 16 tool calls: 1× `list_allowed_directories`, 5× `read_text_file`,
+  1× `xindex_health`, 6× `xindex_search`, 1× `xindex_get_service`,
+  1× `xindex_get_node`, 2× `analyze`, 1× `todo_write`
+- All structurally valid; all paths within scope
+- Model **autonomously** ran `list_allowed_directories` before
+  reads (3rd consecutive session — habit, not noise)
+- Tasks: draft `opnsense-dhcp-dns-push.md` + `openproject-admin-recovery.md`
+- Output split: ~32% Goose draft / ~68% frontier correction —
+  significantly worse than Session 2's 75/25
+- Driver of the regression: **substrate-limited factual gaps**, not
+  model regression. The work-class (runbook authoring) requires
+  knowledge of (a) the OPNsense Kea DHCPv4 UI path and (b) the
+  OpenProject `rails runner` password-reset command syntax —
+  neither derivable from repo + xindex alone. Goose correctly
+  flagged both with `[UNVERIFIED — frontier review]` per the
+  preamble; the resulting drafts are thin in the load-bearing
+  sections precisely because they were honest.
+- Padding resistance: ✅ exemplary. Goose explicitly noted in its
+  self-flagged-defects section that it considered adding
+  "Security checklist" / "Backups" sections and omitted them
+  citing the anti-padding preamble. The Session-2 prompt-engineering
+  correction landed empirically.
+- xindex coverage observation: 6 `xindex_search` calls returned
+  zero results (queries: "opnsense dhcp dns push", "openproject
+  admin access recovery", "dnsmasq dhcp", "dhcp dns server", "kea
+  dhcp", "keadhcp"). Suggests xindex coverage of `docs/runbooks/`
+  may be incomplete — backlog candidate for re-index. Not a Goose
+  defect; the searches were correctly scoped.
+
 ### Patterns to preserve at Phase-A re-enable
 
-1. **Cautious-by-default scope check.** Two of two sessions where
-   the model could verify scope before reading, it did. When
-   `developer` re-enables (write/exec), the corresponding pattern
-   is "verify path, run dry-run, then commit" — Phase-A re-enable
-   design must not regress this.
-2. **Tool-call structural validity.** 8/8 tool calls across two
+1. **Cautious-by-default scope check — confirmed habit.** Three
+   of three sessions where the model could verify scope before
+   reading, it did. Three datapoints is enough to mark this as
+   the model's own posture (not first-session-noise from session
+   1). When `developer` re-enables (write/exec), the
+   corresponding pattern is "verify path, run dry-run, then
+   commit" — Phase-A re-enable design must not regress this.
+2. **Tool-call structural validity.** 24/24 tool calls across three
    sessions emitted as structured `tool_calls` (F1.B substrate).
    Re-enabling write tools should not change this; the substrate
    is independent of capability surface.
+3. **Honest uncertainty marking.** Session 3 resisted fabricating
+   command syntax for the OpenProject password-reset path,
+   marking it `[UNVERIFIED]` instead. This is the right behavior
+   for a model whose ground-truth is bounded by its capability
+   surface, and it generalizes: a model that fabricates to fill
+   space at Phase-A would fabricate at Phase-B (where the
+   consequence surface is bigger). Preserve via the standard
+   preamble's `[UNVERIFIED]` instruction and reinforce by
+   acknowledging high-`[UNVERIFIED]` density as *correct output*
+   rather than *insufficient output* in cases of substrate gap.
 
 ### Patterns to correct via prompt engineering
 
-1. **Padding tendency.** WP-06 draft included two padding sections
-   (Security checklist, Backups) that didn't fit the runbook
-   reference-style. Standard prompt preamble for Phase-A briefs:
-   *"If uncertain about whether a section is necessary, omit
-   rather than pad. Reference docs are concise; sections-because-
-   docs-have-them is wrong."*
-2. **Self-blind to encountered failure modes.** WP-06 draft
+1. **Padding tendency** — *resolved at Session 3.* Session 2 draft
+   included two padding sections (Security checklist, Backups)
+   that didn't fit the runbook reference-style. The standard
+   prompt preamble correction (*"If uncertain about whether a
+   section is necessary, omit rather than pad. Reference docs are
+   concise; sections-because-docs-have-them is wrong."*) was
+   applied at Session 3 and Goose actively cited the rule in its
+   self-flagged-defects output. Tracked as resolved; preserve in
+   the standard preamble.
+2. **Self-blind to encountered failure modes.** Session 2 draft
    omitted the `GOOSE_MODE=auto` headless invocation pattern even
    though that was the exact failure encountered while running
    the test. Standard prompt preamble: *"If a failure mode was
    encountered during the work itself, document it explicitly
    even if it feels like meta-information about the run."*
+   Not re-tested at Session 3 (no in-session failure mode arose);
+   carry forward in preamble.
+
+### Substrate-bounded quality — §18.O finding (Session 3)
+
+**Finding (capability-validation phase):** Output quality on the
+read-author-only class (C1) is bounded above by *"what's in the
+repo + xindex."* Tasks requiring knowledge that lives in vendor
+docs, web sources, or live UI exploration degrade the output split
+predictably — Session 3's 32/68 split tracks the proportion of
+load-bearing facts that aren't derivable from the local substrate.
+
+This is **not a model regression**. It is the read-only capability
+surface working as designed: when ground-truth lives outside the
+substrate, the model honestly degrades to scaffolding + `[UNVERIFIED]`
+flags rather than fabricating.
+
+§18.O implication for Phase-A class scoping: classes that depend
+on external knowledge (vendor UI paths, live system state, web
+docs) should be flagged as *substrate-gap-prone* in the class
+taxonomy. Promotion gate criterion 1 ("clean reviewed executions")
+should weight a thin-but-honest output the same as a thick-and-
+correct output — both are clean from a *model behavior* standpoint;
+the difference is what the substrate could provide. Output split
+trends toward Goose-dominant only on tasks where the substrate is
+sufficient.
+
+Cell (Goose+qwen3-coder:30b × C1) telemetry to date:
+- Session 1: 100% Goose (smoke test, trivial output)
+- Session 2: 75% Goose / 25% frontier (substrate-sufficient)
+- Session 3: 32% Goose / 68% frontier (substrate-gap-prone)
+
+The mean Goose-% is not the right summary statistic across these
+three sessions — the variance is the signal. Promotion-gate
+analysis at N=5 should report split by substrate-sufficiency
+classification, not in aggregate.
 
 ### Cost / economics observation
 
-WP-06 work-class (read 3 files + draft a runbook) completed in 51s
-on local Mac Studio compute vs the equivalent frontier-API
+Session 2 work-class (read 3 files + draft a runbook) completed
+in 51s on local Mac Studio compute vs the equivalent frontier-API
 invocation. First measured data point validating the §18.O
 execution-surface migration thesis: progressive migration of
 work-classes to local T3-B with frontier doing correctness review.
 
+Session 3 added a substrate-gap-prone variant of the same
+work-class. Wall-clock not measured in headless log but tool-count
+roughly tripled (16 vs 6) reflecting the substrate-search effort.
+Force-multiplier signal holds even on substrate-gap-prone tasks:
+the local-side searching is cheap relative to frontier-side
+correction, and the `[UNVERIFIED]` flagging directs frontier
+attention to the load-bearing facts rather than requiring
+end-to-end re-authoring.
+
 Re-measure at N=5 sessions to confirm directionality (cost,
-quality, defect rate).
+quality, defect rate, substrate-sufficiency distribution).
 
 ### Headless invocation gotcha
 

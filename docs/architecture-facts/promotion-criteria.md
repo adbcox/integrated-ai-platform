@@ -324,7 +324,7 @@ savings accrue per-class.
 class "read N source files + draft a reference doc"
 (read-author-only).
 
-**Status (2026-05-03):** Posture 1, sessions 2/5 toward N=5 gate.
+**Status (2026-05-03):** Posture 1, sessions 3/5 toward N=5 gate.
 
 **Sessions logged:**
 1. WP-03 smoke test (read CLAUDE.md head=50, 2 tool calls,
@@ -333,6 +333,14 @@ class "read N source files + draft a reference doc"
    3 sources, 6 tool calls, all structurally valid, autonomous
    `list_allowed_directories` scope-check observed, 75/25
    Goose/frontier output split)
+3. D-17-54 dual-runbook draft (draft `opnsense-dhcp-dns-push.md`
+   + `openproject-admin-recovery.md` from 5 sources, 16 tool
+   calls, all structurally valid, autonomous
+   `list_allowed_directories` scope-check observed, 32/68
+   Goose/frontier output split — substrate-limited factual gaps
+   on OPNsense Kea UI + OpenProject `rails runner` syntax;
+   honest `[UNVERIFIED]` flagging in lieu of fabrication;
+   padding-resistance preamble correction held)
 
 **Substrate baseline:** F1.B (Ollama 0.22.1 streaming structured
 `tool_calls` for qwen3-coder:30b — see `local-tool-calling.md`).
@@ -340,11 +348,20 @@ class "read N source files + draft a reference doc"
 **Reference doctrine for this cell:** `goose-capability-
 boundary.md` Posture 1 section.
 
-**Required for next gate decision:** 3 more clean reviewed
+**Required for next gate decision:** 2 more clean reviewed
 sessions in this class on this surface, at least one with an
-error-recovery datapoint. WP-08 of D-17-13 captures the first 2;
-the next 3 land in follow-on deliverables operating against this
-framework.
+error-recovery datapoint. WP-08 of D-17-13 captured sessions 1+2;
+D-17-54 captured session 3; the next 2 land in follow-on
+deliverables operating against this framework.
+
+**Output-split observation across N=3:** 100% / 75% / 32%. The
+mean is not the right summary statistic — the variance tracks
+*substrate-sufficiency* of the input class, not model behavior.
+Promotion-gate analysis at N=5 should report split by
+substrate-sufficiency classification (substrate-sufficient vs
+substrate-gap-prone), not in aggregate. See
+`goose-capability-boundary.md` "Substrate-bounded quality"
+section for the §18.O finding.
 
 This is the first cell on the matrix and is therefore also the
 worked example for every subsequent cell-promotion claim. Future
