@@ -42,3 +42,10 @@ curl -skI https://bazarr.internal | head -n 1
 ```
 
 Expected: `HTTP/2 200` or `HTTP/2 302`
+
+## Current arr-stack host override set
+
+Add these records when deploying media automation siblings:
+
+- `bazarr.internal` -> `192.168.10.145`
+- `cleanuparr.internal` -> `192.168.10.145`
