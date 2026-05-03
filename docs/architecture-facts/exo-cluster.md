@@ -586,8 +586,10 @@ set on developer toolchain decisions** (see PROJECT_FRAMEWORK §3.5).
   as the new upstream gaps. Did NOT unblock Finding O. Reproducer
   evidence preserved at
   `docs/phase-17/d-17-25-wp-05-multinode-evidence/`.
-- **D-17-24** — CLAUDE.md staleness fix (Finding L). Reduces
-  resumed-session prioritization drift.
+- **D-17-24** — CLAUDE.md staleness fix (Finding L). **DONE
+  2026-05-03 (f76ac51).** Replaced Phase-16-stale "Current Phase:"
+  wall with a canonical-source pointer block; auto-prioritization
+  rule added. Reduces resumed-session prioritization drift.
 - **D-17-26** — Vault-Agent sidecar for open-webui wiring
   `OPENAI_API_KEY` from Vault (Finding S). **CLOSED no-fix-needed
   with doctrine finding:** the wiring was operational the whole
