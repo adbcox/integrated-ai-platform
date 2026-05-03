@@ -4,7 +4,7 @@
 
 **Hardware:**
 - Mac Mini M4 Pro 48 GB at 192.168.10.145 — control plane (`system_profiler`-verified 2026-05-01; earlier "M5" framing was wrong)
-- Mac Studio M3 Ultra 96 GB at 192.168.10.146 — compute node (arrived 2026-05-01)
+- Mac Studio M3 Ultra 96 GB at 192.168.10.142 — compute node (arrived 2026-05-01)
 - MacBook Pro M5 — local-parity node (Phase 13 Block 3 vocabulary; tracked in current phase plan)
 - QNAP NAS — backup target
 
@@ -81,7 +81,7 @@ This is the "AI workstation" or "platform". Pre-2026 alternative terminology (th
 - Mac Mini M4 Pro is the **control plane** today (Phase 13 Block 2 delivered: operator visualization, Vault, Caddy, observability stack, NetBox-driven topology API with YAML fallback during the C5 transition window).
 - **Service inventory authoritative source:** NetBox CMDB at `netbox.internal`. `CMDB_SOURCE` env var (`yaml|netbox`, **default: netbox** as of Phase 14 D-DOC) controls source per consumer. `config/service-registry.yaml` retained as A-012 deprecation-gate fallback only.
 - **Runtime service substrate:** `~/.platform-registry/inventory.json` (D#25). Source of truth for ports / internal IPs / depends_on / Caddy routes / credential file metadata. Always consult before guessing.
-- Mac Studio M3 Ultra (.146) is a **compute node** as of 2026-05-01 (Day-1 in D-17-15). Distributed inference is upstream-blocked (D-17-25 Findings U+V); single-node placement on Mac Mini works and is the demo path.
+- Mac Studio M3 Ultra (.142) is a **compute node** as of 2026-05-01 (Day-1 in D-17-15). Distributed inference is upstream-blocked (D-17-25 Findings U+V); single-node placement on Mac Mini works and is the demo path.
 - MacBook Pro M5 parity (Ollama + LiteLLM + Open WebUI + Headscale client + smart routing) is the original "Block 3" framing — current scope tracking lives in `docs/PROJECT_FRAMEWORK.md` §9.
 - Linux (Threadripper) is a **future host**. Every architectural decision is portability-flagged.
 - Per-host configs in `config/vault-configs/` (`vault-config-macmini.hcl`, `vault-config-linux.hcl`).
