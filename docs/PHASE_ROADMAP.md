@@ -134,7 +134,7 @@ Phase 16 CLOSED. Platform has two compute nodes, supplier data, and autonomous w
 > scope (a6253c3, bd6a844) is now Phase 18 (see below). The
 > audit-surfaced architectural corrections in this Phase 17 must
 > close before Phase 18 work can build on a clean foundation. See
-> `docs/STACK_ARCHITECTURE_AUDIT_2026-05-01.md` for rationale and
+> `docs/_audit/stack-architecture-2026-05-01.md` for rationale and
 > `docs/phase-17/PHASE_17_PLAN_2026-05-01.md` for the canonical
 > 20-deliverable plan across 5 tiers.
 
@@ -335,6 +335,24 @@ that should not block the unpark close:
   (F12 close, ~3-4h): periodic scan over EventFiles parses filename for venue/round tokens,
   asserts linked Event.Title contains the same venue token; soft-fail surfaces as a Sportarr
   tag or external dashboard signal + Grafana panel.
+- **Prowlarr Application URL canonicalization sweep** (F10 worked-example #5 follow-on,
+  D-17-36 follow-on 2026-05-03, ~1-2h): scan all Prowlarr `/api/v1/applications` records;
+  flag any `prowlarrUrl` containing `localhost` or `127.0.0.1` (must be `http://prowlarr:9696`
+  container DNS); flag any `baseUrl` using `<host>.internal:` form (must be container DNS
+  to the consumer container, e.g. `http://sportarr:1867`). Bilateral fix per D-17-36
+  follow-on. Pattern note: fullSync against a broken Application URL creates duplicate
+  consumer indexer rows (Sportarr exhibited 8 rows for 5 Prowlarr slots before fix); sweep
+  must include "consumer indexer count > Prowlarr indexer count for same Application"
+  duplicate-detection probe.
+- **Per-consumer Prowlarr-key-freshness probe** (F10 sub-finding, D-17-36 follow-on
+  2026-05-03, ~1h): hash-compare `apiKey` field on each consumer indexer row against
+  `<Prowlarr config.xml>.ApiKey` (the indexer-proxy validation key, distinct from
+  `Application.apiKey`). Drift indicates the consumer's rows are pre-rotation survivors
+  that ApplicationIndexerSync forceSync does NOT auto-refresh. Confirmed live drift on
+  2026-05-03: Radarr's 2 indexer rows hold pre-rotation key while Sportarr's 5 rows hold
+  the live key (Sportarr rows were re-created during D-17-36 unpark; Radarr rows predate
+  the rotation). Probe surfaces drift as a Grafana panel + structured log; remediation is
+  per-consumer indexer apiKey rewrite via the consumer's API.
 
 **Prerequisites:**
 - D-17-36 closed (Sportarr stable baseline) — DONE 2026-05-03.
@@ -408,6 +426,57 @@ Effort: ~6-8h (collector choice is a separate research turn).
 
 Point estimate: **~210h** at historical +50% discovery overhead on novel-pattern blocks.
 Calendar at one 12–18h execution window per week: **~12–18 months**.
+
+---
+
+### 18.F — Electronic Design / DIY Projects Track (deferred — see prereqs)
+
+Standing pattern for small, parallelizable hardware projects (ESP32-class
+sensor nodes + HA integration). Each project lands as its own deliverable
+when scoped, with a fixed shape:
+
+- Asset registry record (ESP32 base + sensor BOM + enclosure license per
+  asset-mgmt-deliverable-family Deliverable A — see
+  `docs/architecture-facts/exo-cluster.md` Finding T)
+- HA integration via ESPHome or Matter
+- License tracking on enclosure STL (asset-registry license field)
+- Provenance for AI-generated firmware/configs (sibling to D-17-10
+  model-provenance kit)
+
+**Track ethos:** small, parallelizable, each project closes in one
+weekend. Doctrine sibling to arr-stack ecosystem expansion — community
+has solved most of these; we integrate rather than invent.
+
+**Candidate projects (operator picks priority):**
+
+1. **Indoor air quality node** — CO2/VOC/PM2.5/AQI per room.
+   Hardware: ESP32 + SGP30 + SCD41 + PMS7003 + SSD1306 OLED.
+   HA integration: ESPHome native. Slot: carriage house workout area
+   (north end) priority. Estimated $40-60/node hardware.
+2. **Ultrasonic distance / occupancy detection.**
+   Hardware: XIAO ESP32-C6 + HC-SR04 ultrasonic.
+   Use case: garage bay parking guidance, workout-area presence
+   (alternative to MYGGSPRAY for spaces where illuminance isn't
+   relevant). Estimated $15/node.
+3. *Reserved* — remaining projects from article's missing 3 evaluated
+   when full text retrieved.
+
+**Hard prerequisites for any deliverable in this track:**
+
+- Asset registry schema with enclosure license field landed
+  (asset-mgmt-deliverable-family Deliverable A)
+- 3D model database license-aware schema landed (sibling to enclosure
+  license tracking; same Deliverable A class)
+
+**Track-level backlog items (author when first project activates):**
+
+- ESPHome vs MicroPython firmware doctrine
+- Standardized BOM-to-asset-registry workflow
+
+**Defer until** asset-registry substrate (Deliverable A) lands AND
+operator picks one of the candidate projects to activate first. Do not
+add an ESP32 node speculatively — each one costs hardware + ongoing
+maintenance + firmware update overhead.
 
 ---
 

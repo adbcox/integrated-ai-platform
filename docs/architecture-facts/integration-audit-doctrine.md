@@ -375,7 +375,7 @@ D-17-39 closes Gap F9 at the **flow** layer with `scripts/roadmap-create.sh`, an
 
 A retirement audit produces dispositive evidence about ONE phase of a consumer pipeline, then writes a record that implicitly authorizes treating *all* phases as understood. When the same record is later used as a restoration playbook, the un-traced phases surface as latent defects during unpark.
 
-D-17-36 (Sportarr unpark) is the canonical worked example. Four distinct latent defects were discovered post-unpark, each in a phase the 2026-05-01 retirement record (`docs/_retired/sportarr-2026-05-01.md`) had not personally traced:
+D-17-36 (Sportarr unpark) is the canonical worked example. Five distinct latent defects were discovered post-unpark, each in a phase the 2026-05-01 retirement record (`docs/_retired/sportarr-2026-05-01.md`) had not personally traced:
 
 1. **Indexer URL phase.** Retirement record cited `BaseUrl` column rewrite (`UPDATE Indexers SET BaseUrl = REPLACE(...)`); actual schema column is `Url`. The audit had read the column from a Prowlarr export, not from `sportarr.db`. Sportarr's indexer wiring uses `Indexers.Url`. Restoration step 2 was unrunnable as written.
 
@@ -384,6 +384,8 @@ D-17-36 (Sportarr unpark) is the canonical worked example. Four distinct latent 
 3. **Bind-mount phase.** Retirement record's compose block had `/sports:/data` only — no `/downloads` bind. The canonical Sonarr/Radarr arr-stack pattern is `/Users/admin/mnt/qnap-downloads:/downloads` (plural) for the seedbox-replicated tree, `/Users/admin/mnt/qnap-downloads/data:/data` for the media root. Retirement-era audit looked at runtime `docker inspect` output, not at sibling-pattern conformance. First unpark attempt also used `/download` (singular), which was caught by operator pushback.
 
 4. **Storage-layout phase.** Retirement record's `/sports:/data` framing implied Sportarr stored content at `/data/{TV-style hierarchy}`. Actual Sportarr behavior: stores at `/data/{Sport}/Season {Year}/file.mkv` — flat per-sport, no `/data/media/sports/` parent. Plex library γ-recreate at `/share/CACHEDEV2_DATA/data/media/sports` was based on operator projection of media-tree convention rather than tracing actual Sportarr import behavior. Required γ'.3 reconfiguration (RootFolder add `/data/media/sports`, container-mediated `mv` of existing files, EventFile/Events DB FilePath updates, RootFolder remove `/data`) post-unpark to align with the canonical Sonarr/Radarr arr-stack hierarchy `/data/media/{type}/<show>/Season N/`.
+
+5. **Prowlarr-side mirror record phase (D-17-36 follow-on, 2026-05-03).** D-17-36 fixed Sportarr's `Indexers.Url` and `Indexers.ApiKey` columns inside `sportarr.db` (consumer side). It did not audit the **upstream Prowlarr Application record** that mirrors the same wiring (Prowlarr → consumer). On post-D-17-36 inspection, Prowlarr's Application record for Sportarr held `prowlarrUrl=http://localhost:9696` AND `baseUrl=http://mac-mini.internal:1867` — both non-canonical. Symptoms: ApplicationIndexerSync fullSync runs were appending duplicate indexer rows in Sportarr (8 rows for 5 Prowlarr slots) instead of updating the existing rows, because Prowlarr couldn't reach itself via `localhost:9696` from inside its own container, breaking the round-trip identity check that distinguishes "create new row" from "update existing row". Bilateral fix required: PUT /api/v1/applications/1 with `prowlarrUrl=http://prowlarr:9696` (container DNS) + `baseUrl=http://sportarr:1867` (Sportarr's by-design custom port, NOT 8989), then DELETE the 3 duplicate Sportarr indexer rows, then re-run forceSync to confirm idempotent state. Phase: bidirectional sync record, never traced because D-17-36 audited only the consumer side.
 
 ### Why it bit us
 
@@ -412,11 +414,25 @@ Discovered during γ'.3 step 3-4. When moving files within the SMB-overlaid `/da
 
 **Doctrine:** for in-arr-stack file relocations within a tree the container can see, prefer container-mediated `mv` over host-side `mv`. The watcher-driven DB auto-update reduces the manual UPDATE surface and prevents path-rewrite drift. (Caveat: watcher only auto-updates the `FilePath` text; release-parser misclassification — Finding 7 below — is NOT auto-corrected by file moves.)
 
+### Sub-doctrine — bidirectional sync records require bilateral fix; single-side fix leaves drift
+
+D-17-36 fixed Sportarr's consumer-side wiring (`Indexers.Url` + `Indexers.ApiKey` in `sportarr.db`) without auditing the upstream Prowlarr Application record that mirrors the same wiring. The defect surfaced two days later: Prowlarr's Application record still held `localhost:9696` (non-canonical) and `mac-mini.internal:1867` (LAN-routed instead of container-DNS). Each time ApplicationIndexerSync ran, Prowlarr couldn't recognize its own existing rows in Sportarr (because the round-trip URL no longer matched what Prowlarr believed it had written), so it created NEW rows instead of updating, producing duplicate indexer entries (8 rows for 5 Prowlarr slots).
+
+**Pattern:** when two services hold mirrored configuration (Prowlarr Application record ↔ Sportarr Indexer rows; in general, any A↔B sync), an audit on side A alone leaves side B as latent drift. The sync engine does not "self-heal" the un-audited side because sync engines treat their own stored URLs as authoritative — they reconcile *content*, not their own *identity beliefs*. A single-side fix can appear successful (consumer-side test passes) while the upstream record drifts further on every sync run.
+
+**Doctrine:** for retirement audits and restoration audits of services that hold mirrored config in an upstream coordinator (Prowlarr↔Sonarr/Radarr/Sportarr; any Application/Coordinator pattern), the audit MUST trace BOTH sides:
+- Consumer-side: schema columns hold canonical URL+key.
+- Upstream-side: Application record holds canonical URL+key for the SAME consumer.
+
+If the two diverge, the upstream record is presumptively the drift source (because the upstream is what writes the consumer side on sync; the consumer side gets refreshed on every fullSync, the upstream side only on operator edit). Verify both, fix both. Worked example: D-17-36 follow-on 2026-05-03 — `prowlarrUrl=http://localhost:9696` + `baseUrl=http://mac-mini.internal:1867` → `prowlarrUrl=http://prowlarr:9696` + `baseUrl=http://sportarr:1867`; DELETE 3 duplicate indexer rows; re-fullSync confirms idempotent state.
+
+**Sub-finding — fullSync does not refresh stale apiKeys on existing consumer rows.** During the same 2026-05-03 audit, Radarr's 2 indexer rows were observed holding apiKey hash `07ab59f4731b` while Prowlarr's main API key (the value the indexer-proxy endpoint validates against) was hash `a3051e37707a`. Both sides were aware (Radarr stored the same key Prowlarr stored under Application.apiKey), but the **proxy-validation key** is Prowlarr's own `config.xml` ApiKey, which had rotated since Radarr's rows were last keyed. ApplicationIndexerSync forceSync did not refresh the apiKey on existing Radarr rows. Implication: apiKey drift is a third independent failure surface beyond URL drift and content drift; restoration audits must check apiKey hash equality between consumer rows and `<Prowlarr config.xml>.ApiKey`, not just `Application.apiKey`. Sportarr's 5 indexer rows held the canonical hash because they were re-created by fullSync after D-17-36 (new rows pick up the live key); Radarr's rows are pre-rotation survivors. Captured for Phase 18 18.E (Prowlarr Application URL canonicalization sweep) — adding apiKey-freshness check as a sibling probe.
+
 ### Status
 
-**Active doctrine.** Worked example: D-17-36 Sportarr unpark, all four latent-defect phases (indexer URL column name, indexer ApiKey staleness, bind-mount canonical pattern, storage-layout projection) discovered and remediated in real time. Retirement record `docs/_retired/sportarr-2026-05-01.md` patched in WP-08: `BaseUrl → Url` schema correction in restoration step 2; ApiKey-refresh sub-step added; bind-mount block updated to canonical `/downloads` (plural) + `/data`; storage-layout note added pointing at γ'.3 reconfiguration as historical evidence that operator projection of the media-tree convention required post-unpark correction.
+**Active doctrine.** Worked examples: D-17-36 Sportarr unpark (4 latent-defect phases — indexer URL column name, indexer ApiKey staleness, bind-mount canonical pattern, storage-layout projection); D-17-36 follow-on 2026-05-03 (5th latent-defect phase — Prowlarr-side Application record drift, bilateral-sync sub-doctrine, fullSync-creates-duplicates-on-broken-URL pattern). Retirement record `docs/_retired/sportarr-2026-05-01.md` patched in WP-08: `BaseUrl → Url` schema correction in restoration step 2; ApiKey-refresh sub-step added; bind-mount block updated to canonical `/downloads` (plural) + `/data`; storage-layout note added pointing at γ'.3 reconfiguration as historical evidence that operator projection of the media-tree convention required post-unpark correction. Phase 18 18.E backlog item authored: Prowlarr Application URL canonicalization sweep (sweep all Application records for `localhost:` or `<host>.internal:` patterns; rewrite to container-DNS; verify by post-fix fullSync producing no new rows) + per-consumer apiKey-freshness probe (hash-compare consumer indexer rows against `<Prowlarr config.xml>.ApiKey`, flag drift).
 
-Cross-references: D-17-36 (the worked example), Finding 1 (sub-doctrine "container `(healthy)` is not `(integration working)`" — directly applicable), Finding 2 (false-positive completion regression — restoration without phase-by-phase verification is the same anti-pattern as audit-recommendations-without-execution), `docs/runbooks/qnap-downloads-mount.md` (F3 SMB import-by-move reference).
+Cross-references: D-17-36 (the original worked example), D-17-36 follow-on 2026-05-03 (5th defect + bilateral-sync sub-doctrine), Finding 1 (sub-doctrine "container `(healthy)` is not `(integration working)`" — directly applicable), Finding 2 (false-positive completion regression — restoration without phase-by-phase verification is the same anti-pattern as audit-recommendations-without-execution), `docs/runbooks/qnap-downloads-mount.md` (F3 SMB import-by-move reference).
 
 ---
 
@@ -580,3 +596,62 @@ KI-009 status flipped to `RESOLVED` based on D-17-21 close + this confirmed-no-c
 **Active doctrine.** Worked example: D-17-21 close 2026-05-03. Post-migration state: 55 Dnsmasq host records (49 `.internal` + 6 bare), Unbound disabled, port 53 owned solely by Dnsmasq, parity check exit 0 (`missing=0, wrong_target=0, extra_internal=16`). KI-009 RESOLVED. Architecture-fact `opnsense-dns-authority.md` flipped from PROVISIONAL to VERIFIED.
 
 Cross-references: Finding 4 (CMDB authority unenforced — three substrates can disagree silently; Finding 9 extends this with the broader rule that running state cannot be the authority signal regardless of substrate count), D-17-32 Finding 1 ("subsystem closure ≠ integrated-system capability"; Finding 9 names a specific failure mode within that frame).
+
+---
+
+## Finding 10 — Loose-doc accumulation is a recurring phase-boundary failure mode; retirement must be a scheduled deliverable, not opportunistic cleanup
+
+**D-17-16 close, 2026-05-03.**
+
+### Observation
+
+Walking `docs/` at D-17-16 intake surfaced **48 loose markdown files** outside the canonical-paths set (`architecture-facts/`, `runbooks/`, `_audit/`, `phase-NN/`, `troubleshooting/`, `known-issues/`, `architecture-patterns/`, `adr/`, `dashboards/`, `_provenance/`, `_archive/`, `system-prompts/`, plus the four top-level files `ARCHITECTURE.md` / `PROJECT_FRAMEWORK.md` / `PHASE_ROADMAP.md` / `DECISION_REGISTER.md`). The 48 clustered into nine semantic groups; six required moves to canonical homes, two consolidated into a single canonical runbook, three required substrate-merge into existing canonical dirs, and the rest archived.
+
+The accumulation pattern is mechanical: every phase produces audit reports, capability assessments, retrospective fragments, and ad-hoc analysis docs. Without a forcing function, these land at convenient ad-hoc paths (`docs/audits/capability/`, `docs/zabbix/`, `docs/canonical-patterns/`, `docs/architecture/`, `docs/templates/`, `docs/performance/`, `docs/phases/`, top-level `*_AUDIT_*.md`). Each path was reasonable when authored; collectively they fragment the canonical-paths surface and produce the stale-pointer-decay problem (D-17-21 surfaced two such pointers; D-17-16 surfaced ten more — two ADRs, four runbook line refs, plus the live cross-references in CLAUDE.md / ARCHITECTURE.md / PHASE_ROADMAP.md / PROJECT_FRAMEWORK.md, and several parked-compose audit-path comments).
+
+### Doctrine
+
+**Loose-doc retirement is a recurring phase-boundary deliverable, not an opportunistic cleanup.** Schedule one D-NN-MM per major phase boundary (Phase rollover, or every ~6 months when phase cadence stretches) with the following surface:
+
+1. **WP-01 — Framework intake.** Open the deliverable; sequence after any audits whose pointers may need reconciling (DNS, services, etc.).
+2. **WP-02 — Inventory.** Walk `docs/` for files outside canonical-paths set. Categorize each as: stale / misplaced / reference-only / active. Surface back if >50 items (operator gate on the cluster decisions, not file-by-file).
+3. **WP-03 — Retire / move / consolidate.** Single batch commit. `git mv` preserves history; never `rm` + recreate. Where multiple loose docs cover one operational surface, consolidate into one canonical runbook rather than parallel-import each as-is.
+4. **WP-04 — Cross-reference verification.** Grep the repo for paths to all moved/retired docs. Update or break-link with deprecation notes. Frozen retros (`docs/phase-NN/` closeouts, `_archive/` records) are state-at-time and **left alone** during this sweep — only update live canonical surfaces (CLAUDE.md, ARCHITECTURE.md, PROJECT_FRAMEWORK.md, ADRs, runbooks, DECISION_REGISTER.md, active scripts).
+5. **WP-05 — Doctrine + chronicle.** Author or update this doctrine entry; flip framework row.
+
+### Subsidiary rules
+
+- **Canonical-paths set is closed.** New top-level `docs/<dirname>/` paths require an ADR (the architecture-patterns / architecture-facts / etc. set is intentionally bounded). When a new operational surface needs persistence, fold it into an existing canonical path rather than minting a new one. The temptation to add `docs/<topic>/` for one or two files is the exact mechanism that produces accumulation.
+- **`_archive/` vs `_retired/` distinction.** `_retired/` is for compose stacks and service records that the operator may restore (with a recipe). `_archive/` is for documentation snapshots that have been superseded but retain historical value (per-phase subdirs). D-17-16 ratified `_archive/` as the retirement home for documentation, with `_archive/phase-NN/` subdirs for phase-bounded retros that didn't make it into the official `phase-NN/` closeout flow.
+- **Frozen retrospective doctrine.** Phase closeout docs in `docs/phase-NN/` accurately reflect the state-at-time of phase close. Cross-reference verification does NOT update path references in these docs — that would falsify the historical record. The reader of a Phase 14 closeout should see Phase 14's doc-paths, not Phase 17's. Same for `_archive/` records (they were retired *with* their then-current path refs).
+- **Self-referential migration notes are load-bearing, not stale.** When ADR-A-006 carries the note "path corrected — `docs/architecture/DECISION_REGISTER.md` was a stale filing convention; never moved", that reference to the stale path is *the documentation of the migration itself* and must be preserved. A future grep for `docs/architecture/` will hit it; that is correct, not a defect. Same applies to "merged from `docs/canonical-patterns/`" notes in DECISION_REGISTER and ADR-A-016.
+- **Drift sibling fixes welcome during the sweep.** D-17-16 caught and fixed the "Mac Mini M5" → "Mac Mini M4 Pro" drift in `host-portability.md` and `ARCHITECTURE.md` (sibling to D-17-18's .146 → .142 correction). When a loose-doc move surfaces in-line content drift in the same touch, fix it; the cost is bounded and the alternative (logging it as a separate finding) creates more friction than the patch.
+- **Out-of-scope discipline.** When the sweep surfaces broken references in pre-existing dead infrastructure (Phase-8 roadmap-executor pipeline, CI workflow refs to long-deleted Phase-8 architecture files, AnythingLLM ingestion presets that have been broken-but-graceful for 8+ phases), DO NOT fix them in this deliverable. Each is its own retirement deliverable; touching them in a doc-move sweep crosses scope and obscures the cleanup commit. Note them and move on.
+
+### Worked example — D-17-16 close
+
+48 loose docs → 0 outside canonical paths. Nine clusters processed:
+
+- **Cluster A** (top-level audits + 2 misplaced runbooks): 2 → `_audit/`, 1 → `runbooks/`, 1 → `_archive/`, 2 → `_archive/phase-NN/`.
+- **Cluster B** (`docs/architecture/`): 3 files folded into `docs/architecture-facts/` with renames (`mcp-server-architecture.md` → `mcp-servers.md`, `portability.md` → `host-portability.md`). Empty dir retired. Reduced canonical-paths dir count.
+- **Cluster C** (`docs/audits/capability/`): 12 files → `docs/_audit/capability/`. Empty `docs/audits/` retired.
+- **Cluster D** (`docs/canonical-patterns/`): openproject-connector → `architecture-patterns/`; plane-connector → `_archive/` (Plane CE retired in WP-17-04-06).
+- **Cluster E** (`docs/performance/baseline-metrics.md`): → `_archive/phase-10/`.
+- **Cluster F** (`docs/phases/`): 2 files → per-phase `_archive/phase-NN/`.
+- **Cluster G** (`docs/system-prompts/`): canonical-as-is (operator decision; preserves D-17-11 self-contained library shape).
+- **Cluster H** (`docs/templates/`): 1 file → `architecture-patterns/`.
+- **Cluster I** (`docs/zabbix/`): consolidated to single canonical `docs/runbooks/zabbix-operations.md`; Phase 12 retro fragments → `_archive/phase-12/`.
+
+WP-04 fixed 10 live cross-references (CLAUDE.md, ARCHITECTURE.md, PHASE_ROADMAP.md, PROJECT_FRAMEWORK.md, observability-doctrine.md, ADR-A-001 / A-006 / A-008 / A-010 / A-014 / A-016, DECISION_REGISTER.md, sportarr retired-record, two parked-compose audit-path comments) and identified two pre-existing dead-infrastructure broken-pointer clusters left alone (Phase-8 roadmap-executor pipeline; AnythingLLM `ingest-docs.py` preset). Total batch: ~48 git mv operations, ~15 in-file edits, 9 empty-dir retirements.
+
+### Refresh cadence
+
+- Trigger: phase rollover OR observation that >25 loose docs have accumulated outside canonical paths OR a moved-doc cross-reference defect surfaces in a non-doc-cleanup deliverable (signal that the previous sweep is overdue).
+- Owner: whoever is closing the phase; loose-doc retirement is the final step before phase closeout's commit batch.
+
+### Cross-references
+
+- D-17-21 (DNS authority) close surfaced the first wave of cross-reference defects this sweep then completed.
+- D-17-18 (.146 → .142 hostname drift) is the reference precedent for "patch in-line drift during the sweep."
+- ADR-A-016 (Canonical Patterns Registry) explicitly accommodates the `docs/canonical-patterns/` → `docs/architecture-patterns/` merge at the ADR level.
+- Finding 9 (configuration audits verify against intent, not running config) — same authority-vs-residue distinction applies: doc trees accumulate residue (loose docs) that doesn't match the canonical-paths intent stated by the doctrine. Both findings share the rule "the operator-stated intent is the authority signal, not the on-disk-state".
