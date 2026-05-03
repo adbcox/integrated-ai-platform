@@ -140,6 +140,12 @@ prowlarr.internal {
     reverse_proxy host.docker.internal:9696
 }
 
+bazarr.internal {
+    import access_log
+
+    reverse_proxy host.docker.internal:6767
+}
+
 vaultwarden.internal {
     import access_log
 

@@ -522,11 +522,18 @@ ones being stable):
    Music / Spotify metadata source decision gates this — needs
    operator pick before scope.
 
-5. **Bazarr** *(subtitle automation, universal value across Sonarr
-   + Radarr + Sportarr).* Subtitle providers configured per Vault.
-   Auto-pull on download, language preference per series.
-   Operator's hearing/accessibility considerations should drive
-   default-language + forced-subtitle policy at scope time.
+5. **Bazarr** ✅ DONE D-17-47 (2026-05-03) *(subtitle automation,
+   universal value across Sonarr + Radarr + Sportarr).* Deployed
+   alongside arr-stack with canonical `/downloads` + `/data` binds,
+   Caddy route `bazarr.internal`, and Vault Agent sidecar injection
+   of Sonarr/Radarr API keys. Initial no-credential provider baseline
+   enabled; credential-bearing provider enrollment deferred to §18.L
+   companion gate. Buildarr coverage check: no `buildarr-bazarr`
+   plugin/package currently available (known partial-coverage gap,
+   same F11 pattern). Follow-on backlog: Bazarr -> Plex notification
+   provider/refresh trigger not configured in baseline; validate and
+   land as a component-5 hardening step when provider-credential
+   enrollment is scheduled.
 
 6. **arr-suite-mcp-server** *(AI orchestration surface — replaces
    ad-hoc Claude Code direct-API curl loops with a typed MCP tool
@@ -841,6 +848,11 @@ discipline are robust.
 - **Seedbox credentials** — operator-acknowledged deferred (date
   / circumstance not chronicled; flagged here as part of the
   coordinated-rotation queue).
+- **Bazarr subtitle-provider credentials** (OpenSubtitles, Addic7ed,
+  SubDL, regional/account-bound providers) — deferred by operator at
+  D-17-47 baseline. Bazarr deployed with no-credential providers only;
+  provider-account enrollment is intentionally coupled to the same
+  coordinated-rotation companion session after stability baseline.
 
 **Scope:**
 - Pre-rotation snapshot: enumerate every consumer of every
