@@ -25,7 +25,10 @@ The capability-validation phase disables `developer` (shell exec +
 file write), `summon`, `apps`, `chatrecall`, `summarize`, `tom`,
 `code_execution`, `orchestrator` extensions. Read-only via
 `filesystem-mcp` and `xindex` only. Operator review is mandatory on
-all output. Re-enable gates: see WP-05 chronicle (pending).
+all output.
+
+Full posture + Phase-A promotion gate documented in
+`docs/architecture-facts/goose-capability-boundary.md`.
 
 ## Historical paths
 
