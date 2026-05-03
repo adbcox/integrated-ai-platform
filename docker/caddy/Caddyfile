@@ -241,3 +241,14 @@ loki.internal {
     import access_log
     reverse_proxy loki:3100
 }
+
+# ── Logical Service Architecture dashboard (D-17-17) ──────────────────
+# Static HTML rendered from ~/.platform-registry/inventory.json by
+# scripts/dashboards/generate_logical_architecture.py. Served from a
+# host-side python http.server on 8765 reading docs/dashboards/.
+# Default file: logical-service-architecture.html.
+architecture.internal {
+    import access_log
+    redir / /logical-service-architecture.html
+    reverse_proxy host.docker.internal:8765
+}
