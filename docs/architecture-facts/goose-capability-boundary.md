@@ -136,14 +136,22 @@ Revisit per-extension only on operator request.
 
 ---
 
-## Observed behavior — capability-validation phase, sessions 1–4
+## Observed behavior — capability-validation phase complete (sessions 1–5)
 
-**Status:** Four measured sessions (D-17-13 WP-03 smoke test +
-WP-06 first test deliverable + D-17-54 session 2 + D-17-53 session 4
-Vault Agent sidecar pattern draft). Cell
-(Goose+qwen3-coder:30b × C1 — reference-doc draft from N sources)
-is at **4/5** toward the N=5 promotion gate per
-`promotion-criteria.md`. Track ongoing.
+**Status:** Five measured sessions. Cell (Goose+qwen3-coder:30b × C1
+— reference-doc draft from N sources) **cleared the N=5 gate
+2026-05-03**. Promoted Posture 1 → Posture 2 (dual-review).
+Sessions:
+
+1. D-17-13 WP-03 smoke test
+2. D-17-13 WP-06 first test deliverable
+3. D-17-54 dual-runbook draft
+4. D-17-53 Vault Agent sidecar pattern draft
+5. D-17-53 arr-stack-add-component runbook draft (with
+   error-recovery datapoint)
+
+See `promotion-criteria.md` empirical-evidence section for the
+gate-decision record.
 
 ### Session 1 — WP-03 smoke test (read /etc/hosts equivalent)
 
@@ -230,22 +238,101 @@ is at **4/5** toward the N=5 promotion gate per
   redaction discipline. Frontier correction queued; sidecar-
   pattern chronicle held pending operator review of Goose draft +
   frontier diff per option (ii) of the WP-04 review path.
+- Sidecar-pattern chronicle committed 2026-05-03 (frontier-
+  corrected) at `docs/architecture-facts/vault-agent-sidecar-pattern.md`.
 
-### Patterns to preserve at Phase-A re-enable
+### Session 5 — D-17-53 arr-stack-add-component runbook (with error-recovery datapoint)
 
-1. **Cautious-by-default scope check — established posture.**
-   Four of four sessions where the model could verify scope before
-   reading, it did (sessions 2-4 ran `list_allowed_directories`
-   autonomously; session 1's prompt was simple enough that no
-   scope check was needed). Promoted from "habit" (after three
-   datapoints) to "established posture" (after four). When
-   `developer` re-enables (write/exec), the corresponding pattern
-   is "verify path, run dry-run, then commit" — Phase-A re-enable
-   design must not regress this.
-2. **Tool-call structural validity.** 38/38 tool calls across four
-   sessions emitted as structured `tool_calls` (F1.B substrate).
-   Re-enabling write tools should not change this; the substrate
-   is independent of capability surface.
+- 15 tool calls: 10× `read_text_file`, 4× `list_directory`
+  (3 of which were error-recovery probes after the lidarr
+  ENOENT), 2× `todo_write`
+- All structurally valid; all paths within scope
+- Task: draft `docs/runbooks/arr-stack-add-component.md`
+  abstracting from D-17-44/47/49/46 worked examples for future
+  arr-stack ecosystem expansion (Lidarr, Autobrr, Profilarr)
+- **Error-recovery datapoint (load-bearing for N=5 gate):** the
+  prompt deliberately listed
+  `docs/runbooks/lidarr-deployment.md` as a non-existent decoy.
+  Goose hit ENOENT on the first read, immediately ran
+  `list_directory` on `docs/runbooks/` to verify the gap,
+  acknowledged the missing source explicitly ("there's no
+  lidarr-deployment.md file, so I need to adjust my approach"),
+  re-scoped the draft to the remaining 7 sources, and reported
+  the recovery in an explicit "Error-recovery datapoint" output
+  section. **Did not fabricate Lidarr-specific content.** Shape:
+  detect → probe → re-scope → continue without fabrication.
+  This is the recovery-without-operator-nudge requirement for
+  promotion-criteria §1; gate satisfied.
+- **Cautious-by-default scope check broke the streak.** No
+  upfront `list_allowed_directories` this session — first
+  observation across N=5 where the model went straight to
+  reads. Hypothesis: the prompt's path list was 8 absolute
+  paths, so scope verification felt redundant to the model.
+  The cautious-by-default posture is conditional on prompt
+  explicitness, not unconditional — worth testing in Posture-2
+  sessions with more abstract source descriptions.
+- **Autonomous primary-source read.** Goose ran
+  `list_directory config/arr-stack/buildarr` then read
+  `buildarr.yml` without being told to. Recognized that the
+  prompt's abstract Buildarr-coverage description needed
+  primary-substrate verification. Positive pattern.
+- Output split estimate: ~50/50 — substrate-sufficient task,
+  but the runbook draft was thinner and more abstract than the
+  source corpus warranted. Frontier added concrete pattern
+  shapes, the two distinct URL forms (Caddy
+  `host.docker.internal:<host_port>` vs. inter-arr-stack
+  container DNS `http://<container>:<port>`), Buildarr
+  `dump-config` workflow, the `opnsense-add-host-overrides.md`
+  staleness flag, and the §8 doctrine integration steps.
+- Misapplied value-leaking heuristic: Goose's self-flagged-
+  defects #1 cited "to avoid leaking specifics from existing
+  service configurations" as the reason for omitting concrete
+  compose snippets. The platform doctrine treats *credential
+  values* as sensitive, not configuration structure. Compose
+  snippets and Caddy site blocks are the substance of a runbook
+  — not value-leaking. Prompt-engineering correction needed
+  for future sessions (see preamble update below).
+- Defects requiring frontier correction (4 in final tally,
+  retracted from initial 7 after source verification): host
+  port mapping clarification, two distinct URL forms,
+  Buildarr-coverage check workflow, doctrine integration §8
+  steps. Initial Defect 1 (Caddy reverse_proxy target) was
+  **retracted** — Goose was correct that arr-stack uses
+  `host.docker.internal:<host_port>` (verified against the
+  actual Caddyfile site blocks for sonarr/radarr/prowlarr/
+  bazarr/cleanuparr). The frontier reviewer initially conflated
+  the D-17-38 Vault-URL-form rule (consumer-internal URLs use
+  container DNS) with the Caddy-reverse-proxy rule (Caddy
+  reaches host-published ports via `host.docker.internal`).
+  Retraction recorded as a frontier-review-side defect, not a
+  Goose defect.
+- Substrate gap surfaced for backlog:
+  `docs/runbooks/opnsense-add-host-overrides.md` references
+  Unbound, which was disabled by D-17-21 doctrine. Stale
+  runbook; flagged in §4 of the new runbook for follow-on
+  correction.
+- Runbook committed 2026-05-03 at
+  `docs/runbooks/arr-stack-add-component.md`.
+
+### Patterns to preserve at Phase-A / Posture-2
+
+1. **Cautious-by-default scope check — *conditional* posture.**
+   Sessions 2-4 ran `list_allowed_directories` autonomously
+   before reads (4 consecutive). Session 5 broke the streak: no
+   upfront scope check. The pattern is conditional on prompt
+   explicitness — when the prompt's path list is exhaustive and
+   absolute-path-formatted (Session 5: 8 absolute paths), the
+   model treats scope as already verified; when paths are more
+   abstract or partial (Sessions 2-4), the model probes scope
+   first. Earlier promotion from "habit" to "established posture"
+   (post-Session 4) was based on insufficient sample variation;
+   the correct framing is "established conditional on prompt
+   shape." Worth probing in Posture-2 sessions: does the
+   scope-check return when source paths are abstract?
+2. **Tool-call structural validity.** 53/53 tool calls across
+   five sessions emitted as structured `tool_calls` (F1.B
+   substrate). Re-enabling write tools should not change this;
+   the substrate is independent of capability surface.
 3. **Honest uncertainty marking — generalizes across sub-shapes.**
    Session 3 resisted fabricating command syntax for the OpenProject
    password-reset path (factual gap). Session 4 resisted fabricating
@@ -260,6 +347,27 @@ is at **4/5** toward the N=5 promotion gate per
    standard preamble's `[UNVERIFIED]` instruction and reinforce by
    acknowledging high-`[UNVERIFIED]` density as *correct output*
    rather than *insufficient output* in cases of substrate gap.
+4. **Error-recovery shape — Session 5.** Detect tool error →
+   probe (run a diagnostic tool to verify the gap shape, e.g.
+   `list_directory` after ENOENT) → re-scope (continue the work
+   with the remaining real sources) → continue without
+   fabrication → explicit reporting (the model named the
+   missing source in the output rather than silently dropping
+   it). This is the recovery shape promotion-criteria §1
+   requires; preserve as the canonical shape for tool-error
+   handling. Phase-A re-enable design (write/exec) needs the
+   corresponding shape: detect command-failure → probe (e.g.
+   `git status`) → re-scope → continue without papering over.
+5. **Autonomous primary-source read — Session 5.** Goose ran
+   `list_directory config/arr-stack/buildarr` then read
+   `buildarr.yml` without being told to. Recognized that the
+   prompt's abstract description of Buildarr coverage needed
+   primary-substrate verification. Generalizes to: when a
+   prompt describes a config/code substrate at high
+   abstraction, the model should reach for the primary file
+   to ground the abstraction. Positive signal worth preserving
+   via prompt-engineering reinforcement rather than
+   correction.
 
 ### Patterns to correct via prompt engineering
 
@@ -280,8 +388,35 @@ is at **4/5** toward the N=5 promotion gate per
    even if it feels like meta-information about the run."*
    Not re-tested at Session 3 (no in-session failure mode arose);
    carry forward in preamble.
+3. **Misapplied value-leaking heuristic — Session 5.** Goose's
+   self-flagged-defects #1 cited "to avoid leaking specifics
+   from existing service configurations" as the reason for
+   omitting concrete compose snippets. The platform doctrine
+   treats *credential values* as sensitive, not configuration
+   structure. Compose snippets, Caddy site blocks, and HCL
+   policy fragments are the substance of a runbook or
+   architecture-fact — not value-leaking. The standard preamble
+   should clarify: *"The 'do not leak credential values' rule
+   applies to credential values (API keys, passwords, tokens),
+   NOT to configuration structure (compose snippets, Caddy
+   blocks, HCL policy shapes, command syntax). Configuration
+   structure is the substance of a runbook; omitting it is
+   under-specification, not security."* Preamble update queued
+   for Session 6 onward.
+4. **Sub-class variation — abstract-from-worked-examples.**
+   Session 5 produced a higher-abstraction draft than the
+   runbook work-class warranted; Sessions 2 + 4 produced
+   appropriately concrete drafts when the task was "draft from
+   sources." The "abstract from N worked examples" sub-shape of
+   C1 pushes the model toward higher abstraction than a runbook
+   needs. Flagged in `class-taxonomy.md` as a C1 sub-class
+   consideration; Posture-2 prompts for runbook-shaped work
+   should explicitly request "concrete examples in code blocks"
+   rather than relying on the model to infer the right
+   abstraction level from "abstracted from N=4 worked
+   examples."
 
-### Substrate-bounded quality — §18.O finding (Sessions 3-4)
+### Substrate-bounded quality — §18.O finding (Sessions 3-5)
 
 **Finding (capability-validation phase):** Output quality on the
 read-author-only class (C1) is bounded above by *"what's in the
@@ -305,27 +440,42 @@ the difference is what the substrate could provide. Output split
 trends toward Goose-dominant only on tasks where the substrate is
 sufficient.
 
-Cell (Goose+qwen3-coder:30b × C1) telemetry to date:
+Cell (Goose+qwen3-coder:30b × C1) telemetry — full N=5:
 - Session 1: 100% Goose (smoke test, trivial output)
-- Session 2: 75% Goose / 25% frontier (substrate-sufficient)
+- Session 2: 75% Goose / 25% frontier (substrate-sufficient,
+  doctrine-doc sub-shape)
 - Session 3: 32% Goose / 68% frontier (substrate-gap-prone)
-- Session 4: ~75% Goose / ~25% frontier (substrate-sufficient)
+- Session 4: ~75% Goose / ~25% frontier (substrate-sufficient,
+  architecture-fact sub-shape)
+- Session 5: ~50% Goose / ~50% frontier (substrate-sufficient
+  but C1 sub-class "abstract-from-worked-examples" pushed
+  higher abstraction than the runbook work-class warranted)
 
-**Hypothesis validation (Session 4):** the substrate-sufficiency
-variance hypothesis from `promotion-criteria.md` predicts that
-substrate-sufficient C1 tasks land in the 70-80% Goose range,
-substrate-gap-prone tasks land in the 30-40% Goose range, and
-the mean across sessions is not the right statistic. Session 4
-landed at ~75% — within the predicted range for substrate-
-sufficient tasks. Two substrate-sufficient datapoints (sessions
-2, 4) at 75/25 each, one substrate-gap-prone datapoint (session
-3) at 32/68. The bimodal distribution is the signal; mean would
-hide it.
+**Sub-class variation observed (Session 5):** the substrate-
+sufficiency hypothesis as originally framed predicts ~75/25 for
+all substrate-sufficient C1 tasks. Session 5 landed at ~50/50
+despite substrate-sufficiency, because the work-class sub-shape
+"runbook authoring from N abstracted worked examples" pushes
+the model toward higher-than-needed abstraction. Two distinct
+sub-shapes within substrate-sufficient C1:
+- *Doctrine/architecture-fact draft* (Sessions 2, 4): the
+  abstraction *is* the deliverable; ~75/25 holds.
+- *Runbook draft* (Session 5): concrete-step deliverable; the
+  model over-abstracts, ~50/50 lands.
 
-The mean Goose-% is not the right summary statistic across these
-four sessions — the variance is the signal. Promotion-gate
-analysis at N=5 should report split by substrate-sufficiency
-classification, not in aggregate.
+**Hypothesis refinement:** substrate-sufficiency is necessary
+for Goose-dominant output but not sufficient. The C1 sub-class
+matters; runbooks specifically benefit from prompt-engineering
+that requests concrete examples rather than relying on the
+model to infer abstraction level from "abstracted from N worked
+examples." See `class-taxonomy.md` C1 sub-class section.
+
+The mean Goose-% across N=5 is not the right summary statistic;
+report by sub-class:
+- Substrate-sufficient + doctrine sub-shape: 75% (n=2)
+- Substrate-sufficient + runbook sub-shape: ~50% (n=1)
+- Substrate-gap-prone: 32% (n=1)
+- Smoke test: 100% (n=1)
 
 ### Cost / economics observation
 

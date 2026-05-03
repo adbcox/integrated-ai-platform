@@ -99,12 +99,31 @@ the cell can migrate, not the *floor*.
 - **Decide:** Structure only — what sections, in what order, at
   what grain
 - **Tier:** **Phase-A**
-- **Status:** First active cell on the matrix. Goose+qwen3-coder:
-  30b on Mac Studio Ollama 0.22.1 — Posture 1, sessions 2/5
-  toward N=5 gate (D-17-13 WP-03 + WP-06).
+- **Status:** Posture 2 (dual-review) as of D-17-53 close
+  (2026-05-03). Goose+qwen3-coder:30b on Mac Studio Ollama 0.22.1
+  cleared the N=5 gate; M=10 dual-review window now open. See
+  `promotion-criteria.md` for the gate-decision record.
 - **Reference cell:** see `goose-capability-boundary.md`
   "Observed behavior" + `promotion-criteria.md` "Empirical
   evidence — first measured cell".
+- **Sub-class variation (D-17-53 finding):** C1 is not uniform.
+  Output quality (operator-judged % preserved) varies by
+  sub-shape of the prompt:
+  - *Smoke-test* (single subsystem, single source): ~100%
+  - *Doctrine draft* (chronicle from observation): ~75%
+  - *Runbook draft, substrate-sufficient* (concrete service,
+    primary sources present): ~50%
+  - *Runbook draft, substrate-gap-prone* (sources have known
+    staleness or missing pieces): ~32%
+  - *Abstract-from-worked-examples* (generalize from N
+    deliverable instances into a reusable runbook): pushes
+    higher abstraction than the runbook shape needs — Goose
+    omits the concrete examples that make a runbook
+    operator-actionable. **Posture-2 prompts for this sub-shape
+    should explicitly request "concrete examples in code
+    blocks, drawn from the worked instances"** to counter the
+    over-abstraction tendency. First seen D-17-53 Session 5
+    (arr-stack-add-component.md).
 
 ### C2 — Runbook / doc update from observation
 
