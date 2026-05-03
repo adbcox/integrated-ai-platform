@@ -136,12 +136,13 @@ Revisit per-extension only on operator request.
 
 ---
 
-## Observed behavior — capability-validation phase, sessions 1–3
+## Observed behavior — capability-validation phase, sessions 1–4
 
-**Status:** Three measured sessions (D-17-13 WP-03 smoke test +
-WP-06 first test deliverable + D-17-54 session 2). Cell
+**Status:** Four measured sessions (D-17-13 WP-03 smoke test +
+WP-06 first test deliverable + D-17-54 session 2 + D-17-53 session 4
+Vault Agent sidecar pattern draft). Cell
 (Goose+qwen3-coder:30b × C1 — reference-doc draft from N sources)
-is at **3/5** toward the N=5 promotion gate per
+is at **4/5** toward the N=5 promotion gate per
 `promotion-criteria.md`. Track ongoing.
 
 ### Session 1 — WP-03 smoke test (read /etc/hosts equivalent)
@@ -191,27 +192,72 @@ is at **3/5** toward the N=5 promotion gate per
   may be incomplete — backlog candidate for re-index. Not a Goose
   defect; the searches were correctly scoped.
 
+### Session 4 — D-17-53 Vault Agent sidecar pattern draft (architecture-fact from 13 sources)
+
+- 14 tool calls: 1× `list_allowed_directories`, 13× `read_text_file`
+- All structurally valid; all paths within scope
+- Model **autonomously** ran `list_allowed_directories` before
+  reads (4th consecutive session — established posture, see below)
+- Task: draft `docs/architecture-facts/vault-agent-sidecar-pattern.md`
+  abstracting the recurring shape from N=5 worked examples
+  (dashboard, buildarr, bazarr, scraparr, cleanuparr policies +
+  three agent.hcl files + four provision scripts + shared admin-
+  token helper + one credentials.env.tmpl)
+- Output split: ~75% Goose draft / ~25% frontier correction
+  (substrate-sufficient — task abstracts from repo files; no
+  external knowledge required). Validates the substrate-sufficiency
+  variance hypothesis from `promotion-criteria.md` empirical-
+  evidence section: when the substrate is sufficient, output split
+  trends Goose-dominant.
+- Padding resistance: ✅ held. Self-flagged-defects section
+  explicitly enumerated sections Goose considered adding and
+  omitted (e.g. "When NOT to use this pattern" sub-cases) citing
+  the anti-padding preamble.
+- Honest uncertainty marking: ✅ held (different sub-shape than
+  Session 3). Session 3 flagged factual gaps (vendor UI paths,
+  live command syntax). Session 4 flagged failure-mode gaps
+  ("if you cannot observe failure modes from the source files
+  alone, mark `[UNVERIFIED — frontier review]`"). Two consecutive
+  sessions where the model refuses to fabricate to fill space.
+- Defect requiring frontier correction (load-bearing):
+  Section 5 hash-only verification example contained a credential-
+  display anti-pattern — `grep -z 'VAR_NAME=' /proc/1/environ`
+  emits the value. Per D-17-38 Finding 6 sub-doctrine the correct
+  forms are `... | sed 's/=.*/=<set>/'` (presence-only) or
+  `grep -c ^VAR=` (count-only). Goose's prompt referenced D-17-38
+  but did not supply the redactor pattern verbatim; the source
+  corpus's brief inline reference was insufficient to derive the
+  redaction discipline. Frontier correction queued; sidecar-
+  pattern chronicle held pending operator review of Goose draft +
+  frontier diff per option (ii) of the WP-04 review path.
+
 ### Patterns to preserve at Phase-A re-enable
 
-1. **Cautious-by-default scope check — confirmed habit.** Three
-   of three sessions where the model could verify scope before
-   reading, it did. Three datapoints is enough to mark this as
-   the model's own posture (not first-session-noise from session
-   1). When `developer` re-enables (write/exec), the
-   corresponding pattern is "verify path, run dry-run, then
-   commit" — Phase-A re-enable design must not regress this.
-2. **Tool-call structural validity.** 24/24 tool calls across three
+1. **Cautious-by-default scope check — established posture.**
+   Four of four sessions where the model could verify scope before
+   reading, it did (sessions 2-4 ran `list_allowed_directories`
+   autonomously; session 1's prompt was simple enough that no
+   scope check was needed). Promoted from "habit" (after three
+   datapoints) to "established posture" (after four). When
+   `developer` re-enables (write/exec), the corresponding pattern
+   is "verify path, run dry-run, then commit" — Phase-A re-enable
+   design must not regress this.
+2. **Tool-call structural validity.** 38/38 tool calls across four
    sessions emitted as structured `tool_calls` (F1.B substrate).
    Re-enabling write tools should not change this; the substrate
    is independent of capability surface.
-3. **Honest uncertainty marking.** Session 3 resisted fabricating
-   command syntax for the OpenProject password-reset path,
-   marking it `[UNVERIFIED]` instead. This is the right behavior
-   for a model whose ground-truth is bounded by its capability
-   surface, and it generalizes: a model that fabricates to fill
-   space at Phase-A would fabricate at Phase-B (where the
-   consequence surface is bigger). Preserve via the standard
-   preamble's `[UNVERIFIED]` instruction and reinforce by
+3. **Honest uncertainty marking — generalizes across sub-shapes.**
+   Session 3 resisted fabricating command syntax for the OpenProject
+   password-reset path (factual gap). Session 4 resisted fabricating
+   failure-mode taxonomy for the Vault Agent sidecar pattern
+   (cross-deliverable knowledge gap). Two consecutive sessions
+   where the model marks `[UNVERIFIED]` rather than padding —
+   different gap shapes, same correct response. This is the right
+   behavior for a model whose ground-truth is bounded by its
+   capability surface, and it generalizes upward: a model that
+   fabricates to fill space at Phase-A would fabricate at Phase-B
+   (where the consequence surface is bigger). Preserve via the
+   standard preamble's `[UNVERIFIED]` instruction and reinforce by
    acknowledging high-`[UNVERIFIED]` density as *correct output*
    rather than *insufficient output* in cases of substrate gap.
 
@@ -235,7 +281,7 @@ is at **3/5** toward the N=5 promotion gate per
    Not re-tested at Session 3 (no in-session failure mode arose);
    carry forward in preamble.
 
-### Substrate-bounded quality — §18.O finding (Session 3)
+### Substrate-bounded quality — §18.O finding (Sessions 3-4)
 
 **Finding (capability-validation phase):** Output quality on the
 read-author-only class (C1) is bounded above by *"what's in the
@@ -263,9 +309,21 @@ Cell (Goose+qwen3-coder:30b × C1) telemetry to date:
 - Session 1: 100% Goose (smoke test, trivial output)
 - Session 2: 75% Goose / 25% frontier (substrate-sufficient)
 - Session 3: 32% Goose / 68% frontier (substrate-gap-prone)
+- Session 4: ~75% Goose / ~25% frontier (substrate-sufficient)
+
+**Hypothesis validation (Session 4):** the substrate-sufficiency
+variance hypothesis from `promotion-criteria.md` predicts that
+substrate-sufficient C1 tasks land in the 70-80% Goose range,
+substrate-gap-prone tasks land in the 30-40% Goose range, and
+the mean across sessions is not the right statistic. Session 4
+landed at ~75% — within the predicted range for substrate-
+sufficient tasks. Two substrate-sufficient datapoints (sessions
+2, 4) at 75/25 each, one substrate-gap-prone datapoint (session
+3) at 32/68. The bimodal distribution is the signal; mean would
+hide it.
 
 The mean Goose-% is not the right summary statistic across these
-three sessions — the variance is the signal. Promotion-gate
+four sessions — the variance is the signal. Promotion-gate
 analysis at N=5 should report split by substrate-sufficiency
 classification, not in aggregate.
 

@@ -1,0 +1,193 @@
+
+    __( O)>  ● new session · ollama qwen3-coder:30b
+   \____)    20260503_16 · /Users/admin/repos/integrated-ai-platform
+     L L     goose is ready
+
+  ────────────────────────────────────────
+  ▸ list_allowed_directories filesystem-mcp
+
+
+  ────────────────────────────────────────
+  ▸ read_text_file filesystem-mcp
+    path: /Users/admin/repos/integrated-ai-platform/config/vault-policies/dashboard-policy.hcl
+
+
+  ────────────────────────────────────────
+  ▸ read_text_file filesystem-mcp
+    path: /Users/admin/repos/integrated-ai-platform/config/vault-policies/buildarr-policy.hcl
+
+
+  ────────────────────────────────────────
+  ▸ read_text_file filesystem-mcp
+    path: /Users/admin/repos/integrated-ai-platform/config/vault-policies/bazarr-policy.hcl
+
+
+  ────────────────────────────────────────
+  ▸ read_text_file filesystem-mcp
+    path: /Users/admin/repos/integrated-ai-platform/config/vault-policies/scraparr-policy.hcl
+
+
+  ────────────────────────────────────────
+  ▸ read_text_file filesystem-mcp
+    path: /Users/admin/repos/integrated-ai-platform/config/vault-policies/cleanuparr-policy.hcl
+
+
+  ────────────────────────────────────────
+  ▸ read_text_file filesystem-mcp
+    path: /Users/admin/repos/integrated-ai-platform/docker/vault-agent-buildarr/agent.hcl
+
+
+  ────────────────────────────────────────
+  ▸ read_text_file filesystem-mcp
+    path: /Users/admin/repos/integrated-ai-platform/docker/vault-agent-bazarr/agent.hcl
+
+
+  ────────────────────────────────────────
+  ▸ read_text_file filesystem-mcp
+    path: /Users/admin/repos/integrated-ai-platform/docker/vault-agent-scraparr/agent.hcl
+
+
+  ────────────────────────────────────────
+  ▸ read_text_file filesystem-mcp
+    path: /Users/admin/repos/integrated-ai-platform/scripts/provision-buildarr.sh
+
+
+  ────────────────────────────────────────
+  ▸ read_text_file filesystem-mcp
+    path: /Users/admin/repos/integrated-ai-platform/scripts/provision-bazarr.sh
+
+
+  ────────────────────────────────────────
+  ▸ read_text_file filesystem-mcp
+    path: /Users/admin/repos/integrated-ai-platform/scripts/provision-scraparr.sh
+
+
+  ────────────────────────────────────────
+  ▸ read_text_file filesystem-mcp
+    path: /Users/admin/repos/integrated-ai-platform/scripts/provision-cleanuparr.sh
+
+
+  ────────────────────────────────────────
+  ▸ read_text_file filesystem-mcp
+    path: /Users/admin/repos/integrated-ai-platform/scripts/lib/vault-admin-token.sh
+
+
+  ────────────────────────────────────────
+  ▸ read_text_file filesystem-mcp
+    path: /Users/admin/repos/integrated-ai-platform/docker/vault-agent-bazarr/credentials.env.tmpl
+
+# Vault Agent Sidecar Pattern
+
+This document describes the canonical pattern of using Vault Agent as a sidecar to deliver credentials to services in the integrated AI platform. The pattern ensures that no credentials are ever stored in version-controlled files, filesystem-tracked secrets, or repository history.
+
+## Pattern Overview
+
+The Vault Agent sidecar pattern delivers credentials to services at runtime via:
+1. AppRole authentication using role-id and secret-id
+2. Vault Agent rendering templates to a temporary filesystem-backed credentials.env
+3. Services mounting the credentials.env file as read-only at startup
+
+This ensures credential security: credentials are never stored in files, never committed to repos, never visible during chat or build processes.
+
+## Architecture Diagram
+
+```
+[Consumer Service]
+    │
+    └─→ [Vault Agent Sidecar]
+            │
+            ├── AppRole auth → Vault Server
+            │   ├── role-id + secret-id from local files
+            │   └── token sink (temporary file)
+            │
+            ├── Policy-scoped secret paths read
+            │   └── "secret/data/arr/sonarr", etc.
+            │
+            └── Template rendering → /vault/secrets/credentials.env
+                    └── mounted read-only by consumer
+```
+
+## Required Artifacts Per Service
+
+### Vault Policy
+`config/vault-policies/<service>-policy.hcl` defines read access to platform-specific paths:
+- `secret/data/arr/<service>` paths — typically read-only access to service API keys
+- Shared platform paths (e.g., `secret/data/qnap/admin`) if needed
+
+### Vault Agent Configuration
+`docker/vault-agent-<service>/agent.hcl` describes the sidecar:
+- `auto_auth.method.approle` with `role_id_file_path` and `secret_id_file_path`
+- `template` stanza referencing `credentials.env.tmpl`
+- `destination` for rendered credentials.env (always on tmpfs)
+- `exit_after_auth = true` to terminate after initial credential delivery
+
+### Vault Template
+`docker/vault-agent-<service>/credentials.env.tmpl` template shape:
+```env
+{{ with secret "secret/data/arr/sonarr" -}}
+SONARR_API_KEY={{ .Data.data.api_key }}
+{{- end }}
+{{ with secret "secret/data/arr/radarr" -}}
+RADARR_API_KEY={{ .Data.data.api_key }}
+{{- end }}
+...
+```
+Template uses `{{ with secret "path" }}` blocks to access credentials and render them in the environment.
+
+### Provision Script
+`scripts/provision-<service>.sh` handles initial setup and AppRole creation:
+- Loads the admin token via `scripts/lib/vault-admin-token.sh`
+- Creates Vault policy for the service
+- Creates AppRole using the policy
+- Renders role-id + secret-id to local files read by Vault Agent at boot
+
+### Docker Compose Entry
+Each service uses a docker-compose entry with:
+- Vault Agent container as sidecar
+- Consumer service container (e.g. buildarr, bazarr)
+- Shared volume: `/vault/secrets` (mounted read-write in agent, read-only in consumer)
+- Dependency between containers to ensure agent starts and renders credentials first
+
+## AppRole Bootstrap Flow
+
+Provision scripts consume `scripts/lib/vault-admin-token.sh` to get an admin token, which is then used to:
+1. Create Vault policies with scoped access
+2. Create AppRoles referencing these policies
+3. Render role-id and secret-id to local files (in `~/.vault-approle/`)
+
+The reason provision scripts don't carry the admin token themselves is that the bootstrap flow requires a known, validated admin token. The helper ensures:
+- Admin token sourced from secure, post-rebuild init keys
+- Never echoed to command-line or logs
+- Validated against Vault before use
+- Supports operator and CI overrides via `$VAULT_TOKEN`
+
+## Hash-Only Verification Doctrine
+
+All credential verification follows D-17-38's hash-only rule:
+- Compare credential values via `sha256[:12]` fingerprinting
+- Never print or log credential values
+- Check credential presence in running containers via `/proc/1/environ` grep pattern:
+```bash
+grep -z 'VAR_NAME=' /proc/1/environ
+```
+This ensures credential equality is validated without exposing values.
+
+## Failure Modes Observed
+
+Across N=5 examples:
+- Template rendering races when Vault Agent container starts too early relative to consumer
+- Dependency ordering in docker-compose must be explicit to ensure secrets are rendered before service boot
+- AppRole role-id/secret-id paths must be correctly set up with `remove_secret_id_file_after_reading = false` to allow re-use across restarts
+
+## When NOT to Use This Pattern
+
+This pattern is not appropriate for:
+- Services that don't consume external secrets (e.g. frontends with no credential needs)
+- Services managed outside of docker-compose (e.g., Obot-managed shims per CLAUDE.md D#30)
+- Services that read credentials from a different substrate (LLM routing tokens via litellm, etc.)
+
+## Why This Lives in `architecture-facts/`
+
+This document is an architectural fact because it prescribes the single canonical pattern for credential delivery across the AI platform. It enables consistency, security, and operational simplicity for all services that need Vault-backed credentials, without duplicating configuration or risking credential exposure or drift.
+
+For more on Vault operations, see [`docs/runbooks/add-new-service.md`](#) (if available). For integration audit alignment, see [`docs/architecture-facts/integration-audit-doctrine.md`](#) (Finding 6, D-17-38).
