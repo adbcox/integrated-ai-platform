@@ -466,9 +466,9 @@ Backlog from D-17-36 + D-17-38 close work. The arr-stack today (Sonarr,
 Radarr, Prowlarr, Sportarr, qBittorrent) covers the "find + grab" half
 of the pipeline but has structural gaps the chronicle work has surfaced:
 no observability beyond container health (Finding 1 / F5), no declarative
-configuration substrate (config-as-code is absent — candidate F11
-territory; would graduate to a numbered finding when first formal
-worked example lands), no automated bad-download removal or missing-content hunting
+configuration substrate for the full stack (Finding 11 / F11 —
+Radarr + Prowlarr now covered by D-17-44; Sonarr v4 + Sportarr
+pending upstream plugin support), no automated bad-download removal or missing-content hunting
 (would have caught the Radarr paused-torrent + F1 episode-4-of-9 missing
 scenarios), no AI-orchestration surface (forcing this session into
 ad-hoc curl loops against `localhost:9696`/`localhost:7878`).
@@ -487,15 +487,15 @@ ones being stable):
    per service (D-17-38 credential pattern). Grafana dashboards
    `arr-stack-overview-p18` + per-service drill-downs.
 
-2. **Buildarr config-as-code** *(declarative state lock-in;
-   would establish the worked example for the candidate F11
-   config-drift finding).* All
-   Sonarr/Radarr/Prowlarr/Sportarr indexer + quality-profile +
-   custom-format definitions live in `config/arr-stack/buildarr/`
-   and are applied by a launchd-driven sync. Manual UI edits become
-   either ratified into the YAML or reverted on next run. Locks the
-   D-17-36-style retirement-record-as-restoration-playbook problem
-   structurally — the YAML IS the playbook.
+2. **Buildarr config-as-code** ✅ DONE D-17-44 (2026-05-03)
+   *(declarative state lock-in; first worked example for F11
+   config-drift doctrine — now a numbered Finding.)* Radarr +
+   Prowlarr managed. Scope: Radarr full coverage, Prowlarr
+   applications-only. Sonarr v4 + Sportarr out-of-scope (documented
+   known limitations in Finding 11). YAML at
+   `config/arr-stack/buildarr/buildarr.yml`, daily launchd sync via
+   `scripts/buildarr-run.sh`. Manual UI edits become either ratified
+   into the YAML or reverted on next run. YAML IS the playbook.
 
 3. **Cleanuparr + Huntarr** *(closes F10 family at the runtime
    layer — bad-download removal + missing-content hunting).*
@@ -551,9 +551,8 @@ ones being stable):
 
 **Doctrine cross-references:**
 - Finding 1 (F5) — observability before expansion
-- Candidate F11 (config-as-code / declarative state) — would
-  graduate to a numbered finding once Buildarr lands and the
-  first config-drift incident is post-mortemed against it
+- **Finding 11 (F11) — config-as-code / declarative state (now
+  numbered; D-17-44 close is the first worked example)**
 - Finding 6 (F10) — retirement-record-as-restoration-playbook is
   structurally unsound; Buildarr structurally closes this
 - D-17-29 (service-registry MVP) — every new component registers

@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.iap.buildarr-sync</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/bash</string>
+        <string>-c</string>
+        <string>/Users/admin/repos/integrated-ai-platform/scripts/buildarr-run.sh; rc=$?; touch /Users/admin/.platform-logs/buildarr-sync.heartbeat; exit $rc</string>
+    </array>
+    <!-- Daily at 03:00 — after backup (02:00), before business hours.
+         Matches update_times in config/arr-stack/buildarr/buildarr.yml.
+         D-17-44: Buildarr config-as-code substrate (§18.G component 2). -->
+    <key>StartCalendarInterval</key>
+    <dict>
+        <key>Hour</key>
+        <integer>3</integer>
+        <key>Minute</key>
+        <integer>0</integer>
+    </dict>
+    <key>StandardOutPath</key>
+    <string>/Users/admin/.platform-logs/buildarr-sync.log</string>
+    <key>StandardErrorPath</key>
+    <string>/Users/admin/.platform-logs/buildarr-sync.log</string>
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+    </dict>
+</dict>
+</plist>

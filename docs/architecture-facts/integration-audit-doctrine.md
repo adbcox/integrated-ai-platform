@@ -309,6 +309,38 @@ This is **proposed but NOT auto-created** per operator instruction at WP-05 invo
 
 **Active finding** (not yet doctrine — pending operator decision on remediation scope). First application of the finding: D-17-34. Cross-references: D#25 (registry as substrate), ADR-A-014 (NetBox authority), D-17-32 Gap X1 (registry agent surface), Phase 14 D-DOC (CMDB_SOURCE default flip).
 
+### 2026-05-03 intake extension (D-17-45 WP-03 worked examples)
+
+D-17-45 intake audit quantified the three-way drift and supplied
+concrete examples:
+
+- Service-ID divergence at baseline: NetBox=77, YAML.DEPRECATED=75,
+  inventory.json=74.
+- NetBox-only vs YAML: `xindex` and `xindex-mcp` exist in NetBox but
+  not in YAML fallback.
+- Runtime-only service set: 42 IDs present in inventory.json but
+  absent from both NetBox and YAML (examples: `openproject`,
+  `inventree`, `loki`, `promtail`, `traefik`).
+- Declarative-only set: 45 IDs present in NetBox+YAML but absent
+  from runtime inventory (examples: `homeassistant-container`,
+  `anythingllm`, multiple `obot-shim-*`).
+- Attribute conflicts on shared IDs: dependency edges diverge
+  (`control-plane`, `homepage`) and port semantics diverge (`netbox`
+  internal 8080 vs host-mapped 8084 in runtime substrate).
+- IPAM authority gap: NetBox IP/prefix/vlan counts are all zero while
+  OPNsense Dnsmasq has 55 host records (6 unique IPs) and runtime
+  inventory carries 51 internal IP entries across 14 docker networks.
+
+These are not one-off errors; they are structural differences in
+schema intent + update cadence + consumer usage, and they directly
+justify the authority-decision gate in D-17-45 WP-04.
+
+Sub-doctrine formalization: **CMDB authority requires consumer
+enforcement, not declaration alone.** ADR-A-014's declaration is
+necessary but insufficient until every consumer is explicitly bound to
+the correct substrate layer (intent vs runtime) and drift checks run
+continuously.
+
 ---
 
 ## Finding 5 — Roadmap binary artifacts need a substrate, not ad-hoc copies
@@ -655,3 +687,84 @@ WP-04 fixed 10 live cross-references (CLAUDE.md, ARCHITECTURE.md, PHASE_ROADMAP.
 - D-17-18 (.146 → .142 hostname drift) is the reference precedent for "patch in-line drift during the sweep."
 - ADR-A-016 (Canonical Patterns Registry) explicitly accommodates the `docs/canonical-patterns/` → `docs/architecture-patterns/` merge at the ADR level.
 - Finding 9 (configuration audits verify against intent, not running config) — same authority-vs-residue distinction applies: doc trees accumulate residue (loose docs) that doesn't match the canonical-paths intent stated by the doctrine. Both findings share the rule "the operator-stated intent is the authority signal, not the on-disk-state".
+
+---
+
+## Finding 11 — Declarative config-as-code substrate prevents URL drift structurally; reactive remediation is the wrong layer for config-class incidents
+
+**D-17-44 close, 2026-05-03.**
+
+### Observation
+
+The D-17-38 root cause was a Prowlarr application record holding stale URLs (`mac-mini.internal:1867` for Sportarr instead of `sportarr:1867`) that caused authentication failures silently attributed to other causes until a deep integration audit traced them. The fix was reactive: detect the drift, patch the records, update Vault, re-verify. This cycle took the majority of D-17-38's effort.
+
+A declarative config substrate (Buildarr) would have prevented this incident entirely: the canonical form of those application URLs lives in `config/arr-stack/buildarr/buildarr.yml`; any manual UI change diverging from that YAML is detected and reverted on the next daily run. The operator never had to author a "drift audit" — the reconciliation loop is automatic.
+
+**The F10 retirement-record-as-restoration-playbook problem (Finding 6) is the reactive equivalent of the same gap**: without a canonical YAML, the restoration playbook is "re-enter the values you remember from the last time." With Buildarr, the playbook is `buildarr-run.sh`.
+
+### First worked example — D-17-44 (2026-05-03)
+
+Buildarr deployed against Radarr (v6.1.1.10360) and Prowlarr (v2.3.5.5327) on Mac Mini.
+
+**Drift extraction via `dump-config`:** `buildarr radarr/prowlarr dump-config` extracted full live state into Buildarr-native YAML. The extraction is itself the drift-detection mechanism: any deviation between the extracted YAML and a prior-committed YAML would be an empirical drift record.
+
+At first extraction (2026-05-03), state matched expected post-D-17-38 baseline — confirming D-17-38's remediation held. No drift found on first run.
+
+**First `buildarr run` output (WP-05):**
+```
+<prowlarr> (default) Remote configuration is up to date
+<radarr> (default) Remote configuration is up to date
+<radarr> (default) Remote configuration is clean
+<prowlarr> (default) Remote configuration is clean
+```
+Zero mutations applied. Idempotency confirmed.
+
+**Schema coverage gaps surfaced by this deployment:**
+
+| Area | Status | Notes |
+|---|---|---|
+| Radarr media_management, profiles, quality, custom_formats, indexers, download_clients | Managed by Buildarr | Full lockdown |
+| Prowlarr applications (consumer URLs + api_keys) | Managed by Buildarr | **This is the D-17-38 prevention layer** |
+| Prowlarr indexer definitions | NOT managed | Plugin schema gap — `dump-config` returns count=0; indexers remain manual |
+| Prowlarr download clients | NOT managed | Plugin schema gap |
+| Radarr notifications (Plex/PlexServer) | NOT managed | Plugin emits `Unsupported... ignoring`; `delete_unmanaged: false` protects it |
+| Sonarr (all) | NOT managed | v4.0.17: `buildarr-sonarr` plugin supports v3 only |
+| Sportarr (all) | NOT managed | No Buildarr plugin (official or community) |
+
+### Doctrine
+
+**Declarative config-as-code eliminates the reactive-remediation loop for covered config fields.** For Prowlarr application URLs specifically, the canonical form is `http://<container-name>:<port>` (container DNS) as locked in `config/arr-stack/buildarr/buildarr.yml`. Any future session that encounters "Prowlarr can't reach Radarr" should:
+
+1. Run `buildarr-run.sh` first — if the URL drifted, Buildarr restores it automatically.
+2. If drift recurs across multiple runs, the root cause is something that overwrites Buildarr's writes (e.g., a Prowlarr auto-import that resets the URL on new indexer registration). That is a Finding 11 second-order problem, not a URL-entry problem.
+
+**Reactive remediation (`vault kv put`, manual UI edits) is still required for:** credentials (Vault is the authority for secrets; Buildarr is the authority for config), Sonarr/Sportarr until plugin coverage lands, Prowlarr indexer definitions until the plugin schema gap closes.
+
+**The `dump-config` → commit loop is the drift-detection primitive.** Running `buildarr radarr/prowlarr dump-config` after any manual UI change session and committing the diff to `config/arr-stack/buildarr/buildarr.yml` is the operator-facing equivalent of `git diff` for arr-stack config. This should happen after: any Radarr/Prowlarr major version upgrade, any quality-profile or custom-format change, any application record modification.
+
+### Known limitations (scope reduction)
+
+Per D-17-44 pre-flight Q1–Q3:
+
+- **Sonarr v4 blocker:** `buildarr-sonarr` plugin is v3-only. Sonarr v4.0.17 cannot be managed. Remediation: wait for upstream v4 plugin, then re-run `dump-config` and extend `buildarr.yml`. No Sonarr downgrade.
+- **Sportarr no-plugin:** No Buildarr plugin exists. Sportarr remains under the retirement-record-as-restoration-playbook pattern (D-17-36 record). If a community plugin lands, activate via §18.G component 2 extension.
+- **Prowlarr plugin schema gaps (indexers, download_clients):** These fields will be auto-captured once the upstream plugin adds them. Until then, `delete_unmanaged: false` prevents Buildarr from deleting these objects.
+
+### Deployment substrate
+
+- YAML: `config/arr-stack/buildarr/buildarr.yml` (839 lines, dump-config-generated)
+- Credentials: `${RADARR_API_KEY}` / `${PROWLARR_API_KEY}` placeholders; Python-substituted at runtime from Vault-rendered `credentials.env`
+- Vault: AppRole `buildarr`, policy `config/vault-policies/buildarr-policy.hcl`, reads `secret/arr/{radarr,prowlarr,sonarr,sportarr}`
+- Compose: `docker/docker-compose-buildarr.yml` (sidecar + one-shot run pattern)
+- Run wrapper: `scripts/buildarr-run.sh` (sidecar refresh → env substitution → `buildarr run`)
+- Launchd: `docker/launchd-agents/com.iap.buildarr-sync.plist` (daily 03:00, after backup at 02:00)
+- Heartbeat: `/Users/admin/.platform-logs/buildarr-sync.heartbeat`
+- Log: `/Users/admin/.platform-logs/buildarr-sync.log`
+
+### Cross-references
+
+- D-17-38 (the worked incident that Finding 11 would have prevented — Prowlarr URL drift silently causing auth failures)
+- Finding 6 (F10) — retirement-records-as-restoration-playbook; Buildarr YAML is the structural replacement
+- Finding 8 — L3 (integration) health checks; Buildarr is a config-plane complement (it restores config; it does not probe health)
+- §18.G component 2 (PHASE_ROADMAP — this is the first closed sub-deliverable of the arr-stack ecosystem family)
+- §18.G component 8 (Profilarr/Recyclarr — TRaSH-Guides automation; extends Buildarr's quality-profile lockdown with community-maintained profiles)

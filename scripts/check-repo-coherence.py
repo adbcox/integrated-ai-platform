@@ -104,6 +104,12 @@ LAUNCHD_RECENCY_EXPECTATIONS: dict[str, dict] = {
         "max_age_sec": 36 * 3600,
         "probe_paths": ["/Users/admin/.platform-logs/caddy-unbound-parity.heartbeat"],
     },
+    "com.iap.buildarr-sync": {
+        # Daily at 03:00 — Buildarr config-as-code sync for Radarr + Prowlarr (D-17-44).
+        # 36h grace mirrors other daily jobs (allows for sleep + skip days).
+        "max_age_sec": 36 * 3600,
+        "probe_paths": ["/Users/admin/.platform-logs/buildarr-sync.heartbeat"],
+    },
 }
 
 # Same row regex as scripts/phase-deliverable-count.py — kept inline

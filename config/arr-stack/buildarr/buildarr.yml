@@ -1,0 +1,801 @@
+# Buildarr configuration — declarative config-as-code for arr-stack
+#
+# Scope: Radarr (full Buildarr-plugin coverage) + Prowlarr (applications-only).
+#
+#   OUT OF SCOPE (documented known limitations for D-17-44):
+#     Sonarr v4.0.17: buildarr-sonarr plugin supports v3 only; v4 support pending upstream.
+#     Sportarr: no Buildarr plugin exists (official or community).
+#     Both remain under reactive/manual management until plugin coverage lands.
+#
+# Credentials: api_key fields use ${RADARR_API_KEY} / ${PROWLARR_API_KEY} placeholder syntax.
+#   Vault Agent sidecar (vault-agent-buildarr) renders credentials.env at runtime.
+#   Container entrypoint substitutes placeholders via Python before calling Buildarr.
+#   Zero credential values stored in this file or in git.
+#
+# Extracted from live state: 2026-05-03 via buildarr radarr/prowlarr dump-config
+#   Radarr 6.1.1.10360 / Prowlarr 2.3.5.5327
+#
+# Usage:
+#   Apply (live):    docker compose -f docker/docker-compose-buildarr.yml run --rm buildarr
+#   Syntax check:    scripts/buildarr-run.sh --check
+#   Manual one-shot: scripts/buildarr-run.sh
+#
+# Doctrine references:
+#   D-17-44 (this deliverable), PHASE_ROADMAP §18.G component 2
+#   D-17-38 (Vault Agent sidecar credential pattern)
+#   D-17-29 (service registry — container DNS canonical form)
+#   Candidate F11 (first worked example: declarative state for Radarr + Prowlarr)
+
+buildarr:
+  watch_config: false
+  update_days:
+  - monday
+  - tuesday
+  - wednesday
+  - thursday
+  - friday
+  - saturday
+  - sunday
+  update_times:
+  - 03:00
+radarr:
+  hostname: radarr
+  port: 7878
+  protocol: http
+  url_base: null
+  api_key: ${RADARR_API_KEY}
+  version: 6.1.1.10360
+  image: lscr.io/linuxserver/radarr
+  settings:
+    media_management:
+      rename_movies: false
+      replace_illegal_characters: true
+      colon_replacement: delete
+      standard_movie_format: '{Movie Title} ({Release Year}) {Quality Full}'
+      movie_folder_format: '{Movie Title} ({Release Year})'
+      create_missing_movie_folders: false
+      delete_empty_folders: true
+      skip_free_space_check: false
+      minimum_free_space: 100
+      use_hardlinks: true
+      import_using_script: false
+      import_script_path: null
+      import_extra_files: true
+      unmonitor_deleted_movies: false
+      propers_and_repacks: prefer-and-upgrade
+      analyze_video_files: true
+      rescan_folder_after_refresh: always
+      change_file_date: none
+      recycling_bin: null
+      recycling_bin_cleanup: 7
+      set_permissions: false
+      chmod_folder: drwxr-xr-x
+      chown_group: null
+      root_folders:
+        delete_unmanaged: false
+        definitions: []
+    profiles:
+      quality_profiles:
+        delete_unmanaged: false
+        definitions:
+          Any:
+            upgrades_allowed: false
+            qualities:
+            - BR-DISK
+            - Remux-2160p
+            - Bluray-2160p
+            - name: WEB 2160p
+              members:
+              - WEBDL-2160p
+              - WEBRip-2160p
+            - HDTV-2160p
+            - Remux-1080p
+            - Bluray-1080p
+            - name: WEB 1080p
+              members:
+              - WEBDL-1080p
+              - WEBRip-1080p
+            - HDTV-1080p
+            - Bluray-720p
+            - name: WEB 720p
+              members:
+              - WEBDL-720p
+              - WEBRip-720p
+            - HDTV-720p
+            - Bluray-576p
+            - Bluray-480p
+            - name: WEB 480p
+              members:
+              - WEBRip-480p
+              - WEBDL-480p
+            - DVD-R
+            - DVD
+            - SDTV
+            - DVDSCR
+            - REGIONAL
+            - TELECINE
+            - TELESYNC
+            - CAM
+            - WORKPRINT
+            upgrade_until_quality: null
+            minimum_custom_format_score: 0
+            upgrade_until_custom_format_score: 0
+            custom_formats: []
+            language: english
+          SD:
+            upgrades_allowed: false
+            qualities:
+            - Bluray-576p
+            - Bluray-480p
+            - name: WEB 480p
+              members:
+              - WEBRip-480p
+              - WEBDL-480p
+            - DVD
+            - SDTV
+            - DVDSCR
+            - REGIONAL
+            - TELECINE
+            - TELESYNC
+            - CAM
+            - WORKPRINT
+            upgrade_until_quality: null
+            minimum_custom_format_score: 0
+            upgrade_until_custom_format_score: 0
+            custom_formats: []
+            language: english
+          HD-720p:
+            upgrades_allowed: true
+            qualities:
+            - Bluray-720p
+            - name: WEB 720p
+              members:
+              - WEBDL-720p
+              - WEBRip-720p
+            - HDTV-720p
+            upgrade_until_quality: Bluray-720p
+            minimum_custom_format_score: 0
+            upgrade_until_custom_format_score: 500
+            custom_formats:
+            - name: x265
+              score: 500
+            language: english
+          HD-1080p:
+            upgrades_allowed: true
+            qualities:
+            - Remux-1080p
+            - Bluray-1080p
+            - name: WEB 1080p
+              members:
+              - WEBDL-1080p
+              - WEBRip-1080p
+            - HDTV-1080p
+            - Bluray-720p
+            - name: WEB 720p
+              members:
+              - WEBDL-720p
+              - WEBRip-720p
+            - HDTV-720p
+            upgrade_until_quality: Bluray-1080p
+            minimum_custom_format_score: 0
+            upgrade_until_custom_format_score: 500
+            custom_formats:
+            - name: x265
+              score: 500
+            language: english
+          Ultra-HD:
+            upgrades_allowed: true
+            qualities:
+            - Remux-2160p
+            - Bluray-2160p
+            - name: WEB 2160p
+              members:
+              - WEBDL-2160p
+              - WEBRip-2160p
+            - HDTV-2160p
+            upgrade_until_quality: Remux-2160p
+            minimum_custom_format_score: 0
+            upgrade_until_custom_format_score: 500
+            custom_formats:
+            - name: x265
+              score: 500
+            language: english
+          HD - 720p/1080p:
+            upgrades_allowed: true
+            qualities:
+            - Remux-1080p
+            - Bluray-1080p
+            - name: WEB 1080p
+              members:
+              - WEBDL-1080p
+              - WEBRip-1080p
+            - HDTV-1080p
+            - Bluray-720p
+            - name: WEB 720p
+              members:
+              - WEBDL-720p
+              - WEBRip-720p
+            - HDTV-720p
+            upgrade_until_quality: Bluray-720p
+            minimum_custom_format_score: 0
+            upgrade_until_custom_format_score: 500
+            custom_formats:
+            - name: x265
+              score: 500
+            language: english
+      delay_profiles:
+        definitions:
+        - preferred_protocol: usenet-prefer
+          usenet_delay: 0
+          torrent_delay: 0
+          bypass_if_highest_quality: true
+          tags: []
+        delete_unmanaged: false
+    quality:
+      trash_id: null
+      definitions:
+        Unknown:
+          title: null
+          min: 0.0
+          preferred: 95.0
+          max: 100.0
+        WORKPRINT:
+          title: null
+          min: 0.0
+          preferred: 95.0
+          max: 100.0
+        CAM:
+          title: null
+          min: 0.0
+          preferred: 95.0
+          max: 100.0
+        TELESYNC:
+          title: null
+          min: 0.0
+          preferred: 95.0
+          max: 100.0
+        TELECINE:
+          title: null
+          min: 0.0
+          preferred: 95.0
+          max: 100.0
+        REGIONAL:
+          title: null
+          min: 0.0
+          preferred: 95.0
+          max: 100.0
+        DVDSCR:
+          title: null
+          min: 0.0
+          preferred: 95.0
+          max: 100.0
+        SDTV:
+          title: null
+          min: 0.0
+          preferred: 95.0
+          max: 100.0
+        DVD:
+          title: null
+          min: 0.0
+          preferred: 95.0
+          max: 100.0
+        DVD-R:
+          title: null
+          min: 0.0
+          preferred: 95.0
+          max: 100.0
+        WEBDL-480p:
+          title: null
+          min: 0.0
+          preferred: 95.0
+          max: 100.0
+        WEBRip-480p:
+          title: null
+          min: 0.0
+          preferred: 95.0
+          max: 100.0
+        Bluray-480p:
+          title: null
+          min: 0.0
+          preferred: 95.0
+          max: 100.0
+        Bluray-576p:
+          title: null
+          min: 0.0
+          preferred: 95.0
+          max: 100.0
+        HDTV-720p:
+          title: null
+          min: 0.0
+          preferred: 95.0
+          max: 100.0
+        WEBDL-720p:
+          title: null
+          min: 0.0
+          preferred: 95.0
+          max: 100.0
+        WEBRip-720p:
+          title: null
+          min: 0.0
+          preferred: 95.0
+          max: 100.0
+        Bluray-720p:
+          title: null
+          min: 0.0
+          preferred: 95.0
+          max: 100.0
+        HDTV-1080p:
+          title: null
+          min: 0.0
+          preferred: 95.0
+          max: 100.0
+        WEBDL-1080p:
+          title: null
+          min: 0.0
+          preferred: 95.0
+          max: 100.0
+        WEBRip-1080p:
+          title: null
+          min: 0.0
+          preferred: 95.0
+          max: 100.0
+        Bluray-1080p:
+          title: null
+          min: 0.0
+          preferred: null
+          max: null
+        Remux-1080p:
+          title: null
+          min: 0.0
+          preferred: null
+          max: null
+        HDTV-2160p:
+          title: null
+          min: 0.0
+          preferred: null
+          max: null
+        WEBDL-2160p:
+          title: null
+          min: 0.0
+          preferred: null
+          max: null
+        WEBRip-2160p:
+          title: null
+          min: 0.0
+          preferred: null
+          max: null
+        Bluray-2160p:
+          title: null
+          min: 0.0
+          preferred: null
+          max: null
+        Remux-2160p:
+          title: null
+          min: 0.0
+          preferred: null
+          max: null
+        BR-DISK:
+          title: null
+          min: 0.0
+          preferred: null
+          max: null
+        Raw-HD:
+          title: null
+          min: 0.0
+          preferred: null
+          max: null
+    custom_formats:
+      delete_unmanaged: false
+      definitions:
+        x265:
+          trash_id: null
+          default_score: null
+          include_when_renaming: false
+          delete_unmanaged_conditions: true
+          conditions:
+            x265/HEVC:
+              negate: false
+              required: false
+              type: release-title
+              regex: (?i)(x265|HEVC|H\.265|h265)
+        x264:
+          trash_id: null
+          default_score: null
+          include_when_renaming: false
+          delete_unmanaged_conditions: true
+          conditions:
+            x264/AVC:
+              negate: false
+              required: false
+              type: release-title
+              regex: (?i)(x264|AVC|H\.264|h264|XviD|DivX)
+    indexers:
+      minimum_age: 0
+      retention: 0
+      maximum_size: 0
+      rss_sync_interval: 30
+      delete_unmanaged: false
+      definitions:
+        NZBgeek (Prowlarr):
+          enable_rss: true
+          enable_automatic_search: true
+          enable_interactive_search: true
+          priority: 25
+          download_client: null
+          multi_languages: []
+          tags: []
+          type: newznab
+          base_url: http://prowlarr:9696/5/
+          api_path: /api
+          api_key: '********'
+          categories:
+          - Movies/BluRay
+          - Movies/Other
+          - Movies
+          - Movies/Foreign
+          - Movies/SD
+          - Movies/HD
+          - Movies/3D
+          - Movies/UHD
+          remove_year: false
+          additional_parameters: null
+        TorrentDay (Prowlarr):
+          enable_rss: true
+          enable_automatic_search: true
+          enable_interactive_search: true
+          priority: 25
+          download_client: null
+          multi_languages: []
+          tags: []
+          minimum_seeders: 1
+          required_flags: []
+          seed_ratio: null
+          seed_time: null
+          type: torznab
+          base_url: http://prowlarr:9696/4/
+          api_path: /api
+          api_key: '********'
+          categories:
+          - Movies/BluRay
+          - Movies/DVD
+          - Movies
+          - Movies/Foreign
+          - Movies/SD
+          - Movies/UHD
+          remove_year: false
+          additional_parameters: null
+    download_clients:
+      delete_unmanaged: false
+      definitions: {}
+    notifications:
+      delete_unmanaged: false
+      definitions: {}
+    metadata:
+      certification_country: us
+      emby_legacy:
+        enable: false
+        movie_metadata: true
+      kodi_emby:
+        enable: false
+        movie_metadata: true
+        movie_metadata_url: false
+        movie_metadata_language: english
+        movie_images: true
+        use_movie_nfo: false
+        add_collection_name: true
+      roksbox:
+        enable: false
+        movie_metadata: true
+        movie_images: true
+      wdtv:
+        enable: false
+        movie_metadata: true
+        movie_images: true
+    tags:
+      definitions: []
+    general:
+      host:
+        bind_address: '*'
+        port: 7878
+        ssl_port: 9898
+        use_ssl: false
+        ssl_cert_path: null
+        ssl_cert_password: null
+        url_base: null
+        instance_name: Radarr
+      security:
+        authentication: form
+        authentication_required: enabled
+        username: seedit4me
+        certificate_validation: local-disabled
+      proxy:
+        enable: false
+        proxy_type: http
+        hostname: null
+        port: 8080
+        username: null
+        password: null
+        ignored_addresses: []
+        bypass_proxy_for_local_addresses: true
+      logging:
+        log_level: DEBUG
+      analytics:
+        send_anonymous_usage_data: true
+      updates:
+        branch: master
+        automatic: false
+        mechanism: docker
+        script_path: null
+      backup:
+        folder: Backups
+        interval: 7
+        retention: 28
+    ui:
+      first_day_of_week: sunday
+      week_column_header: month-first
+      runtime_format: hours-minutes
+      short_date_format: word-month-first
+      long_date_format: month-first
+      time_format: twelve-hour
+      show_relative_dates: true
+      theme: auto
+      enable_color_impaired_mode: false
+      movie_info_language: english
+      ui_language: english
+prowlarr:
+  hostname: prowlarr
+  port: 9696
+  protocol: http
+  url_base: null
+  api_key: ${PROWLARR_API_KEY}
+  image: lscr.io/linuxserver/prowlarr
+  version: 2.3.5.5327
+  settings:
+    indexers:
+      indexers:
+        delete_unmanaged: false
+        definitions:
+          1337x:
+            type: 1337x
+            enable: true
+            sync_profile: Standard
+            redirect: false
+            priority: 25
+            query_limit: null
+            grab_limit: null
+            tags:
+            - flaresolverr
+            fields:
+              definitionFile: 1337x
+              baseUrl: null
+              baseSettings.limitsUnit: Day
+              torrentBaseSettings.appMinimumSeeders: null
+              torrentBaseSettings.seedRatio: null
+              torrentBaseSettings.seedTime: null
+              torrentBaseSettings.packSeedTime: null
+              torrentBaseSettings.preferMagnetUrl: false
+              uploader: ''
+              downloadlink: iTorrents.org
+              downloadlink2: magnet
+              disablesort: false
+              sort: created
+              type: desc
+            secret_fields: {}
+          EZTV:
+            type: eztv
+            enable: true
+            sync_profile: Standard
+            redirect: false
+            priority: 25
+            query_limit: null
+            grab_limit: null
+            tags:
+            - flaresolverr
+            fields:
+              definitionFile: eztv
+              baseUrl: null
+              baseSettings.limitsUnit: Day
+              torrentBaseSettings.appMinimumSeeders: null
+              torrentBaseSettings.seedRatio: null
+              torrentBaseSettings.seedTime: null
+              torrentBaseSettings.packSeedTime: null
+              torrentBaseSettings.preferMagnetUrl: false
+            secret_fields: {}
+          NZBgeek:
+            type: newznab
+            enable: true
+            sync_profile: Standard
+            redirect: true
+            priority: 25
+            query_limit: null
+            grab_limit: null
+            tags: []
+            fields:
+              baseUrl: https://api.nzbgeek.info
+              apiPath: /api
+              additionalParameters: null
+              vipExpiration: ''
+              baseSettings.limitsUnit: Day
+            secret_fields:
+              apiKey: '********'
+          showRSS:
+            type: showrss
+            enable: true
+            sync_profile: Standard
+            redirect: false
+            priority: 25
+            query_limit: null
+            grab_limit: null
+            tags:
+            - flaresolverr
+            fields:
+              definitionFile: showrss
+              baseUrl: null
+              baseSettings.limitsUnit: Day
+              torrentBaseSettings.appMinimumSeeders: null
+              torrentBaseSettings.seedRatio: null
+              torrentBaseSettings.seedTime: null
+              torrentBaseSettings.packSeedTime: null
+              torrentBaseSettings.preferMagnetUrl: false
+            secret_fields: {}
+          TorrentDay:
+            type: torrentday
+            enable: true
+            sync_profile: Standard
+            redirect: false
+            priority: 25
+            query_limit: null
+            grab_limit: null
+            tags:
+            - flaresolverr
+            fields:
+              baseUrl: https://tday.love/
+              cookie: '********'
+              freeLeechOnly: false
+              baseSettings.limitsUnit: Day
+              torrentBaseSettings.appMinimumSeeders: null
+              torrentBaseSettings.seedRatio: null
+              torrentBaseSettings.seedTime: null
+              torrentBaseSettings.packSeedTime: null
+              torrentBaseSettings.preferMagnetUrl: false
+            secret_fields: {}
+      proxies:
+        delete_unmanaged: false
+        definitions:
+          FlareSolverr:
+            type: flaresolverr
+            tags:
+            - flaresolverr
+            host_url: http://192.168.10.201:8191/
+            request_timeout: 60
+    apps:
+      applications:
+        delete_unmanaged: false
+        definitions:
+          Radarr:
+            type: radarr
+            prowlarr_url: http://prowlarr:9696
+            base_url: http://radarr:7878
+            sync_level: full-sync
+            sync_categories:
+            - movies/3d
+            - movies/foreign
+            - movies/other
+            - movies/bluray
+            - movies/x265
+            - movies/hd
+            - movies/sd
+            - movies
+            - movies/dvd
+            - movies/web-dl
+            - movies/uhd
+            tags: []
+            sync_reject_blocklisted_torrent_hashes: false
+            instance_name: null
+            api_key: '********'
+          Sonarr:
+            type: sonarr
+            prowlarr_url: http://prowlarr:9696
+            base_url: http://sonarr:8989
+            sync_level: full-sync
+            sync_categories:
+            - tv/foreign
+            - tv/sd
+            - tv
+            - tv/web-dl
+            - tv/other
+            - tv/uhd
+            - tv/hd
+            - tv/x265
+            tags: []
+            sync_reject_blocklisted_torrent_hashes: false
+            instance_name: null
+            api_key: '********'
+            anime_sync_categories:
+            - tv/anime
+            sync_anime_standard_format_search: true
+          Sportarr:
+            type: sonarr
+            prowlarr_url: http://prowlarr:9696
+            base_url: http://sportarr:1867
+            sync_level: full-sync
+            sync_categories:
+            - tv/foreign
+            - tv/sd
+            - tv
+            - tv/web-dl
+            - tv/other
+            - tv/uhd
+            - tv/hd
+            - tv/x265
+            tags: []
+            sync_reject_blocklisted_torrent_hashes: false
+            instance_name: null
+            api_key: '********'
+            anime_sync_categories:
+            - tv/anime
+            sync_anime_standard_format_search: true
+      sync_profiles:
+        delete_unmanaged: false
+        definitions:
+          Standard:
+            enable_rss: true
+            enable_interactive_search: true
+            enable_automatic_search: true
+            minimum_seeders: 1
+    download_clients:
+      delete_unmanaged: false
+      definitions: {}
+    notifications:
+      delete_unmanaged: false
+      definitions: {}
+    tags:
+      definitions:
+      - flaresolverr
+    general:
+      host:
+        bind_address: '*'
+        port: 9696
+        ssl_port: 6969
+        use_ssl: false
+        ssl_cert_path: null
+        ssl_cert_password: null
+        url_base: null
+        instance_name: Prowlarr
+      security:
+        authentication: form
+        authentication_required: enabled
+        username: admin
+        certificate_validation: enabled
+      proxy:
+        enable: false
+        proxy_type: http
+        hostname: null
+        port: 8080
+        username: null
+        password: null
+        ignored_addresses: []
+        bypass_proxy_for_local_addresses: true
+      logging:
+        log_level: DEBUG
+      analytics:
+        send_anonymous_usage_data: true
+      updates:
+        branch: master
+        automatic: false
+        mechanism: docker
+        script_path: null
+      backup:
+        folder: Backups
+        interval: 7
+        retention: 28
+    ui:
+      first_day_of_week: sunday
+      week_column_header: month-first
+      short_date_format: word-month-first
+      long_date_format: month-first
+      time_format: twelve-hour
+      show_relative_dates: true
+      enable_color_impaired_mode: false
+      theme: auto
+      ui_language: en

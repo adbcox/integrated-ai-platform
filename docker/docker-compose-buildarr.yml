@@ -1,0 +1,76 @@
+networks:
+  control-center-net:
+    external: true
+
+services:
+
+  # ── Vault Agent sidecar for Buildarr ────────────────────────────────────────
+  # Runs once, renders credentials.env from secret/arr/{radarr,prowlarr,sonarr,sportarr},
+  # then exits. Buildarr container depends on this completing successfully.
+  # D-17-44: Buildarr config-as-code substrate (§18.G component 2)
+  vault-agent-buildarr:
+    image: hashicorp/vault:2.0.0
+    container_name: vault-agent-buildarr
+    restart: "no"
+    environment:
+      VAULT_ADDR: "http://vault-server:8200"
+      SKIP_SETCAP: "true"
+    volumes:
+      - /Users/admin/.vault-approle/buildarr:/vault/approle:ro
+      - /Users/admin/.vault-agent-secrets/buildarr:/vault/secrets
+      - ../docker/vault-agent-buildarr/agent.hcl:/vault/config/agent.hcl:ro
+      - ../docker/vault-agent-buildarr/credentials.env.tmpl:/vault/agent-config/credentials.env.tmpl:ro
+    command: agent -config=/vault/config/agent.hcl
+    networks:
+      - control-center-net
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+
+  # ── Buildarr — config-as-code for arr-stack ──────────────────────────────────
+  # Runs `buildarr run` (one-shot update) then exits. Invoked via launchd plist
+  # (com.iap.buildarr-sync) on schedule; also available for manual `docker compose run`.
+  #
+  # Managed instances: Radarr (full coverage) + Prowlarr (applications-only).
+  # Out of scope: Sonarr (v4 plugin not yet upstream), Sportarr (no plugin).
+  # See config/arr-stack/buildarr/buildarr.yml for declarative config.
+  #
+  # Credential injection: buildarr.yml uses ${VAR} placeholders. The entrypoint
+  # sources credentials.env (Vault-rendered), then Python-substitutes placeholders
+  # into a temp file at /tmp/buildarr-rendered.yml before calling Buildarr.
+  # Zero credential values written to repo or to the container filesystem beyond /tmp.
+  buildarr:
+    image: callum027/buildarr:latest
+    container_name: buildarr
+    restart: "no"
+    depends_on:
+      vault-agent-buildarr:
+        condition: service_completed_successfully
+    volumes:
+      - /Users/admin/repos/integrated-ai-platform/config/arr-stack/buildarr:/config:ro
+      - /Users/admin/.vault-agent-secrets/buildarr:/vault/secrets:ro
+    entrypoint:
+      - sh
+      - -c
+      - |
+        set -eu
+        set -a && . /vault/secrets/credentials.env && set +a
+        python3 -c "
+        import os, sys, re
+        src = open('/config/buildarr.yml').read()
+        rendered = re.sub(r'\$\{([A-Z_]+)\}', lambda m: os.environ[m.group(1)], src)
+        open('/tmp/buildarr-rendered.yml', 'w').write(rendered)
+        "
+        exec buildarr "$@" /tmp/buildarr-rendered.yml
+      - --
+    # Default command: run (live apply). For syntax check: test-config
+    command: ["run"]
+    networks:
+      - control-center-net
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    extra_hosts:
+      - "vault-server:192.168.10.145"

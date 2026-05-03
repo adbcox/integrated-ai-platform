@@ -149,6 +149,14 @@ deliverable table with a fresh D-NN-MM ID.
 - **Migration script as reference pattern:** `scripts/d-17-21-dns-migration.sh` is the worked example for any future cross-daemon record migration (snapshot → add → reconfigure → validate-pre-flip → disable-source → port-flip → validate-post-flip; halt on any error).
 - **Chronicle:** `docs/architecture-facts/opnsense-dns-authority.md` (now VERIFIED, no longer provisional); `docs/architecture-facts/integration-audit-doctrine.md` Finding 9; KI-009 RESOLVED at D-17-21 close.
 
+### Buildarr Config-as-Code Doctrine (D-17-44)
+- **Buildarr is the canonical config authority for Radarr and Prowlarr.** Declarative state lives in `config/arr-stack/buildarr/buildarr.yml`. Any manual UI change to Radarr/Prowlarr settings (quality profiles, custom formats, indexer config, application URLs) that is not reflected in that YAML will be reverted on the next `buildarr-run.sh` execution. To make a permanent change: edit the YAML, commit it, then run `scripts/buildarr-run.sh`.
+- **Scope (as of D-17-44, 2026-05-03):** Radarr (full coverage) + Prowlarr applications-only. Sonarr v4.0.17 and Sportarr are out of scope — Buildarr plugin does not support them yet. They remain under reactive/manual management. Prowlarr indexer definitions and download clients are also out of scope (plugin schema gap).
+- **Buildarr does NOT manage Vault secrets.** Credentials remain in Vault; Buildarr reads them via Vault Agent sidecar (AppRole `buildarr`, policy `config/vault-policies/buildarr-policy.hcl`). The `${RADARR_API_KEY}` / `${PROWLARR_API_KEY}` placeholders in `buildarr.yml` are substituted at runtime by `scripts/buildarr-run.sh`.
+- **Run schedule:** daily at 03:00 via launchd `com.iap.buildarr-sync`. Manual run: `scripts/buildarr-run.sh`. Syntax check only (no mutations): `scripts/buildarr-run.sh --check`. Heartbeat: `/Users/admin/.platform-logs/buildarr-sync.heartbeat`.
+- **Drift detection workflow:** after any manual arr-stack session, run `buildarr radarr dump-config` + `buildarr prowlarr dump-config` against the live instances and diff against the committed YAML. Any diff IS the empirical drift record (F11 first worked example: D-17-38 URL drift would have been detected and reverted automatically).
+- **Chronicle:** `docs/architecture-facts/integration-audit-doctrine.md` Finding 11.
+
 ### Container Hardening
 - `cap_drop: [ALL]` with minimal `cap_add` per workload class.
 - `security_opt: [no-new-privileges:true]` universally.
