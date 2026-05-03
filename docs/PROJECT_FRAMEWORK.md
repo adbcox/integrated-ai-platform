@@ -307,6 +307,22 @@ mechanically eliminates this archaeology pattern. Spec:
 `docs/architecture-patterns/service-registry-mvp.md`. Builder code:
 `scripts/platform-registry/lib/`. Closed by D-17-29.
 
+**Sub-doctrine (D-17-26 close, Finding DD): container env inspection.**
+When inspecting container environment for credential or runtime-set
+variables, query `/proc/1/environ` rather than spawning a fresh shell
+via `docker exec env`. Image-baked `Config.Env` ≠ runtime PID 1
+environ when entrypoint scripts source secret files. Correct check:
+
+```
+docker exec <container> sh -c 'tr "\0" "\n" < /proc/1/environ | grep ^VAR='
+```
+
+D-17-14 WP-06 close ("`OPENAI_API_KEY` effectively empty") was a
+diagnostic error caused by `docker exec env`-style inspection; D-17-26
+was scoped on that wrong premise and closed in 25 min as
+no-fix-needed once the correct check was applied. Apply this pattern
+before reporting a credential as missing/empty.
+
 ---
 
 ## 4. Surface format template
@@ -470,7 +486,7 @@ Deliverable table:
 | D-17-23: Capability self-knowledge + workaround surfacing | DONE | dcc2ca4 |
 | D-17-25: macOS alignment + RDMA hypothesis test (D-17-14 follow-on) | DONE | 7bdb537 — Outcome C: alignment necessary but not sufficient; Findings U+V surfaced. Reproducer evidence at `docs/phase-17/d-17-25-wp-05-multinode-evidence/`; chronicle in `docs/architecture-facts/exo-cluster.md` (Findings U, V + updated "Not operational" + revisit triggers); runbook in `docs/runbooks/exo-cluster-operations.md` updated. |
 | D-17-29: Service Registry MVP — port-discovery archaeology unlock + autonomous-coding substrate | DONE | f47171f — spec at `docs/architecture-patterns/service-registry-mvp.md` (c34d48f); builder at `scripts/platform-registry/lib/` (compose_parser 655764a, docker_inspector 048a047, caddy_reader 8b2501a, credential_finder e8da839, registry_writer 342217b); refresh entrypoint + launchd at a63043f; doctrine D#25 + CLAUDE.md at f47171f. 40/40 integration tests; full refresh in 1.0s producing 76 services + 13 runtime orphans + 31 caddy routes + 125 credential files (metadata-only per Finding ZZ). Spec §10 success criteria all green: canonical seal-vault host_port=8201 query verified. Closes Finding CC. KNOWN: launchd plist installed but not registered (Finding Y; will load on next login). |
-| D-17-26: Open WebUI exo surface via Vault Agent sidecar (existing-but-broken) | IN PROGRESS | prereqs D-17-14 + D-17-29 closed; sidecar at `~/.vault-agent-secrets/open-webui/` exists but renders empty `OPENAI_API_KEY`; demo Saturday 2026-05-09 needs operator-facing chat surface; closes Finding S Open WebUI deferral from D-17-14 WP-06. First deliverable executing under D#25 registry-consultation doctrine. |
+| D-17-26: Open WebUI exo surface via Vault Agent sidecar (existing-but-broken) | DONE | no-fix-needed-with-doctrine-finding. Plumbing was operational the whole time: Open WebUI PID 1 environ has `OPENAI_API_KEY` length=67, byte-identical fingerprint to litellm's `LITELLM_MASTER_KEY` (`439bcdb691d6` == `439bcdb691d6`); `GET http://litellm-gateway:4000/v1/models` from open-webui with bearer auth → HTTP 200 with `exo-qwen-coder-7b` listed. The broken-state premise was a diagnostic error (Finding DD: `docker exec env` reads image `Config.Env`, not PID 1 runtime environ). Closes Finding S; surfaces Finding DD; doctrine added to D#25 corpus. End-to-end demo path requires exo bring-up (separate provisional scope D-17-30). |
 
 ID-reservation note: D-17-22 (multi-session role + intake architecture)
 is RESERVED but not yet framework-authored. Discussed in a prior

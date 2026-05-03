@@ -84,6 +84,7 @@ This is the "AI workstation" or "platform". Pre-2026 alternative terminology (th
 - If the registry is stale (`last-refresh.json` older than 30 minutes), run `scripts/platform-registry/refresh.sh` before proceeding.
 - **Failure to consult before guessing is a doctrine violation.** Tonight's seal-vault recovery (D-17-28) cost ~3 hours because AI guessed port 8200 instead of looking up 8201. The registry exists to eliminate that failure mode permanently.
 - Spec: `docs/architecture-patterns/service-registry-mvp.md`. Builder code: `scripts/platform-registry/lib/`.
+- **Sub-doctrine (D-17-26 close, Finding DD) — container env inspection:** when inspecting container environment for credential or runtime-set variables, query `/proc/1/environ` rather than spawning a fresh shell via `docker exec env`. Image-baked `Config.Env` ≠ runtime PID 1 environ when entrypoint scripts source secret files. Correct check: `docker exec <container> sh -c 'tr "\0" "\n" < /proc/1/environ | grep ^VAR='`. Apply BEFORE reporting a credential as missing/empty.
 
 ### Container Hardening
 - `cap_drop: [ALL]` with minimal `cap_add` per workload class.

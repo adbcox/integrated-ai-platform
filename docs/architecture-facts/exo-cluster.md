@@ -217,9 +217,10 @@ placement.
 ## Lessons learned — InvenTree-pattern findings
 
 D-17-14 surfaced **19 findings** matching the InvenTree pattern,
-with three more (T, U, V) added during D-17-25 and eight more
+with three more (T, U, V) added during D-17-25, eight more
 (W, X, Y, Z, ZZ, AA, BB, CC) added during the D-17-28 recovery
-cascade — **30 findings total** across the deliverable family:
+cascade, and one more (DD) added during D-17-26 close —
+**31 findings total** across the deliverable family:
 *"state appears established but working-system substrate isn't
 actually present."* This density is itself a deliverable-level
 lesson: composite supply chains (upstream tool + custom forks +
@@ -230,7 +231,7 @@ accumulate latent gaps that surface only when a new consumer
 exercises a previously-untested path or a routine operation
 (OS upgrade, restart) traverses the dependency cascade.
 
-The 30 findings, grouped by pattern:
+The 31 findings, grouped by pattern:
 
 ### Toolchain prep (A–G)
 
@@ -312,7 +313,18 @@ The 30 findings, grouped by pattern:
   local models. Wiring requires its own Vault-Agent-sidecar
   deliverable (provisional D-17-26). Meta-instance — extends the
   "appears established but isn't" pattern outside the exo install
-  itself.
+  itself. **RESOLVED D-17-26 close (commit-of-this-doctrine):**
+  the wiring was actually operational the whole time. The
+  D-17-14 WP-06 close diagnostic ("`OPENAI_API_KEY` length=1") was
+  itself an InvenTree-pattern misdiagnosis — see Finding DD. PID 1
+  environ shows `OPENAI_API_KEY` length=67, byte-identical
+  fingerprint to litellm's `LITELLM_MASTER_KEY` (sha256-prefix
+  `439bcdb691d6` == `439bcdb691d6`), and `GET
+  http://litellm-gateway:4000/v1/models` from the open-webui
+  container with bearer auth returns HTTP 200 with the
+  `exo-qwen-coder-7b` model listed. Finding S's premise was right
+  ("appears established but isn't") but applied to itself: the
+  diagnostic showed the path broken when the path was operational.
 
 ### Asset-management substrate gap (T) — surfaced D-17-25
 
@@ -519,6 +531,46 @@ The 30 findings, grouped by pattern:
   Service registry is most urgent because every recovery,
   upgrade, and debug session depends on it.
 
+### Container env-inspection diagnostic trap (DD) — surfaced D-17-26 close
+
+- **DD** — Container env-inspection diagnostic trap. Running
+  `docker exec <container> sh -c 'echo $VAR'` returns the value
+  from `Config.Env` (image-baked + compose-passed env), NOT from
+  PID 1's actual runtime environ. When entrypoint scripts source
+  `credentials.env` (or any file) at runtime, those values land
+  in PID 1's environ but NOT in `Config.Env`. The correct check
+  is:
+
+  ```
+  docker exec <container> sh -c 'tr "\0" "\n" < /proc/1/environ | grep ^VAR='
+  ```
+
+  D-17-14 WP-06 close ("`OPENAI_API_KEY` effectively empty,
+  length=1") was a diagnostic error caused by this trap. D-17-26
+  was scoped on that wrong premise as a 2h diagnose-and-fix
+  deliverable; the actual investigation took ~25 min and produced
+  zero fixes because the plumbing was operational the whole time.
+  Sister finding to W (colima `_lima` path) and X (UID-502
+  mapping) — all three are "wrong path checked" diagnostic
+  failures, the same pattern as Finding BB ("misdiagnosis-via-
+  tool-blame") but pre-blame: the misdiagnosis happens at the
+  observation step, not at the attribution step.
+
+  **Doctrine** (added to D#25 corpus): "When inspecting container
+  environment for credential or runtime-set variables, query
+  `/proc/1/environ` rather than spawning a fresh shell via
+  `docker exec env`. Image-baked `Config.Env` ≠ runtime PID 1
+  environ when entrypoint scripts source secret files." Apply
+  before reporting a credential as missing/empty.
+
+  Operational corollary for the registry: `credential_finder.py`
+  surfaces credentials.env file metadata (size, fingerprint,
+  classification) — a future enhancement could also probe PID 1
+  environ via `docker exec` and report the *delta* between
+  on-disk credentials.env keys and PID 1 environ keys, catching
+  Finding-DD-class breakage proactively. Out of scope for D-17-29
+  MVP; tracked here as a follow-on idea.
+
 ### Doctrine-shaping finding (codified as D#24)
 
 The recurring "two-install-options, defaulted-conservative, paid-
@@ -536,9 +588,14 @@ set on developer toolchain decisions** (see PROJECT_FRAMEWORK §3.5).
   `docs/phase-17/d-17-25-wp-05-multinode-evidence/`.
 - **D-17-24** — CLAUDE.md staleness fix (Finding L). Reduces
   resumed-session prioritization drift.
-- **D-17-26 (provisional)** — Vault-Agent sidecar for open-webui
-  wiring `OPENAI_API_KEY` from Vault (Finding S). Required before
-  Open WebUI can route to exo or any other litellm-routed model.
+- **D-17-26** — Vault-Agent sidecar for open-webui wiring
+  `OPENAI_API_KEY` from Vault (Finding S). **CLOSED no-fix-needed
+  with doctrine finding:** the wiring was operational the whole
+  time; the broken-state premise was a Finding-DD diagnostic
+  error. Open WebUI → litellm → litellm-route end-to-end auth
+  verified HTTP 200. End-to-end demo path (Open WebUI → litellm →
+  exo) still requires exo cluster bring-up, which is a separate
+  scope (provisional D-17-30).
 - **D-17-27 (provisional, post-D-17-25)** — File upstream issue
   with reproducer evidence covering Findings U + V. ~30 min
   scoped follow-up; may be merged into the asset-management
