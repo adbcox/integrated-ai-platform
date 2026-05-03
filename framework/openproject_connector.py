@@ -39,6 +39,13 @@ class RateLimitError(Exception):
     raised on HTTP 429 if the operator ever turns rate limiting on."""
 
 
+class CategoryNotFoundError(Exception):
+    """Raised by ensure_label() when the requested category is absent
+    from the project. OpenProject API v3 categories are read-only — the
+    operator must create the category via the UI before sync can attach
+    it. See ensure_label() docstring for D-17-31 audit context."""
+
+
 def _requests():
     import requests
     return requests
@@ -354,14 +361,35 @@ class OpenProjectAPI:
         return None
 
     def ensure_label(self, name: str) -> int:
-        """Plane-era name; here it returns the project-category id."""
+        """Plane-era name; here it returns the project-category id.
+
+        OpenProject API v3 categories are read-only — there is no
+        documented POST/PATCH/DELETE endpoint for the categories
+        resource (verified against
+        https://www.openproject.org/docs/api/endpoints/categories/
+        2026-05-03; D-17-31 connector audit). Categories must be
+        pre-created via Project settings → Work package categories
+        in the OpenProject UI. This method now raises
+        CategoryNotFoundError instead of returning a NoneType crash
+        from a 404 POST.
+
+        Original code attempted POST /api/v3/projects/<id>/categories,
+        which does not exist; the call returned None and the
+        downstream `int(created["id"])` crashed with
+        `'NoneType' object is not subscriptable`. Almost certainly
+        copied from the Plane connector pattern during D-17-04
+        migration without verification — Plane has a category
+        write endpoint, OpenProject does not.
+        """
         cid = self.get_category_id(name)
         if cid:
             return cid
-        # iap-sync has manage_categories per its role definition
-        created = self._post(self._proj_url("/categories"), {"name": name[:30]})
-        _cache.invalidate(f"categories:{self._project_id_resolved()}")
-        return int(created["id"])
+        raise CategoryNotFoundError(
+            f"OpenProject category {name!r} not found in project "
+            f"{self.project_identifier!r}. OpenProject API v3 cannot "
+            f"create categories — create it manually via "
+            f"Project settings → Work package categories, then retry."
+        )
 
     def ensure_labels_bulk(self, names: list[str]) -> dict[str, int]:
         existing = {c["name"].lower(): c["id"] for c in self.list_categories()}
@@ -414,13 +442,37 @@ class OpenProjectAPI:
         description: str = "",
         external_id: str | None = None,
     ) -> dict:
-        # external_id collapses to name for OP versions
+        # OpenProject API v3: versions are created at the *root* endpoint
+        # `POST /api/v3/versions` with a `_links.definingProject` reference;
+        # there is no project-scoped create endpoint (the project-scoped
+        # path returns 404). Verified against
+        # https://www.openproject.org/docs/api/endpoints/versions/
+        # 2026-05-03; D-17-31 connector audit. The original code path
+        # called `_post(_proj_url("/versions"), …)` which silently
+        # returned None and crashed on `int(created["id"])` —
+        # the same pattern as the broken ensure_label() above. Likely
+        # copied from the Plane connector's nested-resource convention
+        # during D-17-04 migration.
+        #
+        # Required by docs (defensive defaults applied here): name,
+        # _links.definingProject, status, sharing. external_id collapses
+        # to name for OP versions (no native external_id field).
+        proj_id = self._project_id_resolved()
         payload = {
             "name": (external_id or name)[:60],
             "description": {"raw": description},
+            "status": "open",
+            "sharing": "none",
+            "_links": {
+                "definingProject": {"href": f"/api/v3/projects/{proj_id}"},
+            },
         }
-        created = self._post(self._proj_url("/versions"), payload)
-        _cache.invalidate(f"versions:{self._project_id_resolved()}")
+        created = self._post(self._url("/versions"), payload)
+        if not created:
+            raise RuntimeError(
+                f"OpenProject create_module returned no body for {name!r}"
+            )
+        _cache.invalidate(f"versions:{proj_id}")
         return {
             "id": int(created["id"]),
             "name": created["name"],

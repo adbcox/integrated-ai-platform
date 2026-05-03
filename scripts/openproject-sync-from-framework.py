@@ -62,13 +62,21 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT))
+sys.path.insert(0, str(REPO_ROOT / "scripts" / "lib"))
 
 from framework.openproject_connector import (  # type: ignore  # noqa: E402
     OpenProjectAPI,
     RateLimitError,
 )
+from roadmap_parser import (  # type: ignore  # noqa: E402
+    RoadmapItem,
+    parse_roadmap,
+)
 
 FRAMEWORK_MD = REPO_ROOT / "docs" / "PROJECT_FRAMEWORK.md"
+ROADMAP_MD = REPO_ROOT / "docs" / "PHASE_ROADMAP.md"
+
+AUTONOMOUS_CODING_CATEGORY = "autonomous-coding"
 
 OPENPROJECT_URL = "http://192.168.10.145:8086"
 PROJECT_IDENTIFIER = "roadmap"
@@ -251,6 +259,24 @@ def _phase_description_html(p: Phase) -> str:
     )
 
 
+def _roadmap_description_html(it: RoadmapItem) -> str:
+    flag = (
+        "<p><strong>Autonomous-coding capability flag: yes.</strong></p>"
+        if it.autonomous_coding else ""
+    )
+    return (
+        f"<p><strong>Phase {it.phase}.{it.sub_block} roadmap item "
+        f"(ord {it.ordinal}).</strong> "
+        f"This work package mirrors a scope bullet from "
+        f"<code>docs/PHASE_ROADMAP.md</code> §{it.phase}.{it.sub_block} "
+        f"and is rewritten by "
+        f"<code>scripts/openproject-sync-from-framework.py</code> "
+        f"(D-17-31). Edit the markdown roadmap, not this WP.</p>"
+        f"<p>Scope: {_html_escape(it.scope_text)}</p>"
+        f"{flag}"
+    )
+
+
 def _html_escape(s: str) -> str:
     return (
         s.replace("&", "&amp;")
@@ -262,9 +288,10 @@ def _html_escape(s: str) -> str:
 @dataclass
 class PlanRow:
     kind: str          # "module" | "phase-issue" | "deliverable-issue"
+                       # | "roadmap-issue" | "phase17-dedup"
     extid: str
     label: str
-    action: str        # "create" | "update" | "no-op"
+    action: str        # "create" | "update" | "no-op" | "close"
     drift: dict
 
 
@@ -515,34 +542,287 @@ def sync(
     return plan, changed
 
 
+# ── Roadmap-item sync (D-17-31) ──────────────────────────────────────────────
+
+def sync_roadmap(
+    api: OpenProjectAPI,
+    items: list[RoadmapItem],
+    dry_run: bool,
+) -> tuple[list[PlanRow], int]:
+    """Sync PHASE_ROADMAP.md scope items as RM-NN-X-NNN work packages.
+
+    Each item is associated with its phase version (Phase-16 / Phase-18)
+    if that version exists. Autonomous-coding items get the
+    `autonomous-coding` category; non-flagged items get no category.
+    Status: NOT STARTED scope items map to OpenProject `Backlog`.
+    """
+    states = api.ensure_states()
+    backlog_state_id = states.get("Backlog")
+    if backlog_state_id is None:
+        print("WARN: Backlog state not found; roadmap sync will skip writes.",
+              file=sys.stderr)
+        return [], 0
+
+    # Resolve the autonomous-coding category (lookup-only; OpenProject
+    # API v3 has no documented category-create endpoint, so the category
+    # must pre-exist in the project. If absent, we fall back to encoding
+    # the flag in the WP description (see _roadmap_description_html).
+    auto_cat_id = api.get_category_id(AUTONOMOUS_CODING_CATEGORY)
+    if auto_cat_id is None:
+        print(
+            f"NOTE: category {AUTONOMOUS_CODING_CATEGORY!r} not found in "
+            f"OpenProject project — flag will be encoded in WP description "
+            f"only. Operator: create the category via "
+            f"Project settings → Work package categories to enable "
+            f"category-based filtering.",
+            file=sys.stderr,
+        )
+
+    # Resolve phase modules for version-association. Framework sync owns
+    # versions for phases in §9; for phases that exist only in
+    # PHASE_ROADMAP.md (e.g. Phase 18 before its first deliverable lands
+    # in §9), we create the version here so RM items get a swimlane.
+    module_id_for_phase: dict[int, int | None] = {}
+    module_links: dict[int, set[int]] = {}
+    for phase_n in {it.phase for it in items}:
+        phase_extid = f"Phase-{phase_n:02d}"
+        m = api.get_module_by_external_id(phase_extid)
+        if m is None and not dry_run:
+            try:
+                created, _ = api.ensure_module(
+                    external_id=phase_extid,
+                    name=phase_extid,
+                    description=f"Phase {phase_n} (roadmap-only; no §9 deliverables yet)",
+                )
+                m = {"id": created["id"]}
+            except Exception as exc:
+                print(f"WARN: could not create version {phase_extid}: {exc}",
+                      file=sys.stderr)
+        if m is not None:
+            module_id_for_phase[phase_n] = m["id"]
+            try:
+                module_links[phase_n] = set(api.list_module_issues(m["id"]))
+            except RateLimitError:
+                module_links[phase_n] = set()
+        else:
+            module_id_for_phase[phase_n] = None
+            module_links[phase_n] = set()
+
+    # Index existing WPs by external_id once, for diff.
+    all_issues = api.list_all_issues()
+    by_extid: dict[str, dict] = {
+        (i.get("external_id") or ""): i
+        for i in all_issues
+        if i.get("external_id")
+    }
+
+    plan: list[PlanRow] = []
+
+    for it in items:
+        want_name = f"[{it.external_id}] {it.title}"
+        want_desc = _roadmap_description_html(it)
+
+        live = by_extid.get(it.external_id)
+        if live is None:
+            plan.append(PlanRow(
+                kind="roadmap-issue",
+                extid=it.external_id,
+                label=want_name + (" [auto]" if it.autonomous_coding else ""),
+                action="create",
+                drift={"state": backlog_state_id, "name": want_name},
+            ))
+            if not dry_run:
+                try:
+                    label_ids = [auto_cat_id] if (it.autonomous_coding and auto_cat_id) else None
+                    created = api.create_issue(
+                        name=want_name,
+                        description=want_desc,
+                        state_id=backlog_state_id,
+                        priority="medium",
+                        external_id=it.external_id,
+                        label_ids=label_ids,
+                    )
+                    mid = module_id_for_phase.get(it.phase)
+                    if mid:
+                        api.add_issues_to_module(mid, [created["id"]])
+                        module_links[it.phase].add(created["id"])
+                except RateLimitError:
+                    print(f"RATE-LIMIT on {it.external_id} — sleeping {BACKOFF_429}s")
+                    time.sleep(BACKOFF_429)
+                time.sleep(SLEEP_BETWEEN)
+            continue
+
+        # Update path: only diff name + description. Status drift is
+        # operator-owned (they may have moved an item from Backlog to
+        # In Progress); we don't overwrite it.
+        drift: dict = {}
+        if (live.get("name") or "") != want_name:
+            drift["name"] = want_name
+        want_md = _html_to_markdown(want_desc)
+        have_md = live.get("description_raw") or ""
+        if _normalise_md(have_md) != _normalise_md(want_md):
+            drift["description_html"] = want_desc
+
+        if drift:
+            plan.append(PlanRow(
+                kind="roadmap-issue",
+                extid=it.external_id,
+                label=want_name,
+                action="update",
+                drift=drift,
+            ))
+            if not dry_run:
+                try:
+                    api.update_issue(live["id"], drift)
+                except RateLimitError:
+                    print(f"RATE-LIMIT on {it.external_id} — sleeping {BACKOFF_429}s")
+                    time.sleep(BACKOFF_429)
+                time.sleep(SLEEP_BETWEEN)
+        else:
+            plan.append(PlanRow(
+                kind="roadmap-issue",
+                extid=it.external_id,
+                label=want_name,
+                action="no-op",
+                drift={},
+            ))
+
+        mid = module_id_for_phase.get(it.phase)
+        if mid and not dry_run and live["id"] not in module_links[it.phase]:
+            try:
+                api.add_issues_to_module(mid, [live["id"]])
+                module_links[it.phase].add(live["id"])
+            except RateLimitError:
+                pass
+            time.sleep(SLEEP_BETWEEN)
+
+    changed = sum(1 for r in plan if r.action != "no-op")
+    return plan, changed
+
+
+# ── Phase 17 shorthand dedup (D-17-31 one-shot) ──────────────────────────────
+
+# The original 17.A..17.T shorthand WPs were imported pre-D-17-04, before
+# the canonical D-17-NN identifier convention. Both are now in
+# OpenProject. We close the shorthand ones (status=Done) with a
+# description note pointing at the canonical ID. We do NOT delete —
+# preserves history of any operator comments.
+
+PHASE17_SHORTHAND_RE = re.compile(r"^17\.[A-T]$")
+
+PHASE17_SHORTHAND_TO_CANONICAL = {
+    f"17.{chr(ord('A') + i)}": f"D-17-{i + 1:02d}" for i in range(20)
+}
+
+
+def dedup_phase17_shorthand(api: OpenProjectAPI, dry_run: bool) -> list[PlanRow]:
+    states = api.ensure_states()
+    done_id = states.get("Done")
+    plan: list[PlanRow] = []
+
+    for issue in api.list_all_issues():
+        extid = issue.get("external_id") or ""
+        if not PHASE17_SHORTHAND_RE.match(extid):
+            continue
+        canonical = PHASE17_SHORTHAND_TO_CANONICAL.get(extid, "(unknown)")
+        already_closed = (issue.get("state_name") or "").lower() in ("done", "closed")
+        if already_closed:
+            plan.append(PlanRow(
+                kind="phase17-dedup",
+                extid=extid,
+                label=f"{extid} → {canonical} (already closed)",
+                action="no-op",
+                drift={},
+            ))
+            continue
+
+        new_desc = (
+            f"<p><strong>SUPERSEDED.</strong> This shorthand WP was the "
+            f"pre-D-17-04 identifier for what is now <code>{canonical}</code>. "
+            f"Closed as part of D-17-31 dedup. See <code>{canonical}</code> "
+            f"for the canonical work package; manual operator comments on this "
+            f"WP are preserved here.</p>"
+        )
+        plan.append(PlanRow(
+            kind="phase17-dedup",
+            extid=extid,
+            label=f"{extid} → close (superseded by {canonical})",
+            action="close",
+            drift={"state": done_id, "description_html": new_desc},
+        ))
+        if not dry_run and done_id:
+            try:
+                api.update_issue(issue["id"], {
+                    "state": done_id,
+                    "description_html": new_desc,
+                })
+            except RateLimitError:
+                print(f"RATE-LIMIT on dedup {extid} — sleeping {BACKOFF_429}s")
+                time.sleep(BACKOFF_429)
+            time.sleep(SLEEP_BETWEEN)
+
+    return plan
+
+
 # ── CLI ──────────────────────────────────────────────────────────────────────
 
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--dry-run", action="store_true", help="Plan only; exit 2 if changes pending")
     ap.add_argument("--phase", type=int, default=None, help="Limit to a single phase")
+    ap.add_argument("--include-roadmap", action="store_true",
+                    help="Also sync PHASE_ROADMAP.md scope items (Phase 16/18 sub-blocks). D-17-31.")
+    ap.add_argument("--roadmap-only", action="store_true",
+                    help="Skip framework sync; only sync roadmap. Useful for fast iteration.")
+    ap.add_argument("--dedup-phase17", action="store_true",
+                    help="One-shot: close 17.A–17.T shorthand WPs as superseded by D-17-NN canonical IDs.")
     args = ap.parse_args()
 
     print(f"OpenProject: {OPENPROJECT_URL}  project={PROJECT_IDENTIFIER}")
     print(f"Mode: {'DRY-RUN' if args.dry_run else 'APPLY'}")
     if args.phase is not None:
         print(f"Filter: phase {args.phase} only")
+    if args.include_roadmap or args.roadmap_only:
+        print(f"Roadmap sync: ON  (source: {ROADMAP_MD.relative_to(REPO_ROOT)})")
+    if args.dedup_phase17:
+        print("Phase-17 dedup: ON  (close 17.A–17.T as superseded)")
     print()
 
     if not FRAMEWORK_MD.is_file():
         sys.exit(f"ERROR: {FRAMEWORK_MD} not found")
 
-    phases = parse_framework(FRAMEWORK_MD)
-    if args.phase is not None:
-        phases = [p for p in phases if p.number == args.phase]
-    if not phases:
-        sys.exit("ERROR: no phases parsed from PROJECT_FRAMEWORK.md")
+    if not args.roadmap_only:
+        phases = parse_framework(FRAMEWORK_MD)
+        if args.phase is not None:
+            phases = [p for p in phases if p.number == args.phase]
+        if not phases:
+            sys.exit("ERROR: no phases parsed from PROJECT_FRAMEWORK.md")
 
-    total_d = sum(len(p.deliverables) for p in phases)
-    print(f"Parsed {len(phases)} phase(s), {total_d} deliverable(s)")
-    for p in phases:
-        print(f"  Phase {p.number:>2}: {len(p.deliverables)} deliverable(s)  — {p.header}")
-    print()
+        total_d = sum(len(p.deliverables) for p in phases)
+        print(f"Parsed {len(phases)} phase(s), {total_d} deliverable(s) from framework")
+        for p in phases:
+            print(f"  Phase {p.number:>2}: {len(p.deliverables)} deliverable(s)  — {p.header}")
+        print()
+    else:
+        phases = []
+
+    roadmap_items: list[RoadmapItem] = []
+    if args.include_roadmap or args.roadmap_only:
+        if not ROADMAP_MD.is_file():
+            sys.exit(f"ERROR: {ROADMAP_MD} not found")
+        sub_blocks = parse_roadmap(ROADMAP_MD)
+        for sb in sub_blocks:
+            if args.phase is not None and sb.phase != args.phase:
+                continue
+            roadmap_items.extend(sb.items)
+        auto_ct = sum(1 for it in roadmap_items if it.autonomous_coding)
+        print(f"Parsed {len(roadmap_items)} roadmap item(s), {auto_ct} autonomous-codable")
+        for sb in sub_blocks:
+            if args.phase is not None and sb.phase != args.phase:
+                continue
+            ac = sum(1 for it in sb.items if it.autonomous_coding)
+            print(f"  Phase {sb.phase}.{sb.letter}: {len(sb.items)} item(s) ({ac} auto)  — {sb.heading}")
+        print()
 
     token = fetch_token()
     os.environ["OPENPROJECT_API_TOKEN"] = token
@@ -553,20 +833,35 @@ def main() -> int:
     if not api.health_check():
         sys.exit("ERROR: OpenProject health-check failed")
 
+    full_plan: list[PlanRow] = []
+    total_changed = 0
+
     try:
-        plan, changed = sync(api, phases, dry_run=args.dry_run)
+        if not args.roadmap_only:
+            plan, changed = sync(api, phases, dry_run=args.dry_run)
+            full_plan.extend(plan)
+            total_changed += changed
+        if args.include_roadmap or args.roadmap_only:
+            rplan, rchanged = sync_roadmap(api, roadmap_items, dry_run=args.dry_run)
+            full_plan.extend(rplan)
+            total_changed += rchanged
+        if args.dedup_phase17:
+            dplan = dedup_phase17_shorthand(api, dry_run=args.dry_run)
+            full_plan.extend(dplan)
+            total_changed += sum(1 for r in dplan if r.action != "no-op")
     except RateLimitError as exc:
         print(f"\nERROR: OpenProject rate-limited ({exc}). Wait ~60s and retry.", file=sys.stderr)
         return 3
 
-    by_action: dict[str, int] = {"create": 0, "update": 0, "no-op": 0}
-    for row in plan:
+    by_action: dict[str, int] = {"create": 0, "update": 0, "no-op": 0, "close": 0}
+    for row in full_plan:
         by_action[row.action] = by_action.get(row.action, 0) + 1
 
     print("Plan:")
-    for row in plan:
-        icon = {"create": "+", "update": "~", "no-op": "."}[row.action]
-        if row.action == "update":
+    icon_for = {"create": "+", "update": "~", "no-op": ".", "close": "x"}
+    for row in full_plan:
+        icon = icon_for.get(row.action, "?")
+        if row.action == "update" or row.action == "close":
             keys = ",".join(sorted(row.drift.keys()))
             print(f"  {icon} {row.kind:<18} {row.extid:<14} drift=[{keys}]  {row.label}")
         else:
@@ -574,12 +869,12 @@ def main() -> int:
     print()
     print(
         f"Summary: create={by_action['create']}  update={by_action['update']}  "
-        f"no-op={by_action['no-op']}"
+        f"close={by_action['close']}  no-op={by_action['no-op']}"
     )
 
     if args.dry_run:
-        if changed:
-            print(f"\nDRY-RUN: {changed} change(s) pending — exit 2")
+        if total_changed:
+            print(f"\nDRY-RUN: {total_changed} change(s) pending — exit 2")
             return 2
         print("\nDRY-RUN: clean — exit 0")
         return 0

@@ -203,12 +203,43 @@ config/mac_studio/          — Mac Studio M3 node config
 config/qnap/                — QNAP NAS config
 ```
 
-OpenProject (D-17-04) is the **PM substrate / operational mirror** of
-the framework's §9 table — synced one-way from PROJECT_FRAMEWORK.md
-via `scripts/openproject-sync-from-framework.py`. Manual edits in
-the OpenProject UI to synced WPs are overwritten on the next run; the
-markdown is canonical, the UI is for comments and operational links.
-Plane CE was retired 2026-05-01.
+OpenProject (D-17-04) is the **PM substrate / operational mirror** for
+two complementary scopes, synced one-way by
+`scripts/openproject-sync-from-framework.py`:
+
+1. **Framework deliverables** (`D-NN-MM`) — sourced from
+   `docs/PROJECT_FRAMEWORK.md` §9. Status is sync-managed; manual
+   status edits in the OpenProject UI are overwritten on next run.
+2. **Roadmap scope items** (`RM-<phase>-<sub>-<NNN>`, e.g. `RM-16-A-001`,
+   `RM-18-D-001`) — sourced from `docs/PHASE_ROADMAP.md` §16/§18 sub-block
+   `**Scope:**` bullets via `scripts/lib/roadmap_parser.py` (D-17-31).
+   Status is **operator-owned** (sync only creates / refreshes title
+   and description; never overwrites status drift). Items get the
+   `autonomous-coding` category when their scope text matches the
+   buildable-work heuristic (scripts/, services, routes, endpoints,
+   dashboards, plugins, harnesses, agents, MCP, prompt libraries,
+   provenance, capabilities, inference) and don't match the
+   judgment-work veto (audit, review, evaluation, decision, ADR-…).
+
+For both scopes the markdown is canonical; the UI is for comments and
+operational links. Plane CE was retired 2026-05-01.
+
+**"What's next?" doctrine (D-17-31):** never answer this from
+PROJECT_FRAMEWORK.md §9 alone. The framework table covers the *current
+phase's* deliverables only — it intentionally excludes long-horizon
+roadmap items (Phase 18 health/fitness, Linux migration, platform
+hardening) and Phase-16 carry-overs not promoted into the active phase.
+Always also consult OpenProject's queue (filter by status=Backlog/In
+Progress, optionally category=autonomous-coding) before recommending
+work. Convenience: `python3 scripts/openproject-sync-from-framework.py
+--query-backlog [--autonomous-coding-only]`.
+
+**Sync flags (D-17-31):**
+- `--include-roadmap` — include `RM-*` items in normal framework run
+- `--roadmap-only` — sync just the roadmap section (skip §9)
+- `--dedup-phase17` — one-shot: close `17.A`–`17.T` shorthand WPs as
+  superseded by their `D-17-NN` canonical equivalents (already run
+  2026-05-03; idempotent if re-run)
 
 ## Phase Document Storage Convention
 
