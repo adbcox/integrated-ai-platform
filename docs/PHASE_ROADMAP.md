@@ -272,6 +272,25 @@ foundation rather than adding features.
   Investigate: explicit cipher suite pinning, OpenSSL config override, QNAP cert
   re-issue with modern key/sig profile, or replace HTTPS path with QTS-native
   CLI over SSH (would need publickey auth provisioned — QNAP rejects password SSH).
+- **D-17-41 candidate (logged 2026-05-03 by operator intake):** HACS evaluation
+  + supply-chain doctrine for HA plugins. Scope: evaluate HACS deployment on
+  the .141 HA hub; author plugin-vetting doctrine as a sibling to D-17-10
+  (model provenance kit) — reverse-engineered API plugins flagged as a
+  separate ACL/risk class; identify specific plugin needs vs. native HA
+  capability gaps; license compliance review per D-17-37 substrate.
+  Prerequisites: HA on .141 stable (post D-17-34 confirmed ✓); a specific
+  capability gap that HACS solves (no current trigger). **Defer until
+  concrete need surfaces — do not add HACS speculatively.**
+- **D-17-42 candidate (logged 2026-05-03 by operator intake):** Tautulli
+  playback analytics + alerting deployment. Scope: Tautulli on Mac Mini,
+  point at Plex via Vault-managed token (D-17-38 credential pattern),
+  optional Discord/Slack alert integration if operator wants, basic
+  dashboard for who/what/when/transcode-vs-direct-play visibility — sibling
+  observability surface to the D-17-38 health-check substrate, not a
+  replacement. Prerequisites: Plex stable ✓; Vault credential pattern
+  proven (D-17-38 ✓); D-17-38 health-check substrate landed ✓. **Defer
+  until concrete signal that Plex usage analytics matter to operator
+  workflow.**
 
 **Gate:** `phase-18-final` — PASS≥18 FAIL=0 WARN≤3.
 OpenBao + Backstage ADRs committed. YAML deprecation complete. Platform hardening applied.

@@ -506,6 +506,20 @@ framework-add commit. Reserving the ID preserves the parking-lot
 reference without forcing premature scope authoring. Sized similar
 to D-17-23 (~2-3h doctrine-shaped) when it lands.
 
+ID-reservation note: D-17-40 / D-17-41 / D-17-42 are RESERVED as
+deferred-candidate IDs. Each is logged as a §18.C scope bullet in
+`docs/PHASE_ROADMAP.md` with its prerequisite/trigger captured;
+none has a §9 framework row yet by design — they activate only when
+the trigger fires (operator decision or surfaced incident).
+- D-17-40 (logged 2026-05-03 from D-17-38 close): Container-side TLS
+  handshake failure to QNAP appliance — root-cause + workaround.
+- D-17-41 (logged 2026-05-03 by operator intake): HACS evaluation +
+  supply-chain doctrine for HA plugins. Defer until concrete plugin
+  need surfaces.
+- D-17-42 (logged 2026-05-03 by operator intake): Tautulli playback
+  analytics + alerting deployment. Defer until Plex usage analytics
+  matter to operator workflow.
+
 Identifier-convention note: Phase 17 was originally authored using
 shorthand "17.X" deliverable IDs and "WP-17-D-NN" work-package IDs.
 Migrated to canonical D-NN-MM and WP-NN-MM-XX form (per §1
