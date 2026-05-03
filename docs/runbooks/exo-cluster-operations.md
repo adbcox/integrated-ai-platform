@@ -131,21 +131,26 @@ The wrapper proceeds on exit 0 OR 3 without override.
 
 ### Step 2 — Register and instantiate via /instance
 
+The preview endpoint is `GET /instance/previews` (plural, with
+`model_id` as a *query parameter* — not POST/preview/singular as
+earlier drafts of this runbook had it; verified D-17-30 against
+`/openapi.json`). It returns a `previews[]` array; pick `[0]`
+for single-node placement (Pipeline / MlxRing).
+
 ```bash
+# 1. Fetch preview
+curl -s "http://127.0.0.1:52416/instance/previews?model_id=mlx-community/<model-id>" \
+  | python3 -c '
+import json, sys
+data = json.load(sys.stdin)
+print(json.dumps({"instance": data["previews"][0]["instance"]}))
+' > /tmp/exo-instance-body.json
+
+# 2. POST it
 curl -s -X POST http://127.0.0.1:52416/instance \
     -H "Content-Type: application/json" \
-    -d "$(cat <<EOF
-{
-  "instance": $(curl -s -X POST http://127.0.0.1:52416/instance/preview \
-    -H "Content-Type: application/json" \
-    -d '{"modelId":"mlx-community/<model-id>"}')
-}
-EOF
-)"
+    -d @/tmp/exo-instance-body.json
 ```
-
-(In practice, fetch the preview separately and wrap as
-`{"instance": <preview-MlxRingInstance-object>}`.)
 
 The API returns a `command_id`; the master schedules placement
 and the worker loads the model. Single-node placement (worldSize 1)

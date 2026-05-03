@@ -594,8 +594,15 @@ set on developer toolchain decisions** (see PROJECT_FRAMEWORK §3.5).
   time; the broken-state premise was a Finding-DD diagnostic
   error. Open WebUI → litellm → litellm-route end-to-end auth
   verified HTTP 200. End-to-end demo path (Open WebUI → litellm →
-  exo) still requires exo cluster bring-up, which is a separate
-  scope (provisional D-17-30).
+  exo) closed in D-17-30.
+- **D-17-30** — Open WebUI → litellm → exo single-node
+  end-to-end demo verification. **DONE 2026-05-03.** Single-node
+  bring-up on Mac Mini, Qwen2.5-Coder-7B-Instruct-4bit placed via
+  `POST /instance` (corrected runbook endpoint — actual is
+  `GET /instance/previews?model_id=…` plural). TTFT 0.404 s,
+  sustained 54.6 tok/s. Chain confirmed from inside `open-webui`
+  container's network namespace: 0.42 s wall, output "PARIS".
+  Metrics + evidence at `docs/phase-17/d-17-30/`.
 - **D-17-27 (provisional, post-D-17-25)** — File upstream issue
   with reproducer evidence covering Findings U + V. ~30 min
   scoped follow-up; may be merged into the asset-management
