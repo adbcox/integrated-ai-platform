@@ -53,6 +53,53 @@ family absent; nomic-embed family absent).
 
 ---
 
+## Goose CLI — local agent surface (BLOCKED-UPSTREAM)
+
+**Status.** Evaluated under D-17-13 (2026-05-03). NOT adopted.
+**Blocked-upstream**, not "adopted-not-tried." Pinned at
+v1.33.1 (`brew install block-goose-cli`). License: Apache 2.0.
+
+**Tool.** [`block/goose`](https://block.github.io/goose/) — Block-
+authored open-source AI agent CLI with first-class MCP
+integration and an OpenAI-compatible provider that supports
+custom `OPENAI_HOST` + `OPENAI_API_KEY` (so it can target the
+platform's litellm-gateway directly).
+
+**Wiring that worked.** Brew install, config dir
+`~/.config/goose/config.yaml`, provider points at
+`http://127.0.0.1:4000` (litellm host port). Launcher
+`scripts/goose/goose-platform.sh` injects the litellm master key
+from Vault at run time (no credential in static config).
+filesystem-mcp + xindex MCP extensions registered as stdio
+extensions; both surface to Goose's tool inventory.
+
+**Blocker.** Goose hard-codes `supports_streaming: true` in its
+openai provider; Ollama drops `tool_calls` from streaming
+responses; exo's OpenAI-compat shim returns tool calls as
+`<tools>{json}</tools>` text rather than structured `tool_calls`.
+Goose can therefore chat with the model but cannot complete a
+single tool-using turn against any backend in the platform's
+local stack. Full root-cause analysis:
+`docs/architecture-facts/local-tool-calling.md` Findings 1+2.
+
+**Revisit signal.** Either (a) Ollama emits `tool_calls` in
+streaming responses, OR (b) Goose exposes a config key to
+disable streaming for the openai provider, OR (c) exo's
+OpenAI-compat shim post-processes Qwen's native tool-call
+markers into structured `tool_calls`. Any one unblocks adoption.
+
+**Demo posture.** Centerpiece stays Claude Code + subagents
+(decomposer/implementer/reviewer per `~/.claude/agents/`) talking
+directly to Anthropic in the orchestrator and Ollama in the
+subagent shell — both paths handle tool-call protocol natively.
+exo remains the inference backend for chat/completion paths.
+
+**Eval artifacts.** `docs/phase-17/d-17-13/EVALUATION_2026-05-03.md`.
+Install + Vault-mediated launcher + MCP wiring is reusable when
+the upstream block lifts.
+
+---
+
 ## Inbox Zero — AI-assisted email triage (Gmail tier scope-gated)
 
 **Tool.** Inbox Zero (open-source, ~MIT-licensed AI email assistant
