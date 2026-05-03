@@ -2,7 +2,7 @@
 
 **Severity:** Sev-3 (operational; structural bug; not data loss)
 **Opened:** 2026-05-01
-**Status:** PARTIALLY REMEDIATED + ADVISORY-MODE ACTIVE (pre-commit non-blocking until D-17-21 closes).
+**Status:** RESOLVED (closed by D-17-21 on 2026-05-03 — see `## Update 2026-05-03 (RESOLVED via D-17-21)` below).
 
 ## Symptom
 
@@ -148,3 +148,58 @@ The closer of D-17-21 must:
   in the repo (this file), not in session memory. The advisory
   gate reads them at hook-execution time so the hook's behavior
   tracks the documented state without code redeploy.
+
+## Update 2026-05-03 (RESOLVED via D-17-21)
+
+D-17-21 audit revealed the structural bug was deeper than KI-009 had
+diagnosed: Unbound was the de-facto authority on this platform (38
+`.internal` host overrides via `searchHostOverride`), Dnsmasq held
+6 bare-hostname records on port 53053. The 2026-05-01 KI-009 root-
+cause statement ("Unbound's host-override table is empty by design")
+was itself a probe-bug — it queried `settings/get` `.unbound.hosts`
+(0 entries; wrong field) instead of `searchHostOverride` (38 entries;
+correct UI overrides table).
+
+Operator-canonical posture (re-stated at D-17-21 surface-back):
+**Dnsmasq is the sole DNS authority. Unbound is unintended residue.**
+D-17-21 WP-04 executed the migration end-to-end programmatically:
+
+1. Migrated all 38 Unbound overrides + added 12 missing records to
+   Dnsmasq via `/api/dnsmasq/settings/addHost`.
+2. Disabled Unbound (`unbound.general.enabled=0`), stopped service.
+3. Moved Dnsmasq from port 53053 → 53.
+4. Validated all 50 records resolve via Dnsmasq on port 53.
+
+Migration script: `scripts/d-17-21-dns-migration.sh`.
+Snapshots: `~/.platform-logs/d-17-21/`.
+Architecture-fact (now VERIFIED, no longer provisional):
+`docs/architecture-facts/opnsense-dns-authority.md`.
+
+The KI-009 fix direction (parity check now queries Dnsmasq) is
+**correct as-is** — it matches the operator-canonical posture.
+The check's `record_count` will jump from 6 → 56 (50 `.internal` +
+6 bare hostnames) on next refresh; the missing-list will go from 8
+to 0 because all 33 Caddy `*.internal` sites now have matching
+Dnsmasq host records. Operator should run:
+
+```bash
+scripts/check-repo-coherence.py caddy-dns-parity --refresh
+```
+
+When the status file flips `ok=true` (`missing == 0` in the post-D-17-21
+state, this should land first try), strict-fail mode resumes
+automatically — the gate is data-driven on this file's `**Status:**`
+line, which is now `RESOLVED`.
+
+### Final lesson (Finding 9 in integration-audit-doctrine.md)
+
+Configuration audits must verify against **operator-stated intent in
+architecture-facts**, not against currently-running config. Running
+state can be unintended residue. The 2026-05-01 audit chain made the
+opposite mistake — it took observed state ("which daemon has entries
+right now") as the authority signal, when the actual authority signal
+was operator intent ("which daemon is *supposed to be* the authority").
+The right probe order is: read the operator-stated intent first,
+*then* probe to verify the runtime matches that intent, *then* if it
+doesn't, treat the divergence as drift to be remediated, not as
+evidence about which posture is correct.

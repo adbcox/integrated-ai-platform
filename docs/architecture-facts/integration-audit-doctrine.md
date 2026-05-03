@@ -512,3 +512,71 @@ Order matters:
 **Active doctrine, F5 closed.** Worked example: D-17-38 close 2026-05-03. Selfheal cycle post-close: 4/5 services up (sonarr/radarr/prowlarr/qnap), correctly-classified upstream warnings (per-indexer failures, QNAP storage stats deferred under L2 chase), seedbox warning operator-deferred. Critical count: 4 → 2 (both criticals are real upstream — radarr/prowlarr "all indexers unavailable", a third-party state, not platform misconfiguration).
 
 Cross-references: Finding 1 (Gap F5 family, now empirically closed at the silence-mechanism layer), D-17-40 candidate in PHASE_ROADMAP §18.C (QNAP TLS root-cause + workaround), D-17-26 Finding DD (container env inspection — extended this turn with the redactor-discipline sub-doctrine).
+
+---
+
+## Finding 9 — Configuration audits verify against operator-stated intent, not against currently-running config; running state can be unintended residue
+
+**Worked example:** D-17-21 (2026-05-03) — OPNsense DNS authority audit.
+
+### What happened
+
+The 2026-05-01 KI-009 root-cause statement asserted that Unbound's host-override table is empty by design and Dnsmasq is the authority. That assertion was probe-derived: the author queried `/api/unbound/settings/get` `.unbound.hosts` (returned 0) and `/api/dnsmasq/settings/get` `.dnsmasq.hosts` (returned 6). The reasoning was: 0 < 6, therefore Dnsmasq is the authority.
+
+Two independent errors compounded:
+
+1. **Wrong-endpoint probe.** OPNsense Unbound stores user-added host overrides in the **`searchHostOverride` UI overrides table**, not in the `settings/get` general-settings blob. The empty `.unbound.hosts` result didn't mean Unbound was empty — it meant the probe was looking at the wrong field. The actual Unbound `searchHostOverride` table held **38 `.internal` host overrides**, served on port 53.
+2. **Observed-state-as-intent inversion.** Even if the first probe had been correct, "Unbound has more entries than Dnsmasq" would not establish *which is the operator-intended authority*. Authority is an operator-intent question; record-count is observation. The 2026-05-01 audit chain treated observation as authority signal, then renamed the parity check to query the daemon with fewer entries — making the check structurally wrong against either operator-intended posture (because either daemon could have been the authority, depending on operator intent).
+
+The right probe order, in retrospect:
+
+1. **Read the operator-stated intent** from architecture-facts (or, if absent, ask the operator and record the answer).
+2. **Probe to verify the runtime matches that intent.** If runtime matches: green. If runtime diverges: drift, to be remediated.
+3. **Never collapse step 1 and step 2.** Observed state is not authority. The architecture-fact is the authority signal; the probe is the divergence detector.
+
+### Sub-doctrine: residue is a positive failure mode
+
+When a daemon is running but operator-intent says it shouldn't be, that is **residue** — unintended state that has accumulated from a prior session or rollback. Residue patterns:
+
+- A service enabled by a long-ago session that was never disabled (Unbound on this platform).
+- A container left running after a sibling deliverable's "retirement" plan was authored but never executed (D-17-34 stray Home Assistant container).
+- An AppRole / policy / Vault Agent secret directory that outlives its consumer (D-17-34 Finding 3).
+- A docker compose file in `~/control-center-stack/stacks/*` that runs but isn't in the repo (D-17-34 Finding 4 territory).
+
+The doctrine response is **not** to take residue as evidence about correct posture. The right move is to compare against operator-stated intent, recognize the divergence, and remediate (here: disable Unbound, migrate records to Dnsmasq).
+
+### Sub-doctrine: re-probe an audit's premises before depending on its conclusions
+
+The KI-009 fix went out under the assumption that the underlying probe was correct (the rename direction Unbound → Dnsmasq took the wrong-endpoint result as truth). When KI-009 itself goes from `RESOLVED` to `RE-OPENED`, the right close-out is not just "fix the rename direction" but **re-validate the original probe**. D-17-21 only discovered the 38 Unbound overrides because the auditor ran `searchHostOverride` independently. If a future deliverable depends on a prior audit's conclusion, it must re-probe at least the foundational evidence — especially when the operator's pushback ("two services running simultaneously") contradicts the audit's framing.
+
+### Migration pattern (programmatic, no GUI work)
+
+D-17-21 WP-04 demonstrates a clean autonomous migration when both source and destination expose API endpoints. The seven-step pattern:
+
+1. Snapshot both daemons' state to a logging directory.
+2. Compose the target record list (source records + new additions). Skip records already in destination.
+3. Add records to destination via API; reconfigure to make them runtime-active.
+4. Validate destination resolves the records on its current port (pre-flip validation).
+5. Disable source daemon (frees its port if needed) and stop service.
+6. Move destination to source's port if required; reconfigure.
+7. Final validation on the unified port.
+
+Halt on any error. Both daemons can coexist mid-migration as long as they are on different ports — port collision must be the LAST step, not a precondition. Migration script: `scripts/d-17-21-dns-migration.sh`.
+
+### Sub-doctrine: parity-check shape priority
+
+When a parity check matches against records that can appear in multiple shapes (e.g. Dnsmasq accepts `host=foo, domain=internal` AND `host=foo, domain=""` AND `host=foo.internal, domain=""` for the FQDN `foo.internal`), the check must **prefer the most-specific shape** (Shape 1) over fallback shapes. If a bare-hostname record (Shape 3) exists alongside an explicit `.internal` record (Shape 1), Shape 3 might point at an upstream IP (a DHCP reservation) while Shape 1 points at the Caddy front IP. Iteration-order matching is fragile; explicit priority is correct. Worked example: `homeassistant.internal` Shape 1 → 192.168.10.145 (Caddy front), Shape 3 (bare `homeassistant`) → 192.168.10.141 (upstream HA hub on the LAN). The Shape 3 record is a DHCP-paired bare-hostname reservation that has its own purpose; the parity check was matching it instead of the Shape 1 record and falsely reporting `wrong_target`. Fix: walk records, return Shape 1 / Shape 2 immediately, defer Shape 3 to a fallback variable. (Patch landed in `scripts/check-repo-coherence.py` `_dns_match` at D-17-21 close.)
+
+### KI-009 retroactive Vault incident review
+
+D-17-21 WP-05 trace: did the multi-day Vault troubleshooting incident (Sev-2, 2026-04-30, `docs/phase-15/PHASE_15_VAULT_API_ADDR_NETWORK_INCIDENT_2026-04-30.md`) have a silent DNS-routing contribution that was misdiagnosed at the time?
+
+**Conclusion: no.** The incident's root cause was `api_addr = "http://192.168.10.145:8200"` — a literal host LAN IP that forced every in-Docker Vault redirect to U-turn through Docker Desktop's userland-proxy. That misconfig is an IP-literal issue, not a hostname-resolution issue; DNS path was never invoked for `192.168.10.145`. The incident would have produced the same userland-proxy saturation regardless of which DNS daemon was running on OPNsense. The fix (`api_addr = "http://vault-server:8200"`) reroutes through Docker bridge DNS (in-bridge service name resolution), which is internal to Docker Desktop, not OPNsense Unbound or Dnsmasq.
+
+KI-009 status flipped to `RESOLVED` based on D-17-21 close + this confirmed-no-contribution review. The advisory-mode pre-commit gate auto-resumes strict-fail behavior on KI-009 file's `**Status:**` line value.
+
+### Status
+
+**Active doctrine.** Worked example: D-17-21 close 2026-05-03. Post-migration state: 55 Dnsmasq host records (49 `.internal` + 6 bare), Unbound disabled, port 53 owned solely by Dnsmasq, parity check exit 0 (`missing=0, wrong_target=0, extra_internal=16`). KI-009 RESOLVED. Architecture-fact `opnsense-dns-authority.md` flipped from PROVISIONAL to VERIFIED.
+
+Cross-references: Finding 4 (CMDB authority unenforced — three substrates can disagree silently; Finding 9 extends this with the broader rule that running state cannot be the authority signal regardless of substrate count), D-17-32 Finding 1 ("subsystem closure ≠ integrated-system capability"; Finding 9 names a specific failure mode within that frame).

@@ -312,23 +312,29 @@ def _dns_match(caddy_fqdn: str, records: list[dict]) -> dict | None:
          these as a parity match when <x> matches the Caddy stem
          ("openproject" matches "openproject.internal") because the
          operator's network treats them as equivalent.
+
+    Shape priority: prefer 1, then 2, then 3 (post-D-17-21 — many
+    `.internal` records now coexist with bare-hostname DHCP entries
+    that point at upstream IPs, and the bare entry is not the
+    Caddy-front authority for an `*.internal` Caddy site).
     """
     stem, _, _ = caddy_fqdn.partition(".")
+    shape3_fallback: dict | None = None
     for r in records:
         if not r.get("enabled"):
             continue
         rec_host = (r.get("hostname") or "").strip()
         rec_domain = (r.get("domain") or "").strip()
-        # Shape 1: host=stem, domain=internal
+        # Shape 1: host=stem, domain=internal — return immediately
         if rec_host == stem and rec_domain == "internal":
             return r
-        # Shape 2: host=stem.internal, domain=""
+        # Shape 2: host=stem.internal, domain="" — return immediately
         if rec_host == caddy_fqdn and rec_domain == "":
             return r
-        # Shape 3: host=stem, domain="" (bare hostname)
-        if rec_host == stem and rec_domain == "":
-            return r
-    return None
+        # Shape 3: host=stem, domain="" — remember as fallback only
+        if rec_host == stem and rec_domain == "" and shape3_fallback is None:
+            shape3_fallback = r
+    return shape3_fallback
 
 
 def _refresh_parity_status() -> int:
