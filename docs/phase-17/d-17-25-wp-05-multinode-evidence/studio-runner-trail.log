@@ -1,0 +1,25 @@
+5829:[ 2026-05-02 22:31:50.151 | [1mINFO    [0m | exo.worker.runner.llm_inference.runner:__init__:93 ] [1mhello from the runner[0m
+5844:[ 2026-05-02 22:31:50.683 | [1mINFO    [0m | exo.worker.engines.mlx.utils_mlx:mlx_distributed_init:97 ] [1mStarting initialization for rank 0[0m
+5845:[ 2026-05-02 22:31:50.684 | [1mINFO    [0m | exo.worker.engines.mlx.utils_mlx:mlx_distributed_init:135 ] [1mrank 0 MLX_IBV_DEVICES: /var/folders/3g/20vczn0d6tscsff0prwmhg880000gp/T/tmp6k0595ce/hosts_2240fcb2-93b4-4c11-b124-26d60204e99c_0.json with devices: [[null, "rdma_en5"], ["rdma_en3", null]][0m
+5846:[ 2026-05-02 22:31:50.684 | [1mINFO    [0m | exo.worker.engines.mlx.utils_mlx:mlx_distributed_init:138 ] [1mrank 0 MLX_JACCL_COORDINATOR: 0.0.0.0:52617[0m
+5880:[ 2026-05-02 22:31:53.171 | [1mINFO    [0m | exo.worker.runner.runner_supervisor:_check_runner:260 ] [1mRunner exited with exit code -11[0m
+5881:[ 2026-05-02 22:31:53.172 | [31m[1mERROR   [0m | exo.worker.runner.runner_supervisor:_check_runner:273 ] [31m[1mRunner terminated with signal=11 (Segmentation fault: 11)[0m
+5882:[31m[1mRuntimeError[0m:[1m Runner found to be dead[0m
+5913:[ 2026-05-02 22:31:55.094 | [1mINFO    [0m | exo.worker.runner.llm_inference.runner:__init__:93 ] [1mhello from the runner[0m
+6042:[ 2026-05-02 22:31:55.466 | [1mINFO    [0m | exo.worker.runner.runner_supervisor:_check_runner:260 ] [1mRunner exited with exit code 0[0m
+6192:[ 2026-05-02 22:31:57.388 | [1mINFO    [0m | exo.worker.runner.llm_inference.runner:__init__:93 ] [1mhello from the runner[0m
+6195:[ 2026-05-02 22:31:57.389 | [1mINFO    [0m | exo.worker.engines.mlx.utils_mlx:mlx_distributed_init:97 ] [1mStarting initialization for rank 0[0m
+6196:[ 2026-05-02 22:31:57.390 | [1mINFO    [0m | exo.worker.engines.mlx.utils_mlx:mlx_distributed_init:135 ] [1mrank 0 MLX_IBV_DEVICES: /var/folders/3g/20vczn0d6tscsff0prwmhg880000gp/T/tmpk4fu6hhz/hosts_2240fcb2-93b4-4c11-b124-26d60204e99c_0.json with devices: [[null, "rdma_en5"], ["rdma_en3", null]][0m
+6197:[ 2026-05-02 22:31:57.390 | [1mINFO    [0m | exo.worker.engines.mlx.utils_mlx:mlx_distributed_init:138 ] [1mrank 0 MLX_JACCL_COORDINATOR: 0.0.0.0:52617[0m
+6243:[ 2026-05-02 22:32:00.570 | [1mINFO    [0m | exo.worker.runner.runner_supervisor:_check_runner:260 ] [1mRunner exited with exit code -11[0m
+6244:[ 2026-05-02 22:32:00.571 | [31m[1mERROR   [0m | exo.worker.runner.runner_supervisor:_check_runner:273 ] [31m[1mRunner terminated with signal=11 (Segmentation fault: 11)[0m
+6245:[31m[1mRuntimeError[0m:[1m Runner found to be dead[0m
+6269:[ 2026-05-02 22:32:02.481 | [1mINFO    [0m | exo.worker.runner.llm_inference.runner:__init__:93 ] [1mhello from the runner[0m
+6284:[ 2026-05-02 22:32:02.831 | [1mINFO    [0m | exo.worker.runner.runner_supervisor:_check_runner:260 ] [1mRunner exited with exit code 0[0m
+6468:[ 2026-05-02 22:32:10.561 | [1mINFO    [0m | exo.worker.runner.llm_inference.runner:__init__:93 ] [1mhello from the runner[0m
+6471:[ 2026-05-02 22:32:10.561 | [1mINFO    [0m | exo.worker.engines.mlx.utils_mlx:mlx_distributed_init:97 ] [1mStarting initialization for rank 0[0m
+6472:[ 2026-05-02 22:32:10.562 | [1mINFO    [0m | exo.worker.engines.mlx.utils_mlx:mlx_distributed_init:135 ] [1mrank 0 MLX_IBV_DEVICES: /var/folders/3g/20vczn0d6tscsff0prwmhg880000gp/T/tmp82vugup_/hosts_2240fcb2-93b4-4c11-b124-26d60204e99c_0.json with devices: [[null, "rdma_en5"], ["rdma_en3", null]][0m
+6473:[ 2026-05-02 22:32:10.562 | [1mINFO    [0m | exo.worker.engines.mlx.utils_mlx:mlx_distributed_init:138 ] [1mrank 0 MLX_JACCL_COORDINATOR: 0.0.0.0:52617[0m
+6513:[ 2026-05-02 22:32:13.757 | [1mINFO    [0m | exo.worker.runner.runner_supervisor:_check_runner:260 ] [1mRunner exited with exit code -11[0m
+6514:[ 2026-05-02 22:32:13.757 | [31m[1mERROR   [0m | exo.worker.runner.runner_supervisor:_check_runner:273 ] [31m[1mRunner terminated with signal=11 (Segmentation fault: 11)[0m
+6515:[31m[1mRuntimeError[0m:[1m Runner found to be dead[0m

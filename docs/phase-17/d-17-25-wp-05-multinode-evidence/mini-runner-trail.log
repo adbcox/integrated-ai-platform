@@ -1,0 +1,25 @@
+5805:[ 2026-05-02 22:31:50.599 | [1mINFO    [0m | exo.worker.runner.llm_inference.runner:__init__:93 ] [1mhello from the runner[0m
+5822:[ 2026-05-02 22:31:50.745 | [1mINFO    [0m | exo.worker.engines.mlx.utils_mlx:mlx_distributed_init:97 ] [1mStarting initialization for rank 1[0m
+5823:[ 2026-05-02 22:31:50.745 | [1mINFO    [0m | exo.worker.engines.mlx.utils_mlx:mlx_distributed_init:135 ] [1mrank 1 MLX_IBV_DEVICES: /var/folders/8w/ld51p1295hg_c7nkt1r0kl300000gp/T/tmpx9fy57wx/hosts_2240fcb2-93b4-4c11-b124-26d60204e99c_1.json with devices: [[null, "rdma_en5"], ["rdma_en3", null]][0m
+5824:[ 2026-05-02 22:31:50.746 | [1mINFO    [0m | exo.worker.engines.mlx.utils_mlx:mlx_distributed_init:138 ] [1mrank 1 MLX_JACCL_COORDINATOR: 192.168.10.142:52617[0m
+5845:[ 2026-05-02 22:31:53.094 | [1mINFO    [0m | exo.worker.runner.runner_supervisor:_check_runner:260 ] [1mRunner exited with exit code -11[0m
+5846:[ 2026-05-02 22:31:53.094 | [31m[1mERROR   [0m | exo.worker.runner.runner_supervisor:_check_runner:273 ] [31m[1mRunner terminated with signal=11 (Segmentation fault: 11)[0m
+5847:[31m[1mRuntimeError[0m:[1m Runner found to be dead[0m
+5881:[ 2026-05-02 22:31:54.705 | [1mINFO    [0m | exo.worker.runner.llm_inference.runner:__init__:93 ] [1mhello from the runner[0m
+5892:[ 2026-05-02 22:31:55.098 | [1mINFO    [0m | exo.worker.runner.runner_supervisor:_check_runner:260 ] [1mRunner exited with exit code 0[0m
+6048:[ 2026-05-02 22:31:56.894 | [1mINFO    [0m | exo.worker.runner.llm_inference.runner:__init__:93 ] [1mhello from the runner[0m
+6065:[ 2026-05-02 22:31:57.437 | [1mINFO    [0m | exo.worker.engines.mlx.utils_mlx:mlx_distributed_init:97 ] [1mStarting initialization for rank 1[0m
+6066:[ 2026-05-02 22:31:57.437 | [1mINFO    [0m | exo.worker.engines.mlx.utils_mlx:mlx_distributed_init:135 ] [1mrank 1 MLX_IBV_DEVICES: /var/folders/8w/ld51p1295hg_c7nkt1r0kl300000gp/T/tmpcntzlyv3/hosts_2240fcb2-93b4-4c11-b124-26d60204e99c_1.json with devices: [[null, "rdma_en5"], ["rdma_en3", null]][0m
+6067:[ 2026-05-02 22:31:57.437 | [1mINFO    [0m | exo.worker.engines.mlx.utils_mlx:mlx_distributed_init:138 ] [1mrank 1 MLX_JACCL_COORDINATOR: 192.168.10.142:52617[0m
+6094:[ 2026-05-02 22:32:00.305 | [1mINFO    [0m | exo.worker.runner.runner_supervisor:_check_runner:260 ] [1mRunner exited with exit code -11[0m
+6095:[ 2026-05-02 22:32:00.306 | [31m[1mERROR   [0m | exo.worker.runner.runner_supervisor:_check_runner:273 ] [31m[1mRunner terminated with signal=11 (Segmentation fault: 11)[0m
+6096:[31m[1mRuntimeError[0m:[1m Runner found to be dead[0m
+6140:[ 2026-05-02 22:32:02.003 | [1mINFO    [0m | exo.worker.runner.llm_inference.runner:__init__:93 ] [1mhello from the runner[0m
+6147:[ 2026-05-02 22:32:02.356 | [1mINFO    [0m | exo.worker.runner.runner_supervisor:_check_runner:260 ] [1mRunner exited with exit code 0[0m
+6466:[ 2026-05-02 22:32:10.048 | [1mINFO    [0m | exo.worker.runner.llm_inference.runner:__init__:93 ] [1mhello from the runner[0m
+6486:[ 2026-05-02 22:32:10.599 | [1mINFO    [0m | exo.worker.engines.mlx.utils_mlx:mlx_distributed_init:97 ] [1mStarting initialization for rank 1[0m
+6488:[ 2026-05-02 22:32:10.599 | [1mINFO    [0m | exo.worker.engines.mlx.utils_mlx:mlx_distributed_init:135 ] [1mrank 1 MLX_IBV_DEVICES: /var/folders/8w/ld51p1295hg_c7nkt1r0kl300000gp/T/tmp0jsw453j/hosts_2240fcb2-93b4-4c11-b124-26d60204e99c_1.json with devices: [[null, "rdma_en5"], ["rdma_en3", null]][0m
+6489:[ 2026-05-02 22:32:10.599 | [1mINFO    [0m | exo.worker.engines.mlx.utils_mlx:mlx_distributed_init:138 ] [1mrank 1 MLX_JACCL_COORDINATOR: 192.168.10.142:52617[0m
+6516:[ 2026-05-02 22:32:13.561 | [1mINFO    [0m | exo.worker.runner.runner_supervisor:_check_runner:260 ] [1mRunner exited with exit code -11[0m
+6517:[ 2026-05-02 22:32:13.562 | [31m[1mERROR   [0m | exo.worker.runner.runner_supervisor:_check_runner:273 ] [31m[1mRunner terminated with signal=11 (Segmentation fault: 11)[0m
+6518:[31m[1mRuntimeError[0m:[1m Runner found to be dead[0m

@@ -24,6 +24,11 @@ Before any cluster operation, verify:
 - Models directory exists on each node:
   `mkdir -p ~/.exo/models` (Finding K — missing dir is non-fatal
   but log-noisy).
+- **macOS versions aligned across nodes** (REQUIRED for any
+  multi-node placement): `sw_vers` on both nodes must report the
+  same `ProductVersion` AND `BuildVersion`. Empirically validated
+  in D-17-25: drift on either field blocks the MlxJaccl pre-flight
+  check. Single-node bring-up is unaffected by version drift.
 
 ## Cluster bring-up
 
@@ -253,17 +258,34 @@ runner never reaches `RunnerReady`.
 
 ### Multi-node placement fails
 
-Expected as of D-17-14 close. Errors:
+Expected as of D-17-25 close (Outcome C). Distributed inference
+remains upstream-blocked. Failure modes seen in practice:
 
-- `MLX ring backend requires connectivity between neighbouring nodes`
-- `jaccl backend requires all participating devices to be able to
-  communicate`
+- **MlxRing 2-node placement** → planner rejects with
+  `MLX ring backend requires connectivity between neighbouring
+  nodes`. Same error class as D-17-14; macOS alignment did not
+  change this for the ring backend.
+- **MlxJaccl 2-node placement** (post-macOS-alignment, D-17-25):
+  planner accepts, valid Instance object returned, POST `/instance`
+  returns 200 with `command_id`, runner subprocesses start on both
+  nodes and enter `mlx_distributed_init`, then SIGSEGV with
+  `Runner terminated with signal=11 (Segmentation fault: 11)`
+  inside MLX/jaccl C++. Cause is two interacting upstream gaps:
+  - **Finding U** — `MLX_JACCL_COORDINATOR` selects a LAN address
+    (`192.168.10.142:52617`) instead of the libp2p static-peer
+    TB-Bridge multiaddr. Matches upstream `MISSED_THINGS.md`
+    (`get_mlx_jaccl_coordinators picks the first one, which is
+    unstable`).
+  - **Finding V** — runner's `MLX_IBV_DEVICES` matrix is populated
+    even when `nodeRdmaCtl.enabled=false`, with no graceful
+    fallback to TCP; runner crashes when it tries to use
+    uninitialized RDMA devices.
 
-This is upstream-blocked (Finding O). Single-node placement
-(`worldSize: 1` to one peer-id) works. For multi-node, watch for
-either an upstream exo release fixing TODO items 15–16 / the
-Jaccl coordinator stabilization, or for D-17-25 macOS-alignment
-test results.
+Single-node placement (`worldSize: 1` to one peer-id) still works.
+For multi-node, watch for an upstream exo release that covers
+BOTH Finding U (coordinator IP selection) and Finding V (RDMA
+control-plane / runner gating). Reproducer evidence preserved at
+`docs/phase-17/d-17-25-wp-05-multinode-evidence/`.
 
 ## Health checks
 
