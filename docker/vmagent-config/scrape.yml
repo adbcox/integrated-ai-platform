@@ -32,3 +32,11 @@ scrape_configs:
   - job_name: vmagent
     static_configs:
       - targets: ['vmagent:8429']
+
+  - job_name: scraparr
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['host.docker.internal:7100']
+        labels:
+          service: scraparr
+          stack: arr-stack

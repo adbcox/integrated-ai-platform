@@ -768,3 +768,49 @@ Per D-17-44 pre-flight Q1–Q3:
 - Finding 8 — L3 (integration) health checks; Buildarr is a config-plane complement (it restores config; it does not probe health)
 - §18.G component 2 (PHASE_ROADMAP — this is the first closed sub-deliverable of the arr-stack ecosystem family)
 - §18.G component 8 (Profilarr/Recyclarr — TRaSH-Guides automation; extends Buildarr's quality-profile lockdown with community-maintained profiles)
+
+---
+
+## Finding 12 — Metrics-layer observability for arr-stack should use community exporters; selfheal remains remediation-layer only
+
+**D-17-46 close, 2026-05-03.**
+
+### Observation
+
+D-17-38 closed the F5 silence mechanism at the remediation layer
+(`selfheal.py` classification + credential drift repair), but that
+layer is reactive and incident-shaped. It does not provide continuous
+Prometheus-native telemetry for queue depth, scrape timing, or service
+collector health in VictoriaMetrics/Grafana.
+
+D-17-46 added a sibling metrics layer using Scraparr, scraped by
+vmagent into VictoriaMetrics, with a provisioned minimal Grafana
+dashboard (`arr-stack-overview-p18`).
+
+### Doctrine
+
+- **Use community-standard exporters for metrics-class observability**
+  instead of extending custom remediation code for metrics ingestion.
+- **Keep layers distinct:** selfheal remains active-remediation and
+  error-classification logic; exporter metrics remain telemetry plane.
+- **Credential handling remains D-17-38 pattern:** exporter reads
+  Vault-rendered API keys via Vault Agent sidecar; hash-only
+  verification for all key-comparison operations.
+
+### Worked result (D-17-46)
+
+- Scraparr chosen over Exportarr at WP-02: active maintenance and
+  single-instance multi-service coverage fit this stack better.
+- Sidecar + AppRole/policy pattern mirrored from D-17-38 / D-17-44.
+- vmagent target `job=\"scraparr\"` reached `up` and VictoriaMetrics
+  began returning `sonarr_last_scrape`/`radarr_last_scrape`/
+  `prowlarr_last_scrape` series.
+- Community dashboard adaptation deferred intentionally as a backlog
+  item due to non-trivial datasource templating mismatch.
+
+### Cross-references
+
+- Finding 8 (reactive integration health-check layer)
+- Finding 11 (declarative config control layer)
+- §18.G component 1 (observability) and component 2 (Buildarr) as
+  sibling structural prerequisites before arr-stack expansion

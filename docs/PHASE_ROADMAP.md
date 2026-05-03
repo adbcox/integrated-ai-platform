@@ -479,13 +479,19 @@ Each component below becomes its own `D-NN-NN` at scope time.
 **Components and prereq order** (later components depend on earlier
 ones being stable):
 
-1. **Scraparr / Exportarr → existing VictoriaMetrics**
+1. **Scraparr / Exportarr → existing VictoriaMetrics** ✅ DONE D-17-46 (2026-05-03)
    *(observability before expansion — adding components to a stack
    you can't observe is exactly the F5 silence-mechanism trap that
    D-17-38 closed.)* Prowlarr-side metrics, per-indexer success/fail
    rates, queue depth, import-import lag. Vault-managed API tokens
    per service (D-17-38 credential pattern). Grafana dashboards
    `arr-stack-overview-p18` + per-service drill-downs.
+   **Delivered:** Scraparr deployed with Vault Agent sidecar and vmagent
+   scrape path into VictoriaMetrics; minimal provisioned Grafana dashboard
+   `arr-stack-overview-p18` landed for scrape age/duration + exporter health.
+   **Follow-on backlog:** adapt/import Scraparr community dashboard JSON once
+   datasource templating (`DS_MIMIR`/`${datasource}`) is normalized for this
+   Grafana provisioning substrate.
 
 2. **Buildarr config-as-code** ✅ DONE D-17-44 (2026-05-03)
    *(declarative state lock-in; first worked example for F11

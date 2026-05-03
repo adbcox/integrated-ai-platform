@@ -157,6 +157,13 @@ deliverable table with a fresh D-NN-MM ID.
 - **Drift detection workflow:** after any manual arr-stack session, run `buildarr radarr dump-config` + `buildarr prowlarr dump-config` against the live instances and diff against the committed YAML. Any diff IS the empirical drift record (F11 first worked example: D-17-38 URL drift would have been detected and reverted automatically).
 - **Chronicle:** `docs/architecture-facts/integration-audit-doctrine.md` Finding 11.
 
+### arr-stack Metrics Observability Doctrine (D-17-46)
+- **Canonical metrics path for arr-stack is Scraparr → vmagent → VictoriaMetrics → Grafana.** This is the Phase 18 §18.G component-1 observability substrate and is a sibling to D-17-38 selfheal, not a replacement.
+- **Layer split is mandatory:** `selfheal.py` remains remediation/classification logic; exporter metrics are continuous telemetry. Do not add Prometheus-metric responsibilities to selfheal.
+- **Credential pattern is unchanged:** Scraparr reads Sonarr/Radarr/Prowlarr API keys from Vault-rendered `/vault/secrets/credentials.env` via Vault Agent sidecar. Key comparisons remain hash-only (`sha256[:12]`), never value output.
+- **Current scope:** Sonarr/Radarr/Prowlarr metrics in scope; Sportarr exporter coverage is out-of-scope for D-17-46 and tracked as follow-on backlog under §18.G.
+- **Dashboard baseline:** `docker/grafana-provisioning/dashboards/arr-stack-overview-p18.json` is the provisioned minimal dashboard. Community dashboard adaptation is a backlog item (datasource-templating normalization required).
+
 ### Container Hardening
 - `cap_drop: [ALL]` with minimal `cap_add` per workload class.
 - `security_opt: [no-new-privileges:true]` universally.
