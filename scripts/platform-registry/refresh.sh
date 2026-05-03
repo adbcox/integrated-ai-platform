@@ -41,3 +41,14 @@ else
     echo "[$(ts)] ERROR: refresh exit=$rc" >> "$LOG"
     exit $rc
 fi
+
+# D-17-37 — chain artifact-axis refresh so launchd run keeps both indices fresh.
+# Failure here is a warning, not fatal: artifact axis is sibling, not blocker.
+ARTIFACT_REFRESH="$REPO/scripts/platform-registry/refresh-artifacts.sh"
+if [ -x "$ARTIFACT_REFRESH" ]; then
+    if "$ARTIFACT_REFRESH" 2>>"$LOG"; then
+        echo "[$(ts)] artifact refresh ok" >> "$LOG"
+    else
+        echo "[$(ts)] WARN: artifact refresh exit non-zero (non-fatal)" >> "$LOG"
+    fi
+fi

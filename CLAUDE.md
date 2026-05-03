@@ -113,6 +113,15 @@ deliverable table with a fresh D-NN-MM ID.
 - Spec: `docs/architecture-patterns/service-registry-mvp.md`. Builder code: `scripts/platform-registry/lib/`.
 - **Sub-doctrine (D-17-26 close, Finding DD) — container env inspection:** when inspecting container environment for credential or runtime-set variables, query `/proc/1/environ` rather than spawning a fresh shell via `docker exec env`. Image-baked `Config.Env` ≠ runtime PID 1 environ when entrypoint scripts source secret files. Correct check: `docker exec <container> sh -c 'tr "\0" "\n" < /proc/1/environ | grep ^VAR='`. Apply BEFORE reporting a credential as missing/empty.
 
+### Artifact Substrate Doctrine (D-17-37)
+- **Roadmap binary artifacts (PDFs, schematics, vendor docs, source dumps) live on QNAP, not Mac Mini and not git.** Canonical layout: `/Users/admin/mnt/qnap-downloads/manual/roadmap-artifacts/<phase>/<deliverable>/{source,extracted,annotations}/` with `metadata.yaml` at deliverable root.
+- **Stable pointer scheme:** `qnap://download/manual/roadmap-artifacts/<phase>/<deliverable>/source/<file>`. Roadmap docs reference artifacts by this URI, never by absolute local path. Resolver: `scripts/artifact-resolve.sh <qnap-uri>` prints the local path.
+- **Sibling registry axis:** `~/.platform-registry/artifacts.json` (index) + `~/.platform-registry/artifacts/<deliverable>.json` (per-record). Built by `scripts/platform-registry/lib/artifact_writer.py`; refreshed by `scripts/platform-registry/refresh-artifacts.sh` (chained from the launchd-driven `refresh.sh`).
+- **Ingestion is mandatory.** Use `scripts/artifact-ingest.sh <D-NN-NN> <local-path> [--class CLASS]`. Never one-off `cp`/`mv` into the artifact tree. ACL classes: `property` (700/600), `schematics` (750/640), `vendor-docs` (755/644), `source-files` (750/640).
+- **Before answering a question that references a roadmap artifact**, consult `~/.platform-registry/artifacts/<deliverable>.json` first to discover what's actually persisted (avoid re-reading the same PDF from chat context multiple times — the F9 anti-pattern).
+- **Backup posture:** QNAP RAID + native snapshots are the durability layer for QNAP-hosted artifacts. Restic targets MinIO **on QNAP** (`s3://192.168.10.201:9000/backups`), so adding artifact paths to `BACKUP_DIRS` would be circular. Off-host replication is a future deliverable.
+- **Substrate-defining-deliverable exemption:** D-17-37 itself does not need to be retrofitted through its own substrate. Doctrine + chronicle: `docs/architecture-facts/integration-audit-doctrine.md` Finding 5.
+
 ### Container Hardening
 - `cap_drop: [ALL]` with minimal `cap_add` per workload class.
 - `security_opt: [no-new-privileges:true]` universally.

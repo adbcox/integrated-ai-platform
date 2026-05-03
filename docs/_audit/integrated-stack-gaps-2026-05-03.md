@@ -267,9 +267,56 @@ Examples of integration-path checks that would belong in the new family:
 - **Tagged autonomous-coding?** N/A.
 - **Recommendation.** **NEW deliverable family proposed (do NOT auto-create in T5):** end-to-end integration health checks. Separate from registry consultation (which proves what *should* exist) — this proves what *actually flows* through the stack. Sized at ~20-40h depending on flow coverage; could be tiered like the asset-mgmt family (e.g., F5-A inference path, F5-B media stack, F5-C secret propagation, F5-D backup verification). Doctrine outcome: explicit chronicle "container `(healthy)` is not `(integration working)`" plus per-flow probes captured as runbooks or scheduled scripts.
 
+### Gap F8 — QNAP SMB mount persistence work blocked behind Finding Y; mount failures are silent until import attempted (severity D, effort ~30 min once Y resolves)
+
+The 2026-05-03 evening recovery (referenced in F5) restored the QNAP SMB mount manually via `mount_smbfs`, which gets the arr-stack working in-session but **does not survive Mac Mini reboot**. The persistence path — keychain entry + LaunchAgent at `~/Library/LaunchAgents/com.iap.qnap-downloads-mount.plist` + `launchctl bootstrap gui/$(id -u)` — is fully prepared in `docs/runbooks/qnap-downloads-mount.md` but cannot execute today: every `launchctl bootstrap gui/$(id -u) ...` against any `com.iap.*` plist returns `Bootstrap failed: 125: Domain does not support specified action` (Finding Y, X2 above). Adding a 14th unloadable plist while Y is active would only muddle the diagnosis.
+
+The recurring-pain-point shape:
+- **Silent until exercised.** SMB mount loss surfaces no health signal — Sonarr container reports `(healthy)`, Uptime Kuma stays green, Zabbix triggers stay dormant. The first symptom is an import failure inside Sonarr's UI/API, hours or days after the mount went away.
+- **Multiple loss vectors.** Reboot (no LaunchAgent), Mac sleep/wake (smbfs does not auto-reconnect after extended idle), `umount`, container restart timing relative to mount establishment.
+- **Mount-after-container has its own failure mode.** Docker Desktop's filesystem bridge does not pick up SMB overlays onto an existing bind path; the container continues to see the empty pre-mount directory until restarted (`docker restart sonarr radarr`). This is documented in the runbook's failure-modes table but is not platform-detected.
+
+**Cross-reference to F5.** This is the canonical concrete instance of the F5 family — F5 is the doctrine ("container-healthy is not integration-working"); F8 is the specific work item that would close the *persistence* half of the F5-B media-stack tier. The *detection* half (probing whether `/Users/admin/mnt/qnap-downloads` resolves to a populated SMB tree from inside the arr containers) is still F5 family work.
+
+- **Roadmap item?** No.
+- **In OpenProject queue?** No.
+- **Tagged autonomous-coding?** N/A.
+- **Trigger condition.** Finding Y (X2) resolved — verified by any successful `launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.iap.<any>.plist` exit 0. At that point execute `docs/runbooks/qnap-downloads-mount.md` Steps 1–5; mount becomes reboot-persistent.
+- **Pending-followup link.** `~/Documents/pending-platform-followups.md` carries the active item so the Finding Y resolution session executes it without re-discovery.
+- **Recommendation.** Defer until Finding Y resolves (next operator login should auto-resolve via macOS launchd convention). No new deliverable needed — this is a runbook execution gated on an upstream condition. If F5 family is authored, this work folds in as F5-B-001 (or equivalent). If Finding Y does NOT auto-resolve at next login, escalate Y itself to a B-severity blocker since 14 IAP LaunchAgents will be unloadable (registry refresh, this mount, and 12 others).
+
+### Gap F9 — Conversation-as-completion regression: PDF / binary persistence pattern never built (severity B, effort: covered by D-17-35 + ~2-4h pattern doctrine)
+
+Prior chat sessions ingested PDFs (and other binaries) into context for derivation work, then derived facts were persisted via the auto-memory layer — but the source binaries themselves did NOT persist. When a later session needs the originals (for re-extraction at different granularity, for downstream deliverables that consume more than the previously-derived facts, or for verification), the operator must re-paste the same binary attachment a second (and third) time.
+
+**Empirical confirmation (2026-05-03 D-17-35 T0):** the operator's Ono Island carriage-house design chat (claude.ai chat 7bdfb1b5-...) produced derived facts (lot dimensions, carriage-house orientation, flood-zone, structural pile spec) that were captured into operator-locked-fact memory. But the underlying 36-page permit set PDF (`Cox_V3_-_CD_05__Permit_Set__All__signed__25-03-10__House.pdf`) was never persisted to a durable location. The operator is now re-pasting the same PDF a second time today to enable D-17-35 ingestion, which then unblocks D-17-33 Overwatch (camera/sensor placement reads E-1/E-2/E-3 sheets directly from the permit set, not from the derived-facts summary).
+
+This is the **third** "conversation-as-completion" pattern surfaced this session, joining:
+- **D-17-34** — audit recommended HA container retirement; conversation agreement was treated as completion; container kept running for ~48h.
+- **F5** — container `(healthy)` signal treated as completion of integration validation; Sonarr/QNAP SMB mount silently broken.
+- **F9** — PDF ingestion to context treated as completion of persistence; binaries lost on session end.
+
+The underlying anti-pattern: **derivation outputs are persisted; raw inputs are not**. Memory is great for distilled facts, terrible for the originals those facts came from. Property plans, vendor PDFs, screenshots, RFCs, large reference docs, exported reports — all share this shape.
+
+For autonomous coding, this is severity B because:
+- It blocks any deliverable whose work product needs structured access to the original document (per-page/per-sheet extraction, geometry/coordinate reads, image-content queries) rather than the conversation-derived summary.
+- It creates a recurring re-paste burden that scales with how often the same binary is referenced — D-17-35 unblocks at least D-17-33, and any future property-related deliverable would need the plans again.
+- It silently violates the verification doctrine: a future agent asked "where are the planned exterior cameras?" cannot answer from memory alone (memory has the derived-facts summary, not the E-series sheets); the only answer requires re-ingesting the PDF the operator already pasted twice.
+
+**Cross-reference to F7 (architecture-facts doctrine, 2026-05-03 close).** F9 is the binary-asset analogue of F7: F7 says recommendations require executed validation, not conversation agreement; F9 says raw inputs require executed persistence, not conversation ingestion. Both are conversation-as-completion regressions in different layers of the work product.
+
+- **Roadmap item?** No.
+- **In OpenProject queue?** No.
+- **Tagged autonomous-coding?** N/A — D-17-35 is the carrying deliverable for the property-plans instance.
+- **Recommendation.** Two-part close:
+  1. **D-17-35 itself** delivers the *property-plans* instance: durable out-of-repo home (`~/Documents/property/<parcel>/source/`, 700 admin-only) + registry pointer + xindex axis with per-page/per-sheet metadata so AI queries hit `E-1/E-2/E-3` (not just an opaque PDF blob).
+  2. **WP-05 doctrine deliverable** (proposed only, do NOT auto-create in T5): a *binary-asset persistence pattern* chronicle in `docs/architecture-facts/` that generalizes the D-17-35 pattern (out-of-repo location convention + registry pointer + index granularity guideline) so the next class of binary input (vendor PDFs, screenshots, RFCs) follows the same shape without re-deriving the convention. Sized at ~2-4h. Likely lives next to or merges into the F4 family (Stranded data substrates) once that family materializes.
+
+**Status update (2026-05-03 D-17-37 close):** GAP CLOSED. D-17-37 delivered the substrate (QNAP path layout under `download/manual/roadmap-artifacts/`, qnap:// pointer schema, ingest+resolve scripts at `scripts/artifact-{ingest,resolve}.sh`, sibling registry axis at `~/.platform-registry/artifacts/`, ACL classes property/schematics/vendor-docs/source-files, launchd-chained refresh). Doctrine chronicled at `docs/architecture-facts/integration-audit-doctrine.md` Finding 5 (incl. backup posture rationale + substrate-defining-deliverable exemption pattern + smbfs cleanup gotcha). D-17-35 retrofit reduced to a single operator command once PDF lands on filesystem. Severity downgrade: B → CLOSED (was-B).
+
 ---
 
-## Summary — gap inventory (17 gaps)
+## Summary — gap inventory (19 gaps)
 
 | # | Sev | Effort | Has roadmap item? | In queue? | Tagged AC? |
 |---|-----|--------|-------------------|-----------|------------|
@@ -289,14 +336,17 @@ Examples of integration-path checks that would belong in the new family:
 | F3 | N | ~1-2h or 0 | No | No | N/A |
 | F4 | D | ~30 min triage + 0-2h | No (stranded in plane archive) | No | N/A |
 | F5 | **B** | ~20-40h family | No (Phase 6/7 close-extension) | No | N/A (new family) |
+| F8 | D | ~30 min (Y-blocked) | No (runbook exists, gated) | No | N/A |
+| F9 | **B** | covered (D-17-35) + ~2-4h doctrine | No (D-17-35 carries instance) | No | N/A (new pattern) |
 | X1 | **B** | ~3-5h | No (D-17-29 close-extension) | No | N/A (new) |
 | X2 | N | next login | N/A (auto-recovery) | No | N/A |
 | X3 | N | post-demo | Reserved | No | N/A |
 
-Four **B-severity** gaps blocking integrated autonomous-coding flow:
+Five **B-severity** gaps blocking integrated autonomous-coding flow:
 - **F1** — `autonomous-coding` category missing → "what's next" filter broken
 - **C1** — No asset register → upgrade-recommendation flow cannot exist
 - **X1** — Registry has no MCP surface → D#25 doctrine has no clean execution path
 - **F5** — Health checks validate container liveness, not integration paths → agents trust false-positive signal (empirical: 2026-05-03 Sonarr/QNAP SMB mount break went undetected)
+- **F9** — Binary inputs (PDFs etc.) ingested to context but not persisted → recurring re-paste burden, blocks deliverables that need structured per-page/per-sheet access (empirical: 2026-05-03 D-17-35 Ono Island permit set re-paste)
 
 These are the WP-05 priority candidates.

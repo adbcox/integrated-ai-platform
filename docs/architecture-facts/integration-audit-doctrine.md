@@ -308,3 +308,47 @@ This is **proposed but NOT auto-created** per operator instruction at WP-05 invo
 ### Status
 
 **Active finding** (not yet doctrine — pending operator decision on remediation scope). First application of the finding: D-17-34. Cross-references: D#25 (registry as substrate), ADR-A-014 (NetBox authority), D-17-32 Gap X1 (registry agent surface), Phase 14 D-DOC (CMDB_SOURCE default flip).
+
+---
+
+## Finding 5 — Roadmap binary artifacts need a substrate, not ad-hoc copies
+
+**Date:** 2026-05-03
+**Originating WP:** D-17-37 (substrate-defining deliverable; D-17-35 became its deferred first consumer)
+**Severity:** Architecture (governs how AI sessions ingest non-text artifacts referenced by roadmap items)
+
+### What
+
+Roadmap items routinely reference binary artifacts (PDFs, schematics, source-code dumps, vendor datasheets, photos, screenshots). Before D-17-37 there was no canonical storage layer for them. Each ingestion was ad-hoc: a chat upload to context, a manual operator copy somewhere on the Mac Mini filesystem, a `cp` to `/tmp`, or — most commonly — *no persistence at all*: the binary lived only in the conversation that derived facts from it. When a later session needed the original (for re-extraction at different granularity, or for a downstream deliverable consuming more than the previously-derived facts), the operator re-pasted the same file. D-17-35 surfaced this concretely: the Ono Island permit-set PDF was pasted into chat context **four times in a single day** because the prior derivations had persisted facts to memory but had not persisted the source binary anywhere.
+
+### Why it bit us
+
+Three layers of damage:
+
+1. **Operator burden.** Same artifact ingested N times for N deliverables that consume it; scales with cross-deliverable artifact reuse.
+2. **Capability ceiling.** Derived-facts memory cannot answer queries that need structured per-page or per-sheet access ("which sheet in the permit set shows the planned camera locations?"). Only the original PDF can. Without a persistent original, downstream deliverables that need that level of detail are blocked or must re-ingest.
+3. **F9 symmetry to F7 / F5.** F7 says recommendations require executed validation, not conversation agreement. F5 says container-healthy is not integration-working. F9 says raw inputs require executed persistence, not conversation ingestion. All three are conversation-as-completion regressions in different layers of the work product.
+
+### The substrate (D-17-37)
+
+- **Storage:** QNAP `/share/CACHEDEV2_DATA/downloads/manual/roadmap-artifacts/<phase>/<deliverable>/` (reachable on Mac Mini at `/Users/admin/mnt/qnap-downloads/manual/roadmap-artifacts/...`). Reuses the existing `download` SMB mount for v1 — backlog item: rename to a dedicated `/share/roadmap-artifacts/` share once Finding Y unblocks reliable LaunchAgent registration for SMB mount persistence.
+- **Per-deliverable shape:** `source/`, `extracted/`, `annotations/`, `metadata.yaml`. ACL classes (`property`, `schematics`, `vendor-docs`, `source-files`) determine dir/file modes at ingestion.
+- **Pointer schema:** `qnap://download/manual/roadmap-artifacts/<phase>/<deliverable>/source/<filename>`. Embedded in framework row freeform-notes column and OpenProject WP description; resolver `scripts/artifact-resolve.sh` translates back to local mount path.
+- **Registry axis:** `~/.platform-registry/artifacts.json` + per-deliverable `~/.platform-registry/artifacts/<D-NN-NN>.json` — sibling to D-17-29 service axis; same convention. `scripts/platform-registry/refresh.sh` chains to `refresh-artifacts.sh` so launchd refresh keeps both indices fresh.
+- **Ingestion:** single script `scripts/artifact-ingest.sh <D-NN-NN> <local-path> [--class CLASS] [--no-index]` — moves (not copies) the file into the canonical path, sets perms per class, emits a `metadata.yaml` stub if absent, refreshes the registry, prints the qnap:// pointer to stdout.
+
+### Backup posture (deliberate non-coverage)
+
+Restic's repo target is MinIO **on the QNAP itself** (`s3://192.168.10.201:9000/backups`). Adding the artifact root to `BACKUP_DIRS` would back up QNAP data to the same QNAP — single-host failure loses both copies. **Doctrine: artifact persistence is QNAP RAID + native snapshots, not Restic.** Off-host artifact replication, if desired later, is a separate deliverable (cross-host replication target, e.g., Mac Studio external drive or off-site target — not in D-17-37 scope).
+
+### Substrate-defining deliverable exemption pattern
+
+D-17-37 itself does not retrofit through its own substrate. The artifact axis is meta about other deliverables' binaries; D-17-37 produces no binary it would index. **Doctrine: a substrate-defining deliverable is exempt from being its own first consumer.** The first consumer must be a real deliverable that uses the substrate naturally. For D-17-37, that is D-17-35 (Ono Island property plans); the retrofit completes via a single operator command (`scripts/artifact-ingest.sh D-17-35 ~/Documents/property/ono-island/source/Cox_V3_-_CD_05__Permit_Set__All__signed___25-03-10__House.pdf --class property`) once the operator drops the PDF on the host filesystem.
+
+### smbfs cleanup quirk (minor)
+
+When the registry-refresh emitter or operator removes a deliverable directory from the QNAP-mounted share, smbfs may leave `.smbdeleteAAAxxxxxx.N` placeholder files in the directory that Linux/macOS reports as "Resource busy" until the QNAP-side lock releases. The artifact-axis emitter filters dotfiles (`f.name.startswith(".")`), so the registry index correctly shows zero source files; the placeholder purges itself once smbfs releases the lock. Not a substrate bug; documented here so future operators do not chase it.
+
+### Status
+
+**Active doctrine.** First substrate validation: synthetic D-17-37 self-test (smoke pass — ingest emitted qnap:// pointer, resolver resolved it, registry indexed it). First real-deliverable retrofit: D-17-35 (deferred, single operator command). Cross-references: D#25 (registry doctrine), ADR-A-014 (NetBox out of scope for artifacts), D-17-32 Gap F9 (the gap this closes), D-17-35 (first consumer), Finding Y (SMB mount persistence — blocks dedicated-share rename backlog item).
