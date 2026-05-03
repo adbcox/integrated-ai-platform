@@ -132,7 +132,6 @@ See `docs/architecture/mcp-server-architecture.md` for full MCP topology.
 | Caddy | 443 | TLS reverse proxy |
 | Headscale | 8082 | WireGuard VPN controller |
 | NetBox CMDB | 8080 | Service registry (authoritative) |
-| Home Assistant (container) | 8123 | HA integration container |
 
 ### Media (5 services)
 
@@ -235,7 +234,7 @@ Known hardening gaps (Phase 14 D-DOC tracking):
 | MCP Docker | `docker/mcp/docker-compose.mcp-docker-remote.yml` | mcp-docker-remote |
 | Headscale | `docker/headscale/docker-compose.yml` | headscale |
 | Arr stack | `~/control-center-stack/stacks/arr-stack/docker-compose.yml` | sonarr, radarr, prowlarr, sportarr |
-| Dashboards | `~/control-center-stack/stacks/dashboards/docker-compose.yml` | homeassistant |
+| Dashboards | `~/control-center-stack/stacks/dashboards/docker-compose.yml` | (empty — Home Assistant retired 2026-05-03 per D-17-34; canonical HA at 192.168.10.141) |
 | AI Control | `~/control-center-stack/stacks/ai-control/docker-compose.yml` | homarr |
 | Vault | `~/control-center-stack/stacks/vault/docker-compose.yml` | vault-server |
 | Seal Vault | `~/control-center-stack/stacks/seal-vault/docker-compose.yml` | seal-vault |

@@ -20,8 +20,7 @@ graph TB
     grafana["Grafana"]:::observability
     headscale["Headscale VPN Server"]:::infrastructure
     homarr["Homarr"]:::platform
-    homeassistant-container["Home Assistant (container)"]:::automation
-    homeassistant-physical["Home Assistant (physical)"]:::automation
+    homeassistant-physical["Home Assistant (physical) — 192.168.10.141 (canonical)"]:::automation
     homepage["Homepage Control Center"]:::control-center
     litellm-gateway["LiteLLM Gateway"]:::ai
     mcp-docker-remote["MCP Docker Remote"]:::mcp
@@ -47,8 +46,6 @@ graph TB
     obot-shim-generic-c["Obot Shim — Tool C"]:::mcp-shim
     obot-shim-github["Obot Shim — GitHub"]:::mcp-shim
     obot-shim-github-nanobot["Obot Nanobot — GitHub"]:::mcp-shim
-    obot-shim-homeassistant["Obot Shim — Home Assistant"]:::mcp-shim
-    obot-shim-homeassistant-nanobot["Obot Nanobot — Home Assistant"]:::mcp-shim
     obot-shim-postgres["Obot Shim — PostgreSQL"]:::mcp-shim
     obot-shim-postgres-nanobot["Obot Nanobot — PostgreSQL"]:::mcp-shim
     obot-shim-semgrep["Obot Shim — Semgrep"]:::mcp-shim
@@ -123,9 +120,6 @@ graph TB
     obot --> obot-shim-generic-c
     obot --> obot-shim-github
     obot-shim-github --> obot-shim-github-nanobot
-    homeassistant-container --> obot-shim-homeassistant
-    obot --> obot-shim-homeassistant
-    obot-shim-homeassistant --> obot-shim-homeassistant-nanobot
     obot --> obot-shim-postgres
     obot-shim-postgres --> obot-shim-postgres-nanobot
     obot --> obot-shim-semgrep

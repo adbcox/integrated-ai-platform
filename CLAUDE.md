@@ -6,6 +6,7 @@
 - Mac Mini M4 Pro 48 GB at 192.168.10.145 — control plane (`system_profiler`-verified 2026-05-01; earlier "M5" framing was wrong)
 - Mac Studio M3 Ultra 96 GB at 192.168.10.142 — compute node (arrived 2026-05-01)
 - MacBook Pro M5 — local-parity node (Phase 13 Block 3 vocabulary; tracked in current phase plan)
+- Home Assistant hub at 192.168.10.141 — canonical HA host (physical/VM, not platform-managed). Caddy `home.internal` proxies here. Mac Mini did NOT and does NOT host an HA container; a stray container retired 2026-05-03 per D-17-34.
 - QNAP NAS — backup target
 
 ## Phase / deliverable state — DO NOT duplicate here
