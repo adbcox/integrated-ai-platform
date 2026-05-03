@@ -29,7 +29,7 @@ the integrated flow it participates in broken at the seam.
 
 D-17-32 audited Phase 17 against six target flows (Inference,
 InvenTree, Asset/firmware, Provenance, Documentation, Project
-management) and found 16 gaps — three B-severity blockers
+management) and found 17 gaps — four B-severity blockers
 concentrated in seams between subsystems, not within any single
 subsystem:
 
@@ -41,8 +41,13 @@ subsystem:
 - **C1** — No asset/firmware/OS register exists; the 2026-05-02
   macOS-upgrade incident was the worked example (asset-mgmt family
   intake-doc'd but not framework-authored)
+- **F5** — Container health checks validate liveness, not integration
+  paths; the 2026-05-03 Sonarr/QNAP SMB mount break (caught by
+  operator-observed import failure, not by any platform health
+  signal) is the worked example (Phase 6/7 close-extension —
+  monitoring scope was container-layer, not integration-layer)
 
-All three are seams *between* subsystems, not failures within them.
+All four are seams *between* subsystems, not failures within them.
 Each subsystem (OpenProject, registry, asset-tracking-substrate)
 either works or is correctly framed as out-of-scope; the integration
 points are what's missing.
@@ -115,6 +120,50 @@ appear in the gap report; they should be surfaced explicitly so the
 operator can schedule them. "Operator-only" is not a reason to omit
 from the inventory — it's exactly the kind of thing that gets
 forgotten without a tracked surface.
+
+### Sub-doctrine — "container `(healthy)` is not `(integration working)`"
+
+Container-level health checks (Docker `HEALTHCHECK`, Uptime Kuma
+liveness, Zabbix host-up) validate the subsystem's own surface —
+process is alive, port is responding, agent is reachable. They do
+NOT validate that the subsystem's outputs flow correctly through to
+its downstream consumers.
+
+The 2026-05-03 Sonarr/QNAP SMB mount break is canonical: the SMB
+mount used by Sonarr's media library was broken for an unknown
+duration. Sonarr's container health check returned green throughout.
+Zabbix triggers were green. Uptime Kuma was green. The break was
+only surfaced when the operator observed import failures in a
+separate troubleshooting session. **No platform health signal caught
+it.**
+
+Going forward, any deliverable that asserts "monitoring complete"
+must explicitly state which layer is covered:
+
+- **Container liveness** — process up, health endpoint responding,
+  registered with monitoring substrate. (Phase 6/7 scope.)
+- **Integration-path validation** — a real request flows through the
+  subsystem's interface, produces the expected downstream effect,
+  and the effect is observed end-to-end. (Gap F5; new family
+  proposed.)
+
+The two are not interchangeable; deliverables claiming the former
+must NOT be read as covering the latter. Examples of integration-path
+checks that belong in this layer:
+
+- Sonarr import: SMB mount reachable + container can read mount +
+  new file lands + library refresh picks it up
+- Vault → Vault Agent sidecar → container env: secret X in Vault
+  matches `/proc/1/environ` reading inside container Y (per Finding
+  DD — `docker exec env` is the wrong probe)
+- exo cluster → litellm → Open WebUI: a real chat-completion request
+  flows through all three layers and returns expected output
+- Backup chain: Restic snapshot create + restore-to-tmpdir verify
+
+For autonomous coding this matters because an agent that consults
+health-check signal and trusts it will operate on false-positive
+state. Recommendations grounded in "service X is healthy, so the
+integration through it works" can be wrong.
 
 ### Sub-doctrine — negative datapoints count
 

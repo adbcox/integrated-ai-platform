@@ -1,19 +1,20 @@
 # D-17-32 — Prioritized hardening backlog
 
 **Date:** 2026-05-03
-**Source:** `integrated-stack-gaps-2026-05-03.md` (16 gaps across 6 flows + 3 cross-flow seams)
+**Source:** `integrated-stack-gaps-2026-05-03.md` (17 gaps across 6 flows + 3 cross-flow seams)
 **Constraint:** Audit-only deliverable. No remediation deliverables auto-created here. Operator queues new deliverables in next planning pass.
-**Operator confirmation:** ordering confirmed 2026-05-03 (B1 → B2 → B3 → D-tier → N-tier).
+**Operator confirmation:** ordering confirmed 2026-05-03 (B1 → B2 → B3 → B4 → D-tier → N-tier). F5 added late under operator instruction after empirical confirmation via separate Sonarr troubleshooting session (QNAP SMB mount break went undetected by all platform health signals).
 
 ---
 
-## Tier B — Blocks autonomous coding outright (3 gaps)
+## Tier B — Blocks autonomous coding outright (4 gaps)
 
 | Rank | Gap | Effort | Existing roadmap item? | Action |
 |------|-----|--------|------------------------|--------|
 | **B1** | **F1** — `autonomous-coding` category missing in OpenProject; CLAUDE.md doctrine "filter by category=autonomous-coding" returns nothing. Sync falls back to `[auto]` description marker (21 items carry it; 0 carry the category). | ~15 min op + 5 min sync | **None** — D-17-31 closed assuming the category existed. | **NEW micro-deliverable proposed**: create category in OpenProject UI → re-run sync `--include-roadmap` → verify 21 RM items take the category → update CLAUDE.md if filter syntax changes. Highest leverage-per-minute in the audit. |
 | **B2** | **X1** — Service registry has no MCP/agent surface. D#25 mandates consultation but the only path is a 4-line Python snippet pasted into CLAUDE.md. xindex MCP exposes services-as-NetBox-rows but not registry's port/credential/depends_on metadata. | ~3-5h | **None.** Closest: RM-16-B-008 (cross-index InvenTree axis) — adjacent but doesn't cover registry. | **NEW deliverable proposed**: `xindex_get_registry_record` tool OR standalone `registry-mcp` server. Wraps `~/.platform-registry/inventory.json` + `by-service/*.json` with last-refresh staleness signal. Closes D#25 doctrine ↔ execution gap. |
 | **B3** | **C1** — No asset / firmware / OS state register exists. The 2026-05-02 macOS upgrade that triggered the D-17-25 reboot was AI-recommended without any state consult — there was nothing to consult. Spans hosts + accessories per Finding T scope. | ~30-50h (deliverable family) | **None active.** Asset-mgmt A/B/C/D scope is intake-doc'd in operator memory only — not framework-authored. | **NEW deliverable family proposed**: needs framework authoring before queueable. Author scope doc as separate intake deliverable in next planning pass; will become D-17-NN-A through D-17-NN-D (or Phase-18 candidates). |
+| **B4** | **F5** — Container health checks validate liveness, not integration paths. Empirical: 2026-05-03 Sonarr/QNAP SMB mount break went undetected by all platform health signals (container `(healthy)`, Zabbix green, Uptime Kuma green) for unknown duration; surfaced only by operator-observed import failure in separate troubleshooting session. Agents trusting health-check signal will operate on false-positive state. | ~20-40h (deliverable family) | **None.** Phase 6/7 closeouts asserted "monitoring complete" at container layer — integration-layer claim is doctrine drift not previously surfaced. | **NEW deliverable family proposed**: end-to-end integration health checks. Tier examples: F5-A inference path (exo → litellm → Open WebUI roundtrip), F5-B media stack (SMB mount + container access + file move + library refresh), F5-C secret propagation (Vault → Vault Agent sidecar → `/proc/1/environ` per Finding DD), F5-D backup verification (Restic snapshot + restore-to-tmpdir). Doctrine outcome: explicit chronicle "container `(healthy)` is not `(integration working)`." Cross-cuts B3 — asset register catches firmware/OS drift; F5 catches *flow* drift. Both needed. |
 
 ---
 
@@ -56,6 +57,8 @@ These are **not auto-created** by D-17-32. Operator decides at next planning pas
 | Registry MCP surface | X1 (B2) | ~3-5h | High |
 | Asset-management family scope authoring | C1 (B3) — intake | ~2-3h authoring | High |
 | Asset-management family A/B/C/D | C1 (B3) — implementation | ~30-50h | After scope authored |
+| Integration health-check family scope authoring | F5 (B4) — intake | ~2-3h authoring | High |
+| Integration health-check family A/B/C/D | F5 (B4) — implementation | ~20-40h | After scope authored |
 | litellm route enumeration | A1 (D2) | ~2h | Medium |
 | Provenance enumeration MCP | D1 (D6) | ~3-4h | Medium |
 | Architecture-facts xindex axis | E1 (D7) | ~3-5h | Medium |
@@ -68,11 +71,13 @@ These are **not auto-created** by D-17-32. Operator decides at next planning pas
 
 **Stack-integration audit becomes a recurring deliverable at every phase boundary.**
 
-Subsystem-level closure does not equal integrated-system-level capability. Phase 17 produced 25 deliverables that each closed on their own scope; this audit found 16 gaps in how those subsystems compose into the autonomous-coding flow the operator's goal requires.
+Subsystem-level closure does not equal integrated-system-level capability. Phase 17 produced 25 deliverables that each closed on their own scope; this audit found 17 gaps in how those subsystems compose into the autonomous-coding flow the operator's goal requires.
 
 Going forward, every phase plan must include a stack-integration audit as a phase-close deliverable (named `D-NN-INT` or equivalent). Audit format: enumerate target flows for the phase's autonomous-coding posture, trace each end-to-end, classify gaps B/D/N, surface back to operator before queueing remediation.
 
 This audit (D-17-32) is the canonical reference for the format.
+
+**Companion doctrine (F5):** "container `(healthy)` is not `(integration working)`." Phase 6/7 monitoring scope was container-layer; the integration-layer scope was assumed-but-not-built. Going forward, any deliverable that asserts "monitoring complete" must explicitly state which layer (container liveness vs integration-path validation) and not the other.
 
 ---
 

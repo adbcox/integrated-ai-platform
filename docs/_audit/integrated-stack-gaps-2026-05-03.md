@@ -244,9 +244,32 @@ Operator considered Vault retirement during D-17-28 recovery. Reservation: post-
 - **Roadmap item?** Reserved post-demo.
 - **Recommendation.** Defer per operator framing. Mention in WP-05 backlog only as low-priority follow-on.
 
+### Gap F5 — Health checks validate container liveness, not integration paths (severity B, effort: deliverable family ~20-40h)
+
+Phase 6/7 hardening introduced container-level health checks (Docker `HEALTHCHECK` + Uptime Kuma + Zabbix host monitoring). Those signals validate "container is up + responding to liveness probe" but do NOT validate end-to-end flows. A container can be `(healthy)` while its downstream integration is silently broken.
+
+**Empirical confirmation (2026-05-03 evening):** the QNAP SMB mount used by Sonarr's media library was broken for an unknown duration. Sonarr's container health check returned green throughout. The break was only surfaced when the operator observed import failures in a separate troubleshooting session. **No platform health signal caught it.** This is the canonical worked example for the gap, parallel to the role D-17-25's macOS-upgrade incident plays for C1.
+
+This cross-cuts:
+- **B3 (C1, asset-mgmt family)** — asset register would catch firmware/OS drift; F5 catches *flow* drift. Different surfaces, both needed.
+- **The broader operator framing:** "subsystems work but integration doesn't." Container-level health is subsystem-level closure; integration-path health is the missing surface.
+
+For autonomous coding, this is severity B by extension: an agent that consults health-check signal (Zabbix triggers, Uptime Kuma status, container `(healthy)` state) and trusts it will operate on false-positive state. Recommendations grounded in "service X is healthy, so the integration through it works" can be wrong.
+
+Examples of integration-path checks that would belong in the new family:
+- **Sonarr import end-to-end:** SMB mount reachable + container can read mount + new file lands + library refresh picks it up
+- **Vault → Vault Agent sidecar → container env propagation:** secret X in Vault matches what `/proc/1/environ` reads inside container Y (per Finding DD doctrine — `docker exec env` is the wrong probe)
+- **exo cluster → litellm → Open WebUI roundtrip:** a real chat-completion request flows through all three layers and returns expected output (D-17-30 verified this manually once; no recurring check)
+- **Backup chain:** Restic snapshot create + restore-to-tmpdir verify, scheduled monthly minimum
+
+- **Roadmap item?** No. Phase 6/7 closeouts assert "monitoring complete" — that scope was container-layer, not integration-layer. The integration-layer claim is doctrine drift not previously surfaced.
+- **In OpenProject queue?** No.
+- **Tagged autonomous-coding?** N/A.
+- **Recommendation.** **NEW deliverable family proposed (do NOT auto-create in T5):** end-to-end integration health checks. Separate from registry consultation (which proves what *should* exist) — this proves what *actually flows* through the stack. Sized at ~20-40h depending on flow coverage; could be tiered like the asset-mgmt family (e.g., F5-A inference path, F5-B media stack, F5-C secret propagation, F5-D backup verification). Doctrine outcome: explicit chronicle "container `(healthy)` is not `(integration working)`" plus per-flow probes captured as runbooks or scheduled scripts.
+
 ---
 
-## Summary — gap inventory (16 gaps)
+## Summary — gap inventory (17 gaps)
 
 | # | Sev | Effort | Has roadmap item? | In queue? | Tagged AC? |
 |---|-----|--------|-------------------|-----------|------------|
@@ -265,13 +288,15 @@ Operator considered Vault retirement during D-17-28 recovery. Reservation: post-
 | F2 | D | ~5 min | No | No | N/A |
 | F3 | N | ~1-2h or 0 | No | No | N/A |
 | F4 | D | ~30 min triage + 0-2h | No (stranded in plane archive) | No | N/A |
+| F5 | **B** | ~20-40h family | No (Phase 6/7 close-extension) | No | N/A (new family) |
 | X1 | **B** | ~3-5h | No (D-17-29 close-extension) | No | N/A (new) |
 | X2 | N | next login | N/A (auto-recovery) | No | N/A |
 | X3 | N | post-demo | Reserved | No | N/A |
 
-Three **B-severity** gaps blocking integrated autonomous-coding flow:
+Four **B-severity** gaps blocking integrated autonomous-coding flow:
 - **F1** — `autonomous-coding` category missing → "what's next" filter broken
 - **C1** — No asset register → upgrade-recommendation flow cannot exist
 - **X1** — Registry has no MCP surface → D#25 doctrine has no clean execution path
+- **F5** — Health checks validate container liveness, not integration paths → agents trust false-positive signal (empirical: 2026-05-03 Sonarr/QNAP SMB mount break went undetected)
 
 These are the WP-05 priority candidates.
