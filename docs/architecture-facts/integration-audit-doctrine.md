@@ -366,3 +366,104 @@ D-17-39 closes Gap F9 at the **flow** layer with `scripts/roadmap-create.sh`, an
 **Backlog (deferred, not blocking):** (1) `roadmap-create.sh --update-existing` flag for closing IN PROGRESS rows when their gating artifact lands (~30 min when needed; D-17-35's expected close path); (2) MCP-tool surface (`roadmap_create_with_artifact` exposed via xindex-mcp) once chat-attachment-pickup primitive is reliable in this surface.
 
 **Active doctrine.** Cross-references: D-17-37 (storage-layer F9 closure), D-17-35 (first deferred consumer; awaits real artifact), D-16-02.A (repo-owned-canonical doctrine that disqualified surface (b)), D-17-31 (PHASE_ROADMAP.md → OpenProject sync that the script depends on for OP WP creation).
+
+---
+
+## Finding 6 — Retirement audits stop at the integration layer they personally witnessed; consumer pipelines have phases the auditor never traced (F10)
+
+### What
+
+A retirement audit produces dispositive evidence about ONE phase of a consumer pipeline, then writes a record that implicitly authorizes treating *all* phases as understood. When the same record is later used as a restoration playbook, the un-traced phases surface as latent defects during unpark.
+
+D-17-36 (Sportarr unpark) is the canonical worked example. Four distinct latent defects were discovered post-unpark, each in a phase the 2026-05-01 retirement record (`docs/_retired/sportarr-2026-05-01.md`) had not personally traced:
+
+1. **Indexer URL phase.** Retirement record cited `BaseUrl` column rewrite (`UPDATE Indexers SET BaseUrl = REPLACE(...)`); actual schema column is `Url`. The audit had read the column from a Prowlarr export, not from `sportarr.db`. Sportarr's indexer wiring uses `Indexers.Url`. Restoration step 2 was unrunnable as written.
+
+2. **Indexer ApiKey phase.** Retirement record's restoration steps did not mention ApiKey at all. On restore, all 5 indexers had stale ApiKey (`9b7ed91b...`) that no longer matched live Prowlarr's key (`620626ef...`). Result: Url fix landed correctly, but every fetch returned `401 Unauthorized` until a separate sweep `UPDATE Indexers SET ApiKey = '<live>'`. Phase: indexer→Prowlarr authentication, never traced because retirement-era container wasn't authenticated end-to-end either.
+
+3. **Bind-mount phase.** Retirement record's compose block had `/sports:/data` only — no `/downloads` bind. The canonical Sonarr/Radarr arr-stack pattern is `/Users/admin/mnt/qnap-downloads:/downloads` (plural) for the seedbox-replicated tree, `/Users/admin/mnt/qnap-downloads/data:/data` for the media root. Retirement-era audit looked at runtime `docker inspect` output, not at sibling-pattern conformance. First unpark attempt also used `/download` (singular), which was caught by operator pushback.
+
+4. **Storage-layout phase.** Retirement record's `/sports:/data` framing implied Sportarr stored content at `/data/{TV-style hierarchy}`. Actual Sportarr behavior: stores at `/data/{Sport}/Season {Year}/file.mkv` — flat per-sport, no `/data/media/sports/` parent. Plex library γ-recreate at `/share/CACHEDEV2_DATA/data/media/sports` was based on operator projection of media-tree convention rather than tracing actual Sportarr import behavior. Required γ'.3 reconfiguration (RootFolder add `/data/media/sports`, container-mediated `mv` of existing files, EventFile/Events DB FilePath updates, RootFolder remove `/data`) post-unpark to align with the canonical Sonarr/Radarr arr-stack hierarchy `/data/media/{type}/<show>/Season N/`.
+
+### Why it bit us
+
+A retirement-era audit is *evidence*-driven: trace what failed, document the dispositive datapoint, leave a reversible record. Once written, the record becomes an *authoritative* restoration playbook even though restoration is a fundamentally different operation than retirement. Retirement decommissions one phase that already broke; restoration must verify ALL phases work. Latent defects in un-traced phases stay latent because the retirement-era container never exercised them.
+
+For Sportarr specifically: the retirement audit traced `indexer fetch failure → 6,769 silent failures → low engagement → PARK-RETIRE`. Storage layout, bind-mount canonical pattern, ApiKey freshness, and column-name accuracy were never traced because the retirement-era container never imported a single file successfully — those phases of the pipeline never ran.
+
+### Doctrine takeaway
+
+**Retirement-record-as-restoration-playbook is structurally unsound.** Two complementary fixes:
+
+1. **Retirement audits trace ALL phases, not just the failed one.** Even when a phase doesn't matter for the retirement decision, document its current state so a future restoration has a baseline to verify against. Cost: ~15-30 minutes additional audit time. Prevents: 4 latent defects discovered in real time during unpark.
+
+2. **Restoration audits MUST exist as a separate doctrine step.** The retirement record is one input; current sibling-pattern conformance + live-credential freshness + actual-storage-layout-vs-projected are independent checks. D-17-36 implicitly authored this audit during execution; future unparks should structure it explicitly:
+   - Pre-flight phase 1: Re-read all schema columns referenced in the retirement playbook against the preserved data substrate. Retirement-era column names may have changed; retirement-era column names may have been wrong.
+   - Pre-flight phase 2: Audit canonical-pattern conformance against current sibling services (Sonarr/Radarr for arr-stack) — bind mounts, network membership, env vars, security_opt.
+   - Pre-flight phase 3: Refresh all credential references against live secret stores; retirement-era values are presumptive-stale.
+   - Post-bringup phase: Trace the consumer pipeline end-to-end (indexer→grab→download→import→library→playable) before declaring restoration complete. Container `(healthy)` is not `(restoration working)` (per Finding 1 sub-doctrine).
+
+### Sub-doctrine — container-mediated `mv` is canonical for in-Sportarr file relocation
+
+Discovered during γ'.3 step 3-4. When moving files within the SMB-overlaid `/data` tree, two operationally distinct paths exist:
+
+- **Host-side `mv`** via `/Users/admin/mnt/qnap-downloads/...`. Files surface to host as `admin:staff`, but UID translation gap means files surface to container as `root:root 0700`. Move succeeds at SMB protocol layer but Sportarr's filesystem watcher may not observe the change consistently.
+- **Container-mediated `mv`** via `docker exec sportarr mv ...`. Move executes at the SMB protocol layer (same as Sonarr's import-by-move per `docs/runbooks/qnap-downloads-mount.md` F3 reference), AND Sportarr's filesystem watcher observes the change as an in-process FS event. Result: `Events.FilePath` and `EventFiles.FilePath` auto-update without manual SQL.
+
+**Doctrine:** for in-arr-stack file relocations within a tree the container can see, prefer container-mediated `mv` over host-side `mv`. The watcher-driven DB auto-update reduces the manual UPDATE surface and prevents path-rewrite drift. (Caveat: watcher only auto-updates the `FilePath` text; release-parser misclassification — Finding 7 below — is NOT auto-corrected by file moves.)
+
+### Status
+
+**Active doctrine.** Worked example: D-17-36 Sportarr unpark, all four latent-defect phases (indexer URL column name, indexer ApiKey staleness, bind-mount canonical pattern, storage-layout projection) discovered and remediated in real time. Retirement record `docs/_retired/sportarr-2026-05-01.md` patched in WP-08: `BaseUrl → Url` schema correction in restoration step 2; ApiKey-refresh sub-step added; bind-mount block updated to canonical `/downloads` (plural) + `/data`; storage-layout note added pointing at γ'.3 reconfiguration as historical evidence that operator projection of the media-tree convention required post-unpark correction.
+
+Cross-references: D-17-36 (the worked example), Finding 1 (sub-doctrine "container `(healthy)` is not `(integration working)`" — directly applicable), Finding 2 (false-positive completion regression — restoration without phase-by-phase verification is the same anti-pattern as audit-recommendations-without-execution), `docs/runbooks/qnap-downloads-mount.md` (F3 SMB import-by-move reference).
+
+---
+
+## Finding 7 — Release-parser confidence is independent from event-correctness; 100% match score can still misclassify (F12)
+
+### What
+
+D-17-36 WP-07 surfaced a defect where a Sportarr indexer fetched the **Miami Grand Prix Qualifying** .mkv at 100% release-match confidence, but linked the EventFile to **Event 1572 = "Australian Grand Prix Qualifying" (2026)** — a different round entirely. State at discovery (post-γ'.3 file relocation):
+
+```
+EventFile id=1, EventId=1572 (Australian Qualifying)
+  FilePath = /data/media/sports/Formula 1/Season 2026/
+             Formula1.2026.Miami.Grand.Prix.Qualifying.1080p.AHDTV.x264-DARKSPORT.mkv
+
+Event 1572 "Australian Grand Prix Qualifying" Round=3 Date=2026-03-15 — HasFile=1 (wrong)
+Event 1597 "Miami Grand Prix Qualifying"      Round=4 Date=2026-05-02 — HasFile=0 (also wrong)
+```
+
+The filename contains `Miami` unambiguously; Sportarr's release-parser still picked the first 2026 F1 Qualifying event by date order (Australia is round 3, Miami is round 4). Round / venue tokens were either not parsed or not weighted against the event date-ordered candidate list.
+
+### Why it bit us
+
+Release-match confidence and event-correctness are different signals. The release-grab path produced a high-confidence fetch (release-name regex matched, year matched, sport matched), but the event-mapping path (which round, which qualifying session) used a weaker heuristic that fell back to the first-eligible-monitored event. Result: file imported, container healthy, DB consistent (`HasFile=1` on a row), but the row was the wrong event.
+
+This is structurally different from F10 (retirement-audit phase coverage gaps) — F10 is about the audit not tracing a phase; F12 is about a runtime phase producing a confidently-wrong result that no audit would have caught because the failure mode is internal to a working component.
+
+The defect was masked initially by the half-import framing during WP-07 scoping: "file on disk, no DB row" was the working hypothesis. Actual state was "file on disk, DB row exists but points at wrong event." If the scoping question had been "is the imported file linked to the correct event?" rather than "did the import complete?", the misclassification would have surfaced immediately.
+
+### Doctrine takeaway
+
+**Health checks that assert pipeline completion (HasFile=1, FilePath set) do not assert pipeline correctness (linked to the right event).** F5/F8 family integration health checks (per Finding 1) need a correctness layer in addition to the completion layer. For Sportarr specifically:
+
+- **Completion check** (already canonical): for each monitored event in current season, expect HasFile=1 within N days of EventDate.
+- **Correctness check** (new): for each EventFile row, parse the filename for venue/round tokens; assert the linked Event's Title contains the same venue token. Mismatch is a soft failure (operator review) not a hard failure (no auto-relink), because correct relink requires release-name parsing logic that may itself be fallible.
+
+A correctness check would have surfaced the Miami→Australia misclassification without needing a Plex-side end-to-end probe, because the filename and the Event.Title disagree on a token (`Miami` vs `Australian`) that any naïve string compare would catch.
+
+### Sub-doctrine — release-parser correctness is a separate doctrine layer from indexer reachability
+
+Sportarr's release-parser is upstream-frozen (linuxserver/sportarr image; we don't fork). Mitigations live on the consumer side:
+
+1. **Filename-vs-event-title token mismatch probe** (sketch above) — runs as a periodic check, surfaces mismatches as a Sportarr-tag or external dashboard signal.
+2. **Pre-import naming-format hint** — if Sportarr exposes a way to weight venue tokens in its parser, that's a config-level remediation. Out of scope for D-17-36; investigate as Phase 18 backlog.
+3. **Operator-visible "recent imports" surface** — a one-screen view of "what arrived in the last 7 days, mapped to which event" gives the operator a chance to spot a misclassification before the event date passes. F1 cadence (one round/weekend) makes manual review feasible; high-volume sports would need automation.
+
+### Status
+
+**Active doctrine.** Worked example: D-17-36 WP-07 Miami Qualifying misclassification, remediated by manual `UPDATE EventFiles SET EventId = 1597 WHERE Id = 1` + `UPDATE Events SET HasFile=0, FilePath=NULL WHERE Id=1572` + `UPDATE Events SET HasFile=1, FilePath=...` for Event 1597. DB snapshot pre-relink at `/Users/admin/sportarr-db-pre-wp07-relink-2026-05-03.snapshot`. Plex library 4 (Sports) post-relink shows both Sprint AND Qualifying at canonical paths.
+
+Cross-references: D-17-36 (the worked example), Finding 1 (Gap F5 family — integration health checks; correctness layer is a new sub-family), Finding 6 / F10 (retirement-audit phase coverage; this defect would not have been caught by a more thorough retirement audit because it's a runtime-internal failure mode). Backlog: filename-vs-event-title mismatch probe (~3-4h, Phase 18 candidate); Plex movie-mode hierarchy reconfig (Plex agent change, ~1-2h, Phase 18 candidate — the unpark used `tv.plex.agents.none` + `Plex Video Files` scanner because Sportarr's flat-per-sport storage does not match TV-shows agent expectations).

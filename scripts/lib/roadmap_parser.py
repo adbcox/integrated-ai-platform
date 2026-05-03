@@ -5,10 +5,13 @@ bullet under each `### NN.X` sub-block heading. Sister to
 `scripts/openproject-sync-from-framework.py`'s `parse_framework`, which
 parses the §9 deliverable table.
 
-Authoritative for: Phase 16 sub-blocks (16.A/B/C), Phase 18 sub-blocks
-(18.A/B/C/D). Phase 17 is intentionally NOT parsed here — its scope
+Authoritative for: Phase 16 sub-blocks (16.A/B/C…), Phase 18 sub-blocks
+(18.A/B/C/D/E…). Phase 17 is intentionally NOT parsed here — its scope
 lives in `docs/phase-17/PHASE_17_PLAN_*.md` and the framework §9 table,
-both of which the framework-sync already covers.
+both of which the framework-sync already covers. Sub-block letters
+accept `[A-Z]` to allow append-style growth without renumbering
+existing rows (see D-17-36 backlog item adding 18.E for sports indexer
+expansion alongside the pre-existing 18.D NetFlow block).
 
 Scope-section shape:
 
@@ -114,7 +117,7 @@ class RoadmapItem:
 @dataclass
 class SubBlock:
     phase: int
-    letter: str                 # "A".."D"
+    letter: str                 # "A".."Z"
     heading: str                # full heading text e.g. "Mac Studio full compute stack (~12–18h)"
     items: list[RoadmapItem] = field(default_factory=list)
 
@@ -124,7 +127,7 @@ class SubBlock:
 # `### 16.A — Mac Studio full compute stack (~12–18h)` or
 # `### 18.D — Network flow collection + visualization (deferred from Phase 16)`
 SUBBLOCK_RE = re.compile(
-    r"^###\s+(?P<phase>16|18)\.(?P<letter>[A-D])\s+[—–-]\s+(?P<title>.+?)\s*$"
+    r"^###\s+(?P<phase>16|18)\.(?P<letter>[A-Z])\s+[—–-]\s+(?P<title>.+?)\s*$"
 )
 SCOPE_MARKER_RE = re.compile(r"^\*\*Scope:\*\*\s*$")
 END_MARKER_RE = re.compile(r"^\*\*[^*]+:\*\*")            # **Gate:** **ADR-…:** etc.

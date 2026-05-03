@@ -266,6 +266,76 @@ Phase 18 CLOSED.
 
 ---
 
+### 18.E — Sports indexer expansion + Sportarr release-parser tuning (~6h hard cap)
+
+Backlog from D-17-36 unpark execution (2026-05-03). Sportarr unparked
+and stable on Miami round (Sprint Race + Qualifying both visible in
+Plex Sports library at canonical path), but two operational gaps remain
+that should not block the unpark close:
+
+1. Indexer coverage thin (5 original Prowlarr-backed indexers, 2/5
+   rate-limited tonight during WP-04 sweep). Sports content surface is
+   different from movie/TV — sports-specific trackers (motorsport, F1,
+   general DVR) are not in Prowlarr's default catalogue.
+2. Release-parser misclassification (F12 worked example): Miami
+   Qualifying release fetched at 100% confidence but linked to
+   Australian Qualifying event; F12 doctrine chronicled but the
+   correctness probe is open.
+
+**Scope:**
+- Sports tracker research (motorsport, F1-specific, general sports DVR communities, public + private):
+  produce a tracker evaluation matrix (name, sports coverage, public/private, Prowlarr support,
+  Cloudflare protection, rate limits, registration approach) — markdown table at
+  `docs/phase-18/18E/tracker-evaluation.md`.
+- Prowlarr-native vs Jackett/FlareSolverr triage: evaluate which trackers need each pathway;
+  deploy FlareSolverr if absent (verify current stack first — operator notes Solar/Sonarr
+  referenced previously, confirm presence or deploy in
+  `~/control-center-stack/stacks/arr-stack/docker-compose.yml` with pre/post snapshots).
+- Sportarr release-parser tuning ReleaseProfiles to address F12 (parser matched Miami Qualifying
+  release to Australian Qualifying event at 100% confidence — wrong round): regex/required/preferred
+  rules for round-disambiguation, committed to `config/sportarr/release-profiles/` with import
+  script for repeatable apply.
+- Per-tracker rate-limit awareness: avoid recurring rate-limited indexers like the 2/5 hit during
+  D-17-36 WP-04 — health-check probe + Grafana alert when indexer rate-limit threshold approached.
+- Indexer ACL classes + tracker-specific config documentation under D-17-37 substrate
+  (`vendor-docs` ACL class likely fits; one ingestion per tracker).
+- Filename-vs-event-title token mismatch probe `scripts/sportarr-correctness-probe.py`
+  (F12 close, ~3-4h): periodic scan over EventFiles parses filename for venue/round tokens,
+  asserts linked Event.Title contains the same venue token; soft-fail surfaces as a Sportarr
+  tag or external dashboard signal + Grafana panel.
+
+**Prerequisites:**
+- D-17-36 closed (Sportarr stable baseline) — DONE 2026-05-03.
+- D-17-38 closed (health check signal restored) — pending.
+- F12 finding chronicled — DONE 2026-05-03 at
+  `docs/architecture-facts/integration-audit-doctrine.md` Finding 7
+  + `docs/_audit/integrated-stack-gaps-2026-05-03.md` Gap F12.
+
+**Deliverable artifacts:**
+- Tracker evaluation matrix (markdown table in
+  `docs/phase-18/18D/tracker-evaluation.md`).
+- Parser tuning rules (Sportarr ReleaseProfiles) committed to
+  `config/sportarr/release-profiles/` with import script (volume
+  mounts) for repeatable apply.
+- FlareSolverr deployment in
+  `~/control-center-stack/stacks/arr-stack/docker-compose.yml` if
+  not present, with pre/post snapshots in the rewire log.
+- Filename-vs-event-title mismatch probe at
+  `scripts/sportarr-correctness-probe.py` + Grafana panel.
+
+**Hard cap:** 4h research + 2h implementation when scheduled. If
+research surfaces that public sports trackers are uniformly behind
+Cloudflare AND FlareSolverr deployment is non-trivial, fall back to
+private-tracker-only path and document the public-tracker abandonment
+as a Phase 18 finding.
+
+**Gate:** `phase-18-18E` — Sportarr indexer count ≥ 8 healthy
+(non-rate-limited), one Phase 18 round (any sport) imports to correct
+event row on first attempt. F12 mismatch probe registered in Grafana
+with zero current mismatches.
+
+---
+
 ### 18.D — Network flow collection + visualization (deferred from Phase 16)
 
 Live NetFlow / IPFIX from OPNsense → flow collector container

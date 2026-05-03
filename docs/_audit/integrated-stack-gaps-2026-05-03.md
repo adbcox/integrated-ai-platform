@@ -314,9 +314,62 @@ For autonomous coding, this is severity B because:
 
 **Status update (2026-05-03 D-17-37 close):** GAP CLOSED. D-17-37 delivered the substrate (QNAP path layout under `download/manual/roadmap-artifacts/`, qnap:// pointer schema, ingest+resolve scripts at `scripts/artifact-{ingest,resolve}.sh`, sibling registry axis at `~/.platform-registry/artifacts/`, ACL classes property/schematics/vendor-docs/source-files, launchd-chained refresh). Doctrine chronicled at `docs/architecture-facts/integration-audit-doctrine.md` Finding 5 (incl. backup posture rationale + substrate-defining-deliverable exemption pattern + smbfs cleanup gotcha). D-17-35 retrofit reduced to a single operator command once PDF lands on filesystem. Severity downgrade: B → CLOSED (was-B).
 
+### Gap F10 — Retirement records used as restoration playbooks: untraced phases surface as latent defects on unpark (severity B for any future unpark, effort: doctrine + restoration-audit template ~2-3h)
+
+A retirement audit produces dispositive evidence about ONE phase of a consumer pipeline (the phase that broke), then writes a record that implicitly authorizes treating *all* phases as understood. When the same record is later used as a restoration playbook (D-17-36 Sportarr unpark), the un-traced phases surface as latent defects.
+
+**Empirical worked example (D-17-36, 2026-05-03 unpark execution):** the 2026-05-01 retirement record (`docs/_retired/sportarr-2026-05-01.md`) traced indexer→fetch failure as the disposing rationale. On unpark, four un-traced phases surfaced as latent defects:
+1. **Indexer URL column name wrong** — record cited `BaseUrl`, schema column is actually `Url`. Restoration step 2 was unrunnable as written.
+2. **Indexer ApiKey staleness** — not mentioned in record at all; live Prowlarr key had rotated. Url fix landed but every fetch still 401'd until separate ApiKey sweep.
+3. **Bind-mount canonical pattern drift** — record cited `/sports:/data` only; canonical sibling pattern (Sonarr/Radarr) is `/Users/admin/mnt/qnap-downloads:/downloads` (plural) + `/Users/admin/mnt/qnap-downloads/data:/data`. Required operator pushback to surface.
+4. **Storage-layout projection error** — record's framing implied TV-style hierarchy under `/data`; actual Sportarr behavior stores at `/data/{Sport}/Season {Year}/file.mkv` (flat per-sport, no `/data/media/sports/` parent). Plex library γ-recreate at `/share/CACHEDEV2_DATA/data/media/sports` was based on operator projection rather than tracing actual Sportarr import behavior. Required γ'.3 reconfiguration post-unpark.
+
+The retirement-era container never imported a single file successfully (6,769 silent fetch failures), so the storage-layout, bind-mount, and ApiKey-freshness phases were never exercised — they couldn't be traced because they hadn't run yet. Latent defects in un-traced phases stay latent.
+
+- **Roadmap item?** No.
+- **In OpenProject queue?** No.
+- **Tagged autonomous-coding?** No (doctrine + template work, not implementation).
+- **Recommendation.** Two-part close:
+  1. **Doctrine chronicle delivered.** `docs/architecture-facts/integration-audit-doctrine.md` Finding 6 authored 2026-05-03 by D-17-36 WP-08; covers the four-phase worked example + sub-doctrine on container-mediated `mv` as canonical for in-arr-stack file relocation.
+  2. **Restoration-audit template** (proposed only, do NOT auto-create in T5): a Phase 18 doctrine deliverable that captures the three-pre-flight-phase + post-bringup-trace structure as a reusable checklist for future unparks (or PARK→DONE re-attempts). Sized at ~2-3h. Worked example: D-17-36 itself (currently the only data point; future unpark would calibrate the template).
+
+**Status:** doctrine layer CLOSED at D-17-36 WP-08; template layer pending Phase 18.
+
+### Gap F11 — Stale download-pipeline tail state at retired-tool replacement boundaries (severity D, effort: pending operator-driven seedbox investigation)
+
+When a retired tool is replaced (or unparked) in the arr-stack, downstream artifacts of its prior runs may persist in the seedbox / staging tree without obvious owner. D-17-36 surfaced two instances:
+
+1. **Radarr Collections rootFolderPath drift** — 91 of 93 collections pointed at stale `/home/seedit4me/download/Movies` and `/download` paths (pre-canonical-bind-mount era). Bulk repointed via per-collection PUT API to `/data/media/movies`; `MovieCollectionRootFolderCheck` health error cleared. Discovered during D-17-36 parallel cleanup thread, separate from Sportarr-specific work.
+
+2. **Seedbox-side staging investigation** — 13.5 GiB of SAB-staging duplicates suspected on rTorrent / SAB tail; investigation operator-driven via rutorrent UI (no Vault token escalation through chat). HELD pending operator surface.
+
+The shared shape: cross-tool-boundary state drift that is invisible to a single tool's health checks but accumulates real cost (quota, completion-mismatch noise, latent rootFolderPath defects). Different from F10 (audit phase coverage) — F11 is about state outliving its owner, not about audits missing a phase.
+
+- **Roadmap item?** No.
+- **In OpenProject queue?** No.
+- **Tagged autonomous-coding?** N/A — operator-driven seedbox surface not autonomous.
+- **Recommendation.** OPEN. Pending operator-driven seedbox tail investigation; chronicle the 13.5 GiB instance + the 91-collection instance as a single "cross-tool-boundary state drift" pattern in a future Phase 18 doctrine deliverable. Cleanuparr (Phase 18 backlog) is a candidate consumer that would automate the tail-state discovery side.
+
+### Gap F12 — Release-parser confidence is independent from event-correctness; 100% match score can still misclassify (severity D for low-volume sports, B for high-volume, effort: ~3-4h correctness probe)
+
+D-17-36 WP-07 surfaced a defect where Sportarr's release-parser fetched the **Miami Grand Prix Qualifying** .mkv at 100% release-match confidence but linked the EventFile to **Event 1572 = "Australian Grand Prix Qualifying" (2026)** — wrong round entirely. Filename contains `Miami` unambiguously; parser still picked the first 2026 F1 Qualifying event by date order.
+
+Release-match confidence (regex match, year, sport) and event-correctness (which round, which qualifying session) are different signals. The release-grab path produced a high-confidence fetch; the event-mapping path used a weaker heuristic that fell back to the first-eligible-monitored event. Result: file imported, container healthy, DB consistent (`HasFile=1` on a row), but the row was the wrong event.
+
+This is structurally different from F10 (audit phase coverage) — F10 is about the audit not tracing a phase; F12 is about a runtime phase producing a confidently-wrong result that no audit would have caught because the failure mode is internal to a working component.
+
+- **Roadmap item?** No.
+- **In OpenProject queue?** No.
+- **Tagged autonomous-coding?** Yes-candidate — filename-vs-event-title token mismatch probe is a self-contained scripted check.
+- **Recommendation.** OPEN. Two-part:
+  1. **Doctrine chronicle delivered.** `docs/architecture-facts/integration-audit-doctrine.md` Finding 7 authored 2026-05-03 by D-17-36 WP-08; covers the worked example + sub-doctrine on release-parser correctness as a separate doctrine layer from indexer reachability.
+  2. **Filename-vs-event-title mismatch probe** (Phase 18 candidate, ~3-4h): periodic scan over EventFiles parses filename for venue/round tokens, asserts linked Event.Title contains the same venue token. Soft-fail surfaces as a Sportarr tag or external dashboard signal (no auto-relink — correct relink requires release-name parsing logic that may itself be fallible). Folds into the F5 family integration-health-check correctness layer.
+
+**Status:** doctrine layer CLOSED at D-17-36 WP-08; probe layer pending Phase 18.
+
 ---
 
-## Summary — gap inventory (19 gaps)
+## Summary — gap inventory (22 gaps)
 
 | # | Sev | Effort | Has roadmap item? | In queue? | Tagged AC? |
 |---|-----|--------|-------------------|-----------|------------|
@@ -338,6 +391,9 @@ For autonomous coding, this is severity B because:
 | F5 | **B** | ~20-40h family | No (Phase 6/7 close-extension) | No | N/A (new family) |
 | F8 | D | ~30 min (Y-blocked) | No (runbook exists, gated) | No | N/A |
 | F9 | **B** | covered (D-17-35) + ~2-4h doctrine | No (D-17-35 carries instance) | No | N/A (new pattern) |
+| F10 | **B** (any unpark) | doctrine done + ~2-3h template | No (covered by D-17-36 WP-08) | No | N/A (doctrine) |
+| F11 | D | pending operator | No | No | N/A (operator-driven) |
+| F12 | D (low-vol) / B (high-vol) | doctrine done + ~3-4h probe | No | No | Yes-candidate (probe) |
 | X1 | **B** | ~3-5h | No (D-17-29 close-extension) | No | N/A (new) |
 | X2 | N | next login | N/A (auto-recovery) | No | N/A |
 | X3 | N | post-demo | Reserved | No | N/A |
