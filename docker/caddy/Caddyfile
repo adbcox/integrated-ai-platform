@@ -252,3 +252,15 @@ architecture.internal {
     redir / /logical-service-architecture.html
     reverse_proxy host.docker.internal:8765
 }
+
+# ── Physical Architecture dashboard (D-17-18) ─────────────────────────
+# Sister deliverable to D-17-17. Hardware nodes (Mac Mini, Mac Studio,
+# Threadripper-pending, QNAP, HA, OPNsense), network paths (LAN, TB5,
+# VPN), storage paths. Generator:
+# scripts/dashboards/generate_physical_architecture.py. Served from
+# the same host-side python http.server on 8765.
+physical-architecture.internal {
+    import access_log
+    redir / /physical-architecture.html
+    reverse_proxy host.docker.internal:8765
+}

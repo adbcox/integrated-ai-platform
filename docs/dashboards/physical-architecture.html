@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Physical Architecture · Integrated AI Platform</title>
+<style>
+* { box-sizing: border-box; }
+body {
+    background: #0e1117;
+    color: #e6edf3;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+    margin: 0;
+    padding: 24px;
+}
+header {
+    border-bottom: 1px solid #30363d;
+    padding-bottom: 16px;
+    margin-bottom: 24px;
+}
+h1 { margin: 0 0 8px 0; font-size: 22px; font-weight: 600; }
+h2 { font-size: 14px; margin: 24px 0 10px 0; color: #c9d1d9; }
+.meta { font-size: 12px; color: #8b949e; }
+.meta code { background: #161b22; padding: 2px 6px; border-radius: 3px; }
+.legend {
+    display: flex; gap: 16px; margin: 12px 0; font-size: 12px; color: #8b949e;
+    flex-wrap: wrap;
+}
+.legend .swatch {
+    display: inline-block; width: 10px; height: 10px; margin-right: 4px;
+    border-radius: 50%; vertical-align: middle;
+}
+.legend .ok { background: #2ea043; }
+.legend .warn { background: #d29922; }
+.legend .pending { background: #6e7681; }
+.legend .lan { display: inline-block; width: 18px; height: 2px; background: #58a6ff; margin-right: 4px; vertical-align: middle; }
+.legend .tb5 { display: inline-block; width: 18px; height: 2px; background: #d2a8ff; margin-right: 4px; vertical-align: middle; border-top: 1px dashed #d2a8ff; background: transparent; }
+.legend .vpn { display: inline-block; width: 18px; height: 2px; background: transparent; border-top: 2px dotted #f0883e; margin-right: 4px; vertical-align: middle; }
+
+.summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 12px; margin-bottom: 24px;
+}
+.summary .card {
+    background: #161b22; border: 1px solid #30363d; border-radius: 6px;
+    padding: 12px 14px;
+}
+.summary .num { font-size: 22px; font-weight: 600; }
+.summary .lbl { font-size: 11px; color: #8b949e; text-transform: uppercase; letter-spacing: 0.06em; }
+
+.nodes-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 14px;
+    margin-bottom: 28px;
+}
+.node {
+    background: #161b22; border: 1px solid #30363d; border-radius: 6px;
+    padding: 14px 16px;
+}
+.node.ok { border-left: 3px solid #2ea043; }
+.node.warn { border-left: 3px solid #d29922; }
+.node.pending { border-left: 3px solid #6e7681; opacity: 0.78; }
+.node-head {
+    display: flex; align-items: baseline; justify-content: space-between;
+    margin-bottom: 4px;
+}
+.node-name { font-size: 14px; font-weight: 600; color: #e6edf3; }
+.node-role { font-size: 11px; color: #58a6ff; margin-bottom: 8px; text-transform: lowercase; }
+.node-meta { font-size: 11px; color: #8b949e; margin-bottom: 6px; }
+.node-meta code { background: #0d1117; padding: 1px 5px; border-radius: 2px; font-size: 10px; }
+.node-spec { font-size: 11px; color: #c9d1d9; margin-bottom: 2px; }
+.node-os { font-size: 10px; color: #8b949e; font-family: ui-monospace, monospace; margin-bottom: 8px; }
+.srv-link {
+    display: inline-block; font-size: 11px; color: #79c0ff;
+    text-decoration: none; margin-bottom: 6px;
+}
+.srv-link:hover { text-decoration: underline; }
+.notes {
+    margin: 6px 0 0 0; padding-left: 16px;
+    font-size: 11px; color: #8b949e; line-height: 1.5;
+}
+.badge {
+    font-size: 10px; padding: 2px 7px; border-radius: 10px;
+    font-family: ui-monospace, monospace;
+}
+.badge.ok { background: rgba(46,160,67,0.15); color: #56d364; }
+.badge.warn { background: rgba(210,153,34,0.15); color: #e3b341; }
+.badge.pending { background: rgba(110,118,129,0.15); color: #8b949e; }
+
+table.links, table.storage {
+    width: 100%; border-collapse: collapse; margin-bottom: 24px;
+    background: #161b22; border: 1px solid #30363d; border-radius: 6px;
+    overflow: hidden;
+}
+table.links th, table.storage th {
+    text-align: left; padding: 8px 12px; background: #0d1117;
+    font-size: 11px; color: #8b949e; text-transform: uppercase; letter-spacing: 0.06em;
+    font-weight: 600; border-bottom: 1px solid #30363d;
+}
+table.links td, table.storage td {
+    padding: 8px 12px; font-size: 12px; border-bottom: 1px solid #21262d;
+    color: #c9d1d9;
+}
+table.links tr:last-child td, table.storage tr:last-child td { border-bottom: none; }
+table.links code, table.storage code {
+    background: #0d1117; padding: 1px 5px; border-radius: 2px;
+    font-size: 11px; color: #e6edf3;
+}
+.kind-badge {
+    display: inline-block; padding: 2px 7px; border-radius: 3px;
+    font-size: 10px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+.kind-badge.lan { background: rgba(88,166,255,0.15); color: #79c0ff; }
+.kind-badge.tb5 { background: rgba(210,168,255,0.15); color: #d2a8ff; }
+.kind-badge.vpn { background: rgba(240,136,62,0.15); color: #f0883e; }
+
+.footer {
+    margin-top: 32px; padding-top: 16px; border-top: 1px solid #30363d;
+    font-size: 11px; color: #8b949e; line-height: 1.6;
+}
+.footer code { background: #161b22; padding: 1px 5px; border-radius: 2px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Physical Architecture</h1>
+  <div class="meta">
+    Hardware nodes from <code>CLAUDE.md</code> + <code>docs/architecture-facts/</code> ·
+    Reachability probed: <code>2026-05-03T05:27:16Z</code> ·
+    Service registry refresh: <code>2026-05-03T00:07:11</code> (1.028s) ·
+    Sister view: <a href="https://architecture.internal/" style="color:#79c0ff;">logical services</a>
+  </div>
+  <div class="legend">
+    <span><span class="swatch ok"></span>5 reachable</span>
+    <span><span class="swatch warn"></span>0 active but unreachable</span>
+    <span><span class="swatch pending"></span>1 pending hardware</span>
+    <span><span class="lan"></span>LAN</span>
+    <span><span class="tb5"></span>TB5 bridge</span>
+    <span><span class="vpn"></span>VPN overlay</span>
+  </div>
+</header>
+
+<div class="summary">
+  <div class="card"><div class="num">6</div><div class="lbl">physical nodes</div></div>
+  <div class="card"><div class="num">5</div><div class="lbl">active</div></div>
+  <div class="card"><div class="num">5</div><div class="lbl">reachable now</div></div>
+  <div class="card"><div class="num">1</div><div class="lbl">pending hardware</div></div>
+  <div class="card"><div class="num">76</div><div class="lbl">services on Mac Mini</div></div>
+  <div class="card"><div class="num">7</div><div class="lbl">network links</div></div>
+  <div class="card"><div class="num">5</div><div class="lbl">storage paths</div></div>
+</div>
+
+<h2>Nodes</h2>
+<div class="nodes-grid">
+
+<div class="node ok" id="node-mac-mini">
+  <div class="node-head">
+    <div class="node-name">Mac Mini</div>
+    <span class="badge ok">0.0 ms</span>
+  </div>
+  <div class="node-role">Control plane · orchestration · services</div>
+  <div class="node-meta">
+    <code>mac-mini.internal</code> · <code>192.168.10.145</code>
+  </div>
+  <div class="node-spec">Apple M4 Pro · 48 GB unified memory</div>
+  <div class="node-os">macOS 26.4.1 (build 25E253)</div>
+  <a class="srv-link" href="https://architecture.internal/" target="_blank" rel="noopener">→ logical services</a>
+  <ul class='notes'><li>Primary docker host (76 services / 84 containers per registry)</li><li>Vault data + Restic source</li><li>exo single-node coordinator (D-17-30 demo path)</li><li>TB5 bridge link-local: 169.254.160.83, 169.254.153.133 (drifts across reboots)</li></ul>
+</div>
+
+<div class="node ok" id="node-mac-studio">
+  <div class="node-head">
+    <div class="node-name">Mac Studio</div>
+    <span class="badge ok">1.3 ms</span>
+  </div>
+  <div class="node-role">Compute node · exo single-node tonight</div>
+  <div class="node-meta">
+    <code>mac-studio.internal</code> · <code>192.168.10.142</code>
+  </div>
+  <div class="node-spec">Apple M3 Ultra · 96 GB unified memory</div>
+  <div class="node-os">macOS (D-17-15 Day-1 baseline)</div>
+
+  <ul class='notes'><li>Multi-node exo upstream-blocked (D-17-25 Findings U+V)</li><li>TB5 static link-local: 169.254.35.30</li><li>JACCL coordinator: 192.168.10.142:52617</li></ul>
+</div>
+
+<div class="node pending" id="node-threadripper">
+  <div class="node-head">
+    <div class="node-name">Threadripper</div>
+    <span class="badge pending">pending hardware</span>
+  </div>
+  <div class="node-role">GPU compute · FUTURE</div>
+  <div class="node-meta">
+    <code>(pending)</code> · <code>(pending)</code>
+  </div>
+  <div class="node-spec">AMD Threadripper + NVIDIA RTX 4070 · motherboard pending</div>
+  <div class="node-os">Linux (planned)</div>
+
+  <ul class='notes'><li>Portability target (CLAUDE.md heterogeneous-architecture rule)</li><li>Per-host vault config exists: config/vault-configs/vault-config-linux.hcl</li></ul>
+</div>
+
+<div class="node ok" id="node-qnap">
+  <div class="node-head">
+    <div class="node-name">QNAP NAS</div>
+    <span class="badge ok">0.9 ms</span>
+  </div>
+  <div class="node-role">Backup target · media storage</div>
+  <div class="node-meta">
+    <code>qnap.internal</code> · <code>192.168.10.201</code>
+  </div>
+  <div class="node-spec">QNAP appliance</div>
+  <div class="node-os">QTS</div>
+
+  <ul class='notes'><li>Restic nightly backup destination</li><li>Vault audit log archive (30-day local → QNAP)</li><li>MinIO + arr-stack media library</li></ul>
+</div>
+
+<div class="node ok" id="node-homeassistant">
+  <div class="node-head">
+    <div class="node-name">Home Assistant</div>
+    <span class="badge ok">0.4 ms</span>
+  </div>
+  <div class="node-role">Smart home (Phase 13 Block 3)</div>
+  <div class="node-meta">
+    <code>homeassistant.internal</code> · <code>192.168.10.141</code>
+  </div>
+  <div class="node-spec">Intel NUC</div>
+  <div class="node-os">Home Assistant OS</div>
+
+  <ul class='notes'><li>Reverse-proxied via Caddy (LAN-direct upstream)</li><li>Docker Desktop NAT requires X-Forwarded-* stripping</li></ul>
+</div>
+
+<div class="node ok" id="node-opnsense">
+  <div class="node-head">
+    <div class="node-name">OPNsense</div>
+    <span class="badge ok">0.9 ms</span>
+  </div>
+  <div class="node-role">Router · firewall · DNS authority</div>
+  <div class="node-meta">
+    <code>opnsense.internal</code> · <code>192.168.10.1</code>
+  </div>
+  <div class="node-spec">Network appliance</div>
+  <div class="node-os">OPNsense 26.1.6</div>
+
+  <ul class='notes'><li>DNS authority for *.internal (Dnsmasq)</li><li>KI-009 + D-17-21: DNS state audit pending</li></ul>
+</div>
+</div>
+
+<h2>Network paths</h2>
+<table class="links">
+  <thead>
+    <tr><th>kind</th><th>from</th><th></th><th>to</th><th>detail</th></tr>
+  </thead>
+  <tbody>
+<tr class="link-lan"><td><span class="kind-badge lan">LAN</span></td><td><code>Mac Mini</code></td><td>↔</td><td><code>Mac Studio</code></td><td>LAN · 192.168.10.0/24 · 1 GbE</td></tr>
+<tr class="link-tb5"><td><span class="kind-badge tb5">TB5</span></td><td><code>Mac Mini</code></td><td>↔</td><td><code>Mac Studio</code></td><td>TB5 bridge · 169.254.0.0/16 · 80 Gbps</td></tr>
+<tr class="link-lan"><td><span class="kind-badge lan">LAN</span></td><td><code>Mac Mini</code></td><td>↔</td><td><code>QNAP NAS</code></td><td>LAN · Restic backup</td></tr>
+<tr class="link-lan"><td><span class="kind-badge lan">LAN</span></td><td><code>Mac Mini</code></td><td>↔</td><td><code>Home Assistant</code></td><td>LAN · Caddy reverse-proxy</td></tr>
+<tr class="link-lan"><td><span class="kind-badge lan">LAN</span></td><td><code>Mac Mini</code></td><td>↔</td><td><code>OPNsense</code></td><td>LAN · default route + DNS</td></tr>
+<tr class="link-lan"><td><span class="kind-badge lan">LAN</span></td><td><code>Mac Studio</code></td><td>↔</td><td><code>OPNsense</code></td><td>LAN · default route</td></tr>
+<tr class="link-vpn"><td><span class="kind-badge vpn">VPN</span></td><td><code>Mac Mini</code></td><td>↔</td><td><code>Threadripper</code></td><td>Headscale overlay (when TR online)</td></tr>
+  </tbody>
+</table>
+
+<h2>Storage paths</h2>
+<table class="storage">
+  <thead>
+    <tr><th>name</th><th>source</th><th></th><th>destination</th><th>auth</th><th>retention</th></tr>
+  </thead>
+  <tbody>
+<tr><td><strong>Vault data</strong></td><td>Mac Mini /vault/data</td><td>→</td><td>QNAP via Restic (nightly)</td><td><code>backup AppRole</code></td><td>Restic policy (offsite)</td></tr>
+<tr><td><strong>Vault audit log</strong></td><td>Mac Mini /vault/logs/audit.log</td><td>→</td><td>QNAP archive (cron, nightly)</td><td><code>(file-level)</code></td><td>30-day local · indefinite QNAP</td></tr>
+<tr><td><strong>Docker volumes</strong></td><td>Mac Mini Docker Desktop VM</td><td>→</td><td>QNAP via Restic (nightly)</td><td><code>backup AppRole</code></td><td>Restic policy</td></tr>
+<tr><td><strong>Media library</strong></td><td>arr-stack (sonarr/radarr/prowlarr)</td><td>→</td><td>QNAP NAS shares</td><td><code>(SMB/NFS)</code></td><td>indefinite</td></tr>
+<tr><td><strong>HF model cache</strong></td><td>Mac Mini ~/.cache/huggingface</td><td>→</td><td>(local-only — Mac Studio has separate cache)</td><td><code>(file-level)</code></td><td>indefinite</td></tr>
+  </tbody>
+</table>
+
+<div class="footer">
+Generated by <code>scripts/dashboards/generate_physical_architecture.py</code> ·
+Hardware facts: <code>CLAUDE.md</code> hardware block + <code>docs/architecture-facts/exo-cluster.md</code>
++ <code>docs/architecture-facts/opnsense-dns-authority.md</code> ·
+Reachability via <code>ping -c1 -W500 -t1</code> at render time ·
+Service-count cross-link is to <code>architecture.internal</code> (D-17-17 sister deliverable) ·
+D-17-18 close · Phase 17.
+</div>
+</body>
+</html>
