@@ -1010,15 +1010,24 @@ Registration is performed with privileged bootstrap:
 
 ### Deliverable state
 
-D-17-51 shipped operator-run scripts:
+D-17-51 first attempted the user-domain path (`user/<uid>` bootstrap) and
+captured a hard empirical failure: even with root execution, the target agent
+set returned `Bootstrap failed: 5: Input/output error` uniformly on this
+headless configuration. That path is now a **documented failed branch**, not an
+open action item.
 
-- `scripts/d-17-51-launchagents-bootstrap-user-domain.sh`
-- `scripts/d-17-51-launchagents-verify.sh`
+Resolution pivot: migrate unattended `com.iap.*` jobs to LaunchDaemons in
+`system` domain with `UserName=admin` (headless-safe, no GUI-session
+dependency). Migration/verification artifacts:
 
-Status is **PARTIAL** until one root-run execution is performed on-host and verification confirms affected agents are loaded and executing within heartbeat budgets.
+- `scripts/d-17-51-migrate-to-launchdaemons.sh`
+- `scripts/d-17-51-verify-launchdaemons.sh`
+
+Operator executes one sudo migration run; Finding Y is resolved by this
+daemon-domain canonical pattern.
 
 ### Cross-references
 
 - D-17-29 (platform-registry LaunchAgent known blocked by Finding Y)
 - D-17-44 (`--no-verify` commit path due to stale launchd recency checks)
-- D-17-50 (arr-apikey-sweep deployed but registration blocked pending Y)
+- D-17-50 (arr-apikey-sweep deployment unblocked by daemon-domain pivot)

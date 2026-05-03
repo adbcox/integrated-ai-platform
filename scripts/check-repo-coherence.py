@@ -14,7 +14,7 @@ Subcommands:
     caddy-unbound-parity     deprecated alias for caddy-dns-parity (one-cycle)
     netbox-services-have-adrs   stub — Phase 17 territory
     framework-table-coherence  PROJECT_FRAMEWORK.md §7+§8 deliverable rows
-    launchd-recency          docker/launchd-agents/*.plist installed + recent
+    launchd-recency          com.iap launch jobs (agent/daemon) installed + recent
     all                      run everything; exit = max(child exit codes)
 
 Exit codes:
@@ -48,6 +48,7 @@ CADDYFILE = REPO_ROOT / "docker" / "caddy" / "Caddyfile"
 FRAMEWORK = REPO_ROOT / "docs" / "PROJECT_FRAMEWORK.md"
 LAUNCHD_AGENTS_REPO = REPO_ROOT / "docker" / "launchd-agents"
 LAUNCHD_AGENTS_INSTALLED = Path.home() / "Library" / "LaunchAgents"
+LAUNCHD_DAEMONS_INSTALLED = Path("/Library/LaunchDaemons")
 
 # D-17-09 — Caddy↔Unbound parity (status-file pattern). The check is run
 # on the operator Mac (cron/launchd or manual) by invoking this script
@@ -75,41 +76,54 @@ KI009_FILE = REPO_ROOT / "docs" / "known-issues" / "KI-009-opnsense-parity-check
 LAUNCHD_RECENCY_EXPECTATIONS: dict[str, dict] = {
     "com.iap.backup": {
         "max_age_sec": 36 * 3600,  # daily — 36h grace for sleep + skip days
-        "probe_paths": ["/Users/admin/.platform-logs/backup.heartbeat"],
+        "probe_paths": ["/Users/admin/Library/Logs/iap/backup.heartbeat", "/Users/admin/.platform-logs/backup.heartbeat"],
     },
     "com.iap.strava-refresh": {
         "max_age_sec": 2 * 3600,   # 30-min interval — 2h grace
-        "probe_paths": ["/Users/admin/.platform-logs/strava-refresh.heartbeat"],
+        "probe_paths": ["/Users/admin/Library/Logs/iap/strava-refresh.heartbeat", "/Users/admin/.platform-logs/strava-refresh.heartbeat"],
     },
     "com.iap.strava-sync": {
         "max_age_sec": 36 * 3600,
-        "probe_paths": ["/Users/admin/.platform-logs/strava-sync.heartbeat"],
+        "probe_paths": ["/Users/admin/Library/Logs/iap/strava-sync.heartbeat", "/Users/admin/.platform-logs/strava-sync.heartbeat"],
     },
     "com.iap.vault-audit-rotate": {
         "max_age_sec": 36 * 3600,
-        "probe_paths": ["/Users/admin/.platform-logs/vault-audit-rotate.heartbeat"],
+        "probe_paths": ["/Users/admin/Library/Logs/iap/vault-audit-rotate.heartbeat", "/Users/admin/.platform-logs/vault-audit-rotate.heartbeat"],
     },
     "com.iap.vault-audit-archive": {
         "max_age_sec": 36 * 3600,
-        "probe_paths": ["/Users/admin/.platform-logs/vault-audit-archive.heartbeat"],
+        "probe_paths": ["/Users/admin/Library/Logs/iap/vault-audit-archive.heartbeat", "/Users/admin/.platform-logs/vault-audit-archive.heartbeat"],
     },
     "com.iap.docker-events": {
         # KeepAlive — log file gets continuous writes from `docker events`
         "max_age_sec": 1 * 3600,
-        "probe_paths": ["/Users/admin/.platform-logs/docker-events.log"],
+        "probe_paths": ["/Users/admin/Library/Logs/iap/docker-events.log", "/Users/admin/.platform-logs/docker-events.log"],
     },
     "com.iap.caddy-unbound-parity": {
         # Daily refresh of the parity status file (D-17-09). 36h grace mirrors
         # the per-job pattern used for other daily jobs.
         "max_age_sec": 36 * 3600,
-        "probe_paths": ["/Users/admin/.platform-logs/caddy-unbound-parity.heartbeat"],
+        "probe_paths": ["/Users/admin/Library/Logs/iap/caddy-unbound-parity.heartbeat", "/Users/admin/.platform-logs/caddy-unbound-parity.heartbeat"],
     },
     "com.iap.buildarr-sync": {
         # Daily at 03:00 — Buildarr config-as-code sync for Radarr + Prowlarr (D-17-44).
         # 36h grace mirrors other daily jobs (allows for sleep + skip days).
         "max_age_sec": 36 * 3600,
-        "probe_paths": ["/Users/admin/.platform-logs/buildarr-sync.heartbeat"],
+        "probe_paths": ["/Users/admin/Library/Logs/iap/buildarr-sync.heartbeat", "/Users/admin/.platform-logs/buildarr-sync.heartbeat"],
     },
+    "com.iap.arr-apikey-sweep": {
+        "max_age_sec": int(1.5 * 3600),  # hourly + 30m grace
+        "probe_paths": ["/Users/admin/Library/Logs/iap/arr-apikey-sweep.heartbeat", "/Users/admin/.platform-logs/arr-apikey-sweep.heartbeat"],
+    },
+    "com.iap.platform-registry": {
+        "max_age_sec": 36 * 3600,
+        "probe_paths": ["/Users/admin/Library/Logs/iap/platform-registry.heartbeat", "/Users/admin/.platform-logs/platform-registry.heartbeat"],
+    },
+}
+
+# Jobs intentionally excluded from recency SLO checks (e.g., GUI-only reminders).
+LAUNCHD_RECENCY_EXEMPT_LABELS = {
+    "com.iap.d-17-27-reminder",
 }
 
 # Same row regex as scripts/phase-deliverable-count.py — kept inline
@@ -614,8 +628,8 @@ def cmd_launchd_recency() -> int:
     """Verify launchd jobs are installed AND recently active.
 
     Two checks per job:
-      1. Plist source in docker/launchd-agents/ matches installed plist
-         in ~/Library/LaunchAgents/ (drift detection — repo is canonical)
+      1. Plist source in docker/launchd-agents/ has a corresponding installed
+         launch job plist (LaunchDaemon preferred on headless, else LaunchAgent)
       2. The job's most-recently-written log file is younger than its
          per-job max_age_sec budget (recency — silent failure detection)
 
@@ -627,7 +641,8 @@ def cmd_launchd_recency() -> int:
     issues: list[str] = []
     skipped: list[str] = []
     ok_count = 0
-    on_operator_mac = LAUNCHD_AGENTS_INSTALLED.is_dir()
+    on_operator_mac = LAUNCHD_AGENTS_INSTALLED.is_dir() or LAUNCHD_DAEMONS_INSTALLED.is_dir()
+    daemon_mode = LAUNCHD_DAEMONS_INSTALLED.is_dir() and any(LAUNCHD_DAEMONS_INSTALLED.glob("com.iap.*.plist"))
 
     repo_plists = sorted(LAUNCHD_AGENTS_REPO.glob("com.iap.*.plist"))
     if not repo_plists:
@@ -638,7 +653,7 @@ def cmd_launchd_recency() -> int:
     repo_labels = {p.stem for p in repo_plists}
 
     missing_in_repo = expected_labels - repo_labels
-    missing_in_expectations = repo_labels - expected_labels
+    missing_in_expectations = repo_labels - expected_labels - LAUNCHD_RECENCY_EXEMPT_LABELS
     if missing_in_repo:
         for label in sorted(missing_in_repo):
             issues.append(f"  {label}: in expectations but no plist in docker/launchd-agents/")
@@ -648,13 +663,15 @@ def cmd_launchd_recency() -> int:
 
     for plist in repo_plists:
         label = plist.stem
-        installed = LAUNCHD_AGENTS_INSTALLED / plist.name
-        # Drift check: installed copy must match repo copy
+        installed = (LAUNCHD_DAEMONS_INSTALLED if daemon_mode else LAUNCHD_AGENTS_INSTALLED) / plist.name
+        # Drift check: installed copy must exist in active domain install path.
+        # Content-equality check is only valid for LaunchAgents; LaunchDaemons
+        # are transformed (UserName/paths) during D-17-51 migration.
         if on_operator_mac:
             if not installed.is_file():
                 issues.append(f"  {label}: NOT installed at {installed}")
                 continue
-            if installed.read_bytes() != plist.read_bytes():
+            if (not daemon_mode) and installed.read_bytes() != plist.read_bytes():
                 issues.append(f"  {label}: installed plist DIFFERS from repo (drift)")
                 continue
         else:
