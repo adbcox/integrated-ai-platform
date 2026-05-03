@@ -5,7 +5,7 @@
 
 **Reason:** D-17-06 PARK-RETIRE of homarr (zero traffic 7d, redundant
 with homepage; full audit at
-`docs/audits/capability/homarr-2026-05-01.md`).
+`docs/_audit/capability/homarr-2026-05-01.md`).
 
 **D#15 doctrine:** out-of-repo compose changes require pre/post
 snapshots in the rewire log because git does not track the source

@@ -1,7 +1,7 @@
 # ADR-A-001 — Retain the existing control plane
 **Status:** Accepted
 **Date:** 2026-04-01
-**Source:** docs/architecture/DECISION_REGISTER.md
+**Source:** docs/DECISION_REGISTER.md (path corrected — `docs/architecture/DECISION_REGISTER.md` was a stale filing convention; never moved)
 
 ## Context
 

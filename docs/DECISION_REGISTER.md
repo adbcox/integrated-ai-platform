@@ -55,7 +55,7 @@ the decision content here.
 |-----|-------|------------------|
 | [A-014](adr/ADR-A-014-netbox-cmdb-authority.md) | NetBox as Authoritative CMDB | NetBox is the single source of truth for service inventory, node inventory, and network topology. |
 | [A-015](adr/ADR-A-015-staged-toggle-migration.md) | Staged-Toggle Pattern for Source-of-Truth Migrations | Migrate data sources via env-var toggle with equivalence harness; never hard-cutover. |
-| [A-016](adr/ADR-A-016-canonical-patterns-registry.md) | Canonical Patterns Registry | `docs/canonical-patterns/` is the authoritative store for reusable cross-cutting patterns. |
+| [A-016](adr/ADR-A-016-canonical-patterns-registry.md) | Canonical Patterns Registry | `docs/architecture-patterns/` is the authoritative store for reusable cross-cutting patterns (merged from `docs/canonical-patterns/` 2026-05-03 by D-17-16). |
 
 ## Conventions
 

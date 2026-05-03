@@ -9,7 +9,7 @@
 #   - anythingllm-storage         (legacy unnamespaced, also preserved)
 #
 # Restoration: see docker/_retired/anythingllm/README.md (recipe)
-# Audit:       docs/audits/capability/anythingllm-2026-05-01.md
+# Audit:       docs/_audit/capability/anythingllm-2026-05-01.md
 #
 # --- ORIGINAL HEADER (pre-retirement) ---
 # Knowledge Base Stack — AnythingLLM

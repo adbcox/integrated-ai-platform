@@ -1,8 +1,16 @@
 # ADR-A-016 — Canonical Patterns Registry
 
-**Status:** Accepted
+**Status:** Accepted (registry path updated 2026-05-03 by D-17-16)
 **Date:** 2026-04-30
 **Phase:** 15
+
+> **D-17-16 update (2026-05-03):** the canonical patterns registry was
+> merged into `docs/architecture-patterns/` to reduce the canonical-paths
+> dir count. The decision recorded below stands; only the directory name
+> changed. Active entries today: `openproject-connector-usage.md` (the
+> Plane connector pattern was retired with Plane CE in WP-17-04-06 and
+> moved to `docs/_archive/plane-connector-usage.md`), plus the
+> capability-audit template authored under D-17-02.
 
 ## Context
 
@@ -42,4 +50,4 @@ Negative:
 ## Related
 
 - ADR-A-013 (folded gates doctrine — patterns registry reduces gate overhead)
-- `docs/canonical-patterns/` (the registry itself)
+- `docs/architecture-patterns/` (the registry, post-D-17-16 merge)

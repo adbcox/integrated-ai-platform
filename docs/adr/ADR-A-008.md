@@ -1,7 +1,7 @@
 # ADR-A-008 — Branches may not fork the platform
 **Status:** Accepted
 **Date:** 2026-04-25
-**Source:** docs/architecture/DECISION_REGISTER.md
+**Source:** docs/DECISION_REGISTER.md (path corrected — `docs/architecture/DECISION_REGISTER.md` was a stale filing convention; never moved)
 
 ## Context
 

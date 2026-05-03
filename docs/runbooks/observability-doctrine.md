@@ -3,8 +3,8 @@
 The platform runs two metrics stacks intentionally. Each owns a
 distinct capability set. Together they cover the platform's
 observability surface. This document is canonical; the two
-capability audits (`docs/audits/capability/zabbix-2026-05-01.md`
-and `docs/audits/capability/victoriametrics-2026-05-01.md`) are the
+capability audits (`docs/_audit/capability/zabbix-2026-05-01.md`
+and `docs/_audit/capability/victoriametrics-2026-05-01.md`) are the
 evidence.
 
 ---
@@ -164,9 +164,9 @@ template edit — not a stack-architecture decision.
 - **Authored:** 2026-05-01 (D-17-05)
 - **Reviewed by operator:** yes
 - **Linked artifacts:**
-  - `docs/audits/capability/zabbix-2026-05-01.md` (D-17-02 / D-17-05)
-  - `docs/audits/capability/victoriametrics-2026-05-01.md` (D-17-05)
-  - `docs/STACK_ARCHITECTURE_AUDIT_2026-05-01.md` Layer 8 (D-17-01)
+  - `docs/_audit/capability/zabbix-2026-05-01.md` (D-17-02 / D-17-05)
+  - `docs/_audit/capability/victoriametrics-2026-05-01.md` (D-17-05)
+  - `docs/_audit/stack-architecture-2026-05-01.md` Layer 8 (D-17-01)
   - D#20 (capability evidence)
 - **Refresh trigger:** when either stack changes role, when a third
   metrics tool is proposed, or at phase boundary (D#19).

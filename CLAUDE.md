@@ -28,7 +28,7 @@
 
 You are working on a production autonomous AI platform. Before taking any action:
 
-1. **Read the docs first:** All context is in `docs/ARCHITECTURE.md` (supersedes `docs/PLATFORM_OVERVIEW.md`)
+1. **Read the docs first:** All context is in `docs/ARCHITECTURE.md` (supersedes the archived `docs/_archive/PLATFORM_OVERVIEW.md`)
 2. **Deployment target:** Mac Mini .145 (192.168.10.145)
 3. **All code execution:** Happens ON the Mac Mini, NOT locally
 4. **User preference:** Give complete prompts, don't execute incrementally

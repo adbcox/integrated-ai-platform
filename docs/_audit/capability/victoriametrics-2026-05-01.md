@@ -186,7 +186,7 @@ N/A — verdict is KEEP.
   - `docker ps` for container set
 - **Linked artifacts:**
   - D#20 (capability evidence requirement) — peer audit to
-    `docs/audits/capability/zabbix-2026-05-01.md`
+    `docs/_audit/capability/zabbix-2026-05-01.md`
   - D#21 (three-plane audits) — capability plane evidence
   - D-17-02 (template + Zabbix worked example)
   - D-17-05 (observability doctrine consuming this audit)

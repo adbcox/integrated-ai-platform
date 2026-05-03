@@ -22,7 +22,7 @@ The bridge had low value relative to its maintenance cost:
 
 See `docs/runbooks/observability-doctrine.md` §"Bridge between
 stacks" for the canonical decision and rationale, and
-`docs/audits/capability/zabbix-2026-05-01.md` Section 2.4 for the
+`docs/_audit/capability/zabbix-2026-05-01.md` Section 2.4 for the
 audit-trail entry.
 
 ## Restoration

@@ -1,7 +1,7 @@
 # Retired — homarr
 
 **Retired:** 2026-05-01 (Phase 17 deliverable 17.F PARK-RETIRE)
-**Audit:** [docs/audits/capability/homarr-2026-05-01.md](../../../docs/audits/capability/homarr-2026-05-01.md)
+**Audit:** [docs/_audit/capability/homarr-2026-05-01.md](../../../docs/_audit/capability/homarr-2026-05-01.md)
 **Pattern:** PARK-RETIRE (compose parked, volumes preserved)
 **D#15 rewire-log:** [docker/_rewire-log/2026-05-01-homarr-retirement.md](../../_rewire-log/2026-05-01-homarr-retirement.md)
 

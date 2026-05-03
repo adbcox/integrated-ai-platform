@@ -1,9 +1,9 @@
 # Integrated AI Platform — Architecture
 
 **Last updated:** 2026-04-29 (Phase 14 D-DOC)
-**Supersedes:** `docs/PLATFORM_OVERVIEW.md` (archived — see redirect header in that file)
+**Supersedes:** `docs/_archive/PLATFORM_OVERVIEW.md` (archived 2026-04-29; moved to `_archive/` 2026-05-03 per D-17-16)
 **Service inventory:** NetBox CMDB at `netbox.internal` (authoritative)
-**Deployment target:** Mac Mini M5 at 192.168.10.145
+**Deployment target:** Mac Mini M4 Pro at 192.168.10.145 (`system_profiler`-verified 2026-05-01; D-17-16 drift fix — earlier "M5" framing was wrong)
 
 ---
 
@@ -100,7 +100,7 @@ Query live: `CMDB_SOURCE=netbox python3 scripts/cmdb_source.py`
 | sms1obot-mcp-server | 8080 | Obot-managed | Not hardened (D#30) |
 | sms1obot-mcp-server-shim | 8099 | Obot-managed | Not hardened (D#30) |
 
-See `docs/architecture/mcp-server-architecture.md` for full MCP topology.
+See `docs/architecture-facts/mcp-servers.md` for full MCP topology.
 
 ### Observability (6 services)
 

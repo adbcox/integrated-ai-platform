@@ -52,4 +52,4 @@ Negative:
 - ADR-A-012 (equivalence harness — the migration proof)
 - ADR-A-015 (staged-toggle pattern — the transition mechanism)
 - `scripts/cmdb_source.py` (implementation)
-- `docs/architecture/dependency-graph.md` (topology view)
+- `docs/architecture-facts/dependency-graph.md` (topology view, post-D-17-16)

@@ -4,7 +4,7 @@
 recommendation, OR document why a tool has a unique role and stays.
 
 **Output location.** Per-tool audits at
-`docs/audits/capability/{tool-name}-{YYYY-MM-DD}.md`. The audit doc
+`docs/_audit/capability/{tool-name}-{YYYY-MM-DD}.md`. The audit doc
 IS the artifact; the template is the methodology.
 
 **When to trigger.**
@@ -103,7 +103,7 @@ If RETIRE:
 Pattern-matched "this looks redundant" recommendations.
 
 The Zabbix vs VictoriaMetrics analysis (2026-05-01) is the worked
-example — see `docs/audits/capability/zabbix-2026-05-01.md`. The
+example — see `docs/_audit/capability/zabbix-2026-05-01.md`. The
 initial recommendation from a stack-level pattern-match was
 "retire Zabbix; VictoriaMetrics covers this." Section 2 + Section 3
 evidence reversed it: 4,593 SNMP items + 510 JMX items have no

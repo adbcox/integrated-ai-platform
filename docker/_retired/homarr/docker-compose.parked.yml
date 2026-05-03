@@ -14,7 +14,7 @@
 #   - ai-control_homarr-data
 #
 # Restoration: see docker/_retired/homarr/README.md (recipe)
-# Audit:       docs/audits/capability/homarr-2026-05-01.md
+# Audit:       docs/_audit/capability/homarr-2026-05-01.md
 
 # Volume declarations (must be present in the live compose for the
 # named volumes to be recognized — they remain declared in the live

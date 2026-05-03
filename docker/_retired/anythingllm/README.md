@@ -1,7 +1,7 @@
 # Retired — anythingllm
 
 **Retired:** 2026-05-01 (Phase 17 deliverable 17.F PARK-RETIRE)
-**Audit:** [docs/audits/capability/anythingllm-2026-05-01.md](../../../docs/audits/capability/anythingllm-2026-05-01.md)
+**Audit:** [docs/_audit/capability/anythingllm-2026-05-01.md](../../../docs/_audit/capability/anythingllm-2026-05-01.md)
 **Pattern:** PARK-RETIRE (compose parked, volumes preserved)
 
 ---

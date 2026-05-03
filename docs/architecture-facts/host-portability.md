@@ -2,9 +2,9 @@
 
 The Integrated AI Platform is designed to span multiple hosts:
 
-- **Mac Mini M5** (current): macOS via Colima/Docker Desktop. Primary host today.
+- **Mac Mini M4 Pro** (current): macOS via Colima/Docker Desktop. Primary host today. Hardware verified via `system_profiler` 2026-05-01 (D-17-16 drift fix; earlier "M5" framing was wrong).
+- **Mac Studio M3 Ultra** (current): macOS. Compute node since 2026-05-01 (D-17-15 Day-1). AI/ML inference; distributed-inference upstream-blocked per D-17-25 Findings U+V; single-node placement on Mac Mini is the demo path.
 - **Threadripper** (pending): Linux. Compute, ML training, build workloads.
-- **Mac Studio M3** (pending): macOS. AI/ML inference, second-region failover.
 
 ## Per-host Vault config
 

@@ -1,7 +1,7 @@
 # ADR-A-010 — External systems should be adopted where commodity fit is strong
 **Status:** Accepted
 **Date:** 2026-04-25
-**Source:** docs/architecture/DECISION_REGISTER.md
+**Source:** docs/DECISION_REGISTER.md (path corrected — `docs/architecture/DECISION_REGISTER.md` was a stale filing convention; never moved)
 **Note:** Originally filed as ADR-A-007; renumbered 2026-04-29 (Block 4.A) to resolve an ID collision with ADR-A-007 (Syncthing replaces rclone SFTP), which retains A-007.
 
 ## Context
@@ -30,4 +30,4 @@ Building is preferred when:
 - Uptime Kuma adopted for uptime monitoring (not built)
 - AnythingLLM adopted for semantic doc search (not built)
 - Autonomous execution framework, RAG pipeline, CMDB validation → built
-- Each adoption decision recorded in docs/architecture/OSS_REUSE_AND_ADOPTION_REGISTER.md
+- Each adoption decision recorded as its own ADR under `docs/adr/` (the `docs/architecture/OSS_REUSE_AND_ADOPTION_REGISTER.md` referenced here was removed in Phase 8 cleanup; the ADR set is the durable substitute)
