@@ -518,6 +518,7 @@ Deliverable table:
 | D-17-61: CLAUDE.md cross-reference audit | IN PROGRESS | added 2026-05-04 via roadmap-create.sh |
 | D-17-62: Runbooks index + legacy-reference scan | IN PROGRESS | added 2026-05-04 via roadmap-create.sh |
 | D-17-63: scripts directory inventory + dependency map | IN PROGRESS | added 2026-05-04 via roadmap-create.sh |
+| D-17-64: architecture-facts inventory + legacy-reference scan | IN PROGRESS | added 2026-05-04 via roadmap-create.sh |
 
 ID-reservation note: D-17-22 (multi-session role + intake architecture)
 is RESERVED but not yet framework-authored. Discussed in a prior
