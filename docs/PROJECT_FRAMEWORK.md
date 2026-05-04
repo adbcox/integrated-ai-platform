@@ -520,6 +520,7 @@ Deliverable table:
 | D-17-63: scripts directory inventory + dependency map | IN PROGRESS | added 2026-05-04 via roadmap-create.sh |
 | D-17-64: architecture-facts inventory + legacy-reference scan | IN PROGRESS | added 2026-05-04 via roadmap-create.sh |
 | D-17-65: Finding 1-16 cross-reference matrix | IN PROGRESS | added 2026-05-04 via roadmap-create.sh |
+| D-17-66: _audit and _archive inventory + index docs | IN PROGRESS | added 2026-05-04 via roadmap-create.sh |
 
 ID-reservation note: D-17-22 (multi-session role + intake architecture)
 is RESERVED but not yet framework-authored. Discussed in a prior

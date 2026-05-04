@@ -35,3 +35,16 @@ verified and the source system is retired. After WP-17-04-06 (Plane
 retirement) is closed and OpenProject has been running clean for one
 operational cycle, the SQL dump may be moved to long-term cold storage
 on QNAP via the existing Restic backup chain.
+
+## Directory inventory
+
+Current archived groups:
+
+- `phase-9/` — Phase 9 completion records
+- `phase-10/` — baseline metrics + validation-era artifacts
+- `phase-11/` — closeout snapshot
+- `phase-12/` — Zabbix deployment-era setup/security fragments
+- `plane-export-*.json` + `plane-final-snapshot-*.manifest` — Plane CE
+  migration forensic artifacts
+- `plane-connector-usage.md` + `PLATFORM_OVERVIEW.md` — historical
+  architecture references retained for archaeology
