@@ -24,25 +24,30 @@ DEFAULT_OUT_DIR = REPO_ROOT / "artifacts" / "codex51" / "external_patterns"
 
 
 def _read_json(path: Path) -> dict[str, Any]:
+    """Read and parse a JSON file."""
     return json.loads(path.read_text(encoding="utf-8"))
 
 
 def _write_json(path: Path, payload: dict[str, Any]) -> None:
+    """Write a dictionary to a JSON file."""
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
 
 def _write_jsonl(path: Path, rows: list[dict[str, Any]]) -> None:
+    """Write a list of dictionaries to a JSONL file."""
     path.parent.mkdir(parents=True, exist_ok=True)
     lines = [json.dumps(row, ensure_ascii=False) for row in rows]
     path.write_text("\n".join(lines) + ("\n" if lines else ""), encoding="utf-8")
 
 
 def _run(args: list[str], *, cwd: Path | None = None) -> str:
+    """Execute a command and return its output."""
     return subprocess.check_output(args, cwd=cwd, text=True, stderr=subprocess.STDOUT).strip()
 
 
 def _safe_read(path: Path) -> str:
+    """Safely read a file, returning empty string on error."""
     try:
         return path.read_text(encoding="utf-8", errors="ignore")
     except Exception:
@@ -50,10 +55,12 @@ def _safe_read(path: Path) -> str:
 
 
 def _slug(name: str) -> str:
+    """Convert a name to a URL-safe slug."""
     return re.sub(r"[^a-z0-9]+", "_", name.lower()).strip("_")
 
 
 def _detect_license(repo_dir: Path) -> tuple[str, str]:
+    """Detect and extract license information from a repository."""
     for rel in ["LICENSE", "LICENSE.md", "LICENSE.txt", "COPYING", "COPYING.md"]:
         p = repo_dir / rel
         if p.exists() and p.is_file():
@@ -111,6 +118,7 @@ def _sync_repo(source: dict[str, Any], sources_dir: Path) -> dict[str, Any]:
 
 
 def _infer_language(path: Path) -> str:
+    """Infer the programming language from a file path's extension."""
     suffix = path.suffix.lower()
     if suffix in {".py", ".pyi"}:
         return "python"
@@ -132,6 +140,7 @@ def _infer_language(path: Path) -> str:
 
 
 def _complexity_level(line_count: int, pattern_type: str) -> str:
+    """Calculate the complexity level based on line count and pattern type."""
     score = 0
     if pattern_type in {"helper", "module", "multi_file_pattern"}:
         score += 1
@@ -198,6 +207,7 @@ def _extract_python_patterns(content: str) -> list[dict[str, Any]]:
 
 
 def _extract_shell_patterns(content: str) -> list[dict[str, Any]]:
+    """Extract shell patterns from content."""
     out: list[dict[str, Any]] = []
     lines = content.splitlines()
     for idx, line in enumerate(lines):
@@ -262,6 +272,7 @@ def _extract_docs_patterns(content: str) -> list[dict[str, Any]]:
 
 
 def _extract_patterns_for_file(path: Path, source_name: str) -> list[dict[str, Any]]:
+    """Extract patterns from a single file."""
     content = _safe_read(path)
     if not content:
         return []
@@ -420,6 +431,7 @@ def _extract_source_patterns(source: dict[str, Any], sync_meta: dict[str, Any], 
 
 
 def _build_best_practice_priors(patterns: list[dict[str, Any]]) -> dict[str, Any]:
+    """Build best practice priors from extracted patterns."""
     buckets = {
         "python_helper_patterns": ["ruff", "pydantic"],
         "testing_patterns": ["pytest"],
