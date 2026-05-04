@@ -471,7 +471,7 @@ else
       --inline \
       --description "$DESCRIPTION" \
       --task-class "${TASK_CLASS:-}" \
-      "${GUARD_EXTRA_ARGS[@]}" \
+      ${GUARD_EXTRA_ARGS[@]+"${GUARD_EXTRA_ARGS[@]}"} \
       "${GUARD_FILES_ARGS[@]}"
     GUARD_EXIT=$?
     set -e
