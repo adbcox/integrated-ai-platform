@@ -521,7 +521,7 @@ ones being stable):
    §18.L provisions download-client credentials and operator
    authorizes first-pass enablement.
 
-4. **Lidarr** ✅ DONE D-17-87 (2026-05-04) *(music management).* 
+4. **Lidarr** ✅ DONE D-17-87 (2026-05-04) *(music management).*
    Deployed on the canonical arr-stack compose substrate with the
    Sonarr/Radarr sibling mount/network pattern, Caddy route
    `lidarr.internal`, Dnsmasq host override, Vault AppRole/policy,
@@ -872,6 +872,11 @@ discipline are robust.
   to Vault with hash-only verification (no raw-value transcript
   exposure), but should be included in the coordinated §18.L rotation
   inventory alongside Sonarr/Radarr/Prowlarr.
+- **arr-stack admin UI passwords** — D-17-98 seeded `username/password`
+  in `secret/arr/{lidarr,sonarr,radarr,prowlarr,bazarr}` (no plaintext
+  transcript output). Lidarr now stores auth credentials in
+  `/config/config.xml` per application behavior; include in coordinated
+  rotation window and ensure post-rotation config/runtime parity.
 
 **Scope:**
 - Pre-rotation snapshot: enumerate every consumer of every
