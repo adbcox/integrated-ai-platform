@@ -1,4 +1,16 @@
 #!/usr/bin/env bash
+# HISTORICAL REFERENCE — bootstrap-era script from D-17-04
+# WP-17-04-01.
+# OpenProject is already deployed; canonical ongoing operations are:
+#   - scripts/openproject-mint-admin-token.sh
+#   - scripts/openproject-mint-iap-sync-token.sh
+#   - scripts/openproject-bootstrap-ext-id-field.sh
+#   - scripts/openproject-bootstrap-enrichment-fields.sh
+#   - scripts/openproject-sync-from-framework.py
+#   - scripts/openproject-enrich-from-framework.py
+# Keep for forensic/rebuild reference only. Do not treat as the
+# default operational path for new work.
+#
 # D-17-04 WP-17-04-01 — provision Vault policy, AppRole, and credentials for
 # OpenProject (the canonical PM substrate replacing Plane CE).
 #
