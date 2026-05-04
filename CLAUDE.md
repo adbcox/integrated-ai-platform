@@ -6,7 +6,7 @@
 - Mac Mini M4 Pro 48 GB at 192.168.10.145 — control plane (`system_profiler`-verified 2026-05-01; earlier "M5" framing was wrong)
 - Mac Studio M3 Ultra 96 GB at 192.168.10.142 — compute node (arrived 2026-05-01)
 - MacBook Pro M5 — local-parity node (Phase 13 Block 3 vocabulary; tracked in current phase plan)
-- Home Assistant hub at 192.168.10.141 — canonical HA host (physical/VM, not platform-managed). Caddy `home.internal` proxies here. Mac Mini did NOT and does NOT host an HA container; a stray container retired 2026-05-03 per D-17-34.
+- Home Assistant hub at 192.168.10.141 — canonical HA host (physical/VM, not platform-managed). Caddy `homeassistant.internal` proxies here. Mac Mini did NOT and does NOT host an HA container; a stray container retired 2026-05-03 per D-17-34.
 - QNAP NAS — backup target
 
 ## Phase / deliverable state — DO NOT duplicate here
@@ -80,7 +80,7 @@ This is the "AI workstation" or "platform". Pre-2026 alternative terminology (th
 
 ### Heterogeneous Architecture
 - Mac Mini M4 Pro is the **control plane** today (Phase 13 Block 2 delivered: operator visualization, Vault, Caddy, observability stack, NetBox-driven topology API with YAML fallback during the C5 transition window).
-- **Service inventory authoritative source:** NetBox CMDB at `netbox.internal`. `CMDB_SOURCE` env var (`yaml|netbox`, **default: netbox** as of Phase 14 D-DOC) controls source per consumer. `config/service-registry.yaml` retained as A-012 deprecation-gate fallback only.
+- **Service inventory authoritative source:** NetBox CMDB at `netbox.internal`. `CMDB_SOURCE` env var (`yaml|netbox`, **default: netbox** as of Phase 14 D-DOC) controls source per consumer. `config/service-registry.yaml.DEPRECATED` retained as A-012 deprecation-gate fallback only.
 - **Runtime service substrate:** `~/.platform-registry/inventory.json` (D#25). Source of truth for ports / internal IPs / depends_on / Caddy routes / credential file metadata. Always consult before guessing.
 - Mac Studio M3 Ultra (.142) is a **compute node** as of 2026-05-01 (Day-1 in D-17-15). Distributed inference is upstream-blocked (D-17-25 Findings U+V); single-node placement on Mac Mini works and is the demo path.
 - MacBook Pro M5 parity (Ollama + LiteLLM + Open WebUI + Headscale client + smart routing) is the original "Block 3" framing — current scope tracking lives in `docs/PROJECT_FRAMEWORK.md` §9.
@@ -200,7 +200,7 @@ Use `claude-local` for routine work: implementation, refactoring, documentation,
 
 Use `claude-pro` ONLY for high-judgment tasks where Anthropic-quality reasoning is genuinely required. Pro quota is finite; treat it as expensive.
 
-**Platform services must NEVER depend on Anthropic API access.** `secret/anthropic/api` is permanently unused (will be deleted in Phase 13.5 §6). Any service that needs LLM capability uses local models via litellm or Ollama directly.
+**Platform services must NEVER depend on Anthropic API access.** `secret/anthropic/api` is permanently unused and deleted from Vault. Any service that needs LLM capability uses local models via litellm or Ollama directly.
 
 **Token discipline practices**:
 - Use `/compact` when session context exceeds ~150k tokens
@@ -224,11 +224,11 @@ Three surfaces are in use as of 2026-05-03:
 
 - **Claude Code** — Anthropic's CLI. Default for high-judgment work, frontier-PM, multi-step workflows. Pairs with `claude-local` (Ollama-backed via litellm) or `claude-pro` (Anthropic API). All capability surfaces enabled.
 - **Codex** — OpenAI's CLI. Used in parallel for cross-check / second-opinion review. Capability surface broadly enabled.
-- **Goose** (D-17-13) — Block's open-source agent CLI, Apache 2.0. Paired with native Ollama provider + qwen3-coder:30b on Mac Studio (no litellm hop). **Currently in capability-validation phase** — `developer` (shell exec + file write), `summon`, `apps`, `chatrecall`, `summarize`, `tom`, `code_execution`, `orchestrator` extensions disabled. Read-only via `filesystem-mcp` + `xindex` only. Operator review mandatory on all output. See `docs/architecture-facts/goose-capability-boundary.md` for posture + Phase-A promotion gate (N≥5 clean reviewed executions).
+- **Goose** (D-17-13) — Block's open-source agent CLI, Apache 2.0. Paired with native Ollama provider + qwen3-coder:30b on Mac Studio (no litellm hop). **Current state: Posture 2 (dual-review)** — capability-validation gate is complete; enablement remains constrained and all Goose-authored output is reviewed by operator/frontier surface before merge or platform-state change. See `docs/architecture-facts/goose-capability-boundary.md` for current posture and promotion criteria.
 
 The intended trajectory (§18.O migration framework): progressive migration of execution-surface work-classes from frontier-cost surfaces (Claude Code under `claude-pro`, Codex) to local-cost Goose+T3-B, with frontier surfaces doing correctness review on Goose output. First measured economics datapoint (D-17-13 WP-06): drafting a runbook from 3 source files completed in 51 seconds on local Mac Studio compute, ~75% Goose-authored / ~25% frontier-corrected on review.
 
-Operating rule during capability-validation phase: **Goose proposes; operator (or frontier surface) enacts.** Anything Goose-authored that lands on disk lands via operator copy-paste / git operations, never via Goose's own write tools. Commit-identity question (separate `goose-bot` git author) is deferred to Phase-A promotion.
+Operating rule in Posture 2: **Goose output is dual-reviewed before enactment.** Changes informed by Goose run through operator/frontier review prior to merge or any platform-state mutation; promotion beyond this posture remains gate-driven in the Goose capability-boundary doctrine.
 
 ### Known Hardening Trade-offs
 
@@ -251,7 +251,7 @@ Operating rule during capability-validation phase: **Goose proposes; operator (o
 - Right way over easy way; document trade-offs.
 - Stop on any unexpected behavior; surface to user.
 - **D#25 operating-model rule:** §6 AppRole provisioning must verify consumer presence before provisioning AppRole/policy. Mechanical provisioning without verifying that a service actually reads credentials creates orphan AppRoles (learned from plane-web Increment 1.5.A audit — plane-web had a policy provisioned but no credential consumption code). Always check the service's entrypoint/env consumption before provisioning.
-- **§6 final state (Increment 1.5.A):** All 16 credential-consuming services have Vault Agent sidecars. 15 were covered by prior block work; plane-web decommissioned as N/A (frontend, no credential consumption). Orphan policy `config/vault-policies/plane-web-policy.hcl` deleted.
+- **§6 final state (Increment 1.5.A):** All 16 credential-consuming services have Vault Agent sidecars. 15 were covered by prior block work; plane-web decommissioned as N/A (frontend, no credential consumption). The orphan plane-web policy was removed as part of that close.
 - **§7 final state (Increment 1.5.B):** All compose-manageable containers have `cap_drop:[ALL]`. 3 non-compose containers remain (D#30, see Container Hardening above).
 
 ## Project Structure

@@ -515,6 +515,7 @@ Deliverable table:
 | D-17-58: Mac Studio Ollama LaunchDaemon persistence — system-domain UserName=admin | IN PROGRESS | added 2026-05-03 via WP-01 intake for Mac Studio Ollama persistence |
 | D-17-59: ssh non-interactive sudo class — Finding 16 candidate + remote-sudo script pattern | IN PROGRESS | added 2026-05-04 via WP-01 intake for Finding 16 candidate |
 | D-17-60: Phase 18 status audit + cross-reference verification | IN PROGRESS | added 2026-05-04 via roadmap-create.sh |
+| D-17-61: CLAUDE.md cross-reference audit | IN PROGRESS | added 2026-05-04 via roadmap-create.sh |
 
 ID-reservation note: D-17-22 (multi-session role + intake architecture)
 is RESERVED but not yet framework-authored. Discussed in a prior
