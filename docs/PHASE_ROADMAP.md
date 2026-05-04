@@ -521,12 +521,14 @@ ones being stable):
    §18.L provisions download-client credentials and operator
    authorizes first-pass enablement.
 
-4. **Lidarr** *(operator-stated music interest, 2026-05-03).*
-   Music-library equivalent of Sonarr/Radarr. Same Prowlarr
-   integration pattern. Vault-managed API key. Bind-mount canonical
-   per the arr-stack pattern (`/data/media/music`). Apple
-   Music / Spotify metadata source decision gates this — needs
-   operator pick before scope.
+4. **Lidarr** ✅ DONE D-17-87 (2026-05-04) *(music management).* 
+   Deployed on the canonical arr-stack compose substrate with the
+   Sonarr/Radarr sibling mount/network pattern, Caddy route
+   `lidarr.internal`, Dnsmasq host override, Vault AppRole/policy,
+   service-generated API key harvested into `secret/arr/lidarr`,
+   and Prowlarr ApplicationIndexerSync completed. Buildarr coverage
+   remains unconfirmed and is treated as reactive/manual until plugin
+   support is proven from source.
 
 5. **Bazarr** ✅ DONE D-17-47 (2026-05-03) *(subtitle automation,
    universal value across Sonarr + Radarr + Sportarr).* Deployed
@@ -865,6 +867,11 @@ discipline are robust.
   D-17-47 baseline. Bazarr deployed with no-credential providers only;
   provider-account enrollment is intentionally coupled to the same
   coordinated-rotation companion session after stability baseline.
+- **Lidarr API key** — D-17-87 added the new arr-stack credential
+  surface. The key was harvested from the running service and written
+  to Vault with hash-only verification (no raw-value transcript
+  exposure), but should be included in the coordinated §18.L rotation
+  inventory alongside Sonarr/Radarr/Prowlarr.
 
 **Scope:**
 - Pre-rotation snapshot: enumerate every consumer of every

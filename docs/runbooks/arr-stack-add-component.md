@@ -50,8 +50,11 @@ Plugin name resolves → declarative management. Plugin name fails
 → reactive/manual management; add to the Buildarr "out of scope"
 list per `integration-audit-doctrine.md` Finding 11.
 
-Current gaps as of 2026-05-03: Sonarr v4.0.17, Sportarr, Bazarr,
-Cleanuparr, Scraparr, and most non-Radarr-family services.
+Current gaps as of 2026-05-04: Sonarr v4.0.17, Sportarr, Bazarr,
+Cleanuparr, Scraparr, Lidarr, and most non-Radarr-family services.
+Lidarr coverage is unconfirmed locally because the host does not
+have a `buildarr` CLI installed; treat it as reactive/manual until
+plugin support is proven from source.
 
 ### 1.3 Scraparr metrics coverage
 
@@ -160,10 +163,6 @@ OPNsense GUI: `Services → Dnsmasq DNS → Hosts → +` with
 run `scripts/check-repo-coherence.py caddy-dns-parity` and verify
 exit 0; the parity check is enforced pre-commit.
 
-> **Note:** `docs/runbooks/opnsense-add-host-overrides.md` is
-> stale (refers to Unbound, which is disabled per D-17-21).
-> Backlog candidate to update or supersede; until then, follow
-> the Dnsmasq path above.
 
 ---
 
@@ -215,7 +214,7 @@ declarative coverage exists.
 scripts/provision-<service>.sh
 
 # Bring up the new service
-docker compose -f docker/compose.yml up -d vault-agent-<service> <service>
+docker compose -f /Users/admin/control-center-stack/stacks/arr-stack/docker-compose.yml up -d vault-agent-<service> <service>
 
 # Verify container health
 docker compose ps <service>      # expect "healthy"

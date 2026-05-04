@@ -110,6 +110,7 @@ Present in Dnsmasq as of 2026-05-04 (subset of the 50
 
 - `bazarr.internal` → `192.168.10.145`
 - `cleanuparr.internal` → `192.168.10.145`
+- `lidarr.internal` → `192.168.10.145`
 - `sonarr.internal` → `192.168.10.145`
 - `radarr.internal` → `192.168.10.145`
 - `prowlarr.internal` → `192.168.10.145`

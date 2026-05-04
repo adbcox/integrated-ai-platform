@@ -152,6 +152,12 @@ cleanuparr.internal {
     reverse_proxy host.docker.internal:11011
 }
 
+lidarr.internal {
+    import access_log
+
+    reverse_proxy host.docker.internal:8686
+}
+
 vaultwarden.internal {
     import access_log
 
