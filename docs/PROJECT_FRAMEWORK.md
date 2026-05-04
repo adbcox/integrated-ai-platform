@@ -536,8 +536,8 @@ Deliverable table:
 | D-17-79: Plane-era scripts _retired structure decision | DONE | 2026-05-04 decision: keep annotated in place; no scripts/_retired move (forensic references preserved, operational risk already mitigated by D-17-70 headers) |
 | D-17-80: xindex-mcp.md drift audit second pass | DONE | 24b31c2 — xindex-mcp second-pass drift audit: stale caddy-tls reference replaced with operator-path runbook link. |
 | D-17-81: CLAUDE.md second-pass drift audit | IN PROGRESS | added 2026-05-04 via roadmap-create.sh |
-| D-17-83: Roadmap row enrichment audit — §9 narrative quality + status accuracy | IN PROGRESS | added 2026-05-04 via roadmap-create.sh |
-| D-17-84: service-registry filename normalization across docs | IN PROGRESS | added 2026-05-04 via roadmap-create.sh |
+| D-17-83: Roadmap row enrichment audit — §9 narrative quality + status accuracy | DONE | 4861422 — §9 row audit completed; 19 status drifts reconciled to DONE with source-traced narrative enrichment; D-17-49 and D-17-62 retained IN PROGRESS by operator decision |
+| D-17-84: service-registry filename normalization across docs | DONE | dfca39fb — normalized active-doc references to `service-registry.yaml.DEPRECATED`; historical/frozen phase/archive artifacts intentionally left unchanged for forensic fidelity |
 
 ID-reservation note: D-17-22 (multi-session role + intake architecture)
 is RESERVED but not yet framework-authored. Discussed in a prior
