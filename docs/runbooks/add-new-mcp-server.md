@@ -60,7 +60,7 @@ mkdir -p ~/.vault-agent-secrets/<service>
 
 ```
 docker/vault-agent-<service>/
-  agent.hcl              — auth config (copy from vault-agent-plane-api/agent.hcl, change service name)
+  agent.hcl              — auth config (copy from config/vault-agent-canonical-pattern/agent.hcl, change service name)
   credentials.env.tmpl   — renders env vars from Vault KV paths
 ```
 

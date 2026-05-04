@@ -37,7 +37,6 @@ grep -h 'container_name:' \
   docker/observability-stack.yml \
   docker/knowledge-stack.yml \
   docker/obot-stack.yml \
-  docker/docker-compose-plane.yml \
   docker/netbox/docker-compose.yml \
   docker/mcp/docker-compose.yml \
   docker/mcp/docker-compose.mcp-docker-remote.yml \
@@ -53,6 +52,9 @@ comm -13 /tmp/running.txt /tmp/declared.txt
 
 For out-of-repo stacks, add the container_names from
 `~/control-center-stack/stacks/*/docker-compose.yml` to `/tmp/declared.txt`.
+
+Plane CE is retired; include Plane compose only for historical
+forensics, not active drift baselines.
 
 ---
 
