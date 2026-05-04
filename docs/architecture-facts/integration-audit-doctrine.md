@@ -1362,3 +1362,77 @@ D-17-102 correction path:
 - D-17-100 (operational parity follow-on)
 - D-17-102 (this worked example)
 - `docs/runbooks/arr-stack-add-component.md` §7.1
+
+---
+
+## Finding 21 — Open-weights ≠ locally-runnable; RAM-fit is Step -1 before provenance
+
+**Date:** 2026-05-04
+**Originating WP:** D-17-104 WP-02/WP-03 (Kimi K2.6 evaluation)
+**Severity:** Workflow efficiency (avoidable evaluation dead-end)
+
+### What
+
+Kimi K2.6 (moonshotai/Kimi-K2.6) is a 1T-total-parameter MoE model
+with 32B active parameters and 256K context. Public SWE-Bench Verified
+score: 80.2% (vs Claude Opus 4.6 at 80.8% — marginally behind, not
+ahead; article framing was sensationalized).
+
+D-17-104 initiated a full evaluation cycle (provenance gate, pull,
+D-17-12 benchmark) before discovering the hardware constraint:
+
+- BF16 weights split across 46 files (~447 GB uncompressed)
+- Aggressive INT4 quantization still exceeds 200 GB
+- Mac Studio M3 Ultra has 96 GB unified memory pool
+- Model is hardware-blocked by ~3–5× regardless of quantization format
+
+Secondary blockers: Ollama only publishes `kimi-k2.6:cloud` (API-routed,
+requires Moonshot API key); LLM Access Doctrine prohibits cloud API keys
+in Vault. Provenance gate returned `scan-failed` because the HF repo
+requires `trust_remote_code=True` for feature extraction.
+
+### Why this matters
+
+Article-claimed benchmark parity (SWE-Bench, etc.) is meaningless if
+the model doesn't fit the target hardware. The evaluation pipeline
+(D-17-92 provenance gate, D-17-91 benchmark harness) implicitly assumes
+the model is deployable. Without a Step -1 RAM-fit check, evaluation
+effort is wasted when the answer is "hardware-blocked" regardless of
+benchmark quality.
+
+MoE models compound this: a "32B active params" framing creates a
+false impression of RAM requirements (32B active × 0.5 GB/B ≈ 16 GB).
+The real constraint is total parameter weight, not active parameter
+count, because the full MoE routing table must reside in memory.
+
+### How to apply
+
+RAM-fit check is now Step -1 in `docs/runbooks/pull-new-model.md`.
+Before any provenance or evaluation work:
+
+1. Find total parameter count (HF model card `config.json` or README).
+2. For MoE: note total params, not active params.
+3. Estimate INT4 floor: `total_params_B × 0.5 GB`.
+4. Compare to platform pool (96 GB Mac Studio, 48 GB Mac Mini).
+5. Check Ollama registry: `:cloud` tag = API-only; `SIZE -` in `ollama list` = no local weights.
+
+If hardware-blocked: chronicle and defer with reactivation criteria.
+Do not invest provenance or benchmark time on an undeployable model.
+
+### Note on article framing (2026-05-04)
+
+The article that prompted D-17-104 (thinkpol.ca) compared Kimi K2.6
+to Claude/GPT-5.5 on a single sliding-tile word puzzle and framed it as
+dramatically superior. Actual SWE-Bench Verified scores: Kimi K2.6 =
+80.2%, Claude Opus 4.6 = 80.8%. The Kilo Code review found a 23-point
+gap behind Claude Opus 4.7 on multi-agent contention tasks (68 vs 91).
+Sensationalized single-benchmark framings should not trigger evaluation
+work without a RAM-fit pre-check.
+
+### Cross-references
+
+- D-17-104 (this worked example — DEFERRED)
+- D-17-92 (provenance gate, Step 0)
+- D-17-91 (benchmark harness, Step 1+)
+- `docs/architecture-facts/aider-compute-doctrine.md` (96 GB constraint)
+- `docs/runbooks/pull-new-model.md` §Step -1 (RAM-fit gate added)

@@ -1,10 +1,51 @@
 # Pull a new model (provenance-gated)
 
 How to pull a new AI model onto the platform. Every pull goes
-through the model-provenance gate (D-17-92) before `ollama pull`.
-The gate attests model lineage; it does NOT verify cryptographic
-signatures. See `docs/architecture-facts/model-provenance-doctrine.md`
-for the distinction and GGUF-vs-HF-native limitation.
+through the RAM-fit check (Step -1) and the model-provenance gate
+(Step 0) before `ollama pull`. The provenance gate attests model
+lineage; it does NOT verify cryptographic signatures. See
+`docs/architecture-facts/model-provenance-doctrine.md` for the
+distinction and GGUF-vs-HF-native limitation.
+
+## Step -1 — RAM-fit check (MANDATORY before provenance gate)
+
+**Finding 21 (D-17-104 close, 2026-05-04):** Open-weights ≠ locally-runnable.
+Article-claimed benchmark parity is meaningless if the model does not fit
+the hardware. RAM-fit is a gate, not a post-hoc discovery.
+
+Check before investing any evaluation time:
+
+```sh
+# 1. Total parameter count (from HF model card — check "Model Size" or config.json)
+#    For MoE models, note BOTH total and active params.
+#
+# 2. Estimate minimum RAM for INT4 quantization:
+#    total_params_B × 0.5 GB  (rough INT4 floor; add ~10% for KV cache)
+#
+# 3. Check active platform pool:
+#    Mac Studio M3 Ultra: 96 GB unified memory
+#    Mac Mini M4 Pro:     48 GB unified memory
+#
+# 4. Check Ollama registry — is a GGUF available?
+curl -s https://ollama.com/library/<model-name>/tags | python3 -c \
+  "import sys,re; c=sys.stdin.read(); print([x for x in re.findall(r'[a-z0-9._:-]+', c) if 'cloud' not in x and 'GB' in x or True][:10])"
+#    ':cloud' tag = API-routed, requires vendor API key (doctrine-blocked)
+#    SIZE '-' in ollama list = cloud-routed, no local weights
+```
+
+**RAM-fit decision table:**
+
+| Model size | INT4 floor | Fits 96 GB pool? | Action |
+|---|---|---|---|
+| ≤14B total | ≤7 GB | Yes | Proceed to Step 0 |
+| 30–70B total | 15–35 GB | Yes | Proceed to Step 0 |
+| 70–180B total | 35–90 GB | Marginal | Check quantization level; verify GGUF exists |
+| >180B total | >90 GB | No (Mac Studio) | Hardware-blocked; defer or escalate |
+| MoE (e.g. 1T total / 32B active) | >200 GB typical | No | Hardware-blocked even at INT4 |
+
+**Reactivation criteria for hardware-blocked models:**
+hardware upgrade to ≥256 GB unified memory, OR vendor releases a
+smaller-active-params distilled variant that fits the pool.
 
 ## Step 0 — provenance gate (MANDATORY before any pull)
 

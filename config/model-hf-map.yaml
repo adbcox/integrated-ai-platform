@@ -34,3 +34,10 @@ deepseek-coder-v2:16b: deepseek-ai/DeepSeek-Coder-V2-Lite-Instruct
 
 # --- Devstral (Mistral AI) ---
 devstral:latest: mistralai/Devstral-Small-2505
+
+# --- Kimi K2.6 (Moonshot AI — D-17-104 DEFERRED) ---
+# 1T total params / 32B active MoE. INT4 floor ~200 GB — exceeds Mac Studio 96 GB pool.
+# Hardware-blocked. Ollama only publishes :cloud (API-routed; doctrine-blocked).
+# Provenance scan-failed (trust_remote_code=True). Finding 21.
+# Retained here for RAM-fit reference; do not pull without ≥256 GB platform node.
+kimi-k2.6:cloud: moonshotai/Kimi-K2.6
