@@ -82,7 +82,7 @@ def main() -> int:
             plan_data = json.loads(stage7_plan.read_text(encoding="utf-8"))
             subplan_count = len(plan_data.get("plan_payload", {}).get("subplans", []))
             print(f"  Subplans created: {subplan_count}")
-        except:
+        except (json.JSONDecodeError, OSError):
             print(f"  (Could not parse plan)")
     else:
         print(f"✗ Stage 7 plan not found")
@@ -99,7 +99,7 @@ def main() -> int:
             executor_name = data.get("executor")
             print(f"✓ Executor log found: {latest_executor_log.relative_to(REPO_ROOT)}")
             print(f"  Executor used: {executor_name}")
-        except:
+        except (json.JSONDecodeError, OSError):
             pass
 
     # Check file modification
