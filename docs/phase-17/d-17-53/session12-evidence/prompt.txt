@@ -1,0 +1,40 @@
+Goose Session 12 — D-17-53 §18.O Posture-1 re-promotion attempt
+session 1/5.
+
+NOTE: The verbatim dispatch prompt for Session 12 was not captured in
+the chronicle paste-back. This file records dispatch shape rather than
+verbatim text.
+
+Cell: Goose+qwen3-coder:30b × C1.
+Sub-class: reference-doc draft (re-author of existing runbook).
+
+Substrate: F1.B held — Ollama 0.22.1 streaming structured tool_calls
+for qwen3-coder:30b on Mac Studio (192.168.10.142), filesystem-mcp
+enabled.
+
+Target: docs/runbooks/openproject-sync-and-enrich.md
+(operator-side substrate trap: target file already existed at 10,183
+bytes from Session 9 frontier-corrected runbook committed
+2026-05-04).
+
+Source files referenced:
+- scripts/openproject-sync-from-framework.py
+- scripts/openproject-enrich-from-framework.py
+- scripts/openproject-bootstrap-ext-id-field.sh
+- scripts/lib/vault-admin-token.sh
+- docs/architecture-facts/openproject-enrichment-doctrine.md
+
+Standard preamble shape (per §18.O strengthened constraint set
+landed at Session 9):
+- Constraint A: verbatim-block instruction.
+- Constraint B (strengthened at Session 9): "LINE NUMBERS MUST BE
+  VERIFIED via the same `read_text_file` call that read the cited
+  content."
+- Source-grounded self-check / source-citation table required.
+
+Outcome: severe-shape recurrence. Draft NOT committed. Re-promotion
+counter stays at 0/5. See session.log for defect-level analysis.
+
+For the operator-side pre-flight gate that should have caught this
+brief at compose-time (target file already exists), see Session 12
+operator disposition in session.log.

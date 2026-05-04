@@ -325,55 +325,90 @@ class "read N source files + draft a reference doc"
 (read-author-only).
 
 **Status (2026-05-04):** **Posture 1 (capability-validation) —
-DEMOTED from Posture 2 at Session 11.** Cell cleared the N=5 gate
-2026-05-03; operator promoted Posture 1 → Posture 2 in the same
-session. M=10 dual-review window opened. After 6/10 entries
-(Sessions 6–11), operator demoted the cell back to Posture 1 on
-Session 11 evidence. **N=5 gate re-required** for any future
-re-promotion attempt. The standard preamble (verbatim-block +
-source-citation table) is retained for Posture-1 work — it does
-not hurt; it just doesn't reliably suppress the failure-mode class.
+DEMOTED from Posture 2 at Session 11. Re-promotion attempt: 0/5
+(Session 12 was a NULL attempt — severe-shape recurrence; does
+not count toward N=5).** Cell cleared the N=5 gate 2026-05-03;
+operator promoted Posture 1 → Posture 2 in the same session.
+M=10 dual-review window opened. After 6/10 entries (Sessions
+6–11), operator demoted the cell back to Posture 1 on Session 11
+evidence. **N=5 gate re-required** for any future re-promotion
+attempt. The standard preamble (verbatim-block + source-citation
+table) is retained for Posture-1 work — it does not hurt; it just
+doesn't reliably suppress the failure-mode class.
 **Watchlist item — REGRESSED to "PROMPT-ENGINEERING REMEDIATION
 INSUFFICIENT".** The source-fidelity-loss failure mode (N=3
 confirmed Sessions 5, 7, 8) was suppressed cleanly at Session 9
-(N=1), shifted shape at Session 10 (N=1 partial-remediation), and
-**recurred in original severe shape at Session 11**. Hit-rate of
-severe-shape failure under strengthened preamble: **2 of 3
+(N=1), shifted shape at Session 10 (N=1 partial-remediation),
+**recurred in original severe shape at Session 11**, and **recurred
+again at Session 12 (first re-promotion attempt)**. Hit-rate of
+severe-shape failure under strengthened preamble: **3 of 4
 post-remediation sessions** (Session 9 clean, Session 10 shape-
-shifted, Session 11 severe — fabricated plist example with fields
-not in any source plist, fabricated heartbeat path that doesn't
-exist in codebase, fabricated source-citation verbatim quotes that
-don't match cited line content, fabricated `todo__todo_write` tool
-name in audit trail). Remediation does not hold beyond the
-original test datapoint.
+shifted, Session 11 severe, Session 12 severe — wholesale
+fabricated source-citation table line numbers across two scripts,
+fabricated `vault-admin-token.sh` path, misapplied `[UNVERIFIED]`
+flagging covering for facts that were directly answerable from
+source while load-bearing fabrications went unflagged).
+Remediation does not hold beyond the original test datapoint.
+**Class-intrinsic-failure threshold: one more severe-shape
+recurrence (Session 13 or later) triggers Option B — demote to
+Posture 0; class redefinition required before any new N=5 gate
+attempt.**
 
-**Substrate-shape-correlation hypothesis (logged 2026-05-04 from
-Session 11).** Substrate that has clean line-aligned blocks
-(function definitions, argparse, struct literals, Python scripts)
-appears amenable to verbatim-block extraction (Session 9 clean,
-substrate was 2 Python scripts with explicit argparse blocks).
-Substrate with structured-document shape (XML plists, multi-script
-orchestration pipelines) appears to defeat the preamble's verbatim-
-block instruction (Session 11 severe, substrate was 3 XML plists +
-migration script + verify script + check-repo-coherence.py). Worth
-chronicling as a substrate-shape-correlation finding for future
-class-scoping decisions; not a doctrine claim at N=1 of each
-substrate shape. If this correlation holds across more datapoints,
-C1 may need sub-class splits along substrate-shape rather than just
-output-shape.
+**Substrate-shape-correlation hypothesis — FALSIFIED at N=2
+(Session 12, 2026-05-04).** Originally logged 2026-05-04 from
+Session 11: substrate with clean line-aligned blocks (function
+definitions, argparse, struct literals, Python scripts) appeared
+amenable to verbatim-block extraction (Session 9 clean, substrate
+was 2 Python scripts with explicit argparse blocks); substrate
+with structured-document shape (XML plists, multi-script
+orchestration) appeared to defeat the preamble (Session 11 severe).
+Session 12 substrate was the *same shape* as Session 9 (Python
+script + argparse — `openproject-sync-from-framework.py` plus
+`openproject-enrich-from-framework.py`), and produced **wholesale
+line-number fabrication** across both scripts (sync flags cited at
+lines 109-120 actual 771-781; enrich flags cited at lines 158-163
+actual 304-306). Same substrate shape: clean output Session 9,
+fabricated output Session 12. The correlating variable is not
+substrate shape. Hypothesis falsified rather than abandoned —
+candidates worth chronicling but not yet testable: (a) multi-
+script-CLI-flag-table sub-shape (Session 12 had two scripts with
+overlapping flag tables; Session 9 had one primary script);
+(b) target-already-exists shape (Session 9 target was net-new;
+Sessions 11 and 12 both targeted files that already existed,
+which may push the model toward autocompleting from "what such a
+runbook usually looks like" rather than from cited source — the
+deeper rationale for the operator-side substrate trap promoted to
+hard pre-flight gate); (c) single-clean-datapoint sampling
+artifact (Session 9 may have been a lucky draw; the cell may not
+be capable of source-fidelity at this work-class regardless of
+substrate, given 3 of 4 post-remediation sessions exhibit severe-
+shape failure).
 
-**Operator-side substrate trap (sub-doctrine added 2026-05-04).**
+**Operator-side substrate trap — HARD PRE-FLIGHT GATE (promoted
+2026-05-04 from chronicle sub-doctrine on Session 12 recurrence).**
 Session 11's brief targeted `docs/runbooks/launchd-jobs-canonical.md`
 which already existed at commit 2a84076 (D-17-53 Session 8,
-frontier-corrected). Had Session 11's draft been committed, it
-would have overwritten the frontier-corrected runbook with a
-fabrication-laden replacement. **Sub-doctrine for future Goose
-dispatches:** pre-flight check existing-file conflicts before
-issuing the brief — if the target path exists, the brief becomes
-either a re-author (with the existing file in the source list as
-prior art) or a no-go. This is operator-side, not Goose's failure;
-recorded for chronicle completeness; does not affect cell-
-capability disposition.
+frontier-corrected). Session 12's brief targeted
+`docs/runbooks/openproject-sync-and-enrich.md` which already
+existed at 10,183 bytes (D-17-53 Session 9, frontier-corrected,
+committed 2026-05-04). Both drafts, had they been committed,
+would have overwritten frontier-corrected runbooks with
+fabrication-laden replacements. The Session 11 chronicle entry
+logged this as a sub-doctrine; Session 12 demonstrates the
+chronicle entry is insufficient — the trap recurs without a hard
+gate. **Hard pre-flight enforcement (operator-side, not
+enforceable from inside Goose; lives in the pre-dispatch
+checklist):**
+1. Brief-compose-time check that target file path does NOT
+   already exist in the repo.
+2. If target exists, reject brief at compose-time with "use
+   'review and propose corrections' framing OR pick a different
+   filename".
+This is operator-side; does not affect cell-capability
+disposition. Note also the deeper hypothesis surfaced by
+falsification of the substrate-shape correlation: prior-file
+presence in tool-reach may be a *cell-side* correlated failure,
+not just an operator-side procedural trap.
 
 **Sessions logged:**
 1. WP-03 smoke test (read CLAUDE.md head=50, 2 tool calls,
@@ -835,6 +870,93 @@ capability disposition.
    `docs/phase-17/d-17-53/session11-evidence/` (prompt.txt,
    session.log, goose-draft-uncommitted.md). **Draft NOT
    committed; chronicle-only update.**
+
+**Posture-1 re-promotion attempts (post-Session-11 demotion):**
+
+- (2026-05-04) D-17-53 Session 12 — `openproject-sync-and-
+  enrich.md` re-author of existing runbook under standard preamble
+  (with strengthened "LINE NUMBERS MUST BE VERIFIED via the same
+  `read_text_file` call that read the cited content" addition to
+  constraint B). C1 sub-class: reference-doc draft, re-author of
+  existing runbook (a new sub-shape — Sessions 6–11 covered
+  fresh-author / doctrine-substitution / abstract-from-N).
+  Substrate: 5 source files (sync script, enrichment script, two
+  bootstrap scripts, sibling architecture-fact). Scheduled as
+  session 1/5 of the Posture-1 re-promotion attempt; does NOT
+  count toward N=5 because the output is not clean.
+  **WATCHLIST FAILURE MODE — SAME SEVERE SHAPE AS SESSION 11.**
+  Goose's draft contains the Session 5/7/8/11 shape: presenting
+  fabricated source citations as verbatim-verified, with line
+  numbers that don't match the cited content despite the
+  strengthened constraint requiring line-number verification.
+  Four defects:
+  (1) **Source-citation table line numbers wholesale fabricated.**
+      Goose's table cited sync-script argparse flags at lines
+      109-120 (--dry-run 109-110, --phase 111-112,
+      --include-roadmap 113-114, --roadmap-only 115-116,
+      --dedup-phase17 117-118, --skip-enrich 119-120). Verifying:
+      lines 109-120 are the `Deliverable` / `Phase` `@dataclass`
+      definitions; the real argparse block is at lines 771-781
+      (`main()` at 770; `ap = argparse.ArgumentParser()` at 771;
+      `add_argument` calls at 772, 773, 774-775, 776-777,
+      778-779, 780-781). Verbatim quotes match real argparse
+      content (Goose did read the file), but the line-number
+      citations are entirely fabricated. Same shape on the
+      enrichment script: --dry-run cited 158-159 actual 304;
+      --force cited 160-161 actual 305; --limit cited 162-163
+      actual 306. Strengthened constraint B is gameable end-to-
+      end by the model authoring the table. **Substrate-shape-
+      correlation hypothesis falsified at N=2 of the substrate
+      shape: Session 9 (Python+argparse) clean / Session 12
+      (Python+argparse) fabricated.**
+  (2) **Operator-side substrate trap recurs.** Brief targeted
+      `docs/runbooks/openproject-sync-and-enrich.md`; target
+      already existed at 10,183 bytes (Session 9 frontier-
+      corrected runbook committed 2026-05-04). Sub-doctrine
+      logged at Session 11 was insufficient; promoted to **HARD
+      PRE-FLIGHT GATE** per operator disposition.
+  (3) **`vault-admin-token.sh` path fabrication.** Prerequisites
+      claimed `vault-admin-token.sh helper script is available
+      at lib/vault-admin-token.sh`. Canonical path:
+      `scripts/lib/vault-admin-token.sh` (CLAUDE.md reference
+      and Session 10 worked example, frontier-corrected with
+      this exact path). Same shape as Session 11's plist log-
+      path fabrication: concrete file-path autocompleted from
+      training-data shape rather than copied from source.
+  (4) **Misapplied `[UNVERIFIED]` flagging.** Goose self-flagged
+      "exact location of the Vault token retrieval within the
+      scripts cannot be fully verified" — directly answerable
+      from line 43 of the sync script. Goose self-flagged
+      `openproject-bootstrap-ext-id-field.sh` as not analysed
+      "due to tool limitations in the current context" — there
+      are no tool limitations; the file is readable via
+      filesystem-mcp which is enabled. Goose did NOT flag the
+      actually-fabricated content (line-number citations,
+      `vault-admin-token.sh` path). Same shape as Session 11
+      defect 8: `[UNVERIFIED]` used as cover for facts the
+      model didn't read while load-bearing fabrications go
+      unflagged. Wrong direction for the honest-uncertainty-
+      marking preserve-pattern.
+  **Pattern read:** post-remediation hit-rate is now **3 of 4**
+  sessions exhibiting severe-shape failure (Session 9 clean,
+  Session 10 shape-shifted, Session 11 severe, Session 12
+  severe). Class-intrinsic-failure evidence accumulating.
+  **Operator disposition (Posture-1 re-promotion attempt session
+  1/5, NULL, 2026-05-04):** **Option A.** Reject Session 12;
+  re-promotion attempt stays at 0/5. Pre-flight enforcement for
+  future Goose dispatch promoted from chronicle sub-doctrine to
+  HARD GATE (see "Operator-side substrate trap" above).
+  Substrate-shape-correlation hypothesis FALSIFIED at N=2 (logged
+  as falsified rather than abandoned; alternative correlations
+  open for future scoping). **Class-intrinsic-failure threshold:**
+  one more severe-shape recurrence (Session 13 or later) triggers
+  Option B — demote to Posture 0; class redefinition required
+  before any new N=5 gate attempt. Existing Session 9 frontier-
+  corrected runbook at `docs/runbooks/openproject-sync-and-
+  enrich.md` remains canonical. Session evidence preserved at
+  `docs/phase-17/d-17-53/session12-evidence/` (prompt.txt,
+  session.log, goose-draft-uncommitted.md). **Draft NOT
+  committed; chronicle-only update.**
 
 **Substrate baseline:** F1.B (Ollama 0.22.1 streaming structured
 `tool_calls` for qwen3-coder:30b — see `local-tool-calling.md`).
