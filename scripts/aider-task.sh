@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# aider-task.sh — operator entry point for LOCAL_AIDER coding tasks (D-17-94, D-17-96, D-17-97)
+# aider-task.sh — operator entry point for LOCAL_AIDER coding tasks (D-17-94, D-17-96, D-17-97, D-17-103)
 #
 # Usage:
 #   scripts/aider-task.sh "task description" [file1 file2 ...]
@@ -8,9 +8,22 @@
 #   scripts/aider-task.sh --model qwen3-coder:30b "task description" [files...]
 #   scripts/aider-task.sh --hard "task description" [files...]
 #   scripts/aider-task.sh --commit "task description" [files...]
+#   scripts/aider-task.sh --skip-preflight "task description" [files...]
+#   scripts/aider-task.sh --skip-validator "task description" [files...]
 #
 # Routes through domains/router.py classify. If route is LOCAL_AIDER, invokes
 # bin/aider_local.sh. If CLAUDE_CODE escalation, prints guidance and exits 1.
+#
+# Three-layer intelligence (D-17-103):
+#   Layer 2 (pre-flight): task shape validator runs before Aider invocation
+#     blocks doc-append, rewrite-large, C1-multi-file shapes
+#     override: --skip-preflight or AIDER_SKIP_PREFLIGHT=1
+#   Layer 1 (post-run diff sanity): aider_guard.py inline checks after Aider runs
+#     blocks >2% deletion on append tasks, >30% deletion on general tasks
+#     warns on truncation (≤3 lines added to large doc for multi-para task)
+#     override: --skip-validator or AIDER_SKIP_VALIDATOR=1
+#   Layer 3 (learning loop): records outcome to artifacts/execution_metrics.jsonl
+#     feeds domains/learning.py confidence for future routing decisions
 #
 # Task classes (--class) align with D-17-90 persona taxonomy:
 #   C0  quick lookup / one-liner / ≤1 file (default if 1 file)
@@ -40,6 +53,8 @@ DRY_RUN=0
 MODEL_OVERRIDE=""
 HARD_MODE=0
 AUTO_COMMIT=0
+SKIP_PREFLIGHT=0
+SKIP_VALIDATOR=0
 DESCRIPTION=""
 FILES=()
 
@@ -84,6 +99,10 @@ while [[ $# -gt 0 ]]; do
       HARD_MODE=1; shift ;;
     --commit)
       AUTO_COMMIT=1; shift ;;
+    --skip-preflight)
+      SKIP_PREFLIGHT=1; shift ;;
+    --skip-validator)
+      SKIP_VALIDATOR=1; shift ;;
     -h|--help)
       usage; exit 0 ;;
     --)
@@ -218,6 +237,43 @@ if [[ "$EXECUTOR" != "local_aider" ]]; then
   exit 1
 fi
 
+# --- Layer 2: Pre-flight task shape validator (D-17-103) ---
+if [[ $DRY_RUN -eq 0 ]]; then
+  PREFLIGHT_RESULT=$(AIDER_SKIP_PREFLIGHT="${AIDER_SKIP_PREFLIGHT:-0}" \
+    python3 - "$DESCRIPTION" "$TASK_CLASS" "${FILES[@]+"${FILES[@]}"}" <<'PY'
+import sys, os
+sys.path.insert(0, ".")
+from domains.router import preflight_validate
+
+description = sys.argv[1]
+task_class  = sys.argv[2] if len(sys.argv) > 2 else ""
+files       = sys.argv[3:] if len(sys.argv) > 3 else []
+
+result = preflight_validate(description, task_class, files if files else None)
+print(result.severity)
+print(result.shape)
+print(result.reason)
+PY
+  )
+  PF_SEVERITY=$(echo "$PREFLIGHT_RESULT" | sed -n '1p')
+  PF_SHAPE=$(echo "$PREFLIGHT_RESULT" | sed -n '2p')
+  PF_REASON=$(echo "$PREFLIGHT_RESULT" | sed -n '3p')
+
+  if [[ "$PF_SEVERITY" == "block" && "$SKIP_PREFLIGHT" -eq 0 ]]; then
+    echo ""
+    echo "[aider-task] PRE-FLIGHT BLOCK — shape: $PF_SHAPE"
+    echo "  $PF_REASON"
+    echo ""
+    echo "  Override: scripts/aider-task.sh --skip-preflight ..."
+    echo "            or: AIDER_SKIP_PREFLIGHT=1 scripts/aider-task.sh ..."
+    exit 3
+  elif [[ "$PF_SEVERITY" == "warn" ]]; then
+    echo "[aider-task] pre-flight WARN ($PF_SHAPE): $PF_REASON"
+  elif [[ "$PF_SEVERITY" == "ok" && "$PF_SHAPE" != "none" ]]; then
+    echo "[aider-task] pre-flight: $PF_REASON"
+  fi
+fi
+
 # --- LOCAL_AIDER path ---
 if [[ $DRY_RUN -eq 1 ]]; then
   echo "[aider-task] dry-run: would invoke bin/aider_local.sh with:"
@@ -236,6 +292,7 @@ if [[ ${#FILES[@]} -gt 0 ]]; then
 else
   PRE_RUN_CHECKSUMS=""
 fi
+AIDER_START_TIME=$(date +%s)
 
 # Build aider_local.sh invocation
 AIDER_ARGS=()
@@ -265,6 +322,9 @@ bash bin/aider_local.sh "${AIDER_ARGS[@]}"
 AIDER_EXIT=$?
 set -e
 
+AIDER_END_TIME=$(date +%s)
+AIDER_DURATION=$(( AIDER_END_TIME - AIDER_START_TIME ))
+
 # --- Post-run summary ---
 echo ""
 echo "[aider-task] --- post-run summary ---"
@@ -272,6 +332,31 @@ echo "[aider-task] --- post-run summary ---"
 if [[ $AIDER_EXIT -ne 0 ]]; then
   echo "[aider-task] Aider exited with code $AIDER_EXIT"
   echo "[aider-task] Check output above for errors. If timeout: re-run or use --hard."
+
+  # Layer 3: record failure to learning DB
+  AIDER_TASK_DESCRIPTION="$DESCRIPTION" \
+  AIDER_TASK_CLASS="${TASK_CLASS:-}" \
+  AIDER_TASK_MODEL="$ROUTED_MODEL" \
+  AIDER_TASK_DURATION="$AIDER_DURATION" \
+  AIDER_TASK_EXIT="$AIDER_EXIT" \
+  python3 - <<'PY'
+import json, os, sys, time
+from pathlib import Path
+sys.path.insert(0, ".")
+from domains.learning import LearningDomain
+error_type = "timeout" if os.environ.get("AIDER_TASK_EXIT") == "124" else "aider_error"
+LearningDomain().record_execution(
+    task_type="coding",
+    description=os.environ.get("AIDER_TASK_DESCRIPTION", "")[:120],
+    model=os.environ.get("AIDER_TASK_MODEL", "unknown"),
+    executor="LOCAL_AIDER",
+    success=False,
+    duration_seconds=float(os.environ.get("AIDER_TASK_DURATION", "0")),
+    error_type=error_type,
+    exit_code=int(os.environ.get("AIDER_TASK_EXIT", "1")),
+)
+print("[aider-task] learning: recorded failure")
+PY
   exit $AIDER_EXIT
 fi
 
@@ -294,13 +379,101 @@ if [[ ${#CHANGED_FILES[@]} -eq 0 ]]; then
   echo "  - Task description too vague — try a more specific instruction"
   echo "  - File context prompts consumed your input (check for 'Add file?' prompts above)"
   echo "[aider-task] Tip: re-run with --hard for a larger model, or refine the description."
+
+  # Layer 3: record no-change as failure
+  AIDER_TASK_DESCRIPTION="$DESCRIPTION" \
+  AIDER_TASK_MODEL="$ROUTED_MODEL" \
+  AIDER_TASK_DURATION="$AIDER_DURATION" \
+  python3 - <<'PY'
+import os, sys
+sys.path.insert(0, ".")
+from domains.learning import LearningDomain
+LearningDomain().record_execution(
+    task_type="coding",
+    description=os.environ.get("AIDER_TASK_DESCRIPTION", "")[:120],
+    model=os.environ.get("AIDER_TASK_MODEL", "unknown"),
+    executor="LOCAL_AIDER",
+    success=False,
+    duration_seconds=float(os.environ.get("AIDER_TASK_DURATION", "0")),
+    error_type="no_changes",
+    exit_code=0,
+)
+print("[aider-task] learning: recorded no-change failure")
+PY
 else
   echo "[aider-task] Aider modified: ${CHANGED_FILES[*]}"
   echo ""
+
+  # --- Layer 1: Post-run diff sanity check (D-17-103) ---
+  GUARD_EXIT=0
+  if [[ "$SKIP_VALIDATOR" -eq 0 && "${AIDER_SKIP_VALIDATOR:-0}" != "1" ]]; then
+    GUARD_FILES_ARGS=()
+    for f in "${CHANGED_FILES[@]}"; do GUARD_FILES_ARGS+=(--files "$f"); done
+    set +e
+    python3 bin/aider_guard.py \
+      --inline \
+      --description "$DESCRIPTION" \
+      --task-class "${TASK_CLASS:-}" \
+      "${GUARD_FILES_ARGS[@]}"
+    GUARD_EXIT=$?
+    set -e
+  fi
+
   echo "[aider-task] Review the diff:"
   for f in "${CHANGED_FILES[@]}"; do
     git diff "$f"
   done
+
+  if [[ $GUARD_EXIT -eq 1 ]]; then
+    echo ""
+    echo "[aider-task] *** DIFF SANITY CHECK FAILED — review diff above before applying ***"
+    echo "[aider-task] The diff contains suspicious deletions. Do NOT git add until reviewed."
+    echo "[aider-task] If you have reviewed and approve: git add + git commit manually."
+    echo "[aider-task] Override next run: --skip-validator or AIDER_SKIP_VALIDATOR=1"
+
+    # Layer 3: record guarded (operator must decide)
+    AIDER_TASK_DESCRIPTION="$DESCRIPTION" \
+    AIDER_TASK_MODEL="$ROUTED_MODEL" \
+    AIDER_TASK_DURATION="$AIDER_DURATION" \
+    python3 - <<'PY'
+import os, sys
+sys.path.insert(0, ".")
+from domains.learning import LearningDomain
+LearningDomain().record_execution(
+    task_type="coding",
+    description=os.environ.get("AIDER_TASK_DESCRIPTION", "")[:120],
+    model=os.environ.get("AIDER_TASK_MODEL", "unknown"),
+    executor="LOCAL_AIDER",
+    success=False,
+    duration_seconds=float(os.environ.get("AIDER_TASK_DURATION", "0")),
+    error_type="diff_sanity_block",
+    exit_code=0,
+)
+print("[aider-task] learning: recorded diff-sanity-block")
+PY
+    # Exit 4 = diff sanity block (distinct from Aider errors)
+    exit 4
+  fi
+
+  # Layer 3: record success
+  AIDER_TASK_DESCRIPTION="$DESCRIPTION" \
+  AIDER_TASK_MODEL="$ROUTED_MODEL" \
+  AIDER_TASK_DURATION="$AIDER_DURATION" \
+  python3 - <<'PY'
+import os, sys
+sys.path.insert(0, ".")
+from domains.learning import LearningDomain
+LearningDomain().record_execution(
+    task_type="coding",
+    description=os.environ.get("AIDER_TASK_DESCRIPTION", "")[:120],
+    model=os.environ.get("AIDER_TASK_MODEL", "unknown"),
+    executor="LOCAL_AIDER",
+    success=True,
+    duration_seconds=float(os.environ.get("AIDER_TASK_DURATION", "0")),
+    exit_code=0,
+)
+print("[aider-task] learning: recorded success")
+PY
 
   if [[ $AUTO_COMMIT -eq 1 ]]; then
     echo ""

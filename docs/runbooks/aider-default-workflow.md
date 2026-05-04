@@ -507,3 +507,69 @@ deleted from disk but not from the git index.
 ### Aider reference
 
 Full Aider documentation: https://aider.chat/docs/
+
+---
+
+## 13. Three-layer intelligence system (D-17-103)
+
+`aider-task.sh` has three automatic guardrails that run around every
+Aider invocation. Understanding them prevents surprises.
+
+### Layer 2 — Pre-flight validator (runs BEFORE Aider)
+
+Inspects the task description, class, and target file sizes. On a BLOCK
+shape, the script exits 3 and Aider never runs.
+
+| Shape | What triggers it | Why |
+|---|---|---|
+| `doc-append` | append/extend/add-section keyword + `.md` file >50 lines | Multi-paragraph doc authoring is Tier 2 (D-17-101). Aider truncates. |
+| `rewrite-large` | rewrite/restructure/rework/redesign + any file >300 lines | Models touch unrelated content on large-file rewrites. |
+| `c1-multi-file` | C1 class + >2 files | C1 = single-source analysis; >2 files exceeds Tier 1 scope. |
+| `long-doc-task` (warn) | description >200 chars + large `.md` + no fix/patch keywords | Logs warning, proceeds. Heuristic: probable authoring task. |
+
+**Override (exceptional cases):**
+```bash
+aider-task.sh --skip-preflight "description" ...
+# or: AIDER_SKIP_PREFLIGHT=1 aider-task.sh ...
+```
+
+### Layer 1 — Diff sanity check (runs AFTER Aider)
+
+After Aider exits, `bin/aider_guard.py --inline` checks the diff.
+On a BLOCK, the script exits 4 and the changes remain unstaged.
+
+| Check | Threshold | Action |
+|---|---|---|
+| Deletion rate — append task | >2% of original file deleted | BLOCK (exit 4) |
+| Deletion rate — general task | >30% of original file deleted | BLOCK (exit 4) |
+| Truncation — `.md` file | ≤3 lines added to >50-line doc, multi-para task | WARN (logged) |
+
+Artifacts written to `artifacts/aider_runs/guard-inline-<ts>.json` on block.
+
+**Override:**
+```bash
+aider-task.sh --skip-validator "description" ...
+# or: AIDER_SKIP_VALIDATOR=1 aider-task.sh ...
+```
+
+### Layer 3 — Learning feedback (runs in all terminal branches)
+
+Every outcome (success, failure, guard-block, no-change) is recorded to
+`artifacts/execution_metrics.jsonl`. The router reads this log via
+`LearningDomain.recommend_model()` and `should_escalate()` to tune
+future routing decisions.
+
+You do not invoke Layer 3 directly — it is automatic.
+
+### Exit codes
+
+| Exit | Meaning |
+|---|---|
+| 0 | Aider ran, guard passed, files changed |
+| 1 | Aider error or escalation |
+| 3 | Pre-flight BLOCK (Layer 2 refused shape) |
+| 4 | Diff sanity BLOCK (Layer 1 refused diff) |
+
+### Reference
+
+Full doctrine: `docs/architecture-facts/aider-intelligence-doctrine.md`

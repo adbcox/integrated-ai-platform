@@ -201,3 +201,25 @@ days of coding work — all of it routed to Claude Code by default).
 
 Chronicle pointer: `docs/architecture-facts/integration-audit-doctrine.md`
 Finding 19.
+
+---
+
+## Mechanical enforcement — three-layer intelligence system (D-17-103)
+
+The tier boundaries above are enforced automatically by `aider-task.sh`
+via three layers wired around every Aider invocation:
+
+- **Layer 2 (pre-flight)** — `domains/router.py::preflight_validate()` — inspects
+  task shape BEFORE Aider runs. BLOCKs doc-append, rewrite-large, C1-multi-file
+  shapes (exit 3). Prevents the D-17-101 doc-authoring failure mode.
+- **Layer 1 (diff sanity)** — `bin/aider_guard.py --inline` — inspects the diff
+  AFTER Aider runs. BLOCKs excessive deletion rates (2% for append tasks, 30%
+  for general). WARNs on truncation. Prevents silent no-op or destructive diff
+  acceptance (exit 4).
+- **Layer 3 (learning)** — `domains/learning.py::record_execution()` — records
+  every outcome to `artifacts/execution_metrics.jsonl`. Router consults this
+  log to tune future routing (confidence-weighted model selection, auto-escalation
+  on low success rate).
+
+Operator overrides: `--skip-preflight`, `--skip-validator` (or env vars).
+Full doctrine: `docs/architecture-facts/aider-intelligence-doctrine.md`
