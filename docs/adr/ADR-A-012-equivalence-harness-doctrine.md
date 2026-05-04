@@ -7,7 +7,7 @@
 ## Context
 
 Block 4.C migrated the platform's service inventory from a homegrown
-YAML file (`config/service-registry.yaml`) to NetBox's CMDB
+YAML file (`config/service-registry.yaml.DEPRECATED`) to NetBox's CMDB
 (`netbox.internal`). The migration shipped in C3 and was proven
 correct in C5.2 by running both the old and new sources through the
 existing consumer (`scripts/validate-cmdb.sh`) and diffing the
@@ -87,7 +87,7 @@ that runs at **migration time**, not just at deprecation time.
 
 ### Worked example: Block 4.C C5.2
 
-C3 migrated `service-registry.yaml` → NetBox custom fields.
+C3 migrated `service-registry.yaml.DEPRECATED` → NetBox custom fields.
 **C3 did not run a `--verify-roundtrip` probe.** Three lossy
 collapses landed silently.
 

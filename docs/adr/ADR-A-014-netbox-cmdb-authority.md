@@ -6,7 +6,7 @@
 
 ## Context
 
-Block 4.C migrated the service registry from `config/service-registry.yaml`
+Block 4.C migrated the service registry from `config/service-registry.yaml.DEPRECATED`
 to NetBox CMDB. CMDB_SOURCE default was `yaml` during the transition window;
 flipped to `netbox` in Phase 14 D-DOC (commit `60aeb96`). Seventeen discoveries
 surfaced during the migration. This ADR captures the outcome as a durable
@@ -19,7 +19,7 @@ NetBox (`netbox.internal`) is the authoritative source of truth for:
 - Physical node inventory (devices, IP addresses, roles)
 - Network topology (vlans, prefixes, interfaces)
 
-`config/service-registry.yaml` is retained solely as a deprecation-gate
+`config/service-registry.yaml.DEPRECATED` is retained solely as a deprecation-gate
 fallback (ADR-A-012 lifecycle requirement) accessible via `CMDB_SOURCE=yaml`.
 It is not a write target; updates must go to NetBox.
 

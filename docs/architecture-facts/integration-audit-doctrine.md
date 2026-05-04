@@ -286,7 +286,7 @@ Future: an `add-new-service.md`-style `retire-service.md` runbook should encode 
 The platform has three service-state substrates with overlapping scope and no enforcement that they agree:
 
 1. **NetBox CMDB** (`netbox.internal`) — declared authoritative by ADR-A-014 / `CMDB_SOURCE=netbox` default since Phase 14 D-DOC.
-2. **`config/service-registry.yaml`** — declared deprecated A-012 fallback retained only for the Phase-14 transition window.
+2. **`config/service-registry.yaml.DEPRECATED`** — declared deprecated A-012 fallback retained only for the Phase-14 transition window.
 3. **`~/.platform-registry/inventory.json`** — runtime-descriptive registry per D-17-29 (D#25 doctrine substrate); reflects what containers actually exist on the host.
 
 There is no process that ensures these three agree. D-17-34 surfaced the empirical case: the Mac Mini HA container appeared in the runtime registry (correctly — it was running) and in `dependency-graph.md` mermaid (correctly — that doc lived in the repo); whether NetBox carried it was not verified by D-17-34 (the canonical source per ADR-A-014, but D-17-34 did not query NetBox to check).
@@ -303,7 +303,7 @@ Reconciliation between the three substrates needs a deliverable. Specifically: a
 
 This is **proposed but NOT auto-created** per operator instruction at WP-05 invocation. Operator decides scope/priority in next planning pass. Likely shape: `D-17-NN` or `D-18-NN` — "CMDB authority reconciliation." Cross-references D-17-32 Gap X1 (registry MCP surface) — both are facets of the same broader gap (substrate composition).
 
-`config/service-registry.yaml` deprecation (A-012 gate) should also be revisited as part of this work — Phase 14 D-DOC defaulted `CMDB_SOURCE=netbox` but the YAML file has not been deleted; under what gate does deletion happen?
+`config/service-registry.yaml.DEPRECATED` deprecation (A-012 gate) should also be revisited as part of this work — Phase 14 D-DOC defaulted `CMDB_SOURCE=netbox` but the YAML file has not been deleted; under what gate does deletion happen?
 
 ### Status
 

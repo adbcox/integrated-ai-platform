@@ -83,7 +83,7 @@ Total scripts: 78
 
 ## 9) Legacy-reference findings (scripts scope only; catalog)
 
-- `service-registry.yaml` without `.DEPRECATED`:
+- `service-registry.yaml.DEPRECATED` without `.DEPRECATED`:
   - `scripts/migrate-registry-to-netbox.py` docstring reference
 - Legacy user-domain LaunchAgent path:
   - `scripts/d-17-51-launchagents-bootstrap-user-domain.sh`
@@ -100,7 +100,7 @@ Total scripts: 78
 ## 10) Backlog notes (not acted in D-17-63)
 
 1. Decide retention policy for Plane-era scripts (`_retired/scripts/` move vs keep in place with stronger headers).
-2. Normalize remaining `service-registry.yaml` mentions to `.DEPRECATED` where scripts are still active.
+2. Normalize remaining `service-registry.yaml.DEPRECATED` mentions to `.DEPRECATED` where scripts are still active.
 3. Mark `d-17-51-launchagents-*` scripts as explicitly failed-branch artifacts in headers to prevent accidental reuse.
 4. Reconcile `scripts/platform-registry/install-launchd.sh` (LaunchAgents installer) with post-D-17-51 LaunchDaemon doctrine, or retire it.
 5. Evaluate whether `scripts/provision-openproject.sh` is orphaned/superseded by current token/bootstrap flow.
