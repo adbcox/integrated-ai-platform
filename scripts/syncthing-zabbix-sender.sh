@@ -1,103 +1,119 @@
 #!/usr/bin/env bash
-# D-17-105 — Push Syncthing QNAP metrics to Zabbix via zabbix_sender.
-# Runs on the Mac Mini HOST (not in Docker) so it can reach QNAP :8384 directly.
-# Invoked by launchd com.iap.syncthing-zabbix-sender (every 5 minutes).
+# D-17-105 — Option B: SSH-side Syncthing probe + Zabbix trapper push.
 #
-# Why host-side: zabbix-server runs in Docker (zabbix-net/172.25.0.x); that subnet
-# is rejected by QNAP QTS when connecting to Syncthing :8384. Mac Mini host
-# (192.168.10.145) reaches QNAP fine. Trapper items receive the pushed values.
+# Runs on Mac Mini and executes QNAP loopback API probes over SSH:
+#   curl http://127.0.0.1:8384/rest/...
+# Then pushes metrics to Zabbix via zabbix_sender for host "mac-mini".
 
 set -euo pipefail
 
 ZABBIX_SERVER="127.0.0.1"
 ZABBIX_PORT="10051"
 ZABBIX_HOST="mac-mini"
-
-SYNC_URL="http://192.168.10.201:8384"
-VAULT_ADDR="${VAULT_ADDR:-http://localhost:8200}"
+KEY_CACHE="${HOME}/.cache/syncthing-qnap-apikey"
 
 log() { printf '[syncthing-zabbix-sender] %s\n' "$*"; }
 
-# ── Resolve Vault token (prefer rendered secrets file, fall back to token file) ──
 resolve_sync_key() {
-  local creds_file="/Users/admin/.vault-agent-secrets/cleanuparr/credentials.env"
-  # Syncthing QNAP key is not rendered by any current sidecar; use Vault directly
-  local token_file="/Users/admin/vault-init-keys-NEW-20260430.txt"
-  local vault_token
-  vault_token="$(grep 'Root Token' "$token_file" 2>/dev/null | awk '{print $NF}')"
-  if [ -z "$vault_token" ]; then
-    vault_token="$(cat /Users/admin/.vault-token 2>/dev/null)"
+  if [ -s "${KEY_CACHE}" ]; then
+    cat "${KEY_CACHE}"
+    return 0
   fi
-  docker exec -e VAULT_TOKEN="$vault_token" vault-server \
-    vault kv get -field=api_key secret/syncthing/qnap 2>/dev/null
+  source scripts/lib/vault-admin-token.sh
+  local vt
+  vt="$(resolve_admin_vault_token)"
+  local k
+  k="$(docker exec -e VAULT_TOKEN="${vt}" vault-server vault kv get -field=api_key secret/syncthing/qnap 2>/dev/null || true)"
+  if [ -n "${k}" ]; then
+    mkdir -p "$(dirname "${KEY_CACHE}")"
+    umask 077
+    printf '%s' "${k}" > "${KEY_CACHE}"
+  fi
+  printf '%s' "${k}"
 }
 
 SYNC_KEY="$(resolve_sync_key)"
-if [ -z "$SYNC_KEY" ]; then
-  log "ERROR: could not resolve Syncthing QNAP API key from Vault"
-  exit 1
-fi
+[ -n "${SYNC_KEY}" ] || { log "ERROR: missing Syncthing API key"; exit 1; }
 
-# ── Collect staleness metric (max hours since last file sync across all folders) ──
-STATS_JSON="$(curl -sf --connect-timeout 5 \
-  -H "X-API-Key: $SYNC_KEY" \
-  "${SYNC_URL}/rest/stats/folder" 2>/dev/null)"
+source scripts/lib/vault-admin-token.sh
+VT="$(resolve_admin_vault_token)"
+QNAP_USER="$(docker exec -e VAULT_TOKEN="${VT}" vault-server vault kv get -field=user secret/qnap/admin)"
+QNAP_PASS="$(docker exec -e VAULT_TOKEN="${VT}" vault-server vault kv get -field=password secret/qnap/admin)"
 
-if [ -z "$STATS_JSON" ]; then
-  log "WARNING: stats/folder returned empty — skipping staleness push"
-  MAX_STALE_H="-1"
+SSH_BASE=(
+  sshpass -p "${QNAP_PASS}" ssh
+  -o StrictHostKeyChecking=no
+  -o UserKnownHostsFile=/dev/null
+  -o ConnectTimeout=8
+  -p 22
+  "${QNAP_USER}@192.168.10.201"
+)
+
+remote_api() {
+  local ep="$1"
+  "${SSH_BASE[@]}" "curl -sf --connect-timeout 5 -H 'X-API-Key: ${SYNC_KEY}' 'http://127.0.0.1:8384${ep}'" 2>/dev/null || true
+}
+
+STATS_JSON="$(remote_api '/rest/stats/folder')"
+STATUS_JSON="$(remote_api '/rest/db/status?folder=is5fj-3grur')"
+STATUS_RT_JSON="$(remote_api '/rest/db/status?folder=3qukn-rfdel')"
+
+if [ -z "${STATS_JSON}" ] || [ -z "${STATUS_JSON}" ]; then
+  STATE=2
+  LAST_COMPLETED_TS=0
+  ERRORS_TOTAL=-1
+  MAX_STALE_H=-1
 else
-  MAX_STALE_H="$(python3 -c "
-import sys, json, datetime
-d = json.loads('''$STATS_JSON''')
+  read -r STATE LAST_COMPLETED_TS ERRORS_TOTAL MAX_STALE_H <<EOF
+$(python3 - <<'PY' "${STATS_JSON}" "${STATUS_JSON}" "${STATUS_RT_JSON}"
+import datetime, json, sys
+stats = json.loads(sys.argv[1])
+sab = json.loads(sys.argv[2])
+rt  = json.loads(sys.argv[3]) if sys.argv[3].strip() else {}
 now = datetime.datetime.now(datetime.timezone.utc)
+
+state_map = {"idle":0, "syncing":1, "scanning":1, "cleaning":1, "pulling":1}
+st = (sab.get("state") or "error").lower()
+state = state_map.get(st, 2)
+
+errs = int(sab.get("errors", 0)) + int(sab.get("pullErrors", 0))
+errs += int(rt.get("errors", 0)) + int(rt.get("pullErrors", 0))
+
 max_h = 0
-for k, v in d.items():
-    lf = (v or {}).get('lastFile', {})
-    t = (lf or {}).get('at')
-    if t:
-        try:
-            ts = datetime.datetime.fromisoformat(t.replace('Z','+00:00'))
-            h = (now - ts).total_seconds() / 3600
-            if h > max_h:
-                max_h = h
-        except Exception:
-            pass
-print(int(max_h))
-" 2>/dev/null || echo "-1")"
+last_ts = 0
+for _, v in stats.items():
+    lf = (v or {}).get("lastFile", {})
+    at = lf.get("at")
+    if not at:
+        continue
+    ts = datetime.datetime.fromisoformat(at.replace("Z", "+00:00"))
+    epoch = int(ts.timestamp())
+    if epoch > last_ts:
+        last_ts = epoch
+    h = int((now - ts).total_seconds() // 3600)
+    if h > max_h:
+        max_h = h
+
+print(state, last_ts, errs, max_h)
+PY
+)
+EOF
 fi
 
-# ── Collect error count for sabnzbd-complete folder (is5fj-3grur) ──
-STATUS_JSON="$(curl -sf --connect-timeout 5 \
-  -H "X-API-Key: $SYNC_KEY" \
-  "${SYNC_URL}/rest/db/status?folder=is5fj-3grur" 2>/dev/null)"
+log "state=${STATE} last_completed_ts=${LAST_COMPLETED_TS} errors_total=${ERRORS_TOTAL} max_stale_h=${MAX_STALE_H}"
 
-if [ -z "$STATUS_JSON" ]; then
-  log "WARNING: db/status returned empty — skipping errors push"
-  ERRORS_TOTAL="-1"
-else
-  ERRORS_TOTAL="$(python3 -c "
-import sys, json
-d = json.loads('''$STATUS_JSON''')
-print(int(d.get('errors', 0)) + int(d.get('pullErrors', 0)))
-" 2>/dev/null || echo "-1")"
-fi
-
-log "max_stale_h=$MAX_STALE_H errors_total=$ERRORS_TOTAL"
-
-# ── Push via zabbix_sender ──
-/usr/local/bin/zabbix_sender \
-  -z "$ZABBIX_SERVER" \
-  -p "$ZABBIX_PORT" \
-  -s "$ZABBIX_HOST" \
-  -k "d17105.syncthing.qnap.max_stale_h" \
-  -o "$MAX_STALE_H" 2>/dev/null
-
-/usr/local/bin/zabbix_sender \
-  -z "$ZABBIX_SERVER" \
-  -p "$ZABBIX_PORT" \
-  -s "$ZABBIX_HOST" \
-  -k "d17105.syncthing.qnap.errors_total" \
-  -o "$ERRORS_TOTAL" 2>/dev/null
+TMP="$(mktemp)"
+cat > "${TMP}" <<EOF
+${ZABBIX_HOST} d17105.syncthing.qnap.state ${STATE}
+${ZABBIX_HOST} d17105.syncthing.qnap.last_completed_ts ${LAST_COMPLETED_TS}
+${ZABBIX_HOST} d17105.syncthing.qnap.errors_total ${ERRORS_TOTAL}
+${ZABBIX_HOST} d17105.syncthing.qnap.max_stale_h ${MAX_STALE_H}
+EOF
+/usr/local/bin/zabbix_sender -z "${ZABBIX_SERVER}" -p "${ZABBIX_PORT}" -i "${TMP}" >/dev/null 2>&1 || {
+  rm -f "${TMP}"
+  log "ERROR: zabbix_sender failed"
+  exit 1
+}
+rm -f "${TMP}"
 
 log "sent to Zabbix"

@@ -168,7 +168,7 @@ main() {
   ensure_macro "${hostid}" '{$PIPE_STUCK_HOURS}' "2"
   ensure_macro "${hostid}" '{$PIPE_DISK_MIN_PCT}' "10"
   ensure_macro "${hostid}" '{$PIPE_IMPORT_FAIL_PCT}' "5"
-  ensure_macro "${hostid}" '{$PIPE_SYNC_STALE_HOURS}' "6"
+  ensure_macro "${hostid}" '{$PIPE_SYNC_STALE_HOURS}' "48"
 
   ensure_item "${hostid}" "Sonarr queue depth" "d17105.sonarr.queue_depth" "${zbx_http_base}:8989/api/v3/queue?page=1&pageSize=1" '{$SONARR_API_KEY}' 12 '$.totalRecords'
   ensure_item "${hostid}" "Radarr queue depth" "d17105.radarr.queue_depth" "${zbx_http_base}:7878/api/v3/queue?page=1&pageSize=1" '{$RADARR_API_KEY}' 12 '$.totalRecords'
@@ -184,6 +184,8 @@ main() {
 
   # Syncthing items are Zabbix Trapper (type=2) — data pushed by scripts/syncthing-zabbix-sender.sh
   # running on the Mac Mini host (Docker containers cannot reach QNAP:8384 due to subnet filtering).
+  ensure_trapper "${hostid}" "Syncthing QNAP state" "d17105.syncthing.qnap.state"
+  ensure_trapper "${hostid}" "Syncthing QNAP last completed ts" "d17105.syncthing.qnap.last_completed_ts"
   ensure_trapper "${hostid}" "Syncthing QNAP max staleness hours" "d17105.syncthing.qnap.max_stale_h"
   ensure_trapper "${hostid}" "Syncthing QNAP folder errors total" "d17105.syncthing.qnap.errors_total"
 
@@ -193,8 +195,9 @@ main() {
   ensure_trigger "D-17-105: Arr health issues present" "last(/${TARGET_HOST_NAME}/d17105.sonarr.health_count)>0 or last(/${TARGET_HOST_NAME}/d17105.radarr.health_count)>0 or last(/${TARGET_HOST_NAME}/d17105.lidarr.health_count)>0 or last(/${TARGET_HOST_NAME}/d17105.prowlarr.health_count)>0" 3
   ensure_trigger "D-17-105: SABnzbd failed jobs detected" "last(/${TARGET_HOST_NAME}/d17105.sab.failed_jobs)>0" 3
   # Syncthing triggers always present — trapper items receive data from syncthing-zabbix-sender.sh
-  ensure_trigger "D-17-105: Syncthing staleness > 6h" "last(/${TARGET_HOST_NAME}/d17105.syncthing.qnap.max_stale_h)>{\$PIPE_SYNC_STALE_HOURS}" 3
+  ensure_trigger "D-17-105: Syncthing staleness > 48h" "last(/${TARGET_HOST_NAME}/d17105.syncthing.qnap.max_stale_h)>{\$PIPE_SYNC_STALE_HOURS}" 3
   ensure_trigger "D-17-105: Syncthing folder errors present" "last(/${TARGET_HOST_NAME}/d17105.syncthing.qnap.errors_total)>0" 3
+  ensure_trigger "D-17-105: Syncthing state error" "last(/${TARGET_HOST_NAME}/d17105.syncthing.qnap.state)=2" 3
 
   log "provision complete"
   log "Syncthing: trapper items — push via scripts/syncthing-zabbix-sender.sh (launchd com.iap.syncthing-zabbix-sender)"
