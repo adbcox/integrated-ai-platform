@@ -1310,3 +1310,55 @@ first tool call. Classifier:
 - D-17-91 (benchmark results; long-context strength did not imply safe doc append)
 - D-17-97 (compute redirect did not remove the boundary)
 - D-17-101 (this deliverable)
+
+---
+
+## Finding 20 — Download-client category segregation is a hard isolation boundary across *arr apps
+
+**Date:** 2026-05-04
+**Originating WP:** D-17-102 WP-02/03/04
+**Severity:** Operational correctness (cross-app queue contamination risk)
+
+### What
+
+In the arr-stack, category values on download clients are not cosmetic
+labels; they are the routing/isolation key that decides which app
+consumes which queue entries.
+
+D-17-102 worked example: Lidarr had SABnzbd attached with
+`musicCategory=sonarr` while rTorrent was correctly `lidarr`. Result:
+
+- Lidarr consumed Sonarr queue scope (TV items) instead of music scope.
+- Lidarr health warned on Docker path checks against Sonarr completion
+  path, because Lidarr-specific remote-path mapping did not exist for
+  that path pairing.
+
+### Why this recurs
+
+The failure mode is templating drift: copying a known-good Sonarr/Radarr
+client payload into Lidarr without updating app-specific category and
+associated remote-path mappings.
+
+### How to apply
+
+1. For each app/client pair, category must equal app identity:
+   - Sonarr=`sonarr`, Radarr=`radarr`, Lidarr=`lidarr`.
+2. Server-side categories must exist on the downloader (SAB `get_cats`).
+3. Remote path mappings must include category-specific completion paths
+   (`/home/.../complete/<category>/` → container-local `/downloads/.../<category>/`).
+4. Provisioners must enforce these fields idempotently post-deploy.
+
+### Status (worked example outcome)
+
+D-17-102 correction path:
+
+- Added SAB `lidarr` category via API config.
+- Patched Lidarr SAB category to `lidarr`.
+- Added Lidarr remote-path mappings for SAB `lidarr` and rTorrent paths.
+- Health warning cleared; Lidarr queue normalized to zero cross-app items.
+
+### Cross-references
+
+- D-17-100 (operational parity follow-on)
+- D-17-102 (this worked example)
+- `docs/runbooks/arr-stack-add-component.md` §7.1

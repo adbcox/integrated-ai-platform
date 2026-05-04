@@ -74,6 +74,20 @@ For services that generate their own API key in
 credential, not Vault. Direction is service → Vault, never
 reverse (D-17-38 credential-source authority rule).
 
+### 1.6 Authentication baseline
+
+For *arr UI services (Sonarr/Radarr/Lidarr/Prowlarr), set and
+verify at first boot:
+
+- `AuthenticationRequired=DisabledForLocalAddresses`
+- Service method retained unless there is a specific reason to
+  change (`Basic`/`Forms` per sibling pattern)
+
+If the service requires explicit credentials for forms auth
+(Lidarr), seed `username/password` in Vault first, then apply UI
+auth settings. Canonical doctrine:
+`docs/architecture-facts/arr-stack-auth-doctrine.md`.
+
 ### 1.5 Network namespace
 
 arr-stack components join the `arr-stack` Docker network so they
@@ -244,6 +258,24 @@ docker exec <service> sh -c 'curl -fsS http://sonarr:8989/api/v3/system/status' 
 LAN DNS resolution (post-Dnsmasq override) takes a few minutes to
 propagate; if `<service>.internal` doesn't resolve immediately,
 flush the resolver and retry.
+
+### 7.1 Download-client category segregation check
+
+For Sonarr/Radarr/Lidarr, verify every attached download client uses
+an app-specific category and that category exists on the download
+client server side.
+
+- Sonarr category should be `sonarr`
+- Radarr category should be `radarr`
+- Lidarr category should be `lidarr`
+
+Required verification:
+
+1. App API `GET /api/v[1|3]/downloadclient` category field matches app
+   name for each client.
+2. SABnzbd `mode=get_cats` includes the expected category.
+3. Remote path mappings exist for each category-specific completion path
+   so Docker path health checks do not false-fail.
 
 ---
 
