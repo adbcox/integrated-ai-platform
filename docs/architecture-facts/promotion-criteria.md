@@ -324,23 +324,38 @@ savings accrue per-class.
 class "read N source files + draft a reference doc"
 (read-author-only).
 
-**Status (2026-05-04):** **Posture 2 (dual-review), 4/10.** Cell
+**Status (2026-05-04):** **Posture 2 (dual-review), 5/10.** Cell
 cleared the N=5 gate 2026-05-03; operator promoted Posture 1 →
 Posture 2 in the same session. M=10 dual-review window opened;
 closure target ≈ 2026-05-13 conditional on session pacing.
-**Watchlist item — REMEDIATED BY PROMPT ENGINEERING (N=1
-datapoint, Session 9).** The source-fidelity-loss failure mode
-(N=3 confirmed Sessions 5, 7, 8) was **suppressed cleanly** under
-the strengthened prompt at Session 9 (verbatim-block instruction
-+ source-grounded self-check). The remediation produced ~85/15
-Goose/frontier output split — highest substrate-sufficient C1
-ratio in the cell. The watchlist remains active for entries
-5/10–10/10 to confirm the remediation pattern holds; if any of
-those sessions exhibits the failure mode despite the strengthened
-prompt, evidence is intrinsic-to-cell and demotion is warranted.
-Two clean confirmations would standardize the remediation pattern
-into the C1 standard preamble; the standardization landed
-provisionally at Session 9 close per operator decision.
+**Watchlist item — PARTIALLY REMEDIATED N=2 (severe shape
+suppressed; line-number fabrication shape recurs).** The
+source-fidelity-loss failure mode (N=3 confirmed Sessions 5, 7,
+8) was suppressed cleanly under the strengthened prompt at
+Session 9. Session 10 (entry 5/10) is the first post-remediation
+datapoint and shows **shape-shifted recurrence**: the most
+severe shape (presenting autocompleted training-data patterns as
+source-verified) did NOT recur — Session 10 has inline
+`[UNVERIFIED]` tags and a Self-Flagged-Defects section. But the
+failure-mode class shifted shape: line-number fabrication in
+the Source-citation table (verbatim quotes matched source
+content but cited line numbers were mostly wrong or close-but-
+wrong), code-block-example omission (2 of 4 paths shown in
+policy + template examples), missed cross-source divergence
+(provision-buildarr.sh uses md5 while sibling scripts and the
+pattern doc use sha256 — Goose did not catch this), and tool-
+name fabrication in the audit trail (`todo__todo_write` cited
+but not a tool that exists in this surface). N=1 (Session 9)
+clean / N=1 (Session 10) shape-shifted. The strengthened
+preamble suppresses the most-severe shape but does not eliminate
+the failure-mode class — the line-number cite needs frontier-side
+verification on review (line-number verification added to the
+frontier-review checklist 2026-05-04). Demotion (Option C) is
+NOT triggered because the severe shape is genuinely suppressed;
+further preamble strengthening (Option B) is **deferred** pending
+more dual-review datapoints. The watchlist remains active for
+entries 6/10–10/10 to confirm whether the shape-shifted shape
+recurs at higher rate or stabilises.
 
 **Sessions logged:**
 1. WP-03 smoke test (read CLAUDE.md head=50, 2 tool calls,
@@ -595,6 +610,96 @@ provisionally at Session 9 close per operator decision.
    work. Watchlist remains active for 5/10–10/10 confirmation.
    Runbook committed 2026-05-04 at
    `docs/runbooks/openproject-sync-and-enrich.md`.
+
+5. (2026-05-04) D-17-53 Session 10 — `vault-approle-provision-canonical.md`
+   fresh authoring. C1 sub-class: reference-doc draft, fresh
+   authoring with adjacent companion architecture-fact
+   (`vault-agent-sidecar-pattern.md`). Substrate-sufficient
+   (4 provision scripts + helper + sibling pattern doc + sibling
+   retire-service runbook). First entry under the new standard
+   preamble (verbatim-block + source-citation table, effective
+   2026-05-04). Drafted with multiple `read_text_file` calls
+   (per Goose's tool-call trace summary) — exact count not
+   independently verified by frontier; trace summary itself
+   contains a defect (see below). Cautious-by-default scope-
+   check: brief did not include a deliberate path-list-shape
+   variation, so this session does not yet test the shape-
+   conditional hypothesis (deferred to a future entry per
+   operator note).
+   **Watchlist failure mode — SHAPE-SHIFTED RECURRENCE (N=1
+   datapoint of partial-remediation).** The severe shape
+   (presenting autocompleted training-data patterns as
+   source-verified) did NOT recur: Goose used `[UNVERIFIED]`
+   tags inline and produced a Self-Flagged-Defects section.
+   But the failure-mode class shifted shape into four
+   distinct sub-shapes:
+   (1) **Code-block-example omission.** Goose's policy
+       example showed 2 paths (radarr + sonarr alphabetised);
+       actual `config/vault-policies/buildarr-policy.hcl` has
+       4 paths in source order (radarr, prowlarr, sonarr,
+       sportarr). Same shape in the credentials.env.tmpl
+       example: 2 paths shown vs 4 actual. Direct verbatim-
+       block-instruction violation — Goose paraphrased rather
+       than copying the source block.
+   (2) **Missed cross-source divergence (highest severity).**
+       Goose's Verification section asserted `sha256[:12]` is
+       the canonical pattern (matching the pattern doc and
+       sibling scripts) but did not catch that
+       `provision-buildarr.sh` line 91 actually uses
+       `hashlib.md5(v.encode()).hexdigest()[:12]`. Goose was
+       *meant* to be citing from the buildarr script (the
+       prompt's first context file). This is exactly the
+       kind of source-doctrine defect the strengthened
+       preamble was supposed to surface (analogue to Session
+       9's `--query-backlog` flag flag); Session 10 missed
+       it. Frontier added a hash-algo-divergence note to the
+       Verification section calling out the buildarr outlier
+       and recommending sha256 for new services.
+   (3) **Source-citation-table line-number fabrication.**
+       Spot-check failures: "AppRole creation parameters"
+       cited as lines 34-37 (actual 37-40); "AppRole directory
+       path conventions" cited as lines 17-18 (actual line 16);
+       "Secret-id storage location" cited as lines 29-30
+       (actual lines 58-61); "AppRole directory permissions"
+       cited as lines 29-30 (actual line 44); "Secret-id file
+       permissions" cited as lines 39-40 (actual line 62);
+       "Vault Agent configuration file" cited as lines 1-25
+       (actual 1-29); "Verification pattern with sha256[:12]"
+       cited as lines 220-230 (actual 285-293). Verbatim
+       quotes matched source *content* (so Goose did read
+       the files), but line numbers were mostly fabricated
+       or close-but-wrong — autocompleted from "looks-about-
+       right" recall. The constraint-B mechanism is
+       gameable end-to-end by the model authoring the table.
+   (4) **Tool-name fabrication in audit trail.** Goose's
+       Tool-call trace summary listed `todo__todo_write` —
+       not a tool available in this surface (developer
+       extension is disabled per capability boundary). This
+       is a *new* sub-shape: fabrication migrated from the
+       deliverable body into the self-audit trail itself.
+   Soft miss: Goose did not read or cite
+   `docs/runbooks/retire-service.md` (D-17-57), which exists
+   and is directly relevant to AppRole disposition. Brief said
+   "for context" not "required citation" — acceptable, but
+   frontier added the cross-reference to the corrected runbook
+   and a Rotation+Retirement section pointing at retire-service.
+   Output split: ~60/40 Goose/frontier. Substrate was richer
+   than Session 9's, so the lower split reflects the
+   line-number fabrication shape (every cite needed
+   verification + correction) more than substrate gaps.
+   **Operator disposition: Option A.** Frontier corrects +
+   commits 5/10. Correct-pattern #5 promoted to "PARTIALLY
+   REMEDIATED N=2 (severe shape suppressed; line-number
+   fabrication shape recurs)." Line-number verification added
+   to mandatory frontier-review checklist going forward. Option
+   B (further preamble strengthening — e.g. "line numbers must
+   come from the same `read_text_file` tool call that read the
+   cited content") deferred pending more datapoints. Option C
+   (demotion) NOT triggered — severe shape is genuinely
+   suppressed; this is partial-remediation evidence, not
+   class-intrinsic failure. Continue dual-review window 6/10.
+   Runbook committed 2026-05-04 at
+   `docs/runbooks/vault-approle-provision-canonical.md`.
 
 **Substrate baseline:** F1.B (Ollama 0.22.1 streaming structured
 `tool_calls` for qwen3-coder:30b — see `local-tool-calling.md`).

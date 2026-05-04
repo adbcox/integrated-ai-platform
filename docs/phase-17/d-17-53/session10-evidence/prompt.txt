@@ -1,0 +1,92 @@
+GOOSE SESSION 10 — D-17-53 §18.O Posture-2 dual-review entry 5/10
+
+Class: C1 (reference-doc draft). Phase-A Posture 2, dual-review 5/10.
+Frontier review mandatory.
+
+This session is the first post-remediation entry under the new
+standard preamble (verbatim-block instruction + source-grounded
+self-check, effective 2026-05-04). Watchlist failure mode
+(source-fidelity-loss, correct-pattern #5) was marked REMEDIATED
+BY PROMPT ENGINEERING with N=1 datapoint at Session 9 close;
+remains active for entries 5/10-10/10 to confirm remediation holds.
+
+CONTEXT (read in order):
+- /Users/admin/repos/integrated-ai-platform/scripts/provision-buildarr.sh
+- /Users/admin/repos/integrated-ai-platform/scripts/provision-bazarr.sh
+- /Users/admin/repos/integrated-ai-platform/scripts/provision-scraparr.sh
+- /Users/admin/repos/integrated-ai-platform/scripts/provision-cleanuparr.sh
+- /Users/admin/repos/integrated-ai-platform/scripts/lib/vault-admin-token.sh
+- /Users/admin/repos/integrated-ai-platform/docs/architecture-facts/vault-agent-sidecar-pattern.md
+- One example service-retirement runbook (e.g.
+  /Users/admin/repos/integrated-ai-platform/docs/runbooks/<service>-retirement.md
+  if one exists; surface back missing-file fact if not)
+
+STANDARD PREAMBLE (effective 2026-05-04, post-Session-9 remediation):
+
+A. Verbatim-block instruction. For every concrete fact in the
+   deliverable (function name, CLI flag, file path, env var, exit
+   code, command shape, endpoint URL, hostname, port), copy the
+   relevant block from the source file VERBATIM into a code block
+   before paraphrasing. Do not paraphrase first. Do not "simplify"
+   command syntax. If the source file does not contain the fact,
+   say so explicitly — do NOT autocomplete from training data.
+
+B. Source-grounded self-check. After drafting, append a
+   "Source-citation table" section listing every concrete fact in
+   the form:
+
+   | Fact | Source file | Line(s) | Verbatim quote |
+
+   Each row's verbatim quote must match the source file at the
+   cited line(s). Any fact in the deliverable you cannot cite this
+   way is a self-flagged defect.
+
+STANDING CONSTRAINTS:
+- Read-only filesystem-mcp + xindex only.
+- Surface back drafts; do NOT write to disk.
+- Mark "[UNVERIFIED — frontier review]" inline for facts you
+  cannot ground in source files.
+- Skip preamble. Open with one-line scope sentence.
+- If a context file does not exist, surface back the missing-file
+  fact and continue with remaining sources — do NOT fabricate.
+
+TASK: Author docs/runbooks/vault-approle-provision-canonical.md
+
+Goal: Operator-facing runbook for provisioning a new Vault AppRole
++ policy + sidecar credentials for a new service. Generalizes the
+provision-buildarr.sh / provision-bazarr.sh / provision-scraparr.sh
+/ provision-cleanuparr.sh pattern into a canonical procedure.
+Companion to existing vault-agent-sidecar-pattern.md
+(architecture-fact) — this runbook is the operational how-to;
+the architecture-fact carries the *why*. Cross-reference, do not
+duplicate.
+
+Required coverage:
+1. Scope — one-sentence purpose
+2. Prerequisites — Vault running, admin token resolvable via
+   scripts/lib/vault-admin-token.sh
+3. Policy authoring — config/vault-policies/<service>-policy.hcl
+   shape + path conventions (cite from one of the existing
+   provision scripts)
+4. AppRole creation sequence — vault write auth/approle/role/<svc>
+   ... (extract verbatim from a provision script)
+5. Secret-id generation + storage — ~/.vault-approle/<service>/
+   path conventions; permissions
+6. Vault Agent sidecar config — docker/vault-agent-<service>/
+   agent.hcl + credentials.env.tmpl shape (reference the pattern
+   doc for structure; cite from existing service)
+7. Provision script authoring — scripts/provision-<service>.sh
+   shape; what each section does; idempotency contract
+8. Verification — hash-only sha256[:12] comparison patterns
+9. Failure modes — admin token missing, AppRole already exists,
+   policy syntax error, sidecar template render failure
+10. Cross-references — vault-agent-sidecar-pattern.md and one
+    example provision script
+
+DELIVERABLE:
+- Draft markdown
+- Source-citation table (mandatory under standard preamble)
+- Self-flagged defects
+- Tool-call trace summary
+
+DO NOT commit. DO NOT write to disk.
