@@ -272,6 +272,9 @@ foundation rather than adding features.
   Investigate: explicit cipher suite pinning, OpenSSL config override, QNAP cert
   re-issue with modern key/sig profile, or replace HTTPS path with QTS-native
   CLI over SSH (would need publickey auth provisioned — QNAP rejects password SSH).
+
+**Audit note (D-17-60, 2026-05-04):** `D-17-40` is a reserved candidate ID in
+`docs/PROJECT_FRAMEWORK.md` §9 (intentionally no standalone row until promoted).
 **Gate:** `phase-18-final` — PASS≥18 FAIL=0 WARN≤3.
 OpenBao + Backstage ADRs committed. YAML deprecation complete. Platform hardening applied.
 Phase 18 CLOSED.
@@ -647,6 +650,9 @@ HACS speculatively.** Estimated effort when triggered: 6–10h
 (deployment 2h + doctrine authoring 3h + first plugin vetting 2h
 + documentation 1–3h).
 
+**Audit note (D-17-60, 2026-05-04):** `D-17-41` is a reserved candidate ID in
+`docs/PROJECT_FRAMEWORK.md` §9 (intentionally no standalone row until promoted).
+
 ---
 
 ### 18.I — OpenCode evaluation as agentic frontend alternative
@@ -748,6 +754,9 @@ matter to workflow. **Do not deploy Tautulli speculatively** — the
 substrate lands cleanly when there's a signal, but adding it without
 a signal means another service to maintain. Estimated effort when
 triggered: 4–6h.
+
+**Audit note (D-17-60, 2026-05-04):** `D-17-42` is a reserved candidate ID in
+`docs/PROJECT_FRAMEWORK.md` §9 (intentionally no standalone row until promoted).
 
 ---
 
@@ -972,6 +981,11 @@ ESP32 nodes don't.
 **Effort estimate:** 4–6h evaluation matrix; per-device deployment
 when triggered is 1–2h each (HA Matter pairing + asset-registry
 record).
+
+**Audit gap note (D-17-60, 2026-05-04):** `18.N` (Jellyfin parallel-deploy
+evaluation candidate) and `18.O` (local AI execution-surface migration framework)
+are not authored in this roadmap file. `D-17-53` is the existing §9 anchor for the
+18.O scope narrative. Authoring of 18.N/18.O is deferred to a separate deliverable.
 
 ---
 
