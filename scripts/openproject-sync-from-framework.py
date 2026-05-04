@@ -75,6 +75,7 @@ from roadmap_parser import (  # type: ignore  # noqa: E402
 
 FRAMEWORK_MD = REPO_ROOT / "docs" / "PROJECT_FRAMEWORK.md"
 ROADMAP_MD = REPO_ROOT / "docs" / "PHASE_ROADMAP.md"
+ENRICH_SCRIPT = REPO_ROOT / "scripts" / "openproject-enrich-from-framework.py"
 
 AUTONOMOUS_CODING_CATEGORY = "autonomous-coding"
 
@@ -776,6 +777,8 @@ def main() -> int:
                     help="Skip framework sync; only sync roadmap. Useful for fast iteration.")
     ap.add_argument("--dedup-phase17", action="store_true",
                     help="One-shot: close 17.A–17.T shorthand WPs as superseded by D-17-NN canonical IDs.")
+    ap.add_argument("--skip-enrich", action="store_true",
+                    help="Skip D-17-55 enrichment pass after base sync.")
     args = ap.parse_args()
 
     print(f"OpenProject: {OPENPROJECT_URL}  project={PROJECT_IDENTIFIER}")
@@ -786,6 +789,7 @@ def main() -> int:
         print(f"Roadmap sync: ON  (source: {ROADMAP_MD.relative_to(REPO_ROOT)})")
     if args.dedup_phase17:
         print("Phase-17 dedup: ON  (close 17.A–17.T as superseded)")
+    print(f"Enrichment pass: {'OFF' if args.skip_enrich else 'ON'}")
     print()
 
     if not FRAMEWORK_MD.is_file():
@@ -875,10 +879,30 @@ def main() -> int:
     if args.dry_run:
         if total_changed:
             print(f"\nDRY-RUN: {total_changed} change(s) pending — exit 2")
-            return 2
-        print("\nDRY-RUN: clean — exit 0")
-        return 0
-    return 0
+            rc = 2
+        else:
+            print("\nDRY-RUN: clean — exit 0")
+            rc = 0
+    else:
+        rc = 0
+
+    # D-17-55 enrichment follow-on pass.
+    if not args.skip_enrich:
+        if not ENRICH_SCRIPT.is_file():
+            print(f"WARN: enrichment script missing at {ENRICH_SCRIPT}; skipping enrichment")
+        else:
+            cmd = [str(ENRICH_SCRIPT)]
+            if args.dry_run:
+                cmd.append("--dry-run")
+            print("\nRunning enrichment pass:", " ".join(cmd))
+            erc = subprocess.call(cmd)
+            # preserve dry-run semantics if enrichment has pending changes.
+            if args.dry_run and erc == 2:
+                rc = 2
+            elif erc != 0:
+                print(f"ERROR: enrichment pass failed (exit {erc})", file=sys.stderr)
+                return erc
+    return rc
 
 
 if __name__ == "__main__":

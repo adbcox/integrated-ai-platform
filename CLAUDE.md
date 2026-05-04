@@ -325,3 +325,10 @@ Examples:
   docs/phase-13/PHASE_13_BLOCK_1_RESULTS_2026-04-29.md
 
 NEVER write phase docs to ~/, /tmp/, or other ad-hoc locations.
+
+### OpenProject Enrichment Doctrine (D-17-55)
+- `PROJECT_FRAMEWORK.md` §9 is canonical; OpenProject is an enriched projection.
+- Enrichment fields are maintained by `scripts/openproject-enrich-from-framework.py` (description, percentageDone, phase, deliverable_class, finding_refs, dependencies).
+- Manual-edit safety is default: non-empty conflicting managed fields are preserved unless `--force` is explicitly used.
+- `customField1` (Plane RM ID) and `customField2` (External ID) are preserved as mapping/sync keys.
+- `scripts/openproject-sync-from-framework.py` now runs enrichment as a follow-on pass unless `--skip-enrich` is passed.
