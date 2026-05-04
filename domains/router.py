@@ -40,10 +40,10 @@ class TaskRouter:
 
         if any(kw in desc_lower for kw in ["search", "find", "latest", "current", "what is"]):
             return "research"
-        if any(kw in desc_lower for kw in ["architecture", "design", "plan", "strategy"]):
-            return "architecture"
         if files:
             return "coding"
+        if any(kw in desc_lower for kw in ["architecture", "design", "plan", "strategy"]):
+            return "architecture"
 
         return "general"
 
@@ -89,15 +89,8 @@ class TaskRouter:
                 ExecutorType.CLAUDE_CHAT, "sonnet-4", 0.9, "Requires web search"
             )
 
-        # Architecture/design
-        if any(
-            kw in desc_lower for kw in ["architecture", "design", "plan", "strategy"]
-        ):
-            return TaskRoute(
-                ExecutorType.CLAUDE_CODE, "sonnet-4", 0.85, "Architectural work"
-            )
-
-        # Coding tasks
+        # Coding tasks (file-bearing tasks route to LOCAL_AIDER first; architecture
+        # keyword check only fires when no files are provided)
         if files:
             if len(files) == 1 and len(description) < 50:
                 return TaskRoute(
@@ -124,6 +117,15 @@ class TaskRouter:
                 return TaskRoute(
                     ExecutorType.CLAUDE_CODE, "sonnet-4", 0.7, ">5 files - needs planning"
                 )
+
+        # Architecture/design (only when no files provided — file-bearing edits
+        # already routed above)
+        if any(
+            kw in desc_lower for kw in ["architecture", "design", "plan", "strategy"]
+        ):
+            return TaskRoute(
+                ExecutorType.CLAUDE_CODE, "sonnet-4", 0.85, "Architectural work"
+            )
 
         # Default
         return TaskRoute(
