@@ -70,7 +70,7 @@ if [ -z "${RTORRENT_URL:-}" ]; then
 fi
 log "RTORRENT_URL sha256[:12]=$(hash12 "${RTORRENT_URL}")"
 
-export CLEANUPARR_API_KEY
+export CLEANUPARR_API_KEY RTORRENT_URL RTORRENT_USER RTORRENT_PASSWORD
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
 api() { "${CLEANUPARR_API}" "$@"; }
@@ -118,6 +118,7 @@ else
 import json,os,sys
 body = {
   "name": sys.argv[1],
+  "enabled": True,
   "typeName": "rTorrent",
   "host": sys.argv[2],
   "port": int(sys.argv[3]),

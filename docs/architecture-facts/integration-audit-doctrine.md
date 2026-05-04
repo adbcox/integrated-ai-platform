@@ -1146,3 +1146,51 @@ They are sibling controls and both must hold for unattended reliability.
 - D-17-51 (Finding Y resolution; daemon pivot)
 - D-17-58 (Mac Studio Ollama persistence; script-level failing example)
 - `docs/runbooks/remote-sudo-scripts.md` (canonical remote-sudo execution pattern)
+
+---
+
+## Finding 17 — Sourced credentials.env vars do not reach `python3 -c` subprocesses without explicit export
+
+**Date:** 2026-05-04
+**Originating WP:** D-17-76 WP-04 (rTorrent client live-bootstrap)
+**Severity:** Doctrine (touches every Vault Agent sidecar consumer that uses inline-python helpers)
+
+### What
+
+A bootstrap script that does `. /vault/secrets/credentials.env` and then invokes `python3 -c '... os.environ.get("VAR","")'` will silently get the empty default for any sidecar var, because shell-`source` sets shell-scope variables, not exported environment variables — and the python3 subprocess inherits only the exported environment.
+
+D-17-76 WP-04 worked example: `scripts/cleanuparr-bootstrap-config.sh` sourced the rendered Vault Agent credentials file (containing `RTORRENT_USER`, `RTORRENT_PASSWORD`, etc.), then a `python3 -c` block constructed the Cleanuparr `download_client` POST body using `os.environ.get("RTORRENT_USER","")`. The subprocess saw an empty username — but the script `export`ed only `CLEANUPARR_API_KEY` (line 73 at the time). Cleanuparr accepted the POST with empty username; the registered client was authenticated by password alone, which happens to work for ruTorrent httprpc but masks a real config defect.
+
+The defect is not visible from the bootstrap script's `[hash12]` log lines, because those operate on *shell* variables (which are populated correctly by `source`). It only surfaces when: (a) the consumer subprocess actually reads the env, and (b) you GET-back the registered record from the consumer API to check what stuck.
+
+Discovery sequence in D-17-76 WP-04: Cleanuparr `GET /api/configuration/download_client/` returned `username: ''` for the freshly-registered client. The two-line fix was `export RTORRENT_URL RTORRENT_USER RTORRENT_PASSWORD` after the `. ${CRED_FILE}` line, plus `enabled: True` in the POST body (separate orthogonal bug — Cleanuparr's POST default for new clients is disabled).
+
+### Why this is doctrine, not a one-off bug
+
+This is the third recurrence of the env-asymmetry-between-shell-and-subprocess pattern in 2026:
+
+1. D-17-26 sub-doctrine: `docker exec env` ≠ PID 1 environ when entrypoint sources secret files (consumer-side asymmetry).
+2. D-17-38 near-miss: `/proc/1/environ` reads must redact when var holds a credential (display-side asymmetry).
+3. D-17-76 WP-04 (this finding): sourced creds don't reach `python3 -c` without `export` (producer-side asymmetry).
+
+All three are about the same underlying truth: **shell scope, exported env, and PID-1 environ are three distinct readings of "the environment", and they diverge by design**. Diagnosis must specify which reading is being tested.
+
+### How to apply
+
+For any new bootstrap/automation script that follows the Vault Agent sidecar pattern (`. ${CRED_FILE}` → consume credentials in subprocesses):
+
+1. **Always `export` the vars after sourcing**, even when subprocess use looks superficially-shell-only. Subprocess-via-`python3 -c`, `node -e`, `jq --arg`, or any inline interpreter all need exported env.
+2. **Verification step is consumer-side, not script-side.** A `[hash12]` log of the *shell* variable proves the source-load worked, but it does NOT prove the subprocess saw the value. Verify by GET-back from the consumer API and inspect what actually stuck.
+3. **Live-test new bootstrap scripts** by reading the registered record back from the consumer API on first run, with credential-presence flags (`bool(field)`) — never display the value.
+
+### Related anti-patterns to retire
+
+- "If `[hash12]` logs the right hash, the credential is wired" — wrong. The hash is on the shell variable; subprocess inheritance is independent.
+- "Cleanuparr (or any API) accepting the POST means the body was correct" — wrong. APIs frequently accept empty-string fields; the GET-back is the only honest verification.
+
+### Cross-references
+
+- D-17-26 sub-doctrine (`docker exec env` vs PID 1 environ — consumer side)
+- D-17-38 "Hash-only verification — `/proc/1/environ` reads must redact" near-miss (display side)
+- D-17-76 WP-04 (this finding's worked example)
+- `scripts/cleanuparr-bootstrap-config.sh` (canonical fixed example, now exports `RTORRENT_*` vars before any subprocess)
