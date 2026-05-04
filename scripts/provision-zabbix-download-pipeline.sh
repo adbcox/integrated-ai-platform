@@ -99,6 +99,25 @@ ensure_item() {
   fi
 }
 
+ensure_trapper() {
+  local hostid="$1" name="$2" key="$3"
+  local itemid
+  itemid="$(zbx item.get "{\"output\":[\"itemid\",\"type\"],\"hostids\":[\"${hostid}\"],\"filter\":{\"key_\":\"${key}\"}}" | jq -r '.result[0].itemid // empty')"
+  local payload
+  payload="$(jq -nc --arg hostid "${hostid}" --arg name "${name}" --arg key "${key}" \
+    '{hostid:$hostid,name:$name,key_:$key,type:2,value_type:3,delay:"0"}')"
+  if [ -z "${itemid}" ]; then
+    zbx item.create "${payload}" >/dev/null
+  else
+    # Only update if currently not a trapper (avoid clobbering lastvalue)
+    local cur_type
+    cur_type="$(zbx item.get "{\"output\":[\"type\"],\"hostids\":[\"${hostid}\"],\"filter\":{\"key_\":\"${key}\"}}" | jq -r '.result[0].type // ""')"
+    if [ "${cur_type}" != "2" ]; then
+      zbx item.update "$(echo "${payload}" | jq --arg itemid "${itemid}" 'del(.hostid) + {itemid:$itemid}')" >/dev/null
+    fi
+  fi
+}
+
 ensure_trigger() {
   local desc="$1" expr="$2" priority="$3"
   local trig
@@ -159,29 +178,26 @@ main() {
   ensure_item "${hostid}" "Lidarr health issue count" "d17105.lidarr.health_count" "${zbx_http_base}:8686/api/v1/health" '{$LIDARR_API_KEY}' 21 'var a=JSON.parse(value); return Array.isArray(a)?a.length:0;'
   ensure_item "${hostid}" "Prowlarr health issue count" "d17105.prowlarr.health_count" "${zbx_http_base}:9696/api/v1/health" '{$PROWLARR_API_KEY}' 21 'var a=JSON.parse(value); return Array.isArray(a)?a.length:0;'
   ensure_item "${hostid}" "SABnzbd queue depth" "d17105.sab.queue_depth" "${sab_base}?mode=queue&output=json&apikey={\$SABNZBD_API_KEY}" '{$SABNZBD_API_KEY}' 12 '$.queue.noofslots'
-  ensure_item "${hostid}" "SABnzbd failed jobs" "d17105.sab.failed_jobs" "${sab_base}?mode=history&output=json&apikey={\$SABNZBD_API_KEY}&failed_only=1&limit=5" '{$SABNZBD_API_KEY}' 21 'var m=value.match(/\"status\":\"Failed\"/g); return m ? m.length : 0;'
+  # SABnzbd failed jobs: JSONPath $.history.noofslots on mode=history&failed_only=1 response
+  # (noofslots = count of returned slots; failed_only=1 filters to failures only)
+  ensure_item "${hostid}" "SABnzbd failed jobs" "d17105.sab.failed_jobs" "${sab_base}?mode=history&output=json&apikey={\$SABNZBD_API_KEY}&failed_only=1&limit=100" '{$SABNZBD_API_KEY}' 12 '$.history.noofslots'
 
-  if [ -n "${sync_qnap_url}" ] && [ -n "${sync_qnap_key}" ]; then
-    ensure_item "${hostid}" "Syncthing QNAP max staleness hours" "d17105.syncthing.qnap.max_stale_h" "${sync_qnap_url%/}/rest/stats/folder" '{$SYNCTHING_QNAP_API_KEY}' 21 'var d=JSON.parse(value); var now=Date.now(); var maxh=0; Object.keys(d).forEach(function(k){var t=((d[k]||{}).lastFile||{}).at; if(t){var h=(now-Date.parse(t))/3600000; if(h>maxh) maxh=h;}}); return Math.floor(maxh);'
-    ensure_item "${hostid}" "Syncthing QNAP folder errors total" "d17105.syncthing.qnap.errors_total" "${sync_qnap_url%/}/rest/db/status?folder=is5fj-3grur" '{$SYNCTHING_QNAP_API_KEY}' 21 'var a=JSON.parse(value); return Number(a.errors||0)+Number(a.pullErrors||0);'
-  fi
+  # Syncthing items are Zabbix Trapper (type=2) — data pushed by scripts/syncthing-zabbix-sender.sh
+  # running on the Mac Mini host (Docker containers cannot reach QNAP:8384 due to subnet filtering).
+  ensure_trapper "${hostid}" "Syncthing QNAP max staleness hours" "d17105.syncthing.qnap.max_stale_h"
+  ensure_trapper "${hostid}" "Syncthing QNAP folder errors total" "d17105.syncthing.qnap.errors_total"
 
   ensure_trigger "D-17-105: Sonarr queue depth high" "min(/${TARGET_HOST_NAME}/d17105.sonarr.queue_depth,2h)>0" 3
   ensure_trigger "D-17-105: Radarr queue depth high" "min(/${TARGET_HOST_NAME}/d17105.radarr.queue_depth,2h)>0" 3
   ensure_trigger "D-17-105: Lidarr queue depth high" "min(/${TARGET_HOST_NAME}/d17105.lidarr.queue_depth,2h)>0" 3
   ensure_trigger "D-17-105: Arr health issues present" "last(/${TARGET_HOST_NAME}/d17105.sonarr.health_count)>0 or last(/${TARGET_HOST_NAME}/d17105.radarr.health_count)>0 or last(/${TARGET_HOST_NAME}/d17105.lidarr.health_count)>0 or last(/${TARGET_HOST_NAME}/d17105.prowlarr.health_count)>0" 3
   ensure_trigger "D-17-105: SABnzbd failed jobs detected" "last(/${TARGET_HOST_NAME}/d17105.sab.failed_jobs)>0" 3
-  if [ -n "${sync_qnap_url}" ] && [ -n "${sync_qnap_key}" ]; then
-    ensure_trigger "D-17-105: Syncthing staleness > 6h" "last(/${TARGET_HOST_NAME}/d17105.syncthing.qnap.max_stale_h)>{\$PIPE_SYNC_STALE_HOURS}" 3
-    ensure_trigger "D-17-105: Syncthing folder errors present" "last(/${TARGET_HOST_NAME}/d17105.syncthing.qnap.errors_total)>0" 3
-  fi
+  # Syncthing triggers always present — trapper items receive data from syncthing-zabbix-sender.sh
+  ensure_trigger "D-17-105: Syncthing staleness > 6h" "last(/${TARGET_HOST_NAME}/d17105.syncthing.qnap.max_stale_h)>{\$PIPE_SYNC_STALE_HOURS}" 3
+  ensure_trigger "D-17-105: Syncthing folder errors present" "last(/${TARGET_HOST_NAME}/d17105.syncthing.qnap.errors_total)>0" 3
 
   log "provision complete"
-  if [ -n "${sync_qnap_url}" ] && [ -n "${sync_qnap_key}" ]; then
-    log "Syncthing metrics active from secret/syncthing/qnap"
-  else
-    log "NOTE: Syncthing metrics are pending until Vault paths secret/syncthing/{seedbox,qnap} are restored."
-  fi
+  log "Syncthing: trapper items — push via scripts/syncthing-zabbix-sender.sh (launchd com.iap.syncthing-zabbix-sender)"
 }
 
 main "$@"
