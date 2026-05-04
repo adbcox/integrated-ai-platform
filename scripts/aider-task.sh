@@ -23,6 +23,10 @@
 #     blocks >2% deletion on append tasks, >30% deletion on general tasks
 #     warns on truncation (≤3 lines added to large doc for multi-para task)
 #     override: --skip-validator or AIDER_SKIP_VALIDATOR=1
+#   Layer 1.5 (dual-loop verifier): aider_verifier.py reviews diff against description
+#     uses qwen2.5-coder:14b on local Ollama to classify AGREE/DISAGREE
+#     DISAGREE exits 5; error/ambiguous does NOT block (verifier failure is non-fatal)
+#     override: --skip-verifier or AIDER_SKIP_VERIFIER=1
 #   Layer 3 (learning loop): records outcome to artifacts/execution_metrics.jsonl
 #     feeds domains/learning.py confidence for future routing decisions
 #
@@ -56,6 +60,7 @@ HARD_MODE=0
 AUTO_COMMIT=0
 SKIP_PREFLIGHT=0
 SKIP_VALIDATOR=0
+SKIP_VERIFIER=0
 ALLOW_LARGE_INSERTIONS=0
 QUIET=0
 NO_CONTEXT=0
@@ -108,6 +113,8 @@ while [[ $# -gt 0 ]]; do
       SKIP_PREFLIGHT=1; shift ;;
     --skip-validator)
       SKIP_VALIDATOR=1; shift ;;
+    --skip-verifier)
+      SKIP_VERIFIER=1; shift ;;
     --allow-large-insertions)
       ALLOW_LARGE_INSERTIONS=1; shift ;;
     --no-context)
@@ -512,6 +519,51 @@ print("[aider-task] learning: recorded diff-sanity-block")
 PY
     # Exit 4 = diff sanity block (distinct from Aider errors)
     exit 4
+  fi
+
+  # --- Layer 1.5: Dual-loop verifier (D-17-110) ---
+  VERIFIER_EXIT=0
+  if [[ "$SKIP_VERIFIER" -eq 0 && "${AIDER_SKIP_VERIFIER:-0}" != "1" && -f "bin/aider_verifier.py" ]]; then
+    FULL_DIFF="$(git diff "${CHANGED_FILES[@]}" 2>/dev/null)"
+    if [[ -n "$FULL_DIFF" ]]; then
+      set +e
+      if [[ $QUIET -eq 1 ]]; then
+        for f in "${CHANGED_FILES[@]}"; do
+          VERIFIER_OUT=$(echo "$FULL_DIFF" | python3 bin/aider_verifier.py \
+            --description "$DESCRIPTION" \
+            --file-path "$f" \
+            --diff-stdin \
+            --quiet 2>&1)
+          V_EXIT=$?
+          echo "[aider-task] $VERIFIER_OUT"
+          if [[ $V_EXIT -eq 1 && $VERIFIER_EXIT -eq 0 ]]; then
+            VERIFIER_EXIT=1
+          fi
+        done
+      else
+        echo ""
+        for f in "${CHANGED_FILES[@]}"; do
+          echo "[aider-task] Layer 1.5: running dual-loop verifier on $f..."
+          echo "$FULL_DIFF" | python3 bin/aider_verifier.py \
+            --description "$DESCRIPTION" \
+            --file-path "$f" \
+            --diff-stdin 2>&1
+          V_EXIT=$?
+          if [[ $V_EXIT -eq 1 && $VERIFIER_EXIT -eq 0 ]]; then
+            VERIFIER_EXIT=1
+          fi
+        done
+      fi
+      set -e
+
+      if [[ $VERIFIER_EXIT -eq 1 ]]; then
+        echo ""
+        echo "[aider-task] *** DUAL-LOOP VERIFIER BLOCKED — diff does not match task ***"
+        echo "[aider-task] Review the REASON above. Do NOT commit until verified correct."
+        echo "[aider-task] Override: --skip-verifier or AIDER_SKIP_VERIFIER=1"
+        exit 5
+      fi
+    fi
   fi
 
   # Layer 3: record success

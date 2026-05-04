@@ -552,6 +552,27 @@ aider-task.sh --skip-validator "description" ...
 # or: AIDER_SKIP_VALIDATOR=1 aider-task.sh ...
 ```
 
+### Layer 1.5 — Dual-loop verifier (runs AFTER Layer 1 passes) — D-17-110
+
+After Layer 1 passes, `bin/aider_verifier.py` routes the diff to `qwen2.5-coder:14b`
+and asks: *does this diff do exactly what the task described?*
+
+| Verdict | Exit | Action |
+|---|---|---|
+| AGREE | 0 | Continue to Layer 3 + commit hint |
+| DISAGREE | 1 | Exit 5 — BLOCK; review REASON |
+| ERROR/AMBIGUOUS | 2/3 | Non-blocking — print warning, continue |
+
+When blocked (exit 5), inspect the REASON line and `git diff` the changed files.
+If the verifier is wrong (false positive), override:
+
+```bash
+aider-task.sh --skip-verifier "description" ...
+# or: AIDER_SKIP_VERIFIER=1 aider-task.sh ...
+```
+
+Full doctrine: `docs/architecture-facts/aider-verifier-doctrine.md`
+
 ### Layer 3 — Learning feedback (runs in all terminal branches)
 
 Every outcome (success, failure, guard-block, no-change) is recorded to
@@ -565,10 +586,11 @@ You do not invoke Layer 3 directly — it is automatic.
 
 | Exit | Meaning |
 |---|---|
-| 0 | Aider ran, guard passed, files changed |
+| 0 | Aider ran, all guards passed, files changed |
 | 1 | Aider error or escalation |
 | 3 | Pre-flight BLOCK (Layer 2 refused shape) |
 | 4 | Diff sanity BLOCK (Layer 1 refused diff) |
+| 5 | Verifier BLOCK (Layer 1.5 DISAGREE) |
 
 ### Reference
 

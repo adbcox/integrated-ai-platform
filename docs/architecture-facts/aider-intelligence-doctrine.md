@@ -16,7 +16,7 @@ Both failures were silent: exit 0, no guard, downstream pipeline consumed corrup
 
 ---
 
-## Architecture: Three Layers
+## Architecture: Three Layers + 1.5
 
 ```
 aider-task.sh invocation
@@ -36,10 +36,19 @@ aider-task.sh invocation
 ┌─────────────────────────────────────────────────────────────┐
 │  Layer 1 — Diff sanity check (bin/aider_guard.py --inline)  │
 │  AFTER Aider runs                                           │
-│  Inspects: per-file deletion rates, truncation signals      │
+│  Inspects: per-file deletion rates, insertion-expansion     │
 │  Exits script 4 on BLOCK; exits 2 (warn, logged, continue)  │
 └─────────────────────────────────────────────────────────────┘
-       │ (if pass/warn)
+       │ PASS
+       ▼
+┌─────────────────────────────────────────────────────────────┐
+│  Layer 1.5 — Dual-loop verifier (bin/aider_verifier.py)     │
+│  D-17-110; runs AFTER Layer 1 passes                        │
+│  LLM (qwen2.5-coder:14b) classifies: AGREE | DISAGREE       │
+│  Exits script 5 on DISAGREE; non-blocking on ERROR/AMBIG    │
+│  Catches: duplication, scope creep, logic rewrites          │
+└─────────────────────────────────────────────────────────────┘
+       │ AGREE or non-blocking error
        ▼
 ┌─────────────────────────────────────────────────────────────┐
 │  Layer 3 — Learning feedback (domains/learning.py)          │
@@ -162,10 +171,11 @@ D-17-91 established fitness benchmarks for qwen3-coder:30b and qwen3-coder-next:
 
 | Exit | Meaning |
 |---|---|
-| 0 | Success — Aider ran, guard passed, files changed |
+| 0 | Success — Aider ran, all guards passed, files changed |
 | 1 | Escalation or Aider error (non-zero exit from Aider) |
 | 3 | Pre-flight BLOCK (Layer 2 refused the task shape) |
 | 4 | Diff sanity BLOCK (Layer 1 refused the post-run diff) |
+| 5 | Verifier BLOCK (Layer 1.5 DISAGREE — diff does not match task) |
 
 Exit 2 is reserved (unused in current implementation).
 
@@ -238,7 +248,9 @@ aider-task.sh --allow-large-insertions ...
 - **Finding 19** — Truncation silent failure that motivated Layer 1 truncation detection
 - **Finding 23** — Insertion-expansion duplication failure; motivated `check_insertion_expansion()` guard (D-17-109)
 - **D-17-109** — Aider performance tuning: Modelfile derivations (temp, ctx), system context injection, Layer 1 expansion guard
-- `docs/runbooks/aider-default-workflow.md` §13 — operator-facing procedure incorporating all three layers
+- **D-17-110** — Layer 1.5 dual-loop verifier; see `docs/architecture-facts/aider-verifier-doctrine.md`
+- `docs/runbooks/aider-default-workflow.md` §13 — operator-facing procedure incorporating all layers
 - `docs/architecture-facts/work-routing-doctrine.md` — Tier boundary definitions that Layer 2 enforces
+- `docs/architecture-facts/aider-verifier-doctrine.md` — Layer 1.5 model selection, bypass ladder, verdict semantics
 - `config/ollama/Modelfile-qwen3-coder-30b-coding` — temp=0.1, num_ctx=32768 derivation
 - `config/ollama/Modelfile-qwen3-coder-next-coding` — temp=0.15, num_ctx=32768 derivation
