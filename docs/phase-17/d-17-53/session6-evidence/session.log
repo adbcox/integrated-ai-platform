@@ -1,0 +1,198 @@
+
+    __( O)>  ● new session · ollama qwen3-coder:30b
+   \____)    20260503_18 · /Users/admin/repos/integrated-ai-platform
+     L L     goose is ready
+
+  ────────────────────────────────────────
+  ▸ list_allowed_directories filesystem-mcp
+
+
+  ────────────────────────────────────────
+  ▸ read_text_file filesystem-mcp
+    path: /Users/admin/repos/integrated-ai-platform/docs/architecture-facts/opnsense-dns-authority.md
+
+
+  ────────────────────────────────────────
+  ▸ read_text_file filesystem-mcp
+    path: /Users/admin/repos/integrated-ai-platform/docs/runbooks/opnsense-add-host-overrides.md
+
+
+  ────────────────────────────────────────
+  ▸ read_text_file filesystem-mcp
+    path: /Users/admin/repos/integrated-ai-platform/docs/architecture-facts/integration-audit-doctrine.md
+
+
+  ────────────────────────────────────────
+  ▸ search_files filesystem-mcp
+    path: /Users/admin/repos/integrated-ai-platform
+    pattern: *.md
+
+
+  ────────────────────────────────────────
+  ▸ search_files filesystem-mcp
+    path: /Users/admin/repos/integrated-ai-platform/docs
+    pattern: *.md
+
+
+  ────────────────────────────────────────
+  ▸ directory_tree filesystem-mcp
+    path: /Users/admin/repos/integrated-ai-platform/docs
+
+
+  ────────────────────────────────────────
+  ▸ read_text_file filesystem-mcp
+    path: /Users/admin/repos/integrated-ai-platform/docs/runbooks/opnsense-add-host-overrides.md
+
+
+  ────────────────────────────────────────
+  ▸ analyze
+    path: /Users/admin/repos/integrated-ai-platform/docs
+    max_depth: 2
+
+0 files, 0L, 0F, 0C (depth=2)
+(209 files skipped: no parser)
+
+
+  ────────────────────────────────────────
+  ▸ list_directory filesystem-mcp
+    path: /Users/admin/repos/integrated-ai-platform/docs/runbooks
+
+
+  ────────────────────────────────────────
+  ▸ xindex_search xindex
+    query: opnsense dnsmasq dhcp options
+    type: all
+
+
+  ────────────────────────────────────────
+  ▸ xindex_search xindex
+    query: opnsense dnsmasq
+    type: all
+
+# Runbook: Configure OPNsense Dnsmasq DHCP to Push Primary DNS Server
+
+**Purpose:** Configure OPNsense Dnsmasq DHCP to push `192.168.10.1` as the primary DNS server to LAN clients. This closes the gap where new clients query public DNS instead of internal Dnsmasq, breaking `.internal` resolution without manual per-client DNS configuration.
+
+## Why Needed
+
+This is a sibling concern to D-17-21 (DNS authority) and Finding 14 (cache invalidation). Without DHCP-DNS-push, a fresh DHCP client gets whatever DNS its OS defaults to — typically the gateway relaying upstream public DNS — and `.internal` records won't resolve until the operator hand-configures the resolver. This is particularly problematic for devices that have previously been on the LAN and may have queried a hostname before the OPNsense record was added — mDNSResponder will hold the NXDOMAIN until manually flushed or the cache TTL expires (typically 15 minutes for negative responses).
+
+## OPNsense UI Navigation
+
+1. Open OPNsense web UI (`https://192.168.10.1`).
+2. Navigate to `Services` → `Dnsmasq DNS` → `DHCP` options.
+3. Look for the `DHCP` section, which typically has a subsection named "Options".
+4. [UNVERIFIED — frontier review] Find the "DNS server" or "Push DNS server" field.
+5. Set the field value to `192.168.10.1`.
+
+## Config Option
+
+The native Dnsmasq configuration option is:
+```bash
+dhcp-option=6,192.168.10.1
+```
+(option 6 = DNS server). This corresponds to the UI field in the DHCP options section.
+
+## Prerequisite Check
+
+Before pushing DNS server via DHCP option, verify that Dnsmasq is functioning as DNS authority:
+
+```bash
+# Verify Dnsmasq is running and authoritative
+curl -s -k -u "$KEY:$SEC" "https://192.168.10.1/api/dnsmasq/settings/searchHost" | jq -r '.rows[] | "\(.host).\(.domain) → \(.ip)"' | sort
+```
+
+Expected: Should show host records including `*.internal` records.
+The service must be running on port 53.
+
+## Verification
+
+On a client, perform the following verification steps after DHCP lease renewal:
+
+### macOS
+
+1. Use `scutil --dns` to check DNS resolvers:
+   ```bash
+   scutil --dns
+   ```
+
+2. Verify resolution with `dig`:
+   ```bash
+   dig <something>.internal @192.168.10.1 +short
+   ```
+
+Expected output shape:
+```
+resolver[0] : 192.168.10.1
+```
+
+### Linux
+
+1. Use `resolvectl status` or `nmcli dev show`:
+   ```bash
+   resolvectl status
+   ```
+
+2. Verify resolution with `dig`:
+   ```bash
+   dig <something>.internal @192.168.10.1 +short
+   ```
+
+Expected output shape:
+```
+link: eth0 (link: down)
+  DNS Servers: 192.168.10.1
+```
+
+## Rollback
+
+To revert the DHCP option setting, modify the DHCP options field back to empty or the previous value and flush the client-side cache:
+
+### macOS
+
+```bash
+sudo killall -HUP mDNSResponder
+```
+
+### Linux
+
+```bash
+sudo systemd-resolve --flush-caches
+# or
+sudo nscd -i hosts
+# or
+sudo systemctl restart dnsmasq
+```
+
+> Note: Clients with already-leased addresses will not pick up the rollback until lease renewal (typically 30 minutes) or manual `dhclient -r` / toggle network connectivity.
+
+## Self-flagged defects
+
+1. **UI field name uncertain**: The exact field name for "DNS server push" in the Dnsmasq DHCP options section was not verified against a running UI. The field name in the documentation style reference (`opnsense-add-host-overrides.md`) is based on Unbound DNS, not Dnsmasq, which may differ.
+   - [UNVERIFIED — frontier review] Exact UI field name
+
+2. **No CLI equivalent documented**: While `dhcp-option=6,192.168.10.1` is the native config, there's no confirmation if the UI field directly translates to this or if there's a separate API path for setting it.
+   - [UNVERIFIED — frontier review] CLI/API equivalent
+
+3. **Cache flush verification**: The cache invalidation steps were documented, but no specific verification command was provided to ensure that DHCP clients have received the new DNS information without manual triggering.
+   - [UNVERIFIED — frontier review] Verification of client-side DNS cache update
+
+## Tool-call trace summary
+
+1. **Context files read and analyzed**:
+   - `/Users/admin/repos/integrated-ai-platform/docs/architecture-facts/opnsense-dns-authority.md` - Verified that Dnsmasq is the sole DNS authority on this platform
+   - `/Users/admin/repos/integrated-ai-platform/docs/runbooks/opnsense-add-host-overrides.md` - Style reference for OPNsense documentation patterns
+   - `/Users/admin/repos/integrated-ai-platform/docs/architecture-facts/integration-audit-doctrine.md` - Finding 14 and related cache invalidation concepts
+
+2. **File system operations**:
+   - List of allowed directories confirmed: `/Users/admin/repos/integrated-ai-platform`
+   - Directory tree traversal of `/Users/admin/repos/integrated-ai-platform/docs` to locate relevant files
+   - File listing for `/Users/admin/repos/integrated-ai-platform/docs/runbooks` to verify existing documentation structure
+
+3. **Search attempts**:
+   - Xindex searches for "opnsense dnsmasq dhcp options" and "opnsense dnsmasq" yielded no results, indicating no cross-referenced documentation matching this exact search query.
+
+4. **Analysis**:
+   - Basic directory analysis attempted with `analyze` tool but was not successful with the provided path.
+
+All required documentation and context were reviewed. As there were no direct references for the specific UI navigation or field names, these have been marked as uncertain where required. The core principles and procedures were derived from the authoritative architecture facts and integration audit doctrine rather than direct UI observation.

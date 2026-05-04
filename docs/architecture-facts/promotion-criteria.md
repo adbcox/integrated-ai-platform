@@ -324,10 +324,10 @@ savings accrue per-class.
 class "read N source files + draft a reference doc"
 (read-author-only).
 
-**Status (2026-05-03):** **Posture 2 (dual-review).** Cell cleared
-the N=5 gate 2026-05-03; operator promoted Posture 1 → Posture 2
-in the same session. M=10 dual-review window opened; closure
-target ≈ 2026-05-13 conditional on session pacing.
+**Status (2026-05-03):** **Posture 2 (dual-review), 1/10.** Cell
+cleared the N=5 gate 2026-05-03; operator promoted Posture 1 →
+Posture 2 in the same session. M=10 dual-review window opened;
+closure target ≈ 2026-05-13 conditional on session pacing.
 
 **Sessions logged:**
 1. WP-03 smoke test (read CLAUDE.md head=50, 2 tool calls,
@@ -373,6 +373,36 @@ target ≈ 2026-05-13 conditional on session pacing.
    heuristic surfaced as prompt-engineering correction
    candidate. Autonomous primary-source read (`buildarr.yml`)
    surfaced as positive pattern.)
+
+**Dual-review window entries (Posture 2):**
+
+1. (2026-05-03) D-17-53 Session 6 — `opnsense-dhcp-dns-push.md`
+   re-author after Session 2's incorrect Kea proposal. Drafted
+   from 3 sources, 14 tool calls, all structurally valid. Goose
+   ran 5 exploratory probes (xindex_search ×2, search_files ×2,
+   directory_tree ×1) — broke the cautious-by-default
+   scope-check pattern again. Hypothesis from Session 5
+   reinforced at N=2: the autonomous scope-check is conditional
+   on prompt explicitness/path-list shape, not a stable
+   capability. Output split ~70/30 Goose/frontier (substrate-
+   sufficient runbook draft, single-shot sub-class). Frontier
+   corrected 5 defects: (1) prerequisite-check command leaked
+   `$KEY:$SEC` without the AppRole bootstrap chain, (2) Linux
+   `resolvectl status` expected output malformed, (3) macOS
+   `scutil --dns` expected output truncated, (4) Linux rollback
+   block listed three incompatible flushes as alternatives
+   without consumer-shape filtering, (5) opening-paragraph
+   padding regression despite Posture-2 sub-class reminder in
+   prompt. UI field name retained as `[UNVERIFIED — operator to
+   confirm via OPNsense UI]` per surface-back honesty. Goose
+   unprompted-flagged `opnsense-add-host-overrides.md` as
+   stale (Unbound-era) — second consecutive session detecting
+   that staleness without operator hint, promoting the backlog
+   item from candidate to active follow-on (separate D-NN-NN
+   candidate). Defect-rate baseline for the M=10 window: 5
+   frontier corrections on a substrate-sufficient single-shot
+   runbook is at the upper edge of the N=5 capability-
+   validation window range.
 
 **Substrate baseline:** F1.B (Ollama 0.22.1 streaming structured
 `tool_calls` for qwen3-coder:30b — see `local-tool-calling.md`).

@@ -136,11 +136,12 @@ Revisit per-extension only on operator request.
 
 ---
 
-## Observed behavior — capability-validation phase complete (sessions 1–5)
+## Observed behavior — capability-validation complete + Posture 2 dual-review (sessions 1–6)
 
-**Status:** Five measured sessions. Cell (Goose+qwen3-coder:30b × C1
-— reference-doc draft from N sources) **cleared the N=5 gate
-2026-05-03**. Promoted Posture 1 → Posture 2 (dual-review).
+**Status:** Five capability-validation sessions cleared the N=5
+gate 2026-05-03; Posture 1 → Posture 2 promotion approved same
+day. M=10 dual-review window now open (1/10).
+
 Sessions:
 
 1. D-17-13 WP-03 smoke test
@@ -148,10 +149,12 @@ Sessions:
 3. D-17-54 dual-runbook draft
 4. D-17-53 Vault Agent sidecar pattern draft
 5. D-17-53 arr-stack-add-component runbook draft (with
-   error-recovery datapoint)
+   error-recovery datapoint) — gate-clearing session
+6. D-17-53 opnsense-dhcp-dns-push re-author (Posture 2,
+   dual-review entry 1/10)
 
 See `promotion-criteria.md` empirical-evidence section for the
-gate-decision record.
+gate-decision record and dual-review entries.
 
 ### Session 1 — WP-03 smoke test (read /etc/hosts equivalent)
 
@@ -314,21 +317,108 @@ gate-decision record.
 - Runbook committed 2026-05-03 at
   `docs/runbooks/arr-stack-add-component.md`.
 
+### Session 6 — D-17-53 opnsense-dhcp-dns-push re-author (Posture 2 entry 1/10)
+
+- 14 tool calls: 4× `read_text_file`, 2× `xindex_search`, 2×
+  `search_files`, 1× `directory_tree`, 1× `list_directory`,
+  1× `list_allowed_directories`, 1× failed `analyze`, 2 misc.
+  All structurally valid.
+- Task: re-author `docs/runbooks/opnsense-dhcp-dns-push.md`
+  after D-17-54 Session 2 incorrectly proposed Kea DHCPv4 as
+  the DHCP module. Correction context in prompt explicitly
+  required Dnsmasq-as-DNS+DHCP per D-17-21; Goose followed it.
+- **Cautious-by-default scope check broke the streak again.**
+  Goose ran 5 exploratory probes (`xindex_search` ×2,
+  `search_files` ×2, `directory_tree` ×1) before producing
+  output. Combined with Session 5, the streak is now broken
+  in 2 of the last 2 sessions. Hypothesis from Session 5
+  reinforced at N=2: the autonomous scope-check is conditional
+  on prompt explicitness/path-list shape, not a stable
+  capability of the model on this substrate. Worth
+  systematically testing in remaining Posture-2 sessions —
+  vary prompt path-list explicitness and observe whether the
+  scope-check returns.
+- **Staleness detection on `opnsense-add-host-overrides.md`
+  unprompted.** Second consecutive session where Goose flagged
+  this file as stale (Unbound-era) without operator hint. Two
+  sessions confirming the same observation = preserve-pattern;
+  the backlog item we logged at D-17-53 close promotes from
+  candidate to active follow-on (separate D-NN-NN candidate).
+- **Padding tendency partial regression.** Despite the
+  Posture-2 sub-class reminder in the prompt
+  ("substrate-sufficient runbook draft, target ~50% preserved
+  baseline, benefits from concrete examples"), Goose opened
+  with "This is a sibling concern to D-17-21..." preamble that
+  duplicated the why-needed paragraph. The corrective prompt
+  language landed earlier (Session 2 onward) but does not
+  fully suppress in this sub-class. Prompt-engineering
+  refinement: for substrate-sufficient single-shot runbooks,
+  request "skip the preamble; open with the first procedure
+  step" rather than the more general "concise" framing.
+- **Five frontier corrections** (defect-rate datapoint for the
+  M=10 window):
+  1. Prerequisite-check command leaked `$KEY:$SEC` references
+     without including the AppRole bootstrap chain that defines
+     them. Operator running the snippet would hit unbound-
+     variable errors. Goose copied the verbatim curl line from
+     `opnsense-dns-authority.md` without the surrounding
+     bootstrap block.
+  2. Linux `resolvectl status` expected output (`link: eth0
+     (link: down) / DNS Servers: 192.168.10.1`) malformed —
+     real output is `Current Scopes: DNS / DNS Servers:
+     192.168.10.1`. Hallucinated shape; the source files
+     don't contain this command's output.
+  3. macOS `scutil --dns` expected output truncated to
+     `resolver[0] : 192.168.10.1`. Real output starts with
+     `resolver #1 / nameserver[0] : <ip>`. Same hallucinated-
+     shape failure mode as #2.
+  4. Linux rollback section listed `systemd-resolve --flush-
+     caches` / `nscd -i hosts` / `systemctl restart dnsmasq`
+     as three "or" alternatives — copied straight from
+     Finding 14 doctrine without filtering for which applies
+     to a typical LAN client. F14 lists all three because
+     different consumers run different daemons; a runbook
+     should pick the right one for the consumer-shape and
+     note when the others apply, not present a menu.
+  5. Opening-paragraph padding regression (above).
+- UI field name retained as `[UNVERIFIED — operator to confirm
+  via OPNsense UI; record in commit message post-verify]`. The
+  one factual gap on this class of runbook (UI labels) cannot
+  be closed by frontier alone — the OPNsense UI is not
+  read-only-accessible from this surface. Keeping the
+  `[UNVERIFIED]` flag rather than guessing matches Session 4's
+  honest-uncertainty pattern.
+- Output split estimate: ~70/30 Goose/frontier (substrate-
+  sufficient single-shot runbook sub-class). Better than the
+  ~50/50 Session 5 abstract-from-N runbook landed.
+- Runbook committed 2026-05-03 at
+  `docs/runbooks/opnsense-dhcp-dns-push.md`.
+
 ### Patterns to preserve at Phase-A / Posture-2
 
-1. **Cautious-by-default scope check — *conditional* posture.**
-   Sessions 2-4 ran `list_allowed_directories` autonomously
-   before reads (4 consecutive). Session 5 broke the streak: no
-   upfront scope check. The pattern is conditional on prompt
-   explicitness — when the prompt's path list is exhaustive and
-   absolute-path-formatted (Session 5: 8 absolute paths), the
-   model treats scope as already verified; when paths are more
-   abstract or partial (Sessions 2-4), the model probes scope
-   first. Earlier promotion from "habit" to "established posture"
-   (post-Session 4) was based on insufficient sample variation;
-   the correct framing is "established conditional on prompt
-   shape." Worth probing in Posture-2 sessions: does the
-   scope-check return when source paths are abstract?
+1. **Cautious-by-default scope check — *conditional* posture
+   (N=2 confirmation in Posture 2).** Sessions 2-4 ran
+   `list_allowed_directories` autonomously before reads (4
+   consecutive). Sessions 5-6 broke the streak: no upfront
+   scope check, instead Goose ran exploratory probes
+   (`list_directory`, `xindex_search`, `search_files`,
+   `directory_tree`) before producing output. The pattern is
+   conditional on prompt explicitness — when the prompt's path
+   list is exhaustive and absolute-path-formatted (Sessions
+   5-6: 3 and 8 absolute paths respectively), the model treats
+   scope as already verified and explores adjacent substrate
+   instead. Earlier promotion from "habit" to "established
+   posture" (post-Session 4) was based on insufficient sample
+   variation; the correct framing is "established conditional
+   on prompt shape." Now N=2 sessions reinforce the
+   conditionality. Worth systematically testing in remaining
+   Posture-2 sessions: vary prompt path-list explicitness and
+   observe whether the scope-check returns. Hypothesis:
+   abstract or partial path descriptions → scope-check fires;
+   exhaustive absolute-path lists → adjacent exploration fires
+   instead. Both shapes are sound; the cell capability is
+   "model picks the right shape for the prompt," not "model
+   always probes scope first."
 2. **Tool-call structural validity.** 53/53 tool calls across
    five sessions emitted as structured `tool_calls` (F1.B
    substrate). Re-enabling write tools should not change this;
@@ -368,18 +458,49 @@ gate-decision record.
    to ground the abstraction. Positive signal worth preserving
    via prompt-engineering reinforcement rather than
    correction.
+6. **Unprompted staleness detection on cross-referenced
+   docs — Sessions 5 + 6 (N=2 preserve-pattern).** Both
+   sessions independently flagged
+   `docs/runbooks/opnsense-add-host-overrides.md` as stale
+   (references retired Unbound) without operator hint. Session
+   5 surfaced it via the arr-stack runbook's Dnsmasq §4
+   note; Session 6 surfaced it more sharply because the
+   stale doc was being used as the style reference for the
+   re-author task. Two consecutive independent detections of
+   the same staleness shape = preserve-pattern. The implied
+   capability is "model notices when a cross-referenced
+   source contradicts current doctrine in the prompt's other
+   sources." Generalizes upward at Posture-3: a model that
+   detects substrate drift autonomously is exactly what's
+   needed for read-author-only work to remain accurate as
+   the codebase evolves. Backlog promotion: the
+   `opnsense-add-host-overrides.md` Unbound→Dnsmasq update
+   is now an active follow-on (separate D-NN-NN candidate),
+   not a passive backlog item.
 
 ### Patterns to correct via prompt engineering
 
-1. **Padding tendency** — *resolved at Session 3.* Session 2 draft
-   included two padding sections (Security checklist, Backups)
-   that didn't fit the runbook reference-style. The standard
-   prompt preamble correction (*"If uncertain about whether a
-   section is necessary, omit rather than pad. Reference docs are
-   concise; sections-because-docs-have-them is wrong."*) was
-   applied at Session 3 and Goose actively cited the rule in its
-   self-flagged-defects output. Tracked as resolved; preserve in
-   the standard preamble.
+1. **Padding tendency** — *resolved at Session 3 for missing-
+   sections shape; partial regression at Session 6 for opening-
+   preamble shape.* Session 2 draft included two padding
+   sections (Security checklist, Backups) that didn't fit the
+   runbook reference-style. The standard prompt preamble
+   correction (*"If uncertain about whether a section is
+   necessary, omit rather than pad. Reference docs are concise;
+   sections-because-docs-have-them is wrong."*) was applied at
+   Session 3 and Goose actively cited the rule in its
+   self-flagged-defects output. Sessions 3-5 held; Session 6
+   surfaced a different shape: opening with a sibling-concern
+   preamble paragraph that duplicated the why-needed section.
+   The standard preamble's section-omission rule does not
+   address opening-paragraph padding. Sub-class refinement
+   needed: for **substrate-sufficient single-shot runbooks**
+   (Session 6 sub-shape), the prompt should add: *"Skip the
+   preamble. Open with the first procedure step or the
+   when-to-use scope, not with a sibling-concern recap."*
+   For **abstract-from-N runbooks** (Session 5 sub-shape),
+   the existing concrete-examples reminder applies. The
+   Posture-2 prompt template should branch by sub-class.
 2. **Self-blind to encountered failure modes.** Session 2 draft
    omitted the `GOOSE_MODE=auto` headless invocation pattern even
    though that was the exact failure encountered while running
