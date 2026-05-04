@@ -1192,5 +1192,47 @@ For any new bootstrap/automation script that follows the Vault Agent sidecar pat
 
 - D-17-26 sub-doctrine (`docker exec env` vs PID 1 environ — consumer side)
 - D-17-38 "Hash-only verification — `/proc/1/environ` reads must redact" near-miss (display side)
-- D-17-76 WP-04 (this finding's worked example)
-- `scripts/cleanuparr-bootstrap-config.sh` (canonical fixed example, now exports `RTORRENT_*` vars before any subprocess)
+- D-17-76 WP-04 (this finding's worked example #1)
+- D-17-86 WP-07 (this finding's worked example #2 — see below)
+- `scripts/cleanuparr-bootstrap-config.sh` (canonical fixed example, now exports `RTORRENT_*` vars before any subprocess AND uses schema-truth-derived POST body)
+
+### Worked example #2 — GET-mutate-PUT round-trip omits fields the API silently swallows
+
+**Date:** 2026-05-04
+**Originating WP:** D-17-86 WP-07 (Cleanuparr download-client URL repair fold-in)
+
+The same anti-family of asymmetries surfaced again, this time on the API-response side rather than the env-source side. The trigger was operator-observed `Invalid URI: The format of the URI could not be determined.` errors in cleanuparr health-check logs every 5 min, against the rtorrent-seedbox client registered at D-17-49 close.
+
+Discovery sequence:
+
+1. Hypothesis (wrong): GET-mutate-PUT round-trip on `download_client/<id>` was silently dropping `port` and `useSsl` from the request body, causing the live record to lose those fields. Built explicit-field PUT body, re-applied. Health check still failed.
+2. Hypothesis (wrong): API list endpoint hides `port` and `useSsl` for UI-display reasons but persists them. Inspected the SQLite store directly: `download_clients` table has columns `(id, enabled, name, type_name, type, host, username, password, url_base, external_url)` — **no `port` column, no `use_ssl` column.** The fields the bootstrap was POSTing didn't exist in the schema; Cleanuparr accepted them at the API layer (silent ignore) and discarded them at the persistence layer.
+3. Root cause: Cleanuparr's `host` field is the **full origin URL** (e.g., `https://5.nl19.seedit4.me`), and `url_base` is the **path-only suffix**. The model's `get_Url()` accessor concatenates `host + url_base` and parses with `System.Uri`. A bare hostname in `host` fails URI parsing → `Invalid URI: The format of the URI could not be determined.`
+4. Fix: rewrote `parse_url()` in `scripts/cleanuparr-bootstrap-config.sh` to emit `HOST=<scheme>://<hostname>[:<port>]` (full origin) and removed `port`/`useSsl` from the POST body. Recreated the client; health-check tick at 10:54:48 reported `Client a71214b7-... health changed: Healthy`.
+
+The doctrine-relevant pattern: **API field-level acceptance is not field-level persistence.** Two distinct asymmetries collide:
+
+- **API → DB asymmetry:** the POST/PUT validator accepts a field name; the ORM/EF-Core mapper has no column for it; the value lands nowhere.
+- **DB → API asymmetry:** the GET-list serializer omits columns it considers UI-irrelevant (in this case it omits *all* fields, including the model-computed ones, because they're populated from a transient property bag that the list endpoint doesn't bind).
+
+Both asymmetries make the GET-mutate-PUT pattern hostile when the GET is your only source of schema truth. The honest sources are:
+
+1. The DB schema itself (`sqlite3 ".schema <table>"`) — definitive.
+2. The OpenAPI/Swagger surface — when the service exposes one. (Cleanuparr does not.)
+3. The original POST body that produced a known-working state — assuming you can find a worked example.
+4. Direct DB-row inspection of a working record — when no Swagger and no working POST template exists.
+
+### How to apply (worked example #2)
+
+For any consumer-API integration script in this platform:
+
+1. **Treat GET-list as a UI-display projection, not a schema source.** Field omissions in the response can mean: (a) UI redaction (e.g., `password: '••••••••'`), (b) computed field not bound by the list endpoint, OR (c) field doesn't exist in the underlying schema. You cannot tell which without inspecting the store.
+2. **When in doubt, inspect the persistence layer.** SQLite, Postgres, the ORM migrations folder — whatever's authoritative. For Cleanuparr that's `/config/cleanuparr.db` (must copy `.db + .db-wal + .db-shm` together for a coherent read; running container has WAL not yet checkpointed).
+3. **Avoid GET-mutate-PUT for record patches.** Either (a) author the full PUT body from authoritative sources (schema + env + known-working-example), OR (b) DELETE + POST to recreate from the canonical create flow when the API supports it.
+4. **The "health-check log" is the most reliable feedback signal** — much more reliable than a clean PUT response, which can be a false-positive when the server silently drops unrecognized fields.
+
+### Anti-patterns retired (worked example #2)
+
+- "GET-back the live record, modify the field I care about, PUT it back" — wrong when the GET-back is incomplete or is a UI-display projection. Round-trip can lose fields you didn't even know about.
+- "If the POST returned a non-error response, the schema accepted everything I sent" — wrong; .NET model binders silently ignore unknown JSON properties by default. The 415 errors only fire on Content-Type mismatch or malformed bodies, not field-name mismatches.
+- "If the GET response shows the field, the field is persistable" — converse-of-the-above also fails: the GET response may include only persisted fields, OR may include both persisted and computed-on-the-fly fields. Use schema introspection.

@@ -15,9 +15,13 @@
 #   5. Confirms Queue Cleaner + Download Cleaner remain disabled
 #      (initial-deploy safety; require operator post-Seeker observation
 #      cycle before flip).
-#   6. With `--enable-cleaners` flag (post-observation operator action):
-#      PUTs `/api/configuration/queue_cleaner` + `/api/configuration/download_cleaner`
-#      with `enabled: true`.
+#   6. With `--enable-cleaners` flag (post-observation operator action,
+#      D-17-86 close): PUTs `/api/configuration/queue_cleaner` +
+#      `/api/configuration/download_cleaner` with `enabled: true` AND
+#      PUTs `/api/configuration/general` with `dryRun: false`. Stock
+#      cron expressions are preserved verbatim (queue=every 5 min,
+#      download=top of hour) — WP-03 doctrine kept stock values; this
+#      script does not author cron mutations.
 #
 # Idempotency: GET clients before POST; if a client with matching name
 # already exists, no-op. Seeker PUT is naturally idempotent (full-state
@@ -75,29 +79,47 @@ export CLEANUPARR_API_KEY RTORRENT_URL RTORRENT_USER RTORRENT_PASSWORD
 # ── Helpers ──────────────────────────────────────────────────────────────────
 api() { "${CLEANUPARR_API}" "$@"; }
 
-# Parse RTORRENT_URL into host + port + urlBase + useSsl. Cleanuparr's
-# download_client schema separates these fields rather than accepting a
-# full URL string. Accepts forms like:
+# Parse RTORRENT_URL into host (FULL scheme://hostname[:port] origin) +
+# url_base (path-only). Cleanuparr's `download_clients` table schema has
+# columns: id, enabled, name, type_name, type, host, username, password,
+# url_base, external_url — explicitly NO `port` and NO `use_ssl` columns
+# (verified via SQLite inspection at D-17-86 WP-07). The model's
+# `get_Url()` accessor concatenates `host + url_base` and parses the
+# result as a System.Uri; if `host` is a bare hostname, the parse throws
+# `Invalid URI: The format of the URI could not be determined.`
+#
+# Doctrine consequence: the POST body uses `host` as a FULL ORIGIN
+# (scheme + hostname + optional port), not a bare hostname. The legacy
+# parse_url() that emitted separate HOST/PORT/USE_SSL was sending fields
+# Cleanuparr silently discards (no DB column to land in) while leaving
+# `host` as a bare hostname that fails URI parsing on first health check.
+# This anti-pattern produced two unhealthy clients (D-17-86 WP-07
+# discovery sequence) before the schema-truth check landed it.
+#
+# Accepts forms like:
 #   https://5.nl19.seedit4.me/rutorrent/plugins/httprpc/action.php
 #   http://host:8080/rutorrent/plugins/httprpc/action.php
-#   scgi://host:5000/  (rare, not common on seedit4me)
 parse_url() {
   local url="$1"
   python3 - "$url" <<'PY'
 import sys
 from urllib.parse import urlparse
 p = urlparse(sys.argv[1])
-host = p.hostname or ""
+host_only = p.hostname or ""
 scheme = p.scheme or "https"
-use_ssl = "true" if scheme == "https" else "false"
-port = p.port
-if port is None:
-    port = 443 if scheme == "https" else 80
+# Build FULL origin (scheme + hostname + optional port). Omit explicit
+# port when it matches the scheme default — Cleanuparr stores host as a
+# string and feeds it to System.Uri, which is more forgiving with
+# canonical-default-port URLs.
+origin_parts = [scheme, "://", host_only]
+if p.port is not None:
+    default_port = 443 if scheme == "https" else 80
+    if p.port != default_port:
+        origin_parts.append(f":{p.port}")
+origin = "".join(origin_parts)
 url_base = p.path or ""
-print(f"HOST={host}")
-print(f"PORT={port}")
+print(f"HOST={origin}")
 print(f"URL_BASE={url_base}")
-print(f"USE_SSL={use_ssl}")
 PY
 }
 
@@ -120,16 +142,14 @@ body = {
   "name": sys.argv[1],
   "enabled": True,
   "typeName": "rTorrent",
+  "type": "Torrent",
   "host": sys.argv[2],
-  "port": int(sys.argv[3]),
   "username": os.environ.get("RTORRENT_USER",""),
   "password": os.environ.get("RTORRENT_PASSWORD",""),
-  "urlBase": sys.argv[4],
-  "useSsl": sys.argv[5] == "true",
-  "newClient": {}
+  "urlBase": sys.argv[3],
 }
 print(json.dumps(body))
-' "${RT_CLIENT_NAME}" "${HOST}" "${PORT}" "${URL_BASE}" "${USE_SSL}")
+' "${RT_CLIENT_NAME}" "${HOST}" "${URL_BASE}")
 
   RESP=$(api POST /api/configuration/download_client/ "${POST_BODY}")
   if echo "${RESP}" | python3 -c 'import json,sys; d=json.load(sys.stdin); sys.exit(0 if d.get("id") else 1)' 2>/dev/null; then
@@ -157,8 +177,13 @@ SEEKER_RESP=$(api PUT /api/configuration/seeker "${SEEKER_BODY}")
 log "seeker PUT response head: $(echo "${SEEKER_RESP}" | head -c 120)"
 
 # ── Step 3: ensure Cleaners disabled (initial bootstrap) OR enable on flag ──
+# When --enable-cleaners is passed, this is the operator-authorization flip
+# (D-17-86): post-Seeker observation gate satisfied. Bundle Cleaner enable
+# with general.dryRun=false so the cleaners start producing real actions on
+# their next cron tick. Stock cron values are kept verbatim (queue=every 5
+# min, download=top of hour) per WP-03 doctrine — no schedule mutation here.
 if [ "${ENABLE_CLEANERS}" = "1" ]; then
-  log "--enable-cleaners: enabling Queue Cleaner + Download Cleaner"
+  log "--enable-cleaners: enabling Queue Cleaner + Download Cleaner + flipping dryRun=false"
 
   QC_BODY=$(api GET /api/configuration/queue_cleaner | python3 -c '
 import json,sys
@@ -167,7 +192,7 @@ cfg["enabled"] = True
 print(json.dumps(cfg))
 ')
   api PUT /api/configuration/queue_cleaner "${QC_BODY}" >/dev/null
-  log "queue_cleaner enabled=true"
+  log "queue_cleaner enabled=true (cron preserved)"
 
   DC_BODY=$(api GET /api/configuration/download_cleaner | python3 -c '
 import json,sys
@@ -176,7 +201,16 @@ cfg["enabled"] = True
 print(json.dumps(cfg))
 ')
   api PUT /api/configuration/download_cleaner "${DC_BODY}" >/dev/null
-  log "download_cleaner enabled=true"
+  log "download_cleaner enabled=true (cron preserved)"
+
+  GEN_BODY=$(api GET /api/configuration/general | python3 -c '
+import json,sys
+cfg = json.load(sys.stdin)
+cfg["dryRun"] = False
+print(json.dumps(cfg))
+')
+  api PUT /api/configuration/general "${GEN_BODY}" >/dev/null
+  log "general.dryRun=false (live actions authorized)"
 else
   QC_ENABLED=$(api GET /api/configuration/queue_cleaner | python3 -c 'import json,sys; print(json.load(sys.stdin).get("enabled",False))')
   DC_ENABLED=$(api GET /api/configuration/download_cleaner | python3 -c 'import json,sys; print(json.load(sys.stdin).get("enabled",False))')
@@ -184,9 +218,16 @@ else
   log "download_cleaner enabled=${DC_ENABLED} (expected: False at initial bootstrap)"
 fi
 
-# ── Step 4: confirm safety posture ──────────────────────────────────────────
+# ── Step 4: report safety posture ───────────────────────────────────────────
+# Expected dryRun depends on path:
+#   initial bootstrap (no flag)  → dryRun=true  (operator hasn't authorized live yet)
+#   --enable-cleaners            → dryRun=false (set explicitly above)
 DRY_RUN=$(api GET /api/configuration/general | python3 -c 'import json,sys; print(json.load(sys.stdin).get("dryRun",False))')
-log "general.dryRun=${DRY_RUN} (expected: True until operator authorizes live actions)"
+if [ "${ENABLE_CLEANERS}" = "1" ]; then
+  log "general.dryRun=${DRY_RUN} (expected: False after --enable-cleaners)"
+else
+  log "general.dryRun=${DRY_RUN} (expected: True until operator authorizes live actions)"
+fi
 
 unset CLEANUPARR_API_KEY RTORRENT_URL RTORRENT_USER RTORRENT_PASSWORD SEEDBOX_PASSWORD
 log "complete"
