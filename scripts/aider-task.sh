@@ -10,6 +10,7 @@
 #   scripts/aider-task.sh --commit "task description" [files...]
 #   scripts/aider-task.sh --skip-preflight "task description" [files...]
 #   scripts/aider-task.sh --skip-validator "task description" [files...]
+#   scripts/aider-task.sh --quiet "task description" [files...]
 #
 # Routes through domains/router.py classify. If route is LOCAL_AIDER, invokes
 # bin/aider_local.sh. If CLAUDE_CODE escalation, prints guidance and exits 1.
@@ -55,6 +56,7 @@ HARD_MODE=0
 AUTO_COMMIT=0
 SKIP_PREFLIGHT=0
 SKIP_VALIDATOR=0
+QUIET=0
 DESCRIPTION=""
 FILES=()
 
@@ -103,6 +105,8 @@ while [[ $# -gt 0 ]]; do
       SKIP_PREFLIGHT=1; shift ;;
     --skip-validator)
       SKIP_VALIDATOR=1; shift ;;
+    --quiet|-q)
+      QUIET=1; shift ;;
     -h|--help)
       usage; exit 0 ;;
     --)
@@ -162,11 +166,15 @@ ROUTED_MODEL=$(echo "$ROUTE_OUTPUT" | sed -n '2p')
 CONFIDENCE=$(echo "$ROUTE_OUTPUT" | sed -n '3p')
 REASONING=$(echo "$ROUTE_OUTPUT" | sed -n '4p')
 
-echo "[aider-task] route: executor=$EXECUTOR model=$ROUTED_MODEL confidence=$CONFIDENCE"
-echo "[aider-task] reasoning: $REASONING"
-
-if [[ -n "$TASK_CLASS" ]]; then
-  echo "[aider-task] task-class: $TASK_CLASS"
+if [[ $QUIET -eq 1 ]]; then
+  TC_DISPLAY="${TASK_CLASS:-auto}"
+  echo "[aider-task] route=$EXECUTOR model=$ROUTED_MODEL conf=$CONFIDENCE class=$TC_DISPLAY"
+else
+  echo "[aider-task] route: executor=$EXECUTOR model=$ROUTED_MODEL confidence=$CONFIDENCE"
+  echo "[aider-task] reasoning: $REASONING"
+  if [[ -n "$TASK_CLASS" ]]; then
+    echo "[aider-task] task-class: $TASK_CLASS"
+  fi
 fi
 
 # --- Log to router_events.jsonl with task_class populated ---
@@ -181,6 +189,7 @@ AIDER_TASK_CONFIDENCE="$CONFIDENCE" \
 AIDER_TASK_REASONING="$REASONING" \
 AIDER_TASK_DRY_RUN="$DRY_RUN" \
 AIDER_TASK_FILES="${FILES[*]+"${FILES[*]}"}" \
+AIDER_TASK_QUIET="$QUIET" \
 python3 - <<'PY'
 import json, os, sys
 from pathlib import Path
@@ -212,7 +221,8 @@ event = {
 with artifact_path.open("a") as f:
     json.dump(event, f)
     f.write("\n")
-print(f"[aider-task] logged event to {artifact_path}")
+if os.environ.get("AIDER_TASK_QUIET") != "1":
+    print(f"[aider-task] logged event to {artifact_path}")
 PY
 
 # --- Escalation path ---
@@ -270,8 +280,9 @@ PY
   elif [[ "$PF_SEVERITY" == "warn" ]]; then
     echo "[aider-task] pre-flight WARN ($PF_SHAPE): $PF_REASON"
   elif [[ "$PF_SEVERITY" == "ok" && "$PF_SHAPE" != "none" ]]; then
-    echo "[aider-task] pre-flight: $PF_REASON"
+    [[ $QUIET -eq 0 ]] && echo "[aider-task] pre-flight: $PF_REASON"
   fi
+  [[ $QUIET -eq 1 ]] && echo "[aider-task] preflight=$PF_SEVERITY"
 fi
 
 # --- LOCAL_AIDER path ---
@@ -314,11 +325,20 @@ if [[ ${#FILES[@]} -gt 0 ]]; then
   AIDER_ARGS+=("${FILES[@]}")
 fi
 
-echo "[aider-task] invoking: bin/aider_local.sh ${AIDER_ARGS[*]}"
+AIDER_QUIET_LOG="/tmp/aider-task-${RUN_ID}.log"
+if [[ $QUIET -eq 1 ]]; then
+  echo "[aider-task] aider running... (logs: $AIDER_QUIET_LOG)"
+else
+  echo "[aider-task] invoking: bin/aider_local.sh ${AIDER_ARGS[*]}"
+fi
 
 # Run aider (not via exec so we can capture exit code and do post-run work)
 set +e
-bash bin/aider_local.sh "${AIDER_ARGS[@]}"
+if [[ $QUIET -eq 1 ]]; then
+  bash bin/aider_local.sh "${AIDER_ARGS[@]}" >"$AIDER_QUIET_LOG" 2>&1
+else
+  bash bin/aider_local.sh "${AIDER_ARGS[@]}"
+fi
 AIDER_EXIT=$?
 set -e
 
@@ -326,8 +346,10 @@ AIDER_END_TIME=$(date +%s)
 AIDER_DURATION=$(( AIDER_END_TIME - AIDER_START_TIME ))
 
 # --- Post-run summary ---
-echo ""
-echo "[aider-task] --- post-run summary ---"
+if [[ $QUIET -eq 0 ]]; then
+  echo ""
+  echo "[aider-task] --- post-run summary ---"
+fi
 
 if [[ $AIDER_EXIT -ne 0 ]]; then
   echo "[aider-task] Aider exited with code $AIDER_EXIT"
@@ -419,10 +441,17 @@ else
     set -e
   fi
 
-  echo "[aider-task] Review the diff:"
-  for f in "${CHANGED_FILES[@]}"; do
-    git diff "$f"
-  done
+  if [[ $QUIET -eq 1 ]]; then
+    for f in "${CHANGED_FILES[@]}"; do
+      STAT=$(git diff --shortstat "$f" | sed "s/^ *//")
+      echo "[aider-task] modified $f ($STAT)"
+    done
+  else
+    echo "[aider-task] Review the diff:"
+    for f in "${CHANGED_FILES[@]}"; do
+      git diff "$f"
+    done
+  fi
 
   if [[ $GUARD_EXIT -eq 1 ]]; then
     echo ""
@@ -484,14 +513,19 @@ PY
     COMMIT_HASH=$(git rev-parse --short HEAD)
     echo "[aider-task] Committed: $COMMIT_HASH — $COMMIT_MSG"
   else
-    echo ""
-    echo "[aider-task] Next steps:"
-    echo "  git add ${CHANGED_FILES[*]}"
-    echo "  git commit -m \"<your message>\""
-    echo ""
-    echo "  Aider in-session commands (if session still open):"
-    echo "    /diff   show what changed"
-    echo "    /undo   revert the last edit"
-    echo "    /add <file>  add another file to context"
+    if [[ $QUIET -eq 1 ]]; then
+      [[ $GUARD_EXIT -eq 0 ]] && echo "[aider-task] guard=PASS"
+      echo "[aider-task] commit: git add ${CHANGED_FILES[*]} && git commit -m \"<msg>\""
+    else
+      echo ""
+      echo "[aider-task] Next steps:"
+      echo "  git add ${CHANGED_FILES[*]}"
+      echo "  git commit -m \"<your message>\""
+      echo ""
+      echo "  Aider in-session commands (if session still open):"
+      echo "    /diff   show what changed"
+      echo "    /undo   revert the last edit"
+      echo "    /add <file>  add another file to context"
+    fi
   fi
 fi
