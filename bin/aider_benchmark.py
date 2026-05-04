@@ -21,16 +21,19 @@ FALLBACK_SUMMARY_FILE = Path(os.environ.get("AIDER_BENCH_SUMMARY_FALLBACK", "/tm
 
 
 def load_scenarios(config_path: Path) -> dict[str, dict]:
+    """Load benchmark scenarios from a JSON configuration file."""
     return json.loads(config_path.read_text())
 
 
 def list_artifacts() -> set[str]:
+    """List all artifact names in the artifact root directory."""
     if not ARTIFACT_ROOT.exists():
         return set()
     return {relative_artifact_name(p, ARTIFACT_ROOT) for p in ARTIFACT_ROOT.rglob("metadata.json")}
 
 
 def capture_new_artifacts(before: set[str]) -> list[str]:
+    """Capture artifact names that were created after a benchmark run started."""
     if not ARTIFACT_ROOT.exists():
         return []
     names = {relative_artifact_name(p, ARTIFACT_ROOT) for p in ARTIFACT_ROOT.rglob("metadata.json")}
@@ -38,6 +41,7 @@ def capture_new_artifacts(before: set[str]) -> list[str]:
 
 
 def relative_artifact_name(path: Path, root: Path) -> str:
+    """Get the relative path of an artifact from the artifact root."""
     try:
         return str(path.relative_to(root))
     except ValueError:
@@ -45,6 +49,7 @@ def relative_artifact_name(path: Path, root: Path) -> str:
 
 
 def resolve_run_root(path: Path) -> Path:
+    """Find a suitable directory for benchmark runs, creating it if needed."""
     candidates = [path, Path("/tmp/aider_benchmarks")]
     for candidate in candidates:
         try:
@@ -59,6 +64,7 @@ def resolve_run_root(path: Path) -> Path:
 
 
 def stream_process(cmd: list[str], log_path: Path) -> int:
+    """Execute a command and stream its output to both a log file and stdout."""
     log_path.parent.mkdir(parents=True, exist_ok=True)
     with log_path.open("w", encoding="utf-8") as log:
         proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
@@ -71,6 +77,7 @@ def stream_process(cmd: list[str], log_path: Path) -> int:
 
 
 def run_validations(commands: list[str], log_dir: Path, extra_env: dict[str, str] | None = None) -> list[dict]:
+    """Run validation commands and record their results."""
     results: list[dict] = []
     base_env = os.environ.copy()
     if extra_env:
@@ -103,6 +110,7 @@ def run_validations(commands: list[str], log_dir: Path, extra_env: dict[str, str
 
 
 def rel_to_repo(path: Path) -> str:
+    """Get the relative path of a file from the repository root."""
     try:
         return str(path.relative_to(REPO_ROOT))
     except ValueError:
@@ -110,6 +118,7 @@ def rel_to_repo(path: Path) -> str:
 
 
 def parse_banner_keyvals(text: str) -> dict[str, str]:
+    """Parse key-value pairs from a banner string."""
     data: dict[str, str] = {}
     for token in text.strip().split():
         if token.startswith("[") or "=" not in token:
@@ -120,6 +129,7 @@ def parse_banner_keyvals(text: str) -> dict[str, str]:
 
 
 def extract_profile(log_path: Path) -> dict[str, str]:
+    """Extract profile information from an Aider log file."""
     profile: dict[str, str] = {}
     try:
         with log_path.open("r", encoding="utf-8", errors="ignore") as fh:
@@ -142,6 +152,7 @@ def extract_profile(log_path: Path) -> dict[str, str]:
 
 
 def capture_baseline(files: list[str], run_dir: Path) -> Path:
+    """Copy baseline files to a run directory for comparison."""
     baseline_dir = run_dir / "baseline"
     baseline_dir.mkdir(parents=True, exist_ok=True)
     for rel in files:
@@ -154,6 +165,7 @@ def capture_baseline(files: list[str], run_dir: Path) -> Path:
 
 
 def append_summary(record: dict, summary_path: Path) -> None:
+    """Append a benchmark record to the summary file."""
     paths = [summary_path]
     if summary_path != FALLBACK_SUMMARY_FILE:
         paths.append(FALLBACK_SUMMARY_FILE)
@@ -170,6 +182,7 @@ def append_summary(record: dict, summary_path: Path) -> None:
 
 
 def build_command(mode: str, prompt: str, files: list[str]) -> list[str]:
+    """Build the command to run Aider with specified mode, prompt, and files."""
     cmd = ["bash", str(REPO_ROOT / "bin" / "aider_local.sh")]
     if mode == "hard":
         cmd.append("--hard")
@@ -181,6 +194,7 @@ def build_command(mode: str, prompt: str, files: list[str]) -> list[str]:
 
 
 def run_scenario(name: str, mode: str, scenario: dict, run_root: Path, summary_path: Path) -> int:
+    """Run a single benchmark scenario and record results."""
     timestamp = time.strftime("%Y%m%d_%H%M%S")
     run_dir = run_root / name / mode / timestamp
     run_dir.mkdir(parents=True, exist_ok=True)
@@ -225,6 +239,7 @@ def run_scenario(name: str, mode: str, scenario: dict, run_root: Path, summary_p
 
 
 def report_summary(summary_path: Path) -> int:
+    """Generate a summary table from benchmark results."""
     if not summary_path.exists():
         print(f"[report] no summary at {summary_path}")
         return 1
@@ -265,6 +280,7 @@ def report_summary(summary_path: Path) -> int:
 
 
 def compare_summary(summary_path: Path, scenario: str) -> int:
+    """Show the latest results for each mode of a specific scenario."""
     if not summary_path.exists():
         print(f"[compare] no summary at {summary_path}")
         return 1
@@ -316,11 +332,13 @@ def compare_summary(summary_path: Path, scenario: str) -> int:
 
 
 def list_scenario_names(scenarios: dict[str, dict]) -> None:
+    """Print the names and descriptions of all benchmark scenarios."""
     for name, payload in scenarios.items():
         print(f"{name}: {payload.get('description', '')}")
 
 
 def print_models() -> None:
+    """Print the default models for fast, hard, and smart modes."""
     print("Mode   Model                             Map  Timeout  Notes")
     print("---------------------------------------------------------------")
     print("fast   ollama_chat/qwen2.5-coder:1.5b    0    60       CPU default")
@@ -329,6 +347,7 @@ def print_models() -> None:
 
 
 def latest_summary_path(preferred: Path) -> Path:
+    """Get the most recent summary file path, preferring the preferred one."""
     path = preferred
     if not path.exists() and FALLBACK_SUMMARY_FILE.exists():
         path = FALLBACK_SUMMARY_FILE
@@ -342,6 +361,7 @@ def latest_summary_path(preferred: Path) -> Path:
 
 
 def main() -> None:
+    """Main function to parse arguments and run benchmarks."""
     parser = argparse.ArgumentParser(description="Run or inspect local Aider benchmarks")
     parser.add_argument("--scenario", help="Scenario slug from config")
     parser.add_argument("--mode", choices=["fast", "hard", "smart"], default="fast")
