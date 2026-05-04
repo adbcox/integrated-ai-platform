@@ -537,6 +537,7 @@ Deliverable table:
 | D-17-80: xindex-mcp.md drift audit second pass | DONE | 24b31c2 — xindex-mcp second-pass drift audit: stale caddy-tls reference replaced with operator-path runbook link. |
 | D-17-81: CLAUDE.md second-pass drift audit | IN PROGRESS | added 2026-05-04 via roadmap-create.sh |
 | D-17-83: Roadmap row enrichment audit — §9 narrative quality + status accuracy | IN PROGRESS | added 2026-05-04 via roadmap-create.sh |
+| D-17-84: service-registry filename normalization across docs | IN PROGRESS | added 2026-05-04 via roadmap-create.sh |
 
 ID-reservation note: D-17-22 (multi-session role + intake architecture)
 is RESERVED but not yet framework-authored. Discussed in a prior
