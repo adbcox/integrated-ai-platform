@@ -1032,6 +1032,85 @@ daemon-domain canonical pattern.
 - D-17-44 (`--no-verify` commit path due to stale launchd recency checks)
 - D-17-50 (arr-apikey-sweep deployment unblocked by daemon-domain pivot)
 
+### Sub-finding 15.A — Publisher-uniqueness check before LaunchDaemon authoring
+
+**Date:** 2026-05-04
+**Originating WP:** D-17-51 close-out (MCP-trio outlier classification)
+**Severity:** Medium (creates spurious FAILs in migration verification;
+masks "service is fine, plist is duplicate" as "service is broken")
+
+#### What was observed
+
+Three `com.iap.mcp.*` LaunchDaemons in the D-17-51 migration set
+(`com.iap.mcp.docker`, `com.iap.mcp.docs`, `com.iap.mcp.filesystem`)
+hit a clean throttle/SIGTERM loop: their wrapper supergateway
+processes started, logged `Listening on port NNNN`, then were
+immediately killed. Verification reported `loaded=no`.
+
+Investigation showed the failure was **not** a plist defect, **not**
+a launchd-domain semantic problem, **not** a stdio-vs-HTTP design
+issue. The three target ports (8091/8092/8093) were already owned by
+healthy Docker containers (`mcp-filesystem-remote`, `mcp-docker-remote`,
+`mcp-docs-remote`) since the container migration on 2026-05-03. The
+plists predate that migration (wrapper scripts dated 2026-04-27);
+they were left behind as residue. They were trying to publish a
+service that already had a canonical publisher.
+
+#### Canonical pattern
+
+Before authoring or retaining a system-domain `com.iap.*`
+LaunchDaemon for a service that exposes a TCP port or named socket,
+verify that no other supervisor already publishes it. The check is
+the launchd analogue of the D-17-29 "consult `~/.platform-registry/`
+before guessing" doctrine.
+
+Pre-flight checks to add to migration scripts:
+
+1. **Port-uniqueness probe.** For every plist whose `ProgramArguments`
+   ultimately binds a TCP port: parse the port (from the wrapper
+   script or env), then run `lsof -nP -iTCP:<port> -sTCP:LISTEN`. If
+   any process owns it, classify the plist as `DUPLICATE-PUBLISHER`
+   (not OK, not FAIL — a third state) and emit retirement guidance.
+2. **Container-publisher probe.** For each candidate port, also check
+   `docker ps --format '{{.Names}}\t{{.Ports}}' | grep ':<port>->'`.
+   If a container publishes that port, the launchd plist is almost
+   certainly stale residue from a pre-containerization design.
+3. **Service-registry consult.** Cross-reference
+   `~/.platform-registry/inventory.json` for `service_id` matches.
+   A service present in the registry with `state.running == true` is
+   the canonical publisher; a parallel launchd plist is stale.
+
+#### Migration verifier classification
+
+Update `scripts/d-17-51-verify-launchdaemons.sh` (and any successor
+verifier) to emit four states rather than two:
+
+- `OK` — loaded, last-exit-code=0, heartbeat in budget
+- `FAIL` — loaded but failing, OR not loaded for a non-publisher
+  reason
+- `DUPLICATE-PUBLISHER` — port held by Docker/Colima/another
+  supervisor; recommend `bootout` + plist retirement
+- `SKIP` — GUI-dependent or otherwise out-of-scope for system domain
+
+`DUPLICATE-PUBLISHER` does not gate close-out; it triggers a
+retirement task instead.
+
+#### Worked example (D-17-51)
+
+The MCP trio was reclassified `DUPLICATE-PUBLISHER` post-hoc. The
+effective migration result moves from `11 OK / 3 FAIL` to
+`11 OK / 3 retire / 1 skip` — same physical state, correct
+classification. See `docs/phase-18/d-17-51/CLOSEOUT_2026-05-04.md`.
+
+#### Cross-references
+
+- D-17-29 — service-registry consultation doctrine (parent rule).
+- D-17-51 close-out — first applied instance.
+- CLAUDE.md "D#30 three permanently non-compose-hardened
+  containers" — the duplicate-publisher trio is the same set of
+  services, evidence that bare-docker-run / Obot-managed lifecycles
+  are the canonical publishers, not launchd.
+
 ---
 
 ## Finding 16 — SSH non-interactive sudo is a recurring automation blocker; remote privileged scripts require terminal allocation or explicit manual handoff
