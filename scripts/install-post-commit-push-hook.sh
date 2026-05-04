@@ -28,7 +28,7 @@ fi
 (
   pushd "$repo_root" >/dev/null || exit 0
   ts="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
-  if out="$(git push origin main 2>&1)"; then
+  if out="$(GIT_TERMINAL_PROMPT=0 git push origin main 2>&1)"; then
     {
       printf '%s [%s] success: git push origin main\n' "$ts" "post-commit"
       printf '%s\n' "$out"
