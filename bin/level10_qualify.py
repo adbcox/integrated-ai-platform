@@ -28,6 +28,7 @@ QUAL_HISTORY = REPO_ROOT / "artifacts" / "promotion" / "qualification_history.js
 
 
 def parse_timestamp(value: str | None) -> datetime | None:
+    """Parse a timestamp string into a datetime object."""
     if not value:
         return None
     try:
@@ -39,6 +40,7 @@ def parse_timestamp(value: str | None) -> datetime | None:
 
 
 def read_jsonl(path: Path, *, cutoff: datetime | None = None) -> Iterable[dict[str, Any]]:
+    """Read JSONL file and filter rows by timestamp cutoff."""
     if not path.exists():
         return []
     rows: list[dict[str, Any]] = []
@@ -65,6 +67,7 @@ def filter_by_manifest_version(
     manifest_version: int,
     strict: bool,
 ) -> tuple[list[dict[str, Any]], int]:
+    """Filter rows by manifest version, optionally dropping mismatches."""
     filtered: list[dict[str, Any]] = []
     dropped = 0
     for row in rows:
@@ -83,6 +86,7 @@ def filter_by_manifest_version(
 
 
 def candidate_run_key(row: dict[str, Any]) -> str:
+    """Generate a unique key for a candidate run based on commit message, target, and batch file."""
     extra = row.get("extra") if isinstance(row.get("extra"), dict) else {}
     commit_msg = str(extra.get("commit_msg") or "")
     target = ""
@@ -102,6 +106,7 @@ def candidate_run_key(row: dict[str, Any]) -> str:
 
 
 def latest_candidate_rows(manager4_rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Get the latest candidate rows for each unique run key."""
     latest_rows: dict[str, dict[str, Any]] = {}
     for row in manager4_rows:
         if row.get("lane") != "candidate":
@@ -122,6 +127,7 @@ def latest_candidate_rows(manager4_rows: list[dict[str, Any]]) -> list[dict[str,
 
 
 def summarize_candidate(manager4_rows: list[dict[str, Any]]) -> Counter:
+    """Summarize candidate job success/failure counts."""
     latest_rows = latest_candidate_rows(manager4_rows)
     stats: Counter = Counter()
     for row in latest_rows:
@@ -133,6 +139,7 @@ def summarize_candidate(manager4_rows: list[dict[str, Any]]) -> Counter:
 
 
 def summarize_candidate_recovery(manager4_rows: list[dict[str, Any]]) -> dict[str, int]:
+    """Summarize candidate job recovery metrics (success streak and run count)."""
     latest_rows = latest_candidate_rows(manager4_rows)
     success_streak = 0
     for row in reversed(latest_rows):
@@ -147,6 +154,7 @@ def summarize_candidate_recovery(manager4_rows: list[dict[str, Any]]) -> dict[st
 
 
 def summarize_stage6(manager5_rows: list[dict[str, Any]]) -> Counter:
+    """Summarize stage6 job success/failure counts."""
     def stage6_run_key(row: dict[str, Any]) -> str:
         extra = row.get("extra") if isinstance(row.get("extra"), dict) else {}
         plan_id = extra.get("plan_id")
@@ -178,6 +186,7 @@ def summarize_stage6(manager5_rows: list[dict[str, Any]]) -> Counter:
 
 
 def summarize_worker(stage5_rows: list[dict[str, Any]]) -> Counter:
+    """Summarize worker job success/failure counts."""
     stats: Counter = Counter()
     for row in stage5_rows:
         status = str(row.get("status") or "")
@@ -189,6 +198,7 @@ def summarize_worker(stage5_rows: list[dict[str, Any]]) -> Counter:
 
 
 def summarize_rag4(rag4_rows: list[dict[str, Any]]) -> dict[str, Any]:
+    """Summarize RAG4 usage metrics (plans, targets, and average confidence)."""
     plan_count = 0
     total_targets = 0
     confidence_sum = 0
@@ -211,6 +221,7 @@ def summarize_rag4(rag4_rows: list[dict[str, Any]]) -> dict[str, Any]:
 
 
 def summarize_stage8(manager6_rows: list[dict[str, Any]]) -> dict[str, Any]:
+    """Summarize stage8 metrics including resumed runs, checkpointed runs, and rollback coverage."""
     resumed = 0
     paused = 0
     checkpointed = 0
@@ -268,6 +279,7 @@ def summarize_stage8(manager6_rows: list[dict[str, Any]]) -> dict[str, Any]:
 
 
 def summarize_rag6(rag6_rows: list[dict[str, Any]]) -> dict[str, Any]:
+    """Summarize RAG6 usage metrics (plans, clusters, and risk/yield scores)."""
     plans = len(rag6_rows)
     clusters = 0
     with_risk = 0
@@ -291,6 +303,7 @@ def summarize_rag6(rag6_rows: list[dict[str, Any]]) -> dict[str, Any]:
 
 
 def manager5_plan_lifecycle_health(plan_dir: Path) -> dict[str, Any]:
+    """Analyze manager5 plan lifecycle health by counting plans with state and attempts."""
     if not plan_dir.exists():
         return {"plans": 0, "with_state": 0, "with_attempts": 0}
     plans = 0
@@ -321,6 +334,7 @@ def evaluate_subsystems(
     criteria: dict[str, Any],
     manifest_data: dict[str, Any],
 ) -> dict[str, Any]:
+    """Evaluate subsystem readiness based on various metrics and criteria."""
     candidate_success_threshold = int(criteria.get("candidate_success_threshold", 0))
     candidate_failure_budget = int(criteria.get("candidate_failure_budget", 0))
     stage6_success_threshold = int(criteria.get("stage6_success_threshold", 0))
@@ -426,6 +440,7 @@ def evaluate_v8_gates(
     rag6_stats: dict[str, Any],
     assessments: dict[str, Any],
 ) -> dict[str, Any]:
+    """Evaluate V8 gates based on stage8 metrics and subsystem assessments."""
     v8 = manifest_data.get("version8_upgrade_list", {})
     stage_gate = (
         stage8_stats.get("resumed_runs", 0) > 0
@@ -464,12 +479,14 @@ def evaluate_v8_gates(
 
 
 def append_qualification_history(payload: dict[str, Any]) -> None:
+    """Append qualification report to history file."""
     QUAL_HISTORY.parent.mkdir(parents=True, exist_ok=True)
     with QUAL_HISTORY.open("a", encoding="utf-8") as fh:
         fh.write(json.dumps(payload, ensure_ascii=False) + "\n")
 
 
 def main() -> int:
+    """Main function to generate Level-10 qualification report."""
     parser = argparse.ArgumentParser(description="Unified Level-10 readiness report")
     parser.add_argument("--manifest", default=str(MANIFEST_PATH) )
     parser.add_argument("--manager4-trace", default=str(DEFAULT_MANAGER4_TRACE))
