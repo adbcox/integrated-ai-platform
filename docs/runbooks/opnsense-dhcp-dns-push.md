@@ -54,12 +54,9 @@ Do not proceed.
 ## Procedure
 
 1. Open the OPNsense web UI: `https://192.168.10.1`.
-2. Navigate to **Services → Dnsmasq DNS → DHCP options**.
-   _[UNVERIFIED — operator to confirm exact UI label and section
-   position; record in commit message post-verify. The Unbound-era
-   runbook (`opnsense-add-host-overrides.md`) does not cover this
-   path, and that doc is itself stale (Unbound is disabled per
-   D-17-21)._]
+2. Navigate to **Services → Dnsmasq DNS → DHCP options**
+   (operator-verified 2026-05-03; Dnsmasq is the sole DHCP
+   service in use on this platform — Kea is not enabled).
 3. Add (or edit) a DHCP option entry with:
    - **Tag / Scope:** LAN interface (no tag = applies to all
      scopes)
