@@ -86,6 +86,7 @@ Status legend:
 | `exo-cluster-operations.md` | exo cluster operations and constraints | canonical |
 | `observability-doctrine.md` | Observability doctrine and layering | canonical |
 | `pretooluse-hooks.md` | pre-tool-use hooks behavior and safeguards | canonical |
+| `git-autopush-hook.md` | post-commit auto-push install and fail-soft audit behavior | canonical |
 | `migrate-source-of-truth.md` | Source-of-truth migration procedure | canonical |
 
 ## Legacy Monitoring
