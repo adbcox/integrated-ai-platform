@@ -324,38 +324,56 @@ savings accrue per-class.
 class "read N source files + draft a reference doc"
 (read-author-only).
 
-**Status (2026-05-04):** **Posture 2 (dual-review), 5/10.** Cell
-cleared the N=5 gate 2026-05-03; operator promoted Posture 1 →
-Posture 2 in the same session. M=10 dual-review window opened;
-closure target ≈ 2026-05-13 conditional on session pacing.
-**Watchlist item — PARTIALLY REMEDIATED N=2 (severe shape
-suppressed; line-number fabrication shape recurs).** The
-source-fidelity-loss failure mode (N=3 confirmed Sessions 5, 7,
-8) was suppressed cleanly under the strengthened prompt at
-Session 9. Session 10 (entry 5/10) is the first post-remediation
-datapoint and shows **shape-shifted recurrence**: the most
-severe shape (presenting autocompleted training-data patterns as
-source-verified) did NOT recur — Session 10 has inline
-`[UNVERIFIED]` tags and a Self-Flagged-Defects section. But the
-failure-mode class shifted shape: line-number fabrication in
-the Source-citation table (verbatim quotes matched source
-content but cited line numbers were mostly wrong or close-but-
-wrong), code-block-example omission (2 of 4 paths shown in
-policy + template examples), missed cross-source divergence
-(provision-buildarr.sh uses md5 while sibling scripts and the
-pattern doc use sha256 — Goose did not catch this), and tool-
-name fabrication in the audit trail (`todo__todo_write` cited
-but not a tool that exists in this surface). N=1 (Session 9)
-clean / N=1 (Session 10) shape-shifted. The strengthened
-preamble suppresses the most-severe shape but does not eliminate
-the failure-mode class — the line-number cite needs frontier-side
-verification on review (line-number verification added to the
-frontier-review checklist 2026-05-04). Demotion (Option C) is
-NOT triggered because the severe shape is genuinely suppressed;
-further preamble strengthening (Option B) is **deferred** pending
-more dual-review datapoints. The watchlist remains active for
-entries 6/10–10/10 to confirm whether the shape-shifted shape
-recurs at higher rate or stabilises.
+**Status (2026-05-04):** **Posture 1 (capability-validation) —
+DEMOTED from Posture 2 at Session 11.** Cell cleared the N=5 gate
+2026-05-03; operator promoted Posture 1 → Posture 2 in the same
+session. M=10 dual-review window opened. After 6/10 entries
+(Sessions 6–11), operator demoted the cell back to Posture 1 on
+Session 11 evidence. **N=5 gate re-required** for any future
+re-promotion attempt. The standard preamble (verbatim-block +
+source-citation table) is retained for Posture-1 work — it does
+not hurt; it just doesn't reliably suppress the failure-mode class.
+**Watchlist item — REGRESSED to "PROMPT-ENGINEERING REMEDIATION
+INSUFFICIENT".** The source-fidelity-loss failure mode (N=3
+confirmed Sessions 5, 7, 8) was suppressed cleanly at Session 9
+(N=1), shifted shape at Session 10 (N=1 partial-remediation), and
+**recurred in original severe shape at Session 11**. Hit-rate of
+severe-shape failure under strengthened preamble: **2 of 3
+post-remediation sessions** (Session 9 clean, Session 10 shape-
+shifted, Session 11 severe — fabricated plist example with fields
+not in any source plist, fabricated heartbeat path that doesn't
+exist in codebase, fabricated source-citation verbatim quotes that
+don't match cited line content, fabricated `todo__todo_write` tool
+name in audit trail). Remediation does not hold beyond the
+original test datapoint.
+
+**Substrate-shape-correlation hypothesis (logged 2026-05-04 from
+Session 11).** Substrate that has clean line-aligned blocks
+(function definitions, argparse, struct literals, Python scripts)
+appears amenable to verbatim-block extraction (Session 9 clean,
+substrate was 2 Python scripts with explicit argparse blocks).
+Substrate with structured-document shape (XML plists, multi-script
+orchestration pipelines) appears to defeat the preamble's verbatim-
+block instruction (Session 11 severe, substrate was 3 XML plists +
+migration script + verify script + check-repo-coherence.py). Worth
+chronicling as a substrate-shape-correlation finding for future
+class-scoping decisions; not a doctrine claim at N=1 of each
+substrate shape. If this correlation holds across more datapoints,
+C1 may need sub-class splits along substrate-shape rather than just
+output-shape.
+
+**Operator-side substrate trap (sub-doctrine added 2026-05-04).**
+Session 11's brief targeted `docs/runbooks/launchd-jobs-canonical.md`
+which already existed at commit 2a84076 (D-17-53 Session 8,
+frontier-corrected). Had Session 11's draft been committed, it
+would have overwritten the frontier-corrected runbook with a
+fabrication-laden replacement. **Sub-doctrine for future Goose
+dispatches:** pre-flight check existing-file conflicts before
+issuing the brief — if the target path exists, the brief becomes
+either a re-author (with the existing file in the source list as
+prior art) or a no-go. This is operator-side, not Goose's failure;
+recorded for chronicle completeness; does not affect cell-
+capability disposition.
 
 **Sessions logged:**
 1. WP-03 smoke test (read CLAUDE.md head=50, 2 tool calls,
@@ -700,6 +718,123 @@ recurs at higher rate or stabilises.
    class-intrinsic failure. Continue dual-review window 6/10.
    Runbook committed 2026-05-04 at
    `docs/runbooks/vault-approle-provision-canonical.md`.
+
+6. (2026-05-04) D-17-53 Session 11 — `launchd-jobs-canonical.md`
+   fresh authoring under standard preamble (with strengthened
+   "LINE NUMBERS MUST BE VERIFIED via the same `read_text_file`
+   call that read the cited content" addition to constraint B).
+   C1 sub-class: reference-doc draft, fresh authoring. Substrate-
+   sufficient: 9 source files (migration script, verify script,
+   legacy `launchd-jobs.md`, integration-audit-doctrine,
+   RESOLUTION_PLAN, 3 plists, remote-sudo-scripts.md). Second
+   post-remediation entry under the new standard preamble; test
+   whether Session 9's clean datapoint generalises.
+   **WATCHLIST FAILURE MODE — ORIGINAL SEVERE SHAPE RECURS UNDER
+   STRENGTHENED PREAMBLE.** Goose's draft contains the same
+   Session 5/7/8 shape: presenting fabricated training-data
+   autocomplete as source-verified, with verbatim quotes that
+   don't match the cited source-file content. Eight defects, the
+   load-bearing ones being:
+   (1) **Plist example fabrication.** Goose's example plist
+       included `StartInterval=300`, `UserName=admin`,
+       `GroupName=admin`, `StandardOutPath=/var/log/launchd-
+       ollama.log`. Verifying against `com.iap.ollama.plist`
+       (the cited source): actual file has `KeepAlive=true`
+       (no `StartInterval` — Ollama is a daemon, not periodic),
+       NO `UserName` / `GroupName` fields anywhere, log paths
+       under `/Users/admin/Library/Logs/iap/com.iap.ollama.{out,
+       err}.log` (not `/var/log/...`), and `OLLAMA_HOST=
+       0.0.0.0:11434` env var Goose dropped. None of the three
+       reference plists in the prompt's context list contained
+       `UserName`/`GroupName` — Goose autocompleted them from
+       training-data shape. `GroupName=admin` doesn't even match
+       the install-time normalization (migration script line 45
+       applies `GroupName=staff`).
+   (2) **Heartbeat path wholesale fabrication.** Goose cited
+       "Heartbeat path pattern" from migration script lines
+       23-24 with verbatim quote `launchd_heartbeat_path=
+       "/var/run/launchd-agents/com.iap.ollama.heartbeat"`.
+       Actual lines 23-24 of the migration script contain
+       `# Labels that require GUI/session interaction and
+       should stay as LaunchAgent.` / `EXCLUDE_LABELS=(`. The
+       path `/var/run/launchd-agents/...` does not exist
+       anywhere in the codebase. Real heartbeat paths are
+       `/Users/admin/Library/Logs/iap/<short>.heartbeat`
+       (canonical) and `/Users/admin/.platform-logs/
+       <short>.heartbeat` (legacy fallback) — sourced from
+       `d-17-51-verify-launchdaemons.sh` lines 28-38 and
+       `check-repo-coherence.py` lines 79-116. **Fabricated
+       source citation with verbatim quote that doesn't match
+       the cited line content** — same shape as Session 7's
+       fabricated AppRole endpoint, applied to file paths.
+   (3) **Pre-commit hook integration fabrication.** Goose
+       instructed adding `expected_files.add("docker/launchd-
+       agents/com.iap.new-job.plist")` to `check-repo-
+       coherence.py`, cited at lines 135-136. The function
+       `expected_files.add(...)` does not exist anywhere in
+       that script. Actual integration shape: add an entry to
+       the `LAUNCHD_RECENCY_EXPECTATIONS` dict (line 76) with
+       `max_age_sec` and `probe_paths` keys. `check-repo-
+       coherence.py` was NOT in the prompt's context list;
+       Goose autocompleted the citation shape from training
+       data while claiming verbatim quote.
+   (4) Bootstrap-sequence misframed as standalone commands.
+       Operator runs the migration script which handles the
+       per-job loop (lines 78-94: bootout/bootstrap/enable/
+       kickstart at 84-87 — 4 launchctl ops, not 5 or 7 as
+       Goose framed).
+   (5) UserName/GroupName plist-author guidance is wrong.
+       Source plists do NOT contain these fields; the migration
+       script applies them in-flight at install time (lines
+       44-45: `d['UserName']='admin'; d['GroupName']='staff'`).
+       Same defect was identified at Session 8 and corrected
+       in the committed runbook at 2a84076 — Session 11
+       reverted the correction.
+   (6) RunAtLoad described as uniformly required;
+       `arr-apikey-sweep.plist` does NOT have it (periodic-
+       only job).
+   (7) `todo__todo_write` tool fabrication in audit trail
+       (recurs from Session 10).
+   (8) `[UNVERIFIED]` flagging is now misapplied — Goose
+       flagged Finding 15/16 details (which the brief
+       pre-decided are referenced) and "default heartbeat
+       budget" (which IS in source files at `max_age_sec`
+       values 1h/1.5h/2h/36h), while NOT marking the
+       actually-unverified plist fabrications. Wrong direction
+       for the honest-uncertainty-marking preserve-pattern.
+   **Pattern read:** post-remediation hit-rate is 2 of 3
+   sessions exhibiting severe-shape failure (Session 9 clean,
+   Session 10 shape-shifted, Session 11 severe). Strengthened
+   preamble suppresses inconsistently; not stable.
+   **Operator-side substrate trap (recorded post-hoc).** The
+   brief targeted `docs/runbooks/launchd-jobs-canonical.md`
+   which already existed at commit 2a84076 (D-17-53 Session 8,
+   frontier-corrected). Had Session 11's draft been committed,
+   it would have overwritten the existing frontier-corrected
+   runbook with a fabrication-laden replacement. Sub-doctrine
+   for future Goose dispatches: pre-flight check existing-file
+   conflicts before issuing the brief. This is operator-side,
+   not Goose's failure; recorded for chronicle completeness;
+   does not affect cell-capability disposition.
+   **Operator disposition (entry 6/10, 2026-05-04):** **Option
+   D + E combined.** Cell DEMOTED Posture 2 → Posture 1 (T1-A).
+   Session 11 draft NOT committed. Existing frontier-corrected
+   `docs/runbooks/launchd-jobs-canonical.md` at 2a84076 remains
+   canonical. Watchlist correct-pattern #5 status: REGRESSED
+   to "PROMPT-ENGINEERING REMEDIATION INSUFFICIENT". N=5 gate
+   re-required if future re-promotion attempted. Standard
+   preamble retained for Posture-1 work — does not hurt, just
+   doesn't reliably suppress the failure mode. Substrate-shape-
+   correlation hypothesis logged (clean line-aligned blocks
+   like argparse → clean output Session 9; structured-document
+   XML plists / multi-script orchestration → severe-shape
+   recurrence Session 11). Posture-2 promotion was premature:
+   cleared on N=5 + N=1 strengthened-preamble evidence; should
+   have required at least N=3 strengthened-preamble before
+   promoting. Session evidence preserved at
+   `docs/phase-17/d-17-53/session11-evidence/` (prompt.txt,
+   session.log, goose-draft-uncommitted.md). **Draft NOT
+   committed; chronicle-only update.**
 
 **Substrate baseline:** F1.B (Ollama 0.22.1 streaming structured
 `tool_calls` for qwen3-coder:30b — see `local-tool-calling.md`).

@@ -1,0 +1,103 @@
+GOOSE SESSION 11 — D-17-53 §18.O Posture-2 dual-review entry 6/10
+(SESSION OUTCOME: cell demotion. Draft NOT committed.)
+
+Class: C1 (reference-doc draft). Phase-A Posture 2, dual-review 6/10.
+Frontier review mandatory.
+
+CONTEXT (read in order):
+- /Users/admin/repos/integrated-ai-platform/scripts/d-17-51-migrate-to-launchdaemons.sh
+- /Users/admin/repos/integrated-ai-platform/scripts/d-17-51-verify-launchdaemons.sh
+- /Users/admin/repos/integrated-ai-platform/docs/runbooks/launchd-jobs.md
+- /Users/admin/repos/integrated-ai-platform/docs/architecture-facts/integration-audit-doctrine.md
+- /Users/admin/repos/integrated-ai-platform/docs/phase-18/d-17-51/RESOLUTION_PLAN_2026-05-03.md
+- /Users/admin/repos/integrated-ai-platform/docker/launchd-agents/com.iap.platform-registry.plist
+- /Users/admin/repos/integrated-ai-platform/docker/launchd-agents/com.iap.arr-apikey-sweep.plist
+- /Users/admin/repos/integrated-ai-platform/docker/launchd-agents/com.iap.ollama.plist
+- /Users/admin/repos/integrated-ai-platform/docs/runbooks/remote-sudo-scripts.md
+
+STANDARD PREAMBLE (effective 2026-05-04):
+
+A. Verbatim-block instruction. For every concrete fact (function
+   name, CLI flag, file path, env var, exit code, command shape,
+   plist field, label), copy the relevant block from the source
+   file VERBATIM into a code block before paraphrasing. Do not
+   paraphrase first. Do not "simplify" syntax. If the source
+   file does not contain the fact, say so explicitly — do NOT
+   autocomplete from training data.
+
+B. Source-grounded self-check. After drafting, append a
+   "Source-citation table" listing every concrete fact:
+
+   | Fact | Source file | Line(s) | Verbatim quote |
+
+   Each row's verbatim quote must match the source file at the
+   cited line(s). LINE NUMBERS MUST BE VERIFIED via the same
+   read_text_file call that read the cited content. Do not
+   generate line numbers from memory.
+
+STANDING CONSTRAINTS:
+- Read-only filesystem-mcp + xindex only.
+- Surface back drafts; do NOT write to disk.
+- Mark "[UNVERIFIED — frontier review]" inline for facts you
+  cannot ground in source files.
+- Skip preamble. Open with one-line scope sentence.
+- If a context file does not exist, surface back the missing-
+  file fact and continue.
+
+TASK: Author docs/runbooks/launchd-jobs-canonical.md
+
+Goal: Canonical operator-facing runbook for adding new
+LaunchDaemon jobs post-D-17-51 LaunchDaemon pivot. Supersedes
+user-domain LaunchAgent guidance for headless host. Becomes
+single reference for future scheduled-job additions.
+
+Required coverage:
+1. Scope — one-sentence purpose
+2. Why LaunchDaemon (system domain) not LaunchAgent (user
+   domain) on headless host — cross-reference Finding 15
+3. Plist authoring shape — required fields extracted from
+   example plists (Label, ProgramArguments, RunAtLoad,
+   StartInterval/StartCalendarInterval, UserName, GroupName,
+   StandardOutPath, StandardErrorPath, EnvironmentVariables)
+   — note which fields are uniformly required vs job-specific
+4. Canonical paths — plist source (docker/launchd-agents/),
+   plist install (/Library/LaunchDaemons/), logs, heartbeat
+   (verify path conventions from migration script)
+5. Bootstrap sequence — sudo cp + bootout + bootstrap +
+   enable + kickstart (extract verbatim from migration script)
+6. Verification — launchctl print + heartbeat path mtime +
+   verify-launchdaemons.sh integration
+7. Pre-commit recency-hook integration — what to add to
+   scripts/check-repo-coherence.py expectations
+8. Failure modes — bootstrap I/O error (historical user-
+   domain), heartbeat missing past budget, exit code
+   persistence
+9. GUI-dependent jobs exclusion (com.iap.d-17-27-reminder
+   excluded from migration) — when LaunchDaemon is wrong choice
+10. Rollback — bootout + rm
+11. Cross-reference Finding 16 + remote-sudo-scripts.md for
+    SSH-based remote installs
+
+DELIVERABLE:
+- Draft markdown
+- Source-citation table (mandatory; line numbers verified via
+  read_text_file)
+- Self-flagged defects
+- Tool-call trace summary
+
+DO NOT commit. DO NOT write to disk.
+
+────────────────────────────────────────────────────────────────
+OPERATOR-SIDE PRE-FLIGHT FAILURE (recorded post-hoc):
+
+The brief targeted `docs/runbooks/launchd-jobs-canonical.md`
+which already exists, committed at 2a84076 (D-17-53 Session 8,
+frontier-corrected). Had Session 11's draft been committed, it
+would have overwritten the existing frontier-corrected runbook
+with a fabrication-laden replacement. Sub-doctrine for future
+dispatches: pre-flight check existing-file conflicts before
+Goose dispatch.
+
+This is operator-side, not Goose's failure. Recorded for
+chronicle completeness; does not affect cell-capability
+disposition.
