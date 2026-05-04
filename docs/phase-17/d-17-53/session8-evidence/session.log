@@ -1,0 +1,103 @@
+Goose Session 8 — D-17-53 §18.O Posture-2 dual-review entry 3/10.
+Cell: Goose+qwen3-coder:30b × C1.
+Sub-class: reference-doc draft (fresh authoring with adjacent superseded artifact).
+Substrate: F1.B held (Ollama 0.22.1, qwen3-coder:30b, structured tool_calls).
+
+Goose surface-back draft (canonical runbook for adding a launchd job
+post-D-17-51 LaunchDaemon pivot). 7 tool calls — 7× read_text_file,
+one per source file in the prompt-listed order, no exploratory
+probes. All structurally valid.
+
+Tool-call trace summary (Goose-reported):
+1. read_text_file scripts/d-17-51-migrate-to-launchdaemons.sh
+2. read_text_file scripts/d-17-51-verify-launchdaemons.sh
+3. read_text_file docs/runbooks/launchd-jobs.md
+4. read_text_file docs/architecture-facts/integration-audit-doctrine.md (Finding 15 located lines 988-1034)
+5. read_text_file docs/phase-18/d-17-51/RESOLUTION_PLAN_2026-05-03.md
+6. read_text_file docker/launchd-agents/com.iap.platform-registry.plist
+7. read_text_file docker/launchd-agents/com.iap.arr-apikey-sweep.plist
+
+Goose self-flagged-defects (1 [UNVERIFIED] flag, 3 omissions with reasons):
+- [UNVERIFIED] check-repo-coherence.py expectations-list mechanism (the
+  exact code path for adding a label to the expectations list).
+- Omitted: User/UID-specific guidance (not relevant for this canonical form).
+- Omitted: TCC/FDA approval requirements (RESOLUTION_PLAN line 50 says no TCC/FDA).
+- Omitted: Vault credential plumbing (per-job concern, not canonical).
+- Truncation defect noted by frontier on review: "...generic LaunchDaemon doctr–"
+  mid-word at end of self-flagged-defects (Goose output buffer cutoff).
+
+Frontier correctness review — eight defects identified:
+
+Defect 1 [LOAD-BEARING — source-fidelity-loss recurrence]: Goose's draft
+asserts canonical paths are /Users/admin/Library/Logs/iap/<name>.{out,err}.log
+and presents this as "verified by StandardOutPath and StandardErrorPath in
+both reference plists." The actual source plists do NOT use those paths:
+- com.iap.platform-registry.plist writes to /Users/admin/.platform-registry/launchd.{stdout,stderr}.log
+- com.iap.arr-apikey-sweep.plist writes to /Users/admin/.platform-logs/arr-apikey-sweep.launchd.log
+The canonical iap/ paths are produced by the migration script's normalization
+pass (lines 52-53 of d-17-51-migrate-to-launchdaemons.sh: d['StandardOutPath']=f'{LOG_DIR}/{label}.out.log'),
+not by the source plists. Goose conflated source-plist values with
+post-migration values and presented the inferred result as source-verified.
+Same shape as Session 7's fabricated AppRole defect: plausible-shape
+autocomplete from training data when source files contained the actual
+values. Watchlist failure mode N=3 confirmed (Sessions 5, 7, 8).
+
+Defect 2: Heartbeat naming convention ambiguous. Goose used <name>.heartbeat
+without distinguishing whether <name> is the full label (com.iap.foo) or
+the short form (foo). The verify script (lines 27-38) and arr-apikey-sweep.plist
+line 11 both use the short form (label minus com.iap. prefix). Frontier
+clarified to <short>.heartbeat with explicit definition.
+
+Defect 3: Bootstrap-step-count framing inconsistency. Header said "five
+commands" but body has six numbered steps; migration script's per-job
+bootstrap loop (lines 84-87) has four launchctl operations (bootout,
+bootstrap, enable, kickstart). Steps 1-2 of the per-job form (cp, chown/chmod)
+mirror the script's pre-loop pass (lines 68-73). Frontier removed the
+"five commands" framing and described the per-job sequence as 6 steps,
+4 of which are launchctl operations.
+
+Defect 4: RunAtLoad declared as uniformly required. com.iap.platform-registry.plist
+includes RunAtLoad=true; com.iap.arr-apikey-sweep.plist omits it. Frontier
+noted the asymmetry and described when each is appropriate.
+
+Defect 5: UserName=admin / GroupName=staff declared as plist-author fields.
+Both source plists OMIT these fields. They are applied at install time by
+the migration script (lines 44-45: d['UserName']='admin'; d['GroupName']='staff').
+Frontier corrected to: do not author these in the source plist; the migration
+script is the single owner.
+
+Defect 6: [UNVERIFIED] flag preserved on a resolvable fact. Goose flagged
+check-repo-coherence.py expectations as UNVERIFIED. The legacy launchd-jobs.md
+§5/§7 documents the mechanism, and the script's LAUNCHD_RECENCY_EXPECTATIONS
+dict (line 76) is directly readable. Frontier replaced with verified text
+showing the dict structure and the LAUNCHD_RECENCY_EXEMPT_LABELS pattern.
+
+Defect 7 [minor]: Truncated text in Self-flagged defects ("...generic
+LaunchDaemon doctr–" mid-word).
+
+Defect 8 [minor]: Section-anchor cross-reference form drift (uses §Finding 15
+prose-style anchors where repo style uses standard relative markdown links).
+
+Notable correct material preserved:
+- Finding 15 framing was faithful (gui/<uid> + user/<uid> failure → system-domain pivot)
+- GUI-job exclusion logic correctly identified com.iap.d-17-27-reminder from EXCLUDE_LABELS (lines 24-26)
+- Failure-modes section was well-shaped (heartbeat-missing, bootstrap-I/O-historical, exit-code-persistence)
+- Rollback section was accurate (bootout + rm + repo update)
+
+Operator disposition (entry 3/10, 2026-05-04):
+HYBRID. Frontier corrects all 8 defects + commits Session 8 entry 3/10.
+Then immediately reissues Session 9 with prompt-engineering remediation
+(verbatim-block instruction + source-grounded self-check from
+correct-pattern #5 candidates). Two data points before demotion discussion.
+
+Rationale: source-fidelity-loss recurrence at 3/10 is real but premature
+for demotion without testing whether prompt engineering can suppress it.
+If Session 9 also exhibits the failure mode under stronger prompt, that's
+intrinsic-to-cell evidence and demotion is warranted. If Session 9 clean,
+failure mode is prompt-fixable and dual-review window continues.
+
+Output split estimate: ~60/40 Goose/frontier. Closer to ~75/25 sub-class
+target than Session 7's 50/50, but still on the high-correction side.
+Structural skeleton is sound; defects cluster on concrete fact extraction.
+
+Runbook landed: docs/runbooks/launchd-jobs-canonical.md.

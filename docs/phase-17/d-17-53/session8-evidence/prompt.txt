@@ -1,0 +1,66 @@
+GOOSE SESSION 8
+
+Class: C1 (reference-doc draft). Phase-A Posture 2, dual-review 3/10.
+Frontier review mandatory.
+
+CONTEXT (read these first):
+- /Users/admin/repos/integrated-ai-platform/scripts/d-17-51-migrate-to-launchdaemons.sh
+- /Users/admin/repos/integrated-ai-platform/scripts/d-17-51-verify-launchdaemons.sh
+- /Users/admin/repos/integrated-ai-platform/docs/runbooks/launchd-jobs.md
+- /Users/admin/repos/integrated-ai-platform/docs/architecture-facts/integration-audit-doctrine.md (Finding 15 — launchd headless bootstrap)
+- /Users/admin/repos/integrated-ai-platform/docs/phase-18/d-17-51/RESOLUTION_PLAN_2026-05-03.md
+- /Users/admin/repos/integrated-ai-platform/docker/launchd-agents/com.iap.platform-registry.plist (example plist shape)
+- /Users/admin/repos/integrated-ai-platform/docker/launchd-agents/com.iap.arr-apikey-sweep.plist (example plist shape)
+
+Standing constraints:
+- Read-only filesystem-mcp + xindex only.
+- Surface back drafts; do NOT write to disk.
+- Omit sections you're uncertain about.
+- Mark "[UNVERIFIED — frontier review]" inline for uncertain facts.
+- Configuration structure (commands, plist fields, paths) MUST come from source files. Do NOT autocomplete plausible-shape patterns from training data when source is available. (Watchlist item from Session 7.)
+- Skip preamble. Open with one-line scope sentence.
+
+TASK: Author docs/runbooks/launchd-jobs-canonical.md
+
+Goal: Canonical operator-facing runbook for adding new launchd jobs
+post-D-17-51 LaunchDaemon pivot. Supersedes any user-domain
+LaunchAgent guidance. Becomes the single reference for future
+scheduled-job additions to the platform.
+
+Required coverage:
+- Why LaunchDaemon (system domain) not LaunchAgent (user domain) on
+  this headless host (cross-reference Finding 15)
+- Plist authoring shape: required fields (Label, ProgramArguments,
+  RunAtLoad, StartInterval/StartCalendarInterval, UserName=admin,
+  GroupName=staff, StandardOutPath, StandardErrorPath, EnvironmentVariables)
+- Canonical paths:
+  - Plist source: docker/launchd-agents/com.iap.<name>.plist (repo-tracked)
+  - Plist install: /Library/LaunchDaemons/com.iap.<name>.plist (sudo)
+  - Logs: /Users/admin/Library/Logs/iap/<name>.{out,err}.log
+  - Heartbeat: /Users/admin/Library/Logs/iap/<name>.heartbeat
+- Bootstrap sequence (sudo, system domain):
+  - sudo cp docker/launchd-agents/<name>.plist /Library/LaunchDaemons/
+  - sudo launchctl bootout system/<label> 2>/dev/null || true
+  - sudo launchctl bootstrap system /Library/LaunchDaemons/<name>.plist
+  - sudo launchctl enable system/<label>
+  - sudo launchctl kickstart -k system/<label>
+- Verification:
+  - launchctl print system/<label>
+  - heartbeat path mtime check
+  - scripts/d-17-51-verify-launchdaemons.sh integration
+- Pre-commit recency-hook integration (scripts/check-repo-coherence.py
+  expects new label in expectations list)
+- Failure modes (read from RESOLUTION_PLAN_2026-05-03.md if present):
+  - Bootstrap I/O error (user-domain attempt — historical, not current)
+  - Heartbeat missing past budget
+  - Exit code persistence
+- GUI-dependent jobs (com.iap.d-17-27-reminder excluded from migration)
+  — when LaunchDaemon is wrong choice
+- Rollback: sudo launchctl bootout system/<label> + sudo rm
+  /Library/LaunchDaemons/<name>.plist
+
+DELIVERABLE:
+- Draft markdown returned in surface-back
+- Self-flagged defects + tool-call trace summary
+
+DO NOT commit. DO NOT write to disk.

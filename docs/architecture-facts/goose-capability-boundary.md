@@ -470,17 +470,102 @@ gate-decision record and dual-review entries.
 - Rewrite committed 2026-05-04 at
   `docs/runbooks/opnsense-add-host-overrides.md`.
 
+### Session 8 — D-17-53 launchd-jobs-canonical fresh authoring (Posture 2 entry 3/10)
+
+- 7 tool calls: 7× `read_text_file` (one per source file in the
+  prompt's listed order), no exploratory probes. Same clean
+  tool-call profile as Session 7. All structurally valid.
+- Task: author `docs/runbooks/launchd-jobs-canonical.md` as the
+  new canonical operator-facing runbook for adding a launchd job
+  post-D-17-51 LaunchDaemon pivot. Sub-class: reference-doc draft,
+  fresh-authoring with adjacent superseded artifact (the existing
+  minimal `launchd-jobs.md` to be relegated to fleet-wide-only).
+  Substrate-sufficient (all needed values present in 7 source
+  files).
+- **Cautious-by-default scope check skipped — N=4 with same
+  shape-conditional framing.** Sessions 5, 6, 7, and 8 all
+  skipped `list_allowed_directories`; all four had exhaustive
+  absolute-path lists in the prompt. The N=3 confirmed framing
+  from Session 7 holds at N=4 with no new variation observed —
+  the conditional explanation continues to fit the data.
+- **Padding suppression preamble held cleanly.** Sub-class-
+  specific "skip preamble; open with the first procedure step or
+  one-line scope" landed; Goose opened with the scope sentence
+  and went straight into Authority/Why-LaunchDaemon. No
+  opening-preamble regression. Promotion of the suppression
+  preamble from per-session correction (Session 7) to standard
+  preamble across reference-doc sub-classes is now backed by
+  N=2 successful applications.
+- **WATCHLIST FAILURE MODE RECURRENCE — N=3 confirmed.** Eight
+  frontier corrections; the load-bearing one is the same shape
+  as Session 7's fabricated-AppRole defect: **plausible-shape
+  autocomplete from training data when source files contained
+  the actual values.** Specifically, Goose presented
+  `/Users/admin/Library/Logs/iap/<name>.{out,err}.log` as
+  "verified by `StandardOutPath` and `StandardErrorPath` in both
+  reference plists" — but the source plists actually use
+  *different* paths (`com.iap.platform-registry.plist` →
+  `/Users/admin/.platform-registry/launchd.{stdout,stderr}.log`;
+  `com.iap.arr-apikey-sweep.plist` →
+  `/Users/admin/.platform-logs/arr-apikey-sweep.launchd.log`).
+  The `iap/` paths are produced by the migration script's
+  normalization pass at install time, not the source plists.
+  Goose conflated source-plist values with post-migration values
+  and presented the inferred result as source-verified. Other
+  defects: heartbeat-naming form ambiguous between `<name>` and
+  `<short>` (label minus `com.iap.` prefix); bootstrap-step-count
+  framing ("five commands" header / six numbered steps / four
+  `launchctl` ops in the script); `RunAtLoad` declared uniformly
+  required when one of the two reference plists omits it;
+  `UserName=admin` / `GroupName=staff` declared as plist-author
+  fields when they are install-time fields applied by the
+  migration script (and absent from both source plists);
+  preserved `[UNVERIFIED]` flag on `check-repo-coherence.py`
+  integration despite the `LAUNCHD_RECENCY_EXPECTATIONS` dict
+  being directly readable in the source; truncated text in
+  Self-flagged defects ("...generic LaunchDaemon doctr–"
+  mid-word); section-anchor cross-reference form drift.
+- **Sessions 5, 7, 8 form an N=3 series for source-fidelity-loss
+  under abstraction pressure.** All three: substrate was
+  sufficient, prompt explicitly directed source-grounded
+  authoring, model read the sources, model still autocompleted
+  plausible-shape patterns from training data. Self-check
+  sections (Session 7 doctrine-substitution audit, Session 8
+  `[UNVERIFIED]` flagging) did not protect against the failure
+  mode in either session — the audits absorbed the same
+  fabrications.
+- **Operator disposition (entry 3/10):** hybrid. Frontier
+  corrects all 8 defects + commits Session 8 entry 3/10. Then
+  immediately reissues Session 9 with prompt-engineering
+  remediation (verbatim-block instruction + source-grounded
+  self-check from correct-pattern #5 candidates). Two data
+  points before demotion discussion. If Session 9 also exhibits
+  the failure mode under strengthened prompt, demotion is
+  warranted (intrinsic-to-cell evidence). If Session 9 clean,
+  failure mode is prompt-fixable and dual-review window
+  continues toward 4/10, 5/10, ...
+- Output split estimate: ~60/40 Goose/frontier. Closer to the
+  ~75/25 substrate-sufficient C1 target than Session 7's 50/50,
+  but still on the high-correction side. Notable correct material
+  preserved: Finding 15 framing was faithful, GUI-job exclusion
+  logic correctly identified `com.iap.d-17-27-reminder` from
+  `EXCLUDE_LABELS`, rollback section was accurate, failure-modes
+  section was well-shaped. The structural skeleton is sound; the
+  defects cluster on concrete fact extraction.
+- Runbook committed 2026-05-04 at
+  `docs/runbooks/launchd-jobs-canonical.md`.
+
 ### Patterns to preserve at Phase-A / Posture-2
 
 1. **Cautious-by-default scope check — *conditional* posture
-   (N=3 confirmed in Posture 2).** Sessions 2-4 ran
+   (N=4 confirmed in Posture 2).** Sessions 2-4 ran
    `list_allowed_directories` autonomously before reads (4
-   consecutive); Sessions 5, 6, and 7 all skipped it. The
-   shared characteristic of Sessions 5-7 is exhaustive
-   absolute-path lists in the prompt (8, 3, 4 paths
+   consecutive); Sessions 5, 6, 7, and 8 all skipped it. The
+   shared characteristic of Sessions 5-8 is exhaustive
+   absolute-path lists in the prompt (8, 3, 4, 7 paths
    respectively). The shared characteristic of Sessions 2-4 is
    path lists that mixed full paths with directory-shape
-   pointers ("see X" without a full path). Three independent
+   pointers ("see X" without a full path). Four independent
    confirmations: the autonomous scope-check is **conditional
    on prompt path-list shape**, not a stable model behavior.
    - Trigger condition (scope-check fires): path list contains
@@ -619,43 +704,69 @@ gate-decision record and dual-review entries.
    abstraction level from "abstracted from N=4 worked
    examples."
 5. **Source-file fidelity loss under abstraction pressure —
-   Session 7 (NEW; M=10 watchlist).** When the prompt
-   instructs the model to use specific source files for
-   command syntax / API patterns / endpoint paths AND those
-   files are within tool reach AND the model has read them,
-   the model can still autocomplete plausible-shape patterns
-   from training data instead of using the verbatim source.
-   Session 7 worked example: brief explicitly pointed at
-   `opnsense-dns-authority.md` (which contains the canonical
-   Vault-AppRole + HTTP-Basic-auth curl pattern); Goose
-   read it; Goose then produced a fabricated AppRole-Bearer
-   auth flow with an invented `opnsense.example.com`
-   hostname. The model also fabricated a reconfigure
-   endpoint, a Finding-14 anchor slug, and a non-existent
-   "original" API endpoint inside its own self-check
-   doctrine-substitution audit. This is **distinct from
-   over-abstraction** (Session 5: omitted concrete examples).
-   The model has the source, was told to use it, and
-   *substituted* training-data autocomplete for the verbatim
-   source.
-   Prompt-engineering remediation candidates (to test in
-   subsequent Posture-2 sessions):
-   - *Verbatim-block instruction:* "Copy the bootstrap chain
-     from <file>:<line-range> verbatim into the runbook. Do
-     not paraphrase, do not 'simplify,' do not change
-     hostnames or endpoints."
-   - *Source-grounded self-check:* require the audit section
-     to cite source-file line numbers for each fact, not
-     just claim the substitution.
+   Sessions 5/7/8 (N=3 confirmed; M=10 watchlist active).**
+   When the prompt instructs the model to use specific source
+   files for command syntax / API patterns / endpoint paths
+   / concrete path values AND those files are within tool
+   reach AND the model has read them, the model can still
+   autocomplete plausible-shape patterns from training data
+   instead of using the verbatim source.
+   Worked examples (N=3):
+   - *Session 5:* over-abstracted runbook draft from N=4
+     worked examples (omitted concrete compose snippets that
+     should have been preserved). Distinguishing: source
+     gap, not source substitution. Re-classified at Session 8
+     review as the *omission* shape of this failure mode —
+     the model abstracts when it should preserve.
+   - *Session 7:* fabricated AppRole-Bearer authentication
+     flow with invented `opnsense.example.com` hostname and
+     wrong reconfigure endpoint despite the prompt explicitly
+     pointing at `opnsense-dns-authority.md` for the canonical
+     Vault-AppRole + HTTP-Basic-auth pattern. Self-check
+     doctrine-substitution audit absorbed the same
+     fabrication. The *substitution* shape — model replaces
+     real source values with training-data autocomplete.
+   - *Session 8:* presented `/Users/admin/Library/Logs/iap/...`
+     paths as "verified by `StandardOutPath` and
+     `StandardErrorPath` in both reference plists" when the
+     source plists actually use different paths (the `iap/`
+     paths come from the migration script's normalization
+     step, not the plists themselves). Same *substitution*
+     shape as Session 7, applied to file paths instead of API
+     endpoints. Self-check `[UNVERIFIED]` flag was preserved
+     on a check-repo-coherence.py fact that was directly
+     resolvable from source.
+   The shape generalizes: source available + read + still
+   autocompleted. Self-check sections do not protect against
+   it (Session 7 audit absorbed same fabrication; Session 8
+   `[UNVERIFIED]` flag preserved on resolvable fact).
+   Prompt-engineering remediation candidates:
+   - *Verbatim-block instruction:* "Copy <fact-shape> from
+     <file>:<line-range> verbatim into the runbook. Do not
+     paraphrase, do not 'simplify,' do not change hostnames
+     or endpoints. If the source file does not contain the
+     fact, say so."
+   - *Source-grounded self-check:* require the draft to cite
+     source-file `<path>:<line>` for each concrete fact, not
+     just claim the substitution. Absence of a citation is
+     itself a self-flagged defect.
    - *Adversarial source-cite:* require the draft to contain
-     at least one verbatim-quoted command from each source
-     file referenced; absence is a self-flagged defect.
+     at least one verbatim-quoted block from each source
+     file referenced; if a source contributed no verbatim
+     content, justify why.
    - *Final-pass diff:* a final tool call that re-reads the
      authoritative source and compares its own draft against
      it, flagging any divergence.
-   None tested yet. Recurrence at entry 3/10 or 4/10
-   triggers demotion-trigger discussion per `promotion-
-   criteria.md` §2.
+   **Operator disposition (entry 3/10, 2026-05-04):** hybrid.
+   Session 8 corrected + committed; Session 9 reissues with
+   *verbatim-block instruction + source-grounded self-check*
+   (the first two candidates) to test whether prompt
+   engineering can suppress the failure mode. If Session 9
+   exhibits the failure mode under the strengthened prompt,
+   evidence is intrinsic-to-cell and demotion is warranted.
+   If Session 9 is clean, failure mode is prompt-fixable and
+   dual-review window continues. Two data points before
+   demotion discussion.
 
 ### Substrate-bounded quality — §18.O finding (Sessions 3-5)
 

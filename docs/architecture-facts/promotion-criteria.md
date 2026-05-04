@@ -324,13 +324,20 @@ savings accrue per-class.
 class "read N source files + draft a reference doc"
 (read-author-only).
 
-**Status (2026-05-04):** **Posture 2 (dual-review), 2/10.** Cell
+**Status (2026-05-04):** **Posture 2 (dual-review), 3/10.** Cell
 cleared the N=5 gate 2026-05-03; operator promoted Posture 1 →
 Posture 2 in the same session. M=10 dual-review window opened;
 closure target ≈ 2026-05-13 conditional on session pacing.
-**Watchlist item (entry 2/10):** source-file fidelity loss under
-abstraction pressure. If this failure mode recurs at entry 3/10
-or 4/10, demotion-trigger discussion per §2.
+**Watchlist item (entry 3/10):** source-file fidelity loss under
+abstraction pressure — **N=3 confirmed across Sessions 5, 7, 8.**
+Operator decision at entry 3/10 is hybrid: frontier corrects +
+commits 3/10, then immediately reissues Session 9 with
+prompt-engineering remediation (verbatim-block instruction +
+source-grounded self-check). Session 9 result determines whether
+the failure mode is intrinsic-to-cell (demotion warranted) or
+prompt-fixable (window continues). If Session 9 also exhibits the
+failure mode under the strengthened prompt, demotion is the
+correct response.
 
 **Sessions logged:**
 1. WP-03 smoke test (read CLAUDE.md head=50, 2 tool calls,
@@ -458,6 +465,77 @@ or 4/10, demotion-trigger discussion per §2.
    per-session range; one session does not constitute
    regression but the *failure shape* is informative for
    future class scoping.
+
+3. (2026-05-04) D-17-53 Session 8 — `launchd-jobs-canonical.md`
+   fresh authoring on top of an existing minimal runbook
+   (`launchd-jobs.md`). C1 sub-class: reference-doc draft,
+   fresh-authoring with adjacent superseded artifact. Drafted
+   from 7 sources, **7 tool calls** (one per source file, no
+   exploratory probes — same clean tool-call profile as
+   Session 7). Cautious-by-default scope check skipped for
+   the **fourth consecutive session** — the N=3 conditional
+   framing now extends to N=4 with the same prompt-shape
+   condition holding (exhaustive absolute-path list in the
+   brief). Sub-class-specific preamble ("skip preamble; open
+   with one-line scope sentence") landed cleanly — no
+   opening-preamble regression. Output split ~60/40
+   Goose/frontier (closer to the substrate-sufficient ~75/25
+   target than Session 7's 50/50, but still on the high-
+   correction side). Eight frontier corrections, of which
+   the load-bearing ones are: (1) **path-fact fabrication
+   under source availability** — Goose presented
+   `/Users/admin/Library/Logs/iap/<name>.{out,err}.log` as
+   "verified by `StandardOutPath` and `StandardErrorPath` in
+   both reference plists" when the actual source plists use
+   different paths (`com.iap.platform-registry.plist` writes
+   to `/Users/admin/.platform-registry/launchd.{stdout,stderr}.log`;
+   `com.iap.arr-apikey-sweep.plist` writes to
+   `/Users/admin/.platform-logs/arr-apikey-sweep.launchd.log`).
+   The canonical `iap/` paths are produced by the migration
+   script's normalization pass (lines 52–53 of
+   `d-17-51-migrate-to-launchdaemons.sh`), not the source
+   plists. Goose conflated source-plist values with
+   post-migration values; (2) heartbeat naming convention
+   wrong — Goose used `<name>.heartbeat` ambiguously when
+   the verify script and `arr-apikey-sweep.plist` both use
+   the `<short>` form (label minus `com.iap.` prefix);
+   (3) bootstrap-step-count framing inconsistency — header
+   said "five commands", body had six numbered steps,
+   migration script's per-job loop has four `launchctl`
+   ops; (4) `RunAtLoad` declared uniformly required when
+   `arr-apikey-sweep.plist` omits it; (5) `UserName=admin` /
+   `GroupName=staff` declared as plist-author fields when
+   they are actually applied at install time by the
+   migration script (lines 44–45) and are not in either
+   source plist; (6) preserved an `[UNVERIFIED]` flag on
+   `check-repo-coherence.py` integration despite the
+   legacy `launchd-jobs.md` §5/§7 documenting it and the
+   script's `LAUNCHD_RECENCY_EXPECTATIONS` dict (line 76)
+   being directly inspectable; (7) truncated text in
+   Self-flagged defects ("...generic LaunchDaemon doctr–"
+   mid-word); (8) section-anchor cross-reference form
+   inconsistent with repo style. Defect (1) is the same
+   shape as Session 7's fabricated-AppRole defect:
+   **plausible-shape autocomplete from training data when
+   the source files contained the actual values.** Failure
+   mode N=3 confirmed across Sessions 5, 7, 8 — recurrence
+   at entry 3/10 triggers operator's hybrid disposition:
+   commit + reissue Session 9 with prompt-engineering
+   remediation. The two remediation candidates being tested
+   in Session 9: **verbatim-block instruction** ("paste the
+   relevant lines from the source file into the runbook
+   itself before paraphrasing") and **source-grounded
+   self-check** ("after drafting, list every concrete value
+   in the runbook and cite the source-file line it came
+   from"). Self-check sections proved insufficient on their
+   own (Session 7 audit absorbed same fabrication; Session 8
+   `[UNVERIFIED]` flag preserved on a resolvable fact);
+   strengthened prompt is the next variable to test.
+   Notable correct material preserved: Finding 15 framing
+   was faithful, GUI-job exclusion logic correctly
+   identified `com.iap.d-17-27-reminder` from `EXCLUDE_LABELS`,
+   rollback section was accurate, failure-modes section
+   was well-shaped.
 
 **Substrate baseline:** F1.B (Ollama 0.22.1 streaming structured
 `tool_calls` for qwen3-coder:30b — see `local-tool-calling.md`).
