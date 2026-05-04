@@ -533,6 +533,7 @@ Deliverable table:
 | D-17-76: secret/downloads/seedbox bootstrap — §18.L companion to D-17-49 | IN PROGRESS | added 2026-05-04 via roadmap-create.sh |
 | D-17-77: Buildarr coverage audit — Sonarr v4 + Sportarr exclusion verification + reactive-management runbook | DONE | 2026-05-04 audit: F11 exclusion set verified current (Sonarr v4.0.17.2952 + buildarr-sonarr 0.6.4 v3-only; Sportarr no plugin on PyPI; Prowlarr indexer-defs + download-clients schema gap). Operator runbook authored at `docs/runbooks/buildarr-excluded-services.md` covering the four excluded surfaces, lightest-fitting record workflow, procedural drift recovery (sqlite3 for Prowlarr tables, config.xml diff for Sonarr v4 with ApiKey redaction), and three-AND retirement triggers |
 | D-17-78: install-ollama-launchdaemon-mac-studio.sh ssh -t enforcement follow-on | DONE | 2026-05-04 no-op closeout: script already enforces ssh -t for remote sudo path; no patch required |
+| D-17-79: Plane-era scripts _retired structure decision | DONE | 2026-05-04 decision: keep annotated in place; no scripts/_retired move (forensic references preserved, operational risk already mitigated by D-17-70 headers) |
 
 ID-reservation note: D-17-22 (multi-session role + intake architecture)
 is RESERVED but not yet framework-authored. Discussed in a prior
