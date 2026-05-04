@@ -1,0 +1,99 @@
+Goose Session 9 — D-17-53 §18.O Posture-2 dual-review entry 4/10.
+Cell: Goose+qwen3-coder:30b × C1.
+Sub-class: reference-doc draft (fresh authoring with adjacent existing sibling).
+Substrate: F1.B held (Ollama 0.22.1, qwen3-coder:30b, structured tool_calls).
+
+Purpose: Prompt-engineering remediation test for the source-fidelity-loss
+failure mode (N=3 confirmed Sessions 5, 7, 8). Strengthened prompt added
+two constraints to the standard C1 preamble:
+  A. Verbatim-block instruction
+  B. Source-grounded self-check (Source-citation table)
+
+Goose surface-back draft (canonical runbook for the OpenProject sync +
+enrich pipeline). 4 tool calls — 4× read_text_file, one per source
+file in the prompt-listed order, no exploratory probes. All
+structurally valid.
+
+Tool-call trace summary (Goose-reported):
+1. read_text_file scripts/openproject-sync-from-framework.py (910 lines)
+2. read_text_file scripts/openproject-enrich-from-framework.py (420 lines)
+3. read_text_file docs/runbooks/openproject-sync.md (151 lines; sibling exists)
+4. read_text_file CLAUDE.md (335+ lines; "OpenProject Enrichment Doctrine"
+   section located at lines 329-334)
+
+Goose self-flagged defects (5 items, all honest):
+1. --query-backlog flag UNVERIFIED — documented in CLAUDE.md line 301
+   but NOT in argparse definition.
+2. --autonomous-coding-only flag UNVERIFIED — same shape as #1.
+3. --dedup-phase17 flag — present in source but unrequested in
+   coverage. Operator may want this in operations section.
+4. xindex search not used (Read was sufficient for CLAUDE.md doctrine
+   section locate).
+5. Source-doctrine defect classification: --query-backlog and
+   --autonomous-coding-only are author-error-immune; the gap is in
+   the doctrine, not the runbook.
+
+Source-citation table (constraint B) — 21 facts cited with verbatim
+quotes and source-file line ranges. Spot-checked subset by frontier:
+- STATUS_TO_OP_STATE lines 99-104 ✅ verbatim correct
+- --include-roadmap argparse lines 774-775 ✅
+- --roadmap-only argparse lines 776-777 ✅
+- --skip-enrich argparse lines 780-781 ✅
+- --phase argparse line 773 ✅
+- enrichment managed fields lines 14-20 ✅
+- HTTP Basic auth apikey:{token} base64 encoding lines 135-142 ✅
+- Token from Vault secret/openproject/api#token lines 43+229 ✅
+- sync→enrich coupling lines 889-904 ✅
+
+No fabrication, no substitution, no autocompleted-as-verified facts.
+
+WATCHLIST FAILURE MODE — TEST OUTCOME: SUPPRESSED CLEANLY.
+
+Goose encountered the same failure-mode opportunity that tripped
+Sessions 5/7/8: --query-backlog and --autonomous-coding-only flags
+appear in CLAUDE.md operator doctrine but do NOT exist in the script's
+argparse. Under prior-prompt conditions, the model would have
+autocompleted these as "verified" by virtue of CLAUDE.md presence.
+Under the strengthened prompt:
+
+- Goose drafted both flags into Common Operations sections 3c/3d
+- Tagged each [UNVERIFIED — frontier review] inline with specific
+  reason ("documented in CLAUDE.md but NOT present in the argparse
+  definition")
+- Listed both in Self-Flagged Defects with full rationale
+- Framed the gap as "source-doctrine defect, not author error" —
+  exactly the right framing
+
+This is the antidote behavior the watchlist remediation was designed
+to elicit.
+
+Frontier-side review — three minor corrections:
+1. Stylistic Status: line at top of draft (D-17-55 WP-04 + D-17-04
+   WP-17-04-04 integration test) — stripped on commit; not in
+   prompt's required coverage.
+2. ADR-A-006 cross-reference path was wrong: Goose pointed to
+   architecture-facts/adr-a-006.md; actual location is
+   docs/adr/ADR-A-006.md. Frontier verified existence and corrected
+   the path on commit.
+3. --dedup-phase17 flag was source-verified but unrequested in
+   coverage. Frontier added it to operations section since it's
+   operationally useful (one-shot for closing 17.A-17.T shorthand
+   WPs as superseded by D-17-NN).
+
+Output split estimate: ~85/15 Goose/frontier. Highest substrate-
+sufficient C1 ratio observed in this cell, above the ~75/25 baseline
+target. The strengthened prompt produced not just suppression of the
+failure mode but improved overall Goose-dominance.
+
+Operator disposition (entry 4/10, 2026-05-04):
+- Source-fidelity-loss failure mode is PROMPT-FIXABLE, not
+  intrinsic-to-cell, based on this single decisive remediation
+  datapoint.
+- Verbatim-block + source-grounded self-check PROMOTED to standard
+  preamble for substrate-sufficient C1 work.
+- Watchlist item marked "remediated by prompt engineering (N=1
+  datapoint)"; remains active for entries 5/10-10/10 to confirm the
+  remediation holds.
+- No demotion; dual-review window continues toward 5/10.
+
+Runbook landed: docs/runbooks/openproject-sync-and-enrich.md.

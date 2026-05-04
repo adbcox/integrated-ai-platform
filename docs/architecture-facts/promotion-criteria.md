@@ -324,20 +324,23 @@ savings accrue per-class.
 class "read N source files + draft a reference doc"
 (read-author-only).
 
-**Status (2026-05-04):** **Posture 2 (dual-review), 3/10.** Cell
+**Status (2026-05-04):** **Posture 2 (dual-review), 4/10.** Cell
 cleared the N=5 gate 2026-05-03; operator promoted Posture 1 →
 Posture 2 in the same session. M=10 dual-review window opened;
 closure target ≈ 2026-05-13 conditional on session pacing.
-**Watchlist item (entry 3/10):** source-file fidelity loss under
-abstraction pressure — **N=3 confirmed across Sessions 5, 7, 8.**
-Operator decision at entry 3/10 is hybrid: frontier corrects +
-commits 3/10, then immediately reissues Session 9 with
-prompt-engineering remediation (verbatim-block instruction +
-source-grounded self-check). Session 9 result determines whether
-the failure mode is intrinsic-to-cell (demotion warranted) or
-prompt-fixable (window continues). If Session 9 also exhibits the
-failure mode under the strengthened prompt, demotion is the
-correct response.
+**Watchlist item — REMEDIATED BY PROMPT ENGINEERING (N=1
+datapoint, Session 9).** The source-fidelity-loss failure mode
+(N=3 confirmed Sessions 5, 7, 8) was **suppressed cleanly** under
+the strengthened prompt at Session 9 (verbatim-block instruction
++ source-grounded self-check). The remediation produced ~85/15
+Goose/frontier output split — highest substrate-sufficient C1
+ratio in the cell. The watchlist remains active for entries
+5/10–10/10 to confirm the remediation pattern holds; if any of
+those sessions exhibits the failure mode despite the strengthened
+prompt, evidence is intrinsic-to-cell and demotion is warranted.
+Two clean confirmations would standardize the remediation pattern
+into the C1 standard preamble; the standardization landed
+provisionally at Session 9 close per operator decision.
 
 **Sessions logged:**
 1. WP-03 smoke test (read CLAUDE.md head=50, 2 tool calls,
@@ -536,6 +539,62 @@ correct response.
    identified `com.iap.d-17-27-reminder` from `EXCLUDE_LABELS`,
    rollback section was accurate, failure-modes section
    was well-shaped.
+
+4. (2026-05-04) D-17-53 Session 9 — `openproject-sync-and-enrich.md`
+   fresh authoring under **strengthened prompt** (verbatim-block
+   instruction + source-grounded self-check from
+   correct-pattern #5 remediation candidates). C1 sub-class:
+   reference-doc draft, fresh-authoring with adjacent existing
+   sibling artifact (`openproject-sync.md`). Substrate-sufficient
+   (4 source files: 2 scripts + sibling runbook + CLAUDE.md
+   doctrine section). Drafted with **4 tool calls** (4×
+   `read_text_file` in prompt-listed order, no exploratory
+   probes — same clean profile as Sessions 7 and 8).
+   Cautious-by-default scope-check skipped (N=4+ pattern with
+   shape-conditional framing — exhaustive absolute-path list).
+   Sub-class preamble "skip preamble; open with one-line scope
+   sentence" held cleanly.
+   **Watchlist failure mode SUPPRESSED.** The strengthened
+   prompt successfully elicited the antidote behavior. Goose
+   encountered the same failure-mode opportunity that tripped
+   Sessions 5/7/8: two flags (`--query-backlog` and
+   `--autonomous-coding-only`) appear in CLAUDE.md doctrine but
+   do NOT exist in the script's argparse. Under prior-prompt
+   conditions, Goose would have autocompleted these as
+   "verified" by virtue of CLAUDE.md presence. Under the
+   strengthened prompt, Goose: (a) drafted both flags into
+   Common Operations, (b) tagged each `[UNVERIFIED — frontier
+   review]` inline with the specific reason ("documented in
+   CLAUDE.md but NOT present in the argparse definition"),
+   (c) listed both in Self-Flagged Defects with rationale,
+   (d) framed the gap as "**source-doctrine defect**, not an
+   author error" — exactly the right framing.
+   Source-citation table (the constraint-B mechanism) verified
+   spot-check: STATUS_TO_OP_STATE at lines 99–104, four
+   argparse flag claims (`--include-roadmap` 774-775,
+   `--roadmap-only` 776-777, `--skip-enrich` 780-781, `--phase`
+   773-774), enrichment managed-fields lines 14–20, HTTP Basic
+   auth `apikey:{token}` base64 encoding lines 135–142, token
+   from Vault `secret/openproject/api#token` line 43+229,
+   sync→enrich coupling lines 889–904 — all verbatim correct,
+   no fabrication, no substitution. 21 facts in citation
+   table; spot-checked subset matches source verbatim.
+   Output split: **~85/15 Goose/frontier** — highest
+   substrate-sufficient C1 ratio observed in this cell, above
+   the ~75/25 baseline target. Three frontier corrections, all
+   minor: (1) stylistic Status: line at top of draft (stripped
+   on commit), (2) ADR-A-006 cross-reference path was wrong
+   (`architecture-facts/adr-a-006.md` vs actual
+   `docs/adr/ADR-A-006.md`), (3) `--dedup-phase17` flag was
+   in source but unrequested in coverage — frontier added it
+   to operations section since it's source-verified.
+   **Conclusion: source-fidelity-loss failure mode is
+   prompt-fixable, not intrinsic-to-cell.** Per operator
+   decision, verbatim-block + source-grounded self-check
+   promoted to standard preamble for substrate-sufficient C1
+   work. Watchlist remains active for 5/10–10/10 confirmation.
+   Runbook committed 2026-05-04 at
+   `docs/runbooks/openproject-sync-and-enrich.md`.
 
 **Substrate baseline:** F1.B (Ollama 0.22.1 streaming structured
 `tool_calls` for qwen3-coder:30b — see `local-tool-calling.md`).

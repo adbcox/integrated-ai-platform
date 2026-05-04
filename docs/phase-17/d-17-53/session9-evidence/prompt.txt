@@ -1,0 +1,92 @@
+GOOSE SESSION 9 — Prompt-engineering remediation test
+
+Class: C1 (reference-doc draft). Phase-A Posture 2, dual-review 4/10.
+Frontier review mandatory.
+
+This session is a prompt-engineering remediation test for the
+source-file fidelity loss failure mode (correct-pattern #5 in
+goose-capability-boundary.md). N=3 confirmed across Sessions 5, 7,
+8: model presents inferred/autocompleted patterns as source-verified
+when source files were actually read. Two strengthened-prompt
+mechanisms tested in this session: verbatim-block instruction +
+source-grounded self-check.
+
+Failure-mode determination:
+- If Session 9 produces the same failure mode under strengthened
+  prompt → intrinsic-to-cell, demotion warranted.
+- If Session 9 clean → prompt-fixable, dual-review window continues.
+
+CONTEXT (read in order):
+- /Users/admin/repos/integrated-ai-platform/scripts/openproject-sync-from-framework.py
+- /Users/admin/repos/integrated-ai-platform/scripts/openproject-enrich-from-framework.py
+- /Users/admin/repos/integrated-ai-platform/docs/runbooks/openproject-sync.md (read if exists; if not, surface back the missing-file fact)
+- /Users/admin/repos/integrated-ai-platform/CLAUDE.md (locate "OpenProject Enrichment Doctrine" section)
+
+STRENGTHENED CONSTRAINTS (the remediation test):
+
+A. Verbatim-block instruction. For every concrete fact in the
+   runbook (function name, CLI flag, file path, env var, exit code,
+   command shape), copy the relevant block from the source file
+   VERBATIM into the runbook code block before paraphrasing. Do not
+   paraphrase first. Do not "simplify" command syntax. Do not change
+   function names, paths, or flag names. If the source file does
+   not contain the fact, the runbook must say so explicitly — do
+   NOT autocomplete from training data.
+
+B. Source-grounded self-check. After drafting, append a
+   "Source-citation table" section listing every concrete fact in
+   the runbook in the form:
+
+   | Fact | Source file | Line(s) | Verbatim quote |
+
+   This is not optional. Each row's verbatim quote must match the
+   source file at the cited line(s). Any fact in the runbook you
+   cannot cite this way is a self-flagged defect — list it in
+   self-flagged defects with the reason you couldn't cite.
+
+C. Failure mode you are being tested for. Sessions 5, 7, 8 all had
+   source files that contained canonical patterns AND were read AND
+   the model still produced training-data-autocompleted shapes. The
+   strengthened prompt above is the explicit antidote.
+
+STANDING CONSTRAINTS:
+- Read-only filesystem-mcp + xindex only.
+- Surface back drafts; do NOT write to disk.
+- Mark "[UNVERIFIED — frontier review]" inline for facts you cannot
+  ground in source files.
+- Skip preamble. Open with one-line scope sentence.
+- If a context file does not exist, surface back the missing-file
+  fact and continue with remaining sources — do NOT fabricate.
+
+TASK: Author docs/runbooks/openproject-sync-and-enrich.md
+
+Goal: Operator-facing runbook for the OpenProject sync + enrich
+pipeline. The sync script (1) and enrich script (2) together
+maintain OpenProject as an enriched projection of
+PROJECT_FRAMEWORK.md §9. Doctrine is in CLAUDE.md "OpenProject
+Enrichment Doctrine" section.
+
+Required coverage:
+1. Scope — one-sentence purpose
+2. The two-script pipeline — what sync does, what enrich does, the
+   order they run, the safety semantics (manual-edit safety /
+   --force override) per CLAUDE.md doctrine
+3. Common operations — CLI invocations for routine sync, backlog
+   query (--query-backlog), autonomous-coding filter
+   (--autonomous-coding-only), roadmap-only mode (--roadmap-only),
+   include-roadmap mode (--include-roadmap), skip-enrich mode
+   (--skip-enrich). Include actual flag names from source.
+4. Enrichment fields — managed fields per CLAUDE.md doctrine.
+   Plus preserved/sync-key fields: customField1 (Plane RM ID),
+   customField2 (External ID).
+5. Drift handling — sync-managed vs operator-owned per D-17-31.
+6. Cross-references — relative markdown links to CLAUDE.md doctrine
+   section, PROJECT_FRAMEWORK.md §9, sibling runbook from source #3.
+
+DELIVERABLE:
+- Draft markdown
+- Source-citation table (constraint B) — mandatory
+- Self-flagged defects
+- Tool-call trace summary
+
+DO NOT commit. DO NOT write to disk.

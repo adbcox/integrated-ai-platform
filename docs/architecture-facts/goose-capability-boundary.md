@@ -555,17 +555,101 @@ gate-decision record and dual-review entries.
 - Runbook committed 2026-05-04 at
   `docs/runbooks/launchd-jobs-canonical.md`.
 
+### Session 9 — D-17-53 openproject-sync-and-enrich fresh authoring under strengthened prompt (Posture 2 entry 4/10)
+
+- **Purpose: prompt-engineering remediation test** for the
+  source-fidelity-loss watchlist item (N=3 confirmed Sessions
+  5, 7, 8). Strengthened prompt added two constraints to the
+  standard C1 preamble: **verbatim-block instruction** ("for
+  every concrete fact, copy the relevant block from the source
+  file VERBATIM into the runbook code block before
+  paraphrasing; do not autocomplete from training data") and
+  **source-grounded self-check** ("after drafting, append a
+  Source-citation table listing every concrete fact in the
+  form: Fact / Source file / Line(s) / Verbatim quote").
+- 4 tool calls: 4× `read_text_file` (one per source file in
+  prompt-listed order), no exploratory probes. Same clean
+  tool-call profile as Sessions 7-8. All structurally valid.
+- Task: author `docs/runbooks/openproject-sync-and-enrich.md`
+  for the OpenProject sync + enrich pipeline. Sub-class:
+  reference-doc draft, fresh authoring with adjacent existing
+  sibling (`openproject-sync.md`). Substrate-sufficient.
+- **Cautious-by-default scope check skipped — N=5 pattern
+  holds.** Same shape-conditional framing as Sessions 5–8;
+  prompt had exhaustive absolute-path list (4 paths). The
+  conditional explanation continues to fit the data with no
+  variation observed.
+- **Padding suppression preamble held cleanly.** Sub-class-
+  specific "skip preamble; open with one-line scope sentence"
+  landed; Goose opened directly with the scope sentence and
+  went straight into the two-script-pipeline section. N=3
+  successful applications of the suppression preamble.
+- **WATCHLIST FAILURE MODE SUPPRESSED CLEANLY.** Goose
+  encountered the same failure-mode opportunity that tripped
+  Sessions 5/7/8: two flags (`--query-backlog` and
+  `--autonomous-coding-only`) appear in CLAUDE.md operator
+  doctrine but do NOT exist in the script's argparse
+  definition. Under prior-prompt conditions, the model would
+  have autocompleted these as "verified" by virtue of
+  CLAUDE.md presence (the autocomplete-from-doctrine shape).
+  Under the strengthened prompt, Goose:
+  - drafted both flags into Common Operations sections,
+  - **tagged each `[UNVERIFIED — frontier review]` inline**
+    with the specific reason ("documented in CLAUDE.md but
+    NOT present in the argparse definition"),
+  - listed both in Self-Flagged Defects with full rationale,
+  - framed the gap as "**source-doctrine defect**, not an
+    author error" — exactly the right framing.
+  This is the antidote behavior the watchlist remediation
+  was designed to elicit.
+- **Source-citation table verified.** 21 facts cited with
+  verbatim quotes and line numbers. Frontier spot-check
+  confirmed all sampled facts match source verbatim:
+  STATUS_TO_OP_STATE lines 99-104 ✅; argparse flag claims
+  for `--include-roadmap` 774-775, `--roadmap-only` 776-777,
+  `--skip-enrich` 780-781, `--phase` 773-774 all ✅;
+  enrichment managed fields lines 14-20 ✅; HTTP Basic auth
+  `apikey:{token}` base64 lines 135-142 ✅; token from
+  Vault `secret/openproject/api#token` lines 43+229 ✅;
+  sync→enrich coupling lines 889-904 ✅. No fabrication,
+  no substitution.
+- **Output split: ~85/15 Goose/frontier** — highest
+  substrate-sufficient C1 ratio observed in this cell. Above
+  the ~75/25 baseline target. The strengthened prompt
+  produced not just suppression of the failure mode but
+  improved overall Goose-dominance.
+- **Three minor frontier corrections:** (1) stylistic Status
+  line at draft top stripped on commit (not requested);
+  (2) ADR-A-006 cross-reference path was wrong
+  (`architecture-facts/adr-a-006.md` vs actual
+  `docs/adr/ADR-A-006.md`); (3) `--dedup-phase17` flag was
+  source-verified but unrequested in coverage — added to
+  operations section on commit since it's an operationally
+  useful one-shot.
+- **Disposition (operator, entry 4/10, 2026-05-04):**
+  source-fidelity-loss failure mode is **prompt-fixable, not
+  intrinsic-to-cell** based on this single decisive
+  remediation datapoint. Verbatim-block + source-grounded
+  self-check **promoted to standard preamble** for
+  substrate-sufficient C1 work. Watchlist item marked
+  "remediated by prompt engineering (N=1 datapoint)";
+  remains active for entries 5/10–10/10 to confirm the
+  remediation holds. No demotion; dual-review window
+  continues.
+- Runbook committed 2026-05-04 at
+  `docs/runbooks/openproject-sync-and-enrich.md`.
+
 ### Patterns to preserve at Phase-A / Posture-2
 
 1. **Cautious-by-default scope check — *conditional* posture
-   (N=4 confirmed in Posture 2).** Sessions 2-4 ran
+   (N=5 confirmed in Posture 2).** Sessions 2-4 ran
    `list_allowed_directories` autonomously before reads (4
-   consecutive); Sessions 5, 6, 7, and 8 all skipped it. The
-   shared characteristic of Sessions 5-8 is exhaustive
-   absolute-path lists in the prompt (8, 3, 4, 7 paths
+   consecutive); Sessions 5, 6, 7, 8, and 9 all skipped it.
+   The shared characteristic of Sessions 5-9 is exhaustive
+   absolute-path lists in the prompt (8, 3, 4, 7, 4 paths
    respectively). The shared characteristic of Sessions 2-4 is
    path lists that mixed full paths with directory-shape
-   pointers ("see X" without a full path). Four independent
+   pointers ("see X" without a full path). Five independent
    confirmations: the autonomous scope-check is **conditional
    on prompt path-list shape**, not a stable model behavior.
    - Trigger condition (scope-check fires): path list contains
@@ -704,7 +788,9 @@ gate-decision record and dual-review entries.
    abstraction level from "abstracted from N=4 worked
    examples."
 5. **Source-file fidelity loss under abstraction pressure —
-   Sessions 5/7/8 (N=3 confirmed; M=10 watchlist active).**
+   Sessions 5/7/8 (N=3 confirmed); REMEDIATED at Session 9
+   (N=1 clean datapoint under strengthened prompt; watchlist
+   active for 5/10–10/10 confirmation).**
    When the prompt instructs the model to use specific source
    files for command syntax / API patterns / endpoint paths
    / concrete path values AND those files are within tool
@@ -757,16 +843,45 @@ gate-decision record and dual-review entries.
    - *Final-pass diff:* a final tool call that re-reads the
      authoritative source and compares its own draft against
      it, flagging any divergence.
-   **Operator disposition (entry 3/10, 2026-05-04):** hybrid.
-   Session 8 corrected + committed; Session 9 reissues with
-   *verbatim-block instruction + source-grounded self-check*
-   (the first two candidates) to test whether prompt
-   engineering can suppress the failure mode. If Session 9
-   exhibits the failure mode under the strengthened prompt,
-   evidence is intrinsic-to-cell and demotion is warranted.
-   If Session 9 is clean, failure mode is prompt-fixable and
-   dual-review window continues. Two data points before
-   demotion discussion.
+   **Session 9 result (2026-05-04, entry 4/10):** strengthened
+   prompt — verbatim-block + source-grounded self-check —
+   **suppressed the failure mode cleanly.** Goose encountered
+   the same failure-mode opportunity (`--query-backlog` and
+   `--autonomous-coding-only` flags appear in CLAUDE.md
+   doctrine but not in the script's argparse) and produced
+   the antidote behavior: drafted both flags into the runbook,
+   tagged each `[UNVERIFIED — frontier review]` inline with
+   the specific reason, listed both in self-flagged defects,
+   framed the gap as "source-doctrine defect, not author
+   error." Source-citation table verified: 21 facts cited
+   with verbatim quotes; spot-checked subset matches source
+   verbatim. Output split ~85/15 Goose/frontier — highest
+   substrate-sufficient C1 ratio observed in the cell.
+   **Operator disposition (entry 4/10, 2026-05-04):**
+   source-fidelity-loss is **prompt-fixable, not
+   intrinsic-to-cell.** Verbatim-block + source-grounded
+   self-check **promoted to standard preamble** for
+   substrate-sufficient C1 work. Watchlist item marked
+   "remediated by prompt engineering (N=1 datapoint)" and
+   remains active for entries 5/10–10/10 to confirm the
+   remediation pattern holds. No demotion; dual-review
+   window continues.
+   **Standard preamble addition (effective 2026-05-04):**
+   - "For every concrete fact in the deliverable (function
+     name, CLI flag, file path, env var, exit code, command
+     shape, endpoint URL, hostname, port), copy the relevant
+     block from the source file VERBATIM into a code block
+     before paraphrasing. Do not paraphrase first. Do not
+     'simplify' command syntax. If the source file does not
+     contain the fact, say so explicitly — do NOT autocomplete
+     from training data."
+   - "After drafting, append a Source-citation table listing
+     every concrete fact in the form: `| Fact | Source file
+     | Line(s) | Verbatim quote |`. Each row's verbatim quote
+     must match the source file at the cited line(s). Any
+     fact in the deliverable you cannot cite this way is a
+     self-flagged defect — list it in self-flagged defects
+     with the reason you couldn't cite."
 
 ### Substrate-bounded quality — §18.O finding (Sessions 3-5)
 
