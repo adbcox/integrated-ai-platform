@@ -112,6 +112,7 @@ ensure_trigger() {
 
 main() {
   local groupid hostid sab_url sab_key sab_base
+  local sync_qnap_url sync_qnap_key
   local zbx_http_base="http://192.168.10.145"
   groupid="$(ensure_group)"
   hostid="$(ensure_host)"
@@ -128,6 +129,8 @@ main() {
 
   sab_url="$(docker exec -e VAULT_TOKEN="${VAULT_TOKEN}" vault-server vault kv get -field=url secret/seedbox/sabnzbd)"
   sab_key="$(docker exec -e VAULT_TOKEN="${VAULT_TOKEN}" vault-server vault kv get -field=api_key secret/seedbox/sabnzbd)"
+  sync_qnap_url="$(docker exec -e VAULT_TOKEN="${VAULT_TOKEN}" vault-server vault kv get -field=web_url secret/syncthing/qnap 2>/dev/null || true)"
+  sync_qnap_key="$(docker exec -e VAULT_TOKEN="${VAULT_TOKEN}" vault-server vault kv get -field=api_key secret/syncthing/qnap 2>/dev/null || true)"
   if [[ "${sab_url}" == */api ]]; then
     sab_base="${sab_url}"
   else
@@ -140,6 +143,9 @@ main() {
   ensure_macro "${hostid}" '{$PROWLARR_API_KEY}' "${prowlarr_key}"
   ensure_macro "${hostid}" '{$BAZARR_API_KEY}' "${bazarr_key}"
   ensure_macro "${hostid}" '{$SABNZBD_API_KEY}' "${sab_key}"
+  if [ -n "${sync_qnap_key}" ]; then
+    ensure_macro "${hostid}" '{$SYNCTHING_QNAP_API_KEY}' "${sync_qnap_key}"
+  fi
   ensure_macro "${hostid}" '{$PIPE_STUCK_HOURS}' "2"
   ensure_macro "${hostid}" '{$PIPE_DISK_MIN_PCT}' "10"
   ensure_macro "${hostid}" '{$PIPE_IMPORT_FAIL_PCT}' "5"
@@ -153,16 +159,29 @@ main() {
   ensure_item "${hostid}" "Lidarr health issue count" "d17105.lidarr.health_count" "${zbx_http_base}:8686/api/v1/health" '{$LIDARR_API_KEY}' 21 'var a=JSON.parse(value); return Array.isArray(a)?a.length:0;'
   ensure_item "${hostid}" "Prowlarr health issue count" "d17105.prowlarr.health_count" "${zbx_http_base}:9696/api/v1/health" '{$PROWLARR_API_KEY}' 21 'var a=JSON.parse(value); return Array.isArray(a)?a.length:0;'
   ensure_item "${hostid}" "SABnzbd queue depth" "d17105.sab.queue_depth" "${sab_base}?mode=queue&output=json&apikey={\$SABNZBD_API_KEY}" '{$SABNZBD_API_KEY}' 12 '$.queue.noofslots'
-  ensure_item "${hostid}" "SABnzbd failed jobs" "d17105.sab.failed_jobs" "${sab_base}?mode=history&output=json&apikey={\$SABNZBD_API_KEY}&failed_only=1&limit=5" '{$SABNZBD_API_KEY}' 12 '$.history.noofslots'
+  ensure_item "${hostid}" "SABnzbd failed jobs" "d17105.sab.failed_jobs" "${sab_base}?mode=history&output=json&apikey={\$SABNZBD_API_KEY}&failed_only=1&limit=5" '{$SABNZBD_API_KEY}' 21 'var m=value.match(/\"status\":\"Failed\"/g); return m ? m.length : 0;'
+
+  if [ -n "${sync_qnap_url}" ] && [ -n "${sync_qnap_key}" ]; then
+    ensure_item "${hostid}" "Syncthing QNAP max staleness hours" "d17105.syncthing.qnap.max_stale_h" "${sync_qnap_url%/}/rest/stats/folder" '{$SYNCTHING_QNAP_API_KEY}' 21 'var d=JSON.parse(value); var now=Date.now(); var maxh=0; Object.keys(d).forEach(function(k){var t=((d[k]||{}).lastFile||{}).at; if(t){var h=(now-Date.parse(t))/3600000; if(h>maxh) maxh=h;}}); return Math.floor(maxh);'
+    ensure_item "${hostid}" "Syncthing QNAP folder errors total" "d17105.syncthing.qnap.errors_total" "${sync_qnap_url%/}/rest/db/status?folder=is5fj-3grur" '{$SYNCTHING_QNAP_API_KEY}' 21 'var a=JSON.parse(value); return Number(a.errors||0)+Number(a.pullErrors||0);'
+  fi
 
   ensure_trigger "D-17-105: Sonarr queue depth high" "min(/${TARGET_HOST_NAME}/d17105.sonarr.queue_depth,2h)>0" 3
   ensure_trigger "D-17-105: Radarr queue depth high" "min(/${TARGET_HOST_NAME}/d17105.radarr.queue_depth,2h)>0" 3
   ensure_trigger "D-17-105: Lidarr queue depth high" "min(/${TARGET_HOST_NAME}/d17105.lidarr.queue_depth,2h)>0" 3
   ensure_trigger "D-17-105: Arr health issues present" "last(/${TARGET_HOST_NAME}/d17105.sonarr.health_count)>0 or last(/${TARGET_HOST_NAME}/d17105.radarr.health_count)>0 or last(/${TARGET_HOST_NAME}/d17105.lidarr.health_count)>0 or last(/${TARGET_HOST_NAME}/d17105.prowlarr.health_count)>0" 3
   ensure_trigger "D-17-105: SABnzbd failed jobs detected" "last(/${TARGET_HOST_NAME}/d17105.sab.failed_jobs)>0" 3
+  if [ -n "${sync_qnap_url}" ] && [ -n "${sync_qnap_key}" ]; then
+    ensure_trigger "D-17-105: Syncthing staleness > 6h" "last(/${TARGET_HOST_NAME}/d17105.syncthing.qnap.max_stale_h)>{\$PIPE_SYNC_STALE_HOURS}" 3
+    ensure_trigger "D-17-105: Syncthing folder errors present" "last(/${TARGET_HOST_NAME}/d17105.syncthing.qnap.errors_total)>0" 3
+  fi
 
   log "provision complete"
-  log "NOTE: Syncthing metrics are pending until Vault paths secret/syncthing/{seedbox,qnap} are restored."
+  if [ -n "${sync_qnap_url}" ] && [ -n "${sync_qnap_key}" ]; then
+    log "Syncthing metrics active from secret/syncthing/qnap"
+  else
+    log "NOTE: Syncthing metrics are pending until Vault paths secret/syncthing/{seedbox,qnap} are restored."
+  fi
 }
 
 main "$@"
