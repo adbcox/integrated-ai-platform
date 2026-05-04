@@ -22,7 +22,8 @@ fi
 scp "$REPO_PLIST" "${REMOTE_HOST}:${REMOTE_TMP}"
 
 # Privileged install/bootstrap on remote.
-ssh "$REMOTE_HOST" "sudo /bin/bash -s" <<'REMOTE_EOF'
+# ssh -t is required for hosts/sudoers that reject non-interactive sudo.
+ssh -t "$REMOTE_HOST" "sudo /bin/bash -s" <<'REMOTE_EOF'
 set -euo pipefail
 
 TMP_PLIST="/tmp/com.iap.ollama.plist"

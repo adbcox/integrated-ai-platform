@@ -987,8 +987,8 @@ responses).
 
 ## Finding 15 — Headless macOS launchd requires user-domain bootstrap with privileged registration path (Finding Y)
 
-**Date:** 2026-05-03  
-**Originating WP:** D-17-51 WP-02..WP-05  
+**Date:** 2026-05-03
+**Originating WP:** D-17-51 WP-02..WP-05
 **Severity:** Medium-High (unattended automation blocked across multiple agents)
 
 ### What was observed
@@ -1031,3 +1031,39 @@ daemon-domain canonical pattern.
 - D-17-29 (platform-registry LaunchAgent known blocked by Finding Y)
 - D-17-44 (`--no-verify` commit path due to stale launchd recency checks)
 - D-17-50 (arr-apikey-sweep deployment unblocked by daemon-domain pivot)
+
+---
+
+## Finding 16 — SSH non-interactive sudo is a recurring automation blocker; remote privileged scripts require terminal allocation or explicit manual handoff
+
+**Date:** 2026-05-04
+**Originating WP:** D-17-59
+**Severity:** Medium (automation path break; service usually recoverable through manual privileged execution)
+
+### What was observed
+
+- D-17-51 documented a repeated pattern where unattended bootstrap/migration work still required an operator-run sudo path.
+- D-17-58 showed the same class on a remote host: `scripts/install-ollama-launchdaemon-mac-studio.sh` used `ssh "$REMOTE_HOST" "sudo /bin/bash -s"` (no tty allocation), and the operator completed install using manual `sudo cp/bootstrap` steps on Mac Studio.
+- This is a transport/execution-plane failure class: **the privileged action is correct, but the invocation posture (`ssh` non-interactive + `sudo`) is not.**
+
+### Canonical pattern
+
+For remote privileged automation scripts:
+
+1. Use explicit terminal allocation for sudo paths:
+   - `ssh -t <host> "sudo <command>"`
+2. Keep remote privileged blocks idempotent and reversible (`bootout` before `bootstrap`, overwrite-safe file install).
+3. If remote sudo policy/host posture still blocks scripted execution, stop retry loops and emit a canonical manual sequence for operator execution.
+
+### Scope boundary vs Finding 15
+
+- **Finding 15:** launchd domain semantics on headless macOS (`gui/<uid>` vs `user/<uid>` vs `system` daemon pivot).
+- **Finding 16:** remote privileged command-transport semantics (`ssh` + `sudo` interaction model).
+
+They are sibling controls and both must hold for unattended reliability.
+
+### Cross-references
+
+- D-17-51 (Finding Y resolution; daemon pivot)
+- D-17-58 (Mac Studio Ollama persistence; script-level failing example)
+- `docs/runbooks/remote-sudo-scripts.md` (canonical remote-sudo execution pattern)
