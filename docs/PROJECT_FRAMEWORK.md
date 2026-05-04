@@ -525,6 +525,7 @@ Deliverable table:
 | D-17-68: provision-openproject.sh orphan disposition | IN PROGRESS | added 2026-05-04 via roadmap-create.sh |
 | D-17-69: xindex.md legacy DNS wording cleanup | IN PROGRESS | added 2026-05-04 via roadmap-create.sh |
 | D-17-70: Plane-era scripts retention decision | IN PROGRESS | added 2026-05-04 via roadmap-create.sh |
+| D-17-71: Stale-candidate runbook triage — disposition + minimal drift fixes | IN PROGRESS | added 2026-05-04 via roadmap-create.sh |
 
 ID-reservation note: D-17-22 (multi-session role + intake architecture)
 is RESERVED but not yet framework-authored. Discussed in a prior

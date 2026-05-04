@@ -7,7 +7,7 @@
 **Related artifacts:**
 - Finding Y context: `docs/_audit/integrated-stack-gaps-2026-05-03.md` Gap X2; D-17-29 closeout note in `docs/PROJECT_FRAMEWORK.md` §9.
 - Recurring-pain-point cross-reference: Gap F8 in `docs/_audit/integrated-stack-gaps-2026-05-03.md`.
-- Pending-followup trigger: `~/Documents/pending-platform-followups.md` → "QNAP SMB mount LaunchAgent persistence".
+- Pending-followup trigger: `~/Documents/pending-platform-followups.md` → "QNAP SMB mount LaunchDaemon persistence".
 - Syncthing pipeline that populates the share: `docs/runbooks/syncthing-rebuild.md`.
 
 ---
@@ -31,7 +31,7 @@ mount_smbfs '//admin:<password>@192.168.10.201/download' /Users/admin/mnt/qnap-d
 Notes verified 2026-05-03:
 - **No `sudo` required.** `/Users/admin/mnt/qnap-downloads` is owned by `admin:staff` and `mount_smbfs` accepts user-domain mounts on macOS 15+.
 - **No `rm -rf` of the mount point.** It currently contains `audit-archive/`, `data/`, `sports/`. SMB mount overlays them cleanly; the local content is hidden, not deleted.
-- **Mount survives until** logout, sleep-induced eviction, or `umount`. **Does not survive reboot** until the LaunchAgent is loaded.
+- **Mount survives until** logout, sleep-induced eviction, or `umount`. **Does not survive reboot** until the LaunchDaemon is loaded.
 - **Container restart required** after a new mount: Docker Desktop's filesystem bridge does not pick up a mount overlaid onto an existing bind path; existing containers continue to see the empty pre-mount directory until restarted. `docker restart sonarr radarr`.
 - **SMB negotiated SMB 3.1.1, AES_128_GMAC signing, encryption available but currently OFF.** Files surface to host as `admin:staff`; **inside the container they appear as `root:root` mode 0700** for files originally owned by `admin` on QNAP. Files originally owned by `syncthing` (uid 1000) on QNAP surface readable. Sonarr's import-by-move via SMB (runbook F3 in `syncthing-rebuild.md`) succeeds in either case because the move operation is performed by the SMB client at the protocol level, not via UNIX-style read+write+unlink.
 
@@ -39,7 +39,7 @@ Notes verified 2026-05-03:
 
 ## Persistence — EXECUTE WHEN FINDING Y RESOLVES
 
-> **Pre-flight gate.** Run the Finding Y check from `~/Documents/pending-platform-followups.md` first. If `launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.iap.platform-registry.plist` returns 0 (or any other com.iap agent loads via the same path), Y is resolved and you may proceed. If it still returns `Bootstrap failed: 125: Domain does not support specified action`, **stop and surface back** — none of the IAP LaunchAgents are loadable in the current user-domain state, and adding a 14th unloadable plist will only muddle the diagnosis.
+> **Pre-flight gate.** Run the Finding Y check from `~/Documents/pending-platform-followups.md` first. If `sudo launchctl print system/com.iap.platform-registry` succeeds (or any other `com.iap.*` daemon is loaded in system domain), Y is resolved and you may proceed. If system-domain launchd entries are missing, **stop and surface back** before adding this mount job.
 
 ### Step 1 — Store the SMB password in the user keychain
 
@@ -61,7 +61,7 @@ Field explanation:
 - `-s 192.168.10.201` — server (matches the SMB host).
 - `-P 445` — port (must match what `mount_smbfs` will use).
 - `-r "smb "` — protocol code (4 chars including trailing space — required form for SecKeychain SMB lookups).
-- `-T /sbin/mount_smbfs` — authorize `mount_smbfs` to read this item without prompting. **Critical:** without this, the LaunchAgent will hang on first invocation waiting for a GUI keychain prompt that never appears under launchd.
+- `-T /sbin/mount_smbfs` — authorize `mount_smbfs` to read this item without prompting. **Critical:** without this, the LaunchDaemon will hang on first invocation waiting for a keychain prompt that never appears under launchd.
 - `-l` — display label, easy to find in Keychain Access.
 
 Verify:
@@ -72,9 +72,9 @@ security find-internet-password -a admin -s 192.168.10.201 -g 2>&1 | grep -E '^(
 
 (`-g` will surface the password to stderr only when an interactive operator approves the keychain dialog — do not run this automated. Use `find-internet-password` without `-g` for a quiet existence check.)
 
-### Step 2 — Create the LaunchAgent plist
+### Step 2 — Create the LaunchDaemon plist
 
-Path: `~/Library/LaunchAgents/com.iap.qnap-downloads-mount.plist`
+Path: `docker/launchd-agents/com.iap.qnap-downloads-mount.plist` (repo source), install target `/Library/LaunchDaemons/com.iap.qnap-downloads-mount.plist`
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
@@ -117,15 +117,16 @@ Notes:
 - **No `WatchPaths`.** macOS does not reliably surface SMB mount-loss as a filesystem event; auto-remount on disconnect is out of scope for this plist. If you need that, layer a separate watchdog agent or move to autofs.
 - **Logs land under `~/.platform-registry/`** to keep all com.iap.* agents' output in one place (matches existing convention from `com.iap.platform-registry.plist`).
 
-### Step 3 — Bootstrap the agent
+### Step 3 — Bootstrap the daemon
 
 ```bash
 # Sanity check — Finding Y must be resolved first
-launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.iap.qnap-downloads-mount.plist
+sudo cp docker/launchd-agents/com.iap.qnap-downloads-mount.plist /Library/LaunchDaemons/
+sudo launchctl bootstrap system /Library/LaunchDaemons/com.iap.qnap-downloads-mount.plist
 echo "exit=$?"
 ```
 
-Expect exit 0. If `Bootstrap failed: 125`, **abort and re-check Finding Y status** — do not retry-loop.
+Expect exit 0. If bootstrap fails, **abort and re-check launchd domain/status** — do not retry-loop.
 
 ### Step 4 — Verify
 
@@ -150,7 +151,7 @@ docker exec radarr ls /downloads/sabnzbd/radarr/ | head -3
 /Users/admin/repos/integrated-ai-platform/scripts/platform-registry/refresh.sh
 ```
 
-The refresh picks up the new LaunchAgent as a platform dependency. Confirm by inspecting `~/.platform-registry/inventory.json` for an entry tied to `com.iap.qnap-downloads-mount`.
+The refresh picks up the new LaunchDaemon as a platform dependency. Confirm by inspecting `~/.platform-registry/inventory.json` for an entry tied to `com.iap.qnap-downloads-mount`.
 
 ### Step 6 — Restart arr containers (if mount was newly established by the agent)
 
@@ -168,9 +169,9 @@ Expect `RemotePathMappingCheck` and `RootFolderCheck` errors absent. The 1337x i
 ## Rollback
 
 ```bash
-launchctl bootout gui/$(id -u)/com.iap.qnap-downloads-mount
+sudo launchctl bootout system/com.iap.qnap-downloads-mount
 umount /Users/admin/mnt/qnap-downloads
-rm ~/Library/LaunchAgents/com.iap.qnap-downloads-mount.plist
+sudo rm /Library/LaunchDaemons/com.iap.qnap-downloads-mount.plist
 # Optionally remove the keychain entry:
 security delete-internet-password -a admin -s 192.168.10.201 -P 445 -r "smb "
 ```
@@ -183,7 +184,7 @@ The arr containers will continue to run with an empty `/downloads` until the nex
 
 | Symptom | Cause | Fix |
 |---|---|---|
-| `Bootstrap failed: 125: Domain does not support specified action` | Finding Y still active. | Resolve Y first; do not force-load. |
+| `Bootstrap failed: 5: Input/output error` | System-domain install/bootstrap failed or plist invalid. | Validate plist + ownership/permissions, then retry bootstrap once. |
 | Plist loads but mount is empty inside the container | Mount established *after* the container was created; bind layer is frozen. | `docker restart sonarr radarr`. |
 | Container shows files as `root:root 0700`, Sonarr cannot read them | macOS smbfs ↔ Docker Desktop file-bridge UID translation gap; only files owned by `admin` (uid 502) on QNAP are affected. Files owned by `syncthing` (uid 1000) surface readable. | Sonarr's SMB-side import-by-move (`.smbdelete*` artifacts per `syncthing-rebuild.md` F3) usually succeeds anyway. If imports fail wholesale, normalize ownership on QNAP: `ssh admin@192.168.10.201 'chown -R syncthing:everyone /share/download/sabnzbd/ /share/download/rtorrent/'`. |
 | Mount succeeds but `/data/media/...` is missing inside container | QNAP-side `/share/download/data` symlink not followed. SMB clients on macOS handle symlinks via the `mfsymlinks` extension which QNAP supports out of the box. | Verify with `ls -la /Users/admin/mnt/qnap-downloads/data/` on host — if it's an empty dir not a symlink-traversed tree, the QNAP-side symlink is broken; investigate on QNAP. |

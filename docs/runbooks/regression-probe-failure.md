@@ -38,7 +38,7 @@ numbered) failed. Map the label to the service:
 | d | VMAgent | `localhost:8429/health` |
 | e | Grafana | `localhost:3030/api/health` |
 | f | Uptime Kuma | `localhost:3033` |
-| g | Plane API | `localhost:8000/api/` |
+| g | Legacy check slot (historical Plane API) | `localhost:8000/api/` |
 | h | NetBox | `localhost:8080/api/` |
 
 For numbered checks beyond a–h, read the probe script directly:
@@ -140,14 +140,18 @@ cd ~/repos/integrated-ai-platform/docker
 docker compose -f observability-stack.yml up -d uptime-kuma
 ```
 
-### Plane API FAIL (check g)
+### Historical Plane API FAIL (check g)
 
 ```bash
 docker inspect plane-api --format '{{.State.Status}}'
 docker logs plane-api --tail 30
 ```
 
-Plane depends on Vault Agent sidecars (vault-agent-plane-*) and its Postgres + Redis:
+Plane is retired from active operations. Treat this check as historical
+forensics only; do not restore Plane as a remediation step for current
+platform health without explicit operator direction.
+
+Historical dependency note:
 ```bash
 docker compose -f docker/docker-compose-plane.yml ps
 ```

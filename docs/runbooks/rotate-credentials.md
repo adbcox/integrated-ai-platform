@@ -162,5 +162,5 @@ docker exec -e VAULT_TOKEN="$VAULT_TOKEN" vault-server \
 - Always hash-verify after write — never display credential values.
 - Keep the rotation atomic: write to Vault first, verify hash, then restart service.
 - If a service is customer-facing, prefer blue/green (restart the standby first).
-- Log the rotation event: `# rotated $(date -u +%Y-%m-%dT%H:%M:%SZ)` in the Vault KV metadata or Plane issue.
+- Log the rotation event: `# rotated $(date -u +%Y-%m-%dT%H:%M:%SZ)` in Vault KV metadata and/or the current phase chronicle/closeout doc.
 - Credentials in Vault audit log are hashed automatically by Vault — no manual scrubbing needed.

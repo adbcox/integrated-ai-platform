@@ -84,9 +84,9 @@ docker compose -f docker-compose.mcp-docker-remote.yml up -d mcp-docker-remote
 curl -sf http://localhost:8092/healthz && echo "docker-mcp: OK"
 ```
 
-For persistence across reboots, use the launchd agent:
+For persistence across reboots, use the system-domain LaunchDaemon:
 ```bash
-launchctl load ~/Library/LaunchAgents/com.iap.mcp.docker.plist
+sudo launchctl print system/com.iap.docker-events
 ```
 
 ---
@@ -105,14 +105,12 @@ curl -sf http://localhost:3030/api/health && echo "Grafana: OK"
 
 ---
 
-## Plane CE (project management)
+## Historical Plane CE (retired)
 
 ```bash
-cd ~/repos/integrated-ai-platform/docker
-docker compose -f docker-compose-plane.yml up -d
-
-# All sidecars (vault-agent-plane-*) run first; check healthy state
-docker compose -f docker-compose-plane.yml ps
+Plane CE is retired from active platform operations. Do not deploy or
+restart as part of current runbook execution; keep this section only as
+historical context for legacy incident forensics.
 ```
 
 ---

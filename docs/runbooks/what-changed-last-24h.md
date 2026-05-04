@@ -44,8 +44,8 @@ docker ps -a --format 'table {{.Names}}\t{{.RunningFor}}\t{{.Status}}' | \
 
 ```bash
 cd ~/repos/integrated-ai-platform
-git log --since="24 hours ago" -- config/service-registry.yaml --pretty=format:'%h %ai %s'
-git diff "@{1 day ago}" -- config/service-registry.yaml
+git log --since="24 hours ago" -- config/service-registry.yaml.DEPRECATED --pretty=format:'%h %ai %s'
+git diff "@{1 day ago}" -- config/service-registry.yaml.DEPRECATED
 ```
 
 ## Phase document changes

@@ -35,8 +35,8 @@ Pick **Full IV&V** when:
   in Block 4.C are all silent-failure surfaces; full IV&V is the
   default for any future surface of that shape.
 - The sub-stage's blast radius is large (writes against
-  authoritative state, e.g., NetBox dcim, Plane issues, Vault
-  paths).
+  authoritative state, e.g., NetBox dcim, OpenProject work
+  packages, Vault paths).
 
 Pick **Folded** when **all four** ADR-A-013 conditions hold: pattern
 proven in this session, structurally identical application, no
@@ -97,9 +97,9 @@ parallelised.
 
 Stateful inspection (querying NetBox, polling Vault status, etc.)
 parallelises only if the inspection itself doesn't compete for
-rate budget. Plane V1's 60/min budget means audit-time inventory
-GETs against Plane must sequence with any other Plane consumer,
-not parallelise across consumers.
+rate budget. If an external API has strict rate limits, audit-time
+inventory GETs against that API must sequence with any other
+consumer, not parallelise across consumers.
 
 ### When to skip the audit
 
@@ -264,9 +264,9 @@ discoveries).
 
 ### What counts as a discovery
 
-- A pattern that didn't behave as the plan assumed (e.g., the
-  Plane V1 cursor-based pagination terminating on
-  `next_page_results` rather than `next_cursor`).
+- A pattern that didn't behave as the plan assumed (e.g., API
+  pagination terminating on a different cursor field than
+  expected).
 - A silent failure mode (HTTP 200 with no mutation;
   healthcheck flapping under PID-1 env that isn't inherited).
 - An upstream image's behaviour that contradicts assumed

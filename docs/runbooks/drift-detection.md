@@ -182,7 +182,7 @@ the UI edit, copy the new state into the markdown table first.
 
 ### `caddy-dns-parity` advisory annotation
 
-This is informational. The CI runner can't query OPNsense Unbound, so
+This is informational. The CI runner can't query OPNsense Dnsmasq, so
 it prints the canonical Caddy site list and reminds the operator to
 verify each domain resolves to `192.168.10.145` internally.
 
@@ -256,11 +256,11 @@ GATE: PASS | FAIL — <action>
 See also ADR-A-006 (single source of truth) and `docs/PROJECT_FRAMEWORK.md`
 §3.5 (D#15 + D#16 doctrine entries).
 
-## §9 — Caddy ↔ Unbound DNS parity (D-16-06 + D-17-09)
+## §9 — Caddy ↔ Dnsmasq DNS parity (D-16-06 + D-17-09)
 
 The original D-16-06 caddy-internal-domains check was advisory: it
 listed the `*.internal` site blocks declared in `docker/caddy/Caddyfile`
-and asked the operator to verify each had a matching Unbound override.
+and asked the operator to verify each had a matching Dnsmasq override.
 D-17-09 made the check **enforced** by integrating the OPNsense API into
 the existing drift-detection layer.
 
@@ -308,13 +308,13 @@ of `backup` and `vault-audit-rotate` (D-16-04.1).
 
 1. Read the gap report (printed by the read-mode subcommand). Three
    categories:
-   - **missing** — Caddy site has no Unbound override. Add the A-record
-     in OPNsense (UI: Services → Unbound DNS → Overrides → Host
+   - **missing** — Caddy site has no Dnsmasq override. Add the A-record
+     in OPNsense (UI: Services → Dnsmasq DNS → Host Overrides
      Overrides → +). Target IP: `192.168.10.145` (Mac Mini, all Caddy-
      fronted services).
-   - **wrong_target** — Unbound override exists but points to the wrong
+   - **wrong_target** — Dnsmasq override exists but points to the wrong
      IP. Edit the existing record in OPNsense.
-   - **extra_internal** — Informational. Unbound has `.internal` records
+   - **extra_internal** — Informational. Dnsmasq has `.internal` records
      with no Caddy site. Not drift; some are operator-owned non-Caddy
      services (portainer, dozzle, gitea, etc.). Audit-trail only.
 2. After making OPNsense changes, refresh the status file:
@@ -345,14 +345,14 @@ The new pre-commit hook is scoped to changes in `docker/caddy/Caddyfile`
 and `scripts/check-repo-coherence.py` / `scripts/opnsense_client.py`.
 When you add a new site block:
 
-1. Add the Unbound override in OPNsense FIRST (so the parity check
+1. Add the Dnsmasq override in OPNsense FIRST (so the parity check
    passes immediately when you commit).
 2. Edit the Caddyfile.
 3. Stage + commit. The pre-commit hook either:
    - SKIPs (no status file present locally — operator has not run
      the refresh yet on this host)
    - PASSes (status file shows ok=true; new site visible in next refresh)
-   - FAILs (status file is stale OR new site missing from Unbound)
+   - FAILs (status file is stale OR new site missing from Dnsmasq)
 4. If FAIL, run the refresh subcommand and re-stage.
 
 ### Initial reconciliation

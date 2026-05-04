@@ -7,8 +7,8 @@
 ## Overview
 
 A "host" is a physical or virtual machine joining the platform infrastructure.
-Current hosts: Mac Mini M5 (control plane), QNAP TS-X72 (NAS), OPNsense (router),
-HA hub (IoT). Planned: MacBook Pro M5 (Block 3), Linux Threadripper (future).
+Current hosts: Mac Mini M4 Pro (control plane), QNAP TS-X72 (NAS), OPNsense (router),
+HA hub (IoT). Planned: MacBook Pro (future), Linux Threadripper (future).
 
 Adding a new host involves:
 1. Register in NetBox CMDB (authoritative inventory)
@@ -42,7 +42,7 @@ CMDB_SOURCE=netbox python3 scripts/cmdb_source.py | python3 -c \
 
 ## Step 2: Configure DNS in OPNsense
 
-In OPNsense (`192.168.10.1`) → Services → Unbound DNS → Host Overrides:
+In OPNsense (`192.168.10.1`) → Services → Dnsmasq DNS → Host Overrides:
 - Host: `<hostname>`
 - Domain: `internal`
 - IP: `<host IP>`
@@ -66,7 +66,7 @@ For each service the new host will run:
   - Description: purpose
 
 Assign compose file and credential metadata in NetBox custom fields
-(or update `config/service-registry.yaml` during transition window if
+(or update `config/service-registry.yaml.DEPRECATED` during transition window if
 `CMDB_SOURCE=yaml` is still the default).
 
 ---
@@ -167,7 +167,7 @@ Document in `docs/runbooks/rewire-log/YYYY-MM-DD-<description>.md`.
 
 - [ ] Host registered in NetBox with IP, interface, primary address
 - [ ] DNS resolves `<hostname>.internal` from LAN
-- [ ] Services registered in NetBox / service-registry
+- [ ] Services registered in NetBox / service-registry fallback (`config/service-registry.yaml.DEPRECATED`)
 - [ ] Headscale node joined (if remote)
 - [ ] Zabbix agent registered and reporting
 - [ ] Caddy routes verified (if applicable)
