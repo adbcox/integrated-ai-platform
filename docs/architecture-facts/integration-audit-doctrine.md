@@ -1436,3 +1436,69 @@ work without a RAM-fit pre-check.
 - D-17-91 (benchmark harness, Step 1+)
 - `docs/architecture-facts/aider-compute-doctrine.md` (96 GB constraint)
 - `docs/runbooks/pull-new-model.md` §Step -1 (RAM-fit gate added)
+
+## Finding 22 — QNAP QTS blocks Docker bridge subnet source IPs; application containers must run on Mac Mini
+
+**Deliverable:** D-17-108 (FlareSolverr migration)
+**Date:** 2026-05-04
+**Pattern:** Architecture topology constraint — applies to ALL Docker→QNAP network paths
+
+### Canonical statement
+
+QNAP QTS packet-filtering blocks inbound connections from Docker bridge
+subnet source IPs (172.23.x.x, 172.25.x.x, etc.) to services bound on
+QNAP host interfaces. This affects any Docker container attempting to
+reach a QNAP-hosted service directly by host IP:port.
+
+Confirmed blocked paths as of 2026-05-04:
+
+| Source container | QNAP target | Result |
+|---|---|---|
+| zabbix-server (172.25.x.x) | QNAP Syncthing :8384 | TCP RST |
+| prowlarr (172.23.0.12) | QNAP FlareSolverr :8191 | TCP RST |
+
+Mac Mini host (192.168.10.145) reaches both services normally — the
+block is selective to Docker bridge subnet source IPs, not all external
+IPs.
+
+### Implication for architecture
+
+Services that Docker containers need to reach must not run on QNAP.
+This is consistent with the architecture doctrine that QNAP is the NAS
+(downloads, media, backups) and Mac Mini Docker is the application tier.
+Any pre-architecture-lock QNAP-hosted application container that a Mac
+Mini Docker service depends on is broken by design and must be migrated.
+
+### Workaround pattern for QNAP-only data sources
+
+Where the data source (not service) is on QNAP and no Mac Mini-side
+alternative exists, use the host-side bridge pattern:
+- Push from Mac Mini host (not Docker): `zabbix_sender`, SSH→QNAP
+  loopback curl (Syncthing D-17-105)
+- Pull via Mac Mini host process: launchd agent that reaches QNAP and
+  feeds results to Docker containers via trapper/file/socket
+
+Never add `extra_hosts` pointing Docker containers at QNAP IPs for
+application services — the TCP connection will be refused regardless of
+name resolution.
+
+### Verification before assuming container-absent
+
+**Finding 20 repeat in D-17-107:** FlareSolverr was assumed absent
+because Prowlarr health showed proxy unavailable. Correct probe sequence:
+
+1. Probe from Mac Mini host: `curl http://QNAP_IP:PORT/probe`
+2. Probe from inside the consumer container: `docker exec <container> curl ...`
+3. If (1) succeeds and (2) fails → QNAP routing block, not absent service
+4. If (1) fails → service actually absent
+
+Short-circuiting to step 4 without step 1 is a verification gap that
+wastes diagnosis time and can produce wrong remediation (deploying a
+service that already exists).
+
+### Cross-references
+
+- D-17-105 (Syncthing — first instance; resolved via host-side launchd sender)
+- D-17-108 (FlareSolverr — migrated to Mac Mini Docker)
+- Finding 20 (D-17-107 note on probe-before-assume)
+- `docs/architecture-facts/download-pipeline-monitoring-doctrine.md`
