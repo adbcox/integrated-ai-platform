@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# HISTORICAL MIGRATION SCRIPT.
+# Do not use for new work. Retained to preserve the one-time Plane->OpenProject
+# import mapping chain (D-17-04 WP-17-04-03).
+#
 """
 D-17-04 WP-17-04-03 — Import Plane snapshot into OpenProject.
 

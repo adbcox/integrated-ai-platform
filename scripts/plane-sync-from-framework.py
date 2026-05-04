@@ -1,4 +1,11 @@
 #!/usr/bin/env python3
+# HISTORICAL / RETIRED SUBSTRATE (Plane CE).
+# Do not use for new work. Retained for migration archaeology and
+# historical replay only.
+# Canonical operational replacement:
+#   - scripts/openproject-sync-from-framework.py
+#   - scripts/openproject-enrich-from-framework.py
+#
 """D-16-02.A — one-way sync from PROJECT_FRAMEWORK.md to Plane.
 
 Doctrine (ADR-A-006): repo-owned docs are canonical; Plane is an

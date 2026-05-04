@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# HISTORICAL / RETIRED SUBSTRATE (Plane CE).
+# Do not use for new work. Retained as a record of pre-migration
+# backlog curation mechanics.
+#
 """Plane backlog curation: label assignment via title-prefix mapping.
 
 Usage:

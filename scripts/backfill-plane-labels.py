@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# HISTORICAL / RETIRED SUBSTRATE (Plane CE).
+# Do not use for new work. Retained for Discovery-era reference
+# and migration archaeology only.
+#
 """Block 4.C C4.2 — back-fill labels on Plane issues by RM-* prefix.
 
 Reads every issue in the Plane project, extracts the RM-<PREFIX>-NNN

@@ -1,4 +1,9 @@
 #!/usr/bin/env python3
+# HISTORICAL / RETIRED SUBSTRATE (Plane CE).
+# DO NOT RUN for current operations: this receiver creates issues in
+# retired Plane APIs and is not compatible with the OpenProject substrate.
+# Retained for incident archaeology only.
+#
 """Receives Diun webhook payloads and creates Plane issues for image updates."""
 import json
 import os

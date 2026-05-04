@@ -1,4 +1,8 @@
 #!/usr/bin/env bash
+# HISTORICAL / RETIRED SUBSTRATE (Plane CE).
+# Do not use for new work. Retained for forensic migration-chain
+# verification only.
+#
 # D-17-04 WP-17-04-02 — final Plane snapshot (DB dump + structured API
 # export) prior to substrate replacement by OpenProject.
 #

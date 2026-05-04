@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# HISTORICAL / RETIRED SUBSTRATE (Plane CE).
+# Do not use for new work. Retained for historical context of
+# pre-OpenProject ADR backfill behavior.
+#
 """
 Backfill missing ADR-* stub issues in Plane.
 
