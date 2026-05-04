@@ -84,10 +84,12 @@ docs/  ──read-only mount──▶  xindex container  ──FTS5──▶  /d
   `docker exec caddy cat /data/caddy/pki/authorities/local/root.crt > caddy-local-ca.crt`
   (header comment in `docker/caddy/Caddyfile`). The loopback URL stays
   available for local debugging without TLS.
-- DNS: `xindex.internal` is provisioned in OPNsense Unbound (same place as
-  every other `*.internal` hostname). If a host can resolve `grafana.internal`
-  but not `xindex.internal`, the Unbound A-record is missing — add it under
-  Services → Unbound DNS → Overrides pointing at `192.168.10.145`.
+- DNS: `xindex.internal` is provisioned in OPNsense Dnsmasq (canonical
+  authority for all `*.internal` hostnames; Unbound is forbidden). If a host
+  can resolve `grafana.internal` but not `xindex.internal`, add/verify the
+  Dnsmasq host entry under Services → Dnsmasq DNS → Hosts pointing at
+  `192.168.10.145`, then reconfigure Dnsmasq. Reference:
+  `docs/architecture-facts/opnsense-dns-authority.md`.
 
 ## 3. Endpoints
 
