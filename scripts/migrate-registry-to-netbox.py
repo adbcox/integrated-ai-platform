@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Block 4.C C3.2 — migrate config/service-registry.yaml into NetBox.
+"""Block 4.C C3.2 — migrate config/service-registry.yaml.DEPRECATED into NetBox.
 
 Plan:
   1. Ensure 1 site (`integrated-ai-platform`) exists.

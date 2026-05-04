@@ -1,4 +1,10 @@
 #!/usr/bin/env bash
+# FAILED BRANCH — user-domain LaunchAgent approach abandoned per
+# D-17-51 RESOLUTION_PLAN (2026-05-03).
+# Canonical pattern is LaunchDaemon in system domain:
+#   scripts/d-17-51-verify-launchdaemons.sh
+# Do not reuse this script for new work.
+#
 # D-17-51 WP-06 verification helper.
 # Prints launchctl status + heartbeat recency for com.iap.* agents.
 
