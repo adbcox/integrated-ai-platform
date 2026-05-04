@@ -94,21 +94,90 @@ the cell can migrate, not the *floor*.
 
 ### C1 — Reference-doc draft from N sources
 
+**Class split landed 2026-05-04 (D-17-53 Session 13 Option B
+trigger).** C1 is no longer one class; it is two:
+
+- **C1a — verbatim-quote-bearing reference docs.** Output must
+  contain quoted/cited content from source files (verbatim
+  blocks, source-citation tables, line-number citations,
+  concrete file-path or API-endpoint quotation). The
+  source-fidelity-loss failure mode is class-intrinsic at this
+  capability boundary for the first measured cell.
+- **C1b — narrative chronicle/doctrine notes without quote
+  citations.** Output is operator-facing narrative or procedural
+  text that does NOT depend on verbatim quotation from source
+  (no citation tables, no line-number citations, no copied
+  config blocks). Substrate is read for *concept*, written
+  back as paraphrase + structure.
+
+The split is empirically grounded: C1a is the failure-mode
+attractor (Sessions 5/7/8/11/12/13 severe-shape recurrences all
+involved verbatim-quote-bearing content); C1b is the fall-back
+zone for any continued local-execution work in the reference-doc
+shape.
+
+#### C1a — Verbatim-quote-bearing reference docs
+
 - **Read:** N files (typically 2–5 source docs/configs)
-- **Write:** 1 new doc (markdown reference, runbook, chronicle)
-- **Decide:** Structure only — what sections, in what order, at
-  what grain
-- **Tier:** **Phase-A**
-- **Status:** Posture 2 (dual-review) as of D-17-53 close
-  (2026-05-03). Goose+qwen3-coder:30b on Mac Studio Ollama 0.22.1
-  cleared the N=5 gate; M=10 dual-review window now open. See
-  `promotion-criteria.md` for the gate-decision record.
+- **Write:** 1 doc with verbatim quotation, source-citation
+  table, and/or line-number citations
+- **Decide:** Structure + which spans to quote
+- **Tier:** **Phase-A** (originally), **C1a SUSPENDED for
+  Goose+qwen3-coder:30b indefinitely as of 2026-05-04**.
+- **Status:** **Posture 0 (not capable / not yet evaluated)**
+  for the first measured cell. Cell history: cleared the N=5
+  gate at Session 5 (2026-05-03), promoted Posture 1 → Posture
+  2 same day; demoted Posture 2 → Posture 1 at Session 11
+  (2026-05-04) on severe-shape recurrence; demoted Posture 1
+  → Posture 0 at Session 13 (2026-05-04) on Option B trigger
+  after re-promotion attempt 1/5 produced severe-shape failure
+  *with zero source reads* (Sources section asserted reading
+  that did not occur). Class-intrinsic-failure threshold met:
+  4 of 5 post-remediation sessions exhibited severe shape
+  (Session 9 clean, Sessions 10 shape-shifted, Sessions 11/12/
+  13 severe). Single-clean-datapoint sampling-artifact
+  hypothesis strengthened: Session 13 substrate matched
+  Session 9's clean shape (net-new target, single primary
+  source, narrative content, no flag tables, no plists, no API
+  endpoints) and still produced severe-shape failure.
+- **Standing directive (2026-05-04):** Goose dispatch RETIRED
+  for C1a work. C1a returns to Claude Code under
+  `claude-local` (or `claude-pro` for high-judgment passages).
+  Re-promotion attempts paused indefinitely until class
+  redefinition is validated.
+- **Cell-change branch (deferred):** testing other models
+  (gemma2:27b, larger qwen variants) on C1a is parked as a
+  future deliverable; Singapore travel window takes priority
+  over new cell experiments.
 - **Reference cell:** see `goose-capability-boundary.md`
   "Observed behavior" + `promotion-criteria.md` "Empirical
   evidence — first measured cell".
-- **Sub-class variation (D-17-53 finding):** C1 is not uniform.
-  Output quality (operator-judged % preserved) varies by
-  sub-shape of the prompt:
+
+#### C1b — Narrative chronicle/doctrine notes without quote citations
+
+- **Read:** N files for *concept* (paraphrased structurally;
+  not quoted)
+- **Write:** 1 narrative doc (operator-facing prose, procedural
+  steps in the operator's voice, doctrine summary)
+- **Decide:** Structure + paraphrase grain
+- **Tier:** **Phase-A**
+- **Status:** **Posture 0 (not yet evaluated for this cell at
+  the C1b sub-class).** Available for future Goose dispatch
+  attempts. Posture-1 N=5 gate would re-establish capability
+  evidence under the narrowed sub-class definition.
+- **Anti-pattern boundary:** if a draft starts pulling in
+  quoted blocks, citation tables, or line-number references,
+  it has crossed into C1a and the work belongs back on Claude
+  Code. Operator-side review checkpoint: any C1b draft
+  presenting itself as containing source citations is by
+  definition C1a-misclassified.
+
+#### Original C1 sub-class variation (retained for historical
+#### reference, applies to the pre-split unified C1 work)
+
+- **Sub-class variation (D-17-53 finding, pre-split):** C1 was
+  not uniform. Output quality (operator-judged % preserved)
+  varied by sub-shape of the prompt:
   - *Smoke-test* (single subsystem, single source): ~100%
   - *Doctrine draft* (chronicle from observation): ~75%
   - *Runbook draft, substrate-sufficient* (concrete service,

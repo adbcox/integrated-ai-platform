@@ -324,35 +324,49 @@ savings accrue per-class.
 class "read N source files + draft a reference doc"
 (read-author-only).
 
-**Status (2026-05-04):** **Posture 1 (capability-validation) —
-DEMOTED from Posture 2 at Session 11. Re-promotion attempt: 0/5
-(Session 12 was a NULL attempt — severe-shape recurrence; does
-not count toward N=5).** Cell cleared the N=5 gate 2026-05-03;
-operator promoted Posture 1 → Posture 2 in the same session.
-M=10 dual-review window opened. After 6/10 entries (Sessions
-6–11), operator demoted the cell back to Posture 1 on Session 11
-evidence. **N=5 gate re-required** for any future re-promotion
-attempt. The standard preamble (verbatim-block + source-citation
-table) is retained for Posture-1 work — it does not hurt; it just
-doesn't reliably suppress the failure-mode class.
-**Watchlist item — REGRESSED to "PROMPT-ENGINEERING REMEDIATION
-INSUFFICIENT".** The source-fidelity-loss failure mode (N=3
-confirmed Sessions 5, 7, 8) was suppressed cleanly at Session 9
-(N=1), shifted shape at Session 10 (N=1 partial-remediation),
-**recurred in original severe shape at Session 11**, and **recurred
-again at Session 12 (first re-promotion attempt)**. Hit-rate of
-severe-shape failure under strengthened preamble: **3 of 4
-post-remediation sessions** (Session 9 clean, Session 10 shape-
-shifted, Session 11 severe, Session 12 severe — wholesale
-fabricated source-citation table line numbers across two scripts,
-fabricated `vault-admin-token.sh` path, misapplied `[UNVERIFIED]`
-flagging covering for facts that were directly answerable from
-source while load-bearing fabrications went unflagged).
-Remediation does not hold beyond the original test datapoint.
-**Class-intrinsic-failure threshold: one more severe-shape
-recurrence (Session 13 or later) triggers Option B — demote to
-Posture 0; class redefinition required before any new N=5 gate
-attempt.**
+**Status (2026-05-04):** **Posture 0 (not capable / not yet
+evaluated) — DEMOTED from Posture 1 at Session 13. C1 SUSPENDED
+for this cell pending class redefinition.** Cell cleared the N=5
+gate 2026-05-03 and entered Posture 2 dual-review same day; after
+6/10 entries (Sessions 6–11) operator demoted Posture 2 → Posture
+1 on Session 11 evidence; after one Posture-1 re-promotion attempt
+(Session 12, NULL) and one Posture-1 re-promotion session
+(Session 13, NULL), operator triggered Option B and demoted
+Posture 1 → Posture 0 on Session 13 evidence. **C1 split landed
+2026-05-04** (see `class-taxonomy.md` C1a/C1b sub-classes):
+- **C1a (verbatim-quote-bearing reference docs):** SUSPENDED for
+  Goose+qwen3-coder:30b indefinitely. C1a work returns to Claude
+  Code under `claude-local` (or `claude-pro` for high-judgment
+  passages).
+- **C1b (narrative chronicle/doctrine notes without quote
+  citations):** Available for future Goose attempts. Posture 0
+  (not yet evaluated for this cell at C1b sub-class); Posture-1
+  N=5 gate would re-establish capability evidence under the
+  narrowed sub-class definition.
+**Cell-change branch deferred:** testing other models (gemma2:27b,
+larger qwen variants) on C1a is parked as a future deliverable;
+Singapore travel window takes priority over new cell experiments.
+**Watchlist item — CLASS-INTRINSIC FAILURE CONFIRMED for C1a
+work-class.** The source-fidelity-loss failure mode (N=3 confirmed
+Sessions 5, 7, 8) was suppressed cleanly at Session 9 (N=1),
+shifted shape at Session 10 (N=1 partial-remediation), recurred
+in original severe shape at Session 11, recurred again at Session
+12 (Posture-1 re-promotion attempt 1/5 NULL), and recurred at
+Session 13 (Posture-1 re-promotion session 1/5 NULL — Option B
+trigger). Hit-rate of severe-shape failure under strengthened
+preamble: **4 of 5 post-remediation sessions** (Session 9 clean,
+Session 10 shape-shifted, Sessions 11/12/13 severe). Remediation
+does not hold; this is class-intrinsic failure for the C1a
+sub-class on this cell.
+**Single-clean-datapoint sampling-artifact hypothesis (alternative
+correlation c) STRENGTHENED.** Session 13 substrate matched
+Session 9's clean shape on every identifiable axis (net-new
+target, single primary source, narrative content, no flag tables,
+no plists, no API endpoints, no path enumeration) and still
+produced severe-shape failure with a new defect (zero source
+reads — Sources section asserted reading that did not occur).
+This argues that Session 9 was a lucky draw, not evidence of a
+substrate-matched success regime.
 
 **Substrate-shape-correlation hypothesis — FALSIFIED at N=2
 (Session 12, 2026-05-04).** Originally logged 2026-05-04 from
@@ -958,9 +972,100 @@ not just an operator-side procedural trap.
   session.log, goose-draft-uncommitted.md). **Draft NOT
   committed; chronicle-only update.**
 
+- (2026-05-04) D-17-53 Session 13 — `goose-dispatch-preflight.md`
+  fresh authoring under the strengthened standard preamble.
+  C1 sub-class: reference-doc draft, fresh authoring, single
+  primary source. **Brief was deliberately designed to match
+  Session 9's clean substrate shape on every identifiable axis**
+  (net-new target verified via hard pre-flight gate; single
+  primary source — `promotion-criteria.md` "Operator-side
+  substrate trap" section; narrative content with no flag
+  tables, plists, API endpoints, or path enumeration; substrate-
+  defining doctrine note rather than re-author of existing
+  runbook) as a test of the alternative-correlation hypothesis
+  (c) "single-clean-datapoint sampling artifact". Scheduled as
+  Posture-1 re-promotion session 1/5; **Option B trigger**: does
+  not count toward N=5 because the output is not clean.
+  **WATCHLIST FAILURE MODE — SEVERE-SHAPE RECURRENCE WITH NEW
+  DEFECT SHAPE (zero source reads).** Wall-clock 12 seconds,
+  exit 0, output 16 lines markdown, **zero `read_text_file`
+  calls observed in trace**. Goose did not invoke any
+  filesystem-mcp tool despite the brief listing
+  `promotion-criteria.md` as a required source. Four defects:
+  1. **Sources-section fabrication-by-omission. NEW SHAPE.**
+     Goose's output ends with a "Sources" section listing
+     `promotion-criteria.md` and describing its content. No
+     read of that file occurred. Goose produced the source-
+     description text from the brief itself (the brief told
+     Goose what was in the section), then presented that as
+     the result of having read the source. Distinct from prior
+     sessions: Sessions 5/7/8/11/12 read source files and
+     fabricated *citations from* them; Session 13 fabricated
+     the *reading itself*. The Sources section is a load-
+     bearing lie about the reading process.
+  2. **Counterfactual converted to factual (Session 11
+     claim).** Goose's "Why" section: "Session 11's documented
+     failure mode where an overwriting dispatch led to a loss
+     of operational context." Chronicle: Session 11 draft was
+     NOT committed; no overwrite occurred; "loss of operational
+     context" is not a documented failure mode anywhere. Goose
+     converted the *prevented* counterfactual into a historical
+     event.
+  3. **Wholesale fabricated event (Session 12 claim).** Goose's
+     "Why" section: "Session 12's chronicle records the
+     subsequent recovery procedure that was required to restore
+     the correct dispatch state." Chronicle: Session 12 was a
+     NULL re-promotion attempt; no recovery procedure exists;
+     nothing was overwritten or restored.
+  4. Procedure steps 1–2 are correct (limited credit). Step 1
+     (bash existence check) and Step 2 (branch on result) match
+     the spec from `promotion-criteria.md` operator-side
+     substrate trap section. The brief stated the spec
+     verbatim; Goose copied it. Novel content (Why-section
+     reasoning) is where the failure landed.
+  **Pattern read — post-remediation hit-rate now 4 of 5
+  sessions:** Session 9 clean, Session 10 shape-shifted,
+  Sessions 11/12/13 severe.
+  **Alternative-correlation hypothesis (c) STRENGTHENED.**
+  Session 13 substrate matched Session 9's clean shape on
+  every identifiable axis and still produced severe-shape
+  failure. This argues that Session 9 was a lucky draw — a
+  single-clean-datapoint sampling artifact — rather than
+  evidence of a substrate-matched success regime. The cell may
+  not be capable of source-fidelity at the C1 work-class
+  regardless of substrate.
+  **Operator disposition (Posture-1 re-promotion session 1/5,
+  NULL, 2026-05-04):** **Option B confirmed.** Cell DEMOTED
+  Posture 1 → Posture 0. C1 SUSPENDED for this cell pending
+  class redefinition. Class redefinition encoded as combined
+  (a) C1 split + (c) cell change deferred:
+  - **C1a — verbatim-quote-bearing reference docs.** SUSPENDED
+    for Goose+qwen3-coder:30b indefinitely. C1a work returns
+    to Claude Code under `claude-local` (or `claude-pro` for
+    high-judgment passages).
+  - **C1b — narrative chronicle/doctrine notes without quote
+    citations.** Available for future Goose attempts. Posture
+    0 (not yet evaluated for this cell at C1b sub-class);
+    Posture-1 N=5 gate would re-establish capability evidence
+    under the narrowed sub-class definition.
+  - Cell-change branch (testing gemma2:27b or larger qwen
+    variants on C1a) parked as future deliverable; Singapore
+    travel imminent.
+  **Goose dispatch RETIRED for C1a work indefinitely.**
+  Re-promotion attempts paused indefinitely until class
+  redefinition validated; Singapore prep takes priority.
+  Session evidence preserved at
+  `docs/phase-17/d-17-53/session13-evidence/` (prompt.txt,
+  goose-output-raw.txt, goose-draft-uncommitted.md,
+  session.log). **Draft NOT committed; chronicle-only update.**
+  The intended target file
+  `docs/runbooks/goose-dispatch-preflight.md` is NOT created
+  from this draft.
+
 **Substrate baseline:** F1.B (Ollama 0.22.1 streaming structured
 `tool_calls` for qwen3-coder:30b — see `local-tool-calling.md`).
-Held across all five sessions.
+Held across all sessions including the Posture-1 re-promotion
+attempts (Sessions 12 and 13).
 
 **Reference doctrine for this cell:** `goose-capability-
 boundary.md` Posture-1/2 section (now consolidated; per-posture

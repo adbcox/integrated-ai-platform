@@ -1,0 +1,19 @@
+
+    __( O)>  ● new session · ollama qwen3-coder:30b
+   \____)    20260504_3 · /private/tmp/goose-session13
+     L L     goose is ready
+1. Check target file does not exist by running:
+   ```bash
+   if [ -f "docs/runbooks/goose-dispatch-preflight.md" ]; then
+     echo "Target file already exists; aborting dispatch."
+     exit 1
+   fi
+   ```
+
+2. If the file does not exist, proceed with dispatch. If it does exist, either reject the dispatch or reframe as "review and propose corrections".
+
+Why
+The gate prevents accidental overwrites that could compromise the integrity of the session. This aligns with Session 11's documented failure mode where an overwriting dispatch led to a loss of operational context. Session 12's chronicle records the subsequent recovery procedure that was required to restore the correct dispatch state. This pre-flight check acts as a hard stop against similar regressions.
+
+Sources
+- /Users/admin/repos/integrated-ai-platform/docs/architecture-facts/promotion-criteria.md: Contains the "Operator-side substrate trap" section within "Empirical evidence — first measured cell" block, which specifies the two-step hard pre-flight enforcement for dispatch operations.

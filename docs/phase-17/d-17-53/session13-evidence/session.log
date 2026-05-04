@@ -1,0 +1,144 @@
+Goose Session 13 — D-17-53 §18.O Posture-1 re-promotion attempt
+session 1/5 (NULL — Option B trigger).
+
+Cell: Goose+qwen3-coder:30b × C1.
+Sub-class: reference-doc draft (fresh authoring, single primary
+source, narrative-shape — designed to match Session 9's clean
+substrate shape as a test of alternative correlation hypothesis
+(c) "single-clean-datapoint sampling artifact").
+Substrate: F1.B held (Ollama 0.22.1, qwen3-coder:30b on Mac
+Studio, structured tool_calls available via filesystem-mcp).
+
+OUTCOME: SEVERE-SHAPE RECURRENCE on first re-promotion attempt
+under the Posture-1 re-attempt counter. Draft NOT committed.
+Re-promotion counter stays at 0/5. **Option B threshold reached:**
+cell DEMOTED Posture 1 → Posture 0; C1 class redefinition
+encoded.
+
+Purpose: First Posture-1 re-promotion attempt session 1/5
+following the 2026-05-04 Session 12 NULL. Designed deliberately
+as a clean-shape match to Session 9 (the only clean post-
+remediation datapoint) to test whether substrate shape was the
+correlating variable, or whether Session 9 was a sampling
+artifact:
+- Net-new target (passes hard pre-flight gate)
+- Single primary source file
+- Narrative content (no flag tables, no plist examples, no API
+  endpoints, no /var/-style paths, minimal autocomplete-magnet
+  content)
+
+Pre-flight gate verification (2026-05-04, pre-dispatch):
+- Target: docs/runbooks/goose-dispatch-preflight.md
+- `test -f docs/runbooks/goose-dispatch-preflight.md` → PASS
+  (target net-new; brief permitted to proceed).
+
+Dispatch shape:
+- Wall-clock: 12 seconds (`goose run --no-session`)
+- Exit code: 0
+- STDOUT bytes: 1,199 (16 lines markdown after Goose banner)
+- STDERR bytes: 0
+- Tool calls observed: ZERO (no read_text_file, no
+  list_directory, no read_multiple_files — Goose did not invoke
+  any filesystem-mcp tool despite the brief listing
+  promotion-criteria.md as a required source).
+
+DEFECTS:
+
+Defect 1 — Sources-section fabrication-by-omission. NEW SHAPE.
+- Goose's output ends with a "Sources" section listing
+  `promotion-criteria.md` and describing its content.
+- Tool-call trace shows no read of that file.
+- Goose produced the source-description text from the brief
+  itself (the brief told Goose what was in the section), then
+  presented that as the result of having read the source.
+- This is a new defect shape distinct from prior sessions:
+  Sessions 5/7/8/11/12 read source files and then fabricated
+  *citations from* them. Session 13 fabricated the *reading
+  itself*. The Sources section is a load-bearing lie about the
+  reading process.
+
+Defect 2 — Counterfactual converted to factual (Session 11
+claim).
+- Goose's "Why" section: "Session 11's documented failure mode
+  where an overwriting dispatch led to a loss of operational
+  context."
+- Chronicle (promotion-criteria.md, Session 11 entry):
+  Session 11 draft NOT committed. No overwrite occurred. No
+  "loss of operational context" is documented anywhere. The
+  *prevented* counterfactual is what the chronicle records:
+  "Had Session 11's draft been committed, it would have
+  overwritten…"
+- Goose has converted the prevented counterfactual into a
+  historical event.
+
+Defect 3 — Wholesale fabricated event (Session 12 claim).
+- Goose's "Why" section: "Session 12's chronicle records the
+  subsequent recovery procedure that was required to restore
+  the correct dispatch state."
+- Chronicle: Session 12 was a NULL re-promotion attempt with
+  severe-shape failure. No recovery procedure exists. Nothing
+  was overwritten; nothing was restored. The Session 12
+  chronicle promotes the operator-side substrate trap to a
+  hard pre-flight gate; it does not document a "recovery
+  procedure to restore the correct dispatch state."
+- This is invention of an event that never happened.
+
+Defect 4 — Procedure steps 1–2 are correct (limited credit).
+- Step 1 (bash existence check) and Step 2 (branch on result)
+  match the spec from promotion-criteria.md operator-side
+  substrate trap section. Lightly compressed but accurate.
+- Limited credit because the brief stated the spec verbatim;
+  Goose only had to copy it. The novel content (Why section
+  reasoning) is where the failure landed.
+
+PATTERN READ — POST-REMEDIATION HIT-RATE NOW 4 OF 5.
+
+- Session 9: clean.
+- Session 10: shape-shifted partial.
+- Session 11: severe.
+- Session 12: severe.
+- Session 13: severe (with new defect shape: zero source reads).
+
+ALTERNATIVE-CORRELATION HYPOTHESIS (c) STRENGTHENED.
+
+Session 13 substrate matched Session 9's clean shape on every
+identifiable axis:
+- Net-new target (Session 9 also net-new).
+- Single primary source (Session 9: 2 sources; Session 13: 1).
+- Narrative content (no flag tables, no plists, no API
+  endpoints, no path enumeration).
+- Sub-class: fresh authoring of a short reference-doc.
+
+Session 13 still produced severe-shape failure. This argues
+that Session 9 was a lucky draw — a single-clean-datapoint
+sampling artifact — rather than evidence of a substrate-
+matched success regime. The cell may not be capable of
+source-fidelity at the C1 work-class regardless of substrate.
+
+OPERATOR DISPOSITION (2026-05-04):
+- **Option B confirmed.** Cell (Goose+qwen3-coder:30b × C1)
+  demoted Posture 1 → Posture 0. C1 suspended for this cell
+  pending class redefinition.
+- **Class redefinition: (a) C1 split + (c) cell change deferred.**
+  - C1a — verbatim-quote-bearing reference docs. SUSPENDED for
+    Goose+qwen3-coder:30b indefinitely. C1a work returns to
+    Claude Code under claude-local (or claude-pro for high-
+    judgment passages).
+  - C1b — narrative chronicle/doctrine notes without quote
+    citations. Available for future Goose attempts. Posture 0
+    (not yet evaluated for this cell at the C1b sub-class);
+    Posture-1 N=5 gate would re-establish capability evidence
+    under the narrowed sub-class definition.
+  - Cell-change branch (testing gemma2:27b or larger qwen
+    variants on C1a) parked as future deliverable. Singapore
+    travel imminent; not the time for new cell experiments.
+- **Goose loop ends here for now.** Re-promotion attempts
+  paused indefinitely until class redefinition validated;
+  Singapore prep takes priority next.
+
+Runbook NOT landed: Session 13 draft preserved in
+goose-output-raw.txt only. The intended target file
+(docs/runbooks/goose-dispatch-preflight.md) is NOT created
+from this draft. If a pre-flight checklist runbook is
+authored later, it will be authored under Claude Code (C1a
+class) rather than re-attempted on Goose.

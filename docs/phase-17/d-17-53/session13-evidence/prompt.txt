@@ -1,0 +1,38 @@
+You are authoring a short operator-facing runbook. Your output should be drafted as the file `docs/runbooks/goose-dispatch-preflight.md` (do NOT write the file; output the runbook content as your final reply).
+
+# Constraint A — VERBATIM-BLOCK INSTRUCTION
+Any quoted text, code snippet, or path you cite from a source file must be reproduced verbatim from that source — character-for-character. Do not paraphrase quoted material. Do not autocomplete patterns from training-data shape.
+
+# Constraint B — LINE-NUMBER VERIFICATION (STRENGTHENED)
+If you cite line numbers from a source file, the line numbers MUST come from the same `read_text_file` call that produced the cited content. Do not retroactively assign line numbers to content; verify by reading.
+
+# Constraint C — SOURCE-CITATION TABLE
+End your runbook with a "Sources" section listing each source file you read with one bullet per file: file path, brief description of what you used from it. No fabricated tools in any audit trail.
+
+# Constraint D — HONEST-UNCERTAINTY-MARKING
+If you can't verify a fact from the listed sources, mark it `[UNVERIFIED]`. Do NOT use `[UNVERIFIED]` to flag content you didn't bother to look up — flag only what is genuinely not in source. If a fact IS in source, find it and cite it.
+
+# Sub-class
+Reference-doc draft, fresh authoring, single primary source. Skip the preamble/scope intro; open with the first procedure step.
+
+# Topic
+Pre-flight checklist that the operator runs before dispatching a Goose session — verifies the target file does NOT already exist, plus brief rationale tying it to the failure-mode chronicle.
+
+# Sources (read these only)
+- /Users/admin/repos/integrated-ai-platform/docs/architecture-facts/promotion-criteria.md
+  (read the section titled "Operator-side substrate trap" inside the "Empirical evidence — first measured cell" block. That section contains the two-step hard pre-flight enforcement spec — your runbook is the operator-facing rendering of that spec.)
+
+# Output shape
+- Open with one numbered procedure step ("1. Check target file does not exist…") — no opening preamble.
+- Two procedure steps total:
+  1. Existence check (give the bash command).
+  2. Branch on the result (file exists → reject brief OR reframe as "review and propose corrections"; file does not exist → proceed).
+- A short "Why" section (3–5 sentences) tying the gate to Sessions 11 and 12 chronicle entries — name them as "Session 11" and "Session 12" without fabricating other details about them.
+- A "Sources" section per Constraint C.
+- Total length: aim for under 50 lines of markdown.
+
+# Anti-patterns specific to this brief
+- Do NOT include flag tables, plist examples, API endpoints, or `/var/` paths.
+- Do NOT cite or reference any file outside the Sources list above.
+- Do NOT invent example Goose CLI commands beyond what the operator-side gate requires.
+- Do NOT autocomplete a "Related runbooks" section — if you don't have a source for it, omit it.
