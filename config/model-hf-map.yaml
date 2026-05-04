@@ -1,0 +1,32 @@
+# Ollama tag → HuggingFace model ID mapping
+# Used by scripts/verify-model-provenance.sh for provenance scan
+# Add new entries when pulling a new model via pull-new-model.md
+#
+# Format:
+#   <ollama-tag>: <hf-repo-id>
+#
+# Notes:
+#   - Ollama tags map to the *instruction-tuned* HF variant where applicable.
+#   - GGUF quantized models (all Ollama-pulled models) fingerprint against
+#     the HF base weights. Expect NO_MATCH or low score — this is informational,
+#     not a failure. See docs/architecture-facts/model-provenance-doctrine.md
+#     §GGUF-vs-HF section for rationale.
+#   - HF IDs must be exact (case-sensitive, org/repo form).
+
+# --- Qwen2.5-Coder family (Mac Mini inference cascade) ---
+qwen2.5-coder:7b: Qwen/Qwen2.5-Coder-7B-Instruct
+qwen2.5-coder:14b: Qwen/Qwen2.5-Coder-14B-Instruct
+qwen2.5-coder:32b: Qwen/Qwen2.5-Coder-32B-Instruct
+
+# --- Qwen3-Coder family (Mac Studio C1 deliberate-analysis) ---
+qwen3-coder:30b: Qwen/Qwen3-Coder-30B-A3B
+
+# --- Gemma2 family (Mac Studio) ---
+gemma2:27b: google/gemma-2-27b-it
+
+# --- DeepSeek-Coder-V2 (cascade) ---
+deepseek-coder-v2:latest: deepseek-ai/DeepSeek-Coder-V2-Lite-Instruct
+deepseek-coder-v2:16b: deepseek-ai/DeepSeek-Coder-V2-Lite-Instruct
+
+# --- Devstral (Mistral AI) ---
+devstral:latest: mistralai/Devstral-Small-2505

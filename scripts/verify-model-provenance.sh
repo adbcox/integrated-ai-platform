@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# verify-model-provenance.sh — D-17-10 lineage-attestation gate.
+# verify-model-provenance.sh — D-17-92 lineage-attestation gate.
 #
 # Wraps Cisco Model Provenance Kit (cisco-ai-defense/model-provenance-kit
 # v1.0.0) `scan` mode. Returns a verdict + writes a provenance record to
@@ -9,7 +9,7 @@
 # It answers "do this model's weights statistically match a known
 # reference fingerprint?" — not "is this artifact cryptographically
 # signed by its claimed publisher?". See
-# docs/architecture-facts/model-provenance.md.
+# docs/architecture-facts/model-provenance-doctrine.md.
 #
 # Exit codes:
 #   0 = verified-specific      (top match is the requested repo, score >= threshold)
@@ -19,37 +19,138 @@
 #                               specific requested repo — still a real attestation,
 #                               but coarser than variant-level)
 #
-# Usage: verify-model-provenance.sh <hf-repo>
-# Example: verify-model-provenance.sh Qwen/Qwen2.5-Coder-7B-Instruct
+# Usage:
+#   verify-model-provenance.sh <ollama-tag>           resolve via config/model-hf-map.yaml
+#   verify-model-provenance.sh --hf <hf-repo>         direct HuggingFace model ID
+#   verify-model-provenance.sh --refresh-db            update deep-signals fingerprint DB
+#   verify-model-provenance.sh --status               show kit + DB status
+#
+# Examples:
+#   verify-model-provenance.sh qwen2.5-coder:14b
+#   verify-model-provenance.sh --hf Qwen/Qwen2.5-Coder-14B-Instruct
+#   verify-model-provenance.sh --refresh-db
 #
 # Configuration (env):
 #   PROVENANCE_THRESHOLD       default 0.70 (Cisco-calibrated; F1 0.963 at 0.70)
-#   PROVENANCE_KIT_DIR         default ~/repos/external-tools/model-provenance-kit
+#   PROVENANCE_KIT_DIR         default ~/repos/model-provenance-kit
 #   PROVENANCE_CACHE_DAYS      default 30
 #   PROVENANCE_RECORDS_DIR     default <repo>/docs/_provenance
 #   PROVENANCE_FORCE           if set, ignore cache
 #   PROVENANCE_KIT_THRESHOLD   kit-level cutoff for returned matches (default 0.50;
 #                              wrapper still applies PROVENANCE_THRESHOLD policy on top)
+#
+# GGUF / NO_MATCH note:
+#   Ollama models are GGUF-quantized; the Cisco kit fingerprints against HuggingFace
+#   native weights (BF16/FP16). A NO_MATCH (exit 1) on a GGUF-backed Ollama model
+#   is INFORMATIONAL, not a hard failure. See model-provenance-doctrine.md §GGUF.
 set -euo pipefail
 
-REPO_ARG="${1:-}"
-if [[ -z "$REPO_ARG" ]]; then
-  echo "usage: $0 <hf-repo>" >&2
-  echo "  e.g. $0 Qwen/Qwen2.5-Coder-7B-Instruct" >&2
-  exit 64
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+HF_MAP="${REPO_ROOT}/config/model-hf-map.yaml"
+
+# Resolve ollama tag → HF model ID via config/model-hf-map.yaml
+resolve_ollama_tag() {
+  local tag="$1"
+  python3 - "$HF_MAP" "$tag" <<'PY'
+import sys, re
+map_file, tag = sys.argv[1], sys.argv[2]
+# Keys may contain colons (e.g. "qwen2.5-coder:14b"). The YAML value is a
+# HF repo ID "Org/repo" — exactly one slash, no leading whitespace. Match
+# lines of the form: <key>: <value> where <key> == tag (case-sensitive).
+pattern = re.compile(r'^(.+?):\s+(\S.*)$')
+try:
+    with open(map_file) as f:
+        for line in f:
+            line = line.rstrip()
+            if line.startswith('#') or not line:
+                continue
+            m = pattern.match(line)
+            if m and m.group(1) == tag:
+                print(m.group(2).strip())
+                sys.exit(0)
+except FileNotFoundError:
+    sys.exit(1)
+sys.exit(1)
+PY
+}
+
+# Parse subcommands / flags
+REFRESH_DB=0
+STATUS_ONLY=0
+DIRECT_HF=""
+OLLAMA_TAG=""
+
+case "${1:-}" in
+  --refresh-db)
+    REFRESH_DB=1 ;;
+  --status)
+    STATUS_ONLY=1 ;;
+  --hf)
+    if [[ $# -lt 2 ]]; then
+      echo "ERROR: --hf requires a HuggingFace model ID" >&2; exit 64
+    fi
+    DIRECT_HF="$2" ;;
+  -h|--help)
+    sed -n '2,46p' "$0" | sed 's/^# //' | sed 's/^#//'; exit 0 ;;
+  "")
+    echo "usage: $0 <ollama-tag|--hf <hf-repo>|--refresh-db|--status>" >&2; exit 64 ;;
+  -*)
+    echo "ERROR: unknown option '$1'" >&2; exit 64 ;;
+  *)
+    OLLAMA_TAG="$1" ;;
+esac
+
+# Resolve to HF repo ID
+if [[ $REFRESH_DB -eq 0 && $STATUS_ONLY -eq 0 ]]; then
+  if [[ -n "$DIRECT_HF" ]]; then
+    REPO_ARG="$DIRECT_HF"
+  else
+    RESOLVED=$(resolve_ollama_tag "$OLLAMA_TAG" 2>/dev/null || true)
+    if [[ -z "$RESOLVED" ]]; then
+      echo "ERROR: '$OLLAMA_TAG' not found in $HF_MAP" >&2
+      echo "       Add entry:  $OLLAMA_TAG: <HuggingFace/repo-id>" >&2
+      exit 64
+    fi
+    echo "verify-model-provenance: resolved $OLLAMA_TAG → $RESOLVED"
+    REPO_ARG="$RESOLVED"
+  fi
+else
+  REPO_ARG=""
 fi
 
 THRESHOLD="${PROVENANCE_THRESHOLD:-0.70}"
-KIT_DIR="${PROVENANCE_KIT_DIR:-$HOME/repos/external-tools/model-provenance-kit}"
+KIT_DIR="${PROVENANCE_KIT_DIR:-$HOME/repos/model-provenance-kit}"
 CACHE_DAYS="${PROVENANCE_CACHE_DAYS:-30}"
-REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 RECORDS_DIR="${PROVENANCE_RECORDS_DIR:-$REPO_ROOT/docs/_provenance}"
-mkdir -p "$RECORDS_DIR"
+ARTIFACT_DIR="$REPO_ROOT/artifacts/model-provenance"
+mkdir -p "$RECORDS_DIR" "$ARTIFACT_DIR"
 
 if [[ ! -d "$KIT_DIR" ]]; then
   echo "ERROR: Provenance Kit not installed at $KIT_DIR" >&2
-  echo "  Install per docs/runbooks/pull-new-model.md §Install." >&2
+  echo "  git clone https://github.com/cisco-ai-defense/model-provenance-kit.git $KIT_DIR" >&2
+  echo "  cd $KIT_DIR && uv sync" >&2
   exit 70
+fi
+
+# Handle --status and --refresh-db before any scan logic
+if [[ $STATUS_ONLY -eq 1 ]]; then
+  echo "verify-model-provenance: kit status"
+  echo "  Kit dir:   $KIT_DIR"
+  echo "  HF map:    $HF_MAP"
+  echo "  Records:   $RECORDS_DIR"
+  echo "  Artifacts: $ARTIFACT_DIR"
+  echo "  Threshold: $THRESHOLD"
+  echo ""
+  (cd "$KIT_DIR" && uv run --quiet provenancekit download-deepsignals-fingerprint --status 2>&1) || \
+    echo "  Deep-signals: not downloaded (run --refresh-db)"
+  exit 0
+fi
+
+if [[ $REFRESH_DB -eq 1 ]]; then
+  echo "verify-model-provenance: refreshing deep-signals fingerprint database..."
+  (cd "$KIT_DIR" && uv run --quiet provenancekit download-deepsignals-fingerprint --update 2>&1)
+  echo "verify-model-provenance: database refreshed"
+  exit 0
 fi
 
 # Sanitize repo path for filename: "Qwen/Qwen2.5-Coder-7B-Instruct" -> "Qwen__Qwen2.5-Coder-7B-Instruct"
@@ -118,11 +219,11 @@ PY
   exit 1
 fi
 
-# Parse scan output, apply policy, write record.
-/usr/bin/python3 - "$REPO_ARG" "$RECORD_PATH" "$THRESHOLD" "$SCAN_OUT" <<'PY'
+# Parse scan output, apply policy, write record + JSONL artifact.
+/usr/bin/python3 - "$REPO_ARG" "$RECORD_PATH" "$THRESHOLD" "$SCAN_OUT" "$ARTIFACT_DIR" <<'PY'
 import json, sys, datetime
 
-repo, record_path, threshold, scan_out = sys.argv[1], sys.argv[2], float(sys.argv[3]), sys.argv[4]
+repo, record_path, threshold, scan_out, artifact_dir = sys.argv[1], sys.argv[2], float(sys.argv[3]), sys.argv[4], sys.argv[5]
 with open(scan_out) as f:
     scan = json.load(f)
 
@@ -189,6 +290,15 @@ record = {
 }
 with open(record_path, "w") as f:
     json.dump(record, f, indent=2)
+
+# Append to dated JSONL artifact chronicle (hash-only; no credential values)
+import pathlib, time
+artifact_path = pathlib.Path(artifact_dir) / f"provenance-{datetime.datetime.utcnow().strftime('%Y-%m-%d')}.jsonl"
+artifact_path.parent.mkdir(parents=True, exist_ok=True)
+with artifact_path.open("a") as f:
+    json.dump({k: v for k, v in record.items()
+               if k not in ("model_info",)}, f)
+    f.write("\n")
 
 print(f"verify-model-provenance: {verdict} (exit {exit_code})")
 print(f"  repo:      {repo}")

@@ -1,12 +1,47 @@
 # Pull a new model (provenance-gated)
 
 How to pull a new AI model onto the platform. Every pull goes
-through the model-provenance gate (D-17-10) by convention. The gate
-attests model lineage; it does NOT verify cryptographic signatures.
-See `docs/architecture-facts/model-provenance.md` for the
-distinction.
+through the model-provenance gate (D-17-92) before `ollama pull`.
+The gate attests model lineage; it does NOT verify cryptographic
+signatures. See `docs/architecture-facts/model-provenance-doctrine.md`
+for the distinction and GGUF-vs-HF-native limitation.
 
-## TL;DR
+## Step 0 — provenance gate (MANDATORY before any pull)
+
+Before running `ollama pull`, run the provenance gate:
+
+```sh
+# By Ollama tag (auto-resolves via config/model-hf-map.yaml):
+scripts/verify-model-provenance.sh qwen2.5-coder:14b
+
+# By HuggingFace model ID directly:
+scripts/verify-model-provenance.sh --hf Qwen/Qwen2.5-Coder-14B-Instruct
+```
+
+If the model is not yet in `config/model-hf-map.yaml`, add it first:
+
+```yaml
+# config/model-hf-map.yaml
+qwen2.5-coder:14b: Qwen/Qwen2.5-Coder-14B-Instruct
+```
+
+**Gate verdicts and actions:**
+
+| Exit | Verdict | Action |
+|------|---------|--------|
+| 0 | `verified-specific` | Proceed with pull |
+| 3 | `verified-base-family` | Proceed; note coarser attestation in chronicle |
+| 2 | `marginal` | Operator decision required; note in chronicle |
+| 1 | `unverified` — known GGUF source | Informational; see GGUF note below |
+| 1 | `unverified` — unknown source | Pause; review publisher before pulling |
+| 1 (error) | `scan-failed` | Diagnose kit before pulling |
+
+**GGUF note:** Ollama-pulled models are GGUF-quantized. The Cisco kit fingerprints
+HuggingFace native weights (BF16/FP16). `unverified` on a known GGUF model from a
+trusted publisher is informational — proceed, record `NO_MATCH-GGUF` in chronicle.
+See `docs/architecture-facts/model-provenance-doctrine.md §GGUF`.
+
+## TL;DR (wrapper scripts)
 
 ```sh
 # Ollama pull (most common):
@@ -104,24 +139,25 @@ Writes the provenance JSON to `docs/_provenance/<sanitized>.json`.
 Cache hit if a record exists and is <30 days old (configurable via
 `PROVENANCE_CACHE_DAYS`). Force re-scan with `PROVENANCE_FORCE=1`.
 
-## Install (one-time)
+## Install (one-time per node)
 
-The Cisco Model Provenance Kit lives at `~/repos/external-tools/
-model-provenance-kit`, pinned to tag `1.0.0` (commit `5f27dc56`).
+The Cisco Model Provenance Kit lives at `~/repos/model-provenance-kit`.
 Installation is one-time per node:
 
 ```sh
-mkdir -p ~/repos/external-tools
-cd ~/repos/external-tools
-git clone --depth 1 --branch 1.0.0 https://github.com/cisco-ai-defense/model-provenance-kit.git
-cd model-provenance-kit
+git clone https://github.com/cisco-ai-defense/model-provenance-kit.git ~/repos/model-provenance-kit
+cd ~/repos/model-provenance-kit
 uv sync
-uv run provenancekit download-deepsignals-fingerprint  # ~866 MB download
+# Optional (recommended): download deep-signals fingerprint DB (~908 MB)
+scripts/verify-model-provenance.sh --refresh-db
 ```
 
-After install, the wrapper at `scripts/verify-model-provenance.sh`
-discovers the kit at the default path. Override with
-`PROVENANCE_KIT_DIR` env var if installed elsewhere.
+After install, `scripts/verify-model-provenance.sh` discovers the kit
+at `~/repos/model-provenance-kit`. Override with `PROVENANCE_KIT_DIR`
+env var if installed elsewhere.
+
+**Mac Mini status (2026-05-04):** Kit installed, `uv sync` complete,
+deep-signals DB not yet downloaded (run `--refresh-db` to fetch ~908 MB).
 
 ## Reading a provenance record
 
@@ -145,22 +181,17 @@ the right *something*.
 
 ## Known kit limitations
 
-See `docs/architecture-facts/model-provenance.md` §"Known kit
-limitations" for:
+See `docs/architecture-facts/model-provenance-doctrine.md §GGUF` for:
 
+- No GGUF support (kit fingerprints HF-native weights; GGUF quantized
+  models will return `unverified` — this is informational, not a failure)
 - FP8 weight format intermittent failure (workaround: retry)
-- No GGUF support (wrapper verifies upstream HF source, not local
-  GGUF blob — correct behavior for lineage attestation)
-- Weights re-downloaded for first scan (~14–65 GB per model;
-  30-day cache reduces frequency)
+- Statistical evidence only — not cryptographic proof
 
 ## See also
 
-- `docs/architecture-facts/model-provenance.md` — canonical
-  doctrine
-- `docs/_provenance/backfill-2026-05-02.md` — D-17-10 baseline
-  state
-- `docs/_provenance/overrides.log` — audit trail of bypass
-  decisions
-- `docs/architecture-patterns/candidate-tools.md` — Cisco
-  Provenance Kit entry (adopted)
+- `docs/architecture-facts/model-provenance-doctrine.md` — canonical doctrine (D-17-92)
+- `config/model-hf-map.yaml` — Ollama-tag → HuggingFace-ID mapping
+- `artifacts/model-provenance/` — dated JSONL provenance chronicle
+- `docs/_provenance/` — per-model provenance records (30-day cache)
+- `docs/_provenance/overrides.log` — audit trail of bypass decisions

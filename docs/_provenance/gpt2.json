@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "repo": "gpt2",
+  "verdict": "verified-specific",
+  "exit_code": 0,
+  "threshold": 0.7,
+  "kit_version": "1.0.0",
+  "timestamp_utc": "2026-05-04T17:53:08Z",
+  "top_matches": [
+    {
+      "model_id": "gpt2",
+      "family_id": "openaicommunity--gpt",
+      "pipeline_score": 1.0,
+      "match_type": "exact_arch",
+      "provenance_decision": "Confirmed Match"
+    },
+    {
+      "model_id": "roberta-base",
+      "family_id": "facebookai--roberta",
+      "pipeline_score": 0.8306,
+      "match_type": "mfi_only",
+      "provenance_decision": "High-Confidence Match (metadata only)"
+    },
+    {
+      "model_id": "bert-base-uncased",
+      "family_id": "googlebert--bert",
+      "pipeline_score": 0.7831,
+      "match_type": "mfi_only",
+      "provenance_decision": "High-Confidence Match (metadata only)"
+    },
+    {
+      "model_id": "xlm-roberta-base",
+      "family_id": "facebookai--xlm_roberta",
+      "pipeline_score": 0.734,
+      "match_type": "mfi_only",
+      "provenance_decision": "Weak Match (metadata only)"
+    },
+    {
+      "model_id": "gpt2-medium",
+      "family_id": "openaicommunity--gpt",
+      "pipeline_score": 0.7339,
+      "match_type": "family_hash",
+      "provenance_decision": "Weak Match (metadata only)"
+    }
+  ],
+  "model_info": {
+    "architectures": [
+      "GPT2LMHeadModel"
+    ],
+    "model_type": "gpt2",
+    "hidden_size": 768,
+    "num_hidden_layers": 12
+  },
+  "scan_elapsed_ms": 6440.73
+}

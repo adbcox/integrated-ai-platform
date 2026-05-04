@@ -5,7 +5,7 @@
   "exit_code": 0,
   "threshold": 0.7,
   "kit_version": "1.0.0",
-  "timestamp_utc": "2026-05-02T15:49:46Z",
+  "timestamp_utc": "2026-05-04T17:55:39Z",
   "top_matches": [
     {
       "model_id": "NextCoder-7B",
@@ -36,11 +36,11 @@
       "provenance_decision": "Confirmed Match"
     },
     {
-      "model_id": "Qwen2.5-7B",
+      "model_id": "Qwen2-Math-7B",
       "family_id": "qwen--qwen",
-      "pipeline_score": 0.9,
-      "match_type": "family_hash",
-      "provenance_decision": "Confirmed Match"
+      "pipeline_score": 0.9194,
+      "match_type": "mfi_only",
+      "provenance_decision": "High-Confidence Match (metadata only)"
     }
   ],
   "model_info": {
@@ -51,5 +51,5 @@
     "hidden_size": 3584,
     "num_hidden_layers": 28
   },
-  "scan_elapsed_ms": 13439.05
+  "scan_elapsed_ms": 685.98
 }
