@@ -103,6 +103,63 @@ def is_append_task(description: str) -> bool:
     return any(kw in desc_lower for kw in append_kws)
 
 
+def count_definitions(path: str) -> int:
+    """Count function/class definitions in HEAD version of a file."""
+    try:
+        proc = subprocess.run(["git", "show", f"HEAD:{path}"],
+                               capture_output=True, text=True, check=True)
+        count = 0
+        for line in proc.stdout.splitlines():
+            stripped = line.strip()
+            if stripped.startswith("def ") or stripped.startswith("class "):
+                count += 1
+        return count
+    except subprocess.CalledProcessError:
+        return 0
+
+
+def check_insertion_expansion(
+    changed_files: List[str],
+    allow_large_insertions: bool = False,
+) -> List[Tuple[str, str]]:
+    """
+    Block if insertions exceed 3× the function/class definition count in changed files.
+
+    Catches duplication failures (Finding 23, D-17-109): a model that duplicates
+    entire function bodies produces massive insertions relative to the file's
+    definition density. A clean docstring/refactor adds lines proportional to scope.
+
+    Threshold: total_insertions > 3 * total_definitions → BLOCK
+    New files (no HEAD version) are excluded — they have no baseline definition count.
+    """
+    if allow_large_insertions:
+        return []
+
+    per_file = diff_per_file_stats(changed_files)
+    # Only check Python files — definition counting is Python-specific
+    py_files = [e for e in per_file if e["path"].endswith(".py")]
+    if not py_files:
+        return []
+
+    total_insertions = sum(e["added"] for e in py_files)
+    total_defs = sum(count_definitions(e["path"]) for e in py_files)
+
+    if total_defs == 0:
+        # All new files — no baseline, skip
+        return []
+
+    ratio = total_insertions / total_defs
+    THRESHOLD = 3.0
+    if ratio > THRESHOLD:
+        return [(
+            "block",
+            f"insertion-expansion violation: {total_insertions} insertions "
+            f"for {total_defs} definitions (ratio {ratio:.1f}x, threshold {THRESHOLD:.0f}x) — "
+            f"possible duplication/hallucination. Use --allow-large-insertions to override.",
+        )]
+    return []
+
+
 def check_deletion_rates(
     description: str,
     task_class: str,
@@ -255,7 +312,12 @@ def hint_for(code: str) -> Optional[str]:
     }.get(code, None)
 
 
-def run_inline_checks(description: str, task_class: str, files: List[str]) -> int:
+def run_inline_checks(
+    description: str,
+    task_class: str,
+    files: List[str],
+    allow_large_insertions: bool = False,
+) -> int:
     """
     Inline guard mode — called from aider-task.sh after Aider runs.
     No task JSON file required.
@@ -279,6 +341,7 @@ def run_inline_checks(description: str, task_class: str, files: List[str]) -> in
     all_issues: List[Tuple[str, str]] = []
     all_issues.extend(check_deletion_rates(description, task_class, changed))
     all_issues.extend(check_truncation(description, changed))
+    all_issues.extend(check_insertion_expansion(changed, allow_large_insertions))
 
     blocks = [(sev, msg) for sev, msg in all_issues if sev == "block"]
     warns  = [(sev, msg) for sev, msg in all_issues if sev == "warn"]
@@ -324,6 +387,8 @@ def main():
     parser.add_argument("--skip-validation", action="store_true")
     parser.add_argument("--skip-validator", action="store_true",
                         help="Operator override: skip all guard checks")
+    parser.add_argument("--allow-large-insertions", action="store_true",
+                        help="Bypass insertion-expansion check for legitimate large refactors")
     args = parser.parse_args()
 
     # Operator override via flag or env
@@ -334,7 +399,10 @@ def main():
 
     # Inline mode — wired from aider-task.sh
     if args.inline:
-        rc = run_inline_checks(args.description, args.task_class, args.files)
+        rc = run_inline_checks(
+            args.description, args.task_class, args.files,
+            allow_large_insertions=args.allow_large_insertions,
+        )
         sys.exit(rc)
 
     # Original task-file mode

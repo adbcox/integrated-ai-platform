@@ -188,6 +188,45 @@ AIDER_SKIP_PREFLIGHT=1 AIDER_SKIP_VALIDATOR=1 aider-task.sh ...
 
 Both overrides log a visible message; neither is silent.
 
+```bash
+# Allow large insertions in Layer 1 (legitimate refactors):
+aider-task.sh --allow-large-insertions ...
+```
+
+---
+
+## Finding 23 — Insertion-expansion duplication failure (D-17-109, 2026-05-04)
+
+**Gap:** Layer 1 deletion-rate guard caught destructive mutations but missed duplication failures. On a 27KB Python file, the model duplicated 607 lines of existing code into the output. The deletion check passed (net deletions were low) but the file grew from ~700 lines to ~1300 lines. The duplication was silent: exit 0, guard passed, corrupt output committed.
+
+**Root cause:** The guard only checked `deletions / (insertions + deletions)` ratio. A pure duplication — many insertions, few deletions — produces a near-zero deletion ratio and passes cleanly.
+
+**Fix (D-17-109 WP-05):** Added `check_insertion_expansion()` to `bin/aider_guard.py`:
+- Counts `def ` and `class ` lines in the HEAD version of each changed Python file (definition density baseline)
+- Blocks if `total_insertions > 3.0 × total_definitions` across all changed Python files
+- New files are excluded (no HEAD baseline; insertion count is expected to be high)
+- Bypass: `--allow-large-insertions` flag (for legitimate large refactors); also bypassed by `--skip-validator`
+
+**Threshold rationale:** 3× definitions captures the case where a model copies an entire function/class section once. A file with 50 `def`/`class` lines legitimately accepting 150 new lines is plausible (doc additions, stub additions). Accepting 450+ new lines in one Aider pass on a single file is not.
+
+**Performance data recorded (D-17-109):**
+- Empirical failure: 607-line duplication on 27KB file, qwen3-coder-next:latest (default temp=1.0)
+- Contributing factor: base model default temperature (1.0) is creative-writing profile, not coding
+- Fix: `Modelfile-qwen3-coder-next-coding` sets `temp=0.15`; `Modelfile-qwen3-coder-30b-coding` sets `temp=0.1`
+- Both derivations use `num_ctx=32768` (was default 4096 — context window mismatch explained 360s timeouts on 31KB files)
+
+---
+
+## Override Ladder (updated D-17-109)
+
+| Override | Scope | Use when |
+|---|---|---|
+| `--skip-preflight` | Layer 2 only | Task shape check too conservative for known-safe task |
+| `--skip-validator` | Layer 1 only (all checks) | Known-good diff, want to bypass entirely |
+| `--allow-large-insertions` | Layer 1 insertion-expansion only | Legitimate large refactor adding many new functions |
+| `AIDER_SKIP_PREFLIGHT=1` | Layer 2 (env) | Pipeline invocations |
+| `AIDER_SKIP_VALIDATOR=1` | Layer 1 (env) | Pipeline invocations |
+
 ---
 
 ## Cross-references
@@ -197,5 +236,9 @@ Both overrides log a visible message; neither is silent.
 - **D-17-93** — Telemetry gap (Layer 1 artifacts + Layer 3 JSONL are the first substrate)
 - **D-17-97** — Mac Studio compute redirect (provides the models Layer 3 evaluates)
 - **Finding 19** — Truncation silent failure that motivated Layer 1 truncation detection
+- **Finding 23** — Insertion-expansion duplication failure; motivated `check_insertion_expansion()` guard (D-17-109)
+- **D-17-109** — Aider performance tuning: Modelfile derivations (temp, ctx), system context injection, Layer 1 expansion guard
 - `docs/runbooks/aider-default-workflow.md` §13 — operator-facing procedure incorporating all three layers
 - `docs/architecture-facts/work-routing-doctrine.md` — Tier boundary definitions that Layer 2 enforces
+- `config/ollama/Modelfile-qwen3-coder-30b-coding` — temp=0.1, num_ctx=32768 derivation
+- `config/ollama/Modelfile-qwen3-coder-next-coding` — temp=0.15, num_ctx=32768 derivation

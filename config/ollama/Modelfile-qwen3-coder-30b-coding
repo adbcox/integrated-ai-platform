@@ -1,0 +1,14 @@
+FROM qwen3-coder:30b
+
+# Coding-optimized derivation (D-17-109, 2026-05-04)
+# Base defaults: temp=0.7, top_k=20, top_p=0.8 (creative-writing profile)
+# These settings: deterministic code edits, tighter sampling, 32K context
+
+PARAMETER temperature 0.1
+PARAMETER top_p 0.9
+PARAMETER top_k 40
+PARAMETER num_ctx 32768
+PARAMETER repeat_penalty 1.05
+PARAMETER stop "<|im_start|>"
+PARAMETER stop "<|im_end|>"
+PARAMETER stop "<|endoftext|>"

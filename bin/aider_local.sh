@@ -5,7 +5,7 @@ BASE_DIR="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
 # Canonical compute: Mac Studio M3 Ultra at 192.168.10.142:11434 (D-17-97).
 # Override with OLLAMA_API_BASE env var for Mac Mini emergency fallback.
 API_BASE="${OLLAMA_API_BASE:-http://192.168.10.142:11434}"
-MODEL="ollama_chat/qwen3-coder:30b"
+MODEL="ollama_chat/qwen3-coder:30b-coding"
 MAP_TOKENS="1024"
 TIMEOUT="360"
 MODE_LABEL="local"
@@ -116,7 +116,7 @@ ping_ollama_or_fail() {
 while [ "$#" -gt 0 ]; do
   case "$1" in
     --hard)
-      MODEL="ollama_chat/qwen3-coder-next:latest"
+      MODEL="ollama_chat/qwen3-coder-next:coding"
       MAP_TOKENS="2048"
       TIMEOUT="480"
       MODE_LABEL="hard"

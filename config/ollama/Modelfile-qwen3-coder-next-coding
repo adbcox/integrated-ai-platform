@@ -1,0 +1,15 @@
+FROM qwen3-coder-next:latest
+
+# Coding-optimized derivation (D-17-109, 2026-05-04)
+# Base defaults: temp=1.0, top_k=40, top_p=0.95 (very creative — 79.7B MoE)
+# These settings: deterministic code edits, tighter sampling, 32K context
+# temp=0.15 (slightly higher than 30b to preserve MoE reasoning diversity)
+
+PARAMETER temperature 0.15
+PARAMETER top_p 0.9
+PARAMETER top_k 40
+PARAMETER num_ctx 32768
+PARAMETER repeat_penalty 1.05
+PARAMETER stop "<|im_start|>"
+PARAMETER stop "<|im_end|>"
+PARAMETER stop "<|endoftext|>"

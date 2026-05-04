@@ -56,9 +56,12 @@ HARD_MODE=0
 AUTO_COMMIT=0
 SKIP_PREFLIGHT=0
 SKIP_VALIDATOR=0
+ALLOW_LARGE_INSERTIONS=0
 QUIET=0
+NO_CONTEXT=0
 DESCRIPTION=""
 FILES=()
+AIDER_MESSAGE=""
 
 # Placeholder filenames that indicate a copy-paste template not filled in
 PLACEHOLDER_NAMES=("file1" "file1.py" "file1.md" "file2" "file2.py" "file3"
@@ -75,8 +78,8 @@ usage() {
   echo "  scripts/aider-task.sh --commit --class C0 \"Fix stale hostname\" docs/runbooks/vault-unseal.md"
   echo ""
   echo "Model cascade (Mac Studio 192.168.10.142, in priority order):"
-  echo "  qwen3-coder:30b         (default — 30B dense, 85 tps, D-17-91 winner)"
-  echo "  qwen3-coder-next:latest (--hard — MoE 79.7B, long-context strength)"
+  echo "  qwen3-coder:30b-coding         (default — 30B dense, temp=0.1, ctx=32K, D-17-109)"
+  echo "  qwen3-coder-next:coding        (--hard — MoE 79.7B, temp=0.15, ctx=32K)"
   echo "  qwen2.5-coder:7b        (emergency Mac Mini offline fallback only)"
   echo ""
   echo "Override compute target: OLLAMA_API_BASE=http://127.0.0.1:11434 scripts/aider-task.sh ..."
@@ -105,6 +108,10 @@ while [[ $# -gt 0 ]]; do
       SKIP_PREFLIGHT=1; shift ;;
     --skip-validator)
       SKIP_VALIDATOR=1; shift ;;
+    --allow-large-insertions)
+      ALLOW_LARGE_INSERTIONS=1; shift ;;
+    --no-context)
+      NO_CONTEXT=1; shift ;;
     --quiet|-q)
       QUIET=1; shift ;;
     -h|--help)
@@ -247,6 +254,25 @@ if [[ "$EXECUTOR" != "local_aider" ]]; then
   exit 1
 fi
 
+# --- System context injection (D-17-109) ---
+SYSTEM_CTX_FILE="$REPO_ROOT/config/system_knowledge.yaml"
+if [[ $NO_CONTEXT -eq 0 ]] && [[ -f "$SYSTEM_CTX_FILE" ]]; then
+  SYSTEM_CONTEXT="$(python3 bin/inject_system_context.py --print 2>/dev/null)" || SYSTEM_CONTEXT=""
+  if [[ -n "$SYSTEM_CONTEXT" ]]; then
+    CTX_CHARS="${#SYSTEM_CONTEXT}"
+    AIDER_MESSAGE="${SYSTEM_CONTEXT}"$'\n\n'"${DESCRIPTION}"
+    if [[ $QUIET -eq 1 ]]; then
+      echo "[aider-task] system-context injected"
+    else
+      echo "[aider-task] system-context injected (${CTX_CHARS} chars)"
+    fi
+  else
+    AIDER_MESSAGE="$DESCRIPTION"
+  fi
+else
+  AIDER_MESSAGE="$DESCRIPTION"
+fi
+
 # --- Layer 2: Pre-flight task shape validator (D-17-103) ---
 if [[ $DRY_RUN -eq 0 ]]; then
   PREFLIGHT_RESULT=$(AIDER_SKIP_PREFLIGHT="${AIDER_SKIP_PREFLIGHT:-0}" \
@@ -288,7 +314,7 @@ fi
 # --- LOCAL_AIDER path ---
 if [[ $DRY_RUN -eq 1 ]]; then
   echo "[aider-task] dry-run: would invoke bin/aider_local.sh with:"
-  echo "  --message \"$DESCRIPTION\""
+  echo "  --message \"${AIDER_MESSAGE:0:120}...(${#AIDER_MESSAGE} chars total)\""
   [[ ${#FILES[@]} -gt 0 ]] && echo "  files: ${FILES[*]}"
   [[ -n "$MODEL_OVERRIDE" ]] && echo "  --model $MODEL_OVERRIDE"
   [[ $HARD_MODE -eq 1 ]] && echo "  --hard"
@@ -314,7 +340,7 @@ elif [[ $HARD_MODE -eq 1 ]]; then
   AIDER_ARGS+=(--hard)
 fi
 
-AIDER_ARGS+=(--message "$DESCRIPTION")
+AIDER_ARGS+=(--message "$AIDER_MESSAGE")
 
 # Disable repo-map for message-mode runs: repo-map discovery causes Aider
 # to prompt "Add file to chat?" for related files, which blocks --message
@@ -432,10 +458,13 @@ else
     GUARD_FILES_ARGS=()
     for f in "${CHANGED_FILES[@]}"; do GUARD_FILES_ARGS+=(--files "$f"); done
     set +e
+    GUARD_EXTRA_ARGS=()
+    [[ $ALLOW_LARGE_INSERTIONS -eq 1 ]] && GUARD_EXTRA_ARGS+=(--allow-large-insertions)
     python3 bin/aider_guard.py \
       --inline \
       --description "$DESCRIPTION" \
       --task-class "${TASK_CLASS:-}" \
+      "${GUARD_EXTRA_ARGS[@]}" \
       "${GUARD_FILES_ARGS[@]}"
     GUARD_EXIT=$?
     set -e
@@ -459,6 +488,7 @@ else
     echo "[aider-task] The diff contains suspicious deletions. Do NOT git add until reviewed."
     echo "[aider-task] If you have reviewed and approve: git add + git commit manually."
     echo "[aider-task] Override next run: --skip-validator or AIDER_SKIP_VALIDATOR=1"
+    echo "[aider-task] For large legitimate refactors: --allow-large-insertions"
 
     # Layer 3: record guarded (operator must decide)
     AIDER_TASK_DESCRIPTION="$DESCRIPTION" \

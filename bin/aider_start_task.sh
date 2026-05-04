@@ -60,6 +60,7 @@ def parse_files(raw_files):
 
 
 def main():
+    """Generate and output an automation-friendly Aider task brief based on command-line arguments."""
     args = parse_args()
     task_class = args.task_class
     class_cfg = TASK_CLASSES[task_class]
