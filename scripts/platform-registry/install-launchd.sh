@@ -1,4 +1,12 @@
 #!/usr/bin/env bash
+# FAILED BRANCH / HISTORICAL INSTALLER — DO NOT USE FOR NEW WORK
+# D-17-72 disposition: retained for historical reference.
+# This script installs a user-domain LaunchAgent (`~/Library/LaunchAgents`,
+# `gui/<uid>` bootstrap + `launchctl load -w` fallback), which was superseded
+# by D-17-51 headless doctrine after empirical bootstrap failures on this host.
+# Canonical pattern: system-domain LaunchDaemons migration via
+# `scripts/d-17-51-migrate-to-launchdaemons.sh`.
+#
 # Install + register the platform-registry launchd agent.
 #
 # Per Finding Y (D-17-28): the OS-upgrade-induced damage to the

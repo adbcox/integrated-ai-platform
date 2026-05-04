@@ -1,4 +1,10 @@
 #!/bin/bash
+# HISTORICAL / AD HOC HELPER — NOT CANONICAL PLATFORM AUTOMATION
+# D-17-72 disposition: retained as a convenience wrapper for manual
+# troubleshooting prompts only. No launchd/cron/CI integration depends on it.
+# The model/tag invocation here is intentionally not treated as canonical
+# doctrine for execution-surface operations.
+#
 PROBLEM="$1"
 if [ -z "$PROBLEM" ]; then
   echo "Usage: troubleshoot 'problem description'" >&2

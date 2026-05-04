@@ -1,4 +1,13 @@
 #!/usr/bin/env bash
+# HISTORICAL SCRIPT — NOT CANONICAL FOR NEW WORK
+# D-17-72 disposition: retained for forensic reference only.
+# This script encodes a one-time cleanup posture from early platform phases
+# (Plane/Zabbix/OpenHands-era assumptions) and includes broad destructive
+# operations (`docker image prune -a`, `docker buildx prune`) that are unsafe
+# as a general maintenance pattern.
+# Canonical approach: targeted, service-scoped procedures in runbooks, not
+# blanket Docker pruning.
+#
 # Docker cleanup script
 # Removes: exited openhands-runtime containers, one-time init containers,
 #           Zabbix monitoring stack (replaced by Grafana/VictoriaMetrics).
