@@ -25,23 +25,22 @@ fi
   printf '%s [%s] enqueue: git push origin main\n' "$(date -u +'%Y-%m-%dT%H:%M:%SZ')" "post-commit"
 } >> "$log_file"
 
-(
-  pushd "$repo_root" >/dev/null || exit 0
-  ts="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+nohup env REPO_ROOT="$repo_root" LOG_FILE="$log_file" bash -c '
+  cd "$REPO_ROOT" >/dev/null 2>&1 || exit 0
+  ts="$(date -u +'\''%Y-%m-%dT%H:%M:%SZ'\'')"
   if out="$(GIT_TERMINAL_PROMPT=0 git push origin main 2>&1)"; then
     {
-      printf '%s [%s] success: git push origin main\n' "$ts" "post-commit"
-      printf '%s\n' "$out"
-    } >> "$log_file"
+      printf "%s [%s] success: git push origin main\n" "$ts" "post-commit"
+      printf "%s\n" "$out"
+    } >> "$LOG_FILE"
   else
     rc=$?
     {
-      printf '%s [%s] fail-soft rc=%s: git push origin main\n' "$ts" "post-commit" "$rc"
-      printf '%s\n' "$out"
-    } >> "$log_file"
+      printf "%s [%s] fail-soft rc=%s: git push origin main\n" "$ts" "post-commit" "$rc"
+      printf "%s\n" "$out"
+    } >> "$LOG_FILE"
   fi
-  popd >/dev/null || true
-) >/dev/null 2>&1 &
+' >/dev/null 2>&1 &
 
 exit 0
 HOOK
