@@ -531,6 +531,7 @@ Deliverable table:
 | D-17-74: install-launchd.sh disposition decision | DONE | keep-annotated disposition accepted 2026-05-04; no move to scripts/_retired in this pass |
 | D-17-75: D-17-44 Buildarr closeout audit | IN PROGRESS | added 2026-05-04 via roadmap-create.sh |
 | D-17-76: secret/downloads/seedbox bootstrap — §18.L companion to D-17-49 | IN PROGRESS | added 2026-05-04 via roadmap-create.sh |
+| D-17-77: Buildarr coverage audit — Sonarr v4 + Sportarr exclusion verification + reactive-management runbook | IN PROGRESS | added 2026-05-04 via roadmap-create.sh |
 
 ID-reservation note: D-17-22 (multi-session role + intake architecture)
 is RESERVED but not yet framework-authored. Discussed in a prior
