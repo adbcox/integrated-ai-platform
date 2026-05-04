@@ -527,6 +527,7 @@ Deliverable table:
 | D-17-70: Plane-era scripts retention decision | IN PROGRESS | added 2026-05-04 via roadmap-create.sh |
 | D-17-71: Stale-candidate runbook triage — disposition + minimal drift fixes | IN PROGRESS | added 2026-05-04 via roadmap-create.sh |
 | D-17-72: Orphan script disposition — cleanup_docker + troubleshoot + launchd installer | IN PROGRESS | added 2026-05-04 via roadmap-create.sh |
+| D-17-73: Runbooks second pass + runbooks README authoring | IN PROGRESS | added 2026-05-04 via roadmap-create.sh |
 
 ID-reservation note: D-17-22 (multi-session role + intake architecture)
 is RESERVED but not yet framework-authored. Discussed in a prior

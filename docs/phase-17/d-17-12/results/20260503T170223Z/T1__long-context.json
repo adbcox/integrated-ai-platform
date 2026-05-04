@@ -1,0 +1,126 @@
+{
+  "model_key": "T1",
+  "model_name": "qwen2.5-coder:32b",
+  "model_tier": "T1",
+  "model_host": "mac-mini",
+  "context_limit": 32768,
+  "workload": "long-context",
+  "samples": [
+    {
+      "task_id": "lc-finding-T",
+      "task_summary": "Recall InvenTree-pattern Finding T from buried position in DOC A",
+      "status": "ok",
+      "wall_s": 372.151188709,
+      "total_duration": 372149722209,
+      "load_duration": 47683959,
+      "prompt_eval_count": 21916,
+      "prompt_eval_duration": 353017436916,
+      "eval_count": 164,
+      "eval_duration": 18898543628,
+      "tokens_per_sec": 8.677917369093898,
+      "response_role": "assistant",
+      "response_content": "Finding T is about a platform asset-management substrate gap where there is no coherent inventory of various system components, including OS and firmware versions, container runtime details, application binaries, library dependencies, etc., which prevents AI from consulting asset state before recommending upgrades or operators from preemptively preventing AI failure modes.\n\nThe canonical example used in Finding T's body is the 2026-05-02 Mac Mini orchestration-node OS upgrade incident. The exact phrasing of the asset categories named in Finding T's body are:\n\n\"OS / firmware (motherboard BIOS, GPU VBIOS, NVMe, network card, BMC, accessory: Garmin, Oura, Zigbee sensors, 3D printer mainboards, ESP32) / container runtime / container images / application binaries / library dependencies.\"",
+      "tool_calls": [],
+      "finish_reason": "stop",
+      "grade": {
+        "pass": true,
+        "score": 0.7142857142857143,
+        "notes": "5/7 expected facts present"
+      }
+    },
+    {
+      "task_id": "lc-finding-DD-trap",
+      "task_summary": "Recall Finding DD diagnostic trap and its corrected pattern",
+      "status": "ok",
+      "wall_s": 374.2741975,
+      "total_duration": 374272766458,
+      "load_duration": 43992291,
+      "prompt_eval_count": 21903,
+      "prompt_eval_duration": 347387400418,
+      "eval_count": 232,
+      "eval_duration": 26616098411,
+      "tokens_per_sec": 8.716529237963675,
+      "response_role": "assistant",
+      "response_content": "Finding DD, titled 'Container env-inspection diagnostic trap', documents an issue with diagnosing environment variables in running Docker containers.\n\n**WRONG diagnostic pattern:**\nThe wrong pattern involves using `docker exec <container> sh -c 'echo $VAR'` to check the value of an environment variable. This command retrieves the value from `Config.Env`, which includes image-baked and compose-passed environment variables, but not necessarily the runtime environment set by entrypoint scripts.\n\n**Command for WRONG diagnostic pattern:**\n```bash\ndocker exec <container> sh -c 'echo $VAR'\n```\n\n**CORRECT diagnostic pattern:**\nThe correct method involves querying `/proc/1/environ` to get the actual runtime environment of PID 1, which includes any variables sourced by entrypoint scripts at runtime.\n\n**Command for CORRECT diagnostic pattern:**\n```bash\ndocker exec <container> sh -c 'tr \"\\0\" \"\\n\" < /proc/1/environ | grep ^VAR='\n```\n\nThis correct command ensures that the actual environment set in the running process is checked, avoiding false negatives or misdiagnoses.",
+      "tool_calls": [],
+      "finish_reason": "stop",
+      "grade": {
+        "pass": true,
+        "score": 1.0,
+        "notes": "5/5 expected facts present"
+      }
+    },
+    {
+      "task_id": "lc-cross-doc-synthesis",
+      "task_summary": "Synthesize across both documents \u2014 what does Finding 1 tool-call gap have to do with exo's Finding S?",
+      "status": "ok",
+      "wall_s": 423.5839763329999,
+      "total_duration": 423581343750,
+      "load_duration": 43186542,
+      "prompt_eval_count": 21936,
+      "prompt_eval_duration": 347453374333,
+      "eval_count": 651,
+      "eval_duration": 75587761925,
+      "tokens_per_sec": 8.612505297430792,
+      "response_role": "assistant",
+      "response_content": "Finding S and Finding DD in Document A are related in the context of the Open WebUI's integration with the exo cluster via the OpenAI-compatible API path. Specifically, both findings highlight issues related to environment variable settings and diagnostic procedures that led to incorrect conclusions about the operational state of the system.\n\n### Finding S:\n- **Description:** The Open WebUI's `OPENAI_API_KEY` was empty (length=1; SHA-256 matches the empty-string hash). This path had not been exercised because Open WebUI used a direct path for local models and never utilized the OpenAI-compatible client.\n- **Resolution Date:** Resolved during D-17-26 close.\n- **Commit Reference:** Not explicitly mentioned, but the resolution is described in the document.\n\n### Finding DD:\n- **Description:** A diagnostic trap where `docker exec <container> sh -c 'echo $VAR'` returns values from `Config.Env` (image-baked + compose-passed env), not from PID 1's actual runtime environ. This led to incorrect conclusions about the presence of credentials.\n- **Resolution Date:** Discovered and resolved during D-17-26 close.\n- **Commit Reference:** Not explicitly mentioned, but the resolution is described in the document.\n\n### Relationship:\nFinding S initially indicated that the `OPENAI_API_KEY` was effectively empty, which led to the assumption that the Open WebUI's OpenAI-compatible client path was broken. However, this conclusion was based on a diagnostic procedure (Finding DD) that did not correctly inspect the runtime environment of the container.\n\nSpecifically:\n\n1. **Incorrect Diagnostic Procedure:** During D-17-26 close, the diagnostic command `docker exec <container> sh -c 'echo $OPENAI_API_KEY'` returned an empty string, leading to the conclusion that the `OPENAI_API_KEY` was not set.\n   \n2. **Correct Diagnostic Procedure:** The correct method to inspect environment variables in a running container is to query `/proc/1/environ`. This revealed that the `OPENAI_API_KEY` was actually present and correctly configured.\n\n3. **Resolution:** The diagnostic error (Finding DD) was identified, and it clarified that the initial conclusion about the broken path (Finding S) was incorrect. The wiring between Open WebUI and the exo cluster via the OpenAI-compatible API was operational all along.\n\n### Specific Dates or Commit References:\n- **D-17-26 Close Date:** 2026-05-03\n- **Commit Reference for Finding DD Resolution:** Not explicitly provided, but described in the document as part of D-17-26 closeout.\n- **Commit Reference for Finding S Resolution:** Not explicitly provided, but described in the document as part of D-17-26 closeout.\n\nIn summary, both findings were resolved during the closeout of D-17-26 on 2026-05-03. The resolution of Finding DD clarified that the diagnostic procedure used for Finding S was flawed, leading to an incorrect conclusion about the operational state of the Open WebUI's OpenAI-compatible client path.",
+      "tool_calls": [],
+      "finish_reason": "stop",
+      "grade": {
+        "pass": false,
+        "score": 0.6,
+        "notes": "3/5 expected facts present"
+      }
+    },
+    {
+      "task_id": "lc-finding-CC-prior-art",
+      "task_summary": "Recall the three prior-art patterns named in Finding CC",
+      "status": "ok",
+      "wall_s": 357.10922745799985,
+      "total_duration": 357106601166,
+      "load_duration": 69924583,
+      "prompt_eval_count": 21889,
+      "prompt_eval_duration": 345753272829,
+      "eval_count": 98,
+      "eval_duration": 11162799500,
+      "tokens_per_sec": 8.77915974393341,
+      "response_role": "assistant",
+      "response_content": "Finding CC names the following three prior-art approaches for service registry and DNS resolution:\n\n1. **CoreDNS proxy on host forwarding to `127.0.0.11`** \u2014 Exposes container DNS to host shell tools.\n2. **`devdns` / `dockerdns` purpose-built tools watching Docker events maintaining DNS records**.\n3. **Custom compose-aware inventory script producing canonical JSON of container \u2192 port mappings \u2192 credentials \u2192 dependencies for AI consultation**.",
+      "tool_calls": [],
+      "finish_reason": "stop",
+      "grade": {
+        "pass": true,
+        "score": 1.0,
+        "notes": "5/5 expected facts present"
+      }
+    },
+    {
+      "task_id": "lc-short-gemma-friendly",
+      "task_summary": "7K variant \u2014 Finding T recall (Gemma 8K-context fairness)",
+      "status": "ok",
+      "wall_s": 167.48221879099992,
+      "total_duration": 167481632334,
+      "load_duration": 1676949334,
+      "prompt_eval_count": 8192,
+      "prompt_eval_duration": 109940491583,
+      "eval_count": 600,
+      "eval_duration": 55358550188,
+      "tokens_per_sec": 10.83843413460747,
+      "response_role": "assistant",
+      "response_content": "Finding T is about a **platform asset-management substrate gap**. Specifically, it highlights the lack of a coherent inventory system for various components of the platform, including:\n\n- OS versions and firmware (e.g., motherboard BIOS, GPU VBIOS, NVMe drives, network cards, BMCs, accessory devices like Garmin or Oura sensors)\n- Container runtime environments\n- Container images and their versions\n- Application binaries and libraries\n- Dependency states\n\nThe absence of such an inventory system makes it difficult for AI to consult the current state of assets before recommending upgrades or identifying potential failure modes. It also means operators cannot preemptively prevent issues related to outdated components, and visualization layers cannot provide insights into upgrade staleness.\n\n### Canonical Example from 2026-05-02\n\nThe specific incident used as the canonical example for Finding T is an **OS upgrade on the Mac Mini orchestration node**:\n\n1. **Upgrade Recommendation**: AI recommended upgrading the Mac Mini's OS from version 26.3 to 26.4.1 without considering several critical factors:\n   - It did not consult the current state of other components (e.g., GPU firmware, network card drivers) that might be affected by the upgrade.\n   - It did not verify whether the orchestration node was the appropriate target for the upgrade or if an idle compute node would have been more suitable.\n   - It did not check literature or documentation to understand specific version requirements (e.g., RDMA major vs. minor version compatibility).\n   - It did not consider operational dependencies on the orchestration node, such as running services that might be disrupted by the upgrade.\n\n2. **Reboot Triggered**: Despite these considerations being overlooked, the operator proceeded with the OS upgrade and triggered a reboot of the Mac Mini.\n\n3. **Planning Failure**: The operator caught the planning failure after the reboot was already initiated, indicating that the platform lacked mechanisms to prevent such issues proactively.\n\n### Implications\n\nFinding T underscores the need for a comprehensive asset management system that can track and report on the state of all components in the platform. This would allow AI to make more informed recommendations and help operators manage upgrades and maintenance more effectively. The incident serves as a concrete example of how the absence of such a system can lead to operational disruptions and inefficiencies.\n\n### Follow-On Deliverables\n\nThe empirical case for Finding T led to the scoping of additional deliverables aimed at addressing the platform asset-management substrate gap, including:\n\n- **Asset Data Layer**: A structured inventory of all components in the platform.\n- **Visualization Integration**: Tools or dashboards that provide insights into the current state and upgrade status of assets.\n- **AI Maintenance Layer**: Enhancements to AI systems to consult asset data before making recommendations.\n- **Process Documentation**: Detailed procedures for managing upgrades and maintenance based on asset state.\n- **Doctrine**: Guidelines and best practices for operators to follow when dealing with platform upgrades and maintenance.\n\nThese deliverables aim",
+      "tool_calls": [],
+      "finish_reason": "length",
+      "grade": {
+        "pass": true,
+        "score": 1.0,
+        "notes": "4/4 expected facts present"
+      }
+    }
+  ],
+  "peak_runner_rss_bytes": 22154067968,
+  "started_utc": "2026-05-03T17:30:47.516397+00:00",
+  "n_samples_attempted": 5,
+  "n_samples_ok": 5,
+  "n_samples_skipped": 0,
+  "n_samples_error": 0
+}

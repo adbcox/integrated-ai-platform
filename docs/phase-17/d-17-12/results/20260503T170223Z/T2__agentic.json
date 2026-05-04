@@ -1,0 +1,104 @@
+{
+  "model_key": "T2",
+  "model_name": "qwen2.5-coder:14b",
+  "model_tier": "T2",
+  "model_host": "mac-mini",
+  "context_limit": 32768,
+  "workload": "agentic",
+  "samples": [
+    {
+      "task_id": "ag-debug-failing-test",
+      "task_summary": "Plan debugging a failing test with verify steps",
+      "status": "ok",
+      "wall_s": 22.01352329099973,
+      "total_duration": 22012932459,
+      "load_duration": 1047843667,
+      "prompt_eval_count": 106,
+      "prompt_eval_duration": 679818583,
+      "eval_count": 507,
+      "eval_duration": 20064027258,
+      "tokens_per_sec": 25.269104426572547,
+      "response_role": "assistant",
+      "response_content": "### Plan of Actions\n\n1. **Review the Merge Changes**\n2. **Identify the Code Change Responsible for the Behavior**\n3. **Understand the Rationale Behind the Change**\n4. **Determine if the New Behavior is Intended or a Bug**\n5. **Update the Test to Reflect the New Behavior (if intended)**\n6. **Run Tests to Ensure Stability**\n\n### Detailed Plan with Verification Steps\n\n#### 1. Review the Merge Changes\n- **Action**: Examine the recent merge commit and its associated pull request.\n- **Verification Step**: Check if there are any comments or discussions that explain why the behavior was changed.\n\n#### 2. Identify the Code Change Responsible for the Behavior\n- **Action**: Locate the specific code change in `fetch_user` function where it now returns `'unknown'`.\n- **Verification Step**: Use version control tools (e.g., git blame) to pinpoint the exact commit and file changes.\n\n#### 3. Understand the Rationale Behind the Change\n- **Action**: Review the commit message, pull request description, or any associated documentation.\n- **Verification Step**: Look for explanations or justifications provided by the developer who made the change.\n\n#### 4. Determine if the New Behavior is Intended or a Bug\n- **Action**: Assess whether returning `'unknown'` was an intentional design decision or an unintended side effect.\n- **Verification Step**: Consult with stakeholders, including the original developers of the `fetch_user` function, to gather insights.\n\n#### 5. Update the Test to Reflect the New Behavior (if intended)\n- **Action**: Modify `test_fetch_unknown` in `test_user.py` to expect `'unknown'` instead of `None`.\n- **Verification Step**: Run the updated test to ensure it passes with the new expected behavior.\n\n#### 6. Run Tests to Ensure Stability\n- **Action**: Execute the entire test suite to verify that no other tests are affected by this change.\n- **Verification Step**: Check for any failed tests and address them accordingly before considering the issue resolved.\n\n### Summary of Verification Steps\n\n1. Verify merge commit details and associated discussions.\n2. Pinpoint the exact code changes using version control tools.\n3. Review commit message, pull request description, or documentation.\n4. Consult with stakeholders to understand the rationale behind the change.\n5. Run the updated test to ensure it passes with the new expected behavior.\n6. Execute the entire test suite to verify stability and address any affected tests.",
+      "tool_calls": [],
+      "finish_reason": "stop",
+      "grade": {
+        "pass": false,
+        "score": 0.6666666666666666,
+        "notes": "4/6 steps present, 4 in order"
+      }
+    },
+    {
+      "task_id": "ag-deploy-rollback",
+      "task_summary": "Plan deploy + rollback on failure",
+      "status": "ok",
+      "wall_s": 29.01733675000014,
+      "total_duration": 29016129500,
+      "load_duration": 42700500,
+      "prompt_eval_count": 89,
+      "prompt_eval_duration": 509966292,
+      "eval_count": 708,
+      "eval_duration": 28139623751,
+      "tokens_per_sec": 25.160251120089683,
+      "response_role": "assistant",
+      "response_content": "### Deployment Plan for Version 2.1.4 of Service `widget-api`\n\n#### Phase 1: Preparation\n\n1. **Verify Current Environment**\n   - Verify that the current version running in production is 2.1.3.\n   - Command: `kubectl get deployment widget-api -o jsonpath='{.spec.template.spec.containers[0].image}'`\n   - Expected Output: `registry.example.com/widget-api:2.1.3`\n\n2. **Prepare New Version**\n   - Ensure the new version 2.1.4 is available in the registry.\n   - Command: `docker pull registry.example.com/widget-api:2.1.4`\n   - Verify that the image was pulled successfully.\n\n#### Phase 2: Deployment\n\n3. **Deploy New Version**\n   - Update the deployment to use version 2.1.4.\n   - Command: `kubectl set image deployment/widget-api widget-api=registry.example.com/widget-api:2.1.4`\n   - Verify that the deployment is updated:\n     - Command: `kubectl get deployment widget-api -o jsonpath='{.spec.template.spec.containers[0].image}'`\n     - Expected Output: `registry.example.com/widget-api:2.1.4`\n\n4. **Health Check 1**\n   - Wait for all pods to be ready.\n   - Command: `kubectl rollout status deployment/widget-api`\n   - Verify that all pods are running and healthy.\n\n#### Phase 3: Post-Deployment Verification\n\n5. **Verify Application Functionality**\n   - Perform a health check on the application endpoints.\n   - Command: `curl http://<widget-api-service-endpoint>/health`\n   - Expected Output: `{\"status\": \"healthy\"}`\n\n6. **Monitor for Errors**\n   - Monitor logs for any errors or warnings.\n   - Command: `kubectl logs -l app=widget-api --tail=100`\n\n#### Phase 4: Rollback Plan (if necessary)\n\n7. **Rollback to Version 2.1.3**\n   - If any of the health checks fail, rollback to version 2.1.3.\n   - Command: `kubectl set image deployment/widget-api widget-api=registry.example.com/widget-api:2.1.3`\n   - Verify that the rollback was successful:\n     - Command: `kubectl get deployment widget-api -o jsonpath='{.spec.template.spec.containers[0].image}'`\n     - Expected Output: `registry.example.com/widget-api:2.1.3`\n\n8. **Health Check 2 (Post-Rollback)**\n   - Wait for all pods to be ready.\n   - Command: `kubectl rollout status deployment/widget-api`\n   - Verify that all pods are running and healthy.\n\n9. **Verify Application Functionality Post-Rollback**\n   - Perform a health check on the application endpoints.\n   - Command: `curl http://<widget-api-service-endpoint>/health`\n   - Expected Output: `{\"status\": \"healthy\"}`\n\n10. **Monitor for Errors Post-Rollback**\n    - Monitor logs for any errors or warnings.\n    - Command: `kubectl logs -l app=widget-api --tail=100`\n\n### Conclusion\n- If all checks pass, the deployment is successful.\n- If any check fails during the deployment, rollback to version 2.1.3 and ensure that the system returns to a stable state.",
+      "tool_calls": [],
+      "finish_reason": "stop",
+      "grade": {
+        "pass": true,
+        "score": 0.8333333333333334,
+        "notes": "5/6 steps present, 5 in order"
+      }
+    },
+    {
+      "task_id": "ag-data-migration",
+      "task_summary": "Plan a non-trivial data migration with checkpoints",
+      "status": "ok",
+      "wall_s": 43.76844725000001,
+      "total_duration": 43767424916,
+      "load_duration": 67756875,
+      "prompt_eval_count": 93,
+      "prompt_eval_duration": 510844458,
+      "eval_count": 1061,
+      "eval_duration": 42564343369,
+      "tokens_per_sec": 24.926967410302776,
+      "response_role": "assistant",
+      "response_content": "### Migration Plan for Adding Non-Null `email_verified` Column\n\n#### 1. **Preparation**\n   - **Checkpoint:** Ensure you have a backup of the database.\n   - **Verify Steps:**\n     - Confirm that the backup is complete and can be restored if needed.\n     - Check that there are no ongoing schema changes or migrations in progress.\n\n#### 2. **Add Nullable Column**\n   - **Action:** Add a nullable `email_verified` column to the `users` table.\n     ```sql\n     ALTER TABLE users ADD COLUMN email_verified BOOLEAN;\n     ```\n   - **Checkpoint:** Verify the new column is added with NULL values.\n   - **Verify Steps:**\n     - Run a query to check if the column exists and has NULL values for all rows:\n       ```sql\n       SELECT COUNT(*) FROM users WHERE email_verified IS NULL;\n       ```\n     - Ensure the count matches the total number of rows (50M).\n\n#### 3. **Backfill Existing Rows**\n   - **Action:** Update existing rows to set `email_verified` to False.\n     ```sql\n     UPDATE users SET email_verified = FALSE;\n     ```\n   - **Checkpoint:** Verify all rows have been updated.\n   - **Verify Steps:**\n     - Run a query to check if all rows now have `email_verified` set to False:\n       ```sql\n       SELECT COUNT(*) FROM users WHERE email_verified IS NOT NULL AND email_verified = FALSE;\n       ```\n     - Ensure the count matches the total number of rows (50M).\n\n#### 4. **Modify Column to Non-Null**\n   - **Action:** Alter the column to be non-null with a default value of False.\n     ```sql\n     ALTER TABLE users ALTER COLUMN email_verified SET NOT NULL DEFAULT FALSE;\n     ```\n   - **Checkpoint:** Verify the column is now non-null and has a default value.\n   - **Verify Steps:**\n     - Run a query to check if the column is non-nullable:\n       ```sql\n       SELECT column_default, is_nullable FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'email_verified';\n       ```\n     - Ensure `is_nullable` is 'NO' and `column_default` is 'false'.\n\n#### 5. **Update Application Logic**\n   - **Action:** Update application logic to include the new `email_verified` column in INSERT statements.\n   - **Checkpoint:** Verify that all INSERTs now include the `email_verified` column.\n   - **Verify Steps:**\n     - Review and test application code to ensure it includes the new column.\n     - Perform a few test inserts and verify they succeed.\n\n#### 6. **Monitor for Issues**\n   - **Action:** Monitor the database for any issues or errors related to the migration.\n   - **Checkpoint:** Ensure no data integrity issues arise from concurrent writes.\n   - **Verify Steps:**\n     - Set up monitoring for slow queries, deadlocks, and other potential issues.\n     - Review logs for any anomalies.\n\n#### 7. **Final Verification**\n   - **Action:** Perform a final verification of the table structure and data.\n   - **Checkpoint:** Confirm that all rows have the correct `email_verified` value.\n   - **Verify Steps:**\n     - Run a query to check if all rows have `email_verified` set correctly:\n       ```sql\n       SELECT COUNT(*) FROM users WHERE email_verified = FALSE;\n       ```\n     - Ensure the count matches the total number of rows (50M).\n\n### Backout Plan\n\n#### 1. **Rollback Application Changes**\n   - **Action:** Revert any changes made to application logic that include the new `email_verified` column.\n   - **Checkpoint:** Verify that application logic no longer includes the new column.\n\n#### 2. **Drop New Column**\n   - **Action:** Drop the newly added `email_verified` column from the `users` table.\n     ```sql\n     ALTER TABLE users DROP COLUMN email_verified;\n     ```\n   - **Checkpoint:** Verify the column has been dropped.\n   - **Verify Steps:**\n     - Run a query to check if the column still exists:\n       ```sql\n       SELECT COUNT(*) FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'email_verified';\n       ```\n     - Ensure the count is 0.\n\n#### 3. **Restore Backup**\n   - **Action:** Restore the database from the backup taken before the migration.\n   - **Checkpoint:** Verify that the database has been restored to its original state.\n   - **Verify Steps:**\n     - Run a query to check if the `users` table is back to its original schema and data:\n       ```sql\n       SELECT COUNT(*) FROM users;\n       ```\n     - Ensure the count matches the original number of rows (50M).\n\n#### 4. **Review and Document**\n   - **Action:** Review the migration process and document any issues or learnings.\n   - **Checkpoint:** Ensure all steps are documented for future reference.\n\nBy following this plan, you can safely migrate the `users` table to include a non-null `email_verified` column while minimizing risk and providing a rollback path in case of issues.",
+      "tool_calls": [],
+      "finish_reason": "stop",
+      "grade": {
+        "pass": false,
+        "score": 0.6666666666666666,
+        "notes": "4/6 steps present, 4 in order"
+      }
+    },
+    {
+      "task_id": "ag-incident-response",
+      "task_summary": "Plan incident response for production outage",
+      "status": "ok",
+      "wall_s": 29.648942832999637,
+      "total_duration": 29648303917,
+      "load_duration": 41888709,
+      "prompt_eval_count": 90,
+      "prompt_eval_duration": 509950083,
+      "eval_count": 715,
+      "eval_duration": 28603990204,
+      "tokens_per_sec": 24.99651254600185,
+      "response_role": "assistant",
+      "response_content": "### Incident Response Plan for Production API Outage\n\n#### Phase 1: Triage\n\n**Step 1: Confirm the Issue**\n- **Action**: Check monitoring tools (e.g., Prometheus, Grafana) to confirm that the API is indeed returning 500s on 80% of requests.\n- **Verification**: Look for spikes in error rates and latency metrics.\n\n**Step 2: Assess Impact**\n- **Action**: Determine the impact on users/customers by checking logs (e.g., ELK Stack) for user-facing errors or complaints.\n- **Verification**: Review support tickets, social media mentions, and internal communication channels.\n\n**Step 3: Prioritize Affected Services**\n- **Action**: Identify which services are most affected by the API outage.\n- **Verification**: Cross-reference with dependency maps to understand downstream impacts.\n\n#### Phase 2: Mitigation\n\n**Step 4: Rollback Last Deployment**\n- **Action**: If the last deployment is suspected as the cause, initiate a rollback to the previous stable version.\n- **Verification**: Monitor metrics for any improvement in error rates and service availability.\n\n**Step 5: Implement Temporary Workarounds**\n- **Action**: Deploy temporary workarounds if necessary (e.g., caching, fallback services).\n- **Verification**: Ensure that these measures reduce the load on the API and improve response times.\n\n**Step 6: Increase Monitoring and Alerts**\n- **Action**: Temporarily increase logging verbosity and alert thresholds to detect any new issues.\n- **Verification**: Confirm that alerts are being triggered correctly for critical metrics.\n\n#### Phase 3: Root-Cause Analysis (RCA)\n\n**Step 7: Review Recent Changes**\n- **Action**: Analyze the code changes from the last deployment for potential issues.\n- **Verification**: Use static code analysis tools to identify problematic code patterns.\n\n**Step 8: Debugging and Testing**\n- **Action**: Reproduce the issue in a staging environment using similar load conditions.\n- **Verification**: Confirm that the issue can be consistently reproduced and debugged.\n\n**Step 9: Analyze Logs and Metrics**\n- **Action**: Review detailed logs and metrics from the time of the deployment to identify patterns or anomalies.\n- **Verification**: Look for specific error messages, stack traces, or unusual behavior in logs.\n\n**Step 10: Conduct Post-Mortem Meeting**\n- **Action**: Hold a post-mortem meeting with relevant teams (DevOps, Development, QA) to discuss findings and determine root causes.\n- **Verification**: Document the outcomes of the meeting, including identified issues, contributing factors, and lessons learned.\n\n#### Phase 4: Recovery and Preventive Measures\n\n**Step 11: Fix Identified Issues**\n- **Action**: Develop and deploy fixes for the identified root causes.\n- **Verification**: Monitor metrics to ensure that error rates are reduced and service stability is restored.\n\n**Step 12: Implement Monitoring Improvements**\n- **Action**: Enhance monitoring systems to detect similar issues more quickly in the future.\n- **Verification**: Test new monitoring configurations with simulated failures to ensure they work as expected.\n\n**Step 13: Update Documentation and Training**\n- **Action**: Update incident response documentation and provide training to relevant teams based on lessons learned.\n- **Verification**: Conduct a review session with team members to confirm understanding of the updated procedures.\n\nBy following this plan, you can systematically address the API outage, mitigate its impact, identify the root cause, and implement measures to prevent future occurrences.",
+      "tool_calls": [],
+      "finish_reason": "stop",
+      "grade": {
+        "pass": false,
+        "score": 0.6666666666666666,
+        "notes": "4/6 steps present, 4 in order"
+      }
+    }
+  ],
+  "peak_runner_rss_bytes": 10734600192,
+  "started_utc": "2026-05-03T17:55:38.179489+00:00",
+  "n_samples_attempted": 4,
+  "n_samples_ok": 4,
+  "n_samples_skipped": 0,
+  "n_samples_error": 0
+}

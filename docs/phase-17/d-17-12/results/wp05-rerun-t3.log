@@ -1,0 +1,41 @@
+=== D-17-12 bench run 20260503T180613Z ===
+
+[T3-A gemma2:27b on mac-studio] workload=long-context
+  warming up gemma2:27b...
+    [5/5] lc-short-gemma-friendly: wall=41.7s tps=24.0 grade=0.75 pass=True
+
+[T3-B qwen3-coder:30b on mac-studio] workload=long-context
+  warming up qwen3-coder:30b...
+    [1/5] lc-finding-T: wall=52.4s tps=44.3 grade=1.00 pass=True
+    [2/5] lc-finding-DD-trap: wall=48.9s tps=45.1 grade=0.80 pass=True
+    [3/5] lc-cross-doc-synthesis: wall=61.3s tps=44.9 grade=0.80 pass=True
+    [4/5] lc-finding-CC-prior-art: wall=46.7s tps=45.3 grade=0.60 pass=False
+    [5/5] lc-short-gemma-friendly: wall=16.7s tps=67.2 grade=1.00 pass=True
+
+[T3-A gemma2:27b on mac-studio] workload=refactor
+  warming up gemma2:27b...
+    [1/4] refactor-userrepo: wall=21.4s tps=34.1 grade=1.00 pass=True
+    [2/4] refactor-add-logging: wall=22.7s tps=34.1 grade=0.50 pass=False
+    [3/4] refactor-error-handling: wall=19.5s tps=34.1 grade=0.75 pass=True
+    [4/4] refactor-async: wall=11.2s tps=34.5 grade=1.00 pass=True
+
+[T3-B qwen3-coder:30b on mac-studio] workload=refactor
+  warming up qwen3-coder:30b...
+    [1/4] refactor-userrepo: wall=5.5s tps=85.4 grade=1.00 pass=True
+    [2/4] refactor-add-logging: wall=5.8s tps=85.3 grade=0.50 pass=False
+    [3/4] refactor-error-handling: wall=4.1s tps=85.1 grade=1.00 pass=True
+    [4/4] refactor-async: wall=3.8s tps=85.3 grade=1.00 pass=True
+
+[T3-A gemma2:27b on mac-studio] workload=tool-call
+  warming up gemma2:27b...
+
+[T3-B qwen3-coder:30b on mac-studio] workload=tool-call
+  warming up qwen3-coder:30b...
+    [1/6] tc-weather-paris: wall=2.3s tps=87.7 grade=1.00 pass=True
+    [2/6] tc-calc-math: wall=0.5s tps=88.0 grade=1.00 pass=True
+    [3/6] tc-search-event: wall=0.5s tps=91.0 grade=0.60 pass=False
+    [4/6] tc-read-file: wall=0.5s tps=87.9 grade=1.00 pass=True
+    [5/6] tc-no-tool-needed: wall=0.1s tps=167.4 grade=1.00 pass=True
+    [6/6] tc-multi-arg-units: wall=0.5s tps=87.7 grade=1.00 pass=True
+
+=== summary written: /Users/admin/repos/integrated-ai-platform/docs/phase-17/d-17-12/results/20260503T180613Z/summary.json ===

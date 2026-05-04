@@ -1,0 +1,699 @@
+[
+  {
+    "id": "tc-weather-paris",
+    "summary": "Trivial tool call: get weather for Paris in celsius",
+    "approx_input_tokens": 200,
+    "messages": [
+      {
+        "role": "user",
+        "content": "What's the weather like in Paris right now? Use celsius."
+      }
+    ],
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "get_weather",
+          "description": "Get the current weather for a city",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "city": {
+                "type": "string",
+                "description": "City name"
+              },
+              "units": {
+                "type": "string",
+                "enum": [
+                  "celsius",
+                  "fahrenheit"
+                ],
+                "description": "Temperature units"
+              }
+            },
+            "required": [
+              "city"
+            ]
+          }
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "search_web",
+          "description": "Search the web for a query",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "query": {
+                "type": "string",
+                "description": "Search query"
+              },
+              "max_results": {
+                "type": "integer",
+                "description": "Max results to return",
+                "default": 5
+              }
+            },
+            "required": [
+              "query"
+            ]
+          }
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "calculate",
+          "description": "Evaluate a math expression",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "expression": {
+                "type": "string",
+                "description": "Math expression e.g. '2 + 2 * 3'"
+              }
+            },
+            "required": [
+              "expression"
+            ]
+          }
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "read_file",
+          "description": "Read the contents of a file",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "path": {
+                "type": "string",
+                "description": "Absolute file path"
+              },
+              "max_lines": {
+                "type": "integer",
+                "description": "Max lines to read"
+              }
+            },
+            "required": [
+              "path"
+            ]
+          }
+        }
+      }
+    ],
+    "expected_function": "get_weather",
+    "expected_args": {
+      "city": "Paris",
+      "units": "celsius"
+    },
+    "options": {
+      "temperature": 0.1,
+      "num_predict": 200,
+      "num_ctx": 4096
+    },
+    "timeout": 300
+  },
+  {
+    "id": "tc-calc-math",
+    "summary": "Pick the math tool over web search for arithmetic",
+    "approx_input_tokens": 200,
+    "messages": [
+      {
+        "role": "user",
+        "content": "What is 47 * 13 + 91?"
+      }
+    ],
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "get_weather",
+          "description": "Get the current weather for a city",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "city": {
+                "type": "string",
+                "description": "City name"
+              },
+              "units": {
+                "type": "string",
+                "enum": [
+                  "celsius",
+                  "fahrenheit"
+                ],
+                "description": "Temperature units"
+              }
+            },
+            "required": [
+              "city"
+            ]
+          }
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "search_web",
+          "description": "Search the web for a query",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "query": {
+                "type": "string",
+                "description": "Search query"
+              },
+              "max_results": {
+                "type": "integer",
+                "description": "Max results to return",
+                "default": 5
+              }
+            },
+            "required": [
+              "query"
+            ]
+          }
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "calculate",
+          "description": "Evaluate a math expression",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "expression": {
+                "type": "string",
+                "description": "Math expression e.g. '2 + 2 * 3'"
+              }
+            },
+            "required": [
+              "expression"
+            ]
+          }
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "read_file",
+          "description": "Read the contents of a file",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "path": {
+                "type": "string",
+                "description": "Absolute file path"
+              },
+              "max_lines": {
+                "type": "integer",
+                "description": "Max lines to read"
+              }
+            },
+            "required": [
+              "path"
+            ]
+          }
+        }
+      }
+    ],
+    "expected_function": "calculate",
+    "expected_args": {
+      "expression": "47 * 13 + 91"
+    },
+    "options": {
+      "temperature": 0.1,
+      "num_predict": 200,
+      "num_ctx": 4096
+    },
+    "timeout": 300
+  },
+  {
+    "id": "tc-search-event",
+    "summary": "Pick web search for current-events query",
+    "approx_input_tokens": 200,
+    "messages": [
+      {
+        "role": "user",
+        "content": "Find the latest news about Apple's M5 chip release."
+      }
+    ],
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "get_weather",
+          "description": "Get the current weather for a city",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "city": {
+                "type": "string",
+                "description": "City name"
+              },
+              "units": {
+                "type": "string",
+                "enum": [
+                  "celsius",
+                  "fahrenheit"
+                ],
+                "description": "Temperature units"
+              }
+            },
+            "required": [
+              "city"
+            ]
+          }
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "search_web",
+          "description": "Search the web for a query",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "query": {
+                "type": "string",
+                "description": "Search query"
+              },
+              "max_results": {
+                "type": "integer",
+                "description": "Max results to return",
+                "default": 5
+              }
+            },
+            "required": [
+              "query"
+            ]
+          }
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "calculate",
+          "description": "Evaluate a math expression",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "expression": {
+                "type": "string",
+                "description": "Math expression e.g. '2 + 2 * 3'"
+              }
+            },
+            "required": [
+              "expression"
+            ]
+          }
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "read_file",
+          "description": "Read the contents of a file",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "path": {
+                "type": "string",
+                "description": "Absolute file path"
+              },
+              "max_lines": {
+                "type": "integer",
+                "description": "Max lines to read"
+              }
+            },
+            "required": [
+              "path"
+            ]
+          }
+        }
+      }
+    ],
+    "expected_function": "search_web",
+    "expected_args": {
+      "query": "Apple M5 chip release"
+    },
+    "options": {
+      "temperature": 0.1,
+      "num_predict": 200,
+      "num_ctx": 4096
+    },
+    "timeout": 300
+  },
+  {
+    "id": "tc-read-file",
+    "summary": "Pick file-read for path-based query",
+    "approx_input_tokens": 200,
+    "messages": [
+      {
+        "role": "user",
+        "content": "Show me the first 50 lines of /etc/hosts."
+      }
+    ],
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "get_weather",
+          "description": "Get the current weather for a city",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "city": {
+                "type": "string",
+                "description": "City name"
+              },
+              "units": {
+                "type": "string",
+                "enum": [
+                  "celsius",
+                  "fahrenheit"
+                ],
+                "description": "Temperature units"
+              }
+            },
+            "required": [
+              "city"
+            ]
+          }
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "search_web",
+          "description": "Search the web for a query",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "query": {
+                "type": "string",
+                "description": "Search query"
+              },
+              "max_results": {
+                "type": "integer",
+                "description": "Max results to return",
+                "default": 5
+              }
+            },
+            "required": [
+              "query"
+            ]
+          }
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "calculate",
+          "description": "Evaluate a math expression",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "expression": {
+                "type": "string",
+                "description": "Math expression e.g. '2 + 2 * 3'"
+              }
+            },
+            "required": [
+              "expression"
+            ]
+          }
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "read_file",
+          "description": "Read the contents of a file",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "path": {
+                "type": "string",
+                "description": "Absolute file path"
+              },
+              "max_lines": {
+                "type": "integer",
+                "description": "Max lines to read"
+              }
+            },
+            "required": [
+              "path"
+            ]
+          }
+        }
+      }
+    ],
+    "expected_function": "read_file",
+    "expected_args": {
+      "path": "/etc/hosts",
+      "max_lines": 50
+    },
+    "options": {
+      "temperature": 0.1,
+      "num_predict": 200,
+      "num_ctx": 4096
+    },
+    "timeout": 300
+  },
+  {
+    "id": "tc-no-tool-needed",
+    "summary": "Recognize no tool call is needed for trivia",
+    "approx_input_tokens": 200,
+    "messages": [
+      {
+        "role": "user",
+        "content": "What is the capital of France? Just answer in one word."
+      }
+    ],
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "get_weather",
+          "description": "Get the current weather for a city",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "city": {
+                "type": "string",
+                "description": "City name"
+              },
+              "units": {
+                "type": "string",
+                "enum": [
+                  "celsius",
+                  "fahrenheit"
+                ],
+                "description": "Temperature units"
+              }
+            },
+            "required": [
+              "city"
+            ]
+          }
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "search_web",
+          "description": "Search the web for a query",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "query": {
+                "type": "string",
+                "description": "Search query"
+              },
+              "max_results": {
+                "type": "integer",
+                "description": "Max results to return",
+                "default": 5
+              }
+            },
+            "required": [
+              "query"
+            ]
+          }
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "calculate",
+          "description": "Evaluate a math expression",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "expression": {
+                "type": "string",
+                "description": "Math expression e.g. '2 + 2 * 3'"
+              }
+            },
+            "required": [
+              "expression"
+            ]
+          }
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "read_file",
+          "description": "Read the contents of a file",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "path": {
+                "type": "string",
+                "description": "Absolute file path"
+              },
+              "max_lines": {
+                "type": "integer",
+                "description": "Max lines to read"
+              }
+            },
+            "required": [
+              "path"
+            ]
+          }
+        }
+      }
+    ],
+    "expected_function": null,
+    "expected_args": {},
+    "options": {
+      "temperature": 0.1,
+      "num_predict": 50,
+      "num_ctx": 4096
+    },
+    "timeout": 200
+  },
+  {
+    "id": "tc-multi-arg-units",
+    "summary": "Adherence to enum constraint in tool schema",
+    "approx_input_tokens": 200,
+    "messages": [
+      {
+        "role": "user",
+        "content": "Get me the weather for New York in fahrenheit."
+      }
+    ],
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "get_weather",
+          "description": "Get the current weather for a city",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "city": {
+                "type": "string",
+                "description": "City name"
+              },
+              "units": {
+                "type": "string",
+                "enum": [
+                  "celsius",
+                  "fahrenheit"
+                ],
+                "description": "Temperature units"
+              }
+            },
+            "required": [
+              "city"
+            ]
+          }
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "search_web",
+          "description": "Search the web for a query",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "query": {
+                "type": "string",
+                "description": "Search query"
+              },
+              "max_results": {
+                "type": "integer",
+                "description": "Max results to return",
+                "default": 5
+              }
+            },
+            "required": [
+              "query"
+            ]
+          }
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "calculate",
+          "description": "Evaluate a math expression",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "expression": {
+                "type": "string",
+                "description": "Math expression e.g. '2 + 2 * 3'"
+              }
+            },
+            "required": [
+              "expression"
+            ]
+          }
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "read_file",
+          "description": "Read the contents of a file",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "path": {
+                "type": "string",
+                "description": "Absolute file path"
+              },
+              "max_lines": {
+                "type": "integer",
+                "description": "Max lines to read"
+              }
+            },
+            "required": [
+              "path"
+            ]
+          }
+        }
+      }
+    ],
+    "expected_function": "get_weather",
+    "expected_args": {
+      "city": "New York",
+      "units": "fahrenheit"
+    },
+    "options": {
+      "temperature": 0.1,
+      "num_predict": 200,
+      "num_ctx": 4096
+    },
+    "timeout": 300
+  }
+]

@@ -1,0 +1,51 @@
+{
+  "model_key": "T3-B",
+  "model_name": "qwen3-coder:30b",
+  "model_tier": "T3-B",
+  "model_host": "mac-studio",
+  "context_limit": 262144,
+  "workload": "long-context",
+  "samples": [
+    {
+      "task_id": "lc-finding-T",
+      "task_summary": "Recall InvenTree-pattern Finding T from buried position in DOC A",
+      "status": "error",
+      "error": "<urlopen error [Errno 61] Connection refused>",
+      "wall_s": 1.0030854159999762
+    },
+    {
+      "task_id": "lc-finding-DD-trap",
+      "task_summary": "Recall Finding DD diagnostic trap and its corrected pattern",
+      "status": "error",
+      "error": "<urlopen error [Errno 61] Connection refused>",
+      "wall_s": 1.005036999999902
+    },
+    {
+      "task_id": "lc-cross-doc-synthesis",
+      "task_summary": "Synthesize across both documents \u2014 what does Finding 1 tool-call gap have to do with exo's Finding S?",
+      "status": "error",
+      "error": "<urlopen error [Errno 61] Connection refused>",
+      "wall_s": 1.0041460830002507
+    },
+    {
+      "task_id": "lc-finding-CC-prior-art",
+      "task_summary": "Recall the three prior-art patterns named in Finding CC",
+      "status": "error",
+      "error": "<urlopen error [Errno 61] Connection refused>",
+      "wall_s": 1.0043698750000658
+    },
+    {
+      "task_id": "lc-short-gemma-friendly",
+      "task_summary": "7K variant \u2014 Finding T recall (Gemma 8K-context fairness)",
+      "status": "error",
+      "error": "<urlopen error [Errno 61] Connection refused>",
+      "wall_s": 1.0040588339998067
+    }
+  ],
+  "peak_runner_rss_bytes": 0,
+  "started_utc": "2026-05-03T17:44:39.226200+00:00",
+  "n_samples_attempted": 5,
+  "n_samples_ok": 0,
+  "n_samples_skipped": 0,
+  "n_samples_error": 5
+}

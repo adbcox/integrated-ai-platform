@@ -1,0 +1,104 @@
+{
+  "model_key": "T3-A",
+  "model_name": "gemma2:27b",
+  "model_tier": "T3-A",
+  "model_host": "mac-studio",
+  "context_limit": 8192,
+  "workload": "agentic",
+  "samples": [
+    {
+      "task_id": "ag-debug-failing-test",
+      "task_summary": "Plan debugging a failing test with verify steps",
+      "status": "ok",
+      "wall_s": 14.647281583000222,
+      "total_duration": 14643633667,
+      "load_duration": 1392927459,
+      "prompt_eval_count": 107,
+      "prompt_eval_duration": 451207958,
+      "eval_count": 437,
+      "eval_duration": 12559331695,
+      "tokens_per_sec": 34.79484502937161,
+      "response_role": "assistant",
+      "response_content": "Here's a plan to diagnose and fix the failing test:\n\n**1. Understand the Test:**\n\n* **Action:** Carefully read the `test_fetch_unknown` function in `test_user.py`. Examine what inputs it provides to `fetch_user`, what output it expects, and how it verifies the result.\n* **Verification:** Confirm that the test is indeed designed to check if `fetch_user(-1)` returns `None`.\n\n**2. Inspect the `fetch_user` Function:**\n\n* **Action:** Open the code for the `fetch_user` function. Review its logic, paying close attention to how it handles negative user IDs and what value it returns in such cases.\n* **Verification:** Identify the specific part of the code that determines the return value for a user ID of -1.\n\n**3. Analyze Recent Changes:**\n\n* **Action:** Examine the commit history since the last successful run of the test. Look for changes related to `fetch_user` or any functions it might call.\n* **Verification:** Pinpoint the exact code modification(s) that likely introduced the issue.\n\n**4. Hypothesize the Cause:**\n\n* **Action:** Based on your understanding of the test and the recent changes, formulate a hypothesis about why `fetch_user(-1)` now returns 'unknown' instead of `None`.\n* **Verification:** Your hypothesis should logically explain the observed behavior based on the code changes.\n\n**5. Implement a Fix:**\n\n* **Action:** Modify the `fetch_user` function to address the identified issue. This might involve adding a conditional statement to handle negative user IDs explicitly, returning `None` in those cases.\n* **Verification:** Ensure that your fix aligns with the original intent of the function and doesn't introduce unintended side effects.\n\n**6. Rerun the Test:**\n\n\n* **Action:** Execute the `test_fetch_unknown` test again after applying the fix.\n* **Verification:** Confirm that the test now passes successfully, indicating that `fetch_user(-1)` returns `None` as expected.",
+      "tool_calls": [],
+      "finish_reason": "stop",
+      "grade": {
+        "pass": false,
+        "score": 0.5,
+        "notes": "3/6 steps present, 3 in order"
+      }
+    },
+    {
+      "task_id": "ag-deploy-rollback",
+      "task_summary": "Plan deploy + rollback on failure",
+      "status": "ok",
+      "wall_s": 18.532720208000228,
+      "total_duration": 18528783167,
+      "load_duration": 57482875,
+      "prompt_eval_count": 88,
+      "prompt_eval_duration": 334140542,
+      "eval_count": 620,
+      "eval_duration": 17803420827,
+      "tokens_per_sec": 34.82476800524376,
+      "response_role": "assistant",
+      "response_content": "## Deployment Plan: widget-api v2.1.4\n\n**Goal:** Deploy version 2.1.4 of `widget-api` to the production cluster, ensuring backward compatibility and minimal downtime.\n\n**Current Version:** 2.1.3\n\n**Plan:**\n\n1. **Backup Current Configuration:**\n    * Create a snapshot of the current `widget-api` deployment configuration in the production cluster. This will serve as a rollback point if needed.\n2. **Deploy New Version (Canary):**\n    * Deploy version 2.1.4 of `widget-api` to a separate canary environment within the production cluster. This environment should mirror the production setup but handle a small percentage of traffic.\n3. **Health Check (Canary):**\n    * Execute automated health checks against the canary deployment, verifying:\n        * API responsiveness (e.g., successful response to predefined requests)\n        * Data integrity (e.g., correct data retrieval and manipulation)\n        * Error handling (e.g., appropriate error codes and messages for invalid requests)\n4. **Rollback (If Canary Fails):**\n    * **Condition:** If any health check in step 3 fails, rollback to the previous version (2.1.3).\n    * **Action:**\n        * Roll back the canary deployment to version 2.1.3 using the snapshot created in step 1.\n        * Disable traffic routing to the failed canary environment.\n5. **Traffic Shift (If Canary Succeeds):**\n    * **Condition:** If all health checks in step 3 pass, proceed with gradually shifting traffic from the production deployment of `widget-api` (2.1.3) to the successful canary deployment (2.1.4).\n6. **Health Check (Production):**\n    * During the traffic shift, continuously monitor the health of the new `widget-api` deployment in production using the same checks defined in step 3.\n7. **Rollback (If Production Fails):**\n    * **Condition:** If any health check during the traffic shift fails, immediately rollback to version 2.1.3.\n    * **Action:**\n        * Redirect all traffic back to the original `widget-api` deployment (2.1.3).\n        * Investigate and resolve the issue causing the health check failure before attempting redeployment.\n8. **Complete Traffic Shift:**\n    * Once the traffic shift is complete and all health checks pass consistently, decommission the old `widget-api` deployment (2.1.3) to ensure a clean environment.\n\n**Notes:**\n\n\n* This plan assumes automated tools are in place for deployment, configuration management, and health checking.\n* The specific health checks should be tailored to the functionality of `widget-api`.\n* Traffic shifting can be implemented using techniques like blue-green deployments or canary releases.\n* Thorough testing and monitoring are crucial throughout the entire process.",
+      "tool_calls": [],
+      "finish_reason": "stop",
+      "grade": {
+        "pass": true,
+        "score": 1.0,
+        "notes": "6/6 steps present, 6 in order"
+      }
+    },
+    {
+      "task_id": "ag-data-migration",
+      "task_summary": "Plan a non-trivial data migration with checkpoints",
+      "status": "ok",
+      "wall_s": 18.523512124999797,
+      "total_duration": 18519907833,
+      "load_duration": 54894875,
+      "prompt_eval_count": 91,
+      "prompt_eval_duration": 334221166,
+      "eval_count": 620,
+      "eval_duration": 17792571290,
+      "tokens_per_sec": 34.846003418767246,
+      "response_role": "assistant",
+      "response_content": "## PostgreSQL `users` Table Migration Plan: Adding `email_verified` Column\n\nThis plan outlines the steps for migrating a 50M-row PostgreSQL `users` table to add a non-null `email_verified` column with a default value of False for existing rows and mandatory inclusion for new INSERTs. The plan considers concurrent writes and includes backfill, verification, and rollback strategies.\n\n**1. Database Backup:**\n\n* **Action:** Create a full backup of the PostgreSQL database containing the `users` table.\n* **Checkpoint:** Successful completion of the backup process.\n* **Verify:** Verify the backup integrity by restoring it to a test environment.\n* **Backout:** Restore the database from the backup if any issues arise during the migration.\n\n**2. Schema Modification:**\n\n* **Action:** Execute an ALTER TABLE statement to add the `email_verified` column with the BOOLEAN data type and set its default value to FALSE:\n```sql\nALTER TABLE users ADD COLUMN email_verified BOOLEAN DEFAULT FALSE NOT NULL;\n```\n* **Checkpoint:** Successful execution of the ALTER TABLE statement.\n* **Verify:** Query the `users` table schema using `\\d users` to confirm the presence of the new column and its default value.\n\n**3. Backfill Existing Rows:**\n\n* **Action:** Use an UPDATE statement to set the `email_verified` column to FALSE for all existing rows:\n```sql\nUPDATE users SET email_verified = FALSE;\n```\n* **Checkpoint:** Successful completion of the UPDATE statement.\n* **Verify:** Query a sample of rows from the `users` table to confirm that the `email_verified` column is set to FALSE for all existing entries.\n\n**4. Application Code Modification:**\n\n* **Action:** Update application code to include the `email_verified` column in INSERT statements and enforce its presence.\n* **Checkpoint:** Successful deployment of the updated application code.\n* **Verify:** Test the application functionality, ensuring new user registrations correctly populate the `email_verified` column.\n\n**5. Monitoring and Testing:**\n\n* **Action:** Monitor the database for any errors or performance issues during concurrent writes. Conduct thorough testing to ensure data integrity and application functionality.\n* **Checkpoint:** Successful completion of monitoring and testing phase without encountering critical issues.\n\n**6. Rollback Plan (if necessary):**\n\n* **Action:** If any issues arise during the migration process, restore the database from the backup created in step 1. This will revert the database to its pre-migration state.\n* **Checkpoint:** Successful restoration of the database from the backup.\n\n\n\n**Important Considerations:**\n\n\n* This plan assumes minimal downtime is acceptable. For zero-downtime migrations, consider using techniques like online schema changes or replication.\n\n* Regularly monitor database performance during and after the migration process to identify and address potential bottlenecks.\n* Implement robust logging and error handling mechanisms to track the progress of the migration and troubleshoot any issues that may arise.",
+      "tool_calls": [],
+      "finish_reason": "stop",
+      "grade": {
+        "pass": true,
+        "score": 0.8333333333333334,
+        "notes": "5/6 steps present, 5 in order"
+      }
+    },
+    {
+      "task_id": "ag-incident-response",
+      "task_summary": "Plan incident response for production outage",
+      "status": "ok",
+      "wall_s": 20.10594091699977,
+      "total_duration": 20101615375,
+      "load_duration": 56449834,
+      "prompt_eval_count": 85,
+      "prompt_eval_duration": 330948000,
+      "eval_count": 673,
+      "eval_duration": 19347348579,
+      "tokens_per_sec": 34.78512816637251,
+      "response_role": "assistant",
+      "response_content": "## Incident Response Plan: Production API Returning 500 Errors\n\n**Incident:** Production API returning 500 Internal Server Errors on 80% of requests.\n\n**Timeline:** Issue started 2 minutes ago. Last deploy was 30 minutes ago.\n\n**Goal:** Restore service availability and identify the root cause of the issue.\n\n**Plan:**\n\n**Phase 1: Triage (Verify Service Impact & Gather Initial Data)**\n\n1. **Verify Error Rate:**\n    *  Use monitoring tools to confirm the 80% error rate for API requests.\n    * **Verification:** Screenshot or log showing the error rate from monitoring dashboards.\n2. **Identify Affected Endpoints:**\n    * Determine which specific API endpoints are experiencing errors.\n    * **Verification:** List of affected endpoints and their corresponding error rates.\n3. **Check Recent Changes:**\n    * Review the last deployment (30 minutes ago) for any code changes, configuration updates, or infrastructure modifications that could be related to the issue.\n    * **Verification:** Deployment logs, commit history, and change management records.\n\n**Phase 2: Mitigation (Minimize Impact & Restore Service)**\n\n1. **Roll Back Last Deployment (If Suspected):**\n    * If the deployment is suspected as the cause, initiate a rollback to the previous stable version.\n    * **Verification:** Successful rollback confirmation from deployment tools and monitoring dashboards showing error rate reduction.\n2. **Implement Temporary Workarounds (If Necessary):**\n    * Depending on the nature of the issue, consider implementing temporary workarounds like rate limiting, circuit breakers, or fallback mechanisms to mitigate the impact on users.\n    * **Verification:** Documentation of implemented workarounds and their effectiveness in reducing error rates.\n\n**Phase 3: Root Cause Analysis (Identify Underlying Issue)**\n\n1. **Analyze Logs:**\n    * Examine application logs, server logs, and database logs for any error messages, exceptions, or unusual patterns that could provide clues about the root cause.\n    * **Verification:** Log excerpts highlighting relevant information and potential error sources.\n2. **Debug Code (If Applicable):**\n    * If code changes are suspected, use debugging tools to step through the affected code paths and identify any logic errors or unexpected behavior.\n    * **Verification:** Documentation of debugging findings and potential code fixes.\n3. **Review Infrastructure Configuration:**\n    * Check server configurations, network settings, database connections, and other infrastructure components for any misconfigurations or resource limitations that could be contributing to the issue.\n    * **Verification:** Documentation of infrastructure review findings and any identified issues.\n\n**Post-Incident Actions:**\n\n1. **Document Findings:** Create a detailed incident report summarizing the timeline, impact, mitigation steps taken, root cause analysis, and lessons learned.\n2. **Implement Corrective Actions:** Address the identified root cause by fixing bugs, updating configurations, or implementing preventative measures to avoid similar issues in the future.\n3. **Communicate with Stakeholders:** Inform affected users about the incident, its resolution, and any steps taken to prevent recurrence.\n\n**Note:** This plan is a general framework and may need to be adapted based on the specific details of the incident and your organization's processes.",
+      "tool_calls": [],
+      "finish_reason": "stop",
+      "grade": {
+        "pass": true,
+        "score": 0.8333333333333334,
+        "notes": "5/6 steps present, 5 in order"
+      }
+    }
+  ],
+  "peak_runner_rss_bytes": 18869403648,
+  "started_utc": "2026-05-03T17:57:07.496658+00:00",
+  "n_samples_attempted": 4,
+  "n_samples_ok": 4,
+  "n_samples_skipped": 0,
+  "n_samples_error": 0
+}

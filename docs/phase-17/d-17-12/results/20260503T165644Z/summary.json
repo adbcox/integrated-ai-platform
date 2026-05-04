@@ -1,0 +1,33 @@
+{
+  "run_id": "20260503T165644Z",
+  "started_utc": "2026-05-03T16:56:44.349185+00:00",
+  "models": [
+    {
+      "key": "T2",
+      "name": "qwen2.5-coder:14b",
+      "host": "127.0.0.1",
+      "port": 11434,
+      "host_label": "mac-mini",
+      "tier": "T2",
+      "context_limit": 32768,
+      "ssh_target": null
+    }
+  ],
+  "workloads": [
+    "long-context"
+  ],
+  "samples_cap": 1,
+  "results": [
+    {
+      "model_key": "T2",
+      "workload": "long-context",
+      "n_ok": 1,
+      "n_skipped": 0,
+      "n_error": 0,
+      "mean_score": 1.0,
+      "mean_tps": 16.331140267955178,
+      "peak_rss_gb": 15.673901056
+    }
+  ],
+  "finished_utc": "2026-05-03T16:59:58.088944+00:00"
+}

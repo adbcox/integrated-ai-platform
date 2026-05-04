@@ -1,0 +1,38 @@
+{
+  "model_key": "T2",
+  "model_name": "qwen2.5-coder:14b",
+  "model_tier": "T2",
+  "model_host": "mac-mini",
+  "context_limit": 32768,
+  "workload": "tool-call",
+  "samples": [
+    {
+      "task_id": "tc-weather-paris",
+      "task_summary": "Trivial tool call: get weather for Paris in celsius",
+      "status": "ok",
+      "wall_s": 4.083185875,
+      "total_duration": 4082207541,
+      "load_duration": 777094666,
+      "prompt_eval_count": 361,
+      "prompt_eval_duration": 1994352208,
+      "eval_count": 33,
+      "eval_duration": 1279131166,
+      "tokens_per_sec": 25.798761594712015,
+      "response_role": "assistant",
+      "response_content": "{\n  \"name\": \"get_weather\",\n  \"arguments\": {\n    \"city\": \"Paris\",\n    \"units\": \"celsius\"\n  }\n}",
+      "tool_calls": [],
+      "finish_reason": "stop",
+      "grade": {
+        "pass": false,
+        "score": 0.3,
+        "notes": "function named in content but no structured tool_calls"
+      }
+    }
+  ],
+  "peak_runner_rss_bytes": 9932865536,
+  "started_utc": "2026-05-03T16:55:55.829379+00:00",
+  "n_samples_attempted": 1,
+  "n_samples_ok": 1,
+  "n_samples_skipped": 0,
+  "n_samples_error": 0
+}

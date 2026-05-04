@@ -1,0 +1,47 @@
+{
+  "model_key": "T3-A",
+  "model_name": "gemma2:27b",
+  "model_tier": "T3-A",
+  "model_host": "mac-studio",
+  "context_limit": 8192,
+  "workload": "long-context",
+  "samples": [
+    {
+      "task_id": "lc-finding-T",
+      "task_summary": "Recall InvenTree-pattern Finding T from buried position in DOC A",
+      "status": "n/a-context-insufficient",
+      "reason": "task input ~15568 tok exceeds model context limit 8192 \u2014 recorded as N/A to preserve comparison fairness (no artificial truncation)"
+    },
+    {
+      "task_id": "lc-finding-DD-trap",
+      "task_summary": "Recall Finding DD diagnostic trap and its corrected pattern",
+      "status": "n/a-context-insufficient",
+      "reason": "task input ~15568 tok exceeds model context limit 8192 \u2014 recorded as N/A to preserve comparison fairness (no artificial truncation)"
+    },
+    {
+      "task_id": "lc-cross-doc-synthesis",
+      "task_summary": "Synthesize across both documents \u2014 what does Finding 1 tool-call gap have to do with exo's Finding S?",
+      "status": "n/a-context-insufficient",
+      "reason": "task input ~15568 tok exceeds model context limit 8192 \u2014 recorded as N/A to preserve comparison fairness (no artificial truncation)"
+    },
+    {
+      "task_id": "lc-finding-CC-prior-art",
+      "task_summary": "Recall the three prior-art patterns named in Finding CC",
+      "status": "n/a-context-insufficient",
+      "reason": "task input ~15568 tok exceeds model context limit 8192 \u2014 recorded as N/A to preserve comparison fairness (no artificial truncation)"
+    },
+    {
+      "task_id": "lc-short-gemma-friendly",
+      "task_summary": "7K variant \u2014 Finding T recall (Gemma 8K-context fairness)",
+      "status": "error",
+      "error": "<urlopen error [Errno 61] Connection refused>",
+      "wall_s": 1.0027561669999159
+    }
+  ],
+  "peak_runner_rss_bytes": 0,
+  "started_utc": "2026-05-03T17:44:32.973125+00:00",
+  "n_samples_attempted": 5,
+  "n_samples_ok": 0,
+  "n_samples_skipped": 4,
+  "n_samples_error": 1
+}

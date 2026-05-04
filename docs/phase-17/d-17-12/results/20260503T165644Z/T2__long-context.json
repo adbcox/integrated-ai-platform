@@ -1,0 +1,38 @@
+{
+  "model_key": "T2",
+  "model_name": "qwen2.5-coder:14b",
+  "model_tier": "T2",
+  "model_host": "mac-mini",
+  "context_limit": 32768,
+  "workload": "long-context",
+  "samples": [
+    {
+      "task_id": "lc-finding-T",
+      "task_summary": "Recall InvenTree-pattern Finding T from buried position in DOC A",
+      "status": "ok",
+      "wall_s": 192.528018959,
+      "total_duration": 192527455417,
+      "load_duration": 43066584,
+      "prompt_eval_count": 21916,
+      "prompt_eval_duration": 179111028830,
+      "eval_count": 215,
+      "eval_duration": 13165032966,
+      "tokens_per_sec": 16.331140267955178,
+      "response_role": "assistant",
+      "response_content": "Finding T is about an **asset-management substrate gap**. It states that there is no coherent inventory of various assets on the platform, including:\n\n- OS / firmware (e.g., motherboard BIOS, GPU VBIOS, NVMe, network card, BMC)\n- Container runtime \n- Container images\n- Application binaries\n- Library dependencies\n\nThe canonical example used to illustrate this gap is the **2026-05-02 Mac Mini orchestration-node OS upgrade** from version 26.3 to 26.4.1. The finding notes that:\n\n- The upgrade was AI-recommended without consulting asset state.\n- It did not specify which node (orchestration vs idle-compute) was appropriate for the upgrade.\n- It did not verify the premise against literature regarding RDMA major-vs-minor version requirements.\n- It did not consider operational dependencies on the orchestration node.\n- It did not schedule an appropriate maintenance window.\n\nThe finding concludes that operator intervention caught the planning failure, but the reboot had already been triggered.",
+      "tool_calls": [],
+      "finish_reason": "stop",
+      "grade": {
+        "pass": true,
+        "score": 1.0,
+        "notes": "7/7 expected facts present"
+      }
+    }
+  ],
+  "peak_runner_rss_bytes": 15673901056,
+  "started_utc": "2026-05-03T16:59:58.088576+00:00",
+  "n_samples_attempted": 1,
+  "n_samples_ok": 1,
+  "n_samples_skipped": 0,
+  "n_samples_error": 0
+}

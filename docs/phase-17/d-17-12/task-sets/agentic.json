@@ -1,0 +1,118 @@
+[
+  {
+    "id": "ag-debug-failing-test",
+    "summary": "Plan debugging a failing test with verify steps",
+    "approx_input_tokens": 400,
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are an autonomous coding agent. For each task, produce a numbered plan of actions, then for each action describe the verification step you would run before moving on. Do not execute \u2014 just produce the plan."
+      },
+      {
+        "role": "user",
+        "content": "A test in test_user.py::test_fetch_unknown is failing after a recent merge. The test expects fetch_user(-1) to return None but it now returns 'unknown'. Plan how you would diagnose and fix this. Include verification steps after each action."
+      }
+    ],
+    "expected_steps": [
+      "reproduce",
+      "git",
+      "fetch_user",
+      "verify",
+      "fix",
+      "test"
+    ],
+    "options": {
+      "temperature": 0.2,
+      "num_predict": 1500,
+      "num_ctx": 8192
+    },
+    "timeout": 600
+  },
+  {
+    "id": "ag-deploy-rollback",
+    "summary": "Plan deploy + rollback on failure",
+    "approx_input_tokens": 400,
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are an autonomous deploy agent. For each task, produce a numbered plan with explicit verify-and-rollback steps for any irreversible action."
+      },
+      {
+        "role": "user",
+        "content": "Deploy version 2.1.4 of service `widget-api` to the production cluster. The current version is 2.1.3. Plan the deploy with health-check verification at each phase and a rollback path if any check fails."
+      }
+    ],
+    "expected_steps": [
+      "snapshot",
+      "deploy",
+      "health",
+      "verify",
+      "rollback",
+      "monitor"
+    ],
+    "options": {
+      "temperature": 0.2,
+      "num_predict": 1500,
+      "num_ctx": 8192
+    },
+    "timeout": 600
+  },
+  {
+    "id": "ag-data-migration",
+    "summary": "Plan a non-trivial data migration with checkpoints",
+    "approx_input_tokens": 400,
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are an autonomous data-engineering agent. Produce a numbered plan with explicit checkpoints, verify steps, and a backout plan."
+      },
+      {
+        "role": "user",
+        "content": "Migrate a 50M-row PostgreSQL `users` table to add a non-null `email_verified` column. Existing rows should default to False; new INSERTs must include the column. Plan the migration with backfill, verification, and rollback under concurrent writes."
+      }
+    ],
+    "expected_steps": [
+      "backup",
+      "schema",
+      "migrate",
+      "backfill",
+      "verify",
+      "rollback"
+    ],
+    "options": {
+      "temperature": 0.2,
+      "num_predict": 1500,
+      "num_ctx": 8192
+    },
+    "timeout": 600
+  },
+  {
+    "id": "ag-incident-response",
+    "summary": "Plan incident response for production outage",
+    "approx_input_tokens": 400,
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are an autonomous incident-response agent. Produce a numbered plan with verify steps for triage, mitigation, and root-cause analysis."
+      },
+      {
+        "role": "user",
+        "content": "Production API is returning 500s on 80% of requests as of 2 minutes ago. Last deploy was 30 minutes ago. Plan your response with explicit triage / mitigate / RCA phases and verification at each step."
+      }
+    ],
+    "expected_steps": [
+      "triage",
+      "rollback",
+      "mitigate",
+      "verify",
+      "logs",
+      "root cause"
+    ],
+    "options": {
+      "temperature": 0.2,
+      "num_predict": 1500,
+      "num_ctx": 8192
+    },
+    "timeout": 600
+  }
+]

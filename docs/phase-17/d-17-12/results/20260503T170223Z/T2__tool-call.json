@@ -1,0 +1,148 @@
+{
+  "model_key": "T2",
+  "model_name": "qwen2.5-coder:14b",
+  "model_tier": "T2",
+  "model_host": "mac-mini",
+  "context_limit": 32768,
+  "workload": "tool-call",
+  "samples": [
+    {
+      "task_id": "tc-weather-paris",
+      "task_summary": "Trivial tool call: get weather for Paris in celsius",
+      "status": "ok",
+      "wall_s": 4.137802125000235,
+      "total_duration": 4136432584,
+      "load_duration": 854460667,
+      "prompt_eval_count": 361,
+      "prompt_eval_duration": 1992606750,
+      "eval_count": 33,
+      "eval_duration": 1273599961,
+      "tokens_per_sec": 25.910804813537524,
+      "response_role": "assistant",
+      "response_content": "{\n  \"name\": \"get_weather\",\n  \"arguments\": {\n    \"city\": \"Paris\",\n    \"units\": \"celsius\"\n  }\n}",
+      "tool_calls": [],
+      "finish_reason": "stop",
+      "grade": {
+        "pass": false,
+        "score": 1.0,
+        "notes": "called get_weather (inline JSON); 2/2 args match"
+      }
+    },
+    {
+      "task_id": "tc-calc-math",
+      "task_summary": "Pick the math tool over web search for arithmetic",
+      "status": "ok",
+      "wall_s": 1.5438218340000276,
+      "total_duration": 1543197917,
+      "load_duration": 42800750,
+      "prompt_eval_count": 361,
+      "prompt_eval_duration": 191800541,
+      "eval_count": 33,
+      "eval_duration": 1280506792,
+      "tokens_per_sec": 25.771046437370245,
+      "response_role": "assistant",
+      "response_content": "{\n  \"name\": \"calculate\",\n  \"arguments\": {\n    \"expression\": \"47 * 13 + 91\"\n  }\n}",
+      "tool_calls": [],
+      "finish_reason": "stop",
+      "grade": {
+        "pass": false,
+        "score": 1.0,
+        "notes": "called calculate (inline JSON); 1/1 args match"
+      }
+    },
+    {
+      "task_id": "tc-search-event",
+      "task_summary": "Pick web search for current-events query",
+      "status": "ok",
+      "wall_s": 1.5187114999998812,
+      "total_duration": 1518080250,
+      "load_duration": 46892458,
+      "prompt_eval_count": 359,
+      "prompt_eval_duration": 191010167,
+      "eval_count": 33,
+      "eval_duration": 1264028083,
+      "tokens_per_sec": 26.107014902452924,
+      "response_role": "assistant",
+      "response_content": "{\n  \"name\": \"search_web\",\n  \"arguments\": {\n    \"query\": \"latest news about Apple's M5 chip release\"\n  }\n}",
+      "tool_calls": [],
+      "finish_reason": "stop",
+      "grade": {
+        "pass": false,
+        "score": 0.45,
+        "notes": "called search_web (inline JSON); 0/1 args match"
+      }
+    },
+    {
+      "task_id": "tc-read-file",
+      "task_summary": "Pick file-read for path-based query",
+      "status": "ok",
+      "wall_s": 1.6434468750003361,
+      "total_duration": 1642823417,
+      "load_duration": 44432917,
+      "prompt_eval_count": 361,
+      "prompt_eval_duration": 192067042,
+      "eval_count": 36,
+      "eval_duration": 1388226248,
+      "tokens_per_sec": 25.932372372201392,
+      "response_role": "assistant",
+      "response_content": "{\n  \"name\": \"read_file\",\n  \"arguments\": {\n    \"path\": \"/etc/hosts\",\n    \"max_lines\": 50\n  }\n}",
+      "tool_calls": [],
+      "finish_reason": "stop",
+      "grade": {
+        "pass": false,
+        "score": 1.0,
+        "notes": "called read_file (inline JSON); 2/2 args match"
+      }
+    },
+    {
+      "task_id": "tc-no-tool-needed",
+      "task_summary": "Recognize no tool call is needed for trivia",
+      "status": "ok",
+      "wall_s": 0.2813643750000665,
+      "total_duration": 280762541,
+      "load_duration": 46045791,
+      "prompt_eval_count": 360,
+      "prompt_eval_duration": 191403667,
+      "eval_count": 2,
+      "eval_duration": 40164000,
+      "tokens_per_sec": 49.795837068021115,
+      "response_role": "assistant",
+      "response_content": "Paris",
+      "tool_calls": [],
+      "finish_reason": "stop",
+      "grade": {
+        "pass": true,
+        "score": 1.0,
+        "notes": "correctly answered without tool call"
+      }
+    },
+    {
+      "task_id": "tc-multi-arg-units",
+      "task_summary": "Adherence to enum constraint in tool schema",
+      "status": "ok",
+      "wall_s": 1.5706503750002412,
+      "total_duration": 1570113750,
+      "load_duration": 43263500,
+      "prompt_eval_count": 358,
+      "prompt_eval_duration": 190664042,
+      "eval_count": 34,
+      "eval_duration": 1313899498,
+      "tokens_per_sec": 25.87716948804253,
+      "response_role": "assistant",
+      "response_content": "{\n  \"name\": \"get_weather\",\n  \"arguments\": {\n    \"city\": \"New York\",\n    \"units\": \"fahrenheit\"\n  }\n}",
+      "tool_calls": [],
+      "finish_reason": "stop",
+      "grade": {
+        "pass": false,
+        "score": 1.0,
+        "notes": "called get_weather (inline JSON); 2/2 args match"
+      }
+    }
+  ],
+  "peak_runner_rss_bytes": 20869808128,
+  "started_utc": "2026-05-03T17:49:21.113718+00:00",
+  "n_samples_attempted": 6,
+  "n_samples_ok": 6,
+  "n_samples_skipped": 0,
+  "n_samples_error": 0
+}

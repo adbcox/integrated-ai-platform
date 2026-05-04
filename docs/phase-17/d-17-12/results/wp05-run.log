@@ -1,0 +1,106 @@
+=== WP-05 EXECUTE start 2026-05-03T17:02:23Z ===
+=== model-major, samples=6, all 4 workloads ===
+
+=== D-17-12 bench run 20260503T170223Z ===
+
+[T1 qwen2.5-coder:32b on mac-mini] workload=long-context
+  warming up qwen2.5-coder:32b...
+    [1/5] lc-finding-T: wall=372.2s tps=8.7 grade=0.71 pass=True
+    [2/5] lc-finding-DD-trap: wall=374.3s tps=8.7 grade=1.00 pass=True
+    [3/5] lc-cross-doc-synthesis: wall=423.6s tps=8.6 grade=0.60 pass=False
+    [4/5] lc-finding-CC-prior-art: wall=357.1s tps=8.8 grade=1.00 pass=True
+    [5/5] lc-short-gemma-friendly: wall=167.5s tps=10.8 grade=1.00 pass=True
+
+[T2 qwen2.5-coder:14b on mac-mini] workload=long-context
+  warming up qwen2.5-coder:14b...
+    [1/5] lc-finding-T: wall=191.3s tps=16.3 grade=1.00 pass=True
+    [2/5] lc-finding-DD-trap: wall=187.8s tps=16.3 grade=0.80 pass=True
+    [3/5] lc-cross-doc-synthesis: wall=199.2s tps=16.3 grade=0.80 pass=True
+    [4/5] lc-finding-CC-prior-art: wall=180.7s tps=16.3 grade=1.00 pass=True
+    [5/5] lc-short-gemma-friendly: wall=60.2s tps=23.0 grade=0.75 pass=True
+
+[T3-A gemma2:27b on mac-studio] workload=long-context
+  warming up gemma2:27b...
+  WARMUP FAILED for gemma2:27b: <urlopen error [Errno 61] Connection refused>
+
+[T3-B qwen3-coder:30b on mac-studio] workload=long-context
+  warming up qwen3-coder:30b...
+  WARMUP FAILED for qwen3-coder:30b: <urlopen error [Errno 61] Connection refused>
+
+[T1 qwen2.5-coder:32b on mac-mini] workload=refactor
+  warming up qwen2.5-coder:32b...
+    [1/4] refactor-userrepo: wall=42.1s tps=11.5 grade=1.00 pass=True
+    [2/4] refactor-add-logging: wall=43.8s tps=11.4 grade=0.50 pass=False
+    [3/4] refactor-error-handling: wall=45.9s tps=11.4 grade=1.00 pass=True
+    [4/4] refactor-async: wall=27.5s tps=11.5 grade=1.00 pass=True
+
+[T2 qwen2.5-coder:14b on mac-mini] workload=refactor
+  warming up qwen2.5-coder:14b...
+    [1/4] refactor-userrepo: wall=15.9s tps=25.2 grade=1.00 pass=True
+    [2/4] refactor-add-logging: wall=22.9s tps=25.2 grade=0.50 pass=False
+    [3/4] refactor-error-handling: wall=19.3s tps=25.1 grade=0.75 pass=True
+    [4/4] refactor-async: wall=14.3s tps=25.2 grade=1.00 pass=True
+
+[T3-A gemma2:27b on mac-studio] workload=refactor
+  warming up gemma2:27b...
+  WARMUP FAILED for gemma2:27b: <urlopen error [Errno 61] Connection refused>
+
+[T3-B qwen3-coder:30b on mac-studio] workload=refactor
+  warming up qwen3-coder:30b...
+  WARMUP FAILED for qwen3-coder:30b: <urlopen error [Errno 61] Connection refused>
+
+[T1 qwen2.5-coder:32b on mac-mini] workload=tool-call
+  warming up qwen2.5-coder:32b...
+    [1/6] tc-weather-paris: wall=8.0s tps=12.1 grade=1.00 pass=False
+    [2/6] tc-calc-math: wall=2.6s tps=12.0 grade=1.00 pass=False
+    [3/6] tc-search-event: wall=3.2s tps=11.8 grade=0.45 pass=False
+    [4/6] tc-read-file: wall=2.7s tps=11.9 grade=1.00 pass=False
+    [5/6] tc-no-tool-needed: wall=0.6s tps=23.1 grade=1.00 pass=True
+    [6/6] tc-multi-arg-units: wall=2.6s tps=12.0 grade=1.00 pass=False
+
+[T2 qwen2.5-coder:14b on mac-mini] workload=tool-call
+  warming up qwen2.5-coder:14b...
+    [1/6] tc-weather-paris: wall=4.1s tps=25.9 grade=1.00 pass=False
+    [2/6] tc-calc-math: wall=1.5s tps=25.8 grade=1.00 pass=False
+    [3/6] tc-search-event: wall=1.5s tps=26.1 grade=0.45 pass=False
+    [4/6] tc-read-file: wall=1.6s tps=25.9 grade=1.00 pass=False
+    [5/6] tc-no-tool-needed: wall=0.3s tps=49.8 grade=1.00 pass=True
+    [6/6] tc-multi-arg-units: wall=1.6s tps=25.9 grade=1.00 pass=False
+
+[T3-A gemma2:27b on mac-studio] workload=tool-call
+  warming up gemma2:27b...
+  WARMUP FAILED for gemma2:27b: <urlopen error [Errno 61] Connection refused>
+
+[T3-B qwen3-coder:30b on mac-studio] workload=tool-call
+  warming up qwen3-coder:30b...
+  WARMUP FAILED for qwen3-coder:30b: <urlopen error [Errno 61] Connection refused>
+
+[T1 qwen2.5-coder:32b on mac-mini] workload=agentic
+  warming up qwen2.5-coder:32b...
+    [1/4] ag-debug-failing-test: wall=60.2s tps=11.3 grade=0.50 pass=False
+    [2/4] ag-deploy-rollback: wall=55.0s tps=11.3 grade=0.83 pass=True
+    [3/4] ag-data-migration: wall=71.1s tps=11.4 grade=0.67 pass=False
+    [4/4] ag-incident-response: wall=58.0s tps=11.5 grade=0.50 pass=False
+
+[T2 qwen2.5-coder:14b on mac-mini] workload=agentic
+  warming up qwen2.5-coder:14b...
+    [1/4] ag-debug-failing-test: wall=22.0s tps=25.3 grade=0.67 pass=False
+    [2/4] ag-deploy-rollback: wall=29.0s tps=25.2 grade=0.83 pass=True
+    [3/4] ag-data-migration: wall=43.8s tps=24.9 grade=0.67 pass=False
+    [4/4] ag-incident-response: wall=29.6s tps=25.0 grade=0.67 pass=False
+
+[T3-A gemma2:27b on mac-studio] workload=agentic
+  warming up gemma2:27b...
+    [1/4] ag-debug-failing-test: wall=14.6s tps=34.8 grade=0.50 pass=False
+    [2/4] ag-deploy-rollback: wall=18.5s tps=34.8 grade=1.00 pass=True
+    [3/4] ag-data-migration: wall=18.5s tps=34.8 grade=0.83 pass=True
+    [4/4] ag-incident-response: wall=20.1s tps=34.8 grade=0.83 pass=True
+
+[T3-B qwen3-coder:30b on mac-studio] workload=agentic
+  warming up qwen3-coder:30b...
+    [1/4] ag-debug-failing-test: wall=8.6s tps=86.5 grade=0.83 pass=True
+    [2/4] ag-deploy-rollback: wall=11.7s tps=85.3 grade=0.83 pass=True
+    [3/4] ag-data-migration: wall=8.3s tps=85.7 grade=0.83 pass=True
+    [4/4] ag-incident-response: wall=8.2s tps=85.7 grade=0.83 pass=True
+
+=== summary written: /Users/admin/repos/integrated-ai-platform/docs/phase-17/d-17-12/results/20260503T170223Z/summary.json ===

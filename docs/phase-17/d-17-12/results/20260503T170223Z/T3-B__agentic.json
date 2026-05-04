@@ -1,0 +1,104 @@
+{
+  "model_key": "T3-B",
+  "model_name": "qwen3-coder:30b",
+  "model_tier": "T3-B",
+  "model_host": "mac-studio",
+  "context_limit": 262144,
+  "workload": "agentic",
+  "samples": [
+    {
+      "task_id": "ag-debug-failing-test",
+      "task_summary": "Plan debugging a failing test with verify steps",
+      "status": "ok",
+      "wall_s": 8.61030241599974,
+      "total_duration": 8606807584,
+      "load_duration": 1101522500,
+      "prompt_eval_count": 106,
+      "prompt_eval_duration": 296336667,
+      "eval_count": 614,
+      "eval_duration": 7101214545,
+      "tokens_per_sec": 86.4640824621079,
+      "response_role": "assistant",
+      "response_content": "## Diagnosis and Fix Plan\n\n### Action 1: Examine the test failure details\n**Description:** First, I need to understand exactly what the test is doing and what the current behavior is by looking at the test file and running it to see the exact error message.\n**Verification:** Run `pytest test_user.py::test_fetch_unknown -v` to see the specific failure details and error message.\n\n### Action 2: Review the fetch_user function implementation\n**Description:** Look at the actual implementation of the fetch_user function to understand how it handles negative user IDs.\n**Verification:** Locate the fetch_user function in the codebase and examine its logic, particularly how it handles the case when user_id is -1.\n\n### Action 3: Check recent changes in the codebase\n**Description:** Since the issue appeared after a recent merge, I need to identify what changed in the fetch_user function or related code.\n**Verification:** Use `git log --oneline -10` or `git diff` to see recent changes to the user fetching logic.\n\n### Action 4: Analyze the expected vs actual behavior\n**Description:** Determine why the function now returns 'unknown' instead of None for negative IDs.\n**Verification:** Add debug prints or use a debugger to trace the execution path when fetch_user(-1) is called.\n\n### Action 5: Check if there are any default return values or fallback logic\n**Description:** Look for any default return logic or fallback mechanisms that might be causing the 'unknown' return value.\n**Verification:** Search the codebase for patterns like `return 'unknown'` or similar fallback logic in user fetching functions.\n\n### Action 6: Create a minimal reproduction case\n**Description:** Create a simple script that calls fetch_user(-1) to isolate and confirm the issue.\n**Verification:** Run the reproduction script and confirm it returns 'unknown' instead of None.\n\n### Action 7: Fix the function to match expected behavior\n**Description:** Modify the fetch_user function to return None when user_id is -1, matching the test expectation.\n**Verification:** After making changes, run the specific test `pytest test_user.py::test_fetch_unknown` to confirm it passes.\n\n### Action 8: Run all user-related tests to ensure no regression\n**Description:** Run the full test suite for user functionality to make sure the fix doesn't break other functionality.\n**Verification:** Execute `pytest test_user.py` to ensure all user tests pass, not just the one that was failing.\n\n### Action 9: Verify edge cases still work correctly\n**Description:** Test that other negative values and edge cases still work as expected after the fix.\n**Verification:** Test fetch_user(-2), fetch_user(0), and other boundary conditions to ensure they behave correctly.\n\n### Action 10: Document the fix\n**Description:** Add a comment explaining why the function returns None for invalid IDs to prevent future confusion.\n**Verification:** Review the code change to ensure the comment is clear and helpful for future developers.",
+      "tool_calls": [],
+      "finish_reason": "stop",
+      "grade": {
+        "pass": true,
+        "score": 0.8333333333333334,
+        "notes": "5/6 steps present, 5 in order"
+      }
+    },
+    {
+      "task_id": "ag-deploy-rollback",
+      "task_summary": "Plan deploy + rollback on failure",
+      "status": "ok",
+      "wall_s": 11.719062834000397,
+      "total_duration": 11715177958,
+      "load_duration": 44305417,
+      "prompt_eval_count": 89,
+      "prompt_eval_duration": 115696250,
+      "eval_count": 971,
+      "eval_duration": 11381039795,
+      "tokens_per_sec": 85.31733633218528,
+      "response_role": "assistant",
+      "response_content": "# Deploy Plan: widget-api v2.1.4 to Production\n\n## 1. Pre-deployment Preparation\n**Action**: Verify deployment artifacts and configuration\n- [ ] Validate docker image `widget-api:2.1.4` exists in registry\n- [ ] Verify deployment manifest files are correct\n- [ ] Confirm rollback image `widget-api:2.1.3` is available\n- [ ] Check that all required secrets and configmaps are present\n- [ ] Verify deployment has sufficient resources allocated\n\n**Rollback**: If any artifact is missing, halt deployment and notify team\n\n## 2. Health Check - Pre-deployment\n**Action**: Verify current production state\n- [ ] Check current deployment status: `kubectl get deployments widget-api -n production`\n- [ ] Verify current version is 2.1.3: `kubectl get pods -n production -l app=widget-api -o jsonpath='{.items[*].spec.containers[*].image}'`\n- [ ] Confirm all existing pods are healthy: `kubectl get pods -n production -l app=widget-api`\n- [ ] Verify current service endpoints are functional: `kubectl get svc widget-api -n production`\n\n**Rollback**: If any pre-existing service is unhealthy, abort deployment\n\n## 3. Deploy New Version\n**Action**: Deploy version 2.1.4\n- [ ] Apply deployment manifest: `kubectl set image deployment/widget-api widget-api=widget-api:2.1.4 -n production`\n- [ ] Monitor deployment progress: `kubectl rollout status deployment/widget-api -n production`\n- [ ] Verify deployment is in progress: `kubectl get deployments widget-api -n production`\n\n**Rollback**: If deployment fails to start, revert with: `kubectl rollout undo deployment/widget-api -n production`\n\n## 4. Health Check - Post-deployment (Phase 1)\n**Action**: Verify initial pod startup\n- [ ] Check new pods are created: `kubectl get pods -n production -l app=widget-api`\n- [ ] Verify new pods are in \"Running\" state: `kubectl get pods -n production -l app=widget-api -o jsonpath='{.items[*].status.phase}'`\n- [ ] Check pod logs for startup errors: `kubectl logs -l app=widget-api -n production --tail=50`\n- [ ] Verify pod readiness: `kubectl get pods -n production -l app=widget-api -o jsonpath='{.items[*].status.containerStatuses[*].ready}'`\n\n**Rollback**: If pods fail to start, revert with: `kubectl rollout undo deployment/widget-api -n production`\n\n## 5. Health Check - Post-deployment (Phase 2)\n**Action**: Verify service functionality\n- [ ] Test API endpoints: `curl -f http://widget-api.production.svc.cluster.local/health`\n- [ ] Verify service response times are acceptable\n- [ ] Check application logs for errors: `kubectl logs -l app=widget-api -n production --since=5m`\n- [ ] Verify no new error metrics in monitoring system\n\n**Rollback**: If service is not functional, revert with: `kubectl rollout undo deployment/widget-api -n production`\n\n## 6. Health Check - Post-deployment (Phase 3)\n**Action**: Verify full production readiness\n- [ ] Run comprehensive integration tests against new version\n- [ ] Verify all dependent services are communicating properly\n- [ ] Check database connections and queries are working\n- [ ] Confirm no performance degradation in monitoring metrics\n\n**Rollback**: If integration tests fail or performance issues detected, revert with: `kubectl rollout undo deployment/widget-api -n production`\n\n## 7. Final Verification\n**Action**: Confirm successful deployment\n- [ ] Verify deployment is complete: `kubectl get deployments widget-api -n production`\n- [ ] Confirm version is 2.1.4: `kubectl get pods -n production -l app=widget-api -o jsonpath='{.items[*].spec.containers[*].image}'`\n- [ ] Validate all production traffic is routed to new version\n- [ ] Update deployment documentation with successful deployment\n\n**Rollback**: If final verification fails, revert with: `kubectl rollout undo deployment/widget-api -n production`\n\n## 8. Post-deployment Monitoring\n**Action**: Monitor for 15 minutes post-deployment\n- [ ] Monitor application logs for any issues\n- [ ] Verify monitoring dashboards show normal metrics\n- [ ] Confirm no alerts are triggered\n- [ ] Validate user-facing functionality works correctly\n\n**Rollback**: If monitoring shows issues within 15 minutes, revert with: `kubectl rollout undo deployment/widget-api -n production`",
+      "tool_calls": [],
+      "finish_reason": "stop",
+      "grade": {
+        "pass": true,
+        "score": 0.8333333333333334,
+        "notes": "5/6 steps present, 5 in order"
+      }
+    },
+    {
+      "task_id": "ag-data-migration",
+      "task_summary": "Plan a non-trivial data migration with checkpoints",
+      "status": "ok",
+      "wall_s": 8.334189583999887,
+      "total_duration": 8329866833,
+      "load_duration": 42050208,
+      "prompt_eval_count": 93,
+      "prompt_eval_duration": 118531375,
+      "eval_count": 690,
+      "eval_duration": 8050194583,
+      "tokens_per_sec": 85.7122138956874,
+      "response_role": "assistant",
+      "response_content": "# PostgreSQL Migration Plan: Add Non-Null `email_verified` Column\n\n## 1. Pre-Migration Preparation\n**Checkpoints:**\n- [ ] Verify current table structure and size\n- [ ] Create backup of the users table\n- [ ] Test migration script on staging environment\n- [ ] Document current table schema and constraints\n\n## 2. Create Migration Script\n**Checkpoints:**\n- [ ] Write migration script with proper transaction handling\n- [ ] Include proper error handling and rollback logic\n- [ ] Verify script works with concurrent writes\n- [ ] Test script with sample data\n\n## 3. Execute Migration in Phases\n**Phase 1: Add Column with Default**\n**Checkpoints:**\n- [ ] Begin transaction\n- [ ] Add column with default value (False)\n- [ ] Verify column addition without blocking writes\n- [ ] Commit transaction\n\n**Phase 2: Backfill Existing Rows**\n**Checkpoints:**\n- [ ] Start backfill process with minimal locking\n- [ ] Process rows in batches (10,000 rows at a time)\n- [ ] Monitor for long-running transactions\n- [ ] Verify backfill progress and completion\n\n**Phase 3: Make Column Non-Null**\n**Checkpoints:**\n- [ ] Update column constraint to NOT NULL\n- [ ] Verify all rows have valid values\n- [ ] Test INSERT operations with new constraint\n- [ ] Commit final transaction\n\n## 4. Verification Steps\n**Checkpoints:**\n- [ ] Verify all existing rows have email_verified = false\n- [ ] Test new INSERT operations work correctly\n- [ ] Verify no data corruption or loss\n- [ ] Confirm concurrent write operations work properly\n- [ ] Run performance tests on affected queries\n\n## 5. Post-Migration Validation\n**Checkpoints:**\n- [ ] Monitor database performance for 24 hours\n- [ ] Verify application functionality with new column\n- [ ] Confirm no regressions in existing features\n- [ ] Document successful migration completion\n\n## Backout Plan\n\n### Immediate Rollback Steps:\n1. **Revert Column Addition:**\n   - [ ] Drop the email_verified column if added\n   - [ ] Restore original table structure\n   - [ ] Revert any constraint changes\n\n2. **Restore Data Integrity:**\n   - [ ] Verify original data consistency\n   - [ ] Confirm no data loss occurred\n   - [ ] Restore any backup if needed\n\n3. **Application Rollback:**\n   - [ ] Revert application code changes\n   - [ ] Update configuration files\n   - [ ] Test application without new column\n\n### Alternative Recovery:\n- [ ] Restore from pre-migration backup\n- [ ] Revert database to previous state\n- [ ] Re-apply any necessary patches\n- [ ] Notify stakeholders of rollback completion\n\n## Risk Mitigation:\n- [ ] Schedule migration during low-traffic period\n- [ ] Monitor database locks and performance metrics\n- [ ] Have DBA team on standby\n- [ ] Prepare emergency rollback procedures\n- [ ] Test rollback procedures before execution\n\n## Success Criteria:\n- [ ] Migration completes within 2 hours\n- [ ] No data loss or corruption\n- [ ] Concurrent write operations continue normally\n- [ ] All existing functionality preserved\n- [ ] New column behaves as expected in INSERT operations",
+      "tool_calls": [],
+      "finish_reason": "stop",
+      "grade": {
+        "pass": true,
+        "score": 0.8333333333333334,
+        "notes": "5/6 steps present, 5 in order"
+      }
+    },
+    {
+      "task_id": "ag-incident-response",
+      "task_summary": "Plan incident response for production outage",
+      "status": "ok",
+      "wall_s": 8.151997041999948,
+      "total_duration": 8148615083,
+      "load_duration": 42563208,
+      "prompt_eval_count": 90,
+      "prompt_eval_duration": 112506541,
+      "eval_count": 675,
+      "eval_duration": 7876898158,
+      "tokens_per_sec": 85.69363046981266,
+      "response_role": "assistant",
+      "response_content": "# Incident Response Plan: Production API 500 Errors\n\n## Phase 1: Triage (0-5 minutes)\n\n1. **Confirm the incident scope**\n   - Verify the 500 errors are real by checking monitoring dashboards (Prometheus, Grafana, New Relic)\n   - Confirm the 80% error rate across multiple regions/instances\n   - Check if this is affecting all endpoints or specific ones\n\n2. **Assess impact level**\n   - Determine if this is a critical production outage affecting customers\n   - Check if there are any active user reports or support tickets\n   - Verify if this is a partial outage or complete service disruption\n\n3. **Verify recent changes**\n   - Confirm the exact time of the last deploy (30 minutes ago)\n   - Review the deployment logs and changes made in the last 30 minutes\n   - Identify which services/containers were deployed\n\n## Phase 2: Mitigation (5-15 minutes)\n\n4. **Immediate rollback**\n   - Rollback the last deployment to the previous stable version\n   - Verify rollback completion across all instances\n   - Monitor error rates for 5 minutes post-rollback\n\n5. **Verify rollback success**\n   - Confirm 500 error rate drops to <5% within 5 minutes\n   - Check that all endpoints are returning 200s\n   - Validate that service functionality is restored\n\n6. **Implement monitoring**\n   - Set up alerting for any recurring 500 errors\n   - Monitor key metrics (response time, throughput, error rates)\n   - Ensure all team members are notified of the rollback\n\n## Phase 3: Root Cause Analysis (15-45 minutes)\n\n7. **Analyze deployment artifacts**\n   - Compare code changes between current and previous versions\n   - Review deployment configuration changes\n   - Check for breaking changes in dependencies or libraries\n\n8. **Examine error logs**\n   - Collect and analyze error logs from affected instances\n   - Look for stack traces, specific error messages, or patterns\n   - Check application logs for the exact time of failures\n\n9. **Investigate infrastructure**\n   - Verify resource utilization (CPU, memory, disk)\n   - Check for any infrastructure issues or resource constraints\n   - Review container health and restarts\n\n10. **Test fix in staging**\n    - Apply the same changes to staging environment\n    - Run comprehensive tests to ensure the fix works\n    - Validate that the specific issue is resolved\n\n## Phase 4: Verification (45-60 minutes)\n\n11. **Verify fix in production**\n    - Deploy the fixed version to production\n    - Monitor error rates for 15 minutes\n    - Ensure no regressions in functionality\n\n12. **Validate service stability**\n    - Confirm all endpoints return 200s consistently\n    - Verify performance metrics are within normal ranges\n    - Check that no new issues have emerged\n\n13. **Document findings**\n    - Create detailed incident report with timeline\n    - Document root cause and resolution steps\n    - Update runbooks with prevention measures\n\n14. **Close incident**\n    - Notify stakeholders of resolution\n    - Remove emergency alerts\n    - Schedule post-mortem meeting for the team",
+      "tool_calls": [],
+      "finish_reason": "stop",
+      "grade": {
+        "pass": true,
+        "score": 0.8333333333333334,
+        "notes": "5/6 steps present, 5 in order"
+      }
+    }
+  ],
+  "peak_runner_rss_bytes": 19148275712,
+  "started_utc": "2026-05-03T17:57:55.042979+00:00",
+  "n_samples_attempted": 4,
+  "n_samples_ok": 4,
+  "n_samples_skipped": 0,
+  "n_samples_error": 0
+}

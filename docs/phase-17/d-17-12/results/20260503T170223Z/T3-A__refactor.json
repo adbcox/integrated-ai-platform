@@ -1,0 +1,44 @@
+{
+  "model_key": "T3-A",
+  "model_name": "gemma2:27b",
+  "model_tier": "T3-A",
+  "model_host": "mac-studio",
+  "context_limit": 8192,
+  "workload": "refactor",
+  "samples": [
+    {
+      "task_id": "refactor-userrepo",
+      "task_summary": "5-file refactor: introduce UserRepository, inject it, add type hints",
+      "status": "error",
+      "error": "<urlopen error [Errno 61] Connection refused>",
+      "wall_s": 0.21457054099982997
+    },
+    {
+      "task_id": "refactor-add-logging",
+      "task_summary": "Add structured logging to all 5 files preserving behavior",
+      "status": "error",
+      "error": "<urlopen error [Errno 61] Connection refused>",
+      "wall_s": 0.21853066699986812
+    },
+    {
+      "task_id": "refactor-error-handling",
+      "task_summary": "Add coherent error handling across all 5 files",
+      "status": "error",
+      "error": "<urlopen error [Errno 61] Connection refused>",
+      "wall_s": 0.21863637499973265
+    },
+    {
+      "task_id": "refactor-async",
+      "task_summary": "Make 5-file chain async-compatible",
+      "status": "error",
+      "error": "<urlopen error [Errno 61] Connection refused>",
+      "wall_s": 0.21673774999999296
+    }
+  ],
+  "peak_runner_rss_bytes": 0,
+  "started_utc": "2026-05-03T17:48:40.895859+00:00",
+  "n_samples_attempted": 4,
+  "n_samples_ok": 0,
+  "n_samples_skipped": 0,
+  "n_samples_error": 4
+}

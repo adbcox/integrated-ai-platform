@@ -1,0 +1,126 @@
+{
+  "model_key": "T3-B",
+  "model_name": "qwen3-coder:30b",
+  "model_tier": "T3-B",
+  "model_host": "mac-studio",
+  "context_limit": 262144,
+  "workload": "long-context",
+  "samples": [
+    {
+      "task_id": "lc-finding-T",
+      "task_summary": "Recall InvenTree-pattern Finding T from buried position in DOC A",
+      "status": "ok",
+      "wall_s": 52.408675208000005,
+      "total_duration": 52405679250,
+      "load_duration": 1226213041,
+      "prompt_eval_count": 21920,
+      "prompt_eval_duration": 44032817042,
+      "eval_count": 312,
+      "eval_duration": 7045370822,
+      "tokens_per_sec": 44.28439721380502,
+      "response_role": "assistant",
+      "response_content": "Finding T is about a **platform asset-management substrate gap**. It describes the lack of a coherent inventory of various system assets, including OS/firmware versions, hardware components (motherboard BIOS, GPU VBIOS, NVMe, network card, BMC, accessories), container runtimes, container images, application binaries, and library dependencies. The finding emphasizes that AI cannot consult asset state before recommending upgrades, and operators cannot prevent AI failure modes pre-emptively. It also notes that visualization layers cannot surface upgrade-staleness for operator awareness.\n\nThe **canonical example** used from the 2026-05-02 incident is an **OS upgrade** where a Mac Mini orchestration node was upgraded from macOS 26.3 to 26.4.1. This upgrade was AI-recommended without consulting asset state, without verifying which node was appropriate (orchestration vs idle-compute), without considering operational dependencies on the orchestration node, and without scheduling an appropriate maintenance window. The operator caught the planning failure, but the reboot was already triggered.\n\nThe **specific asset categories** named in Finding T's body are:\n\n*   **OS / firmware** (including motherboard BIOS, GPU VBIOS, NVMe, network card, BMC)\n*   **accessory** (specifically mentioning Garmin, Oura, Zigbee sensors, 3D printer mainboards, ESP32)\n*   **container runtime**\n*   **container images**\n*   **application binaries**\n*   **library dependencies**",
+      "tool_calls": [],
+      "finish_reason": "stop",
+      "grade": {
+        "pass": true,
+        "score": 1.0,
+        "notes": "7/7 expected facts present"
+      }
+    },
+    {
+      "task_id": "lc-finding-DD-trap",
+      "task_summary": "Recall Finding DD diagnostic trap and its corrected pattern",
+      "status": "ok",
+      "wall_s": 48.89504929100001,
+      "total_duration": 48892053625,
+      "load_duration": 45444959,
+      "prompt_eval_count": 21907,
+      "prompt_eval_duration": 43897150750,
+      "eval_count": 220,
+      "eval_duration": 4876029213,
+      "tokens_per_sec": 45.11867964479318,
+      "response_role": "assistant",
+      "response_content": "Based on DOCUMENT A, Finding DD is titled \"Container env-inspection diagnostic trap\".\n\nThe WRONG diagnostic pattern it documents is:\nRunning `docker exec <container> sh -c 'echo $VAR'` which returns the value from `Config.Env` (image-baked + compose-passed env), NOT from PID 1's actual runtime environ.\n\nThe CORRECT pattern is:\nUsing the command `docker exec <container> sh -c 'tr \"\\0\" \"\\n\" < /proc/1/environ | grep ^VAR='` which queries `/proc/1/environ` to get the actual runtime environment variables set by the running process, rather than the static environment variables baked into the container image or passed via compose configuration.\n\nThis finding was surfaced during the D-17-26 close and was related to a misdiagnosis of the `OPENAI_API_KEY` being empty in the Open WebUI container, when in fact the plumbing was operational. The correct diagnostic method ensures that runtime-set variables (like those sourced from credentials.env files at runtime) are properly inspected.",
+      "tool_calls": [],
+      "finish_reason": "stop",
+      "grade": {
+        "pass": true,
+        "score": 0.8,
+        "notes": "4/5 expected facts present"
+      }
+    },
+    {
+      "task_id": "lc-cross-doc-synthesis",
+      "task_summary": "Synthesize across both documents \u2014 what does Finding 1 tool-call gap have to do with exo's Finding S?",
+      "status": "ok",
+      "wall_s": 61.29048716700001,
+      "total_duration": 61287582459,
+      "load_duration": 44513834,
+      "prompt_eval_count": 21940,
+      "prompt_eval_duration": 44014433500,
+      "eval_count": 765,
+      "eval_duration": 17054185275,
+      "tokens_per_sec": 44.85702410665291,
+      "response_role": "assistant",
+      "response_content": "Based on the provided documents (exo cluster and integration audit), here's how Finding S and Finding DD are related in the closeout of D-17-26:\n\n1.  **Finding S (Open WebUI Wiring):** This finding, documented in the exo cluster architecture fact (Document A), identified a latent issue where the Open WebUI's OpenAI-compatible client path was \"unwired.\" Specifically, the `OPENAI_API_KEY` environment variable inside the Open WebUI container was empty (length=1, matching the SHA-256 hash of an empty string). This was because Open WebUI was using the Ollama direct path for local models and had never exercised the OpenAI-compatible client path. The finding concluded that wiring required a Vault-Agent sidecar deliverable (provisional D-17-26).\n\n2.  **D-17-26 Closeout:** The D-17-26 deliverable was explicitly scoped to address Finding S, aiming to wire the Open WebUI to the exo route via Vault-Agent sidecar. However, the closeout of D-17-26 (as described in Document A) revealed a crucial correction:\n    *   **Finding DD Diagnostic Trap:** The initial diagnosis of the \"unwired\" state (as described in D-17-14 WP-06, which corresponds to Finding S's premise) was incorrect. Finding DD, documented in Document A, describes a diagnostic trap where inspecting container environment variables using `docker exec <container> sh -c 'echo $VAR'` returns the value from `Config.Env` (image-baked) rather than the actual runtime environment (`/proc/1/environ`). This led to the false conclusion that `OPENAI_API_KEY` was effectively empty.\n    *   **Correct Diagnosis:** The actual investigation, conducted during D-17-26 (taking about 25 minutes), revealed that the plumbing was *operational* the whole time. The `OPENAI_API_KEY` was correctly set (length=67, matching the `LITELLM_MASTER_KEY` fingerprint) in the runtime environment (`/proc/1/environ`), and the end-to-end path from Open WebUI \u2192 litellm \u2192 exo was functional, returning HTTP 200 for the `exo-qwen-coder-7b` model.\n\n3.  **Resolution:** The closeout of D-17-26 explicitly states: \"**CLOSED no-fix-needed with doctrine finding:** the wiring was operational the whole time; the broken-state premise was a Finding-DD diagnostic error.\" This means that while D-17-26 was *intended* to fix the issue described in Finding S (the unwired path), the actual root cause was the diagnostic error described in Finding DD. The \"fix\" was not a code change but a correction of the diagnosis, confirming that the integration was already working.\n\nIn summary, Finding S identified a potential integration gap (unwired Open WebUI), but the closeout of D-17-26 (2026-05-03) revealed that the gap was not real due to a diagnostic error (Finding DD). The D-17-26 closeout explicitly states that the wiring was operational, resolving the issue by correcting the misdiagnosis rather than implementing a fix. The specific date of the D-17-26 closeout is 2026-05-03, and the commit reference for the D-17-26 closeout is mentioned as being part of the \"doctrine finding\" referenced in the exo cluster document.",
+      "tool_calls": [],
+      "finish_reason": "stop",
+      "grade": {
+        "pass": true,
+        "score": 0.8,
+        "notes": "4/5 expected facts present"
+      }
+    },
+    {
+      "task_id": "lc-finding-CC-prior-art",
+      "task_summary": "Recall the three prior-art patterns named in Finding CC",
+      "status": "ok",
+      "wall_s": 46.699769833000005,
+      "total_duration": 46696905750,
+      "load_duration": 45276000,
+      "prompt_eval_count": 21893,
+      "prompt_eval_duration": 43881124792,
+      "eval_count": 123,
+      "eval_duration": 2715531004,
+      "tokens_per_sec": 45.29500853380793,
+      "response_role": "assistant",
+      "response_content": "Based on Document B, the three prior-art approaches for service registry / DNS resolution mentioned in Finding CC are:\n\n1.  **Docker's embedded DNS:** The embedded DNS at `127.0.0.11` provides internal name \u2192 IP resolution for container-to-container traffic.\n2.  **CoreDNS proxy:** A CoreDNS proxy on the host forwarding to `127.0.0.11`, exposing container DNS to host shell tools.\n3.  **`devdns` / `dockerdns`:** Purpose-built tools watching Docker events and maintaining DNS records.",
+      "tool_calls": [],
+      "finish_reason": "stop",
+      "grade": {
+        "pass": false,
+        "score": 0.6,
+        "notes": "3/5 expected facts present"
+      }
+    },
+    {
+      "task_id": "lc-short-gemma-friendly",
+      "task_summary": "7K variant \u2014 Finding T recall (Gemma 8K-context fairness)",
+      "status": "ok",
+      "wall_s": 16.731677083000022,
+      "total_duration": 16728923417,
+      "load_duration": 1069771917,
+      "prompt_eval_count": 8192,
+      "prompt_eval_duration": 8638459542,
+      "eval_count": 458,
+      "eval_duration": 6818744290,
+      "tokens_per_sec": 67.1677922680981,
+      "response_role": "assistant",
+      "response_content": "Based on the provided text:\n\n**What is Finding T about?**\n\nFinding T identifies a **critical gap in the platform's operational substrate**: the **lack of a coherent, AI-consultable inventory or management system for platform assets**. This includes:\n\n*   **Operating System and Firmware Versions:** (motherboard BIOS, GPU VBIOS, etc.)\n*   **Hardware Components:** (NVMe, network card, BMC, accessories like Garmin, Oura, Zigbee sensors, 3D printer mainboards, ESP32)\n*   **Container Runtime and Images**\n*   **Application Binaries**\n*   **Library Dependencies**\n\nThe core problem is that AI systems cannot consult this asset state *before* recommending upgrades or changes. Operators cannot prevent potential AI failure modes proactively. Visualization layers cannot surface upgrade staleness for operator awareness.\n\nFinding T essentially argues that the platform lacks an **asset-management substrate** \u2013 a foundational layer for tracking and understanding the physical and software state of the system. It's highlighted as the 20th InvenTree-pattern finding when surfaced and reinforced by other findings (W, X, Y, AA, BB, CC) from the D-17-28 recovery.\n\n**What specific 2026-05-02 incident does it use as the canonical example?**\n\nThe canonical example used for Finding T is the **2026-05-02 OS upgrade of the Mac Mini orchestration node** (from version 26.3 to 26.4.1).\n\nThis upgrade was recommended by AI *without* consulting the asset state. The AI didn't consider:\n\n*   Which specific node was appropriate (orchestration vs. idle-compute).\n*   The implications of the upgrade for the orchestration node's operational dependencies.\n*   The specific requirement for RDMA (major-vs-minor version) that was affected by the upgrade.\n*   The need for scheduling an appropriate maintenance window.\n\nThe operator caught the planning failure *before* the reboot was triggered, but the incident demonstrates how AI recommendations can fail due to the lack of a coherent asset inventory and state management system. It exemplifies how the absence of this substrate leads to potentially problematic decisions.",
+      "tool_calls": [],
+      "finish_reason": "stop",
+      "grade": {
+        "pass": true,
+        "score": 1.0,
+        "notes": "4/4 expected facts present"
+      }
+    }
+  ],
+  "peak_runner_rss_bytes": 19224133632,
+  "started_utc": "2026-05-03T18:10:45.500877+00:00",
+  "n_samples_attempted": 5,
+  "n_samples_ok": 5,
+  "n_samples_skipped": 0,
+  "n_samples_error": 0
+}

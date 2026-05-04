@@ -1,0 +1,62 @@
+{
+  "model_key": "T3-A",
+  "model_name": "gemma2:27b",
+  "model_tier": "T3-A",
+  "model_host": "mac-studio",
+  "context_limit": 8192,
+  "workload": "long-context",
+  "samples": [
+    {
+      "task_id": "lc-finding-T",
+      "task_summary": "Recall InvenTree-pattern Finding T from buried position in DOC A",
+      "status": "n/a-context-insufficient",
+      "reason": "task input ~15568 tok exceeds model context limit 8192 \u2014 recorded as N/A to preserve comparison fairness (no artificial truncation)"
+    },
+    {
+      "task_id": "lc-finding-DD-trap",
+      "task_summary": "Recall Finding DD diagnostic trap and its corrected pattern",
+      "status": "n/a-context-insufficient",
+      "reason": "task input ~15568 tok exceeds model context limit 8192 \u2014 recorded as N/A to preserve comparison fairness (no artificial truncation)"
+    },
+    {
+      "task_id": "lc-cross-doc-synthesis",
+      "task_summary": "Synthesize across both documents \u2014 what does Finding 1 tool-call gap have to do with exo's Finding S?",
+      "status": "n/a-context-insufficient",
+      "reason": "task input ~15568 tok exceeds model context limit 8192 \u2014 recorded as N/A to preserve comparison fairness (no artificial truncation)"
+    },
+    {
+      "task_id": "lc-finding-CC-prior-art",
+      "task_summary": "Recall the three prior-art patterns named in Finding CC",
+      "status": "n/a-context-insufficient",
+      "reason": "task input ~15568 tok exceeds model context limit 8192 \u2014 recorded as N/A to preserve comparison fairness (no artificial truncation)"
+    },
+    {
+      "task_id": "lc-short-gemma-friendly",
+      "task_summary": "7K variant \u2014 Finding T recall (Gemma 8K-context fairness)",
+      "status": "ok",
+      "wall_s": 41.732054833,
+      "total_duration": 41728744542,
+      "load_duration": 1403134667,
+      "prompt_eval_count": 8192,
+      "prompt_eval_duration": 29450355124,
+      "eval_count": 256,
+      "eval_duration": 10675344125,
+      "tokens_per_sec": 23.980491589070905,
+      "response_role": "assistant",
+      "response_content": "Finding T highlights the lack of a **coherent inventory and visualization layer for the platform's operational state**. This includes:\n\n* **OS/Firmware versions:** Tracking macOS, firmware on all hardware components (motherboard BIOS, GPU VBIOS, NVMe drives, network cards), accessory device firmware.\n* **Container runtime:** Docker version, container images used, their provenance and security scans.\n* **Application binaries:** Versions of all software running on the platform.\n* **Library dependencies:** Tracking which libraries are used by each application and their versions.\n\nThe canonical example is the 2026-05-02 macOS upgrade (26.3 \u2192 26.4.1) on the Mac Mini orchestration node. The AI recommended this upgrade without consulting:\n\n* **Asset state:** Which node was appropriate for the upgrade (orchestration vs idle compute).\n* **Premise against literature:** RDMA major-vs-minor version requirement for distributed training.\n* **Operational dependencies:** Impact of the upgrade on the running orchestration services.\n\nThe operator caught the planning failure, but the reboot was already triggered. This incident demonstrates the need for a platform operational substrate that can answer these questions and prevent such failures in the future.",
+      "tool_calls": [],
+      "finish_reason": "stop",
+      "grade": {
+        "pass": true,
+        "score": 0.75,
+        "notes": "3/4 expected facts present"
+      }
+    }
+  ],
+  "peak_runner_rss_bytes": 18974982144,
+  "started_utc": "2026-05-03T18:06:57.080396+00:00",
+  "n_samples_attempted": 5,
+  "n_samples_ok": 1,
+  "n_samples_skipped": 4,
+  "n_samples_error": 0
+}

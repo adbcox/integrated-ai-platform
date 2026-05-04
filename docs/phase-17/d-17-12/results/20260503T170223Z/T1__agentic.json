@@ -1,0 +1,104 @@
+{
+  "model_key": "T1",
+  "model_name": "qwen2.5-coder:32b",
+  "model_tier": "T1",
+  "model_host": "mac-mini",
+  "context_limit": 32768,
+  "workload": "agentic",
+  "samples": [
+    {
+      "task_id": "ag-debug-failing-test",
+      "task_summary": "Plan debugging a failing test with verify steps",
+      "status": "ok",
+      "wall_s": 60.24623675000021,
+      "total_duration": 60245354167,
+      "load_duration": 1358671625,
+      "prompt_eval_count": 106,
+      "prompt_eval_duration": 1574219958,
+      "eval_count": 642,
+      "eval_duration": 56920543318,
+      "tokens_per_sec": 11.278880393205595,
+      "response_role": "assistant",
+      "response_content": "### Plan for Diagnosing and Fixing the Failing Test\n\n#### Action 1: Review Recent Changes\n- **Description**: Examine the recent changes made in the merge to identify any modifications that might have affected the `fetch_user` function or related components.\n- **Verification Step**: Check the commit history and pull request details for changes in files related to user fetching logic, such as `user.py`, `test_user.py`, and any configuration files.\n\n#### Action 2: Isolate the Issue\n- **Description**: Run the test in isolation to confirm that it consistently fails and understand if other tests are affected.\n- **Verification Step**: Execute only `test_fetch_unknown` using a command like `pytest test_user.py::test_fetch_unknown`. Confirm that the test still fails with the same error.\n\n#### Action 3: Debug the Function\n- **Description**: Add debug statements or use a debugger to trace the execution of `fetch_user(-1)` and identify where it starts returning 'unknown'.\n- **Verification Step**: After adding debug statements, run the test again. Check the output logs to see the flow of execution and the values at each step.\n\n#### Action 4: Review Function Logic\n- **Description**: Carefully review the logic in `fetch_user` to understand why `-1` is now returning 'unknown'.\n- **Verification Step**: Manually walk through the code with test data. Ensure that all conditions and branches are correctly implemented as per the expected behavior.\n\n#### Action 5: Check for Default Values or Configurations\n- **Description**: Investigate if there have been changes in default values, configurations, or environment settings that might affect how `fetch_user` behaves.\n- **Verification Step**: Compare configuration files before and after the merge. Ensure no unintended changes were made to these files.\n\n#### Action 6: Update Test Case if Necessary\n- **Description**: If the change in behavior is intentional and aligns with new requirements, update the test case to reflect the expected outcome.\n- **Verification Step**: Modify `test_fetch_unknown` to expect 'unknown' instead of None. Run the test suite to ensure that this change does not break other tests.\n\n#### Action 7: Revert Changes if Necessary\n- **Description**: If the change in behavior is unintended, revert the changes or fix the code to restore the previous functionality.\n- **Verification Step**: After reverting or fixing the code, run `test_fetch_unknown` again. Ensure that it now passes and returns None for `fetch_user(-1)`.\n\n#### Action 8: Write Additional Tests\n- **Description**: To prevent future regressions, write additional tests to cover edge cases and ensure robustness.\n- **Verification Step**: Add new test cases to `test_user.py`. Run the full test suite to confirm that all tests pass and that no new issues are introduced.\n\n#### Action 9: Document Changes\n- **Description**: Update documentation or comments in the codebase to reflect any changes made during this process.\n- **Verification Step**: Review the updated documentation/comments for clarity and accuracy. Ensure they accurately describe the current behavior of `fetch_user` and any relevant test cases.",
+      "tool_calls": [],
+      "finish_reason": "stop",
+      "grade": {
+        "pass": false,
+        "score": 0.5,
+        "notes": "3/6 steps present, 3 in order"
+      }
+    },
+    {
+      "task_id": "ag-deploy-rollback",
+      "task_summary": "Plan deploy + rollback on failure",
+      "status": "ok",
+      "wall_s": 55.04956070799972,
+      "total_duration": 55048962042,
+      "load_duration": 43812084,
+      "prompt_eval_count": 89,
+      "prompt_eval_duration": 1252622500,
+      "eval_count": 601,
+      "eval_duration": 53377726958,
+      "tokens_per_sec": 11.259377913804645,
+      "response_role": "assistant",
+      "response_content": "### Deployment Plan for widget-api Version 2.1.4\n\n#### Phase 1: Preparation\n1. **Backup Configuration Files**\n   - Action: Backup all configuration files related to `widget-api` in the production cluster.\n   - Verify: Ensure backups are complete and stored securely.\n   - Rollback: No action needed if verification passes.\n\n2. **Review Release Notes**\n   - Action: Review the release notes for version 2.1.4 to understand changes, fixes, and potential issues.\n   - Verify: Confirm understanding of all changes.\n   - Rollback: Revert any pre-deployment actions taken based on incorrect assumptions from the release notes.\n\n#### Phase 2: Deployment\n3. **Deploy New Version**\n   - Action: Deploy version 2.1.4 of `widget-api` to a staging environment that mirrors production as closely as possible.\n   - Verify: Ensure deployment is successful and all services are running.\n   - Rollback: If deployment fails, revert the staging environment to version 2.1.3.\n\n4. **Run Staging Health Checks**\n   - Action: Execute health checks on the staging environment.\n   - Verify: Confirm that all health checks pass indicating no issues with the new version.\n   - Rollback: If any health check fails, roll back the staging environment to version 2.1.3 and investigate the issue.\n\n5. **Deploy New Version to Production**\n   - Action: Deploy version 2.1.4 of `widget-api` to the production cluster using a rolling update strategy.\n   - Verify: Monitor the deployment process for any errors or issues.\n   - Rollback: If deployment fails, roll back to version 2.1.3 by redeploying the previous version.\n\n#### Phase 3: Post-Deployment Verification\n6. **Run Production Health Checks**\n   - Action: Execute health checks on the production environment.\n   - Verify: Confirm that all health checks pass indicating no issues with the new version in production.\n   - Rollback: If any health check fails, roll back to version 2.1.3 by redeploying the previous version.\n\n7. **Monitor Application Performance**\n   - Action: Monitor application performance and user feedback for at least 24 hours post-deployment.\n   - Verify: Ensure no significant issues arise during this period.\n   - Rollback: If critical issues are reported, roll back to version 2.1.3 by redeploying the previous version.\n\n8. **Cleanup**\n   - Action: Remove any temporary files or backups used during deployment that are no longer needed.\n   - Verify: Ensure all unnecessary data is removed without affecting the running application.\n   - Rollback: Restore any mistakenly deleted data from backups if necessary.\n\nBy following this plan, you can ensure a smooth transition to version 2.1.4 of `widget-api` with clear steps for verification and rollback in case of issues.",
+      "tool_calls": [],
+      "finish_reason": "stop",
+      "grade": {
+        "pass": true,
+        "score": 0.8333333333333334,
+        "notes": "5/6 steps present, 5 in order"
+      }
+    },
+    {
+      "task_id": "ag-data-migration",
+      "task_summary": "Plan a non-trivial data migration with checkpoints",
+      "status": "ok",
+      "wall_s": 71.13341133299991,
+      "total_duration": 71132885459,
+      "load_duration": 41862125,
+      "prompt_eval_count": 93,
+      "prompt_eval_duration": 1189324833,
+      "eval_count": 792,
+      "eval_duration": 69443752873,
+      "tokens_per_sec": 11.404913577300814,
+      "response_role": "assistant",
+      "response_content": "### Migration Plan: Adding a Non-Null `email_verified` Column to PostgreSQL `users` Table\n\n#### Objective:\nTo add a non-null `email_verified` column to the existing 50M-row `users` table in PostgreSQL with a default value of `False`. Ensure that all existing rows are updated to reflect this new column, and future INSERTs must include this column. The migration should be performed under concurrent writes.\n\n#### Plan:\n\n1. **Pre-Migration Preparation**\n   - **Checkpoint 1:** Backup the database.\n     - Command: `pg_dump -U <username> -d <database_name> > backup.sql`\n     - Verify Step: Ensure the backup file is created and has a non-zero size.\n     - Backout Plan: Restore from the backup if needed using `psql -U <username> -d <database_name> < backup.sql`.\n   \n2. **Add Column with Default Value**\n   - **Checkpoint 2:** Add the new column with a default value of `False` and allow NULLs temporarily.\n     - Command: `ALTER TABLE users ADD COLUMN email_verified BOOLEAN DEFAULT FALSE;`\n     - Verify Step: Check the table schema using `\\d users` to confirm the new column is added.\n     - Backout Plan: Drop the newly added column if needed using `ALTER TABLE users DROP COLUMN email_verified;`.\n   \n3. **Backfill Existing Rows**\n   - **Checkpoint 3:** Update existing rows to ensure they have a value for the new column (though it should already be set by default).\n     - Command: `UPDATE users SET email_verified = FALSE WHERE email_verified IS NULL;`\n     - Verify Step: Run a query like `SELECT COUNT(*) FROM users WHERE email_verified IS NULL;` to confirm no rows are left with NULL values.\n     - Backout Plan: If necessary, revert any changes by manually setting the column back to default or previous state if applicable.\n\n4. **Set Column as Non-Nullable**\n   - **Checkpoint 4:** Alter the column to be non-null.\n     - Command: `ALTER TABLE users ALTER COLUMN email_verified SET NOT NULL;`\n     - Verify Step: Check the table schema using `\\d users` to confirm the column is now marked as NOT NULL.\n     - Backout Plan: Revert by allowing NULLs again with `ALTER TABLE users ALTER COLUMN email_verified DROP NOT NULL;`.\n\n5. **Update Application Code**\n   - **Checkpoint 5:** Modify application code to include `email_verified` in all INSERT statements for the `users` table.\n     - Verify Step: Test a few inserts manually or through automated tests to ensure they work as expected.\n     - Backout Plan: Revert changes in application code if issues arise.\n\n6. **Monitor and Validate**\n   - **Checkpoint 6:** Monitor database performance and application behavior post-migration.\n     - Verify Step: Check logs for any errors related to the `users` table or application functionality.\n     - Backout Plan: If issues are found, revert changes made in previous steps as necessary.\n\n7. **Post-Migration Cleanup**\n   - **Checkpoint 7:** Remove any temporary scripts or backups used during migration if they are no longer needed.\n     - Verify Step: Ensure that all unnecessary files have been deleted and the environment is clean.\n     - Backout Plan: Restore any accidentally removed files from a backup.\n\n8. **Documentation**\n   - **Checkpoint 8:** Document the entire process, including commands executed, verification steps taken, and any issues encountered along with their resolutions.\n     - Verify Step: Review the documentation to ensure all details are captured accurately.\n     - Backout Plan: Update the documentation if new information arises or corrections need to be made.\n\nBy following this plan, you can safely add a non-null `email_verified` column to your PostgreSQL `users` table while maintaining data integrity and application functionality.",
+      "tool_calls": [],
+      "finish_reason": "stop",
+      "grade": {
+        "pass": false,
+        "score": 0.6666666666666666,
+        "notes": "4/6 steps present, 4 in order"
+      }
+    },
+    {
+      "task_id": "ag-incident-response",
+      "task_summary": "Plan incident response for production outage",
+      "status": "ok",
+      "wall_s": 58.043433124999865,
+      "total_duration": 58042794167,
+      "load_duration": 42406625,
+      "prompt_eval_count": 90,
+      "prompt_eval_duration": 1188947000,
+      "eval_count": 648,
+      "eval_duration": 56485328462,
+      "tokens_per_sec": 11.472005521503451,
+      "response_role": "assistant",
+      "response_content": "Certainly! Below is a structured plan for responding to the incident where the Production API is returning 500 errors on 80% of requests, following a recent deployment.\n\n### Triage Phase\n\n1. **Identify Incident**\n   - Confirm the issue by checking monitoring tools and logs.\n   - Verify that the API is indeed returning 500 Internal Server Error responses for approximately 80% of requests.\n   \n2. **Gather Information**\n   - Review recent changes in the codebase from the last deployment.\n   - Check system metrics (CPU, memory usage) to see if there are any unusual spikes or drops.\n   - Verify that no external dependencies have issues by checking their status pages.\n\n3. **Communicate Incident**\n   - Inform relevant stakeholders including development, operations, and customer support teams.\n   - Update the incident management tool with details of the issue and current status.\n\n### Mitigation Phase\n\n4. **Rollback Deployment (if necessary)**\n   - If recent changes are suspected to be the cause, consider rolling back to a previous stable version.\n   - Verify that the rollback was successful by checking if the error rate decreases or disappears.\n   \n5. **Isolate and Patch**\n   - Temporarily disable or isolate the problematic part of the code if possible.\n   - Apply quick fixes (e.g., hotfixes) to address immediate issues without a full rollback.\n   - Verify that the patch resolves the issue by monitoring API response codes.\n\n6. **Monitor and Scale**\n   - Increase logging around the affected areas for more detailed information.\n   - Scale resources up if necessary to handle the load while investigating further.\n   - Verify that scaling actions have helped stabilize the system.\n\n### Root-Cause Analysis (RCA) Phase\n\n7. **Analyze Logs**\n   - Review logs from the time of deployment and leading up to the incident.\n   - Identify any error messages, stack traces, or unusual patterns in the logs.\n   \n8. **Code Review**\n   - Conduct a thorough code review of recent changes.\n   - Look for potential bugs, misconfigurations, or performance issues introduced by the last deploy.\n\n9. **Dependency Check**\n   - Verify that all external dependencies are functioning correctly and have not changed unexpectedly.\n   - Check if there were any updates to libraries or services that might cause compatibility issues.\n\n10. **Environment Configuration Review**\n    - Ensure that environment configurations (e.g., database connections, API keys) are correct and consistent across environments.\n    - Verify that no configuration changes were made inadvertently during the deployment process.\n\n11. **Testing**\n    - Write unit tests to cover the recently changed code.\n    - Conduct integration testing to ensure all components work together as expected.\n    - Perform load testing to identify any performance bottlenecks or stress points in the system.\n\n### Verification\n\n- After each step, verify that the issue is mitigated and the system is stable.\n- Ensure that no new issues have been introduced during the mitigation process.\n- Confirm with stakeholders that the incident has been resolved satisfactorily.\n\nBy following this plan, you can systematically address the API outage, minimize its impact, and prevent similar incidents in the future.",
+      "tool_calls": [],
+      "finish_reason": "stop",
+      "grade": {
+        "pass": false,
+        "score": 0.5,
+        "notes": "3/6 steps present, 3 in order"
+      }
+    }
+  ],
+  "peak_runner_rss_bytes": 22106963968,
+  "started_utc": "2026-05-03T17:53:31.732112+00:00",
+  "n_samples_attempted": 4,
+  "n_samples_ok": 4,
+  "n_samples_skipped": 0,
+  "n_samples_error": 0
+}

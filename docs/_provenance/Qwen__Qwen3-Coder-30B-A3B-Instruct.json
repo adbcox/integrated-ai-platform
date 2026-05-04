@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "repo": "Qwen/Qwen3-Coder-30B-A3B-Instruct",
+  "verdict": "scan-failed",
+  "exit_code": 1,
+  "threshold": 0.7,
+  "kit_version": "1.0.0",
+  "timestamp_utc": "2026-05-03T16:44:01Z",
+  "scan_rc": 137,
+  "matches": [],
+  "note": "Provenance Kit scan failed; treat as unverified."
+}

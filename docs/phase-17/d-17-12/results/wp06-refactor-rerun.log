@@ -1,0 +1,31 @@
+=== D-17-12 bench run 20260503T210101Z ===
+
+[T1 qwen2.5-coder:32b on mac-mini] workload=refactor
+  warming up qwen2.5-coder:32b...
+    [1/4] refactor-userrepo: wall=42.2s tps=11.6 grade=1.00 pass=True
+    [2/4] refactor-add-logging: wall=44.6s tps=11.3 grade=1.00 pass=True
+    [3/4] refactor-error-handling: wall=46.3s tps=11.3 grade=1.00 pass=True
+    [4/4] refactor-async: wall=27.3s tps=11.6 grade=1.00 pass=True
+
+[T2 qwen2.5-coder:14b on mac-mini] workload=refactor
+  warming up qwen2.5-coder:14b...
+    [1/4] refactor-userrepo: wall=15.9s tps=25.6 grade=1.00 pass=True
+    [2/4] refactor-add-logging: wall=20.5s tps=25.5 grade=1.00 pass=True
+    [3/4] refactor-error-handling: wall=19.2s tps=25.5 grade=0.75 pass=True
+    [4/4] refactor-async: wall=14.3s tps=25.4 grade=1.00 pass=True
+
+[T3-A gemma2:27b on mac-studio] workload=refactor
+  warming up gemma2:27b...
+    [1/4] refactor-userrepo: wall=17.2s tps=34.4 grade=1.00 pass=True
+    [2/4] refactor-add-logging: wall=22.2s tps=34.2 grade=1.00 pass=True
+    [3/4] refactor-error-handling: wall=18.9s tps=34.3 grade=0.75 pass=True
+    [4/4] refactor-async: wall=11.2s tps=34.5 grade=1.00 pass=True
+
+[T3-B qwen3-coder:30b on mac-studio] workload=refactor
+  warming up qwen3-coder:30b...
+    [1/4] refactor-userrepo: wall=5.5s tps=85.2 grade=1.00 pass=True
+    [2/4] refactor-add-logging: wall=5.8s tps=85.1 grade=1.00 pass=True
+    [3/4] refactor-error-handling: wall=4.1s tps=84.9 grade=1.00 pass=True
+    [4/4] refactor-async: wall=3.4s tps=85.2 grade=1.00 pass=True
+
+=== summary written: /Users/admin/repos/integrated-ai-platform/docs/phase-17/d-17-12/results/20260503T210101Z/summary.json ===

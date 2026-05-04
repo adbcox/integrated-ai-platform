@@ -1,0 +1,207 @@
+{
+  "model_key": "T3-B",
+  "model_name": "qwen3-coder:30b",
+  "model_tier": "T3-B",
+  "model_host": "mac-studio",
+  "context_limit": 262144,
+  "workload": "tool-call",
+  "samples": [
+    {
+      "task_id": "tc-weather-paris",
+      "task_summary": "Trivial tool call: get weather for Paris in celsius",
+      "status": "ok",
+      "wall_s": 2.275945207999996,
+      "total_duration": 2273043334,
+      "load_duration": 1382528542,
+      "prompt_eval_count": 619,
+      "prompt_eval_duration": 453710125,
+      "eval_count": 33,
+      "eval_duration": 376204667,
+      "tokens_per_sec": 87.718210045491,
+      "response_role": "assistant",
+      "response_content": "",
+      "tool_calls": [
+        {
+          "id": "call_0r2xdybu",
+          "function": {
+            "index": 0,
+            "name": "get_weather",
+            "arguments": {
+              "city": "Paris",
+              "units": "celsius"
+            }
+          }
+        }
+      ],
+      "finish_reason": "stop",
+      "grade": {
+        "pass": true,
+        "score": 1.0,
+        "notes": "called get_weather (structured); 2/2 args match"
+      }
+    },
+    {
+      "task_id": "tc-calc-math",
+      "task_summary": "Pick the math tool over web search for arithmetic",
+      "status": "ok",
+      "wall_s": 0.475713833000043,
+      "total_duration": 472446167,
+      "load_duration": 47489584,
+      "prompt_eval_count": 619,
+      "prompt_eval_duration": 65753042,
+      "eval_count": 31,
+      "eval_duration": 352079795,
+      "tokens_per_sec": 88.04822213668922,
+      "response_role": "assistant",
+      "response_content": "",
+      "tool_calls": [
+        {
+          "id": "call_ndv1xgj2",
+          "function": {
+            "index": 0,
+            "name": "calculate",
+            "arguments": {
+              "expression": "47 * 13 + 91"
+            }
+          }
+        }
+      ],
+      "finish_reason": "stop",
+      "grade": {
+        "pass": true,
+        "score": 1.0,
+        "notes": "called calculate (structured); 1/1 args match"
+      }
+    },
+    {
+      "task_id": "tc-search-event",
+      "task_summary": "Pick web search for current-events query",
+      "status": "ok",
+      "wall_s": 0.5148228329999824,
+      "total_duration": 512111666,
+      "load_duration": 45507750,
+      "prompt_eval_count": 617,
+      "prompt_eval_duration": 62714583,
+      "eval_count": 36,
+      "eval_duration": 395559622,
+      "tokens_per_sec": 91.01030033849108,
+      "response_role": "assistant",
+      "response_content": "",
+      "tool_calls": [
+        {
+          "id": "call_knkv9fca",
+          "function": {
+            "index": 0,
+            "name": "search_web",
+            "arguments": {
+              "query": "Apple M5 chip release news",
+              "max_results": 5
+            }
+          }
+        }
+      ],
+      "finish_reason": "stop",
+      "grade": {
+        "pass": false,
+        "score": 0.6,
+        "notes": "called search_web (structured); 0/1 args match"
+      }
+    },
+    {
+      "task_id": "tc-read-file",
+      "task_summary": "Pick file-read for path-based query",
+      "status": "ok",
+      "wall_s": 0.5109687089999966,
+      "total_duration": 508202583,
+      "load_duration": 45689708,
+      "prompt_eval_count": 619,
+      "prompt_eval_duration": 67811250,
+      "eval_count": 34,
+      "eval_duration": 386960796,
+      "tokens_per_sec": 87.86419800521601,
+      "response_role": "assistant",
+      "response_content": "",
+      "tool_calls": [
+        {
+          "id": "call_0qgi25xo",
+          "function": {
+            "index": 0,
+            "name": "read_file",
+            "arguments": {
+              "path": "/etc/hosts",
+              "max_lines": 50
+            }
+          }
+        }
+      ],
+      "finish_reason": "stop",
+      "grade": {
+        "pass": true,
+        "score": 1.0,
+        "notes": "called read_file (structured); 2/2 args match"
+      }
+    },
+    {
+      "task_id": "tc-no-tool-needed",
+      "task_summary": "Recognize no tool call is needed for trivia",
+      "status": "ok",
+      "wall_s": 0.12642762500001936,
+      "total_duration": 123676375,
+      "load_duration": 44420417,
+      "prompt_eval_count": 618,
+      "prompt_eval_duration": 65184167,
+      "eval_count": 2,
+      "eval_duration": 11950833,
+      "tokens_per_sec": 167.35235108715852,
+      "response_role": "assistant",
+      "response_content": "Paris",
+      "tool_calls": [],
+      "finish_reason": "stop",
+      "grade": {
+        "pass": true,
+        "score": 1.0,
+        "notes": "correctly answered without tool call"
+      }
+    },
+    {
+      "task_id": "tc-multi-arg-units",
+      "task_summary": "Adherence to enum constraint in tool schema",
+      "status": "ok",
+      "wall_s": 0.504324084000018,
+      "total_duration": 501573500,
+      "load_duration": 44532959,
+      "prompt_eval_count": 616,
+      "prompt_eval_duration": 61636542,
+      "eval_count": 34,
+      "eval_duration": 387737792,
+      "tokens_per_sec": 87.68812507190425,
+      "response_role": "assistant",
+      "response_content": "",
+      "tool_calls": [
+        {
+          "id": "call_nlt4zgbe",
+          "function": {
+            "index": 0,
+            "name": "get_weather",
+            "arguments": {
+              "city": "New York",
+              "units": "fahrenheit"
+            }
+          }
+        }
+      ],
+      "finish_reason": "stop",
+      "grade": {
+        "pass": true,
+        "score": 1.0,
+        "notes": "called get_weather (structured); 2/2 args match"
+      }
+    }
+  ],
+  "peak_runner_rss_bytes": 18940428288,
+  "started_utc": "2026-05-03T18:12:32.759768+00:00",
+  "n_samples_attempted": 6,
+  "n_samples_ok": 6,
+  "n_samples_skipped": 0,
+  "n_samples_error": 0
+}

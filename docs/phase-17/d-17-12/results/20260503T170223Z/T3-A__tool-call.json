@@ -1,0 +1,58 @@
+{
+  "model_key": "T3-A",
+  "model_name": "gemma2:27b",
+  "model_tier": "T3-A",
+  "model_host": "mac-studio",
+  "context_limit": 8192,
+  "workload": "tool-call",
+  "samples": [
+    {
+      "task_id": "tc-weather-paris",
+      "task_summary": "Trivial tool call: get weather for Paris in celsius",
+      "status": "error",
+      "error": "<urlopen error [Errno 61] Connection refused>",
+      "wall_s": 0.22025200000007317
+    },
+    {
+      "task_id": "tc-calc-math",
+      "task_summary": "Pick the math tool over web search for arithmetic",
+      "status": "error",
+      "error": "<urlopen error [Errno 61] Connection refused>",
+      "wall_s": 0.21553979200007234
+    },
+    {
+      "task_id": "tc-search-event",
+      "task_summary": "Pick web search for current-events query",
+      "status": "error",
+      "error": "<urlopen error [Errno 61] Connection refused>",
+      "wall_s": 0.22205612499965355
+    },
+    {
+      "task_id": "tc-read-file",
+      "task_summary": "Pick file-read for path-based query",
+      "status": "error",
+      "error": "<urlopen error [Errno 61] Connection refused>",
+      "wall_s": 0.22065945900021688
+    },
+    {
+      "task_id": "tc-no-tool-needed",
+      "task_summary": "Recognize no tool call is needed for trivia",
+      "status": "error",
+      "error": "<urlopen error [Errno 61] Connection refused>",
+      "wall_s": 0.22129945899996528
+    },
+    {
+      "task_id": "tc-multi-arg-units",
+      "task_summary": "Adherence to enum constraint in tool schema",
+      "status": "error",
+      "error": "<urlopen error [Errno 61] Connection refused>",
+      "wall_s": 0.20756454200000007
+    }
+  ],
+  "peak_runner_rss_bytes": 0,
+  "started_utc": "2026-05-03T17:49:22.872159+00:00",
+  "n_samples_attempted": 6,
+  "n_samples_ok": 0,
+  "n_samples_skipped": 0,
+  "n_samples_error": 6
+}

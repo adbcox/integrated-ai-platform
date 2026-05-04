@@ -1,0 +1,104 @@
+{
+  "model_key": "T3-B",
+  "model_name": "qwen3-coder:30b",
+  "model_tier": "T3-B",
+  "model_host": "mac-studio",
+  "context_limit": 262144,
+  "workload": "refactor",
+  "samples": [
+    {
+      "task_id": "refactor-userrepo",
+      "task_summary": "5-file refactor: introduce UserRepository, inject it, add type hints",
+      "status": "ok",
+      "wall_s": 5.456227291999994,
+      "total_duration": 5453262750,
+      "load_duration": 1094615416,
+      "prompt_eval_count": 354,
+      "prompt_eval_duration": 246748916,
+      "eval_count": 344,
+      "eval_duration": 4036826745,
+      "tokens_per_sec": 85.21544810563823,
+      "response_role": "assistant",
+      "response_content": "```python\n# file_a.py\nfrom typing import Optional, Dict, Any\n\nclass UserRepository:\n    def __init__(self, db_path: str = \"/var/db/users.txt\"):\n        self.db_path = db_path\n    \n    def fetch_user(self, user_id: int) -> Optional[Dict[str, Any]]:\n        with open(self.db_path) as db:\n            for line in db:\n                uid, name = line.strip().split(\",\")\n                if uid == str(user_id):\n                    return {\"id\": uid, \"name\": name}\n        return None\n\n# Module-level instance for backward compatibility\n_default_repo = UserRepository()\n\ndef fetch_user(user_id: int) -> Optional[Dict[str, Any]]:\n    return _default_repo.fetch_user(user_id)\n```\n\n```python\n# file_b.py\nfrom typing import Optional\nfrom file_a import fetch_user, UserRepository\n\ndef get_username(user_id: int) -> str:\n    user = fetch_user(user_id)\n    if user:\n        return user[\"name\"]\n    return \"unknown\"\n```\n\n```python\n# file_c.py\nfrom file_b import get_username\n\ndef greet(user_id: int) -> str:\n    name = get_username(user_id)\n    return f\"Hello, {name}\"\n```\n\n```python\n# file_d.py \u2014 caller\nfrom file_c import greet\n\nprint(greet(42))\nprint(greet(99))\n```\n\n```python\n# file_e.py \u2014 tests\nfrom file_a import fetch_user\nfrom file_b import get_username\n\ndef test_fetch():\n    assert fetch_user(1)[\"name\"]\n\ndef test_unknown():\n    assert get_username(-1) == \"unknown\"\n```",
+      "tool_calls": [],
+      "finish_reason": "stop",
+      "grade": {
+        "pass": true,
+        "score": 1.0,
+        "notes": "6/6 required transforms; 0 forbidden"
+      }
+    },
+    {
+      "task_id": "refactor-add-logging",
+      "task_summary": "Add structured logging to all 5 files preserving behavior",
+      "status": "ok",
+      "wall_s": 5.797432792000052,
+      "total_duration": 5794318708,
+      "load_duration": 44067208,
+      "prompt_eval_count": 317,
+      "prompt_eval_duration": 215117500,
+      "eval_count": 464,
+      "eval_duration": 5454461003,
+      "tokens_per_sec": 85.06798375582777,
+      "response_role": "assistant",
+      "response_content": "```python\n# file_a.py\nimport logging\n\nlogger = logging.getLogger(__name__)\n\ndef fetch_user(user_id):\n    logger.info(\"Entering fetch_user with arguments: user_id=%s\", user_id)\n    db = open(\"/var/db/users.txt\")\n    for line in db:\n        uid, name = line.strip().split(\",\")\n        if uid == str(user_id):\n            result = {\"id\": uid, \"name\": name}\n            logger.info(\"Exiting fetch_user with return value: %s\", result)\n            return result\n    logger.info(\"Exiting fetch_user with return value: None\")\n    return None\n```\n\n```python\n# file_b.py\nimport logging\n\nlogger = logging.getLogger(__name__)\n\nfrom file_a import fetch_user\n\ndef get_username(user_id):\n    logger.info(\"Entering get_username with arguments: user_id=%s\", user_id)\n    user = fetch_user(user_id)\n    if user:\n        result = user[\"name\"]\n        logger.info(\"Exiting get_username with return value: %s\", result)\n        return result\n    result = \"unknown\"\n    logger.info(\"Exiting get_username with return value: %s\", result)\n    return result\n```\n\n```python\n# file_c.py\nimport logging\n\nlogger = logging.getLogger(__name__)\n\nfrom file_b import get_username\n\ndef greet(user_id):\n    logger.info(\"Entering greet with arguments: user_id=%s\", user_id)\n    name = get_username(user_id)\n    result = f\"Hello, {name}\"\n    logger.info(\"Exiting greet with return value: %s\", result)\n    return result\n```\n\n```python\n# file_d.py\nimport logging\n\nlogger = logging.getLogger(__name__)\n\nfrom file_c import greet\nprint(greet(42))\nprint(greet(99))\n```\n\n```python\n# file_e.py\nimport logging\n\nlogger = logging.getLogger(__name__)\n\nfrom file_a import fetch_user\nfrom file_b import get_username\n\ndef test_fetch():\n    logger.info(\"Entering test_fetch\")\n    assert fetch_user(1)[\"name\"]\n    logger.info(\"Exiting test_fetch\")\n\ndef test_unknown():\n    logger.info(\"Entering test_unknown\")\n    assert get_username(-1) == \"unknown\"\n    logger.info(\"Exiting test_unknown\")\n```",
+      "tool_calls": [],
+      "finish_reason": "stop",
+      "grade": {
+        "pass": true,
+        "score": 1.0,
+        "notes": "3/3 required transforms; 0 forbidden"
+      }
+    },
+    {
+      "task_id": "refactor-error-handling",
+      "task_summary": "Add coherent error handling across all 5 files",
+      "status": "ok",
+      "wall_s": 4.126631541999984,
+      "total_duration": 4123611458,
+      "load_duration": 44511083,
+      "prompt_eval_count": 333,
+      "prompt_eval_duration": 216928458,
+      "eval_count": 323,
+      "eval_duration": 3805689336,
+      "tokens_per_sec": 84.87292878705956,
+      "response_role": "assistant",
+      "response_content": "```python\n# file_a.py\nclass UserNotFoundError(Exception):\n    pass\n\ndef fetch_user(user_id):\n    db = open(\"/var/db/users.txt\")\n    for line in db:\n        uid, name = line.strip().split(\",\")\n        if uid == str(user_id):\n            return {\"id\": uid, \"name\": name}\n    db.close()\n    raise UserNotFoundError(f\"User with id {user_id} not found\")\n```\n\n```python\n# file_b.py\nfrom file_a import fetch_user, UserNotFoundError\n\ndef get_username(user_id):\n    try:\n        user = fetch_user(user_id)\n        if user:\n            return user[\"name\"]\n        return \"unknown\"\n    except UserNotFoundError:\n        raise\n```\n\n```python\n# file_c.py\nfrom file_b import get_username\n\ndef greet(user_id):\n    name = get_username(user_id)\n    return f\"Hello, {name}\"\n```\n\n```python\n# file_d.py \u2014 caller\nfrom file_c import greet\nfrom file_a import UserNotFoundError\n\ntry:\n    print(greet(42))\n    print(greet(99))\nexcept UserNotFoundError as e:\n    print('User missing')\n```\n\n```python\n# file_e.py \u2014 tests\nfrom file_a import fetch_user, UserNotFoundError\nfrom file_b import get_username\n\ndef test_fetch():\n    try:\n        assert fetch_user(1)[\"name\"]\n    except UserNotFoundError:\n        # This test expects the exception to be raised\n        raise\n\ndef test_unknown():\n    assert get_username(-1) == \"unknown\"\n```",
+      "tool_calls": [],
+      "finish_reason": "stop",
+      "grade": {
+        "pass": true,
+        "score": 1.0,
+        "notes": "4/4 required transforms; 0 forbidden"
+      }
+    },
+    {
+      "task_id": "refactor-async",
+      "task_summary": "Make 5-file chain async-compatible",
+      "status": "ok",
+      "wall_s": 3.4098555409999562,
+      "total_duration": 3403567292,
+      "load_duration": 41893584,
+      "prompt_eval_count": 329,
+      "prompt_eval_duration": 215884125,
+      "eval_count": 264,
+      "eval_duration": 3099968912,
+      "tokens_per_sec": 85.1621443615303,
+      "response_role": "assistant",
+      "response_content": "```python\n# file_a.py\nimport asyncio\n\nasync def fetch_user(user_id):\n    db = open(\"/var/db/users.txt\")\n    for line in db:\n        uid, name = line.strip().split(\",\")\n        if uid == str(user_id):\n            return {\"id\": uid, \"name\": name}\n    return None\n```\n\n```python\n# file_b.py\nfrom file_a import fetch_user\n\nasync def get_username(user_id):\n    user = await fetch_user(user_id)\n    if user:\n        return user[\"name\"]\n    return \"unknown\"\n```\n\n```python\n# file_c.py\nfrom file_b import get_username\n\nasync def greet(user_id):\n    name = await get_username(user_id)\n    return f\"Hello, {name}\"\n```\n\n```python\n# file_d.py \u2014 caller\nfrom file_c import greet\nimport asyncio\n\nprint(asyncio.run(greet(42)))\nprint(asyncio.run(greet(99)))\n```\n\n```python\n# file_e.py \u2014 tests\nfrom file_a import fetch_user\nfrom file_b import get_username\nimport asyncio\n\nasync def test_fetch():\n    assert (await fetch_user(1))[\"name\"]\n    \nasync def test_unknown():\n    assert await get_username(-1) == \"unknown\"\n```",
+      "tool_calls": [],
+      "finish_reason": "stop",
+      "grade": {
+        "pass": true,
+        "score": 1.0,
+        "notes": "5/5 required transforms; 0 forbidden"
+      }
+    }
+  ],
+  "peak_runner_rss_bytes": 19157876736,
+  "started_utc": "2026-05-03T21:06:39.990779+00:00",
+  "n_samples_attempted": 4,
+  "n_samples_ok": 4,
+  "n_samples_skipped": 0,
+  "n_samples_error": 0
+}

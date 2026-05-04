@@ -1,0 +1,104 @@
+{
+  "model_key": "T3-A",
+  "model_name": "gemma2:27b",
+  "model_tier": "T3-A",
+  "model_host": "mac-studio",
+  "context_limit": 8192,
+  "workload": "refactor",
+  "samples": [
+    {
+      "task_id": "refactor-userrepo",
+      "task_summary": "5-file refactor: introduce UserRepository, inject it, add type hints",
+      "status": "ok",
+      "wall_s": 21.44121524999997,
+      "total_duration": 21438029750,
+      "load_duration": 1407107875,
+      "prompt_eval_count": 422,
+      "prompt_eval_duration": 1416128708,
+      "eval_count": 624,
+      "eval_duration": 18285317124,
+      "tokens_per_sec": 34.125741203633936,
+      "response_role": "assistant",
+      "response_content": "```python\n# file_a.py\nclass UserRepository:\n    def __init__(self, db_path: str):\n        self.db_path = db_path\n\n    def fetch_user(self, user_id: int) -> dict | None:\n        with open(self.db_path) as db:\n            for line in db:\n                uid, name = line.strip().split(\",\")\n                if uid == str(user_id):\n                    return {\"id\": uid, \"name\": name}\n        return None\n\ndef fetch_user(user_id: int, repo: UserRepository) -> dict | None:\n    return repo.fetch_user(user_id)\n```\n\n```python\n# file_b.py\nfrom file_a import fetch_user\n\ndef get_username(user_id: int, repo: UserRepository) -> str:\n    user = fetch_user(user_id, repo)\n    if user:\n        return user[\"name\"]\n    return \"unknown\"\n```\n\n```python\n# file_c.py\nfrom file_b import get_username\n\ndef greet(user_id: int, repo: UserRepository) -> str:\n    name = get_username(user_id, repo)\n    return f\"Hello, {name}\"\n```\n\n```python\n# file_d.py \u2014 caller\nfrom file_c import greet\nrepo = UserRepository(\"/var/db/users.txt\")\nprint(greet(42, repo))\nprint(greet(99, repo))\n```\n\n```python\n# file_e.py \u2014 tests\nfrom file_a import fetch_user\nfrom file_b import get_username\nimport unittest\n\nclass TestUserFunctions(unittest.TestCase):\n    def test_fetch(self):\n        repo = UserRepository(\"/var/db/users.txt\")\n        self.assertTrue(fetch_user(1, repo)[\"name\"])\n\n    def test_unknown(self):\n        repo = UserRepository(\"/var/db/users.txt\")\n        self.assertEqual(get_username(-1, repo), \"unknown\")\n\nif __name__ == '__main__':\n    unittest.main()\n```\n\n\n\n**Explanation of Changes:**\n\n\n* **Class-Based Repository:** A `UserRepository` class is introduced to encapsulate the logic for accessing user data from the file. This promotes code reusability and testability.\n* **Dependency Injection:** The `UserRepository` instance is now injected into the functions (`fetch_user`, `get_username`, `greet`) via constructor parameters, making them more flexible and testable.\n\n* **Type Hints:** Type hints are added to all function parameters and return values for improved code readability and static analysis.\n* **Public API Preservation:** The public API of each file's exported function remains unchanged, ensuring compatibility with existing code that uses these functions.",
+      "tool_calls": [],
+      "finish_reason": "stop",
+      "grade": {
+        "pass": true,
+        "score": 1.0,
+        "notes": "6/6 required transforms; 0 forbidden"
+      }
+    },
+    {
+      "task_id": "refactor-add-logging",
+      "task_summary": "Add structured logging to all 5 files preserving behavior",
+      "status": "ok",
+      "wall_s": 22.672551457999987,
+      "total_duration": 22669187250,
+      "load_duration": 58816042,
+      "prompt_eval_count": 379,
+      "prompt_eval_duration": 1216248750,
+      "eval_count": 716,
+      "eval_duration": 21021927174,
+      "tokens_per_sec": 34.05967464703005,
+      "response_role": "assistant",
+      "response_content": "```python\n# file_a.py\nimport logging\n\nlogger = logging.getLogger(__name__)\n\ndef fetch_user(user_id):\n    logger.info(\"fetch_user called with user_id: %s\", user_id)\n    db = open(\"/var/db/users.txt\")\n    for line in db:\n        uid, name = line.strip().split(\",\")\n        if uid == str(user_id):\n            logger.info(\"fetch_user returning: %s\", {\"id\": uid, \"name\": name})\n            return {\"id\": uid, \"name\": name}\n    logger.info(\"fetch_user returning: None\")\n    return None\n```\n\n```python\n# file_b.py\nimport logging\n\nlogger = logging.getLogger(__name__)\n\nfrom file_a import fetch_user\n\ndef get_username(user_id):\n    logger.info(\"get_username called with user_id: %s\", user_id)\n    user = fetch_user(user_id)\n    if user:\n        logger.info(\"get_username returning: %s\", user[\"name\"])\n        return user[\"name\"]\n    logger.info(\"get_username returning: unknown\")\n    return \"unknown\"\n```\n\n```python\n# file_c.py\nimport logging\n\nlogger = logging.getLogger(__name__)\n\nfrom file_b import get_username\n\ndef greet(user_id):\n    logger.info(\"greet called with user_id: %s\", user_id)\n    name = get_username(user_id)\n    logger.info(\"greet returning: %s\", f\"Hello, {name}\")\n    return f\"Hello, {name}\"\n```\n\n```python\n# file_d.py \u2014 caller\nfrom file_c import greet\nimport logging\n\nlogging.basicConfig(level=logging.INFO)\n\nprint(greet(42))\nprint(greet(99))\n```\n\n```python\n# file_e.py \u2014 tests\nimport logging\n\nlogger = logging.getLogger(__name__)\n\nfrom file_a import fetch_user\nfrom file_b import get_username\n\ndef test_fetch():\n    assert fetch_user(1)[\"name\"]\ndef test_unknown():\n    assert get_username(-1) == \"unknown\"\n```\n\n\n\n**Explanation:**\n\n* **Module-level Loggers:** Each Python file now has its own logger using `logging.getLogger(__name__)`. This ensures that log messages are organized by module, making it easier to trace the flow of execution and debug issues.\n\n* **Structured Logging:**  Log messages are formatted in a structured way using string formatting (`%s` for variables). This allows for easy parsing and analysis of logs.\n* **INFO Level:** All logging calls are set to `logging.INFO`. You can adjust this level (e.g., `logging.DEBUG`, `logging.WARNING`) based on your needs.\n\n* **Caller File (file_d.py):**  We added `logging.basicConfig(level=logging.INFO)` to configure the root logger and enable logging output at the INFO level.\n\n\n\nRemember that you'll need to set up a logging handler (e.g., writing logs to a file) for these messages to be visible.",
+      "tool_calls": [],
+      "finish_reason": "stop",
+      "grade": {
+        "pass": false,
+        "score": 0.5,
+        "notes": "3/3 required transforms; 1 forbidden"
+      }
+    },
+    {
+      "task_id": "refactor-error-handling",
+      "task_summary": "Add coherent error handling across all 5 files",
+      "status": "ok",
+      "wall_s": 19.45939983300002,
+      "total_duration": 19456271625,
+      "load_duration": 59568125,
+      "prompt_eval_count": 400,
+      "prompt_eval_duration": 1308127000,
+      "eval_count": 607,
+      "eval_duration": 17777533439,
+      "tokens_per_sec": 34.1442192800704,
+      "response_role": "assistant",
+      "response_content": "## file_a.py\n\n```python\n# file_a.py\nclass UserNotFoundError(Exception):\n    pass\n\ndef fetch_user(user_id):\n    db = open(\"/var/db/users.txt\")\n    for line in db:\n        uid, name = line.strip().split(\",\")\n        if uid == str(user_id):\n            return {\"id\": uid, \"name\": name}\n    raise UserNotFoundError(f\"User with ID {user_id} not found.\")\n```\n\n## file_b.py\n\n```python\n# file_b.py\nfrom file_a import fetch_user\n\ndef get_username(user_id):\n    try:\n        user = fetch_user(user_id)\n        return user[\"name\"]\n    except UserNotFoundError:\n        return \"unknown\" \n```\n\n## file_c.py\n\n```python\n# file_c.py\nfrom file_b import get_username\n\ndef greet(user_id):\n    name = get_username(user_id)\n    return f\"Hello, {name}\"\n```\n\n## file_d.py\n\n```python\n# file_d.py \u2014 caller\nfrom file_c import greet\nprint(greet(42))\nprint(greet(99)) \n```\n\n## file_e.py\n\n```python\n# file_e.py \u2014 tests\nfrom file_a import fetch_user\nfrom file_b import get_username\n\ndef test_fetch():\n    assert fetch_user(1)[\"name\"]\n\ndef test_unknown():\n    assert get_username(-1) == \"unknown\"\n\ndef test_user_not_found():\n    try:\n        fetch_user(999)\n    except UserNotFoundError:\n        pass\n    else:\n        raise AssertionError(\"UserNotFoundError not raised\") \n```\n\n\n\n**Explanation:**\n\n\n* **file_a.py**: We define a custom exception `UserNotFoundError` to be raised when the user is not found in the database. The `fetch_user` function now raises this exception if no matching user ID is found.\n\n* **file_b.py**:  We use a `try-except` block to catch the `UserNotFoundError`. If the exception occurs, we return \"unknown\" as the username.\n\n* **file_c.py**: This file remains unchanged as it relies on the output of `get_username`.\n\n* **file_d.py**: This file also remains unchanged as it calls `greet` which uses the logic from previous files.\n\n* **file_e.py**: We add a new test case `test_user_not_found` to explicitly check that `UserNotFoundError` is raised when attempting to fetch a non-existent user.",
+      "tool_calls": [],
+      "finish_reason": "stop",
+      "grade": {
+        "pass": true,
+        "score": 0.75,
+        "notes": "3/4 required transforms; 0 forbidden"
+      }
+    },
+    {
+      "task_id": "refactor-async",
+      "task_summary": "Make 5-file chain async-compatible",
+      "status": "ok",
+      "wall_s": 11.22845537500001,
+      "total_duration": 11225104583,
+      "load_duration": 58434333,
+      "prompt_eval_count": 397,
+      "prompt_eval_duration": 1311820667,
+      "eval_count": 334,
+      "eval_duration": 9683753172,
+      "tokens_per_sec": 34.49075932312497,
+      "response_role": "assistant",
+      "response_content": "```python\n# file_a.py\nimport asyncio\n\nasync def fetch_user(user_id):\n    db = open(\"/var/db/users.txt\")\n    for line in db:\n        uid, name = line.strip().split(\",\")\n        if uid == str(user_id):\n            return {\"id\": uid, \"name\": name}\n    return None\n```\n\n```python\n# file_b.py\nimport asyncio\nfrom file_a import fetch_user\n\nasync def get_username(user_id):\n    user = await fetch_user(user_id)\n    if user:\n        return user[\"name\"]\n    return \"unknown\"\n```\n\n```python\n# file_c.py\nimport asyncio\nfrom file_b import get_username\n\nasync def greet(user_id):\n    name = await get_username(user_id)\n    return f\"Hello, {name}\"\n```\n\n```python\n# file_d.py \u2014 caller\nimport asyncio\nfrom file_c import greet\n\nprint(asyncio.run(greet(42)))\nprint(asyncio.run(greet(99)))\n```\n\n```python\n# file_e.py \u2014 tests\nimport asyncio\nfrom file_a import fetch_user\nfrom file_b import get_username\n\nasync def test_fetch():\n    assert (await fetch_user(1))[\"name\"]\n\nasync def test_unknown():\n    assert await get_username(-1) == \"unknown\"\n```",
+      "tool_calls": [],
+      "finish_reason": "stop",
+      "grade": {
+        "pass": true,
+        "score": 1.0,
+        "notes": "5/5 required transforms; 0 forbidden"
+      }
+    }
+  ],
+  "peak_runner_rss_bytes": 19224133632,
+  "started_utc": "2026-05-03T18:12:02.104430+00:00",
+  "n_samples_attempted": 4,
+  "n_samples_ok": 4,
+  "n_samples_skipped": 0,
+  "n_samples_error": 0
+}

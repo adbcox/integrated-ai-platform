@@ -1,0 +1,55 @@
+{
+  "run_id": "20260503T165543Z",
+  "started_utc": "2026-05-03T16:55:43.303635+00:00",
+  "models": [
+    {
+      "key": "T1",
+      "name": "qwen2.5-coder:32b",
+      "host": "127.0.0.1",
+      "port": 11434,
+      "host_label": "mac-mini",
+      "tier": "T1",
+      "context_limit": 32768,
+      "ssh_target": null
+    },
+    {
+      "key": "T2",
+      "name": "qwen2.5-coder:14b",
+      "host": "127.0.0.1",
+      "port": 11434,
+      "host_label": "mac-mini",
+      "tier": "T2",
+      "context_limit": 32768,
+      "ssh_target": null
+    },
+    {
+      "key": "T3-A",
+      "name": "gemma2:27b",
+      "host": "192.168.10.142",
+      "port": 11434,
+      "host_label": "mac-studio",
+      "tier": "T3-A",
+      "context_limit": 8192,
+      "ssh_target": "admin@192.168.10.142"
+    },
+    {
+      "key": "T3-B",
+      "name": "qwen3-coder:30b",
+      "host": "192.168.10.142",
+      "port": 11434,
+      "host_label": "mac-studio",
+      "tier": "T3-B",
+      "context_limit": 262144,
+      "ssh_target": "admin@192.168.10.142"
+    }
+  ],
+  "workloads": [
+    "long-context",
+    "refactor",
+    "tool-call",
+    "agentic"
+  ],
+  "samples_cap": 4,
+  "results": [],
+  "finished_utc": "2026-05-03T16:55:43.304518+00:00"
+}
