@@ -1,0 +1,104 @@
+{
+  "model_key": "T3-C",
+  "model_name": "qwen3-coder-next",
+  "model_tier": "T3-C",
+  "model_host": "mac-studio",
+  "context_limit": 262144,
+  "workload": "long-context",
+  "samples": [
+    {
+      "task_id": "lc-finding-T",
+      "task_summary": "Recall InvenTree-pattern Finding T from buried position in DOC A",
+      "status": "ok",
+      "wall_s": 51.293857667,
+      "total_duration": 51289502708,
+      "load_duration": 9689317833,
+      "prompt_eval_count": 21920,
+      "prompt_eval_duration": 32881158208,
+      "eval_count": 253,
+      "eval_duration": 8587451540,
+      "tokens_per_sec": 29.461592746292226,
+      "response_role": "assistant",
+      "response_content": "**Finding T** is about a **Platform asset-management substrate gap**: there is no coherent inventory of OS / firmware / container runtime / container images / application binaries / library dependencies across the platform. This gap prevents AI from consulting asset state before recommending upgrades and prevents operators from preventing AI failure modes pre-emptively.\n\nThe **canonical example** surfaced on **2026-05-02** is:\n\n> *the 2026-05-02 Mac Mini orchestration-node OS upgrade (26.3 \u2192 26.4.1) was AI-recommended without consulting asset state, without asking which node was appropriate (orchestration vs idle-compute), without verifying premise against literature (RDMA major-vs-minor version requirement), without considering operational dependencies on the orchestration node, and without scheduling an appropriate maintenance window.*\n\nThe **exact phrasing of the asset categories** named in Finding T's body is:\n\n> **OS / firmware (motherboard BIOS, GPU VBIOS, NVMe, network card, BMC, accessory: Garmin, Oura, Zigbee sensors, 3D printer mainboards, ESP32) / container runtime / container images / application binaries / library dependencies**",
+      "tool_calls": [],
+      "finish_reason": "stop",
+      "grade": {
+        "pass": true,
+        "score": 1.0,
+        "notes": "7/7 expected facts present"
+      }
+    },
+    {
+      "task_id": "lc-finding-DD-trap",
+      "task_summary": "Recall Finding DD diagnostic trap and its corrected pattern",
+      "status": "ok",
+      "wall_s": 50.37813187500001,
+      "total_duration": 50373521166,
+      "load_duration": 55816416,
+      "prompt_eval_count": 21907,
+      "prompt_eval_duration": 32824051125,
+      "eval_count": 525,
+      "eval_duration": 17354825839,
+      "tokens_per_sec": 30.250951802709128,
+      "response_role": "assistant",
+      "response_content": "Based on **DOCUMENT A \u2014 exo cluster**, specifically the **Container env-inspection diagnostic trap (DD)** subsection:\n\n---\n\n### **What is Finding DD?**\n\nFinding DD is a *diagnostic trap* where inspecting a container's environment variables using a common but incorrect method yields the *image-baked* environment (`Config.Env`) instead of the *actual runtime environment* of PID 1. This leads to false conclusions (e.g., reporting a credential as missing or empty when it is actually present in runtime memory).\n\nIt was discovered during D-17-26 close and retroactively identified as the cause of a misdiagnosis in D-17-14 WP-06 (which incorrectly concluded `OPENAI_API_KEY` was effectively empty).\n\n---\n\n### **WRONG diagnostic pattern (what *not* to do)**\n\n```bash\ndocker exec <container> sh -c 'echo $VAR'\n```\n\n- This spawns a *new shell* inside the container.\n- The new shell inherits environment from the *image's `Config.Env`* (image build time + compose `env:` or `environment:` fields).\n- It **does NOT reflect runtime modifications** (e.g., variables sourced from `/vault/secrets/credentials.env` by the entrypoint script).\n- Result: returns stale or empty values even when the actual PID 1 process has the correct values.\n\n---\n\n### **CORRECT diagnostic pattern (what *to* do)**\n\n```bash\ndocker exec <container> sh -c 'tr \"\\0\" \"\\n\" < /proc/1/environ | grep ^VAR='\n```\n\n- Reads `/proc/1/environ`, the *actual environment block of PID 1*.\n- Converts NUL-separated entries to newline-separated lines (`tr \"\\0\" \"\\n\"`).\n- Filters for the specific variable (`grep ^VAR=`).\n- Reflects *runtime state*, including values set by entrypoint scripts.\n\n\u2705 This is the only reliable way to inspect environment variables that are set *at runtime* (e.g., via `set -a && . credentials.env && set +a` in an entrypoint).\n\n---\n\n### **Operational corollary (from Finding DD)**\n\n> \"When inspecting container environment for credential or runtime-set variables, query `/proc/1/environ` rather than spawning a fresh shell via `docker exec env`. Image-baked `Config.Env` \u2260 runtime PID 1 environ when entrypoint scripts source secret files.\"\n\nThis pattern must be used before concluding a credential is missing or misconfigured.",
+      "tool_calls": [],
+      "finish_reason": "stop",
+      "grade": {
+        "pass": true,
+        "score": 1.0,
+        "notes": "5/5 expected facts present"
+      }
+    },
+    {
+      "task_id": "lc-cross-doc-synthesis",
+      "task_summary": "Synthesize across both documents \u2014 what does Finding 1 tool-call gap have to do with exo's Finding S?",
+      "status": "ok",
+      "wall_s": 66.41064608300002,
+      "total_duration": 66406425417,
+      "load_duration": 55743750,
+      "prompt_eval_count": 21940,
+      "prompt_eval_duration": 32773301500,
+      "eval_count": 1000,
+      "eval_duration": 33350486975,
+      "tokens_per_sec": 29.9845696630941,
+      "response_role": "assistant",
+      "response_content": "Finding S and Finding DD are directly related in the closeout of **D-17-26**, with **Finding DD being the root cause of the misdiagnosis that gave rise to Finding S\u2019s apparent failure**.\n\n### Relationship Summary\n\n- **Finding S** (in DOC A, under \u201cPlatform integration (S)\u201d) originally reported:  \n  > *\"Open WebUI's `OPENAI_API_KEY` is empty (length=1; SHA-256 matches the empty-string hash). The container has worked through Open WebUI for months because it takes the `OLLAMA_BASE_URL` direct path for local models and never exercised the OpenAI-compatible client. Wiring requires its own Vault-Agent-sidecar deliverable (provisional D-17-26).\"*  \n  This framed the OpenAI-compatible path as **broken and requiring a fix**.\n\n- **Finding DD** (in DOC A, under \u201cContainer env-inspection diagnostic trap\u201d) later revealed:  \n  > *\"`docker exec <container> sh -c 'echo $VAR'` returns the value from `Config.Env` (image-baked + compose-passed env), NOT from PID 1's actual runtime environ... The correct check is: `docker exec <container> sh -c 'tr \"\\0\" \"\\n\" < /proc/1/environ | grep ^VAR='`\"*  \n  > *\"D-17-14 WP-06 close (`OPENAI_API_KEY` effectively empty, length=1) was a diagnostic error caused by this trap.\"*\n\nThus, **Finding DD retroactively invalidated the diagnostic premise of Finding S**.\n\n---\n\n### How D-17-26 Closed (with Dates & References)\n\nFrom **DOC A, Dependencies + follow-on deliverables**:\n\n> **D-17-26** \u2014 Vault-Agent sidecar for open-webui wiring `OPENAI_API_KEY` from Vault (Finding S). **CLOSED no-fix-needed with doctrine finding:** the wiring was operational the whole time; the broken-state premise was a **Finding-DD diagnostic error**. Open WebUI \u2192 litellm \u2192 litellm-route end-to-end auth verified HTTP 200. End-to-end demo path (Open WebUI \u2192 litellm \u2192 exo) closed in D-17-30.\n\nAnd from **DOC A, Status of this document** (D-17-26 is referenced in the D-17-25/D-17-28 timeline but not explicitly dated here \u2014 however, the commit reference is given in the next line):\n\n> *\"D-17-26 close (commit-of-this-doctrine)\"* \u2014 this appears in the **\"Platform integration (S)\"** section, immediately after the resolution of Finding S.\n\nThe **commit reference** is explicitly stated in the **\"Lessons learned \u2014 InvenTree-pattern findings\"** section under **Finding DD**:\n\n> *\"...D-17-26 was scoped on that wrong premise as a 2h diagnose-and-fix deliverable; the actual investigation took ~25 min and produced zero fixes because the plumbing was operational the whole time.\"*\n\nWhile the exact commit hash isn\u2019t listed in the provided text, the **close date and outcome are unambiguous**:\n\n- **D-17-26 closed on 2026-05-03** (same day as D-17-30, per the sequence: D-17-25 on 2026-05-02, D-17-26 & D-17-30 both on 2026-05-03).\n- The close outcome was **\u201cno-fix-needed\u201d**, with the diagnosis corrected by applying the **Finding DD probe method** (`/proc/1/environ` instead of `docker exec env`), which revealed:\n  > *\"PID 1 environ shows `OPENAI_API_KEY` length=67, byte-identical fingerprint to litellm's `LITELLM_MASTER_KEY` (sha256-prefix `439bcdb691d6` == `439bcdb691d6`), and `GET http://litellm-gateway:4000/v1/models` from the open-webui container with bearer auth returns HTTP 200 with the `exo-qwen-coder-7b` model listed.\"*\n\n---\n\n### Conclusion\n\n- **Finding S** was a *symptom* (apparently broken OpenAI path).\n- **Finding DD** was the *root cause* of the misdiagnosis (incorrect container env inspection method).\n- **D-17-26** closed on **2026-05-0",
+      "tool_calls": [],
+      "finish_reason": "length",
+      "grade": {
+        "pass": true,
+        "score": 1.0,
+        "notes": "5/5 expected facts present"
+      }
+    },
+    {
+      "task_id": "lc-finding-CC-prior-art",
+      "task_summary": "Recall the three prior-art patterns named in Finding CC",
+      "status": "ok",
+      "wall_s": 36.85225245799995,
+      "total_duration": 36848001625,
+      "load_duration": 54604416,
+      "prompt_eval_count": 21893,
+      "prompt_eval_duration": 32818675833,
+      "eval_count": 119,
+      "eval_duration": 3915568256,
+      "tokens_per_sec": 30.391501876554187,
+      "response_role": "assistant",
+      "response_content": "Based on Document A, under **Finding CC \u2014 Service-registry gap**, the three prior-art approaches for service registry / DNS resolution are:\n\n1. **CoreDNS proxy on host forwarding to `127.0.0.11`**  \n   \u2192 Exposes container DNS to host shell tools.\n\n2. **`devdns` / `dockerdns` purpose-built tools**  \n   \u2192 Watch Docker events and maintain DNS records.\n\n3. **Custom compose-aware inventory script producing canonical JSON**  \n   \u2192 Of container \u2192 port mappings \u2192 credentials \u2192 dependencies for AI consultation.",
+      "tool_calls": [],
+      "finish_reason": "stop",
+      "grade": {
+        "pass": true,
+        "score": 1.0,
+        "notes": "5/5 expected facts present"
+      }
+    }
+  ],
+  "peak_runner_rss_bytes": 54588620800,
+  "started_utc": "2026-05-04T16:34:50.080412+00:00",
+  "n_samples_attempted": 4,
+  "n_samples_ok": 4,
+  "n_samples_skipped": 0,
+  "n_samples_error": 0
+}

@@ -1,0 +1,116 @@
+{
+  "run_id": "20260504T162745Z",
+  "started_utc": "2026-05-04T16:27:45.278674+00:00",
+  "models": [
+    {
+      "key": "T3-B",
+      "name": "qwen3-coder:30b",
+      "host": "192.168.10.142",
+      "port": 11434,
+      "host_label": "mac-studio",
+      "tier": "T3-B",
+      "context_limit": 262144,
+      "ssh_target": "admin@192.168.10.142"
+    },
+    {
+      "key": "T3-C",
+      "name": "qwen3-coder-next",
+      "host": "192.168.10.142",
+      "port": 11434,
+      "host_label": "mac-studio",
+      "tier": "T3-C",
+      "context_limit": 262144,
+      "ssh_target": "admin@192.168.10.142"
+    }
+  ],
+  "workloads": [
+    "long-context",
+    "refactor",
+    "tool-call",
+    "agentic"
+  ],
+  "samples_cap": 4,
+  "results": [
+    {
+      "model_key": "T3-B",
+      "workload": "long-context",
+      "n_ok": 4,
+      "n_skipped": 0,
+      "n_error": 0,
+      "mean_score": 0.8,
+      "mean_tps": 45.134417969758964,
+      "peak_rss_gb": 20.68594688
+    },
+    {
+      "model_key": "T3-C",
+      "workload": "long-context",
+      "n_ok": 4,
+      "n_skipped": 0,
+      "n_error": 0,
+      "mean_score": 1.0,
+      "mean_tps": 30.022154022162407,
+      "peak_rss_gb": 54.5886208
+    },
+    {
+      "model_key": "T3-B",
+      "workload": "refactor",
+      "n_ok": 4,
+      "n_skipped": 0,
+      "n_error": 0,
+      "mean_score": 1.0,
+      "mean_tps": 85.50631407180009,
+      "peak_rss_gb": 19.156451328
+    },
+    {
+      "model_key": "T3-C",
+      "workload": "refactor",
+      "n_ok": 4,
+      "n_skipped": 0,
+      "n_error": 0,
+      "mean_score": 0.9166666666666666,
+      "mean_tps": 34.8521133948863,
+      "peak_rss_gb": 54.04254208
+    },
+    {
+      "model_key": "T3-B",
+      "workload": "tool-call",
+      "n_ok": 4,
+      "n_skipped": 0,
+      "n_error": 0,
+      "mean_score": 0.9,
+      "mean_tps": 87.94521598452769,
+      "peak_rss_gb": 18.939232256
+    },
+    {
+      "model_key": "T3-C",
+      "workload": "tool-call",
+      "n_ok": 4,
+      "n_skipped": 0,
+      "n_error": 0,
+      "mean_score": 0.9,
+      "mean_tps": 35.78734303761699,
+      "peak_rss_gb": 53.997469696
+    },
+    {
+      "model_key": "T3-B",
+      "workload": "agentic",
+      "n_ok": 4,
+      "n_skipped": 0,
+      "n_error": 0,
+      "mean_score": 0.8333333333333334,
+      "mean_tps": 85.39438252320544,
+      "peak_rss_gb": 19.14888192
+    },
+    {
+      "model_key": "T3-C",
+      "workload": "agentic",
+      "n_ok": 4,
+      "n_skipped": 0,
+      "n_error": 0,
+      "mean_score": 0.7916666666666667,
+      "mean_tps": 34.74768800808305,
+      "peak_rss_gb": 54.030647296
+    }
+  ],
+  "finished_utc": "2026-05-04T16:40:35.371930+00:00"
+}

@@ -1,0 +1,104 @@
+{
+  "model_key": "T3-C",
+  "model_name": "qwen3-coder-next",
+  "model_tier": "T3-C",
+  "model_host": "mac-studio",
+  "context_limit": 262144,
+  "workload": "refactor",
+  "samples": [
+    {
+      "task_id": "refactor-userrepo",
+      "task_summary": "5-file refactor: introduce UserRepository, inject it, add type hints",
+      "status": "ok",
+      "wall_s": 15.128750249999996,
+      "total_duration": 15124182541,
+      "load_duration": 9889997375,
+      "prompt_eval_count": 354,
+      "prompt_eval_duration": 545631792,
+      "eval_count": 162,
+      "eval_duration": 4639818335,
+      "tokens_per_sec": 34.91516009968955,
+      "response_role": "assistant",
+      "response_content": "```python\n# file_a.py\nfrom typing import Optional, Dict, Any\n\nclass UserRepository:\n    def __init__(self, db_path: str = \"/var/db/users.txt\"):\n        self.db_path = db_path\n\n    def fetch_by_id(self, user_id: int) -> Optional[Dict[str, Any]]:\n        try:\n            with open(self.db_path) as db:\n                for line in db:\n                    uid, name = line.strip().split(\",\")\n                    if uid == str(user_id):\n                        return {\"id\": uid, \"name\": name}\n        except (FileNotFoundError, ValueError):\n            pass\n        return None\n\ndef fetch_user(user_id: int) -> Optional[Dict[str, Any]]:\n    repo = UserRepository()\n    return repo.fetch_by_id(user_id)\n```",
+      "tool_calls": [],
+      "finish_reason": "stop",
+      "grade": {
+        "pass": false,
+        "score": 0.6666666666666666,
+        "notes": "4/6 required transforms; 0 forbidden"
+      }
+    },
+    {
+      "task_id": "refactor-add-logging",
+      "task_summary": "Add structured logging to all 5 files preserving behavior",
+      "status": "ok",
+      "wall_s": 17.882047333000003,
+      "total_duration": 17877519792,
+      "load_duration": 56267750,
+      "prompt_eval_count": 317,
+      "prompt_eval_duration": 480542791,
+      "eval_count": 599,
+      "eval_duration": 17218003830,
+      "tokens_per_sec": 34.78916638154796,
+      "response_role": "assistant",
+      "response_content": "Here are the rewritten Python files with structured logging added. Each function logs its entry (with arguments) and exit (with return value) at the `INFO` level using module-level loggers. No function signatures or public APIs were changed.\n\n```python\n# file_a.py\nimport logging\n\nlogger = logging.getLogger(__name__)\n\ndef fetch_user(user_id):\n    logger.info(\"fetch_user called with user_id=%s\", user_id)\n    db = open(\"/var/db/users.txt\")\n    try:\n        for line in db:\n            uid, name = line.strip().split(\",\")\n            if uid == str(user_id):\n                result = {\"id\": uid, \"name\": name}\n                logger.info(\"fetch_user returning %s\", result)\n                return result\n        result = None\n        logger.info(\"fetch_user returning %s\", result)\n        return result\n    finally:\n        db.close()\n```\n\n```python\n# file_b.py\nimport logging\n\nlogger = logging.getLogger(__name__)\n\nfrom file_a import fetch_user\n\ndef get_username(user_id):\n    logger.info(\"get_username called with user_id=%s\", user_id)\n    user = fetch_user(user_id)\n    if user:\n        result = user[\"name\"]\n    else:\n        result = \"unknown\"\n    logger.info(\"get_username returning %s\", result)\n    return result\n```\n\n```python\n# file_c.py\nimport logging\n\nlogger = logging.getLogger(__name__)\n\nfrom file_b import get_username\n\ndef greet(user_id):\n    logger.info(\"greet called with user_id=%s\", user_id)\n    name = get_username(user_id)\n    result = f\"Hello, {name}\"\n    logger.info(\"greet returning %s\", result)\n    return result\n```\n\n```python\n# file_d.py \u2014 caller\nimport logging\nimport sys\n\n# Configure logging for the main module\nlogging.basicConfig(\n    level=logging.INFO,\n    format=\"%(asctime)s - %(name)s - %(levelname)s - %(message)s\"\n)\n\nfrom file_c import greet\n\nlogger = logging.getLogger(__name__)\n\nif __name__ == \"__main__\":\n    logger.info(\"Calling greet(42)\")\n    result1 = greet(42)\n    print(result1)\n    logger.info(\"Calling greet(99)\")\n    result2 = greet(99)\n    print(result2)\n```\n\n```python\n# file_e.py \u2014 tests\nimport logging\nimport pytest\n\nlogger = logging.getLogger(__name__)\n\nfrom file_a import fetch_user\nfrom file_b import get_username\n\ndef test_fetch():\n    logger.info(\"test_fetch called\")\n    result = fetch_user(1)\n    assert result is not None\n    assert \"name\" in result\n    logger.info(\"test_fetch passed\")\n\ndef test_unknown():\n    logger.info(\"test_unknown called\")\n    result = get_username(-1)\n    assert result == \"unknown\"\n    logger.info(\"test_unknown passed\")\n```",
+      "tool_calls": [],
+      "finish_reason": "stop",
+      "grade": {
+        "pass": true,
+        "score": 1.0,
+        "notes": "3/3 required transforms; 0 forbidden"
+      }
+    },
+    {
+      "task_id": "refactor-error-handling",
+      "task_summary": "Add coherent error handling across all 5 files",
+      "status": "ok",
+      "wall_s": 15.069056708000005,
+      "total_duration": 15064075041,
+      "load_duration": 53996333,
+      "prompt_eval_count": 333,
+      "prompt_eval_duration": 504536292,
+      "eval_count": 502,
+      "eval_duration": 14402967814,
+      "tokens_per_sec": 34.85392777952645,
+      "response_role": "assistant",
+      "response_content": "```python\n# file_a.py\nclass UserNotFoundError(Exception):\n    \"\"\"Raised when a user cannot be found in the database.\"\"\"\n    pass\n\ndef fetch_user(user_id):\n    try:\n        with open(\"/var/db/users.txt\") as db:\n            for line in db:\n                line = line.strip()\n                if not line:\n                    continue\n                try:\n                    uid, name = line.split(\",\", 1)\n                    if uid == str(user_id):\n                        return {\"id\": uid, \"name\": name}\n                except ValueError:\n                    # Skip malformed lines\n                    continue\n    except FileNotFoundError:\n        # If the database file doesn't exist, raise UserNotFoundError\n        raise UserNotFoundError(f\"User database not found\")\n    \n    # User not found after scanning all lines\n    raise UserNotFoundError(f\"User with ID {user_id} not found\")\n```\n\n```python\n# file_b.py\nfrom file_a import fetch_user, UserNotFoundError\n\ndef get_username(user_id):\n    try:\n        user = fetch_user(user_id)\n        return user[\"name\"]\n    except UserNotFoundError:\n        raise  # Propagate the exception up the call stack\n```\n\n```python\n# file_c.py\nfrom file_b import get_username, UserNotFoundError\n\ndef greet(user_id):\n    try:\n        name = get_username(user_id)\n        return f\"Hello, {name}\"\n    except UserNotFoundError:\n        raise  # Propagate the exception up the call stack\n```\n\n```python\n# file_d.py \u2014 caller\nfrom file_c import greet, UserNotFoundError\n\ntry:\n    print(greet(42))\nexcept UserNotFoundError:\n    print(\"User missing\")\n\ntry:\n    print(greet(99))\nexcept UserNotFoundError:\n    print(\"User missing\")\n```\n\n```python\n# file_e.py \u2014 tests\nimport pytest\nfrom file_a import fetch_user, UserNotFoundError\nfrom file_b import get_username\n\ndef test_fetch():\n    # Assuming user ID 1 exists in the database\n    user = fetch_user(1)\n    assert user is not None\n    assert \"name\" in user\n    assert user[\"name\"]\n\ndef test_fetch_not_found():\n    # Test that fetch_user raises UserNotFoundError for missing users\n    with pytest.raises(UserNotFoundError):\n        fetch_user(-1)\n\ndef test_get_username_not_found():\n    # Test that get_username raises UserNotFoundError for missing users\n    with pytest.raises(UserNotFoundError):\n        get_username(-1)\n```",
+      "tool_calls": [],
+      "finish_reason": "stop",
+      "grade": {
+        "pass": true,
+        "score": 1.0,
+        "notes": "4/4 required transforms; 0 forbidden"
+      }
+    },
+    {
+      "task_id": "refactor-async",
+      "task_summary": "Make 5-file chain async-compatible",
+      "status": "ok",
+      "wall_s": 10.269911041999933,
+      "total_duration": 10265297000,
+      "load_duration": 53402917,
+      "prompt_eval_count": 329,
+      "prompt_eval_duration": 501973583,
+      "eval_count": 336,
+      "eval_duration": 9641264801,
+      "tokens_per_sec": 34.850199318781264,
+      "response_role": "assistant",
+      "response_content": "```python\n# file_a.py\nimport asyncio\n\nasync def fetch_user(user_id):\n    # Simulate async I/O with asyncio.to_thread for file operations\n    def read_db():\n        try:\n            with open(\"/var/db/users.txt\") as db:\n                for line in db:\n                    uid, name = line.strip().split(\",\")\n                    if uid == str(user_id):\n                        return {\"id\": uid, \"name\": name}\n            return None\n        except Exception:\n            return None\n    \n    return await asyncio.to_thread(read_db)\n```\n\n```python\n# file_b.py\nfrom file_a import fetch_user\n\nasync def get_username(user_id):\n    user = await fetch_user(user_id)\n    if user:\n        return user[\"name\"]\n    return \"unknown\"\n```\n\n```python\n# file_c.py\nfrom file_b import get_username\n\nasync def greet(user_id):\n    name = await get_username(user_id)\n    return f\"Hello, {name}\"\n```\n\n```python\n# file_d.py \u2014 caller\nimport asyncio\nfrom file_c import greet\n\nasync def main():\n    print(await greet(42))\n    print(await greet(99))\n\nif __name__ == \"__main__\":\n    asyncio.run(main())\n```\n\n```python\n# file_e.py \u2014 tests\nimport asyncio\nimport pytest\nfrom file_a import fetch_user\nfrom file_b import get_username\n\n@pytest.mark.asyncio\nasync def test_fetch():\n    user = await fetch_user(1)\n    assert user and user[\"name\"]\n\n@pytest.mark.asyncio\nasync def test_unknown():\n    assert await get_username(-1) == \"unknown\"\n```",
+      "tool_calls": [],
+      "finish_reason": "stop",
+      "grade": {
+        "pass": true,
+        "score": 1.0,
+        "notes": "5/5 required transforms; 0 forbidden"
+      }
+    }
+  ],
+  "peak_runner_rss_bytes": 54042542080,
+  "started_utc": "2026-05-04T16:36:25.112209+00:00",
+  "n_samples_attempted": 4,
+  "n_samples_ok": 4,
+  "n_samples_skipped": 0,
+  "n_samples_error": 0
+}

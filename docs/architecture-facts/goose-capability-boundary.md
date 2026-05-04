@@ -162,9 +162,36 @@ C1a/C1b sub-classes):
 **Cell-change branch deferred:** testing other models (gemma2:27b,
 larger qwen variants) on C1a is parked as a future deliverable;
 Singapore travel takes priority over new cell experiments.
-**Goose dispatch RETIRED for C1a work indefinitely.**
+**Goose dispatch SUSPENDED for C1a work indefinitely.**
 Re-promotion attempts paused indefinitely until class
 redefinition is validated.
+
+**IMPORTANT — Goose is NOT retired (D-17-94 correction):**
+Posture 0 is a demotion of the *C1a work-class only* for the
+Goose+qwen3-coder:30b cell. Goose itself remains installed and
+the extension surface remains configured. The following use-cases
+are NOT in the C1a suspended scope and have not been evaluated
+for this cell yet (Posture 0 = "not yet tested"):
+
+- **MCP automation:** Goose driving xindex + filesystem-mcp for
+  structured platform-state queries. Zero sessions run; no evidence
+  of failure.
+- **Multi-step engineering with developer extension:** file write +
+  shell exec for code changes. Gated at Phase-A active promotion;
+  not yet attempted.
+- **Recipe-driven orchestration:** repeatable operator-defined task
+  recipes via Goose `--recipe` or prompt-file dispatch. Untested.
+- **C1b narrative chronicle drafting:** narrative content without
+  verbatim-quote citations. Posture 0 (not yet evaluated at this
+  sub-class).
+
+None of these untested use-cases inherit the C1a suspension. They
+require separate Posture-1 gate entries (N=5 clean reviewed
+executions) before production use. The correct framing: Goose is
+in Posture 0 for these classes — *not tested yet*, awaiting
+operator-initiated evaluation. This is different from "suspended"
+(which implies evidence of failure) and different from "retired"
+(which would mean permanent removal).
 
 Sessions:
 

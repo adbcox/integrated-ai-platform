@@ -1,0 +1,35 @@
+{
+  "run_id": "20260504T162639Z",
+  "started_utc": "2026-05-04T16:26:39.332828+00:00",
+  "models": [
+    {
+      "key": "T3-B",
+      "name": "qwen3-coder:30b",
+      "host": "192.168.10.142",
+      "port": 11434,
+      "host_label": "mac-studio",
+      "tier": "T3-B",
+      "context_limit": 262144,
+      "ssh_target": "admin@192.168.10.142"
+    },
+    {
+      "key": "T3-C",
+      "name": "qwen3-coder-next",
+      "host": "192.168.10.142",
+      "port": 11434,
+      "host_label": "mac-studio",
+      "tier": "T3-C",
+      "context_limit": 262144,
+      "ssh_target": "admin@192.168.10.142"
+    }
+  ],
+  "workloads": [
+    "long-context",
+    "refactor",
+    "tool-call",
+    "agentic"
+  ],
+  "samples_cap": 4,
+  "results": [],
+  "finished_utc": "2026-05-04T16:26:39.333642+00:00"
+}

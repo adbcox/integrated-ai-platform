@@ -1,0 +1,104 @@
+{
+  "model_key": "T3-B",
+  "model_name": "qwen3-coder:30b",
+  "model_tier": "T3-B",
+  "model_host": "mac-studio",
+  "context_limit": 262144,
+  "workload": "long-context",
+  "samples": [
+    {
+      "task_id": "lc-finding-T",
+      "task_summary": "Recall InvenTree-pattern Finding T from buried position in DOC A",
+      "status": "ok",
+      "wall_s": 52.055730083,
+      "total_duration": 52051500958,
+      "load_duration": 1217918583,
+      "prompt_eval_count": 21920,
+      "prompt_eval_duration": 43879520792,
+      "eval_count": 309,
+      "eval_duration": 6844416169,
+      "tokens_per_sec": 45.146290402318755,
+      "response_role": "assistant",
+      "response_content": "Finding T is about a **platform asset-management substrate gap**. It describes the lack of a coherent inventory of various system assets, including OS/firmware versions, hardware components (motherboard BIOS, GPU VBIOS, NVMe, network card, BMC, accessories), container runtimes, container images, application binaries, and library dependencies. The finding emphasizes that AI cannot consult asset state before recommending upgrades, and operators cannot prevent AI failure modes pre-emptively. It also notes that visualization layers cannot surface upgrade-staleness for operator awareness.\n\nThe **canonical example** cited for Finding T is the **2026-05-02 Mac Mini orchestration-node OS upgrade**. This upgrade (from macOS 26.3 to 26.4.1) was AI-recommended without consulting asset state, without verifying which node was appropriate (orchestration vs idle-compute), without considering operational dependencies on the orchestration node, and without scheduling an appropriate maintenance window. The operator caught the planning failure, but the reboot was already triggered.\n\nThe **specific asset categories** named in Finding T's body are:\n\n*   **OS / firmware** (including motherboard BIOS, GPU VBIOS, NVMe, network card, BMC)\n*   **accessory** (specifically mentioning Garmin, Oura, Zigbee sensors, 3D printer mainboards, ESP32)\n*   **container runtime**\n*   **container images**\n*   **application binaries**\n*   **library dependencies**",
+      "tool_calls": [],
+      "finish_reason": "stop",
+      "grade": {
+        "pass": true,
+        "score": 1.0,
+        "notes": "7/7 expected facts present"
+      }
+    },
+    {
+      "task_id": "lc-finding-DD-trap",
+      "task_summary": "Recall Finding DD diagnostic trap and its corrected pattern",
+      "status": "ok",
+      "wall_s": 48.658990667,
+      "total_duration": 48654611334,
+      "load_duration": 47257917,
+      "prompt_eval_count": 21907,
+      "prompt_eval_duration": 43894519750,
+      "eval_count": 210,
+      "eval_duration": 4644064538,
+      "tokens_per_sec": 45.21900983108172,
+      "response_role": "assistant",
+      "response_content": "Based on DOCUMENT A, Finding DD is titled \"Container env-inspection diagnostic trap\".\n\nThe WRONG diagnostic pattern it documents is:\nRunning `docker exec <container> sh -c 'echo $VAR'` which returns the value from `Config.Env` (image-baked + compose-passed env), NOT from PID 1's actual runtime environ.\n\nThe CORRECT pattern is:\nUsing the command `docker exec <container> sh -c 'tr \"\\0\" \"\\n\" < /proc/1/environ | grep ^VAR='` which queries `/proc/1/environ` to get the actual runtime environment variables set by the running process, rather than the static image environment.\n\nThis finding was surfaced during the D-17-26 close and was related to a misdiagnosis of the `OPENAI_API_KEY` being empty in the Open WebUI container, when in fact the plumbing was operational. The correct diagnostic method ensures that runtime-set variables (like those sourced from credentials.env files at runtime) are properly inspected.",
+      "tool_calls": [],
+      "finish_reason": "stop",
+      "grade": {
+        "pass": true,
+        "score": 0.8,
+        "notes": "4/5 expected facts present"
+      }
+    },
+    {
+      "task_id": "lc-cross-doc-synthesis",
+      "task_summary": "Synthesize across both documents \u2014 what does Finding 1 tool-call gap have to do with exo's Finding S?",
+      "status": "ok",
+      "wall_s": 58.34590362499999,
+      "total_duration": 58342334750,
+      "load_duration": 44796625,
+      "prompt_eval_count": 21940,
+      "prompt_eval_duration": 44086864792,
+      "eval_count": 631,
+      "eval_duration": 14065875499,
+      "tokens_per_sec": 44.86034303693789,
+      "response_role": "assistant",
+      "response_content": "Based on the provided documents (exo cluster and integration audit), here's how Finding S and Finding DD are related in the closeout of D-17-26:\n\n1.  **Finding S (Open WebUI Wiring):** This finding, documented in the exo cluster architecture fact (Document A), identified a latent issue where the Open WebUI's OpenAI-compatible client path was \"unwired.\" Specifically, the `OPENAI_API_KEY` environment variable inside the Open WebUI container was empty (length=1, matching the SHA-256 of an empty string). This was because Open WebUI had been using the Ollama direct path for local models, avoiding the OpenAI-compatible client entirely. The finding concluded that wiring required a Vault-Agent sidecar deliverable (provisional D-17-26).\n\n2.  **Finding DD (Diagnostic Trap):** This finding, also in Document A, described a common diagnostic error where inspecting a container's environment using `docker exec <container> sh -c 'echo $VAR'` would show the value from the image's `Config.Env` rather than the actual runtime environment of PID 1 (where values loaded from files like `credentials.env` reside). This led to incorrect conclusions about the state of variables like `OPENAI_API_KEY`.\n\n3.  **Relation in D-17-26 Closeout:** The closeout of D-17-26 (as detailed in Document A) explicitly states that the \"Vault-Agent sidecar for open-webui wiring `OPENAI_API_KEY` from Vault (Finding S)\" was **CLOSED no-fix-needed with doctrine finding:** the wiring was operational the whole time; the broken-state premise was a **Finding-DD diagnostic error**.\n\n    *   **Specific Date:** The closeout of D-17-26 occurred on **2026-05-03** (as mentioned in the \"Dependencies + follow-on deliverables\" section of Document A).\n    *   **Commit Reference:** The commit mentioned for the D-17-26 closeout is **f76ac51** (referenced in the \"Dependencies + follow-on deliverables\" section of Document A).\n\nIn summary, the closeout of D-17-26 resolved the apparent issue described in Finding S by demonstrating that the Open WebUI \u2192 litellm \u2192 exo integration was actually functional. The \"broken\" state reported in D-17-14 WP-06 (which was the basis for the Finding S premise) was due to the diagnostic trap described in Finding DD. The correct investigation (using `/proc/1/environ` instead of `docker exec env`) revealed that the plumbing was already in place and working, thus the \"fix\" was not needed, but the underlying issue was a misdiagnosis, not a missing feature. The D-17-26 closeout explicitly cites Finding DD as the root cause of the incorrect diagnosis that led to the mistaken belief that the wiring was broken.",
+      "tool_calls": [],
+      "finish_reason": "stop",
+      "grade": {
+        "pass": true,
+        "score": 0.8,
+        "notes": "4/5 expected facts present"
+      }
+    },
+    {
+      "task_id": "lc-finding-CC-prior-art",
+      "task_summary": "Recall the three prior-art patterns named in Finding CC",
+      "status": "ok",
+      "wall_s": 46.74463104200001,
+      "total_duration": 46738906333,
+      "load_duration": 45611041,
+      "prompt_eval_count": 21893,
+      "prompt_eval_duration": 43923762708,
+      "eval_count": 123,
+      "eval_duration": 2714510998,
+      "tokens_per_sec": 45.312028608697496,
+      "response_role": "assistant",
+      "response_content": "Based on Document B, the three prior-art approaches for service registry / DNS resolution mentioned in Finding CC are:\n\n1.  **Docker's embedded DNS:** The embedded DNS at `127.0.0.11` provides internal name \u2192 IP resolution for container-to-container traffic.\n2.  **CoreDNS proxy:** A CoreDNS proxy on the host forwarding to `127.0.0.11`, exposing container DNS to host shell tools.\n3.  **`devdns` / `dockerdns`:** Purpose-built tools watching Docker events and maintaining DNS records.",
+      "tool_calls": [],
+      "finish_reason": "stop",
+      "grade": {
+        "pass": false,
+        "score": 0.6,
+        "notes": "3/5 expected facts present"
+      }
+    }
+  ],
+  "peak_runner_rss_bytes": 20685946880,
+  "started_utc": "2026-05-04T16:31:13.809420+00:00",
+  "n_samples_attempted": 4,
+  "n_samples_ok": 4,
+  "n_samples_skipped": 0,
+  "n_samples_error": 0
+}

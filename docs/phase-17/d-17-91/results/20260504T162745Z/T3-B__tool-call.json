@@ -1,0 +1,151 @@
+{
+  "model_key": "T3-B",
+  "model_name": "qwen3-coder:30b",
+  "model_tier": "T3-B",
+  "model_host": "mac-studio",
+  "context_limit": 262144,
+  "workload": "tool-call",
+  "samples": [
+    {
+      "task_id": "tc-weather-paris",
+      "task_summary": "Trivial tool call: get weather for Paris in celsius",
+      "status": "ok",
+      "wall_s": 2.253141959000004,
+      "total_duration": 2247922417,
+      "load_duration": 1357994667,
+      "prompt_eval_count": 619,
+      "prompt_eval_duration": 449680417,
+      "eval_count": 33,
+      "eval_duration": 377291878,
+      "tokens_per_sec": 87.46543968804968,
+      "response_role": "assistant",
+      "response_content": "",
+      "tool_calls": [
+        {
+          "id": "call_swkd50l2",
+          "function": {
+            "index": 0,
+            "name": "get_weather",
+            "arguments": {
+              "city": "Paris",
+              "units": "celsius"
+            }
+          }
+        }
+      ],
+      "finish_reason": "stop",
+      "grade": {
+        "pass": true,
+        "score": 1.0,
+        "notes": "called get_weather (structured); 2/2 args match"
+      }
+    },
+    {
+      "task_id": "tc-calc-math",
+      "task_summary": "Pick the math tool over web search for arithmetic",
+      "status": "ok",
+      "wall_s": 0.477132083000015,
+      "total_duration": 471280167,
+      "load_duration": 47733333,
+      "prompt_eval_count": 619,
+      "prompt_eval_duration": 65732167,
+      "eval_count": 31,
+      "eval_duration": 350585954,
+      "tokens_per_sec": 88.42339416712628,
+      "response_role": "assistant",
+      "response_content": "",
+      "tool_calls": [
+        {
+          "id": "call_8aodn019",
+          "function": {
+            "index": 0,
+            "name": "calculate",
+            "arguments": {
+              "expression": "47 * 13 + 91"
+            }
+          }
+        }
+      ],
+      "finish_reason": "stop",
+      "grade": {
+        "pass": true,
+        "score": 1.0,
+        "notes": "called calculate (structured); 1/1 args match"
+      }
+    },
+    {
+      "task_id": "tc-search-event",
+      "task_summary": "Pick web search for current-events query",
+      "status": "ok",
+      "wall_s": 0.5302449580000257,
+      "total_duration": 525013875,
+      "load_duration": 44336958,
+      "prompt_eval_count": 617,
+      "prompt_eval_duration": 63778958,
+      "eval_count": 36,
+      "eval_duration": 408984956,
+      "tokens_per_sec": 88.02279759160628,
+      "response_role": "assistant",
+      "response_content": "",
+      "tool_calls": [
+        {
+          "id": "call_opggg0kq",
+          "function": {
+            "index": 0,
+            "name": "search_web",
+            "arguments": {
+              "query": "Apple M5 chip release news",
+              "max_results": 5
+            }
+          }
+        }
+      ],
+      "finish_reason": "stop",
+      "grade": {
+        "pass": false,
+        "score": 0.6,
+        "notes": "called search_web (structured); 0/1 args match"
+      }
+    },
+    {
+      "task_id": "tc-read-file",
+      "task_summary": "Pick file-read for path-based query",
+      "status": "ok",
+      "wall_s": 0.512150915999996,
+      "total_duration": 507292292,
+      "load_duration": 44782125,
+      "prompt_eval_count": 619,
+      "prompt_eval_duration": 67935750,
+      "eval_count": 34,
+      "eval_duration": 386938625,
+      "tokens_per_sec": 87.86923249132857,
+      "response_role": "assistant",
+      "response_content": "",
+      "tool_calls": [
+        {
+          "id": "call_704ym676",
+          "function": {
+            "index": 0,
+            "name": "read_file",
+            "arguments": {
+              "path": "/etc/hosts",
+              "max_lines": 50
+            }
+          }
+        }
+      ],
+      "finish_reason": "stop",
+      "grade": {
+        "pass": true,
+        "score": 1.0,
+        "notes": "called read_file (structured); 2/2 args match"
+      }
+    }
+  ],
+  "peak_runner_rss_bytes": 18939232256,
+  "started_utc": "2026-05-04T16:36:33.250518+00:00",
+  "n_samples_attempted": 4,
+  "n_samples_ok": 4,
+  "n_samples_skipped": 0,
+  "n_samples_error": 0
+}
