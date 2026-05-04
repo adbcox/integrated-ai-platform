@@ -13,7 +13,8 @@ config/prompts/library/
     ├── 02-deliberate-analysis.md   ← Persona: deliberate-analysis (C1 tasks)
     ├── 03-code-review.md           ← Persona: code-review (C2 tasks)
     ├── 04-decomposition.md         ← Persona: decomposition (C3 tasks)
-    └── 05-persona-routing.yaml     ← Litellm/Open WebUI routing config
+    ├── 05-persona-routing.yaml     ← Litellm/Open WebUI routing config
+    └── 06-aider-tier1-presets.md   ← Tier 1 routing presets + Claude Code/Codex refusal preamble (D-17-95)
 
 ## Persona selection guide
 
@@ -56,7 +57,9 @@ Quick inclusion rule:
 ## Cross-references
 
 - Doctrine: docs/architecture-facts/local-prompt-library-doctrine.md
+- Work-routing classifier: docs/architecture-facts/work-routing-doctrine.md (D-17-95)
 - Failure-mode analysis source: docs/phase-17/d-17-53/ (sessions 1–13)
 - Goose capability boundary: docs/architecture-facts/goose-capability-boundary.md
 - Anthropic prompting guide: https://docs.claude.com/en/docs/build-with-claude/prompt-engineering/overview
 - Pre-flight gate: docs/runbooks/goose-dispatch-preflight.md
+- Tier 1 presets + Claude Code/Codex refusal preamble: 06-aider-tier1-presets.md

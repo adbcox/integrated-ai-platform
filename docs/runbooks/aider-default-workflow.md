@@ -7,6 +7,8 @@ learning back into the router.
 
 **Related:**
 - `config/prompts/library/v1.0.0/CATALOG.md` — persona routing guide (D-17-90)
+- `config/prompts/library/v1.0.0/06-aider-tier1-presets.md` — copy-paste Tier 1 invocation templates (D-17-95)
+- `docs/architecture-facts/work-routing-doctrine.md` — Tier 1/2/3 classifier (D-17-95)
 - `docs/runbooks/goose-operations.md` — Goose invocation (non-coding agentic tasks)
 - `docs/phase-17/d-17-93/AUDIT_2026-05-04.md` — telemetry audit that motivated this runbook
 
@@ -295,3 +297,101 @@ c = Counter(json.loads(l)['executor'] for l in lines if l)
 for k,v in c.most_common(): print(f'{k}: {v}')
 "
 ```
+
+---
+
+## 9. Tasks Claude Code / Codex should refuse and route to Aider (D-17-95)
+
+The three-tier classifier is defined in
+`docs/architecture-facts/work-routing-doctrine.md`. Summary of TIER 1
+shapes that Claude Code and Codex should decline and surface back:
+
+| Pattern | Why it belongs to Aider | Example |
+|---------|------------------------|---------|
+| Wording drift fix | Single substitution, deterministic, no probes | Replace stale hostname in doctrine doc |
+| Docstring / comment addition | Pure file edit, no runtime context | Add docstring to a function |
+| Type hint addition | Inferrable from code, no execution | Annotate function signatures |
+| Header annotation | Mechanical addition, content known | Add derivation header to a script |
+| Single-file refactor | Bounded diff, interface preserved | Extract helper, rename variable |
+| Doctrine text update | Known wording, target section identified | Append finding to integration-audit-doctrine |
+| cap_drop / security_opt addition | Mechanical compose stanza edit | Add hardening to a service |
+| Single new doc from named sources | All content derivable from passed files | Generate INDEX.md from existing runbooks |
+
+**Refusal preamble for Claude Code / Codex dispatch briefs:**
+
+```
+ROUTING PRE-CHECK (work-routing-doctrine.md D-17-95):
+Before executing, classify against the three-tier classifier:
+- TIER 1 (Aider-eligible): ≤5 files, no runtime probes, no API/Vault/Docker,
+  deterministic diff. If TIER 1: decline, surface back with the exact
+  scripts/aider-task.sh invocation the operator should run.
+- TIER 2 (Claude Code/Codex): proceed if orchestration, probes, Vault, or
+  judgment are required.
+- TIER 3 (frontier): surface to operator for manual decision.
+```
+
+When Claude Code or Codex surfaces back a TIER 1 task, the response should
+include the ready-to-run invocation, e.g.:
+
+```
+TIER 1 task detected — routing to Aider.
+Run:
+  scripts/aider-task.sh --class C0 "Replace 'foo' with 'bar' in this file" path/to/file.py
+```
+
+---
+
+## 10. How to compose an Aider task from a Tier 1 deliverable (D-17-95)
+
+Many backlog deliverables contain one or more TIER 1 sub-tasks embedded
+inside a larger TIER 2 scope. To extract and run a Tier 1 component:
+
+**Step 1: Identify the bounded sub-task.**
+Look for WP items like "fix wording", "add annotation", "update
+cross-reference", "rename X to Y". These are almost always TIER 1.
+
+**Step 2: Name the exact files.**
+Look at what files the sub-task touches. If it's ≤ 5 pre-existing files
+and requires no live probes, it's Aider-eligible.
+
+**Step 3: Write a precise description.**
+Aider works best with one specific instruction. Bad: "update the doc".
+Good: "Replace every occurrence of 'homelab' with 'AI workstation' in
+this file."
+
+**Step 4: Choose the task class.**
+- C0: single file, ≤ 50-char description, simple fix
+- C1: multi-file synthesis or doc authoring from named sources
+- C2: code/diff review pass
+- C3: planning or decomposition output
+
+**Step 5: Run.**
+```bash
+scripts/aider-task.sh --class <CLASS> "<DESCRIPTION>" <FILE> [<FILE2> ...]
+```
+
+**Step 6: Review the diff.**
+`git diff` — Aider edits are never auto-committed. Accept with
+`git add` + `git commit`, or reject with `git checkout -- <file>`.
+
+**Worked example — extracting a Tier 1 sub-task from D-17-62 (Runbooks index):**
+
+D-17-62 is "Runbooks index + legacy-reference scan" — a TIER 2 deliverable
+(requires sweeping all runbooks + legacy-ref grep). But the index doc itself,
+once the list of runbooks is known, is a TIER 1 authoring task:
+
+```bash
+# First, get the list (TIER 2 — Claude Code):
+ls docs/runbooks/*.md | sort
+
+# Then author the index (TIER 1 — Aider, passing the runbook files directly):
+scripts/aider-task.sh --class C1 \
+  "Author docs/runbooks/INDEX.md: table with one-line description per runbook, alphabetical, include path and D-NN-NN origin where available" \
+  docs/runbooks/aider-default-workflow.md \
+  docs/runbooks/goose-operations.md \
+  docs/runbooks/vault-unseal.md \
+  docs/runbooks/add-new-service.md \
+  docs/runbooks/incident-response.md
+```
+
+Preset templates for common patterns: `config/prompts/library/v1.0.0/06-aider-tier1-presets.md`
