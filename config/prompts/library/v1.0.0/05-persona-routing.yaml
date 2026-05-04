@@ -1,0 +1,59 @@
+# Persona routing config — Litellm / Open WebUI
+# Version: 1.0.0
+# Effective: 2026-05-04
+# Derivation: D-17-90 (T1 system prompt library); D-17-12 benchmark model assignments
+
+# This file is consumed by:
+#   - litellm-gateway (docker/litellm-config.yaml) as model alias definitions
+#   - Open WebUI (system prompt per model config) when persona routing is wired
+#
+# Note: Model aliases are declared in litellm-config.yaml; this file is the
+# source-of-truth specification. Update both files together when changing models.
+
+personas:
+  voice-fast:
+    description: "Quick lookup / short-answer / ≤50 lines, ≤1 source (C0)"
+    primary_model: "ollama/qwen2.5-coder:14b"
+    fallback_model: "ollama/qwen2.5-coder:7b"
+    temperature: 0.1
+    max_tokens: 512
+    system_prompt_file: "01-voice-fast.md"
+    standard_preamble: false
+
+  deliberate-analysis:
+    description: "Runbook/doctrine/architecture-facts from 2+ sources (C1)"
+    primary_model: "ollama/qwen3-coder:30b"
+    fallback_model: "ollama/qwen2.5-coder:32b"
+    temperature: 0.1
+    max_tokens: 4096
+    context_window: 32768
+    system_prompt_file: "02-deliberate-analysis.md"
+    standard_preamble: true  # 00-standard-preamble.md included verbatim in every dispatch
+    frontier_review_required: true
+
+  code-review:
+    description: "Code review / diff analysis / security audit (C2)"
+    primary_model: "ollama/qwen2.5-coder:7b"
+    large_diff_model: "ollama/qwen3-coder:30b"  # use for diffs >500 lines or security audit
+    temperature: 0.05
+    max_tokens: 2048
+    system_prompt_file: "03-code-review.md"
+    standard_preamble: false  # Constraints C+D only; see 03-code-review.md
+
+  decomposition:
+    description: "Breaking large deliverables into subtask specs (C3)"
+    primary_model: "ollama/qwen3-coder:30b"
+    temperature: 0.2
+    max_tokens: 2048
+    system_prompt_file: "04-decomposition.md"
+    standard_preamble: false
+
+# Future integration note (D-17-90 backlog):
+# When Open WebUI persona routing is wired (requires Open WebUI model config API),
+# each persona entry above maps to a named Open WebUI model configuration with the
+# system_prompt_file content loaded as the system prompt.
+# Until then, operators apply persona prompts manually at dispatch time.
+#
+# MCP-tool surface (roadmap-create.sh --persona flag) is a future deliverable;
+# deferred on same grounds as D-17-39 backlog item (chat-attachment-pickup primitive
+# stability).
