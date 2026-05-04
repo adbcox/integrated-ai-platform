@@ -1,11 +1,11 @@
 {
   "schema_version": 1,
-  "repo": "google/gemma-2-27b-it",
+  "repo": "Qwen/Qwen3-Coder-30B-A3B",
   "verdict": "scan-failed",
   "exit_code": 1,
   "threshold": 0.7,
   "kit_version": "1.0.0",
-  "timestamp_utc": "2026-05-04T18:08:15Z",
+  "timestamp_utc": "2026-05-04T18:08:13Z",
   "scan_rc": 1,
   "matches": [],
   "note": "Provenance Kit scan failed; treat as unverified."

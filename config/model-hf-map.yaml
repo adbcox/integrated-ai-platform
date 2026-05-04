@@ -18,8 +18,12 @@ qwen2.5-coder:7b: Qwen/Qwen2.5-Coder-7B-Instruct
 qwen2.5-coder:14b: Qwen/Qwen2.5-Coder-14B-Instruct
 qwen2.5-coder:32b: Qwen/Qwen2.5-Coder-32B-Instruct
 
-# --- Qwen3-Coder family (Mac Studio C1 deliberate-analysis) ---
+# --- Qwen3-Coder family (Mac Studio — D-17-97 canonical compute) ---
 qwen3-coder:30b: Qwen/Qwen3-Coder-30B-A3B
+# qwen3-coder-next HF ID is unverified upstream (flagged D-17-12 INTAKE line 28).
+# "qwen3-coder-next" may be an Ollama-specific provisional tag. Provenance scan
+# will return unverified until Cisco DB contains this model or HF ID is confirmed.
+qwen3-coder-next:latest: Qwen/Qwen3-Coder-Next  # UNVERIFIED — confirm when published
 
 # --- Gemma2 family (Mac Studio) ---
 gemma2:27b: google/gemma-2-27b-it

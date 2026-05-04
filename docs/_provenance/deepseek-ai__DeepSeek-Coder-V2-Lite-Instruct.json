@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
-  "repo": "google/gemma-2-27b-it",
+  "repo": "deepseek-ai/DeepSeek-Coder-V2-Lite-Instruct",
   "verdict": "scan-failed",
   "exit_code": 1,
   "threshold": 0.7,
   "kit_version": "1.0.0",
-  "timestamp_utc": "2026-05-04T18:08:15Z",
-  "scan_rc": 1,
+  "timestamp_utc": "2026-05-04T18:15:02Z",
+  "scan_rc": 137,
   "matches": [],
   "note": "Provenance Kit scan failed; treat as unverified."
 }

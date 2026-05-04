@@ -13,9 +13,9 @@ from dataclasses import dataclass
 from domains.learning import LearningDomain
 
 DEFAULT_MODEL_CASCADE = [
-    "qwen2.5-coder:14b",
-    "qwen2.5-coder:32b",
-    "qwen2.5-coder:7b",
+    "qwen3-coder:30b",        # primary — Mac Studio M3 Ultra (D-17-97)
+    "qwen3-coder-next:latest", # --hard / long-context — Mac Studio MoE (D-17-97)
+    "qwen2.5-coder:7b",       # emergency Mac Mini offline fallback
 ]
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -536,7 +536,7 @@ Make sure to address all issues and test edge cases."""
 
         try:
             env = os.environ.copy()
-            env["OLLAMA_API_BASE"] = "http://127.0.0.1:11434"
+            env["OLLAMA_API_BASE"] = os.environ.get("OLLAMA_API_BASE", "http://192.168.10.142:11434")
             # Do NOT set AIDER_AUTO_COMMITS=0 — auto-commits are our success signal.
             env["AIDER_NO_SHOW_MODEL_WARNINGS"] = "1"
             env["AIDER_YES"] = "1"

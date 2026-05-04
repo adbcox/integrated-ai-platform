@@ -82,14 +82,18 @@ scripts/aider-task.sh --dry-run "Any task" services/foo.py
 When `--class` is not passed, the router infers from description keywords
 and file count. Supply `--class` to get accurate learning-layer analytics.
 
-### Model cascade (Mac Mini Ollama)
+### Model cascade (Mac Studio M3 Ultra — canonical compute, D-17-97)
+
+Compute target: `192.168.10.142:11434` (Mac Studio M3 Ultra 96 GB).
+Override: `OLLAMA_API_BASE=http://127.0.0.1:11434 scripts/aider-task.sh ...` for Mac Mini emergency fallback.
 
 Priority order when `--model` and `--hard` are not set:
 
-1. `qwen2.5-coder:14b` — default fast
-2. `qwen2.5-coder:32b` — `--hard` flag or explicit `--model`
-3. `qwen2.5-coder:7b` — fallback
-4. `devstral:latest` — via `--model devstral:latest`
+1. `qwen3-coder:30b` — default fast (30B dense, 85 tps, D-17-91 winner on refactor/tool-call/agentic)
+2. `qwen3-coder-next:latest` — `--hard` flag (MoE 79.7B, 262K context, D-17-91 winner on long-context)
+3. `qwen2.5-coder:7b` — emergency Mac Mini offline fallback only
+
+Use `--hard` for multi-paragraph document tasks, large diffs, or any task that timed out at the default model.
 
 ---
 
@@ -141,25 +145,24 @@ block format Aider expects, or the task description was too vague.
 **Remediation:**
 - Re-run with a more specific description that names the exact function
   or line range.
-- Try `--hard` to escalate to qwen2.5-coder:32b.
+- Try `--hard` to escalate to qwen3-coder-next (MoE, long-context strength).
 - If the file is large (> 300 lines), decompose the task — target a
-  specific function rather than the whole file. Aider on 14b truncates
-  whole-file responses on 40+ line files under load.
+  specific function rather than the whole file.
 
 ### F3 — Timeout (exit 124)
 
 **Symptom:** Aider exits with code 124.
 
-**Cause:** qwen2.5-coder:14b cold-load on Mac Mini takes 20–40s; a
-tight timeout leaves insufficient generation budget.
+**Cause:** First-token latency on cold model load, or task is too large
+for the default timeout budget.
 
 **Remediation:**
 - Re-run immediately (model is warm on second attempt).
-- For consistently large tasks, use `--hard` (32b has higher throughput
-  for complex outputs once loaded).
-- Default timeout in `bin/aider_local.sh` is 360s (raised D-17-94).
-  If this is still firing, investigate Ollama resource contention
-  (`ollama ps` on Mac Mini).
+- For large multi-paragraph tasks, use `--hard` (qwen3-coder-next, MoE,
+  higher throughput for complex outputs).
+- Default timeout in `bin/aider_local.sh` is 360s; `--hard` is 480s.
+  If still firing, check Mac Studio Ollama: `ssh 192.168.10.142 "ollama ps"`
+  or override compute: `OLLAMA_API_BASE=http://127.0.0.1:11434 scripts/aider-task.sh ...`
 
 ### F4 — aider not on PATH
 

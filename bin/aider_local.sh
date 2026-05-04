@@ -2,9 +2,10 @@
 set -euo pipefail
 
 BASE_DIR="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
-# Live local Ollama default: 127.0.0.1:11434 (verified by /api/tags).
-API_BASE="http://127.0.0.1:11434"
-MODEL="ollama_chat/qwen2.5-coder:14b"
+# Canonical compute: Mac Studio M3 Ultra at 192.168.10.142:11434 (D-17-97).
+# Override with OLLAMA_API_BASE env var for Mac Mini emergency fallback.
+API_BASE="${OLLAMA_API_BASE:-http://192.168.10.142:11434}"
+MODEL="ollama_chat/qwen3-coder:30b"
 MAP_TOKENS="1024"
 TIMEOUT="360"
 MODE_LABEL="local"
@@ -32,16 +33,16 @@ Usage:
   ./bin/aider_local.sh [--hard] [--smart] [--gpu-experimental] [--api-base <url>] [--smart-status] [aider args...]
 
 Default fast lane settings:
-  OLLAMA_API_BASE defaults to http://127.0.0.1:11434
-  --model ollama_chat/qwen2.5-coder:14b
+  OLLAMA_API_BASE defaults to http://192.168.10.142:11434 (Mac Studio M3 Ultra)
+  --model ollama_chat/qwen3-coder:30b
   --map-tokens 1024
-  --timeout 180
+  --timeout 360
 
 Options:
-  --hard               Use explicit harder-task profile (deepseek-coder-v2, map-tokens 2048, timeout 240)
+  --hard               Long-context profile: qwen3-coder-next:latest on Mac Studio (MoE, 262K ctx)
   --micro-profile      Opt into local-micro-coder-fast profile (Stage 3 experiments)
   --smart              Use 32B smart profile (requires OLLAMA_API_BASE_32B or --api-base)
-  --gpu-experimental   Alias for the default endpoint (127.0.0.1:11434).
+  --gpu-experimental   Alias for the default endpoint (127.0.0.1:11434 Mac Mini).
   --api-base <url>     Override Ollama API base URL
   --smart-status       Check the configured smart (32B) endpoint and exit
   -h, --help           Show help
@@ -56,7 +57,7 @@ smart_status() {
     echo "[aider-local] smart-status: OK"
     exit 0
   fi
-  echo "ERROR: smart endpoint '$base' is unreachable. Ensure OLLAMA_API_BASE_32B or --api-base points to the live 32B server." >&2
+  echo "ERROR: smart endpoint '$base' is unreachable. Ensure OLLAMA_API_BASE_32B or --api-base points to the live server." >&2
   exit 1
 }
 
@@ -115,9 +116,9 @@ ping_ollama_or_fail() {
 while [ "$#" -gt 0 ]; do
   case "$1" in
     --hard)
-      MODEL="ollama_chat/deepseek-coder-v2:latest"
+      MODEL="ollama_chat/qwen3-coder-next:latest"
       MAP_TOKENS="2048"
-      TIMEOUT="240"
+      TIMEOUT="480"
       MODE_LABEL="hard"
       shift
       ;;
@@ -147,6 +148,7 @@ while [ "$#" -gt 0 ]; do
       shift
       ;;
     --gpu-experimental)
+      # Legacy alias — redirects to Mac Mini local Ollama (emergency fallback)
       API_BASE="http://127.0.0.1:11434"
       HAS_API_BASE_OVERRIDE=1
       shift

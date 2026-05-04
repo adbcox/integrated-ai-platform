@@ -1,11 +1,11 @@
 {
   "schema_version": 1,
-  "repo": "google/gemma-2-27b-it",
+  "repo": "mistralai/Devstral-Small-2505",
   "verdict": "scan-failed",
   "exit_code": 1,
   "threshold": 0.7,
   "kit_version": "1.0.0",
-  "timestamp_utc": "2026-05-04T18:08:15Z",
+  "timestamp_utc": "2026-05-04T18:15:06Z",
   "scan_rc": 1,
   "matches": [],
   "note": "Provenance Kit scan failed; treat as unverified."

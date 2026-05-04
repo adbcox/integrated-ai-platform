@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# aider-task.sh — operator entry point for LOCAL_AIDER coding tasks (D-17-94, D-17-96)
+# aider-task.sh — operator entry point for LOCAL_AIDER coding tasks (D-17-94, D-17-96, D-17-97)
 #
 # Usage:
 #   scripts/aider-task.sh "task description" [file1 file2 ...]
 #   scripts/aider-task.sh --dry-run "task description" [files...]
 #   scripts/aider-task.sh --class C1 "task description" [files...]
-#   scripts/aider-task.sh --model qwen2.5-coder:32b "task description" [files...]
+#   scripts/aider-task.sh --model qwen3-coder:30b "task description" [files...]
 #   scripts/aider-task.sh --hard "task description" [files...]
 #   scripts/aider-task.sh --commit "task description" [files...]
 #
@@ -57,11 +57,12 @@ usage() {
   echo "  scripts/aider-task.sh --hard \"Refactor scheduler\" services/scheduler.py"
   echo "  scripts/aider-task.sh --commit --class C0 \"Fix stale hostname\" docs/runbooks/vault-unseal.md"
   echo ""
-  echo "Model cascade (Mac Mini, in priority order):"
-  echo "  qwen2.5-coder:14b  (default fast)"
-  echo "  qwen2.5-coder:32b  (--hard or explicit --model)"
-  echo "  qwen2.5-coder:7b   (fallback)"
-  echo "  devstral:latest    (via --model devstral:latest)"
+  echo "Model cascade (Mac Studio 192.168.10.142, in priority order):"
+  echo "  qwen3-coder:30b         (default — 30B dense, 85 tps, D-17-91 winner)"
+  echo "  qwen3-coder-next:latest (--hard — MoE 79.7B, long-context strength)"
+  echo "  qwen2.5-coder:7b        (emergency Mac Mini offline fallback only)"
+  echo ""
+  echo "Override compute target: OLLAMA_API_BASE=http://127.0.0.1:11434 scripts/aider-task.sh ..."
   echo ""
   echo "Tier 1 preset templates: config/prompts/library/v1.0.0/06-aider-tier1-presets.md"
   echo "Full workflow guide:     docs/runbooks/aider-default-workflow.md"

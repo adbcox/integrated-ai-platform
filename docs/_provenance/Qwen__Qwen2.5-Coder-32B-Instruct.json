@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "repo": "Qwen/Qwen2.5-Coder-32B-Instruct",
+  "verdict": "verified-base-family",
+  "exit_code": 3,
+  "threshold": 0.7,
+  "kit_version": "1.0.0",
+  "timestamp_utc": "2026-05-04T18:08:10Z",
+  "top_matches": [
+    {
+      "model_id": "Qwen2.5-32B-Instruct",
+      "family_id": "qwen--qwen",
+      "pipeline_score": 1.0,
+      "match_type": "exact_arch",
+      "provenance_decision": "Confirmed Match"
+    },
+    {
+      "model_id": "NextCoder-14B",
+      "family_id": "microsoft--nextcoder",
+      "pipeline_score": 0.879,
+      "match_type": "family_hash",
+      "provenance_decision": "High-Confidence Match (metadata only)"
+    },
+    {
+      "model_id": "Qwen2.5-14B-Instruct",
+      "family_id": "qwen--qwen",
+      "pipeline_score": 0.879,
+      "match_type": "family_hash",
+      "provenance_decision": "High-Confidence Match (metadata only)"
+    },
+    {
+      "model_id": "T-pro-it-2.0-AWQ",
+      "family_id": "ttech--t-models",
+      "pipeline_score": 0.8787,
+      "match_type": "mfi_only",
+      "provenance_decision": "High-Confidence Match (metadata only)"
+    },
+    {
+      "model_id": "DeepSeek-R1-Distill-Qwen-32B",
+      "family_id": "deepseekai--deepseek",
+      "pipeline_score": 0.8387,
+      "match_type": "mfi_only",
+      "provenance_decision": "High-Confidence Match (metadata only)"
+    }
+  ],
+  "model_info": {
+    "architectures": [
+      "Qwen2ForCausalLM"
+    ],
+    "model_type": "qwen2",
+    "hidden_size": 5120,
+    "num_hidden_layers": 64
+  },
+  "scan_elapsed_ms": 512063.08
+}

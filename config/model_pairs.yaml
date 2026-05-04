@@ -1,24 +1,25 @@
 # Dual-model workflow configuration
 # Writer model generates code, reviewer model analyzes for issues
+# Compute: Mac Studio M3 Ultra 192.168.10.142:11434 (D-17-97)
 
 pairs:
   fast_accurate:
-    writer: qwen2.5-coder:7b
-    reviewer: qwen2.5-coder:32b
+    writer: qwen3-coder:30b
+    reviewer: qwen3-coder:30b
     use_for: [simple, medium]
-    description: "Fast 7b writer with thorough 32b review - best for most tasks"
+    description: "30b writer+reviewer on Mac Studio — default for most tasks"
 
   balanced:
-    writer: qwen2.5-coder:14b
-    reviewer: deepseek-coder-v2:latest
+    writer: qwen3-coder:30b
+    reviewer: qwen3-coder-next:latest
     use_for: [medium, complex]
-    description: "14b writer with deepseek review - good for harder logic"
+    description: "30b writer with MoE reviewer — good for harder logic"
 
   thorough:
-    writer: qwen2.5-coder:32b
-    reviewer: qwen2.5-coder:32b
+    writer: qwen3-coder-next:latest
+    reviewer: qwen3-coder-next:latest
     use_for: [complex, critical]
-    description: "32b writer with 32b review - most thorough, slowest"
+    description: "MoE writer+reviewer — long-context and complex tasks, slowest"
 
 default_pair: fast_accurate
 
