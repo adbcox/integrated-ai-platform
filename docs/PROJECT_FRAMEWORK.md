@@ -512,6 +512,7 @@ Deliverable table:
 | D-17-55: OpenProject WP metadata enrichment — descriptions, % complete, custom fields, idempotent sync extension | IN PROGRESS | added 2026-05-03 via WP-01 intake for Phase 18 OpenProject metadata enrichment |
 | D-17-56: opnsense-add-host-overrides runbook substitution — Unbound to Dnsmasq | IN PROGRESS | added 2026-05-03 via WP-01 intake for runbook authority substitution |
 | D-17-57: retire-service runbook authoring — canonical decommission pattern | IN PROGRESS | added 2026-05-03 via WP-01 intake for retire-service runbook |
+| D-17-58: Mac Studio Ollama LaunchDaemon persistence — system-domain UserName=admin | IN PROGRESS | added 2026-05-03 via WP-01 intake for Mac Studio Ollama persistence |
 
 ID-reservation note: D-17-22 (multi-session role + intake architecture)
 is RESERVED but not yet framework-authored. Discussed in a prior
