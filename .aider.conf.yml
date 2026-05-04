@@ -1,0 +1,38 @@
+# Aider configuration for integrated-ai-platform
+# Auto-loaded when running aider from repo root
+# Last updated: D-17-96 2026-05-04
+
+# Model is set by bin/aider_local.sh --model flag (overrides this).
+# Commenting out default to avoid stale model name errors.
+# model: anthropic/claude-sonnet-4-20250514
+
+# Read-only context files: these load into every session as read-only.
+# IMPORTANT: Only list files that exist on disk. Missing files cause a
+# warning on every invocation and eat the operator's first input prompt.
+# docs/MASTER_GUIDE.md removed — file does not exist (D-17-96).
+# Operator-specific files are better passed per-invocation via --read.
+read: []
+
+# Git settings
+# auto-commits: false — Aider edits files but does NOT git-commit.
+# This is intentional. After Aider completes: git diff, git add, git commit.
+auto-commits: false
+dirty-commits: false
+
+# Suppress interactive prompts that Aider generates from repo-map discovery.
+# --yes-always in aider_local.sh confirms edit application but NOT file-add
+# prompts from repo-map. Disabling suggestions + shell commands prevents
+# extra context prompts.
+suggest-shell-commands: false
+
+# NOTE on map-tokens: aider_local.sh passes --map-tokens 1024 explicitly,
+# which overrides any value set here. The map-tokens value is what causes
+# Aider to discover related files and prompt "Add file to chat?".
+# For Tier 1 message-mode runs, callers should pass --map-tokens 0 to
+# disable repo-map discovery. aider-task.sh does this automatically for
+# --message invocations (D-17-96).
+# map-tokens: 0  # do not set here — overridden by aider_local.sh
+
+# Output settings
+pretty: true
+stream: true

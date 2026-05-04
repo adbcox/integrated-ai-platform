@@ -125,3 +125,7 @@ A cell at Posture 2 (dual-review) for C1 tasks requires BOTH:
   C1 tasks regardless of preamble presence.
 - D-17-90 completed: 2026-05-04. T1 substrate (library + doctrine) is the prerequisite
   that should have preceded D-17-53 (T3, Goose deployment). Retrospective delivery.
+
+## Related-docs
+
+- Work-routing classifier (Tier 1/2/3): `docs/architecture-facts/work-routing-doctrine.md` (D-17-95)

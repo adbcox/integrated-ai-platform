@@ -1,0 +1,26 @@
+# .aiderignore — suppress these paths from Aider's repo-map
+# Aider will not include these in context or suggest adding them.
+# D-17-96 2026-05-04
+
+# Benchmark task-sets (large JSON files, not code)
+docs/phase-17/d-17-12/task-sets/
+docs/phase-17/d-17-91/task-sets/
+
+# Aider run artifacts (jsonl logs, not code)
+artifacts/
+
+# Training data exports
+training/
+
+# Retired/archived services
+docker/_retired/
+
+# Archive docs (historical only)
+docs/_archive/
+
+# Audit snapshots
+docs/_audit/
+
+# Chat history (Aider's own log)
+.aider.chat.history.md
+.aider.input.history

@@ -395,3 +395,96 @@ scripts/aider-task.sh --class C1 \
 ```
 
 Preset templates for common patterns: `config/prompts/library/v1.0.0/06-aider-tier1-presets.md`
+
+---
+
+## 11. Useful Aider commands during a session (D-17-96)
+
+If Aider opens an interactive `>` prompt (e.g., after a context-file question),
+these commands are available:
+
+| Command | What it does |
+|---------|-------------|
+| `/diff` | Show the diff Aider has applied so far in this session |
+| `/undo` | Revert the last edit Aider applied |
+| `/add <file>` | Add a file to the current session context |
+| `/drop <file>` | Remove a file from context |
+| `/run <cmd>` | Run a shell command and show output in context |
+| `/exit` | Quit the session cleanly |
+| `/help` | List all available commands |
+
+**Handling the `>` prompt during a `--message` run:**
+
+When you invoke `scripts/aider-task.sh` with `--message`, Aider should
+apply the edit and exit without an interactive prompt. If it stops at `>`,
+it is either:
+
+1. **Waiting for a file-add confirmation** — type `n` to decline, or `s`
+   ("skip all") to suppress all further prompts. Don't type "proceed" —
+   Aider interprets unrecognized input as a new chat message.
+2. **Waiting for you to clarify the task** — type your clarification, then
+   `/exit` when done and re-run with a more specific `--message`.
+
+The `--yes-always` flag in `bin/aider_local.sh` auto-confirms edit applications
+but does NOT auto-confirm file-add prompts. To suppress file-add prompts
+entirely, the `.aider.conf.yml` has been updated to `read: []` (D-17-96)
+so Aider no longer discovers context files that trigger add-file prompts.
+
+**After the session — commits are manual:**
+
+```bash
+git diff <files>          # review what changed
+git add <files>           # stage
+git commit -m "..."       # commit
+
+# Or use --commit flag to do this automatically:
+scripts/aider-task.sh --commit --class C0 "Fix docstring" path/to/file.py
+```
+
+---
+
+## 12. When edits don't land cleanly (D-17-96)
+
+### Symptom: Aider shows diff in terminal but file unchanged on disk
+
+**Cause:** Aider is an interactive tool — `--yes-always` confirms edit
+*application* but file-add prompts (triggered by repo-map discovery of
+related context) can eat keystrokes. The actual edit proposal may have
+received an `n` (from a queued "proceed" input) instead of `y`.
+
+**Fix:**
+1. `git diff <file>` — confirm the file is actually unchanged
+2. Re-run with the same command. `.aider.conf.yml` `read: []` (D-17-96 fix)
+   eliminates most context-file prompts.
+3. If prompts still appear, type `s` at the first one to skip all.
+
+### Symptom: "Aider made NO changes" warning from aider-task.sh
+
+**Cause:** Model produced a response that didn't fit the SEARCH/REPLACE block
+format, or the task description matched nothing in the target file.
+
+**Fix:**
+1. Re-run with a more specific description naming the exact function/section.
+2. Try `--hard` to use `qwen2.5-coder:32b`.
+3. If the file is large (> 300 lines), target a specific section explicitly.
+
+### Symptom: "Read-only file does not exist" warning
+
+**Cause (historical, D-17-96 fixed):** `.aider.conf.yml` had
+`docs/MASTER_GUIDE.md` in the `read:` list; the file doesn't exist.
+Fixed by setting `read: []`. If this warning recurs, check `.aider.conf.yml`.
+
+### Symptom: Repo-map warnings about paths "in git but not on disk"
+
+**Cause:** A symlink points to a non-existent target, or a file was
+deleted from disk but not from the git index.
+
+**Fix (D-17-96):**
+- `docs/phase-17/d-17-91/task-sets` symlink was broken (`../../` prefix
+  wrong); fixed to `../d-17-12/task-sets`.
+- For other phantom paths: `git rm --cached <path>` to remove from index,
+  or `ln -sf <correct-target> <symlink>` to fix.
+
+### Aider reference
+
+Full Aider documentation: https://aider.chat/docs/

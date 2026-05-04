@@ -6,6 +6,8 @@ artifacts/
 *.pyc
 .ssh/authorized_keys
 .aider*
+!.aider.conf.yml
+!.aiderignore
 .remote-tasks/
 .local-model-data/
 tmp/
