@@ -27,7 +27,11 @@ PLEX_TOKEN: secret/plex/api:token
 QNAP_PASS: secret/qnap/admin:password
 
 # ── Seedbox ───────────────────────────────────────────────────────────────────
-SEEDBOX_PASSWORD: secret/seedbox/account:password
+# D-17-76 (2026-05-04): drift fix. Path was secret/seedbox/account
+# (which doesn't exist); actual path is secret/seedbox/sftp.
+# Companion path secret/seedbox/qbittorrent (Cleanuparr Cleaner modules)
+# is operator-populated separately via scripts/provision-seedbox-credentials.sh.
+SEEDBOX_PASSWORD: secret/seedbox/sftp:password  # pragma: allowlist secret
 
 # ── GitHub ────────────────────────────────────────────────────────────────────
 GITHUB_TOKEN: secret/github/api:token
