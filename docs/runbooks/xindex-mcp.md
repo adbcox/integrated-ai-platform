@@ -152,7 +152,7 @@ Transport: streamableHttp
 ```
 
 Caddy also serves it at `https://mcp-xindex.internal` (signed by the
-internal CA — see `docs/runbooks/caddy-tls.md`).
+internal CA; operator DNS/host-override path: `docs/runbooks/opnsense-add-host-overrides.md`).
 
 ## §5 — Debugging
 
