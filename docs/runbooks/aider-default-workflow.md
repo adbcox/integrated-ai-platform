@@ -316,9 +316,8 @@ shapes that Claude Code and Codex should decline and surface back:
 | Type hint addition | Inferrable from code, no execution | Annotate function signatures |
 | Header annotation | Mechanical addition, content known | Add derivation header to a script |
 | Single-file refactor | Bounded diff, interface preserved | Extract helper, rename variable |
-| Doctrine text update | Known wording, target section identified | Append finding to integration-audit-doctrine |
 | cap_drop / security_opt addition | Mechanical compose stanza edit | Add hardening to a service |
-| Single new doc from named sources | All content derivable from passed files | Generate INDEX.md from existing runbooks |
+| Single-line doc drift fix | One substitution in existing text | Replace stale hostname in a runbook |
 
 **Refusal preamble for Claude Code / Codex dispatch briefs:**
 
@@ -342,6 +341,11 @@ Run:
   scripts/aider-task.sh --class C0 "Replace 'foo' with 'bar' in this file" path/to/file.py
 ```
 
+Tasks that Claude Code/Codex should keep (Tier 2) and not route to Aider:
+- multi-paragraph doc authoring
+- structured finding append to an existing chronicle/doctrine
+- doctrine extension or policy-text expansion
+
 ---
 
 ## 10. How to compose an Aider task from a Tier 1 deliverable (D-17-95)
@@ -364,7 +368,7 @@ this file."
 
 **Step 4: Choose the task class.**
 - C0: single file, ≤ 50-char description, simple fix
-- C1: multi-file synthesis or doc authoring from named sources
+- C1: multi-file code/config synthesis (non-doc-authoring)
 - C2: code/diff review pass
 - C3: planning or decomposition output
 
@@ -379,25 +383,26 @@ scripts/aider-task.sh --class <CLASS> "<DESCRIPTION>" <FILE> [<FILE2> ...]
 
 **Worked example — extracting a Tier 1 sub-task from D-17-62 (Runbooks index):**
 
-D-17-62 is "Runbooks index + legacy-reference scan" — a TIER 2 deliverable
-(requires sweeping all runbooks + legacy-ref grep). But the index doc itself,
-once the list of runbooks is known, is a TIER 1 authoring task:
+D-17-62 is "Runbooks index + legacy-reference scan" — a TIER 2 deliverable.
+The index authoring portion is document authoring and now stays TIER 2
+(Claude Code/Codex), while narrow string-level cleanup edits can still be
+decomposed and routed to Aider.
 
 ```bash
 # First, get the list (TIER 2 — Claude Code):
 ls docs/runbooks/*.md | sort
 
-# Then author the index (TIER 1 — Aider, passing the runbook files directly):
-scripts/aider-task.sh --class C1 \
-  "Author docs/runbooks/INDEX.md: table with one-line description per runbook, alphabetical, include path and D-NN-NN origin where available" \
-  docs/runbooks/aider-default-workflow.md \
-  docs/runbooks/goose-operations.md \
-  docs/runbooks/vault-unseal.md \
-  docs/runbooks/add-new-service.md \
-  docs/runbooks/incident-response.md
+# Then author/update the index (still TIER 2 — Claude Code/Codex):
+# Do not route this step to Aider.
 ```
 
 Preset templates for common patterns: `config/prompts/library/v1.0.0/06-aider-tier1-presets.md`
+
+**Chronicle append decomposition example (Tier 2 route):**
+
+- Task: "Append Finding N to `integration-audit-doctrine.md` with multi-paragraph body."
+- Classification: Tier 2 doc-authoring.
+- Dispatch: run in Claude Code/Codex directly; do not route to Aider.
 
 ---
 
@@ -460,6 +465,17 @@ received an `n` (from a queued "proceed" input) instead of `y`.
 2. Re-run with the same command. `.aider.conf.yml` `read: []` (D-17-96 fix)
    eliminates most context-file prompts.
 3. If prompts still appear, type `s` at the first one to skip all.
+
+### Symptom: Aider proposes destructive or broad rewrites during doc append
+
+**Cause:** Known local-LLM source-fidelity boundary for multi-paragraph
+append-to-existing-doc work; model reconstructs instead of appending.
+
+**Fix:**
+1. Reject the diff immediately.
+2. Re-route the task to Claude Code/Codex (Tier 2 doc-authoring).
+3. Record the incident as a Tier classification miss if the task was
+   originally sent to Aider.
 
 ### Symptom: "Aider made NO changes" warning from aider-task.sh
 

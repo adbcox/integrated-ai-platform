@@ -24,7 +24,7 @@ A task is TIER 1 if ALL of the following hold:
 | Criterion | Requirement |
 |-----------|-------------|
 | File scope | ≤ 5 files, all pre-existing |
-| Intent | Single purpose: fix, annotate, refactor, or document one clearly defined thing |
+| Intent | Single purpose: fix, annotate, or refactor one clearly defined thing |
 | Runtime probes | None — no `docker exec`, no `curl`, no service health checks |
 | API / network calls | None during edit |
 | Vault interaction | None — no secret reads, writes, or rotations |
@@ -44,7 +44,6 @@ A task is TIER 1 if ALL of the following hold:
 - Add a missing `cap_drop` or security_opt to a compose service stanza
 - Sync a comment block to match updated code it describes
 - Add `--help` text to an existing CLI script
-- Author a single new doc file where all content derives from files handed to Aider (no live probes needed)
 
 ---
 
@@ -66,6 +65,7 @@ A task is TIER 2 if ANY of the following hold:
 | Cross-file consistency | Changes must stay consistent across > 5 files or the whole repo |
 | Commit + push | Git operations beyond local staging (hooks, force-push decisions) |
 | New file creation (non-trivial) | Authoring a net-new runbook, ADR, or architecture doc from scratch |
+| Multi-paragraph doc authoring | Chronicle authoring, doctrine extension, structured finding append to existing docs |
 
 **TIER 2 examples:**
 
@@ -77,6 +77,11 @@ A task is TIER 2 if ANY of the following hold:
 - Run `buildarr-run.sh` and verify the result
 - Migrate a DNS record from Unbound to Dnsmasq via the migration script
 - Orchestrate a phase gate (run regression probe, update status, commit)
+- Append a new Finding section to `integration-audit-doctrine.md`
+
+**Aider refusal note for doc-authoring:** when a task is multi-paragraph
+doc-authoring or structured chronicle append, Aider should refuse and surface
+back with: "Tier 2 required — route to Claude Code/Codex for source-fidelity."
 
 ---
 
@@ -185,9 +190,9 @@ the operator forms the habit of reaching for `aider-task.sh` first.
 
 ---
 
-## Finding 21 (integration-audit-doctrine.md)
+## Finding 19 (integration-audit-doctrine.md)
 
-This doctrine establishes Finding 21: **Tier-classification is a
+This doctrine establishes Finding 19: **Tier-classification is a
 pre-dispatch obligation, not a post-hoc label.** Every AI session must
 classify the task before emitting the first tool call. Skipping
 classification and auto-routing to frontier is the F1 pattern from
@@ -195,4 +200,4 @@ D-17-93 (zero operator-initiated LOCAL_AIDER invocations despite 18
 days of coding work — all of it routed to Claude Code by default).
 
 Chronicle pointer: `docs/architecture-facts/integration-audit-doctrine.md`
-Finding 21.
+Finding 19.

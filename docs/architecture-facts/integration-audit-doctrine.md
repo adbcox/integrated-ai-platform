@@ -1257,3 +1257,56 @@ The failure mode: if a compose change breaks a sibling service, there is no git-
 ### D-17-88 retroactive note
 
 D-17-87 (Lidarr deployment) was committed with `--no-verify`. The bypassed hook was `detect-secrets` (no credential content in the diff). The process deviation is acknowledged; `--no-verify` should be used only when the specific failing hook is verified safe for the specific diff. Using it as a blanket bypass is not acceptable under hook discipline.
+
+---
+
+## Finding 19 — Aider+local-LLM has the same source-fidelity boundary as Goose+local-LLM for multi-paragraph doc-authoring
+
+**Date:** 2026-05-04
+**Originating WP:** D-17-101 WP-02 / WP-07
+**Severity:** Doctrine (routing boundary correction)
+
+### What
+
+Empirical N=2 evidence on 2026-05-04 shows the boundary is local-LLM-class,
+not surface-specific:
+
+1. `scripts/aider-task.sh --class C1` on `qwen2.5-coder:14b` (Mac Mini)
+   proposed replacing an entire long chronicle file with only the new section
+   body (reconstruction instead of append).
+2. `scripts/aider-task.sh --hard --class C1` on `qwen3-coder-next:latest`
+   (Mac Studio M3 Ultra) proposed rewrites of unrelated existing Findings while
+   attempting to append one new finding, then timed out (`exit 124`) before a
+   safe apply point.
+
+Both attempts targeted append-to-existing-doc work in
+`docs/architecture-facts/integration-audit-doctrine.md` and both failed
+source-fidelity semantics. The failure mode matches D-17-53 (Goose + local
+LLM): once the model is prompted for whole-edit-style output on long narrative
+documents, it can emit a reconstructed "new file" instead of a constrained
+append delta.
+
+### Canonical statement (Finding 19)
+
+Tier-classification is a pre-dispatch obligation, not a post-hoc label.
+Skipping classification and auto-routing to frontier was the root cause of zero
+operator-initiated LOCAL_AIDER invocations in an 18-day window (D-17-93). Every
+AI session must classify incoming work against Tier 1/2/3 before emitting the
+first tool call. Classifier:
+`docs/architecture-facts/work-routing-doctrine.md` (D-17-95). Chronicle:
+2026-05-04.
+
+### How to apply
+
+- Multi-paragraph doc-authoring, doctrine extension, and structured finding
+  append work are permanently Tier 2 (Claude Code/Codex), not Tier 1 Aider.
+- Aider should refuse these tasks and surface back with routing guidance.
+- Benchmark wins on long-context throughput do not override this safety boundary
+  unless empirical source-fidelity evidence says otherwise.
+
+### Cross-references
+
+- D-17-53 (Goose posture boundary)
+- D-17-91 (benchmark results; long-context strength did not imply safe doc append)
+- D-17-97 (compute redirect did not remove the boundary)
+- D-17-101 (this deliverable)

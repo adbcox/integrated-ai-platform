@@ -139,56 +139,15 @@ scripts/aider-task.sh --class C0 \
 
 ---
 
-## Preset: doctrine-text-update
+## Tier 2 boundary note
 
-**When:** A doctrine doc, architecture-facts file, or runbook needs a specific
-wording update, section addition, or cross-reference addition. All content
-derives from the file itself or other files you explicitly name.
+Multi-paragraph doc-authoring is not Tier 1. Route to Claude Code/Codex:
 
-```bash
-scripts/aider-task.sh --class C1 \
-  "In the section '<SECTION_TITLE>', add a paragraph explaining <WHAT> after the existing <LANDMARK>" \
-  docs/architecture-facts/<FILE>.md
-```
+- doctrine extensions
+- chronicle/finding appends to existing long docs
+- net-new runbook/ADR/doc authoring
 
-**Example — add cross-reference:**
-```bash
-scripts/aider-task.sh --class C0 \
-  "Add a 'See also: docs/architecture-facts/work-routing-doctrine.md' line to the Related section" \
-  docs/runbooks/aider-default-workflow.md
-```
-
-**Example — append finding:**
-```bash
-scripts/aider-task.sh --class C1 \
-  "Append Finding 21 at the bottom: 'Tier-classification is a pre-dispatch obligation, not a post-hoc label. D-17-95 2026-05-04.'" \
-  docs/architecture-facts/integration-audit-doctrine.md
-```
-
----
-
-## Preset: single-doc-author
-
-**When:** A single new file needs to be authored and all required content
-is derivable from files you explicitly pass to Aider (no live probes,
-no API calls, no Vault).
-
-```bash
-scripts/aider-task.sh --class C1 \
-  "Author <FILENAME> covering <WHAT>. Derive all content from the files passed. Do not add facts not present in the source files." \
-  <SOURCE_FILE_1> <SOURCE_FILE_2>
-```
-
-**Example — generate index from existing files:**
-```bash
-scripts/aider-task.sh --class C1 \
-  "Author docs/runbooks/INDEX.md: a one-line description per runbook in docs/runbooks/, alphabetical order" \
-  docs/runbooks/aider-default-workflow.md \
-  docs/runbooks/goose-operations.md \
-  docs/runbooks/vault-unseal.md
-```
-
----
+Aider should refuse these and surface back with a Tier 2 routing note.
 
 ## Preset: cap-drop-add
 
@@ -214,6 +173,7 @@ scripts/aider-task.sh --class C0 \
 
 - The "correct value" requires reading a live config, running a command, or checking a service state → TIER 2
 - The doc to update needs judgment about what the right policy should be → TIER 2
+- The task is multi-paragraph doc authoring, chronicle append, or doctrine extension → TIER 2
 - The refactor changes external interface or callers need updating across > 5 files → TIER 2
 - The new doc requires interviewing live platform state (running containers, Vault secrets, DNS records) → TIER 2
 - The task is an audit, review, or architecture decision → TIER 2 or TIER 3
