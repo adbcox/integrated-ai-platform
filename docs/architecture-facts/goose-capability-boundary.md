@@ -140,7 +140,7 @@ Revisit per-extension only on operator request.
 
 **Status:** Five capability-validation sessions cleared the N=5
 gate 2026-05-03; Posture 1 → Posture 2 promotion approved same
-day. M=10 dual-review window now open (1/10).
+day. M=10 dual-review window now open (2/10).
 
 Sessions:
 
@@ -152,6 +152,10 @@ Sessions:
    error-recovery datapoint) — gate-clearing session
 6. D-17-53 opnsense-dhcp-dns-push re-author (Posture 2,
    dual-review entry 1/10)
+7. D-17-53 opnsense-add-host-overrides Unbound→Dnsmasq rewrite
+   (Posture 2, dual-review entry 2/10) — doctrine-substitution
+   sub-class; surfaced "source-file fidelity loss under
+   abstraction pressure" as M=10 watchlist item
 
 See `promotion-criteria.md` empirical-evidence section for the
 gate-decision record and dual-review entries.
@@ -394,31 +398,106 @@ gate-decision record and dual-review entries.
 - Runbook committed 2026-05-03 at
   `docs/runbooks/opnsense-dhcp-dns-push.md`.
 
+### Session 7 — D-17-53 opnsense-add-host-overrides rewrite (Posture 2 entry 2/10)
+
+- 4 tool calls: 4× `read_text_file`, no exploratory probes —
+  cleanest tool-call profile of any session in this cell. All
+  structurally valid. Sources read in the prompt-listed order.
+- Task: rewrite `docs/runbooks/opnsense-add-host-overrides.md`
+  to substitute Dnsmasq for Unbound across UI path, API
+  endpoint, authority section, and verification command. The
+  same runbook this cell flagged as stale unprompted in
+  Sessions 5 and 6 — Session 7 is the cell executing the
+  correction it itself detected. Sub-class: doctrine-
+  substitution rewrite (new sub-class for this cell).
+- **Cautious-by-default scope check skipped — N=3 confirmed.**
+  Sessions 5, 6, and 7 all skipped `list_allowed_directories`,
+  all three had exhaustive absolute-path lists in the prompt.
+  N=2 hypothesis (Session 6) is now N=3 confirmed: the
+  autonomous scope-check is conditional on prompt path-list
+  shape, not a stable capability. Promoted from "hypothesis
+  reinforced at N=2" to "confirmed pattern at N=3" in the
+  preserve-patterns section.
+- **Padding suppression in doctrine-substitution sub-class
+  held cleanly.** No opening-preamble regression — Goose
+  opened with a one-line scope sentence and went straight
+  into the Authority section, exactly as the sub-class-
+  specific preamble requested. Promoted from per-session
+  correction to standard preamble for this sub-class.
+- **NEW failure mode — source-file fidelity loss under
+  abstraction pressure.** Eight frontier corrections, the
+  load-bearing one being **fabricated authentication
+  pattern**: Goose invented an OPNsense AppRole/Bearer-token
+  auth flow (`https://opnsense.example.com/api/auth/approle`
+  → JWT → Bearer header) despite the prompt explicitly
+  pointing at `opnsense-dns-authority.md` for the canonical
+  Vault-AppRole + HTTP-Basic-auth pattern. The hostname
+  `opnsense.example.com` was also fabricated where the source
+  files use `192.168.10.1`. The reconfigure endpoint was
+  wrong (`/api/dnsmasq/settings/reconfigure` with a body, vs.
+  the actual `/api/dnsmasq/service/reconfigure` with `{}`).
+  Verification command shape regressed from Session 6's
+  standard. Cross-reference to Finding 14 used a fabricated
+  slugified anchor. Host-record list dropped the IP target
+  column. The brief-required Authority section was missing
+  entirely. Most revealing: the "Doctrine-substitution audit"
+  section, which the prompt added as a self-check mechanism,
+  **absorbed the same fabrication** — claimed the original
+  endpoint was `GET /api/unbound/settings/addHost` when the
+  original runbook had no API section at all (UI-only). The
+  self-check section did not protect against the failure
+  mode.
+- **Distinction from Session 5 over-abstraction.** Session 5
+  abstracted appropriately for the runbook work-class but
+  omitted concrete examples that should have been included.
+  Session 7 had concrete sources directly available, was
+  instructed to use them verbatim, and *still* invented
+  plausible-shape API patterns from training data. This is a
+  more dangerous shape than omission — the model is filling
+  with autocompletion when ground-truth was within tool reach.
+- **Watchlist item promoted (M=10).** Per `promotion-
+  criteria.md` §2 ("No new failure modes surface"), the
+  fabrication-under-source-availability shape is now a
+  watchlist item. Recurrence at entry 3/10 or 4/10 triggers
+  demotion-trigger discussion. One occurrence does not
+  constitute regression but does constitute *pattern flagged
+  for tracking*.
+- Output split estimate: ~50/50 Goose/frontier — below the
+  ~75/25 sub-class target. The strong structural priors from
+  the existing runbook should have produced a higher
+  preserved ratio; the load-bearing fabrications dragged it
+  down.
+- Rewrite committed 2026-05-04 at
+  `docs/runbooks/opnsense-add-host-overrides.md`.
+
 ### Patterns to preserve at Phase-A / Posture-2
 
 1. **Cautious-by-default scope check — *conditional* posture
-   (N=2 confirmation in Posture 2).** Sessions 2-4 ran
+   (N=3 confirmed in Posture 2).** Sessions 2-4 ran
    `list_allowed_directories` autonomously before reads (4
-   consecutive). Sessions 5-6 broke the streak: no upfront
-   scope check, instead Goose ran exploratory probes
-   (`list_directory`, `xindex_search`, `search_files`,
-   `directory_tree`) before producing output. The pattern is
-   conditional on prompt explicitness — when the prompt's path
-   list is exhaustive and absolute-path-formatted (Sessions
-   5-6: 3 and 8 absolute paths respectively), the model treats
-   scope as already verified and explores adjacent substrate
-   instead. Earlier promotion from "habit" to "established
-   posture" (post-Session 4) was based on insufficient sample
-   variation; the correct framing is "established conditional
-   on prompt shape." Now N=2 sessions reinforce the
-   conditionality. Worth systematically testing in remaining
-   Posture-2 sessions: vary prompt path-list explicitness and
-   observe whether the scope-check returns. Hypothesis:
-   abstract or partial path descriptions → scope-check fires;
-   exhaustive absolute-path lists → adjacent exploration fires
-   instead. Both shapes are sound; the cell capability is
-   "model picks the right shape for the prompt," not "model
-   always probes scope first."
+   consecutive); Sessions 5, 6, and 7 all skipped it. The
+   shared characteristic of Sessions 5-7 is exhaustive
+   absolute-path lists in the prompt (8, 3, 4 paths
+   respectively). The shared characteristic of Sessions 2-4 is
+   path lists that mixed full paths with directory-shape
+   pointers ("see X" without a full path). Three independent
+   confirmations: the autonomous scope-check is **conditional
+   on prompt path-list shape**, not a stable model behavior.
+   - Trigger condition (scope-check fires): path list contains
+     directory pointers, abstract source descriptions, or
+     partial paths.
+   - Suppression condition (adjacent exploration fires
+     instead): path list is exhaustive and absolute-path-
+     formatted; the model treats scope as already verified
+     and probes adjacent substrate (xindex, list_directory,
+     search_files) for related context.
+   Both shapes are sound — the cell capability is "model
+   picks the right behavior for the prompt shape." The
+   earlier framing of "habit" → "established posture" was
+   wrong (insufficient sample variation); the correct framing
+   is "shape-dependent." Worth confirming the trigger
+   condition in a future Posture-2 session by deliberately
+   using an abstract path list.
 2. **Tool-call structural validity.** 53/53 tool calls across
    five sessions emitted as structured `tool_calls` (F1.B
    substrate). Re-enabling write tools should not change this;
@@ -481,26 +560,29 @@ gate-decision record and dual-review entries.
 ### Patterns to correct via prompt engineering
 
 1. **Padding tendency** — *resolved at Session 3 for missing-
-   sections shape; partial regression at Session 6 for opening-
-   preamble shape.* Session 2 draft included two padding
-   sections (Security checklist, Backups) that didn't fit the
-   runbook reference-style. The standard prompt preamble
-   correction (*"If uncertain about whether a section is
-   necessary, omit rather than pad. Reference docs are concise;
-   sections-because-docs-have-them is wrong."*) was applied at
-   Session 3 and Goose actively cited the rule in its
-   self-flagged-defects output. Sessions 3-5 held; Session 6
-   surfaced a different shape: opening with a sibling-concern
-   preamble paragraph that duplicated the why-needed section.
-   The standard preamble's section-omission rule does not
-   address opening-paragraph padding. Sub-class refinement
-   needed: for **substrate-sufficient single-shot runbooks**
-   (Session 6 sub-shape), the prompt should add: *"Skip the
-   preamble. Open with the first procedure step or the
-   when-to-use scope, not with a sibling-concern recap."*
-   For **abstract-from-N runbooks** (Session 5 sub-shape),
-   the existing concrete-examples reminder applies. The
-   Posture-2 prompt template should branch by sub-class.
+   sections shape; partial regression at Session 6 for
+   opening-preamble shape; suppressed at Session 7 via
+   sub-class-specific preamble.* Session 2 draft included two
+   padding sections (Security checklist, Backups) that didn't
+   fit the runbook reference-style. The standard prompt
+   preamble correction (*"If uncertain about whether a section
+   is necessary, omit rather than pad. Reference docs are
+   concise; sections-because-docs-have-them is wrong."*) was
+   applied at Session 3 and Goose actively cited the rule in
+   its self-flagged-defects output. Sessions 3-5 held; Session
+   6 surfaced a different shape (sibling-concern opening
+   preamble); Session 7 added the sub-class-specific preamble
+   *"Skip the preamble. Open with the first procedure step or
+   the when-to-use scope, not with a sibling-concern recap."*
+   and held. The sub-class-specific preamble for
+   **doctrine-substitution rewrites** is now promoted from
+   per-session correction to standard preamble for that
+   sub-class. **Substrate-sufficient single-shot runbooks**
+   (Session 6 sub-shape) should also include the same
+   skip-the-preamble line. **Abstract-from-N runbooks**
+   (Session 5 sub-shape) keep the existing concrete-examples
+   reminder. The Posture-2 prompt template now branches by
+   sub-class for opening-paragraph padding suppression.
 2. **Self-blind to encountered failure modes.** Session 2 draft
    omitted the `GOOSE_MODE=auto` headless invocation pattern even
    though that was the exact failure encountered while running
@@ -536,6 +618,44 @@ gate-decision record and dual-review entries.
    rather than relying on the model to infer the right
    abstraction level from "abstracted from N=4 worked
    examples."
+5. **Source-file fidelity loss under abstraction pressure —
+   Session 7 (NEW; M=10 watchlist).** When the prompt
+   instructs the model to use specific source files for
+   command syntax / API patterns / endpoint paths AND those
+   files are within tool reach AND the model has read them,
+   the model can still autocomplete plausible-shape patterns
+   from training data instead of using the verbatim source.
+   Session 7 worked example: brief explicitly pointed at
+   `opnsense-dns-authority.md` (which contains the canonical
+   Vault-AppRole + HTTP-Basic-auth curl pattern); Goose
+   read it; Goose then produced a fabricated AppRole-Bearer
+   auth flow with an invented `opnsense.example.com`
+   hostname. The model also fabricated a reconfigure
+   endpoint, a Finding-14 anchor slug, and a non-existent
+   "original" API endpoint inside its own self-check
+   doctrine-substitution audit. This is **distinct from
+   over-abstraction** (Session 5: omitted concrete examples).
+   The model has the source, was told to use it, and
+   *substituted* training-data autocomplete for the verbatim
+   source.
+   Prompt-engineering remediation candidates (to test in
+   subsequent Posture-2 sessions):
+   - *Verbatim-block instruction:* "Copy the bootstrap chain
+     from <file>:<line-range> verbatim into the runbook. Do
+     not paraphrase, do not 'simplify,' do not change
+     hostnames or endpoints."
+   - *Source-grounded self-check:* require the audit section
+     to cite source-file line numbers for each fact, not
+     just claim the substitution.
+   - *Adversarial source-cite:* require the draft to contain
+     at least one verbatim-quoted command from each source
+     file referenced; absence is a self-flagged defect.
+   - *Final-pass diff:* a final tool call that re-reads the
+     authoritative source and compares its own draft against
+     it, flagging any divergence.
+   None tested yet. Recurrence at entry 3/10 or 4/10
+   triggers demotion-trigger discussion per `promotion-
+   criteria.md` §2.
 
 ### Substrate-bounded quality — §18.O finding (Sessions 3-5)
 

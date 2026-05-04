@@ -1,0 +1,93 @@
+
+    __( O)>  ● new session · ollama qwen3-coder:30b
+   \____)    20260504_1 · /Users/admin/repos/integrated-ai-platform
+     L L     goose is ready
+# Add Host Overrides to OPNsense Dnsmasq
+
+This runbook describes how to add host overrides to the OPNsense Dnsmasq DNS server for Caddy-fronted internal services that require LAN DNS resolution.
+
+## Procedure
+
+1. **Access the Dnsmasq Hosts UI**:
+   Navigate to `Services → Dnsmasq DNS → Hosts → +` in the OPNsense web UI.
+
+2. **Add Host Override**:
+   - **Host**: Short hostname (e.g., `sonarr`)
+   - **Domain**: `internal`
+   - **IP**: Typically `192.168.10.145` for Caddy-fronted services; use upstream IP for direct-port services.
+
+3. **Add Host via API**:
+   For automation, use the following API call sequence to add a new `.internal` record:
+   ```bash
+   # Bootstrap AppRole to obtain a token
+   export TOKEN=$(curl -s -k -X POST -d '{"role":"opnsense-api-role"}' https://opnsense.example.com/api/auth/approle | jq -r .token)
+
+   # Add new host
+   curl -s -k -H "Authorization: Bearer $TOKEN" \
+     -H "Content-Type: application/json" \
+     -X POST -d '{"host":"sonarr","domain":"internal","ip":"192.168.10.145"}' \
+     https://opnsense.example.com/api/dnsmasq/settings/addHost
+
+   # Reconfigure Dnsmasq to apply changes
+   curl -s -k -H "Authorization: Bearer $TOKEN" \
+     -H "Content-Type: application/json" \
+     -X POST -d '{"reconfigure":"true"}' \
+     https://opnsense.example.com/api/dnsmasq/settings/reconfigure
+   ```
+
+4. **Flush DNS Cache**:
+   After adding a host override, flush the DNS cache on clients to ensure changes propagate.
+   - On macOS clients:
+     ```bash
+     sudo killall -HUP mDNSResponder
+     ```
+   - On Linux clients:
+     ```bash
+     sudo systemd-resolve --flush-caches
+     ```
+
+## Verification
+To verify that a new host override has been applied:
+```bash
+dig @192.168.10.1 sonarr.internal
+curl -v http://sonarr.internal
+```
+
+## Current arr-stack host override set
+- bazarr.internal
+- cleanuparr.internal
+- sonarr.internal
+- radarr.internal
+- prowlarr.internal
+
+## Cross-references
+- [OPNsense DNS Authority](opnsense-dns-authority.md)
+- [OPNsense DHCP DNS Push](opnsense-dhcp-dns-push.md)
+- [Finding 14: Consumer-side DNS cache flush policy](integration-audit-doctrine.md#finding-14-consumer-side-dns-cache-flush-policy)
+
+## Self-flagged defects
+
+- The original runbook did not include a cache flush section, which is necessary due to Finding 14. I've added this section to ensure complete coverage.
+- The API call example uses hardcoded hostnames and IPs. In an actual deployment, these should be parameterized.
+- No shell command was executed to validate the API patterns because shell access is not available.
+
+## Tool-call trace summary
+
+1. `filesystem-mcp__read_text_file` - Read `docs/runbooks/opnsense-add-host-overrides.md`
+2. `filesystem-mcp__read_text_file` - Read `docs/architecture-facts/opnsense-dns-authority.md`
+3. `filesystem-mcp__read_text_file` - Read `scripts/d-17-21-dns-migration.sh`
+4. `filesystem-mcp__read_text_file` - Read `docs/runbooks/opnsense-dhcp-dns-push.md`
+
+## Doctrine-substitution audit
+
+- **Original authority**: `Unbound DNS` → **New authority**: `Dnsmasq DNS`
+- **Original UI path**: `Services → Unbound → Hosts → +` → **New UI path**: `Services → Dnsmasq DNS → Hosts → +`
+- **Original API endpoint**: `GET /api/unbound/settings/addHost` → **New API endpoint**: `POST /api/dnsmasq/settings/addHost`
+- **Original verification command**: `dig @192.168.10.1 <hostname>` → **New verification command**: `dig @192.168.10.1 <hostname>` (same port, different DNS daemon)
+- **Original cache flush**: Not included → **New cache flush**: `sudo killall -HUP mDNSResponder` and `sudo systemd-resolve --flush-caches`
+- **Original host override list**: Contains entries for arr-stack services → **New host override list**: Same subset but pulled from updated source (`opnsense-dns-authority.md`)
+- **Original procedure section**: Reference to Unbound → **New procedure section**: Reference to Dnsmasq DNS authoritative service
+- **Original introduction**: Unbound DNS substrate reference → **New introduction**: Dnsmasq DNS substrate reference
+- **Original cross-references**: No specific doctrine references → **New cross-references**: `opnsense-dns-authority.md`, `opnsense-dhcp-dns-push.md`, Finding 14
+
+The rewrite preserves the operator-actionable structure of the original runbook while replacing all doctrine substrates with correct Dnsmasq-based information. All API call patterns and command syntax have been updated to reflect the new Dnsmasq authority.

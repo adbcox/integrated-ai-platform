@@ -324,10 +324,13 @@ savings accrue per-class.
 class "read N source files + draft a reference doc"
 (read-author-only).
 
-**Status (2026-05-03):** **Posture 2 (dual-review), 1/10.** Cell
+**Status (2026-05-04):** **Posture 2 (dual-review), 2/10.** Cell
 cleared the N=5 gate 2026-05-03; operator promoted Posture 1 →
 Posture 2 in the same session. M=10 dual-review window opened;
 closure target ≈ 2026-05-13 conditional on session pacing.
+**Watchlist item (entry 2/10):** source-file fidelity loss under
+abstraction pressure. If this failure mode recurs at entry 3/10
+or 4/10, demotion-trigger discussion per §2.
 
 **Sessions logged:**
 1. WP-03 smoke test (read CLAUDE.md head=50, 2 tool calls,
@@ -403,6 +406,58 @@ closure target ≈ 2026-05-13 conditional on session pacing.
    frontier corrections on a substrate-sufficient single-shot
    runbook is at the upper edge of the N=5 capability-
    validation window range.
+
+2. (2026-05-04) D-17-53 Session 7 — `opnsense-add-host-overrides.md`
+   doctrine-substitution rewrite (Unbound → Dnsmasq). Same
+   runbook Sessions 5 and 6 flagged as stale unprompted; this
+   session executes the correction the cell itself detected.
+   Drafted from 4 sources, **4 tool calls** (no exploratory
+   probes — cleanest tool-call profile of any session in this
+   cell). Cautious-by-default scope check skipped for the third
+   consecutive session — N=3 confirmation that the autonomous
+   scope-check is conditional on prompt path-list shape (all
+   three sessions had exhaustive absolute-path lists). The
+   conditional framing is now confirmed; it was hypothesis at
+   N=1 (Session 5), reinforced at N=2 (Session 6), confirmed
+   at N=3 (Session 7).
+   Padding-suppression sub-class preamble ("skip the preamble;
+   open with the first procedure step or one-line scope")
+   landed cleanly — no opening-preamble regression in this
+   session. Promotes from per-session correction to standard
+   preamble for the doctrine-substitution rewrite sub-class.
+   Output split ~50/50 Goose/frontier (lower than the ~75/25
+   sub-class target). Eight frontier corrections, the
+   load-bearing one being **fabricated authentication
+   pattern**: Goose invented an OPNsense AppRole/Bearer-token
+   endpoint (`/api/auth/approle` returning a JWT) despite the
+   prompt explicitly pointing at `opnsense-dns-authority.md`
+   for the canonical Vault-AppRole + HTTP-Basic-auth shape.
+   Hostname `opnsense.example.com` was also fabricated where
+   the source files use `192.168.10.1`. The reconfigure
+   endpoint was wrong (`/api/dnsmasq/settings/reconfigure` with
+   a body, vs. the actual `/api/dnsmasq/service/reconfigure`
+   with `{}`). Verification command shape regressed from
+   Session 6's standard. Cross-reference to Finding 14 used a
+   fabricated slugified anchor. Host-record list dropped the
+   IP target column. Brief-required Authority section was
+   missing entirely. Doctrine-substitution audit, intended as
+   a self-check, **absorbed the same fabrication** — claimed
+   the original endpoint was `GET /api/unbound/settings/addHost`
+   when the original runbook had no API section at all (UI-only).
+   This is the new failure mode worth tracking: **source-file
+   fidelity loss under abstraction pressure** — model
+   autocompletes plausible-shape API patterns from training
+   data when source is *also* available, and a self-check
+   audit section does not protect against it. Distinct from
+   Session 5 over-abstraction (which omitted concrete
+   examples); Session 7 had concrete sources, was instructed
+   to use them, and still fabricated. Promoted to **M=10
+   watchlist item per §2** — recurrence at entry 3/10 or 4/10
+   triggers demotion discussion. Defect-rate this session: 8
+   on a substrate-sufficient rewrite is above the N=5 window's
+   per-session range; one session does not constitute
+   regression but the *failure shape* is informative for
+   future class scoping.
 
 **Substrate baseline:** F1.B (Ollama 0.22.1 streaming structured
 `tool_calls` for qwen3-coder:30b — see `local-tool-calling.md`).
