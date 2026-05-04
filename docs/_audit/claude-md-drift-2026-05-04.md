@@ -72,6 +72,13 @@ Neither flag exists. The implemented flags are listed correctly at CLAUDE.md lin
 
 **Suggested remediation:** either add a one-line note under §Vault Operations referencing `~/vault-init-keys-NEW-20260430.txt`, or commit to keeping this in the runbook (`docs/runbooks/vault-recovery-from-shamir.md`) only and explicitly out of CLAUDE.md.
 
+**Resolution (2026-05-04, post-audit):** in-memory remediation. The auto-memory file `vault_migration_2026_04_26.md` was rewritten to: (a) point at `~/vault-init-keys-NEW-20260430.txt` as canonical, with the pre-KV-loss file noted as historical-only; (b) redact the embedded root token value (F6 doctrine violation found during patching — escalation beyond M1's original scope; chronicled below); (c) correct the DNS-authority block from "Unbound host overrides" to "Dnsmasq host overrides" per D-17-21 (third out-of-scope drift hit found during patching). CLAUDE.md left unedited — the runbook (`docs/runbooks/vault-recovery-from-shamir.md`) is the canonical operational reference; CLAUDE.md should not duplicate it.
+
+**M1 escalation findings (memory file drift beyond stale path):**
+1. Stale Shamir keys path (the original M1 hit) — fixed.
+2. Embedded root token value at line 15 — F6 hash-only doctrine violation in an auto-loaded memory file. Replaced with `sha256[:12]=fe9f5d7e167d` reference noting invalidation by 2026-04-30 KV-loss rebuild; current token referenced via `~/control-center-stack/stacks/vault/.env` location only.
+3. OPNsense block claimed Unbound DNS authority + prescribed `/api/unbound/settings/addHostOverride` endpoint — direct contradiction of D-17-21 doctrine (Dnsmasq is sole authority; Unbound forbidden). Rewritten to point at `/api/dnsmasq/settings/addHost` with explicit drift-acknowledgement that the original Unbound prescription was correct at 2026-04-26 but obsolete post-D-17-21.
+
 ---
 
 #### M2. launchd buildarr-sync claim says "daily at 03:00" — state can't be validated by `launchctl list`
