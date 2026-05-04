@@ -130,3 +130,20 @@ deploying.
 - `scripts/d-17-21-dns-migration.sh` — worked-example script
   for the original Unbound→Dnsmasq migration; canonical curl/jq
   shapes
+
+## Doctrine-substitution audit (D-17-56)
+
+This runbook had stale Unbound-era guidance in prior revisions
+(authority framing + endpoint family) that conflicted with the
+post-D-17-21 canonical posture.
+
+Faithful substitution completed in D-17-56:
+
+- Authority claim aligned to Dnsmasq sole authority
+  (`opnsense-dns-authority.md`), with explicit Unbound-forbidden
+  note retained.
+- UI path aligned to Dnsmasq Host records flow.
+- API path aligned to Dnsmasq endpoints, including
+  `POST /api/dnsmasq/service/reconfigure` with empty `{}` body.
+- Consumer cache invalidation (Finding 14) integrated as a required
+  post-change step; `dscacheutil -flushcache` explicitly rejected.

@@ -148,3 +148,18 @@ This deliverable's lessons are recorded as durable doctrine in two places:
 
 1. `CLAUDE.md` "DNS Authority Doctrine" section (operator-side rules — Dnsmasq is sole authority, Unbound is forbidden).
 2. `docs/architecture-facts/integration-audit-doctrine.md` Finding 9 (audit-side rule — configuration audits verify against operator-stated intent, not against currently-running config; running state can be unintended residue).
+
+---
+
+## D-17-56 follow-through (2026-05-03)
+
+The outstanding stale-runbook backlog item from D-17-21 is now
+closed: `docs/runbooks/opnsense-add-host-overrides.md` has been
+fully substituted from Unbound-era guidance to Dnsmasq-canonical
+guidance, including:
+
+- Dnsmasq UI/API paths (`/api/dnsmasq/settings/addHost`,
+  `/api/dnsmasq/service/reconfigure` with `{}`),
+- explicit Unbound-forbidden framing,
+- Finding 14 consumer-cache invalidation integration (`mDNSResponder`
+  HUP on macOS, Linux resolver flush variants).
