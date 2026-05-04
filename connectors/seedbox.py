@@ -48,7 +48,7 @@ class SeedboxConnector(BaseConnector):
         self.host     = host     or os.environ.get("SEEDBOX_HOST", _SEEDBOX_IP)
         self.user     = user     or os.environ.get("SEEDBOX_USER", "seedit4me")
         self.port     = int(os.environ.get("SEEDBOX_PORT", port or 2088))
-        self.password = password or os.environ.get("SEEDBOX_PASSWORD", "2vraVAYcSF3uSIIdlF2U5ggw1OcgkEshSw")
+        self.password = password or os.environ.get("SEEDBOX_PASSWORD", "")
         self.key_path = key_path or os.environ.get("SEEDBOX_KEY_PATH",
                             str(Path.home() / ".ssh" / "id_ed25519"))
 

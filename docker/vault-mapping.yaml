@@ -29,8 +29,10 @@ QNAP_PASS: secret/qnap/admin:password
 # ── Seedbox ───────────────────────────────────────────────────────────────────
 # D-17-76 (2026-05-04): drift fix. Path was secret/seedbox/account
 # (which doesn't exist); actual path is secret/seedbox/sftp.
-# Companion path secret/seedbox/qbittorrent (Cleanuparr Cleaner modules)
-# is operator-populated separately via scripts/provision-seedbox-credentials.sh.
+# Companion paths secret/seedbox/rtorrent + secret/seedbox/sabnzbd
+# (Cleanuparr Cleaner modules) are operator-populated separately via
+# scripts/provision-seedbox-credentials.sh and consumed by the
+# cleanuparr Vault Agent sidecar (not by docker/.env).
 SEEDBOX_PASSWORD: secret/seedbox/sftp:password  # pragma: allowlist secret
 
 # ── GitHub ────────────────────────────────────────────────────────────────────
