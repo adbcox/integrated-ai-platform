@@ -1236,3 +1236,24 @@ For any consumer-API integration script in this platform:
 - "GET-back the live record, modify the field I care about, PUT it back" — wrong when the GET-back is incomplete or is a UI-display projection. Round-trip can lose fields you didn't even know about.
 - "If the POST returned a non-error response, the schema accepted everything I sent" — wrong; .NET model binders silently ignore unknown JSON properties by default. The 415 errors only fire on Content-Type mismatch or malformed bodies, not field-name mismatches.
 - "If the GET response shows the field, the field is persistable" — converse-of-the-above also fails: the GET response may include only persisted fields, OR may include both persisted and computed-on-the-fly fields. Use schema introspection.
+
+---
+
+## Finding 18 — Out-of-repo compose changes require rewire-log snapshots; cumulative gap produces an unrecoverable forensic blind spot
+
+**Deliverable:** D-17-89 (arr-stack compose git integration audit, 2026-05-04)
+
+The arr-stack compose file at `/Users/admin/control-center-stack/stacks/arr-stack/docker-compose.yml` had 4 service additions (Bazarr D-17-47, Cleanuparr D-17-49, Sportarr D-17-36, Lidarr D-17-87) with no rewire-log snapshots. The D#15 doctrine ("out-of-repo compose changes require pre/post snapshots") was followed for the `ai-control` stack (homarr retirement, 2026-05-01) but never applied to the arr-stack.
+
+The failure mode: if a compose change breaks a sibling service, there is no git-diff equivalent to recover from — the rewire log IS the pre/post diff. Without it, rollback requires operator memory or container inspection, both of which degrade with time.
+
+### How to apply
+
+1. **Before any compose edit to `~/control-center-stack/stacks/*`:** run `shasum -a 256 <compose-file>` + `wc -l <compose-file>` and record the pre-state in a new `docker/_rewire-log/<YYYY-MM-DD>-<stack>-<reason>.md` entry.
+2. **After the edit:** record the post-state SHA256 + line count in the same file. Include which services were added/removed/changed.
+3. **For post-hoc recovery:** write a "snapshot" entry (as done for D-17-89) that captures current state and notes the gap period. This is better than no entry but is not a substitute for the pre-state.
+4. **Enforcement:** the pre-commit hook cannot check out-of-repo files; this is an operator discipline item. A future periodic audit deliverable could diff `~/control-center-stack/stacks/` against recorded hashes.
+
+### D-17-88 retroactive note
+
+D-17-87 (Lidarr deployment) was committed with `--no-verify`. The bypassed hook was `detect-secrets` (no credential content in the diff). The process deviation is acknowledged; `--no-verify` should be used only when the specific failing hook is verified safe for the specific diff. Using it as a blanket bypass is not acceptable under hook discipline.
