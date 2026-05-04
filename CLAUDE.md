@@ -128,7 +128,7 @@ deliverable table with a fresh D-NN-MM ID.
 - **URL values in Vault are part of the credential, not metadata.** A service URL that resolves on the host but not from inside a consumer container is a broken credential record. For dashboard-style consumers on a Docker network, the canonical form is `http://<container-name>:<port>` (container DNS), not `http://<host>.<lan-tld>:<port>`. The D-17-38 root cause was Vault holding `mac-mini.internal` URLs that didn't resolve from the dashboard container.
 - **Reachability vs storage-stats are different probes.** A bare TCP connect to the appliance port proves "alive on the network" without requiring TLS handshake or auth. Application-level probes (HTTPS GET, API call) prove "service is responsive" but can fail for orthogonal reasons (TLS incompatibility, cert trust). The connector pattern: try the application probe first, fall back to TCP-connect for reachability classification — see `connectors/qnap.py` `health_check`.
 - **Hash-only verification — `/proc/1/environ` reads must redact (D-17-38 near-miss):** the D-17-26 sub-doctrine pattern `tr "\0" "\n" < /proc/1/environ | grep ^VAR=` MUST be piped through a redactor when the var holds a credential. Correct form: `... | sed 's/=.*/=<set>/'` for presence-only checks, or `... | grep -c ^VAR=` for count-only. Bare grep emits the value; doing this on a credential variable counts as a credential-display incident even when "just diagnosing".
-- **Chronicle:** `docs/architecture-facts/integration-audit-doctrine.md` Finding 6.
+- **Chronicle:** `docs/architecture-facts/integration-audit-doctrine.md` Finding 8.
 
 ### Roadmap Ingestion Flow Doctrine (D-17-39)
 - **Roadmap items with binary artifacts MUST flow through the ingestion surface, not direct filesystem placement.** Canonical entrypoint: `scripts/roadmap-create.sh <D-NN-NN> "<title>" [--status STATUS] [--reference TEXT] [--artifact <path>] [--class CLASS]`. The script composes D-17-37 substrate (artifact-ingest.sh) + framework row insertion + OpenProject WP creation in one self-contained transaction.
@@ -153,7 +153,7 @@ deliverable table with a fresh D-NN-MM ID.
 - **Buildarr is the canonical config authority for Radarr and Prowlarr.** Declarative state lives in `config/arr-stack/buildarr/buildarr.yml`. Any manual UI change to Radarr/Prowlarr settings (quality profiles, custom formats, indexer config, application URLs) that is not reflected in that YAML will be reverted on the next `buildarr-run.sh` execution. To make a permanent change: edit the YAML, commit it, then run `scripts/buildarr-run.sh`.
 - **Scope (as of D-17-44, 2026-05-03):** Radarr (full coverage) + Prowlarr applications-only. Sonarr v4.0.17 and Sportarr are out of scope — Buildarr plugin does not support them yet. They remain under reactive/manual management. Prowlarr indexer definitions and download clients are also out of scope (plugin schema gap).
 - **Buildarr does NOT manage Vault secrets.** Credentials remain in Vault; Buildarr reads them via Vault Agent sidecar (AppRole `buildarr`, policy `config/vault-policies/buildarr-policy.hcl`). The `${RADARR_API_KEY}` / `${PROWLARR_API_KEY}` placeholders in `buildarr.yml` are substituted at runtime by `scripts/buildarr-run.sh`.
-- **Run schedule:** daily at 03:00 via launchd `com.iap.buildarr-sync`. Manual run: `scripts/buildarr-run.sh`. Syntax check only (no mutations): `scripts/buildarr-run.sh --check`. Heartbeat: `/Users/admin/.platform-logs/buildarr-sync.heartbeat`.
+- **Run schedule:** daily at 03:00 via launchd `com.iap.buildarr-sync`. Manual run: `scripts/buildarr-run.sh`. Syntax check only (no mutations): `scripts/buildarr-run.sh --check`. **Verification:** check heartbeat freshness at `/Users/admin/.platform-logs/buildarr-sync.heartbeat` (updates within 24h on healthy schedule). `launchctl list | grep com.iap.buildarr-sync` may return empty between firings for `StartCalendarInterval`-only jobs — heartbeat is the canonical liveness signal, not `launchctl list`.
 - **Drift detection workflow:** after any manual arr-stack session, run `buildarr radarr dump-config` + `buildarr prowlarr dump-config` against the live instances and diff against the committed YAML. Any diff IS the empirical drift record (F11 first worked example: D-17-38 URL drift would have been detected and reverted automatically).
 - **Chronicle:** `docs/architecture-facts/integration-audit-doctrine.md` Finding 11.
 
@@ -297,8 +297,12 @@ roadmap items (Phase 18 health/fitness, Linux migration, platform
 hardening) and Phase-16 carry-overs not promoted into the active phase.
 Always also consult OpenProject's queue (filter by status=Backlog/In
 Progress, optionally category=autonomous-coding) before recommending
-work. Convenience: `python3 scripts/openproject-sync-from-framework.py
---query-backlog [--autonomous-coding-only]`.
+work — read via the OpenProject UI or API directly. (A CLI convenience
+flag was previously prescribed here but the implementation never landed
+— removed 2026-05-04 per D-17-81 H2; documenting non-existent flags is
+the same fabrication-as-canonical pattern chronicled in F17. If a CLI
+backlog reader is wanted, file as a separate deliverable to implement
+properly.)
 
 **Sync flags (D-17-31):**
 - `--include-roadmap` — include `RM-*` items in normal framework run
