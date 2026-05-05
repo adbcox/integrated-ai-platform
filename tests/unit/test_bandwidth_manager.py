@@ -175,6 +175,7 @@ class TestShouldThrottle:
             patch("domains.bandwidth_manager.datetime") as mock_dt,
             patch("domains.bandwidth_manager.psutil") as mock_psutil,
         ):
+            manager._stats_history.clear()
             mock_dt.now.return_value = _mock_now(3)
             mock_psutil.cpu_percent.return_value = 10.0  # well below threshold
             result = manager.should_throttle()
