@@ -77,3 +77,28 @@ Items 1–3 from the original gap list:
 3. rTorrent stuck-count — still deferred per operator decision D1 (D-17-107). Cleanuparr (D-17-86) provides stuck-torrent coverage operationally.
 
 4. **SABnzbd recent-failures-only trigger** (new, D-17-107): Operator requested tuning the failed-jobs trigger to fire only on failures-in-last-7-days, not cumulative count. Current implementation (`d17105.sab.failed_jobs` via `mode=history&failed_only=1&limit=100`) returns all current failed items in history. The `limit=100` parameter bounds it but the rolling-7-day window requires either: (a) Zabbix calculated item with `last()` against a timestamp item, or (b) SABnzbd API filtering by date client-side. Deferred — current SABnzbd behavior of clearing stale failures on success is operationally adequate.
+
+## Finding 24 — Syncthing QNAP is a silent SPOF for all arr-stack imports (D-17-112, 2026-05-04)
+
+**Failure mode observed:** Syncthing process on QNAP died silently (no error log entry; OOM kill suspected — process exited cleanly without logging cause). No monitoring existed for the QNAP Syncthing process health — the existing Zabbix trapper item (`com.iap.syncthing-zabbix-sender` launchd on Mac Mini) pushes staleness metrics from the QNAP GUI, but if Syncthing itself is dead, the GUI is unreachable and the sender logs an error but does NOT emit a Zabbix alert — the trapper item simply goes stale (which does eventually fire the staleness trigger at 48h).
+
+**Impact:** With Syncthing down, `/share/CACHEDEV2_DATA/download/sabnzbd/lidarr/` on QNAP contained only `.smbdelete*` placeholder files. Lidarr, Sonarr, Radarr, and Sportarr ALL import via this single Syncthing pipe. All arr-stack imports were silently blocked. The failure manifested as `importPending` in Lidarr queues with `No files found` — which is indistinguishable from category drift or permission issues without probing Syncthing state directly.
+
+**Scope:** The Syncthing process on QNAP is a **single point of failure for the entire arr-stack import path.** Losing it silently blocks Lidarr + Sonarr + Radarr + Sportarr simultaneously with no immediate alert.
+
+**Resolution:** `/etc/init.d/SyncThing.sh start` — Syncthing came up, connected to seedbox (`7UTBN2T`, 193.163.71.22:26401), began draining 393-file / ~751 GB backlog immediately.
+
+**Recommended monitoring (WP-09d, D-17-112):**
+
+| Monitor | Mechanism | Alert threshold |
+|---|---|---|
+| Syncthing REST reachability | Zabbix HTTP check to `http://192.168.10.201:8384/rest/system/ping` with API key header | Unreachable > 5 min → CRITICAL |
+| Syncthing folder sync state | `GET /rest/db/status?folder=is5fj-3grur` → `state` field | `state=error` → CRITICAL |
+| Pending files backlog | `needFiles` from folder status | `needFiles > 100` for > 1h → WARNING |
+| Process-level (backup) | The existing staleness trigger | ≥ 48h without transfer → WARNING (already deployed) |
+
+The REST reachability check is the highest-value add: it detects Syncthing down in <5 minutes, vs the current 48h staleness fallback.
+
+**Implementation note:** The Zabbix trapper sender `scripts/syncthing-zabbix-sender.sh` already fetches from `http://192.168.10.201:8384/rest/...` — if Syncthing is down, the sender exits with a curl error. Adding a separate Zabbix external check (or HTTP item pointing directly at port 8384) would provide the fast-fail signal.
+
+**Architectural note:** Long-term, consider a redundant transport (e.g., rclone SFTP from seedbox direct to QNAP as fallback) to eliminate the Syncthing SPOF. Short-term, WP-09d monitoring is the mitigation.
