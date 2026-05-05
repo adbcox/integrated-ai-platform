@@ -161,11 +161,88 @@ with actual results after DB download.
   Ollama-tag map at `config/model-hf-map.yaml`. Step 0 gate added to `pull-new-model.md`.
   GGUF limitation documented. Backfill scan log at
   `artifacts/model-provenance/provenance-2026-05-04.jsonl` (partial — awaits deep-signals DB).
+- D-17-122 addendum: 2026-05-05. See §D-17-122 below.
+
+## D-17-122 addendum (2026-05-05) — Structured backfill + pull wrapper
+
+D-17-122 extends D-17-92 with a structured mapping table, per-model JSON provenance
+records, and a pull wrapper that integrates provenance into the Ollama ingestion path.
+
+### What D-17-122 covers vs does not cover
+
+**Covered (this deliverable):** upstream HF model lineage via Cisco Provenance Kit.
+The kit scans the HuggingFace-hosted source model and classifies its family derivation.
+F1 0.963 at threshold 0.70 on the kit's benchmark set.
+
+**NOT covered — GGUF blob integrity:** Ollama stores weights as GGUF blobs. The Cisco
+kit only supports safetensors/PyTorch format and cannot inspect GGUF files.
+
+**GGUF integrity mitigation:** all models sourced from `registry.ollama.ai` only; Ollama
+client verifies SHA-256 blob checksums at download time. This is the current GGUF
+integrity control; GGUF metadata fingerprinting is a future deliverable candidate.
+
+### New tooling (D-17-122)
+
+| Artifact | Purpose |
+|----------|---------|
+| `config/model_provenance/ollama_to_hf_mapping.yaml` | Structured Ollama → HF ID mapping with derivation types, fallback chains, scan targets |
+| `bin/ollama_pull_with_provenance.sh` | Pull wrapper: `ollama pull` + provenance scan + JSON record |
+| `bin/run_provenance_backfill.py` | Batch backfill runner for all mapped models |
+| `artifacts/model_provenance/<model>_<date>.json` | Per-model provenance records (structured schema) |
+| `venv-provenance/` | Python 3.12 venv with `cisco-ai-provenance-kit==1.0.0` |
+
+### Standing operational rule (supplements pull-new-model.md Step 0)
+
+```bash
+bin/ollama_pull_with_provenance.sh <ollama_model> [<hf_id>]
+```
+
+Every new Ollama model pull uses this wrapper. Exception: `local_modelfile_derivative`
+models (created via `ollama create`) inherit provenance from their base model.
+
+### Verdict taxonomy (D-17-122 JSON records)
+
+| Verdict | pipeline_score | Action |
+|---------|---------------|--------|
+| `VERIFIED` | ≥ 0.85 | None required |
+| `LIKELY` | 0.70–0.84 | Review; accept or re-scan with deep-signals |
+| `WEAK_MATCH` | 0.50–0.69 | Investigate; do not use in production without review |
+| `NO_MATCH` | < 0.50 | Block; surface to operator |
+| `SCAN_OOM` | — | Kit OOM-killed; re-scan on Mac Studio (96GB) |
+| `UNKNOWN` | — | HF repo missing / kit error / HF ID unconfirmed; operator resolves |
+| `N_A` | — | Cloud-only or Modelfile derivative; provenance inherited or N/A |
+| `N_A_GATED` | — | Gated HF model; provision `secret/huggingface/admin` |
+
+### Backfill results (2026-05-05)
+
+| Model | Host | Verdict | Score | Notes |
+|-------|------|---------|-------|-------|
+| qwen3-coder:30b | Mac Studio | SCAN_OOM | — | 30.5B OOM on Mac Mini; re-scan on Mac Studio |
+| qwen3-coder:30b-coding | Mac Studio | N_A | — | Modelfile derivative |
+| qwen3-coder-next:latest | Mac Studio | UNKNOWN | — | 79.7B; HF source unconfirmed; all fallback IDs 404 or timeout |
+| qwen3-coder-next:coding | Mac Studio | N_A | — | Modelfile derivative |
+| deepseek-coder-v2:16b-lite-instruct | Mac Studio | SCAN_OOM | — | 16B OOM on Mac Mini |
+| kimi-k2.6:cloud | Mac Studio | N_A | — | Cloud API proxy |
+| gemma2:27b | Mac Studio | N_A_GATED | — | Gated; provision secret/huggingface/admin |
+| qwen2.5-coder:7b | Mac Mini | **VERIFIED** | 1.000 | Confirmed Match; in Cisco reference DB |
+| qwen2.5-coder:14b | Mac Mini | **VERIFIED** | 1.000 | Confirmed Match |
+| qwen2.5-coder:32b | Mac Mini | **VERIFIED** | 1.000 | Confirmed Match |
+| nomic-embed-text:latest | Mac Mini | **VERIFIED** | 0.992 | Confirmed Match |
+| devstral:latest | Mac Mini | UNKNOWN | — | Kit error: Mistral tokenizer v3 `special_tokens` key missing |
+| deepseek-coder-v2:latest (alias) | Mac Mini | SCAN_OOM | — | Same as instruct variant |
+
+**Open follow-up actions:**
+- Install deep-signals DB (`provenancekit download-deepsignals-fingerprint`) and
+  re-scan SCAN_OOM models on Mac Studio
+- Confirm qwen3-coder-next HF repo with Qwen; update mapping
+- File upstream issue against cisco-ai-provenance-kit for Mistral tokenizer v3 support
+- Provision `secret/huggingface/admin` with `token` field for gemma2 scan
 
 ## Related docs
 
 - `docs/runbooks/pull-new-model.md` — lifecycle runbook with Step 0 gate
-- `config/model-hf-map.yaml` — Ollama-tag → HF-ID mapping
+- `config/model-hf-map.yaml` — Ollama-tag → HF-ID mapping (D-17-92; superseded by D-17-122 YAML for new models)
+- `config/model_provenance/ollama_to_hf_mapping.yaml` — structured mapping (D-17-122)
 - `docs/architecture-facts/goose-capability-boundary.md` — Goose deployment posture
 - `docs/architecture-facts/local-prompt-library-doctrine.md` — D-17-90 (T1 substrate)
 - arXiv:2512.12921 — Cisco AI Security and Safety Framework Report (F1 0.963 source)

@@ -1,0 +1,201 @@
+# Ollama → HuggingFace upstream model mapping
+# Deliverable: D-17-122 (Cisco Model Provenance Kit integration)
+# Last updated: 2026-05-05
+# Purpose: Maps each Ollama model to its upstream HF repo for provenance scanning.
+#          Cisco kit scans the HF source; GGUF blob integrity is out of scope (see doctrine).
+#
+# derivation_type values:
+#   direct_quantization       — Ollama GGUF is a standard quantization of the upstream HF model
+#   local_modelfile_derivative — Created via `ollama create` with a Modelfile FROM a base model
+#   cloud_only                — No local weights; cloud inference API proxy
+#   unknown                   — HF source not confirmed; operator verification required
+
+ollama_models:
+
+  # ── Mac Studio models (active inference node) ──────────────────────────────
+
+  - ollama_name: qwen3-coder:30b
+    ollama_tag: 30b
+    host: mac-studio
+    architecture: qwen3moe
+    param_count: "30.5B"
+    quantization: Q4_K_M
+    upstream_hf_id: Qwen/Qwen3-Coder-30B-A3B-Instruct
+    upstream_hf_id_notes: >
+      Operator-confirmed 2026-05-05. qwen3moe + 30.5B + 262K context matches
+      Qwen3-Coder-30B-A3B-Instruct (MoE: 30.5B total / 3B active).
+      Fallback if 404: Qwen/Qwen3-Coder-30B-A3B, then mark UNKNOWN.
+    derivation_type: direct_quantization
+    hf_id_confidence: operator_confirmed
+    provenance_scan_target: Qwen/Qwen3-Coder-30B-A3B-Instruct
+    provenance_scan_fallbacks:
+      - Qwen/Qwen3-Coder-30B-A3B
+
+  - ollama_name: qwen3-coder:30b-coding
+    ollama_tag: 30b-coding
+    host: mac-studio
+    architecture: qwen3moe
+    param_count: "30.5B"
+    quantization: Q4_K_M
+    upstream_hf_id: Qwen/Qwen3-30B-A3B
+    derivation_type: local_modelfile_derivative
+    base_model: qwen3-coder:30b
+    modelfile_ref: config/ollama/Modelfile-qwen3-coder-30b-coding
+    notes: >
+      D-17-109 WP-02 Modelfile derivative. Inherits weights from qwen3-coder:30b;
+      only inference parameters changed (temp, top_k, top_p, repeat_penalty, num_ctx).
+      Provenance is inherited from base model — no separate HF scan needed.
+    hf_id_confidence: inherited
+    provenance_scan_target: null  # inherited from base; skip independent scan
+
+  - ollama_name: qwen3-coder-next:latest
+    ollama_tag: latest
+    host: mac-studio
+    architecture: qwen3next
+    param_count: "79.7B"
+    quantization: Q4_K_M
+    upstream_hf_id: Qwen/Qwen3-Next-80B-A3B-Instruct
+    upstream_hf_id_notes: >
+      Operator-confirmed 2026-05-05. 79.7B + qwen3next architecture + 262K context
+      matches Qwen3-Next-80B-A3B-Instruct (MoE, ~80B total / 3B active).
+      Fallback chain: Qwen/Qwen3-Coder-Next-80B-A3B-Instruct, then
+      Qwen/Qwen3-80B-A3B-Instruct, then mark UNKNOWN.
+    derivation_type: direct_quantization
+    hf_id_confidence: operator_confirmed
+    provenance_scan_target: Qwen/Qwen3-Next-80B-A3B-Instruct
+    provenance_scan_fallbacks:
+      - Qwen/Qwen3-Coder-Next-80B-A3B-Instruct
+      - Qwen/Qwen3-80B-A3B-Instruct
+
+  - ollama_name: qwen3-coder-next:coding
+    ollama_tag: coding
+    host: mac-studio
+    architecture: qwen3next
+    param_count: "79.7B"
+    quantization: Q4_K_M
+    upstream_hf_id: null
+    derivation_type: local_modelfile_derivative
+    base_model: qwen3-coder-next:latest
+    modelfile_ref: config/ollama/Modelfile-qwen3-coder-next-coding
+    notes: >
+      D-17-109 WP-02 Modelfile derivative of qwen3-coder-next:latest.
+      Provenance blocked pending base model HF source confirmation.
+    hf_id_confidence: inherited_blocked
+    provenance_scan_target: null
+
+  - ollama_name: deepseek-coder-v2:16b-lite-instruct-q4_K_M
+    ollama_tag: 16b-lite-instruct-q4_K_M
+    host: mac-studio
+    architecture: deepseek_v2
+    param_count: "16B"
+    quantization: Q4_K_M
+    upstream_hf_id: deepseek-ai/DeepSeek-Coder-V2-Lite-Instruct
+    upstream_hf_id_notes: >
+      Confirmed: DeepSeek-Coder-V2-Lite is the 16B-parameter lightweight variant
+      of DeepSeek-Coder-V2. Instruct variant is the standard fine-tuned model.
+    derivation_type: direct_quantization
+    hf_id_confidence: certain
+    provenance_scan_target: deepseek-ai/DeepSeek-Coder-V2-Lite-Instruct
+
+  - ollama_name: kimi-k2.6:cloud
+    ollama_tag: cloud
+    host: mac-studio
+    architecture: kimi-k2
+    param_count: "1042B"
+    quantization: INT4
+    blob_size_bytes: 384  # cloud API proxy — no local weights
+    upstream_hf_id: null
+    upstream_hf_id_notes: >
+      Cloud-only inference proxy. 1.042T parameter MoE model; local weights would
+      require ~500GB+ storage. The 384-byte "blob" is an API configuration stub,
+      not model weights. Moonshot AI (MoonshotAI/Kimi-K2) has not published weights
+      on HuggingFace as of 2026-05-05.
+    derivation_type: cloud_only
+    hf_id_confidence: n_a
+    provenance_scan_target: null  # cloud_only — provenance N/A
+
+  - ollama_name: gemma2:27b
+    ollama_tag: 27b
+    host: mac-studio
+    architecture: gemma2
+    param_count: "27.2B"
+    quantization: Q4_0
+    upstream_hf_id: google/gemma-2-27b-it
+    upstream_hf_id_notes: >
+      gemma2 architecture, 27.2B params. Ollama's gemma2:27b pulls the instruct-tuned
+      variant (gemma-2-27b-it). Base variant is google/gemma-2-27b.
+      Note: Gemma models require accepting Google's license on HuggingFace.
+      The Cisco kit may fail if the model is gated — scan may require --trust-remote-code
+      or pre-cached weights.
+    derivation_type: direct_quantization
+    hf_id_confidence: certain
+    provenance_scan_target: google/gemma-2-27b-it
+
+  # ── Mac Mini models (manifests present; ollama not running locally) ─────────
+  # These were pulled historically; Mac Mini ollama is inactive as of 2026-05-05.
+
+  - ollama_name: qwen2.5-coder:7b
+    ollama_tag: 7b
+    host: mac-mini
+    architecture: qwen2
+    upstream_hf_id: Qwen/Qwen2.5-Coder-7B-Instruct
+    derivation_type: direct_quantization
+    hf_id_confidence: certain
+    provenance_scan_target: Qwen/Qwen2.5-Coder-7B-Instruct
+    notes: Mac Mini ollama inactive; manifest exists but model not currently serving.
+
+  - ollama_name: qwen2.5-coder:14b
+    ollama_tag: 14b
+    host: mac-mini
+    architecture: qwen2
+    upstream_hf_id: Qwen/Qwen2.5-Coder-14B-Instruct
+    derivation_type: direct_quantization
+    hf_id_confidence: certain
+    provenance_scan_target: Qwen/Qwen2.5-Coder-14B-Instruct
+    notes: Mac Mini ollama inactive; manifest exists.
+
+  - ollama_name: qwen2.5-coder:32b
+    ollama_tag: 32b
+    host: mac-mini
+    architecture: qwen2
+    upstream_hf_id: Qwen/Qwen2.5-Coder-32B-Instruct
+    derivation_type: direct_quantization
+    hf_id_confidence: certain
+    provenance_scan_target: Qwen/Qwen2.5-Coder-32B-Instruct
+    notes: Mac Mini ollama inactive; manifest exists.
+
+  - ollama_name: devstral:latest
+    ollama_tag: latest
+    host: mac-mini
+    architecture: mistral3
+    upstream_hf_id: mistralai/Devstral-Small-2505
+    upstream_hf_id_notes: >
+      Devstral-Small-2505 is Mistral's coding model released May 2025.
+      Ollama devstral:latest corresponds to this release.
+    derivation_type: direct_quantization
+    hf_id_confidence: certain
+    provenance_scan_target: mistralai/Devstral-Small-2505
+    notes: Mac Mini ollama inactive; manifest exists.
+
+  - ollama_name: nomic-embed-text:latest
+    ollama_tag: latest
+    host: mac-mini
+    architecture: nomic-bert
+    upstream_hf_id: nomic-ai/nomic-embed-text-v1.5
+    upstream_hf_id_notes: >
+      Embedding-only model. nomic-embed-text-v1.5 is the standard version.
+      Used by xindex RAG pipeline.
+    derivation_type: direct_quantization
+    hf_id_confidence: likely
+    provenance_scan_target: nomic-ai/nomic-embed-text-v1.5
+    notes: Mac Mini ollama inactive; manifest exists. Embedding model — load-bearing for RAG.
+
+  - ollama_name: deepseek-coder-v2:latest
+    ollama_tag: latest
+    host: mac-mini
+    architecture: deepseek_v2
+    upstream_hf_id: deepseek-ai/DeepSeek-Coder-V2-Lite-Instruct
+    derivation_type: direct_quantization
+    hf_id_confidence: certain
+    provenance_scan_target: deepseek-ai/DeepSeek-Coder-V2-Lite-Instruct
+    notes: Mac Mini manifest; same model as mac-studio variant, different tag alias.
