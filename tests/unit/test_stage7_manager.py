@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from bin.stage7_manager import _choose_subplan_strategy
+from bin.stage7_manager import _apply_manager14_budget_fallback_shaping, _choose_subplan_strategy
 
 
 def _base_inputs() -> dict:
@@ -41,3 +41,21 @@ def test_weak_single_target_multi_file_tasks_split_first_under_learning_priors()
 
     assert result["strategy"] == "split_first"
     assert result["reason"] == "learning_priors_single_target_weak_class_split"
+
+
+def test_manager14_retrieval_singleton_quota_cap_increases_under_replay_pressure() -> None:
+    strategy_decisions = {"subplan-1": {"decision_tags": []}}
+    result = _apply_manager14_budget_fallback_shaping(
+        subplans=[{"subplan_id": "subplan-1", "targets": ["bin/stage6_manager.py"]}],
+        strategy_decisions=strategy_decisions,
+        recurrence_memory={
+            "replay_pressure": True,
+            "recent_bad_rate": 0.4,
+            "strategy_bad_rates": {"grouped_subplan": 0.0},
+        },
+        task_class="retrieval_orchestration",
+    )
+
+    assert result["enabled"] is True
+    assert result["singleton_quota_cap"] == 2
+    assert strategy_decisions["subplan-1"]["manager14_singleton_quota_cap"] == 2

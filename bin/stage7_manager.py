@@ -1724,6 +1724,7 @@ def _apply_manager14_budget_fallback_shaping(
     subplans: list[dict[str, Any]],
     strategy_decisions: dict[str, dict[str, Any]],
     recurrence_memory: dict[str, Any],
+    task_class: str,
 ) -> dict[str, Any]:
     """Manager-14 proactive budget fallback shaping.
 
@@ -1739,6 +1740,9 @@ def _apply_manager14_budget_fallback_shaping(
     grouped_bad_rate = float(strategy_bad_rates.get("grouped_subplan") or 0.0)
 
     enabled = bool(replay_pressure or recent_bad_rate >= 0.35 or grouped_bad_rate >= 0.35)
+    singleton_quota_cap = 1 if enabled else 0
+    if enabled and task_class == "retrieval_orchestration" and (replay_pressure or recent_bad_rate >= 0.35):
+        singleton_quota_cap = 2
     grouped_candidate_count = 0
     singleton_candidate_count = 0
     enabled_count = 0
@@ -1756,6 +1760,7 @@ def _apply_manager14_budget_fallback_shaping(
         decision["manager14_budget_fallback_reason"] = (
             "manager14_replay_or_grouped_budget_recurrence_pressure" if enabled else "manager14_fallback_not_needed"
         )
+        decision["manager14_singleton_quota_cap"] = int(singleton_quota_cap)
         tags = list(decision.get("decision_tags") or [])
         if enabled:
             tags.append("manager14_budget_fallback_ready")
@@ -1772,6 +1777,7 @@ def _apply_manager14_budget_fallback_shaping(
         "recent_bad_rate": round(recent_bad_rate, 3),
         "grouped_bad_rate": round(grouped_bad_rate, 3),
         "replay_pressure": replay_pressure,
+        "singleton_quota_cap": int(singleton_quota_cap),
     }
 
 
@@ -2083,6 +2089,7 @@ def main() -> int:
         subplans=subplans_to_run,
         strategy_decisions=strategy_decisions,
         recurrence_memory=recurrence_memory,
+        task_class=task_class,
     )
     hierarchy_contexts = {
         str(k): dict(v)
@@ -2267,13 +2274,14 @@ def main() -> int:
             )
             replay_pressure = bool(recurrence_adaptation.get("replay_pressure"))
             recent_bad_rate = float(recurrence_adaptation.get("recent_bad_rate") or 0.0)
-            singleton_quota_cap = (
-                1
-                if manager14_enabled
+            singleton_quota_cap = int(strategy_decision.get("manager14_singleton_quota_cap") or 0)
+            if (
+                singleton_quota_cap <= 0
+                and manager14_enabled
                 and (replay_pressure or recent_bad_rate >= 0.35)
                 and task_class in {"multi_file_orchestration", "retrieval_orchestration", "resumable_checkpointed"}
-                else 0
-            )
+            ):
+                singleton_quota_cap = 1
             if (
                 manager14_enabled
                 and risk_rank <= 1
