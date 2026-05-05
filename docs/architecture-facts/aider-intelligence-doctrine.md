@@ -326,6 +326,15 @@ The D-17-117 wrapper regression suite now exercises:
 
 Result: the regression path is now covered end-to-end, and the bare-except default flow passes after the insertion-expansion threshold tune.
 
+### Finding 38 — Routing policy is now aligned with the empirical envelope
+
+The D-17-118 routing update codifies the D-17-117 matrix:
+- inference-heavy task patterns (`type hints`, `extract function`, `rewrite`, `rearchitect`) force Tier 2 regardless of file size
+- mechanical patterns (`docstring-add`, `bare-except-narrow`, single-rename, typo/indentation fixes) remain eligible for Tier 1 when the file is structurally narrow
+- `classify_task_complexity()` in `domains/router.py` is the gate that separates those two classes before the existing file-size and learning heuristics run
+
+This makes the router explicit about the operator intent versus the file-size envelope instead of treating every file-bearing edit as the same coding shape.
+
 ---
 
 ## Override Ladder (updated D-17-109)

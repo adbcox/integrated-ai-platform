@@ -25,6 +25,7 @@ class ExecutionRecord:
     error_type: Optional[str] = None  # e.g., 'timeout', 'syntax_error', 'llm_failure'
     tokens_used: int = 0
     exit_code: int = 0
+    routing_complexity_override: Optional[str] = None
 
 
 @dataclass
@@ -89,6 +90,7 @@ class LearningDomain:
         error_type: Optional[str] = None,
         tokens_used: int = 0,
         exit_code: int = 0,
+        routing_complexity_override: Optional[str] = None,
     ) -> None:
         """
         Record a task execution.
@@ -115,6 +117,7 @@ class LearningDomain:
             duration_seconds=duration_seconds,
             tokens_used=tokens_used,
             exit_code=exit_code,
+            routing_complexity_override=routing_complexity_override,
         )
 
         self.records.append(record)

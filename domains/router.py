@@ -33,6 +33,62 @@ class PreflightResult:
     shape: str        # detected shape label e.g. "doc-append", "rewrite-large"
 
 
+MECHANICAL_PATTERNS = [
+    "add docstring",
+    "add a docstring",
+    "add docstrings to",
+    "replace bare except",
+    "narrow except",
+    "replace 'except:'",
+    "replace except:",
+    "rename variable",
+    "single rename",
+    "add logging statement",
+    "add log line",
+    "fix typo",
+    "fix indentation",
+]
+
+INFERENCE_HEAVY_PATTERNS = [
+    "add type hints",
+    "type hints",
+    "add type annotations",
+    "type annotations",
+    "annotate types",
+    "extract function",
+    "extract method",
+    "refactor into helper",
+    "split into helpers",
+    "redesign",
+    "rewrite",
+    "rearchitect",
+]
+
+
+def _contains_any(text: str, patterns: List[str]) -> bool:
+    return any(pattern in text for pattern in patterns)
+
+
+def classify_task_complexity(description: str) -> str:
+    """
+    Classify task complexity from description text.
+
+    Returns:
+      - "mechanical" for clear low-variance edit patterns
+      - "inference_heavy" for structural/inference-heavy edits
+      - "ambiguous" when the description does not cleanly match one side
+    """
+    desc_lower = description.casefold()
+    mechanical = _contains_any(desc_lower, [p.casefold() for p in MECHANICAL_PATTERNS])
+    inference_heavy = _contains_any(desc_lower, [p.casefold() for p in INFERENCE_HEAVY_PATTERNS])
+
+    if mechanical and not inference_heavy:
+        return "mechanical"
+    if inference_heavy and not mechanical:
+        return "inference_heavy"
+    return "ambiguous"
+
+
 def preflight_validate(
     description: str,
     task_class: str,
@@ -182,10 +238,25 @@ class TaskRouter:
 
         return "general"
 
-    def classify(self, description: str, files: Optional[List[str]] = None) -> TaskRoute:
+    def classify(
+        self,
+        description: str,
+        files: Optional[List[str]] = None,
+        override_complexity: str = "auto",
+    ) -> TaskRoute:
         """Classify and route task using learning or keyword-based fallback."""
         task_type = self._infer_task_type(description, files)
         desc_lower = description.lower()
+        complexity = classify_task_complexity(description)
+        effective_complexity = override_complexity if override_complexity != "auto" else complexity
+
+        if effective_complexity == "inference_heavy":
+            return TaskRoute(
+                ExecutorType.CLAUDE_CODE,
+                "sonnet-4",
+                0.85,
+                "Task complexity: inference-heavy",
+            )
 
         # Try learning-based recommendation first
         if self.learning and task_type == "coding" and files:

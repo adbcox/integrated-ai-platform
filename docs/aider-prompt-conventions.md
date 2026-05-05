@@ -40,6 +40,8 @@ Mechanical edits stay Tier 1 when the target is structurally clear, even on mode
 
 Inference-heavy edits move to Tier 2 when the prompt requires the model to infer the correct target from repeated patterns, hidden context, or subtle scope distinctions.
 
+If your wording already signals an inference-heavy edit (`type hints`, `extract function`, `refactor into helper`, `rewrite`, `rearchitect`), the router will now treat that as Tier 2 by default. You usually do not need to force a tier manually.
+
 ## 6. Use `--allow-ambiguous` only when you are deliberately testing the guard
 
 The Layer 0 ambiguity guard blocks prompts like `replace the bare except clauses` when a file has multiple `except` clauses and no structural disambiguator. That block is intentional.

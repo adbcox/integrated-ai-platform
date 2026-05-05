@@ -15,6 +15,7 @@
 #   scripts/aider-task.sh --with-doctrine "task description" [files...]
 #   scripts/aider-task.sh --strip-line-refs "task description" [files...]
 #   scripts/aider-task.sh --allow-ambiguous "task description" [files...]
+#   scripts/aider-task.sh --override-complexity auto|mechanical|inference_heavy "task description" [files...]
 #
 # Routes through domains/router.py classify. If route is LOCAL_AIDER, invokes
 # bin/aider_local.sh. If CLAUDE_CODE escalation, prints guidance and exits 1.
@@ -33,6 +34,7 @@
 #     override: --skip-verifier or AIDER_SKIP_VERIFIER=1
 #   Layer 3 (learning loop): records outcome to artifacts/execution_metrics.jsonl
 #     feeds domains/learning.py confidence for future routing decisions
+#     logs override-complexity when provided for traceability
 #
 # Task classes (--class) align with D-17-90 persona taxonomy:
 #   C0  quick lookup / one-liner / ≤1 file (default if 1 file)
@@ -71,6 +73,7 @@ WITH_CONTEXT=0
 WITH_DOCTRINE=0
 STRIP_LINE_REFS=0
 ALLOW_AMBIGUOUS=0
+OVERRIDE_COMPLEXITY="auto"
 NO_CONTEXT=0
 DESCRIPTION=""
 FILES=()
@@ -101,6 +104,7 @@ usage() {
   echo "Context flags: --with-context (slim) | --with-doctrine (full) | --no-context (deprecated no-op)"
   echo "Prompt hygiene: --strip-line-refs removes 'at line N' / 'on line N' hints"
   echo "Guard bypass:   --allow-ambiguous lets multi-match targets through Layer 0"
+  echo "Complexity override: --override-complexity auto|mechanical|inference_heavy"
   echo ""
   echo "Tier 1 preset templates: config/prompts/library/v1.0.0/06-aider-tier1-presets.md"
   echo "Full workflow guide:     docs/runbooks/aider-default-workflow.md"
@@ -138,6 +142,10 @@ while [[ $# -gt 0 ]]; do
       STRIP_LINE_REFS=1; shift ;;
     --allow-ambiguous)
       ALLOW_AMBIGUOUS=1; shift ;;
+    --override-complexity)
+      OVERRIDE_COMPLEXITY="$2"; shift 2 ;;
+    --override-complexity=*)
+      OVERRIDE_COMPLEXITY="${1#--override-complexity=}"; shift ;;
     --no-context)
       NO_CONTEXT=1; shift ;;
     --quiet|-q)
@@ -163,6 +171,14 @@ if [[ -z "$DESCRIPTION" ]]; then
   usage >&2
   exit 1
 fi
+
+case "$OVERRIDE_COMPLEXITY" in
+  auto|mechanical|inference_heavy) ;;
+  *)
+    echo "ERROR: --override-complexity must be auto, mechanical, or inference_heavy" >&2
+    exit 1
+    ;;
+esac
 
 DESCRIPTION_EFFECTIVE="$DESCRIPTION"
 
@@ -201,7 +217,7 @@ for f in "${FILES[@]}"; do
 done
 
 # --- Route classification ---
-ROUTE_OUTPUT=$(python3 - "$DESCRIPTION" "${FILES[@]}" <<'PY'
+ROUTE_OUTPUT=$(python3 - "$DESCRIPTION" "$OVERRIDE_COMPLEXITY" "${FILES[@]}" <<'PY'
 import sys
 from pathlib import Path
 
@@ -209,10 +225,11 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from domains.router import TaskRouter, ExecutorType
 
 description = sys.argv[1]
-files = sys.argv[2:] if len(sys.argv) > 2 else []
+override_complexity = sys.argv[2] if len(sys.argv) > 2 else "auto"
+files = sys.argv[3:] if len(sys.argv) > 3 else []
 
 router = TaskRouter()
-route = router.classify(description, files if files else None)
+route = router.classify(description, files if files else None, override_complexity=override_complexity)
 print(route.executor.value)
 print(route.model)
 print(f"{route.confidence:.2f}")
@@ -228,11 +245,15 @@ REASONING=$(echo "$ROUTE_OUTPUT" | sed -n '4p')
 if [[ $QUIET -eq 1 ]]; then
   TC_DISPLAY="${TASK_CLASS:-auto}"
   echo "[aider-task] route=$EXECUTOR model=$ROUTED_MODEL conf=$CONFIDENCE class=$TC_DISPLAY"
+  [[ "$OVERRIDE_COMPLEXITY" != "auto" ]] && echo "[aider-task] complexity-override=$OVERRIDE_COMPLEXITY"
 else
   echo "[aider-task] route: executor=$EXECUTOR model=$ROUTED_MODEL confidence=$CONFIDENCE"
   echo "[aider-task] reasoning: $REASONING"
   if [[ -n "$TASK_CLASS" ]]; then
     echo "[aider-task] task-class: $TASK_CLASS"
+  fi
+  if [[ "$OVERRIDE_COMPLEXITY" != "auto" ]]; then
+    echo "[aider-task] complexity-override: $OVERRIDE_COMPLEXITY"
   fi
 fi
 
@@ -251,6 +272,7 @@ AIDER_TASK_MODEL="$ROUTED_MODEL" \
 AIDER_TASK_CONFIDENCE="$CONFIDENCE" \
 AIDER_TASK_REASONING="$REASONING" \
 AIDER_TASK_DRY_RUN="$DRY_RUN" \
+AIDER_TASK_OVERRIDE_COMPLEXITY="$OVERRIDE_COMPLEXITY" \
 AIDER_TASK_FILES="${FILES[*]+"${FILES[*]}"}" \
 AIDER_TASK_QUIET="$QUIET" \
 python3 - <<'PY'
@@ -275,6 +297,7 @@ event = {
     "routed_model": os.environ["AIDER_TASK_MODEL"],
     "confidence": float(os.environ.get("AIDER_TASK_CONFIDENCE", "0")),
     "reasoning": os.environ.get("AIDER_TASK_REASONING", ""),
+    "task_complexity_override": os.environ.get("AIDER_TASK_OVERRIDE_COMPLEXITY", "auto"),
     "mode": "operator-initiated",
     "files": files,
     "timestamp": int(time.time()),
@@ -417,6 +440,7 @@ if [[ $DRY_RUN -eq 1 ]]; then
   [[ ${#FILES[@]} -gt 0 ]] && echo "  files: ${FILES[*]}"
   [[ -n "$MODEL_OVERRIDE" ]] && echo "  --model $MODEL_OVERRIDE"
   [[ $HARD_MODE -eq 1 ]] && echo "  --hard"
+  [[ "$OVERRIDE_COMPLEXITY" != "auto" ]] && echo "  --override-complexity $OVERRIDE_COMPLEXITY"
   [[ $AUTO_COMMIT -eq 1 ]] && echo "  (--commit: will git add + commit after success)"
   exit 0
 fi
@@ -489,6 +513,7 @@ if [[ $AIDER_EXIT -ne 0 ]]; then
   AIDER_TASK_MODEL="$ROUTED_MODEL" \
   AIDER_TASK_DURATION="$AIDER_DURATION" \
   AIDER_TASK_EXIT="$AIDER_EXIT" \
+  AIDER_TASK_OVERRIDE_COMPLEXITY="$OVERRIDE_COMPLEXITY" \
   python3 - <<'PY'
 import json, os, sys, time
 from pathlib import Path
@@ -504,6 +529,7 @@ LearningDomain().record_execution(
     duration_seconds=float(os.environ.get("AIDER_TASK_DURATION", "0")),
     error_type=error_type,
     exit_code=int(os.environ.get("AIDER_TASK_EXIT", "1")),
+    routing_complexity_override=os.environ.get("AIDER_TASK_OVERRIDE_COMPLEXITY") or None,
 )
 print("[aider-task] learning: recorded failure")
 PY
@@ -534,6 +560,7 @@ if [[ ${#CHANGED_FILES[@]} -eq 0 ]]; then
   AIDER_TASK_DESCRIPTION="$DESCRIPTION" \
   AIDER_TASK_MODEL="$ROUTED_MODEL" \
   AIDER_TASK_DURATION="$AIDER_DURATION" \
+  AIDER_TASK_OVERRIDE_COMPLEXITY="$OVERRIDE_COMPLEXITY" \
   python3 - <<'PY'
 import os, sys
 sys.path.insert(0, ".")
@@ -547,6 +574,7 @@ LearningDomain().record_execution(
     duration_seconds=float(os.environ.get("AIDER_TASK_DURATION", "0")),
     error_type="no_changes",
     exit_code=0,
+    routing_complexity_override=os.environ.get("AIDER_TASK_OVERRIDE_COMPLEXITY") or None,
 )
 print("[aider-task] learning: recorded no-change failure")
 PY
@@ -609,6 +637,7 @@ LearningDomain().record_execution(
     duration_seconds=float(os.environ.get("AIDER_TASK_DURATION", "0")),
     error_type="diff_sanity_block",
     exit_code=0,
+    routing_complexity_override=os.environ.get("AIDER_TASK_OVERRIDE_COMPLEXITY") or None,
 )
 print("[aider-task] learning: recorded diff-sanity-block")
 PY
@@ -674,6 +703,7 @@ PY
   AIDER_TASK_DESCRIPTION="$DESCRIPTION" \
   AIDER_TASK_MODEL="$ROUTED_MODEL" \
   AIDER_TASK_DURATION="$AIDER_DURATION" \
+  AIDER_TASK_OVERRIDE_COMPLEXITY="$OVERRIDE_COMPLEXITY" \
   python3 - <<'PY'
 import os, sys
 sys.path.insert(0, ".")
@@ -686,6 +716,7 @@ LearningDomain().record_execution(
     success=True,
     duration_seconds=float(os.environ.get("AIDER_TASK_DURATION", "0")),
     exit_code=0,
+    routing_complexity_override=os.environ.get("AIDER_TASK_OVERRIDE_COMPLEXITY") or None,
 )
 print("[aider-task] learning: recorded success")
 PY
