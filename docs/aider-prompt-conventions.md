@@ -34,9 +34,23 @@ When a file has multiple matching clauses, mention the enclosing function, block
 
 If a prompt includes `at line N` or `on line N`, the wrapper will warn. Use `--strip-line-refs` if you want the wrapper to remove those hints before Aider runs.
 
-## 5. Use `--allow-ambiguous` only when you are deliberately testing the guard
+## 5. Route by task complexity, not just file size
+
+Mechanical edits stay Tier 1 when the target is structurally clear, even on moderately sized files.
+
+Inference-heavy edits move to Tier 2 when the prompt requires the model to infer the correct target from repeated patterns, hidden context, or subtle scope distinctions.
+
+## 6. Use `--allow-ambiguous` only when you are deliberately testing the guard
 
 The Layer 0 ambiguity guard blocks prompts like `replace the bare except clauses` when a file has multiple `except` clauses and no structural disambiguator. That block is intentional.
+
+## 7. F25 standing instruction
+
+F25 is the standing prompt-hygiene rule for future sessions:
+- keep prompts concise and structural
+- avoid URL-bearing context unless the task needs it
+- avoid line numbers as target selectors
+- prefer explicit scope qualifiers over vague references
 
 ## Examples from the D-17-111 failure
 

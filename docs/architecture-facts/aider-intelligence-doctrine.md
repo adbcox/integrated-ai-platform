@@ -283,6 +283,28 @@ The live Aider run on `bin/test_stage3_executor.py` earlier in this session sele
 
 Conclusion: the current verifier prompt / model combination can miss a wrong-target edit if the diff is locally plausible. The verifier is useful, but not sufficient as a sole correctness gate on this class of edit. Proof artifact: `artifacts/aider_dual_loop_proof_2026-05-04.log`.
 
+## Findings 31-34 — D-17-111 verifier v1.1.0, task routing, and F25 standing instruction
+
+### Finding 31 — Verifier v1.0.0 was structurally blind to wrong-target edits; v1.1.0 adds full-file context and disambiguation rules
+
+The `config/prompts/library/v1.0.0/07-deepseek-verifier-prompt.md` draft was sufficient for broad diff checks but still missed the D-17-111 wrong-target case. The v1.1.0 draft adds explicit full-file context, repeated-target comparison rules, and a wrong-occurrence DISAGREE rule so the verifier can reason about which repeated clause was actually edited.
+
+### Finding 32 — Task type dominates file size in the empirical envelope
+
+The benchmark sample showed that mechanical edits can succeed on moderate files while inference-heavy edits fail much earlier. The old "file size alone" envelope is not stable. Success depends on task shape:
+- mechanical edits: can stay viable up to roughly the low-20KB range in this sample
+- inference-heavy edits: can go amber below 10KB if the prompt is ambiguous or the target repeats
+
+The benchmark output is therefore a 2D problem: file size plus task type, not a single byte threshold.
+
+### Finding 33 — The only tested model/prompt pair that caught the D-17-111 wrong-target diff was qwen3-coder:30b-coding + verifier v1.1.0
+
+On the deliberately wrong-target replay, `qwen3-coder:30b-coding` with the v1.1.0 verifier prompt returned `DISAGREE`, while the same prompt against the clean correction returned `AGREE`. The other tested local verifier candidates (`deepseek-coder-v2:16b-lite-instruct-q4_K_M` and `qwen3-coder-next:coding`) still false-negatived the wrong-target case. The candidate matrix is captured in `docs/phase-18/d-17-111/WP-04C_MODEL_EVALUATION_MATRIX_2026-05-04.md`.
+
+### Finding 34 — F25 output hygiene is now a standing instruction for agent prompts
+
+Prompt hygiene is now a standing rule: keep prompts concise, structural, and URL-free unless the task explicitly needs the URL; prefer function/block scope over line numbers; and avoid narration-heavy context unless explicitly opted in. This is the rule the next session should assume by default when constructing agent prompts.
+
 ---
 
 ## Override Ladder (updated D-17-109)
@@ -312,5 +334,6 @@ Conclusion: the current verifier prompt / model combination can miss a wrong-tar
 - `docs/architecture-facts/work-routing-doctrine.md` — Tier boundary definitions that Layer 2 enforces
 - `docs/architecture-facts/aider-verifier-doctrine.md` — Layer 1.5 model selection, bypass ladder, verdict semantics
 - `bin/aider_envelope_benchmark.py` — envelope benchmark harness used for Finding 29
+- `docs/phase-18/d-17-111/WP-04C_MODEL_EVALUATION_MATRIX_2026-05-04.md` — verifier model/prompt matrix used for Finding 33
 - `config/ollama/Modelfile-qwen3-coder-30b-coding` — temp=0.1, num_ctx=32768 derivation
 - `config/ollama/Modelfile-qwen3-coder-next-coding` — temp=0.15, num_ctx=32768 derivation

@@ -2,10 +2,10 @@
 """
 aider_verifier.py — Layer 1.5 dual-loop verifier (D-17-110).
 
-Calls qwen2.5-coder:14b (default) on Mac Mini local Ollama to review an Aider diff
-and determine whether it matches the stated task description. Model is configurable:
-  AIDER_VERIFIER_MODEL=deepseek-coder-v2:16b-lite-instruct-q4_K_M (Mac Studio, when WP-03 lands)
-  AIDER_VERIFIER_API_BASE=http://192.168.10.142:11434 (when Mac Studio is externally reachable)
+Calls the configured local Ollama verifier to review an Aider diff and
+determine whether it matches the stated task description. Model is configurable:
+  AIDER_VERIFIER_MODEL=deepseek-coder-v2:16b-lite-instruct-q4_K_M (Mac Studio default)
+  AIDER_VERIFIER_API_BASE=http://192.168.10.142:11434 (Mac Studio default)
 
 Exit codes:
   0  AGREE      — diff matches task description
@@ -33,7 +33,7 @@ import urllib.request
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).parent.parent
-PROMPT_TEMPLATE = REPO_ROOT / "config/prompts/library/v1.0.0/07-deepseek-verifier-prompt.md"
+DEFAULT_PROMPT_TEMPLATE = REPO_ROOT / "config/prompts/library/v1.0.0/07-deepseek-verifier-prompt.md"
 VERIFIER_LOG = REPO_ROOT / "artifacts/aider_runs/verifier_events.jsonl"
 
 DEFAULT_MODEL = "deepseek-coder-v2:16b-lite-instruct-q4_K_M"
@@ -83,12 +83,12 @@ def count_definitions_from_head(rel_path: str) -> int:
         return 0
 
 
-def load_prompt_template() -> str:
+def load_prompt_template(prompt_template: Path) -> str:
     """Extract the user input template and system role from the prompt file."""
     try:
-        text = PROMPT_TEMPLATE.read_text(encoding="utf-8")
+        text = prompt_template.read_text(encoding="utf-8")
     except FileNotFoundError:
-        raise RuntimeError(f"Prompt template not found: {PROMPT_TEMPLATE}")
+        raise RuntimeError(f"Prompt template not found: {prompt_template}")
 
     # Extract system role (between "# System Role" and next "# " heading)
     system_match = re.search(
@@ -102,7 +102,8 @@ def load_prompt_template() -> str:
 
 
 def build_prompt(system_role: str, description: str, file_path: str,
-                 diff: str, orig_count: int, new_count: int) -> str:
+                 diff: str, orig_count: int, new_count: int,
+                 *, file_context: str = "", prompt_version: str = "1.0.0") -> str:
     """Build a raw prompt string for /api/generate (works with both base and instruct models)."""
     count_note = ""
     if orig_count > 0 and new_count != orig_count:
@@ -110,16 +111,24 @@ def build_prompt(system_role: str, description: str, file_path: str,
             f"\nWARNING: Function/class count changed from {orig_count} to {new_count}. "
             f"This is suspicious if the task only asked to add docstrings or make small edits.\n"
         )
+    context_block = ""
+    if prompt_version.startswith("1.1") and file_context:
+        context_block = (
+            f"FILE CONTEXT:\n{file_context}\n\n"
+        )
     return (
         f"{system_role}\n\n"
         f"TASK: {description}\n"
         f"FILE: {file_path}\n"
+        f"{context_block}"
         f"ORIGINAL FUNCTION/CLASS COUNT: {orig_count}\n"
         f"NEW FUNCTION/CLASS COUNT: {new_count}{count_note}\n"
         f"DIFF:\n{diff}\n\n"
         f"Does this diff do exactly what the TASK asked — no more, no less?\n"
         f"DISAGREE if: function count changed unexpectedly, function bodies are duplicated, "
         f"logic was modified beyond scope, or the change is disproportionately large for the task.\n"
+        f"If the file contains repeated targets, compare the diff against the full file context and the named scope.\n"
+        f"DISAGREE if the diff changes a different matching occurrence than the one implied by the task.\n"
         f"Answer using this exact format (no other text):\n"
         f"VERDICT: AGREE\n"
         f"REASON: <why>\n\n"
@@ -194,18 +203,35 @@ def append_log(record: dict) -> None:
         pass
 
 
-def run(description: str, file_path: str, diff: str, quiet: bool = False) -> int:
+def run(description: str, file_path: str, diff: str, quiet: bool = False,
+        *, prompt_template: Path = DEFAULT_PROMPT_TEMPLATE) -> int:
     orig_count = count_definitions_from_head(file_path)
     new_count = count_definitions(file_path)
 
     try:
-        system_role = load_prompt_template()
+        system_role = load_prompt_template(prompt_template)
     except RuntimeError as e:
         print(f"[aider-verifier] ERROR: {e}", file=sys.stderr)
         return 2
 
-    prompt = build_prompt(system_role, description, file_path, diff,
-                          orig_count, new_count)
+    prompt_version = "1.1.0" if "1.1.0" in str(prompt_template) else "1.0.0"
+    file_context = ""
+    if prompt_version == "1.1.0":
+        try:
+            file_context = Path(file_path).read_text(encoding="utf-8", errors="replace")
+        except Exception:
+            file_context = ""
+
+    prompt = build_prompt(
+        system_role,
+        description,
+        file_path,
+        diff,
+        orig_count,
+        new_count,
+        file_context=file_context,
+        prompt_version=prompt_version,
+    )
 
     raw = ""
     duration = 0.0
@@ -285,10 +311,13 @@ def main() -> int:
                         help="Compact single-line output")
     parser.add_argument("--api-base", default=None,
                         help="Override Ollama API base URL (default: OLLAMA_API_BASE or Mac Studio)")
+    parser.add_argument("--prompt-template", default=None,
+                        help="Override verifier prompt template path")
     args = parser.parse_args()
 
     model_source = _setting_source("AIDER_VERIFIER_MODEL")
     api_source = _setting_source("AIDER_VERIFIER_API_BASE")
+    prompt_template = Path(args.prompt_template) if args.prompt_template else DEFAULT_PROMPT_TEMPLATE
 
     if args.api_base:
         global API_BASE
@@ -309,7 +338,7 @@ def main() -> int:
         print("[aider-verifier] ERROR: no diff provided (use --diff-stdin or --diff)", file=sys.stderr)
         return 2
 
-    return run(args.description, args.file_path, diff, quiet=args.quiet)
+    return run(args.description, args.file_path, diff, quiet=args.quiet, prompt_template=prompt_template)
 
 
 if __name__ == "__main__":

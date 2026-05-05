@@ -183,7 +183,7 @@ PY
   fi
 fi
 
-if [[ "$DESCRIPTION" =~ [[:space:]](at|on)[[:space:]]line[[:space:]][0-9]+ ]]; then
+if [[ $STRIP_LINE_REFS -eq 0 ]] && [[ "$DESCRIPTION_EFFECTIVE" =~ [[:space:]](at|on)[[:space:]]line[[:space:]][0-9]+ ]]; then
   echo "[aider-task] WARN: line-number references detected; see docs/aider-prompt-conventions.md" >&2
   echo "[aider-task] WARN: use --strip-line-refs to auto-remove them before Aider runs" >&2
 fi
