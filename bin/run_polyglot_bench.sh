@@ -12,19 +12,26 @@ OLLAMA_DIRECT_BASE="${OLLAMA_API_BASE:-http://192.168.10.142:11434}"
 OLLAMA_BASE="$OLLAMA_DIRECT_BASE"
 TUNNEL_PID=""
 TUNNEL_PORT=""
+# D-17-134: raised defaults to survive large-model latency
+BENCH_TIMEOUT="${BENCH_TIMEOUT:-1800}"   # per-task timeout seconds (AIDER_TIMEOUT)
+BENCH_TRIES="${BENCH_TRIES:-2}"          # max retries per task (--tries)
+FULL_RUN=0                               # set by --full; overrides --task-subset
 
 usage() {
   cat <<'USAGE'
 Usage:
-  bin/run_polyglot_bench.sh --model <model> [--task-subset N] [--keywords k1,k2] [--languages l1,l2]
+  bin/run_polyglot_bench.sh --model <model> [--task-subset N] [--full] [--keywords k1,k2] [--languages l1,l2]
 
 Options:
   --model <name>         Model name passed to aider benchmark (required)
   --task-subset <N>      Limit to N benchmark tasks for a shorter run
+  --full                 Run all tasks (ignores --task-subset)
   --keywords <list>      Comma-separated benchmark keyword filter
   --languages <list>     Comma-separated language filter
   --ollama-base <url>    Override Ollama base URL passed to the container
   --no-tunnel            Skip the automatic SSH tunnel to Mac Studio
+  --timeout <secs>       Per-task timeout in seconds (default: 1800, env: BENCH_TIMEOUT)
+  --tries <N>            Max retries per task (default: 2, env: BENCH_TRIES)
 USAGE
 }
 
@@ -68,68 +75,47 @@ while [[ $# -gt 0 ]]; do
   case "$1" in
     --model)
       [[ $# -ge 2 ]] || { echo "ERROR: --model requires a value" >&2; exit 1; }
-      MODEL="$2"
-      MODEL_SET=1
-      shift 2
-      ;;
+      MODEL="$2"; MODEL_SET=1; shift 2 ;;
     --model=*)
-      MODEL="${1#--model=}"
-      MODEL_SET=1
-      shift
-      ;;
+      MODEL="${1#--model=}"; MODEL_SET=1; shift ;;
     --task-subset)
       [[ $# -ge 2 ]] || { echo "ERROR: --task-subset requires a value" >&2; exit 1; }
-      TASK_SUBSET="$2"
-      TASK_SUBSET_SET=1
-      shift 2
-      ;;
+      TASK_SUBSET="$2"; TASK_SUBSET_SET=1; shift 2 ;;
     --task-subset=*)
-      TASK_SUBSET="${1#--task-subset=}"
-      TASK_SUBSET_SET=1
-      shift
-      ;;
+      TASK_SUBSET="${1#--task-subset=}"; TASK_SUBSET_SET=1; shift ;;
+    --full)
+      FULL_RUN=1; shift ;;
     --keywords)
       [[ $# -ge 2 ]] || { echo "ERROR: --keywords requires a value" >&2; exit 1; }
-      KEYWORDS="$2"
-      shift 2
-      ;;
+      KEYWORDS="$2"; shift 2 ;;
     --keywords=*)
-      KEYWORDS="${1#--keywords=}"
-      shift
-      ;;
+      KEYWORDS="${1#--keywords=}"; shift ;;
     --languages)
       [[ $# -ge 2 ]] || { echo "ERROR: --languages requires a value" >&2; exit 1; }
-      LANGUAGES="$2"
-      shift 2
-      ;;
+      LANGUAGES="$2"; shift 2 ;;
     --languages=*)
-      LANGUAGES="${1#--languages=}"
-      shift
-      ;;
+      LANGUAGES="${1#--languages=}"; shift ;;
     --ollama-base)
       [[ $# -ge 2 ]] || { echo "ERROR: --ollama-base requires a value" >&2; exit 1; }
-      OLLAMA_DIRECT_BASE="$2"
-      OLLAMA_BASE="$2"
-      shift 2
-      ;;
+      OLLAMA_DIRECT_BASE="$2"; OLLAMA_BASE="$2"; shift 2 ;;
     --ollama-base=*)
-      OLLAMA_DIRECT_BASE="${1#--ollama-base=}"
-      OLLAMA_BASE="$OLLAMA_DIRECT_BASE"
-      shift
-      ;;
+      OLLAMA_DIRECT_BASE="${1#--ollama-base=}"; OLLAMA_BASE="$OLLAMA_DIRECT_BASE"; shift ;;
     --no-tunnel)
-      NO_TUNNEL=1
-      shift
-      ;;
+      NO_TUNNEL=1; shift ;;
+    --timeout)
+      [[ $# -ge 2 ]] || { echo "ERROR: --timeout requires a value" >&2; exit 1; }
+      BENCH_TIMEOUT="$2"; shift 2 ;;
+    --timeout=*)
+      BENCH_TIMEOUT="${1#--timeout=}"; shift ;;
+    --tries)
+      [[ $# -ge 2 ]] || { echo "ERROR: --tries requires a value" >&2; exit 1; }
+      BENCH_TRIES="$2"; shift 2 ;;
+    --tries=*)
+      BENCH_TRIES="${1#--tries=}"; shift ;;
     -h|--help)
-      usage
-      exit 0
-      ;;
+      usage; exit 0 ;;
     *)
-      echo "ERROR: unknown option '$1'" >&2
-      usage >&2
-      exit 1
-      ;;
+      echo "ERROR: unknown option '$1'" >&2; usage >&2; exit 1 ;;
   esac
 done
 
@@ -142,7 +128,14 @@ fi
 
 MODEL_SLUG="$(sanitize_name "$MODEL")"
 STAMP="$(date +%F)"
-RUN_TAG="${MODEL_SLUG}_${STAMP}"
+# --full overrides any --task-subset
+[[ $FULL_RUN -eq 1 ]] && TASK_SUBSET=""
+# Build run tag: include subset count if a subset is being run
+if [[ -n "$TASK_SUBSET" ]]; then
+  RUN_TAG="${MODEL_SLUG}_${STAMP}_subset${TASK_SUBSET}"
+else
+  RUN_TAG="${MODEL_SLUG}_${STAMP}_full"
+fi
 RUN_DIR_GLOB="$BENCH_ROOT/tmp.benchmarks/*--$RUN_TAG"
 RESULT_JSON="$ARTIFACT_ROOT/${RUN_TAG}.json"
 
@@ -154,6 +147,7 @@ DOCKER_ARGS=(
   -e AIDER_DOCKER=1
   -e AIDER_BENCHMARK_DIR=/benchmarks
   -e OLLAMA_API_BASE="$OLLAMA_BASE"
+  -e AIDER_TIMEOUT="$BENCH_TIMEOUT"
   -v "$BENCH_ROOT:/aider"
   -v "$BENCH_ROOT/tmp.benchmarks:/benchmarks"
   -w /aider
@@ -161,7 +155,14 @@ DOCKER_ARGS=(
   bash -lc
 )
 
-BENCH_CMD=("python3" "./benchmark/benchmark.py" "$RUN_TAG" "--new" "--model" "$MODEL" "--edit-format" "whole" "--threads" "1")
+BENCH_CMD=(
+  "python3" "./benchmark/benchmark.py" "$RUN_TAG"
+  "--new"
+  "--model" "$MODEL"
+  "--edit-format" "whole"
+  "--threads" "1"
+  "--tries" "$BENCH_TRIES"
+)
 if [[ -n "$TASK_SUBSET" ]]; then
   BENCH_CMD+=("--num-tests" "$TASK_SUBSET")
 fi
