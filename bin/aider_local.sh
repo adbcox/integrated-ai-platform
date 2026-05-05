@@ -252,6 +252,32 @@ if [ "${#PASSTHRU_ARGS[@]}" -gt 0 ]; then
   CMD+=("${PASSTHRU_ARGS[@]}")
 fi
 
+# D-17-XXX: inject RAG context pack as --read (read-only; does not pollute editable context)
+if [ "${AIDER_NO_CONTEXT_PACK:-0}" != "1" ]; then
+  _CP_DESC=""
+  _CP_FILES=()
+  _skip_next=0
+  for _arg in "${PASSTHRU_ARGS[@]}"; do
+    if [ "$_skip_next" -eq 1 ]; then
+      _CP_DESC="$_arg"
+      _skip_next=0
+    elif [ "$_arg" = "--message" ] || [ "$_arg" = "-m" ]; then
+      _skip_next=1
+    elif [[ "$_arg" != -* ]] && [[ "$_arg" == *.* ]]; then
+      _CP_FILES+=("$_arg")
+    fi
+  done
+  _CP_RUN_ID="$(date +%Y%m%d_%H%M%S)_$$"
+  _CP_OUT="/tmp/context_pack_${_CP_RUN_ID}.md"
+  _CP_ARGS=(--output "$_CP_OUT" --run-id "$_CP_RUN_ID")
+  [ -n "$_CP_DESC" ] && _CP_ARGS+=(--description "$_CP_DESC")
+  [ "${#_CP_FILES[@]}" -gt 0 ] && _CP_ARGS+=(--files "${_CP_FILES[@]}")
+  if python3 "$BASE_DIR/aider_context_pack.py" "${_CP_ARGS[@]}" >/dev/null 2>&1; then
+    CMD+=(--read "$_CP_OUT")
+    echo "[aider-local] context-pack injected: $_CP_OUT"
+  fi
+fi
+
 EFFECTIVE_MODEL="${USER_MODEL:-$MODEL}"
 EFFECTIVE_MAP_TOKENS="${USER_MAP_TOKENS:-$MAP_TOKENS}"
 EFFECTIVE_TIMEOUT="${USER_TIMEOUT:-$TIMEOUT}"
