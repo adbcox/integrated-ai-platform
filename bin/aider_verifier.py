@@ -36,16 +36,17 @@ REPO_ROOT = Path(__file__).parent.parent
 PROMPT_TEMPLATE = REPO_ROOT / "config/prompts/library/v1.0.0/07-deepseek-verifier-prompt.md"
 VERIFIER_LOG = REPO_ROOT / "artifacts/aider_runs/verifier_events.jsonl"
 
-MODEL = os.environ.get("AIDER_VERIFIER_MODEL", "qwen2.5-coder:14b")
-# Default: local Mac Mini Ollama. Override with AIDER_VERIFIER_API_BASE to use Mac Studio.
-# Mac Studio deepseek-coder-v2:16b-lite-instruct-q4_K_M is available but binds to 127.0.0.1
-# only (D-17-109 WP-03 deferred). Mac Mini qwen2.5-coder:14b is the validated fallback.
-# When Mac Studio becomes externally reachable: set AIDER_VERIFIER_API_BASE=http://192.168.10.142:11434
-# and AIDER_VERIFIER_MODEL=deepseek-coder-v2:16b-lite-instruct-q4_K_M.
-API_BASE = os.environ.get("AIDER_VERIFIER_API_BASE",
-           os.environ.get("OLLAMA_API_BASE", "http://127.0.0.1:11434"))
+DEFAULT_MODEL = "deepseek-coder-v2:16b-lite-instruct-q4_K_M"
+DEFAULT_API_BASE = "http://192.168.10.142:11434"
+
+MODEL = os.environ.get("AIDER_VERIFIER_MODEL", DEFAULT_MODEL)
+API_BASE = os.environ.get("AIDER_VERIFIER_API_BASE", DEFAULT_API_BASE)
 TIMEOUT = int(os.environ.get("AIDER_VERIFIER_TIMEOUT", "60"))
 MAX_RETRIES = 1
+
+
+def _setting_source(env_name: str) -> str:
+    return "env" if os.environ.get(env_name) else "default"
 
 
 def count_definitions(path: str) -> int:
@@ -286,9 +287,18 @@ def main() -> int:
                         help="Override Ollama API base URL (default: OLLAMA_API_BASE or Mac Studio)")
     args = parser.parse_args()
 
+    model_source = _setting_source("AIDER_VERIFIER_MODEL")
+    api_source = _setting_source("AIDER_VERIFIER_API_BASE")
+
     if args.api_base:
         global API_BASE
         API_BASE = args.api_base
+        api_source = "arg"
+
+    print(
+        f"[aider-verifier] config: api_base={API_BASE} ({api_source}) model={MODEL} ({model_source})",
+        file=sys.stderr,
+    )
 
     if args.diff_stdin:
         diff = sys.stdin.read()

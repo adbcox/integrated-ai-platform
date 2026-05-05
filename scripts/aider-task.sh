@@ -11,6 +11,10 @@
 #   scripts/aider-task.sh --skip-preflight "task description" [files...]
 #   scripts/aider-task.sh --skip-validator "task description" [files...]
 #   scripts/aider-task.sh --quiet "task description" [files...]
+#   scripts/aider-task.sh --with-context "task description" [files...]
+#   scripts/aider-task.sh --with-doctrine "task description" [files...]
+#   scripts/aider-task.sh --strip-line-refs "task description" [files...]
+#   scripts/aider-task.sh --allow-ambiguous "task description" [files...]
 #
 # Routes through domains/router.py classify. If route is LOCAL_AIDER, invokes
 # bin/aider_local.sh. If CLAUDE_CODE escalation, prints guidance and exits 1.
@@ -63,10 +67,16 @@ SKIP_VALIDATOR=0
 SKIP_VERIFIER=0
 ALLOW_LARGE_INSERTIONS=0
 QUIET=0
+WITH_CONTEXT=0
+WITH_DOCTRINE=0
+STRIP_LINE_REFS=0
+ALLOW_AMBIGUOUS=0
 NO_CONTEXT=0
 DESCRIPTION=""
 FILES=()
 AIDER_MESSAGE=""
+DESCRIPTION_EFFECTIVE=""
+SYSTEM_CONTEXT_MODE="none"
 
 # Placeholder filenames that indicate a copy-paste template not filled in
 PLACEHOLDER_NAMES=("file1" "file1.py" "file1.md" "file2" "file2.py" "file3"
@@ -88,6 +98,9 @@ usage() {
   echo "  qwen2.5-coder:7b        (emergency Mac Mini offline fallback only)"
   echo ""
   echo "Override compute target: OLLAMA_API_BASE=http://127.0.0.1:11434 scripts/aider-task.sh ..."
+  echo "Context flags: --with-context (slim) | --with-doctrine (full) | --no-context (deprecated no-op)"
+  echo "Prompt hygiene: --strip-line-refs removes 'at line N' / 'on line N' hints"
+  echo "Guard bypass:   --allow-ambiguous lets multi-match targets through Layer 0"
   echo ""
   echo "Tier 1 preset templates: config/prompts/library/v1.0.0/06-aider-tier1-presets.md"
   echo "Full workflow guide:     docs/runbooks/aider-default-workflow.md"
@@ -117,6 +130,14 @@ while [[ $# -gt 0 ]]; do
       SKIP_VERIFIER=1; shift ;;
     --allow-large-insertions)
       ALLOW_LARGE_INSERTIONS=1; shift ;;
+    --with-context)
+      WITH_CONTEXT=1; shift ;;
+    --with-doctrine)
+      WITH_DOCTRINE=1; shift ;;
+    --strip-line-refs)
+      STRIP_LINE_REFS=1; shift ;;
+    --allow-ambiguous)
+      ALLOW_AMBIGUOUS=1; shift ;;
     --no-context)
       NO_CONTEXT=1; shift ;;
     --quiet|-q)
@@ -141,6 +162,30 @@ if [[ -z "$DESCRIPTION" ]]; then
   echo "ERROR: task description is required" >&2
   usage >&2
   exit 1
+fi
+
+DESCRIPTION_EFFECTIVE="$DESCRIPTION"
+
+if [[ $STRIP_LINE_REFS -eq 1 ]]; then
+  DESCRIPTION_EFFECTIVE="$(python3 - "$DESCRIPTION_EFFECTIVE" <<'PY'
+import re
+import sys
+
+text = sys.argv[1]
+text = re.sub(r'(?i)\b(?:at|on) line \d+\b', '', text)
+text = re.sub(r'\s+([,.;:!?])', r'\1', text)
+text = re.sub(r'\s{2,}', ' ', text).strip()
+print(text)
+PY
+  )"
+  if [[ $QUIET -eq 0 ]]; then
+    echo "[aider-task] stripped line references from description"
+  fi
+fi
+
+if [[ "$DESCRIPTION" =~ [[:space:]](at|on)[[:space:]]line[[:space:]][0-9]+ ]]; then
+  echo "[aider-task] WARN: line-number references detected; see docs/aider-prompt-conventions.md" >&2
+  echo "[aider-task] WARN: use --strip-line-refs to auto-remove them before Aider runs" >&2
 fi
 
 # --- Placeholder validation (runs before routing to prevent stray file creation) ---
@@ -189,6 +234,10 @@ else
   if [[ -n "$TASK_CLASS" ]]; then
     echo "[aider-task] task-class: $TASK_CLASS"
   fi
+fi
+
+if [[ $NO_CONTEXT -eq 1 && $QUIET -eq 0 ]]; then
+  echo "[aider-task] --no-context is now the default; flag is deprecated"
 fi
 
 # --- Log to router_events.jsonl with task_class populated ---
@@ -263,21 +312,64 @@ fi
 
 # --- System context injection (D-17-109) ---
 SYSTEM_CTX_FILE="$REPO_ROOT/config/system_knowledge.yaml"
-if [[ $NO_CONTEXT -eq 0 ]] && [[ -f "$SYSTEM_CTX_FILE" ]]; then
-  SYSTEM_CONTEXT="$(python3 bin/inject_system_context.py --print 2>/dev/null)" || SYSTEM_CONTEXT=""
+if [[ -f "$SYSTEM_CTX_FILE" ]] && [[ $WITH_DOCTRINE -eq 1 || $WITH_CONTEXT -eq 1 ]]; then
+  if [[ $WITH_DOCTRINE -eq 1 ]]; then
+    SYSTEM_CONTEXT="$(python3 bin/inject_system_context.py --print 2>/dev/null)" || SYSTEM_CONTEXT=""
+    SYSTEM_CONTEXT_MODE="doctrine"
+  else
+    SYSTEM_CONTEXT="$(python3 bin/inject_system_context.py --compact 2>/dev/null)" || SYSTEM_CONTEXT=""
+    SYSTEM_CONTEXT_MODE="compact"
+  fi
   if [[ -n "$SYSTEM_CONTEXT" ]]; then
+    SYSTEM_CONTEXT="$(python3 - "$SYSTEM_CONTEXT" <<'PY'
+import re
+import sys
+
+text = sys.argv[1]
+text = re.sub(r'https?://\S+', '[URL redacted]', text)
+print(text.rstrip())
+PY
+    )"
     CTX_CHARS="${#SYSTEM_CONTEXT}"
-    AIDER_MESSAGE="${SYSTEM_CONTEXT}"$'\n\n'"${DESCRIPTION}"
+    AIDER_MESSAGE="${SYSTEM_CONTEXT}"$'\n\n'"${DESCRIPTION_EFFECTIVE}"
     if [[ $QUIET -eq 1 ]]; then
       echo "[aider-task] system-context injected"
     else
-      echo "[aider-task] system-context injected (${CTX_CHARS} chars)"
+      echo "[aider-task] system-context injected (${SYSTEM_CONTEXT_MODE}, ${CTX_CHARS} chars)"
     fi
   else
-    AIDER_MESSAGE="$DESCRIPTION"
+    AIDER_MESSAGE="$DESCRIPTION_EFFECTIVE"
   fi
 else
-  AIDER_MESSAGE="$DESCRIPTION"
+  AIDER_MESSAGE="$DESCRIPTION_EFFECTIVE"
+fi
+
+if [[ $ALLOW_AMBIGUOUS -eq 1 ]]; then
+  TARGET_GUARD_FLAG=(--allow-ambiguous)
+else
+  TARGET_GUARD_FLAG=()
+fi
+
+if [[ ${#FILES[@]} -gt 0 ]]; then
+  for f in "${FILES[@]}"; do
+    if [[ -f "$f" ]]; then
+      set +e
+      TARGET_OUT=$(python3 bin/aider_guard.py \
+        --target-check \
+        --description "$DESCRIPTION_EFFECTIVE" \
+        --file-path "$f" \
+        "${TARGET_GUARD_FLAG[@]+"${TARGET_GUARD_FLAG[@]}"}" 2>&1)
+      TARGET_EXIT=$?
+      set -e
+      if [[ $TARGET_EXIT -ne 0 ]]; then
+        printf '%s\n' "$TARGET_OUT"
+        echo ""
+        echo "[aider-task] PRE-FLIGHT BLOCK — ambiguous target detected in $f"
+        echo "[aider-task] Use structural context (function/method/block) or pass --allow-ambiguous."
+        exit 3
+      fi
+    fi
+  done
 fi
 
 # --- Layer 2: Pre-flight task shape validator (D-17-103) ---
@@ -348,6 +440,9 @@ elif [[ $HARD_MODE -eq 1 ]]; then
 fi
 
 AIDER_ARGS+=(--message "$AIDER_MESSAGE")
+
+# Prevent Aider from scraping URLs out of the prompt/context block.
+AIDER_ARGS+=(--no-detect-urls)
 
 # Disable repo-map for message-mode runs: repo-map discovery causes Aider
 # to prompt "Add file to chat?" for related files, which blocks --message
@@ -524,6 +619,12 @@ PY
   # --- Layer 1.5: Dual-loop verifier (D-17-110) ---
   VERIFIER_EXIT=0
   if [[ "$SKIP_VERIFIER" -eq 0 && "${AIDER_SKIP_VERIFIER:-0}" != "1" && -f "bin/aider_verifier.py" ]]; then
+    if [[ -z "${AIDER_VERIFIER_API_BASE:-}" ]]; then
+      export AIDER_VERIFIER_API_BASE="http://192.168.10.142:11434"
+    fi
+    if [[ -z "${AIDER_VERIFIER_MODEL:-}" ]]; then
+      export AIDER_VERIFIER_MODEL="deepseek-coder-v2:16b-lite-instruct-q4_K_M"
+    fi
     FULL_DIFF="$(git diff "${CHANGED_FILES[@]}" 2>/dev/null)"
     if [[ -n "$FULL_DIFF" ]]; then
       set +e

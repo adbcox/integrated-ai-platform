@@ -68,7 +68,17 @@ scripts/aider-task.sh --model devstral:latest "Port to async" services/sync.py
 
 # Dry-run — print routing decision without executing Aider
 scripts/aider-task.sh --dry-run "Any task" services/foo.py
+
+# Opt-in context when you explicitly need it
+scripts/aider-task.sh --with-context "Small task that benefits from local context" services/foo.py
+scripts/aider-task.sh --with-doctrine "Multi-paragraph doc update" docs/architecture-facts/aider-intelligence-doctrine.md
+
+# Prompt hygiene and ambiguity control
+scripts/aider-task.sh --strip-line-refs "Replace bare except at line 114" bin/test_stage3_executor.py
+scripts/aider-task.sh --allow-ambiguous "Replace bare except clauses" bin/test_stage3_executor.py
 ```
+
+By default, `scripts/aider-task.sh` does **not** inject system context. That default flipped after D-17-111 showed the injected preamble could trigger URL scraping and repo-map noise. Use `--with-context` for the short preamble or `--with-doctrine` for the full block.
 
 ### Task class taxonomy (D-17-90)
 
@@ -192,6 +202,29 @@ design — learning wins over keywords when it has evidence.
 genuinely too complex for Aider, use `--model qwen2.5-coder:32b --hard`
 or invoke Claude Code directly. The learning layer will adjust based
 on outcome.
+
+### F6 — URL scraping or repo-map noise appears in the prompt path
+
+**Symptom:** Aider tries to fetch `http://...`/`https://...` or prints unrelated `Add file?` suggestions.
+
+**Cause:** The prompt or injected context still contains URL-like text, or the task triggered repo-map expansion.
+
+**Remediation:**
+- Keep context opt-in unless you actually need it.
+- Use `--with-context` instead of `--with-doctrine` for small tasks.
+- Use `--strip-line-refs` when the task description includes line numbers.
+- Prefer `--dry-run` first if the prompt shape is changing.
+
+### F7 — Ambiguous target blocked by the Layer 0 guard
+
+**Symptom:** `aider-task.sh` exits 3 with `PRE-FLIGHT BLOCK — ambiguous target detected`.
+
+**Cause:** The description names a repeated pattern (`bare except`, `return`, `import`, etc.) without a structural disambiguator.
+
+**Remediation:**
+- Rephrase with enclosing function/block context.
+- Use `--allow-ambiguous` only when you are intentionally testing the guard.
+- See `docs/aider-prompt-conventions.md` for the approved prompt shapes.
 
 ---
 

@@ -225,6 +225,64 @@ aider-task.sh --allow-large-insertions ...
 - Fix: `Modelfile-qwen3-coder-next-coding` sets `temp=0.15`; `Modelfile-qwen3-coder-30b-coding` sets `temp=0.1`
 - Both derivations use `num_ctx=32768` (was default 4096 — context window mismatch explained 360s timeouts on 31KB files)
 
+## Findings 25-30 — D-17-111 hardening, envelope data, and verifier proof
+
+### Finding 25 — System-context injection regressed into URL scraping / repo-map noise; default is now no-context
+
+The D-17-109 wrapper path that prepended the full system-context block caused a repeatable regression on tonight's no-context-sensitive task: Aider attempted to scrape `http://127.0.0.1:11434`, pulled in unrelated repo-map suggestions, and emitted narration instead of SEARCH/REPLACE output. The same task succeeded cleanly when the wrapper ran with no injected context.
+
+Doctrine change:
+- `scripts/aider-task.sh` now defaults to **no context**
+- `--with-context` injects the slim preamble only
+- `--with-doctrine` injects the full block only when explicitly requested
+- URL-like text in injected context is redacted before passing to Aider
+- `--no-detect-urls` is passed to Aider to suppress URL scraping
+
+### Finding 26 — Verifier env propagation must be layered, not shell-profile dependent
+
+`AIDER_VERIFIER_API_BASE` and `AIDER_VERIFIER_MODEL` lived only in `~/.zshrc` on the Mac Mini, so non-interactive shells (`zsh -l -c`, SSH commands, cron) did not inherit them and the verifier fell back to the wrong endpoint.
+
+Doctrine change:
+- `bin/aider_verifier.py` now defaults to the Mac Studio endpoint and DeepSeek verifier model when env vars are absent
+- `scripts/aider-task.sh` exports the same defaults before invoking the verifier
+- the verifier prints whether each setting came from `env`, `arg`, or `default`
+- optional `/etc/zshenv` persistence remains operator-controlled documentation only
+
+### Finding 27 — Wrong-target ambiguity is a Layer 0 failure mode, not a Layer 1/1.5 afterthought
+
+The `bin/test_stage3_executor.py` example has two `except` clauses. A prompt like "Replace bare except clauses with specific exception types" is ambiguous enough that the model can choose the wrong target unless the prompt is structurally disambiguated.
+
+Doctrine change:
+- `bin/aider_guard.py` now blocks ambiguous prompts before Aider runs when the description names a repeated pattern without structural context
+- `--allow-ambiguous` exists only as an explicit bypass for tests
+- the wrapper surfaces the block as a Layer 0 pre-flight failure
+
+### Finding 28 — Line-number disambiguators are brittle and break SEARCH/REPLACE formatting
+
+The line-number hint that seemed helpful in the moment (`at line 114`) is part of the failure mode. It pushes the model toward text matching and away from structural edits, and in this stack it degrades the quality of the Aider response.
+
+Doctrine change:
+- prompt conventions now prefer function/block/scope qualifiers over line numbers
+- `--strip-line-refs` is available to remove `at line N` / `on line N` hints before dispatch
+- prompt guidance is documented in `docs/aider-prompt-conventions.md`
+
+### Finding 29 — Empirical envelope is narrower than the old "<=25KB green" assumption
+
+The wrapper benchmark on 2026-05-04 sampled 9 Python files across 5KB → 114KB and produced only one clean success:
+- `bin/aider_worker.py` (`7999` bytes, `13` def/class lines) succeeded in `51.51s` with `AGREE`
+- `bin/aider_lib.py` (`5234` bytes) failed after `42.22s`
+- `bin/aider_benchmark.py` (`15639` bytes) failed after `119.64s`
+- `bin/stage5_manager.py` (`22844` bytes) exited `0` but produced no diff
+- the remaining larger samples either hit guard/router exits immediately or produced no usable change
+
+Conclusion: the old envelope claim is refuted by this sample. The current wrapper baseline is not reliably green across the 5KB–30KB band, and success is already fragile by ~8KB.
+
+### Finding 30 — Live dual-loop verification currently has a false-negative blind spot on wrong-target diffs
+
+The live Aider run on `bin/test_stage3_executor.py` earlier in this session selected the bare `except:` correctly. To prove the dual-loop path, a wrong-target diff was then replayed through the verifier: the diff changed the specific `except json.JSONDecodeError` clause instead of the bare `except:`. `bin/aider_guard.py` blocked the diff as ambiguous, but `bin/aider_verifier.py` still returned `AGREE`.
+
+Conclusion: the current verifier prompt / model combination can miss a wrong-target edit if the diff is locally plausible. The verifier is useful, but not sufficient as a sole correctness gate on this class of edit. Proof artifact: `artifacts/aider_dual_loop_proof_2026-05-04.log`.
+
 ---
 
 ## Override Ladder (updated D-17-109)
@@ -250,7 +308,9 @@ aider-task.sh --allow-large-insertions ...
 - **D-17-109** — Aider performance tuning: Modelfile derivations (temp, ctx), system context injection, Layer 1 expansion guard
 - **D-17-110** — Layer 1.5 dual-loop verifier; see `docs/architecture-facts/aider-verifier-doctrine.md`
 - `docs/runbooks/aider-default-workflow.md` §13 — operator-facing procedure incorporating all layers
+- `docs/aider-prompt-conventions.md` — prompt-shape rules for structural disambiguation
 - `docs/architecture-facts/work-routing-doctrine.md` — Tier boundary definitions that Layer 2 enforces
 - `docs/architecture-facts/aider-verifier-doctrine.md` — Layer 1.5 model selection, bypass ladder, verdict semantics
+- `bin/aider_envelope_benchmark.py` — envelope benchmark harness used for Finding 29
 - `config/ollama/Modelfile-qwen3-coder-30b-coding` — temp=0.1, num_ctx=32768 derivation
 - `config/ollama/Modelfile-qwen3-coder-next-coding` — temp=0.15, num_ctx=32768 derivation

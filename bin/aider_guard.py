@@ -13,6 +13,7 @@
 # Operator override: AIDER_SKIP_VALIDATOR=1 or --skip-validator
 import argparse
 import json
+import re
 import subprocess
 import sys
 import time
@@ -101,6 +102,110 @@ def is_append_task(description: str) -> bool:
     desc_lower = description.lower()
     append_kws = ["append", "add ", "extend", "insert", "prepend", "attach"]
     return any(kw in desc_lower for kw in append_kws)
+
+
+def has_disambiguator(description: str) -> bool:
+    """Return True when the description carries structural disambiguation."""
+    return bool(re.search(
+        r"\b(line\s+\d+|function\s+\w+|method\s+\w+|inside\b|within\b|before\b|after\b|block\b)",
+        description,
+        re.IGNORECASE,
+    ))
+
+
+def detect_ambiguous_targets(description: str) -> list[str]:
+    """Extract likely ambiguous target phrases from a task description."""
+    desc = description.lower()
+    targets: list[str] = []
+    if "bare except" in desc or "except clause" in desc or "except clauses" in desc:
+        targets.append("except")
+    if "bare return" in desc or "return statement" in desc:
+        targets.append("return")
+    if "bare import" in desc or "import statement" in desc:
+        targets.append("import")
+    if "bare raise" in desc or "raise statement" in desc:
+        targets.append("raise")
+    if "bare continue" in desc:
+        targets.append("continue")
+    if "bare pass" in desc:
+        targets.append("pass")
+    return sorted(set(targets))
+
+
+def _target_matches_for_file(path: str, target: str) -> tuple[int, int, list[int]]:
+    """Return total match count, bare match count, and matching line numbers."""
+    try:
+        text = Path(path).read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return 0, 0, []
+
+    total = 0
+    bare = 0
+    lines: list[int] = []
+
+    if target == "except":
+        pattern = re.compile(r"^\s*except\b")
+        bare_pattern = re.compile(r"^\s*except\s*:\s*(#.*)?$")
+    elif target == "return":
+        pattern = re.compile(r"^\s*return\b")
+        bare_pattern = pattern
+    elif target == "import":
+        pattern = re.compile(r"^\s*(?:import\b|from\b)")
+        bare_pattern = pattern
+    elif target == "raise":
+        pattern = re.compile(r"^\s*raise\b")
+        bare_pattern = pattern
+    elif target == "continue":
+        pattern = re.compile(r"^\s*continue\b")
+        bare_pattern = pattern
+    elif target == "pass":
+        pattern = re.compile(r"^\s*pass\b")
+        bare_pattern = pattern
+    else:
+        pattern = re.compile(rf"\b{re.escape(target)}\b")
+        bare_pattern = pattern
+
+    for idx, line in enumerate(text.splitlines(), start=1):
+        if pattern.search(line):
+            total += 1
+            lines.append(idx)
+        if bare_pattern.search(line):
+            bare += 1
+    return total, bare, lines
+
+
+def pre_flight_target_check(
+    description: str,
+    file_path: str,
+    allow_ambiguous: bool = False,
+) -> List[Tuple[str, str]]:
+    """Block ambiguous targets that need structural disambiguation."""
+    if allow_ambiguous:
+        return []
+    if not file_path:
+        return []
+
+    issues: List[Tuple[str, str]] = []
+    if has_disambiguator(description):
+        return issues
+
+    for target in detect_ambiguous_targets(description):
+        total, bare, lines = _target_matches_for_file(file_path, target)
+        if total <= 1:
+            continue
+        if target == "except" and bare == 1:
+            issues.append((
+                "block",
+                f"ambiguous: {total} except clauses found, {bare} bare. "
+                f"Specify by function name or unique pre/post context.",
+            ))
+        else:
+            issues.append((
+                "block",
+                f"ambiguous target '{target}': {total} matches in {file_path} at lines {', '.join(map(str, lines[:6]))}. "
+                f"Specify by function name or unique pre/post context.",
+            ))
+    return issues
 
 
 def count_definitions(path: str) -> int:
@@ -339,6 +444,8 @@ def run_inline_checks(
         return 0
 
     all_issues: List[Tuple[str, str]] = []
+    for path in changed:
+        all_issues.extend(pre_flight_target_check(description, path))
     all_issues.extend(check_deletion_rates(description, task_class, changed))
     all_issues.extend(check_truncation(description, changed))
     all_issues.extend(check_insertion_expansion(changed, allow_large_insertions))
@@ -381,7 +488,7 @@ def main():
     parser = argparse.ArgumentParser(description="Guardrail enforcement for Aider patches")
     parser.add_argument("--task-file", help="Task JSON file (batch pipeline mode)")
     parser.add_argument("--inline", action="store_true", help="Inline mode (from aider-task.sh)")
-    parser.add_argument("--description", default="", help="Task description (inline mode)")
+    parser.add_argument("--description", default="", help="Task description (inline / target-check mode)")
     parser.add_argument("--task-class", default="", help="Task class C0/C1/C2/C3 (inline mode)")
     parser.add_argument("--files", nargs="*", default=[], help="Changed files (inline mode)")
     parser.add_argument("--skip-validation", action="store_true")
@@ -389,12 +496,41 @@ def main():
                         help="Operator override: skip all guard checks")
     parser.add_argument("--allow-large-insertions", action="store_true",
                         help="Bypass insertion-expansion check for legitimate large refactors")
+    parser.add_argument("--target-check", action="store_true",
+                        help="Run only the ambiguous-target pre-flight check")
+    parser.add_argument("--file-path", default="", help="Single file path (target-check mode)")
+    parser.add_argument("--allow-ambiguous", action="store_true",
+                        help="Bypass the ambiguous-target pre-flight check")
     args = parser.parse_args()
 
     # Operator override via flag or env
     import os
     if args.skip_validator or os.environ.get("AIDER_SKIP_VALIDATOR") == "1":
         print("[aider-guard] SKIPPED (operator override)")
+        sys.exit(0)
+
+    if args.target_check:
+        issues = pre_flight_target_check(
+            args.description,
+            args.file_path,
+            allow_ambiguous=args.allow_ambiguous,
+        )
+        if issues:
+            for sev, msg in issues:
+                print(f"[aider-guard] {sev.upper()}: {msg}", file=sys.stderr)
+            artifact = ARTIFACT_DIR / f"guard-target-{int(time.time())}.json"
+            ARTIFACT_DIR.mkdir(parents=True, exist_ok=True)
+            artifact.write_text(json.dumps({
+                "mode": "target_check",
+                "description": args.description,
+                "file_path": args.file_path,
+                "blocks": [msg for sev, msg in issues if sev == "block"],
+                "warns": [msg for sev, msg in issues if sev == "warn"],
+                "timestamp": int(time.time()),
+            }, indent=2) + "\n")
+            print(f"[aider-guard] artifact: {artifact}", file=sys.stderr)
+            sys.exit(1)
+        print("[aider-guard] target-check PASSED")
         sys.exit(0)
 
     # Inline mode — wired from aider-task.sh

@@ -1,0 +1,35 @@
+=== Wrong-target verifier proof ===
+File: bin/test_stage3_executor.py
+Description: Replace bare except clauses with specific exception types
+
+--- git diff ---
+diff --git a/bin/test_stage3_executor.py b/bin/test_stage3_executor.py
+index c537fe06..227096fa 100755
+--- a/bin/test_stage3_executor.py
++++ b/bin/test_stage3_executor.py
+@@ -84,7 +84,7 @@ def test_stage3_with_executor() -> int:
+                 print(f"\n⚠ Aider executor was used (fallback)")
+             else:
+                 print(f"\n? Unknown executor: {executor_name}")
+-        except json.JSONDecodeError as e:
++        except (json.JSONDecodeError, FileNotFoundError) as e:
+             print(f"✗ Could not parse executor log: {e}")
+     else:
+         print(f"✗ No executor log found at: {executor_log.relative_to(REPO_ROOT)}")
+
+--- layer 1 guard ---
+[aider-guard] running inline diff sanity checks...
+[aider-guard] Diff sanity check FAILED — review diff before applying.
+[aider-guard] Override: AIDER_SKIP_VALIDATOR=1 or --skip-validator
+[aider-guard] artifact: /Users/admin/repos/integrated-ai-platform/artifacts/aider_runs/guard-inline-1777945567.json
+
+--- layer 1.5 verifier ---
+[aider-verifier] verifier=AGREE (4.1s)
+
+NOTE: The live Aider direct run on this file earlier in the session selected the bare `except:` correctly. The wrong-target diff above was constructed deliberately to probe verifier behavior; the verifier still returned AGREE, which is a false negative.
+
+--- live Aider run summary ---
+[aider-local] OLLAMA_API_BASE=http://192.168.10.142:11434
+[aider-local] model=ollama_chat/qwen3-coder:30b-coding map_tokens=0 timeout=360
+Repo-map: disabled
+Applied edit to bin/test_stage3_executor.py

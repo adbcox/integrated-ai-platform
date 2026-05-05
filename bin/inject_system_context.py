@@ -160,6 +160,17 @@ def build_context_block() -> str:
     return "\n".join(lines)
 
 
+def build_compact_context_block() -> str:
+    """Build a short default context block for Aider prompts."""
+    lines = [
+        "INTEGRATED AI PLATFORM — SYSTEM CONTEXT",
+        "Prefer small targeted edits.",
+        "Stay within the named file(s) and avoid broad refactors.",
+        "Do not add doctrine or runbook detail unless --with-doctrine is used.",
+    ]
+    return "\n".join(lines)
+
+
 def build_aider_conf() -> str:
     """Build a complete .aider.conf.yml content."""
     cfg = _load_yaml(_CONFIG) if _CONFIG.exists() else {}
@@ -236,11 +247,12 @@ def main() -> int:
     parser.add_argument("--json",             action="store_true", help="Output context as JSON")
     parser.add_argument("--export-env",       action="store_true", help="Output shell export statement")
     parser.add_argument("--write-aider-conf", action="store_true", help="Write/update .aider.conf.yml")
+    parser.add_argument("--compact",          action="store_true", help="Print a short context block")
     parser.add_argument("--prompt",           default="",          help="Prepend context to this prompt string")
     parser.add_argument("--dry-run",          action="store_true", help="Show what would be written without writing")
     args = parser.parse_args()
 
-    if not any([args.print, args.json, args.export_env, args.write_aider_conf, args.prompt]):
+    if not any([args.print, args.json, args.export_env, args.write_aider_conf, args.prompt, args.compact]):
         parser.print_help()
         return 0
 
@@ -256,7 +268,7 @@ def main() -> int:
             print(f"✓ Wrote {_AIDER_CONF}")
         return 0
 
-    ctx = build_context_block()
+    ctx = build_compact_context_block() if args.compact else build_context_block()
 
     if args.json:
         cfg = _load_yaml(_CONFIG) if _CONFIG.exists() else {}
@@ -266,6 +278,10 @@ def main() -> int:
     if args.export_env:
         escaped = ctx.replace("'", "'\\''")
         print(f"export SYSTEM_CONTEXT='{escaped}'")
+        return 0
+
+    if args.compact:
+        print(ctx)
         return 0
 
     if args.prompt:
