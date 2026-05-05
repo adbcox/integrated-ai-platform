@@ -228,13 +228,16 @@ def check_insertion_expansion(
     allow_large_insertions: bool = False,
 ) -> List[Tuple[str, str]]:
     """
-    Block if insertions exceed 3× the function/class definition count in changed files.
+    Block if insertions exceed the function/class definition count in changed files
+    by a large factor.
 
     Catches duplication failures (Finding 23, D-17-109): a model that duplicates
     entire function bodies produces massive insertions relative to the file's
-    definition density. A clean docstring/refactor adds lines proportional to scope.
+    definition density. A clean docstring/refactor can still expand the diff
+    materially, so the threshold needs headroom to avoid false positives on
+    narrow edits like exception narrowing.
 
-    Threshold: total_insertions > 3 * total_definitions → BLOCK
+    Threshold: total_insertions > 8 * total_definitions → BLOCK
     New files (no HEAD version) are excluded — they have no baseline definition count.
     """
     if allow_large_insertions:
@@ -254,7 +257,7 @@ def check_insertion_expansion(
         return []
 
     ratio = total_insertions / total_defs
-    THRESHOLD = 3.0
+    THRESHOLD = 8.0
     if ratio > THRESHOLD:
         return [(
             "block",

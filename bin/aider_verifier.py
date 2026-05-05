@@ -33,7 +33,12 @@ import urllib.request
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).parent.parent
-DEFAULT_PROMPT_TEMPLATE = REPO_ROOT / "config/prompts/library/v1.0.0/07-deepseek-verifier-prompt.md"
+DEFAULT_PROMPT_TEMPLATE = Path(
+    os.environ.get(
+        "AIDER_VERIFIER_PROMPT_TEMPLATE",
+        str(REPO_ROOT / "config/prompts/library/v1.1.0/07-deepseek-verifier-prompt.md"),
+    )
+)
 VERIFIER_LOG = REPO_ROOT / "artifacts/aider_runs/verifier_events.jsonl"
 
 DEFAULT_MODEL = "deepseek-coder-v2:16b-lite-instruct-q4_K_M"

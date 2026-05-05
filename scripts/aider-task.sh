@@ -625,6 +625,9 @@ PY
     if [[ -z "${AIDER_VERIFIER_MODEL:-}" ]]; then
       export AIDER_VERIFIER_MODEL="deepseek-coder-v2:16b-lite-instruct-q4_K_M"
     fi
+    if [[ -z "${AIDER_VERIFIER_PROMPT_TEMPLATE:-}" ]]; then
+      export AIDER_VERIFIER_PROMPT_TEMPLATE="$REPO_ROOT/config/prompts/library/v1.1.0/07-deepseek-verifier-prompt.md"
+    fi
     FULL_DIFF="$(git diff "${CHANGED_FILES[@]}" 2>/dev/null)"
     if [[ -n "$FULL_DIFF" ]]; then
       set +e

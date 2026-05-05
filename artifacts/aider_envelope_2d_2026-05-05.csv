@@ -1,0 +1,37 @@
+task_type,task_description,file_path,file_size_bytes,line_count,function_count,prompt_token_estimate,time_seconds,exit_code,diff_size_bytes,layer1_pass,layer1_5_verdict,applicable,success_boolean,success_reason
+docstring-add,Add a one-line docstring to every function in this file that lacks one.,bin/aider_lib.py,5234,150,15,1327,35.06,0,930,1,AGREE,1,0,2 defs still lack docstrings
+docstring-add,Add a one-line docstring to every function in this file that lacks one.,bin/aider_worker.py,7999,238,13,1958,48.63,0,2140,1,AGREE,1,1,all missing docstrings added
+docstring-add,Add a one-line docstring to every function in this file that lacks one.,bin/aider_benchmark.py,15639,411,20,3928,119.51,0,0,1,N-A,0,1,no missing docstrings in original
+docstring-add,Add a one-line docstring to every function in this file that lacks one.,bin/stage5_manager.py,22844,587,22,5729,211.42,0,0,1,N-A,1,0,applicable task produced no diff
+docstring-add,Add a one-line docstring to every function in this file that lacks one.,bin/aider_guard.py,24434,653,22,6117,218.59,0,0,1,N-A,1,0,applicable task produced no diff
+docstring-add,Add a one-line docstring to every function in this file that lacks one.,bin/level10_qualify.py,25626,644,19,6425,0.09,1,0,1,N-A,1,0,wrapper exit 1
+docstring-add,Add a one-line docstring to every function in this file that lacks one.,framework/worker_runtime.py,42165,1004,28,10559,0.09,1,0,1,N-A,1,0,wrapper exit 1
+docstring-add,Add a one-line docstring to every function in this file that lacks one.,domains/coding.py,29735,808,19,7439,0.09,1,0,1,N-A,1,0,wrapper exit 1
+docstring-add,Add a one-line docstring to every function in this file that lacks one.,bin/codex51_learning_loop.py,114713,2695,59,28696,0.08,1,0,1,N-A,1,0,wrapper exit 1
+bare-except-narrow,Replace any bare 'except:' clauses with 'except Exception:'.,bin/aider_lib.py,5234,150,15,1324,0.09,1,0,1,N-A,0,0,wrapper exit 1
+bare-except-narrow,Replace any bare 'except:' clauses with 'except Exception:'.,bin/aider_worker.py,7999,238,13,1956,0.09,1,0,1,N-A,0,0,wrapper exit 1
+bare-except-narrow,Replace any bare 'except:' clauses with 'except Exception:'.,bin/aider_benchmark.py,15639,411,20,3925,0.08,1,0,1,N-A,0,0,wrapper exit 1
+bare-except-narrow,Replace any bare 'except:' clauses with 'except Exception:'.,bin/stage5_manager.py,22844,587,22,5726,0.08,1,0,1,N-A,0,0,wrapper exit 1
+bare-except-narrow,Replace any bare 'except:' clauses with 'except Exception:'.,bin/aider_guard.py,24434,653,22,6114,0.08,1,0,1,N-A,0,0,wrapper exit 1
+bare-except-narrow,Replace any bare 'except:' clauses with 'except Exception:'.,bin/level10_qualify.py,25626,644,19,6422,0.08,1,0,1,N-A,0,0,wrapper exit 1
+bare-except-narrow,Replace any bare 'except:' clauses with 'except Exception:'.,framework/worker_runtime.py,42165,1004,28,10557,0.08,1,0,1,N-A,0,0,wrapper exit 1
+bare-except-narrow,Replace any bare 'except:' clauses with 'except Exception:'.,domains/coding.py,29735,808,19,7436,0.08,1,0,1,N-A,0,0,wrapper exit 1
+bare-except-narrow,Replace any bare 'except:' clauses with 'except Exception:'.,bin/codex51_learning_loop.py,114713,2695,59,28694,0.09,1,0,1,N-A,0,0,wrapper exit 1
+type-hint-add,Add type hints to all function signatures in this file.,bin/aider_lib.py,5234,150,15,1323,0.09,1,0,1,N-A,1,0,wrapper exit 1
+type-hint-add,Add type hints to all function signatures in this file.,bin/aider_worker.py,7999,238,13,1954,0.08,1,0,1,N-A,1,0,wrapper exit 1
+type-hint-add,Add type hints to all function signatures in this file.,bin/aider_benchmark.py,15639,411,20,3924,0.08,1,0,1,N-A,0,0,wrapper exit 1
+type-hint-add,Add type hints to all function signatures in this file.,bin/stage5_manager.py,22844,587,22,5725,0.08,1,0,1,N-A,1,0,wrapper exit 1
+type-hint-add,Add type hints to all function signatures in this file.,bin/aider_guard.py,24434,653,22,6113,0.09,1,0,1,N-A,1,0,wrapper exit 1
+type-hint-add,Add type hints to all function signatures in this file.,bin/level10_qualify.py,25626,644,19,6421,0.08,1,0,1,N-A,0,0,wrapper exit 1
+type-hint-add,Add type hints to all function signatures in this file.,framework/worker_runtime.py,42165,1004,28,10555,0.09,1,0,1,N-A,1,0,wrapper exit 1
+type-hint-add,Add type hints to all function signatures in this file.,domains/coding.py,29735,808,19,7435,0.09,1,0,1,N-A,1,0,wrapper exit 1
+type-hint-add,Add type hints to all function signatures in this file.,bin/codex51_learning_loop.py,114713,2695,59,28692,0.08,1,0,1,N-A,0,0,wrapper exit 1
+function-extract,Extract any code block longer than 30 lines that appears inside a function into a separate helper function.,bin/aider_lib.py,5234,150,15,1336,0.08,1,0,1,N-A,0,0,wrapper exit 1
+function-extract,Extract any code block longer than 30 lines that appears inside a function into a separate helper function.,bin/aider_worker.py,7999,238,13,1967,0.08,1,0,1,N-A,1,0,wrapper exit 1
+function-extract,Extract any code block longer than 30 lines that appears inside a function into a separate helper function.,bin/aider_benchmark.py,15639,411,20,3937,0.08,1,0,1,N-A,1,0,wrapper exit 1
+function-extract,Extract any code block longer than 30 lines that appears inside a function into a separate helper function.,bin/stage5_manager.py,22844,587,22,5738,0.08,1,0,1,N-A,1,0,wrapper exit 1
+function-extract,Extract any code block longer than 30 lines that appears inside a function into a separate helper function.,bin/aider_guard.py,24434,653,22,6126,0.08,1,0,1,N-A,1,0,wrapper exit 1
+function-extract,Extract any code block longer than 30 lines that appears inside a function into a separate helper function.,bin/level10_qualify.py,25626,644,19,6434,0.09,1,0,1,N-A,1,0,wrapper exit 1
+function-extract,Extract any code block longer than 30 lines that appears inside a function into a separate helper function.,framework/worker_runtime.py,42165,1004,28,10568,0.09,1,0,1,N-A,1,0,wrapper exit 1
+function-extract,Extract any code block longer than 30 lines that appears inside a function into a separate helper function.,domains/coding.py,29735,808,19,7448,0.08,1,0,1,N-A,1,0,wrapper exit 1
+function-extract,Extract any code block longer than 30 lines that appears inside a function into a separate helper function.,bin/codex51_learning_loop.py,114713,2695,59,28705,0.09,1,0,1,N-A,1,0,wrapper exit 1

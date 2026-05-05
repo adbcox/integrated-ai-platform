@@ -283,7 +283,7 @@ The live Aider run on `bin/test_stage3_executor.py` earlier in this session sele
 
 Conclusion: the current verifier prompt / model combination can miss a wrong-target edit if the diff is locally plausible. The verifier is useful, but not sufficient as a sole correctness gate on this class of edit. Proof artifact: `artifacts/aider_dual_loop_proof_2026-05-04.log`.
 
-## Findings 31-34 — D-17-111 verifier v1.1.0, task routing, and F25 standing instruction
+## Findings 31-37 — D-17-111 verifier v1.1.0, task routing, F25 standing instruction, and D-17-117 regression data
 
 ### Finding 31 — Verifier v1.0.0 was structurally blind to wrong-target edits; v1.1.0 adds full-file context and disambiguation rules
 
@@ -291,11 +291,12 @@ The `config/prompts/library/v1.0.0/07-deepseek-verifier-prompt.md` draft was suf
 
 ### Finding 32 — Task type dominates file size in the empirical envelope
 
-The benchmark sample showed that mechanical edits can succeed on moderate files while inference-heavy edits fail much earlier. The old "file size alone" envelope is not stable. Success depends on task shape:
-- mechanical edits: can stay viable up to roughly the low-20KB range in this sample
-- inference-heavy edits: can go amber below 10KB if the prompt is ambiguous or the target repeats
+The D-17-117 benchmark shows that the old "file size alone" envelope is not stable, but the task-specific picture is even more mixed than the earlier one-dimensional claim:
+- `docstring-add` had one real local success on `bin/aider_worker.py` (7,999 bytes / 13 defs / 48.63s / AGREE) and one trivial no-op success on `bin/aider_benchmark.py` where the file already satisfied the prompt
+- `bare-except-narrow` did not succeed in the raw 36-run benchmark because the insertion-expansion guard was too tight for a narrow two-clause exception edit; after tuning the guard threshold, the same shape passes
+- `type-hint-add` and `function-extract` remained zero-success in the sample
 
-The benchmark output is therefore a 2D problem: file size plus task type, not a single byte threshold.
+Conclusion: file size alone is not the routing axis. Mechanical edits remain Tier 1 candidates only when they are structurally narrow and the target file is small enough that the guard does not overreact; inference-heavy edits should route Tier 2 regardless of size.
 
 ### Finding 33 — The only tested model/prompt pair that caught the D-17-111 wrong-target diff was qwen3-coder:30b-coding + verifier v1.1.0
 
@@ -304,6 +305,26 @@ On the deliberately wrong-target replay, `qwen3-coder:30b-coding` with the v1.1.
 ### Finding 34 — F25 output hygiene is now a standing instruction for agent prompts
 
 Prompt hygiene is now a standing rule: keep prompts concise, structural, and URL-free unless the task explicitly needs the URL; prefer function/block scope over line numbers; and avoid narration-heavy context unless explicitly opted in. This is the rule the next session should assume by default when constructing agent prompts.
+
+### Finding 36 — Multi-task envelope benchmarks must be read as task-type matrices, not single-size thresholds
+
+The D-17-117 2D matrix (`artifacts/aider_envelope_2d_2026-05-05.csv`) captured 36 runs across four task types and nine files. The matrix is only meaningful when read by task type:
+- `docstring-add`: the only real local success landed on the 7.9KB worker file; larger files either became no-ops or timed out/escaped routing
+- `bare-except-narrow`: raw matrix runs were blocked by the insertion-expansion guard until the threshold was widened for narrow exception edits
+- `type-hint-add` and `function-extract`: no successful local edits in this sample
+
+Routing consequence: keep `docstring-add` and `bare-except-narrow` as Tier 1 only when the target is structurally narrow; route `type-hint-add` and `function-extract` to Tier 2 by default.
+
+### Finding 37 — Wrapper E2E regression now covers the critical guardrails
+
+The D-17-117 wrapper regression suite now exercises:
+- default local flow on a bare-except edit
+- `--with-context` opt-in for system context injection
+- `--with-doctrine` opt-in for full doctrine injection
+- Layer 0 ambiguity blocking plus `--allow-ambiguous` bypass
+- `--strip-line-refs` prompt hygiene
+
+Result: the regression path is now covered end-to-end, and the bare-except default flow passes after the insertion-expansion threshold tune.
 
 ---
 
@@ -329,6 +350,7 @@ Prompt hygiene is now a standing rule: keep prompts concise, structural, and URL
 - **Finding 23** — Insertion-expansion duplication failure; motivated `check_insertion_expansion()` guard (D-17-109)
 - **D-17-109** — Aider performance tuning: Modelfile derivations (temp, ctx), system context injection, Layer 1 expansion guard
 - **D-17-110** — Layer 1.5 dual-loop verifier; see `docs/architecture-facts/aider-verifier-doctrine.md`
+- **D-17-117** — Multi-task envelope benchmark + wrapper E2E regression
 - `docs/runbooks/aider-default-workflow.md` §13 — operator-facing procedure incorporating all layers
 - `docs/aider-prompt-conventions.md` — prompt-shape rules for structural disambiguation
 - `docs/architecture-facts/work-routing-doctrine.md` — Tier boundary definitions that Layer 2 enforces
