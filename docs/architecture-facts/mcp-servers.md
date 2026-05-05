@@ -94,6 +94,8 @@ set -a && . /vault/secrets/credentials.env && set +a && exec <binary>
 | Server | Vault path(s) |
 |---|---|
 | plex-mcp | `secret/plex/api`, `secret/arr/{sonarr,radarr}` |
+
+`plex-mcp.internal` is the MCP control surface, not the Plex Media Server. The media server canonical name is `plex.internal` (see `docs/architecture-facts/media-stack-doctrine.md`).
 | obot | `secret/obot/{admin,github,plane}` |
 
 ---

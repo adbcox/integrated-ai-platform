@@ -212,6 +212,15 @@ plex-mcp.internal {
     reverse_proxy host.docker.internal:8094
 }
 
+plex.internal {
+    import access_log
+
+    reverse_proxy 192.168.10.201:32400 {
+        header_up Host {http.reverse_proxy.upstream.host}
+        flush_interval -1
+    }
+}
+
 # ── Smart Home (Phase 13 Block 3) ──────────────────────────────────────
 # Home Assistant lives on a separate LAN host (Intel NUC at 192.168.10.141),
 # not in the Mac Mini docker network. Reverse-proxy uses the LAN address
