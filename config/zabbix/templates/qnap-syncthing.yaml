@@ -1,0 +1,55 @@
+template:
+  name: Template QNAP Syncthing HTTP
+  group: Templates/Applications
+  host: qnap-ts-x72
+  transport: trapper
+  collector:
+    script: scripts/qnap-syncthing-zabbix-sender.sh
+    schedule: "*/5 * * * *"
+  macros:
+    - macro: '{$SYNCTHING_QNAP_URL}'
+      value: 'http://192.168.10.201:8384'
+      note: Canonical LAN REST endpoint for QNAP Syncthing HTTP polling.
+    - macro: '{$SYNCTHING_QNAP_FOLDER_ID}'
+      value: 'is5fj-3grur'
+      note: QNAP folder id for the sabnzbd-complete mirror.
+    - macro: '{$SYNCTHING_QNAP_PENDING_BYTES}'
+      value: '107374182400'
+      note: 100 GiB threshold for excessive pending bytes.
+    - macro: '{$SYNCTHING_QNAP_API_KEY}'
+      vault:
+        path: secret/syncthing/qnap
+        field: api_key
+      note: Populated from Vault at provision time.
+  items:
+    - key: d17119.qnap.syncthing.rest.alive
+      name: QNAP Syncthing REST alive
+      value_type: numeric
+    - key: d17119.qnap.syncthing.folder.state
+      name: QNAP Syncthing folder state
+      value_type: numeric
+    - key: d17119.qnap.syncthing.folder.need_files
+      name: QNAP Syncthing folder need files
+      value_type: numeric
+    - key: d17119.qnap.syncthing.folder.need_bytes
+      name: QNAP Syncthing folder need bytes
+      value_type: numeric
+    - key: d17119.qnap.syncthing.system.uptime
+      name: QNAP Syncthing system uptime
+      value_type: numeric
+  triggers:
+    - name: QNAP Syncthing REST unreachable
+      severity: high
+      expression: 'last(/qnap-ts-x72/d17119.qnap.syncthing.rest.alive)=0 or nodata(/qnap-ts-x72/d17119.qnap.syncthing.rest.alive,5m)=1'
+    - name: QNAP Syncthing folder error state
+      severity: high
+      expression: 'last(/qnap-ts-x72/d17119.qnap.syncthing.folder.state)=3 or nodata(/qnap-ts-x72/d17119.qnap.syncthing.folder.state,5m)=1'
+    - name: QNAP Syncthing sync stalled
+      severity: warning
+      expression: 'last(/qnap-ts-x72/d17119.qnap.syncthing.folder.state)<>0 and min(/qnap-ts-x72/d17119.qnap.syncthing.folder.need_files,1h)>0'
+    - name: QNAP Syncthing pending bytes excessive
+      severity: info
+      expression: 'min(/qnap-ts-x72/d17119.qnap.syncthing.folder.need_bytes,30m)>{$SYNCTHING_QNAP_PENDING_BYTES}'
+    - name: QNAP Syncthing OOM-restart pattern
+      severity: warning
+      expression: 'count(/qnap-ts-x72/d17119.qnap.syncthing.system.uptime,1h,"lt",600)>=2'

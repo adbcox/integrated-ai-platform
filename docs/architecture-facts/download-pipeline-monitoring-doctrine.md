@@ -78,6 +78,21 @@ Items 1–3 from the original gap list:
 
 4. **SABnzbd recent-failures-only trigger** (new, D-17-107): Operator requested tuning the failed-jobs trigger to fire only on failures-in-last-7-days, not cumulative count. Current implementation (`d17105.sab.failed_jobs` via `mode=history&failed_only=1&limit=100`) returns all current failed items in history. The `limit=100` parameter bounds it but the rolling-7-day window requires either: (a) Zabbix calculated item with `last()` against a timestamp item, or (b) SABnzbd API filtering by date client-side. Deferred — current SABnzbd behavior of clearing stale failures on success is operationally adequate.
 
+## Finding 25 — QNAP Syncthing needs direct REST monitoring, not just staleness fallback (D-17-119, 2026-05-05)
+
+**Operational conclusion:** The silent-OOM QNAP Syncthing outage from D-17-112 is now monitored directly in Zabbix instead of relying only on the 48h staleness backstop.
+
+**Implemented surface:** `Template QNAP Syncthing HTTP` on host `qnap-ts-x72`. Direct Zabbix HTTP-agent polling from the server container was blocked by QNAP/network filtering, so the implementation uses a Mac Mini collector (`scripts/qnap-syncthing-zabbix-sender.sh`) that polls the REST API with `X-API-Key` from `secret/syncthing/qnap` and pushes trapper values. The monitored surface is:
+
+- REST alive (`/rest/system/ping`)
+- folder state (`/rest/db/status?folder=is5fj-3grur`)
+- folder backlog (`needFiles`, `needBytes`)
+- process uptime (`/rest/system/status`)
+
+**Trigger set:** REST unreachable, folder error state, sync stalled, pending bytes excessive, and OOM-restart pattern. This closes the deferred WP-09d gap from D-17-112.
+
+**Monitoring posture:** The staleness trigger remains as a backstop, but the 5-minute REST check is the real early-warning signal for the next silent QNAP Syncthing failure.
+
 ## Finding 24 — Syncthing QNAP is a silent SPOF for all arr-stack imports (D-17-112, 2026-05-04)
 
 **Failure mode observed:** Syncthing process on QNAP died silently (no error log entry; OOM kill suspected — process exited cleanly without logging cause). No monitoring existed for the QNAP Syncthing process health — the existing Zabbix trapper item (`com.iap.syncthing-zabbix-sender` launchd on Mac Mini) pushes staleness metrics from the QNAP GUI, but if Syncthing itself is dead, the GUI is unreachable and the sender logs an error but does NOT emit a Zabbix alert — the trapper item simply goes stale (which does eventually fire the staleness trigger at 48h).
