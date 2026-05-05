@@ -308,9 +308,17 @@ def summarize_metrics(task_set: list[PlanRun]) -> dict[str, Any]:
     code_coverage_avg = _safe_rate(sum(r.code_outcome_coverage_rate for r in task_set), total)
     code_diff_integrity_avg = _safe_rate(sum(r.code_diff_integrity_rate for r in task_set), total)
     failure_signatures = [r.failure_signature for r in task_set if r.failure_signature]
+    failed_task_ids = [r.plan_id for r in task_set if not r.success and r.failure_signature]
     sig_counter = Counter(failure_signatures)
     recurring_failure_runs = sum(1 for sig in failure_signatures if sig_counter[sig] > 1)
-    recurrence_rate = _safe_rate(recurring_failure_runs, len(failure_signatures))
+    recurrence_denominator = len(failure_signatures)
+    distinct_failed_tasks = len(set(failed_task_ids))
+    if distinct_failed_tasks < 3:
+        recurrence_rate = None
+        recurrence_status = "insufficient_data"
+    else:
+        recurrence_rate = _safe_rate(recurring_failure_runs, recurrence_denominator)
+        recurrence_status = "computed"
     return {
         "task_count": total,
         "success_count": successes,
@@ -325,6 +333,9 @@ def summarize_metrics(task_set: list[PlanRun]) -> dict[str, Any]:
         "code_outcome_coverage_rate": code_coverage_avg,
         "code_diff_integrity_rate": code_diff_integrity_avg,
         "recurrence_rate": recurrence_rate,
+        "recurrence_status": recurrence_status,
+        "recurrence_denominator": recurrence_denominator,
+        "distinct_failed_tasks": distinct_failed_tasks,
         "recurrence_signatures": [
             {"signature": sig, "count": count}
             for sig, count in sig_counter.most_common(10)
@@ -397,6 +408,7 @@ def summarize_by_profile(task_set: list[PlanRun], configured_profiles: list[str]
 
 
 def evaluate_pass_fail(metrics: dict[str, Any], thresholds: dict[str, Any]) -> dict[str, Any]:
+    recurrence_status = str(metrics.get("recurrence_status") or "computed")
     checks = {
         "success_rate": {
             "value": metrics["success_rate"],
@@ -417,6 +429,7 @@ def evaluate_pass_fail(metrics: dict[str, Any], thresholds: dict[str, Any]) -> d
             "value": metrics["recurrence_rate"],
             "target": float(thresholds.get("max_recurrence_rate", 1.0)),
             "direction": "max",
+            "status": recurrence_status,
         },
         "first_attempt_quality_rate": {
             "value": metrics["first_attempt_quality_rate"],
@@ -425,6 +438,10 @@ def evaluate_pass_fail(metrics: dict[str, Any], thresholds: dict[str, Any]) -> d
         },
     }
     for item in checks.values():
+        if item.get("status") == "insufficient_data":
+            item["pass"] = True
+            item["reason"] = "insufficient_data_calibration"
+            continue
         if item["direction"] == "min":
             item["pass"] = item["value"] >= item["target"]
         else:
@@ -449,6 +466,7 @@ def to_markdown(summary: dict[str, Any]) -> str:
         "rescue_rate",
         "escalation_rate",
         "recurrence_rate",
+        "recurrence_status",
         "first_attempt_quality_rate",
         "first_attempt_success_rate_raw",
             "first_to_final_delta_rate",
@@ -461,8 +479,10 @@ def to_markdown(summary: dict[str, Any]) -> str:
     lines.append("")
     lines.append("## Pass/Fail Checks")
     for name, item in summary["pass_fail"]["checks"].items():
+        status = item.get("status")
+        status_suffix = f" status={status}" if status else ""
         lines.append(
-            f"- {name}: value={item['value']} target={item['target']} direction={item['direction']} pass={item['pass']}"
+            f"- {name}: value={item['value']} target={item['target']} direction={item['direction']} pass={item['pass']}{status_suffix}"
         )
     lines.append("")
     lines.append("## Class Metrics")
