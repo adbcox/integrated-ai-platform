@@ -126,6 +126,36 @@ A cell at Posture 2 (dual-review) for C1 tasks requires BOTH:
 - D-17-90 completed: 2026-05-04. T1 substrate (library + doctrine) is the prerequisite
   that should have preceded D-17-53 (T3, Goose deployment). Retrospective delivery.
 
+## API-surface persona library (D-17-121)
+
+D-17-121 (2026-05-05) added a `personas/` subdirectory to `v1.0.0/` providing
+structured, front-matter-tagged persona files suitable for programmatic injection via
+litellm system prompt fields or Open WebUI custom persona configuration.
+
+```
+config/prompts/library/v1.0.0/personas/
+├── INDEX.md                   — persona table, selection guidance, versioning policy
+├── voice-fast.md              — C0: Home Assistant voice; one-sentence; <2s budget
+├── deliberate-analysis.md     — C1: architecture decisions; trade-off analysis
+├── code-review.md             — C2: security + correctness; severity-tagged findings
+└── decomposition-planner.md   — C3: WP-NN decomposition; PMP+ITIL labels
+```
+
+**Loader:** `bin/persona_loader.py` — `load_persona(id, version="latest") -> str`
+Returns the system prompt body with front-matter stripped, ready for use as
+`system` in an OpenAI-compatible API call or Open WebUI persona field.
+
+**Distinction from operator-dispatch files:** The `v1.0.0/` root-level files
+(01-voice-fast.md, 02-deliberate-analysis.md, etc.) are operator-dispatch templates
+for manual Goose/Aider session composition. The `personas/` files are
+programmatic-injection surfaces for API-driven calls.
+
+**Versioning:** Follows the policy in `personas/INDEX.md`. MINOR bump (v1.0.x →
+v1.1.0) for new personas; MAJOR (v1.x.x → v2.0.0) for breaking front-matter schema
+changes. The loader's `version="latest"` always resolves to the highest version
+directory that contains a `personas/` subdirectory.
+
 ## Related-docs
 
 - Work-routing classifier (Tier 1/2/3): `docs/architecture-facts/work-routing-doctrine.md` (D-17-95)
+- API-surface persona index: `config/prompts/library/v1.0.0/personas/INDEX.md` (D-17-121)
