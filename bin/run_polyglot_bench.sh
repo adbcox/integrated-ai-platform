@@ -159,7 +159,7 @@ BENCH_CMD=(
   "python3" "./benchmark/benchmark.py" "$RUN_TAG"
   "--new"
   "--model" "$MODEL"
-  "--edit-format" "whole"
+  "--edit-format" "diff"
   "--threads" "1"
   "--tries" "$BENCH_TRIES"
 )
