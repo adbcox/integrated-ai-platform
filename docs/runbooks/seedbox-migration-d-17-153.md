@@ -314,19 +314,494 @@ If INVESTIGATE → STOP. Open D-17-154 and run the Mullvad-on-QNAP track before 
 
 ---
 
+## WP-153-05 — Prowlarr API reconfiguration (Whatbox qBit, parallel mode)
+
+This is the point where Whatbox becomes active in your media acquisition pipeline. Seedit4me stays alive; we're adding Whatbox as a secondary for testing.
+
+### Step 5.1 — Update Prowlarr download client
+
+**On QNAP (or via Tailscale from home):**
+
+1. Open Prowlarr web UI (usually http://qnap-ip:9696)
+2. Settings → Download Clients
+3. Click the existing **seedit4me-rtorrent** entry to edit it
+   - **Disable** it for now (toggle off, don't delete)
+   - This stops new searches from going to seedit4me
+4. Click **"Add Download Client"** → **qBittorrent**
+   - **Name:** `whatbox-qbit-pilot` (reflects this is testing)
+   - **Host:** `<your-host>.whatbox.ca` (from WP-02)
+   - **Port:** `6881` (or check Whatbox control panel for their qBit API port; typical is default or custom)
+   - **Username:** `<qbit-webui-username>` (from WP-02.3 Vault entry)
+   - **Password:** `<qbit-webui-password>` (from Vault)
+   - **Use SSL:** **enabled** (Whatbox uses HTTPS for API)
+   - **URL Base:** `/` (Whatbox qBit typically at root)
+   - Test connection (Prowlarr will verify API reachability)
+5. **Priority:** Set **seedit4me-rtorrent** to priority 2, **whatbox-qbit-pilot** to priority 1
+   - Prowlarr will now send NEW searches to Whatbox qBit first
+6. Save
+
+### Step 5.2 — Verify Prowlarr sends traffic to Whatbox
+
+```bash
+# In Prowlarr web UI: Settings → Health → Job History
+# Trigger a manual search on an indexer (e.g., search for a trending show)
+# Check Prowlarr logs for "sending to whatbox-qbit-pilot"
+# OR: check Whatbox qBit WebUI: Activity tab should show new torrent (if found + grabbed)
+```
+
+### Step 5.3 — Record decision
+
+Append to D-17-MEDIA-master-plan.md Decisions log:
+
+```
+| 2026-MM-DD | WP-153-05 | Prowlarr reconfigured; Whatbox qBit API reachable; seedit4me disabled | PROCEED |
+```
+
+**Acceptance criteria:**
+- [ ] Prowlarr can reach Whatbox qBit API
+- [ ] At least one torrent successfully grabbed and added to Whatbox qBit (verify in WebUI)
+- [ ] seedit4me-rtorrent disabled in Prowlarr (no longer receiving searches)
+
+**Rollback:**
+```bash
+# In Prowlarr: re-enable seedit4me-rtorrent, disable whatbox-qbit-pilot
+# In Whatbox: manually delete test torrents (qBit WebUI)
+# No arr-app changes yet, so zero impact
+```
+
+**Estimated time:** 30 min (including first grab verification)
+
+---
+
+## WP-153-06 — Sonarr + Radarr + Lidarr: add Whatbox qBit as secondary client
+
+Now that Prowlarr sends torrents to Whatbox, the arr-apps need to know about the Whatbox download client for import post-processing. We add it without making it primary yet.
+
+### Step 6.1 — Sonarr download client (secondary)
+
+**On QNAP (http://qnap-ip:8989):**
+
+1. Settings → Download Clients
+2. Click existing **seedit4me-rtorrent** to verify it's still there (priority 2 or lower)
+3. Add new client: **qBittorrent**
+   - **Name:** `whatbox-qbit-pilot`
+   - **Host:** `<your-host>.whatbox.ca`
+   - **Port:** `6881` (match Prowlarr)
+   - **Username/Password:** (from Vault)
+   - **Use SSL:** enabled
+   - **URL Base:** `/`
+   - Test connection
+4. **Priority:** Set Whatbox to priority 1, seedit4me to priority 2
+   - This means Sonarr will check Whatbox qBit for completed downloads first
+5. Save
+
+### Step 6.2 — Radarr download client (secondary)
+
+Repeat Step 6.1 for Radarr (http://qnap-ip:7878):
+- Same configuration
+- Same priorities
+
+### Step 6.3 — Lidarr download client (secondary)
+
+Repeat for Lidarr (http://qnap-ip:8686):
+- Same configuration
+- Same priorities
+
+### Step 6.4 — Verify arr-apps see Whatbox qBit
+
+```bash
+# On QNAP, check each arr-app logs for "Download client: whatbox-qbit-pilot"
+# Or in Sonarr/Radarr/Lidarr UI → Health → should show no warnings about Whatbox reachability
+
+# Try a manual search + grab in Sonarr (search for a TV episode, let Prowlarr/Whatbox grab it)
+# Wait 5 min, check if Sonarr auto-imports it:
+# If yes: Whatbox client is working
+# If no: check logs for import path issues
+```
+
+**Acceptance criteria:**
+- [ ] Whatbox qBit client appears in all three arr-apps (Sonarr, Radarr, Lidarr)
+- [ ] No connection errors in health/logs
+- [ ] Whatbox priority is higher than seedit4me (will be checked first for imports)
+
+**Rollback:**
+```bash
+# Delete whatbox-qbit-pilot from Sonarr, Radarr, Lidarr
+# No configuration changes yet, so imports will continue from seedit4me
+```
+
+**Estimated time:** 30 min (3 × 10 min each)
+
+---
+
+## WP-153-07 — Lidarr pilot: add 1 album (smallest blast radius)
+
+**Goal:** Add a single album via Whatbox → verify download → verify import → verify hardlink → verify Navidrome serves it.
+
+This is the lowest-risk test. If Lidarr's import path or hardlink setup breaks, it only affects one album.
+
+### Step 7.1 — Choose a test album
+
+Pick something small (< 500 MB) and widely available:
+- Example: "The Dark Side of the Moon" by Pink Floyd
+- Or any album you actually want to add
+- Search in Lidarr: Artists → Add new → search
+
+### Step 7.2 — Add artist to Lidarr
+
+1. Lidarr web UI (http://qnap-ip:8686)
+2. Artists → Add new
+3. Search for artist name (e.g., "Pink Floyd")
+4. Select artist
+5. Root folder: `/data/media/music/` (matches TRaSH path from WP-03)
+6. Quality Profile: (use default or existing)
+7. Add
+
+### Step 7.3 — Search for specific album
+
+1. Click artist → Albums
+2. Find test album
+3. Click "Add" or "Download"
+4. Prowlarr searches → Whatbox qBit grabs torrent
+
+### Step 7.4 — Monitor download + import
+
+```bash
+# Watch Whatbox qBit WebUI: Downloads tab
+# Verify torrent appears, shows as downloading, completes within 5 min
+
+# Switch to Lidarr: Activities → History
+# After qBit completes, Lidarr should auto-import (look for "Album imported")
+# If import fails: check logs for error (path issue, file format, metadata)
+```
+
+### Step 7.5 — Verify hardlink + Navidrome
+
+```bash
+# On QNAP, check hardlinks:
+ls -li /data/media/music/<artist>/<album>/*.flac | head -3
+# Output should show same inode across files (hardlink indicator)
+
+# Test Navidrome playback:
+# Open Navidrome web UI (http://qnap-ip:4533)
+# Search for album → click → play track
+# Verify 30 seconds of uninterrupted playback
+```
+
+### Step 7.6 — Record result
+
+```
+| 2026-MM-DD | WP-153-07 | Lidarr pilot: 1 album added via Whatbox → imported → hardlinked → served by Navidrome | PASS |
+```
+
+**Acceptance criteria (all must pass to proceed to WP-08):**
+- [ ] Torrent downloaded to Whatbox qBit within 5 min
+- [ ] Lidarr auto-imported without errors
+- [ ] Files hardlinked (same inode in torrents/ and media/)
+- [ ] Navidrome serves playback without errors
+- [ ] No orphaned files in import staging
+
+**Rollback:**
+```bash
+# Remove artist from Lidarr (triggers file deletion)
+rm -rf /data/media/music/<artist>
+rm -rf /data/torrents/music/<artist>  # Clean up torrent copy if needed
+# On Whatbox qBit: delete torrent
+```
+
+**Estimated time:** 1 hr (including download + import verification)
+
+---
+
+## WP-153-08 — Sonarr pilot: add 1 episode (same pattern)
+
+Repeat WP-07 for Sonarr:
+
+### Step 8.1 — Choose test show
+
+Pick a show with small episodes (< 1 GB per episode):
+- Example: a recent animated series or documentary
+- Something you'd actually watch
+
+### Step 8.2 — Add series to Sonarr
+
+1. Sonarr web UI (http://qnap-ip:8989)
+2. Series → Add new
+3. Search show name
+4. Root folder: `/data/media/tv/` (TRaSH path from WP-03)
+5. Season monitoring: monitor only the latest season (or first episode)
+6. Add
+
+### Step 8.3 — Search + grab
+
+1. Click series → Seasons
+2. Find test episode (recent = likely available)
+3. Click "download" or "search now"
+4. Prowlarr searches → Whatbox qBit grabs
+
+### Step 8.4 — Monitor + verify
+
+```bash
+# Whatbox qBit: verify torrent completes
+# Sonarr Activity → History: watch for "Episode imported"
+# Check hardlinks: ls -li /data/torrents/tv/<show>/ | head -3
+# Verify Plex/Jellyfin plays (or manual VLC test from QNAP)
+```
+
+### Step 8.5 — Record result
+
+```
+| 2026-MM-DD | WP-153-08 | Sonarr pilot: 1 episode added via Whatbox → imported → hardlinked | PASS |
+```
+
+**Acceptance criteria (all must pass):**
+- [ ] Episode downloaded to Whatbox qBit
+- [ ] Sonarr auto-imported without errors
+- [ ] Files hardlinked to media/
+- [ ] Playback verified (not just Plex metadata)
+
+**Rollback:** Delete series from Sonarr (removes files)
+
+**Estimated time:** 1 hr
+
+---
+
+## WP-153-09 — Radarr pilot: add 1 movie (same pattern)
+
+Repeat for Radarr:
+
+### Step 9.1 — Choose test movie
+
+Small file (< 4 GB):
+- Example: a 720p indie film or old movie
+- Something actually worth watching
+
+### Step 9.2 — Add movie to Radarr
+
+1. Radarr web UI (http://qnap-ip:7878)
+2. Movies → Add new
+3. Search movie title
+4. Root folder: `/data/media/movies/` (TRaSH path)
+5. Add
+
+### Step 9.3 — Search + grab
+
+Click movie → "Search movie" → Prowlarr grabs from Whatbox
+
+### Step 9.4 — Monitor + verify
+
+Same as WP-07/08:
+- Whatbox downloads
+- Radarr imports
+- Hardlinks verified
+- Playback tested
+
+### Step 9.5 — Record result
+
+```
+| 2026-MM-DD | WP-153-09 | Radarr pilot: 1 movie added via Whatbox → imported → hardlinked | PASS |
+```
+
+**Acceptance criteria:**
+- [ ] Download, import, hardlink, playback all pass
+- [ ] No import failures despite different file format (mkv vs flac)
+
+**Rollback:** Delete movie from Radarr
+
+**Estimated time:** 1 hr
+
+---
+
+## WP-153-10 — Promote Whatbox qBit to primary across all arr-apps
+
+All three pilots (Lidarr, Sonarr, Radarr) have passed. Time to make Whatbox the default for NEW downloads.
+
+### Step 10.1 — Update all arr-apps
+
+In Sonarr, Radarr, Lidarr:
+
+**Settings → Download Clients:**
+- Move **whatbox-qbit-pilot** to priority 1
+- Move **seedit4me-rtorrent** to priority 2 (becomes fallback only)
+
+### Step 10.2 — Verify in Prowlarr
+
+Prowlarr should still have Whatbox at priority 1 (from WP-05). Confirm:
+
+**Settings → Download Clients:**
+- whatbox-qbit-pilot: priority 1
+- seedit4me-rtorrent: priority 2 (disabled)
+
+### Step 10.3 — Add one fresh torrent to each arr-app
+
+Test that NEW searches now go to Whatbox:
+- Sonarr: search for upcoming episode
+- Radarr: search for new movie release
+- Lidarr: search for new album
+
+Verify all land in Whatbox qBit, not seedit4me.
+
+### Step 10.4 — Record
+
+```
+| 2026-MM-DD | WP-153-10 | Whatbox qBit promoted to primary; seedit4me demoted to fallback | PROCEED |
+```
+
+**Acceptance criteria:**
+- [ ] All three arr-apps have Whatbox at priority 1
+- [ ] Manual searches land in Whatbox qBit
+- [ ] seedit4me remains as fallback (disabled in Prowlarr, but still active in arr-apps for legacy downloads)
+
+**Rollback:**
+```bash
+# Swap priorities back: seedit4me priority 1, Whatbox priority 2
+# Manual searches will resume going to seedit4me
+```
+
+**Estimated time:** 15 min
+
+---
+
+## WP-153-11 — 30-day parallel run (passive monitoring)
+
+From this point forward, all NEW torrents go to Whatbox qBit. Old torrents on seedit4me continue seeding for ratio/community good.
+
+### Monitoring schedule:
+
+**Daily (5 min):**
+- Check Whatbox qBit WebUI: active torrents < expected queue length?
+- Check QNAP Syncthing: any large sync backlogs?
+
+**Weekly (15 min at day 7, 14, 21, 28):**
+- Whatbox qBit: check for failed torrents (if any, manually remove)
+- Seedit4me rTorrent: note number of active torrents (should be slowly declining)
+- Syncthing: verify sync completes within expected window
+
+**Gate at day 30:** Proceed to WP-12 (cancel seedit4me) only if:
+- [ ] ≥3 complete downloads via Whatbox (Lidarr, Sonarr, Radarr all working)
+- [ ] Sync throughput sustained ≥50 Mbps
+- [ ] No corruption or import failures in last 7 days
+- [ ] Seedit4me ratio acceptable (or you've decided to cut it)
+
+**Estimated time:** 30 days passive + 1 min daily checks
+
+---
+
+## WP-153-12 — End parallel run: cancel seedit4me
+
+After day 30 gate passes:
+
+### Step 12.1 — Verify seedit4me is no longer needed
+
+```bash
+# Check current active torrents on seedit4me rTorrent
+# Via web UI: note how many are still seeding
+# If < 10 active, safe to cancel
+# If > 10 and ratio not important: cancel anyway (your new standard is Whatbox ratio)
+```
+
+### Step 12.2 — Cancel seedit4me subscription
+
+1. Log into seedit4me account (online portal)
+2. Go to Billing → Subscriptions
+3. Cancel subscription (usually effective end of current billing cycle)
+4. Download final rTorrent config as backup (optional, for record-keeping)
+
+### Step 12.3 — Clean up local references
+
+```bash
+# On QNAP:
+# Remove seedit4me-rtorrent from Sonarr/Radarr/Lidarr (no longer needed)
+# Or leave disabled as emergency fallback
+
+# On home Mac:
+# Remove seedit4me SSH keys (~/.ssh/seedit4me_*)
+# Remove Vault entry: vault kv delete secret/seedbox/seedit4me
+```
+
+### Step 12.4 — Record
+
+```
+| 2026-MM-DD | WP-153-12 | Seedit4me subscription cancelled; all production downloads now via Whatbox | DONE |
+```
+
+**Acceptance criteria:**
+- [ ] Seedit4me subscription terminated
+- [ ] No active torrents remain on seedit4me (or acceptable to abandon seeding)
+- [ ] All arr-apps default to Whatbox qBit
+- [ ] No regression in download speed or import quality
+
+**Estimated time:** 15 min (mostly waiting for cancellation to process)
+
+---
+
+## WP-153-13 — Final documentation + decision log
+
+### Step 13.1 — Summarize in master plan
+
+Add final entry to D-17-MEDIA-master-plan.md Decisions log:
+
+```
+| 2026-MM-DD | WP-153-01 through WP-153-12 | Seedbox migration complete: seedit4me → Whatbox NL + qBittorrent | DECISION CLOSED |
+```
+
+### Step 13.2 — Document lessons learned
+
+Edit this runbook (seedbox-migration-d-17-153.md):
+- Add "Lessons learned" section at end
+- Note any surprises (e.g., "hardlinks worked perfectly with qBit", or "Syncthing had one hiccup on day 14")
+- Note any workarounds applied (if any)
+
+### Step 13.3 — Commit final state
+
+```bash
+cd ~/repos/integrated-ai-platform
+git add docs/decision-records/D-17-MEDIA-master-plan.md \
+        docs/runbooks/seedbox-migration-d-17-153.md
+git commit -m "docs(D-17-153): Seedbox migration to Whatbox NL complete; all pilots passed; 30-day parallel done"
+git log --oneline -n 1
+```
+
+### Step 13.4 — Close D-17-153
+
+In D-17-MEDIA-master-plan.md, update the tracker row:
+
+```
+| D-17-153 | Seedbox migration (Whatbox NL + qBittorrent) | P1 | DONE | none | 2-4 hr active + 30 days parallel | 2026-MM-DD | 2026-MM-DD |
+```
+
+**Estimated time:** 30 min (documentation + commit)
+
+---
+
+## Rollback summary (across all phases)
+
+| Phase | If aborting here, revert | Cost | Notes |
+|---|---|---|---|
+| WP-05 (Prowlarr config) | Disable Whatbox client in Prowlarr; re-enable seedit4me | 5 min | Zero impact; Whatbox exists but unused |
+| WP-06 (arr-app clients) | Delete Whatbox client from Sonarr/Radarr/Lidarr | 10 min | Imports resume from seedit4me |
+| WP-07/08/09 (pilots) | Delete test artist/series/movie from arr-apps | 15 min | Files deleted; Whatbox torrent deleted manually |
+| WP-10 (promote primary) | Swap priorities back: seedit4me → 1, Whatbox → 2 | 10 min | New downloads resume on seedit4me |
+| WP-11/12 (parallel + cancel) | After day 30 gate, if something breaks, keep seedit4me running longer (max 90 days is typical) | Extends monthly cost | Fallback is always available |
+
+---
+
 ## After this block — what's next
 
-After WP-153-04 PASSes, the next session is WP-153-05 (Prowlarr → Whatbox qBit API connection). That's 30 min and starts the actual migration. You can pause for days/weeks between blocks safely.
+After WP-153-12 COMPLETE, D-17-153 is **DONE**. Unblock:
+- D-17-154 (Syncthing hardening) — can start immediately
+- D-17-155 (TRaSH path migration) — can start immediately
 
 Update master plan tracker before closing the session:
 
 ```bash
 cd ~/repos/integrated-ai-platform
 # Edit docs/decision-records/D-17-MEDIA-master-plan.md
-# Update WP-153-01 through WP-153-04 status to DONE
+# Update D-17-153 status to DONE
+# Update D-17-154, D-17-155 status to NOT BLOCKED (can start anytime)
 # Add commit on travel branch:
 git add docs/decision-records/D-17-MEDIA-master-plan.md
-git commit -m "docs(D-17-153): WP-01 through WP-04 complete; throughput X Mbps; PROCEED"
+git commit -m "docs(D-17-153): WP-05 through WP-13 documented (paste-ready); all migration runbook complete"
 ```
 
 ---
