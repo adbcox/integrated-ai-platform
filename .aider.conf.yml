@@ -9,9 +9,16 @@
 # Read-only context files: these load into every session as read-only.
 # IMPORTANT: Only list files that exist on disk. Missing files cause a
 # warning on every invocation and eat the operator's first input prompt.
-# docs/MASTER_GUIDE.md removed — file does not exist (D-17-96).
-# Operator-specific files are better passed per-invocation via --read.
-read: []
+# CONVENTIONS.md added 2026-05-07 (D-17-XXX LocalAIConfig bootstrap).
+read:
+  - CONVENTIONS.md
+
+# Lint command: pre-commit run --files {filename}
+# auto-lint is false initially — enable after confirming pre-commit hook
+# latency doesn't slow Aider invocations (D-17-XXX follow-up gate).
+lint-cmd:
+  - "python: pre-commit run --files {filename}"
+auto-lint: false
 
 # Git settings
 # auto-commits: false — Aider edits files but does NOT git-commit.
