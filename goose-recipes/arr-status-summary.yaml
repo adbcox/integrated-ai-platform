@@ -1,0 +1,106 @@
+# Goose Recipe: arr-status-summary
+# WP-160-01 — pulls Sonarr/Radarr/Lidarr queue + recent imports + recent errors,
+# outputs a Markdown brief suitable for daily standup or Plane ticket.
+#
+# Profile: goose-local-media (per master log §6.4)
+# Permissions: read-only HTTP to local arr-app endpoints + Vault read for API keys
+# Mode: brief (no edits, no shell exec)
+# Status: DRAFT (v0.1) — for D-17-160 implementation
+#
+# Inputs:
+#   - SONARR_URL (default: http://192.168.10.201:8989)
+#   - RADARR_URL (default: http://192.168.10.201:7878)
+#   - LIDARR_URL (default: http://192.168.10.201:8686)
+#   - Vault paths for API keys: secret/sonarr/api, secret/radarr/api, secret/lidarr/api
+#
+# Output: Markdown brief with the following sections:
+#   - Header: timestamp, status rollup (one line per arr)
+#   - Active queue (top 5 per arr, with ETA if available)
+#   - Recent imports (last 24h)
+#   - Recent errors / failed imports (last 24h)
+#   - Recommended actions (1-3 bullets, only if errors present)
+
+name: arr-status-summary
+description: |
+  Pull current state from Sonarr, Radarr, and Lidarr. Produce a Markdown brief
+  for daily review. No edits, no shell execution. Pure read + summarize.
+
+profile: goose-local-media
+mode: brief
+permissions:
+  http:
+    - http://192.168.10.201:8989/api/v3/queue
+    - http://192.168.10.201:8989/api/v3/history
+    - http://192.168.10.201:7878/api/v3/queue
+    - http://192.168.10.201:7878/api/v3/history
+    - http://192.168.10.201:8686/api/v1/queue
+    - http://192.168.10.201:8686/api/v1/history
+  vault:
+    - secret/sonarr/api
+    - secret/radarr/api
+    - secret/lidarr/api
+  filesystem: []
+  shell: []
+
+inputs:
+  sonarr_url:
+    type: string
+    default: http://192.168.10.201:8989
+  radarr_url:
+    type: string
+    default: http://192.168.10.201:7878
+  lidarr_url:
+    type: string
+    default: http://192.168.10.201:8686
+  history_window_hours:
+    type: integer
+    default: 24
+
+prompt_template: |
+  You are a media-operations brief writer. The user wants a quick read of their arr-stack state.
+  
+  Pull current data from the URLs provided. For each arr-app:
+    1. Get /api/v3/queue (or /api/v1/queue for Lidarr)
+    2. Get /api/v3/history with date filter for last {{history_window_hours}} hours
+  
+  Use the Vault-provided API keys via X-Api-Key header.
+  
+  Produce a Markdown brief in this exact structure:
+  
+  # Arr-stack brief — {{timestamp}}
+  
+  ## Status rollup
+  - Sonarr: {N items in queue} | {N successful imports last {{history_window_hours}}h} | {N errors}
+  - Radarr: same shape
+  - Lidarr: same shape
+  
+  ## Active queue (top 5 per app)
+  ### Sonarr
+  - {title} — {progress%} — ETA: {eta}
+  ...
+  
+  ## Recent imports ({{history_window_hours}}h)
+  ### Sonarr
+  - {timestamp} {title}
+  ...
+  
+  ## Recent errors / failed imports ({{history_window_hours}}h)
+  ### Sonarr
+  - {timestamp} {title}: {error message}
+  ...
+  
+  ## Recommended actions
+  (Only include this section if errors > 0. 1-3 bullets max. No editorial.)
+  
+  Constraints:
+  - NO speculation. If a field is empty, write "(none)".
+  - NO suggestions to manually intervene unless errors clearly require it.
+  - NO file edits, no shell commands. Pure read + format.
+  - If any arr-app is unreachable, note it in Status rollup as "UNREACHABLE" and continue with the others.
+
+acceptance_criteria:
+  - Output is valid Markdown parseable by Plane ticket templates
+  - All three arr-apps queried (or marked UNREACHABLE)
+  - History window respected (no entries older than configured)
+  - Recommended actions section omitted when no errors
+  - Total token budget under 4k for typical home queue size

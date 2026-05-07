@@ -1,0 +1,118 @@
+# Goose Recipe: arr-failed-imports-triage
+# WP-160-02 — examines failed imports across Sonarr/Radarr/Lidarr, categorizes
+# by failure mode, drafts Plane ticket(s) (NOT auto-create).
+#
+# Profile: goose-local-media
+# Permissions: read-only HTTP to arr-apps + Vault read for API keys; NO Plane write
+# Mode: triage-brief (read + classify, draft only)
+# Status: DRAFT (v0.1)
+#
+# Failure modes recognized (per current arr-stack experience):
+#   1. INDEXER_DOWN: indexer connection failed
+#   2. DOWNLOAD_CLIENT_DOWN: qBit/SAB unreachable
+#   3. PATH_PERMISSION: write/move failed (likely permission or path mismatch)
+#   4. TRASH_FORMAT_REJECT: release rejected by custom format scoring
+#   5. DUPLICATE_DETECTED: file already present
+#   6. CORRUPT_FILE: integrity check failed
+#   7. NAMING_CONFLICT: TRaSH naming pattern collision
+#   8. UNKNOWN: doesn't match above patterns
+
+name: arr-failed-imports-triage
+description: |
+  Classify failed imports across arr-stack. Group by failure mode. Draft Plane
+  tickets for each distinct failure. NEVER auto-creates tickets — output is a
+  draft for operator review.
+
+profile: goose-local-media
+mode: triage-brief
+permissions:
+  http:
+    - http://192.168.10.201:8989/api/v3/queue
+    - http://192.168.10.201:8989/api/v3/queue/details
+    - http://192.168.10.201:8989/api/v3/history
+    - http://192.168.10.201:7878/api/v3/queue
+    - http://192.168.10.201:7878/api/v3/queue/details
+    - http://192.168.10.201:7878/api/v3/history
+    - http://192.168.10.201:8686/api/v1/queue
+    - http://192.168.10.201:8686/api/v1/history
+  vault:
+    - secret/sonarr/api
+    - secret/radarr/api
+    - secret/lidarr/api
+  filesystem: []
+  shell: []
+  # Plane API access intentionally NOT included — ticket creation requires operator approval
+
+inputs:
+  history_window_hours:
+    type: integer
+    default: 48
+  min_occurrences_to_ticket:
+    type: integer
+    default: 2
+    description: Only draft Plane ticket if same failure mode occurs N+ times
+
+prompt_template: |
+  You are a media-stack incident analyst. The user has failed imports across their
+  arr-stack and wants them triaged.
+  
+  Step 1: Pull queue + history from Sonarr, Radarr, Lidarr (last {{history_window_hours}}h).
+  Filter to entries with status: failed, error, or pending-review.
+  
+  Step 2: For each failure, categorize into one of these failure modes:
+    - INDEXER_DOWN: error mentions indexer/Prowlarr/connection refused
+    - DOWNLOAD_CLIENT_DOWN: error mentions qBit/SAB/client unreachable
+    - PATH_PERMISSION: error mentions write/move/permission/access denied
+    - TRASH_FORMAT_REJECT: error mentions custom format/quality profile reject
+    - DUPLICATE_DETECTED: error mentions exists/duplicate/already present
+    - CORRUPT_FILE: error mentions hash/checksum/integrity/corrupt
+    - NAMING_CONFLICT: error mentions naming/format/pattern collision
+    - UNKNOWN: doesn't fit above
+  
+  Step 3: Group failures by mode. For modes with >= {{min_occurrences_to_ticket}} occurrences,
+  draft a Plane ticket using this template:
+  
+  ---
+  TICKET DRAFT
+  Title: [arr-stack] {failure_mode}: {N} occurrences in last {{history_window_hours}}h
+  Project: Infrastructure
+  Priority: {derived from failure_mode}
+  Description:
+    Summary: {one sentence}
+    Affected items:
+      - {timestamp} {arr-app} {title}: {error excerpt}
+      ...
+    Suggested next step: {one of: check service health, review logs, verify path, adjust profile}
+  ---
+  
+  Step 4: Output structure:
+  
+  # arr-stack failure triage — {{timestamp}}
+  
+  ## Summary
+  - Total failures last {{history_window_hours}}h: {N}
+  - Distinct failure modes: {N}
+  - Tickets drafted (≥ {{min_occurrences_to_ticket}} occurrences): {N}
+  
+  ## Tickets drafted
+  (Each ticket draft as above template, separated by ---)
+  
+  ## Single-occurrence failures (no ticket drafted)
+  (Bullet list with timestamp + title + mode)
+  
+  ## Modes detected
+  (Table: mode | count | sample message)
+  
+  Constraints:
+  - DO NOT call Plane API. Output draft text only.
+  - DO NOT speculate beyond the failure mode classification. If error doesn't clearly
+    fit a mode, classify as UNKNOWN and include the raw error for operator review.
+  - DO NOT recommend specific commands or fixes. The "Suggested next step" is
+    high-level only.
+
+acceptance_criteria:
+  - All failures from history endpoint examined
+  - Each failure assigned exactly one failure mode (no multi-classification)
+  - UNKNOWN bucket exists and is populated when patterns don't match
+  - Plane API never called (verify in audit log)
+  - Drafted tickets are operator-pasteable into Plane without modification

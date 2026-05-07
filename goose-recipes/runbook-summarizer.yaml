@@ -1,0 +1,87 @@
+# Goose Recipe: runbook-summarizer
+# WP-160-04 — compresses any runbook .md file into an action-focused brief
+# with critical commands extracted.
+#
+# Profile: goose-local-research
+# Permissions: filesystem read on /Users/adriancox/repos/integrated-ai-platform/docs/runbooks/
+# Mode: brief (no edits)
+# Status: DRAFT (v0.1)
+#
+# Use case: operator is about to execute a long runbook and wants a concise
+# pre-execution brief that highlights the critical commands and decision points.
+
+name: runbook-summarizer
+description: |
+  Read a runbook markdown file. Produce a 1-page brief with: purpose, key
+  commands extracted, decision points, rollback steps. No file edits.
+
+profile: goose-local-research
+mode: brief
+permissions:
+  http: []
+  vault: []
+  filesystem:
+    read:
+      - /Users/adriancox/repos/integrated-ai-platform/docs/runbooks/
+      - /Users/adriancox/repos/integrated-ai-platform/docs/architecture-facts/
+  shell: []
+
+inputs:
+  runbook_path:
+    type: string
+    required: true
+    description: Absolute path to the runbook .md file
+
+prompt_template: |
+  Read the file at {{runbook_path}}. Produce an action-focused brief for the operator
+  who is about to execute it.
+  
+  Output structure:
+  
+  # Runbook brief: {filename}
+  
+  **Source:** {runbook_path}  
+  **Original length:** {N} lines  
+  **Last updated:** {extracted from frontmatter or "unknown"}
+  
+  ## Purpose
+  (One sentence: what does this runbook accomplish?)
+  
+  ## Pre-flight checklist
+  (3-5 bullets: what must be true before starting? Extracted from "prerequisites" or "before you begin" sections, or inferred from early commands.)
+  
+  ## Critical commands (in order)
+  (Numbered list. Each entry:
+   - Command (verbatim from runbook, in code fence)
+   - One-line purpose
+   - Reversibility flag: REVERSIBLE | DESTRUCTIVE | UNCLEAR
+  )
+  
+  ## Decision points
+  (Where the runbook says "if X then Y else Z", surface them here. Each as:
+   - Condition
+   - Path A action
+   - Path B action
+  If no decision points exist, write "(none — straight execution)".)
+  
+  ## Rollback
+  (Extract any rollback or recovery section. If none documented, write
+  "WARNING: no rollback documented in source. Operator should pause before
+   executing DESTRUCTIVE commands.")
+  
+  ## Estimated wall-clock time
+  (If the runbook says, quote it. If not, write "(unspecified)".)
+  
+  Constraints:
+  - DO NOT modify the runbook file.
+  - DO NOT invent commands not present in the source.
+  - If a command is REVERSIBLE | DESTRUCTIVE classification is unclear, mark UNCLEAR.
+  - Quote command lines verbatim — character-for-character — including all flags.
+  - Keep total output under 1500 words.
+
+acceptance_criteria:
+  - All commands quoted verbatim from source (no rewording)
+  - Reversibility classification provided for every command
+  - Rollback section present (extracted or warning)
+  - Output is a single Markdown document, parseable
+  - Source file unmodified (verify via mtime)
