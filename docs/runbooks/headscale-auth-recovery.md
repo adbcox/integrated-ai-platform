@@ -291,20 +291,23 @@ docker exec -it headscale headscale preauthkeys create \
 
 ---
 
-## Part 4: Open questions for operator
+## Part 4: Emergency pre-auth key count (operator decision)
 
-**Decision needed: How many emergency pre-auth keys to maintain?**
+**Decided (2026-05-07):** Maintain 3 emergency pre-auth keys at any time.
 
-- **Recommended: 3 keys** (one consumed, one active, one rotation buffer)
-  - Key 1: "Active" — use only in emergency. Once used, expires after one re-auth.
-  - Key 2: "Backup" — identical to Key 1 but stored in secondary location (1Password).
-  - Key 3: "Rotation buffer" — kept fresh for next quarterly rotation. Unused.
-  
-- **If you prefer fewer (2 keys):** Only "Active" + "Backup." Risk: if both consumed or lost, no recovery until you're home.
-  
-- **If you prefer more (4+ keys):** Overkill for home use, but zero risk of emergency key exhaustion during long travel. Requires more rotation overhead.
+**Allocation:**
+- Key 1: "Active" — primary emergency key for crisis recovery. Single-use (expires after consumption).
+- Key 2: "Backup" — secondary key, identical validity to Key 1. Stored in secondary offline location (1Password).
+- Key 3: "Rotation buffer" — held fresh for next quarterly rotation. Not consumed except during rotation cycle.
 
-**Operator decision at GATE:** Confirm number of emergency keys to maintain. Update this runbook with your decision.
+**Rationale:**
+- One consumed during recovery (Key 1)
+- One fresh after consumption (Key 2)
+- One buffer for next scheduled rotation (Key 3) without gap
+- Below 3: risk getting caught between rotations if traveling during key refresh
+- Above 3: added management surface without recovery benefit
+
+**Quarterly rotation reminder:** When rotating keys, revoke all 3 old keys and generate 3 new ones. Zero-day gap risk = zero.
 
 ---
 
@@ -398,4 +401,4 @@ tailscale up
 
 **Last updated:** 2026-05-07 (flight session)  
 **Reviewed by:** Adrian Cox  
-**Status:** DRAFT (awaiting operator feedback on emergency key count decision)
+**Status:** DESIGN COMPLETE (operator decided emergency key count = 3; WP-145-01 ready for execution when home)

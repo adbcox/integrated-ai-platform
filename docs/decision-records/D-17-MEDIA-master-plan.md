@@ -21,7 +21,8 @@ Scope split into **8 independently-executable deliverables (D-17-153 through D-1
 
 | ID | Deliverable | Priority | Status | Blocked by | Est. effort | Started | Completed |
 |---|---|---|---|---|---|---|---|
-| D-17-145 | Headscale auth recovery (travel resilience) | P1 | DESIGN DRAFT | none | 2 hr (prevention) + ongoing maintenance | 2026-05-07 | — |
+| D-17-145 | Headscale auth recovery (travel resilience) | P1 | DESIGN COMPLETE | none | 2 hr (prevention) + ongoing maintenance | 2026-05-07 | 2026-05-07 |
+| D-17-150 | Tailscale client consolidation (brew CLI only) | P1 | DECISION DONE, EXECUTION PENDING | D-17-145 | 1 hr decision + 2 hr execution (verification window) | 2026-05-07 | — |
 | D-17-153 | Seedbox migration (Whatbox NL + qBittorrent) | P1 | NOT STARTED | none | 2-4 hr active + 30 days parallel | — | — |
 | D-17-154 | Sync transit hardening (Syncthing throughput verify) | P1 | NOT STARTED | D-17-153 WP-04 | 2 hr | — | — |
 | D-17-155 | TRaSH path discipline migration | P1 | NOT STARTED | D-17-153 WP-02 | 3-5 hr | — | — |
@@ -33,6 +34,37 @@ Scope split into **8 independently-executable deliverables (D-17-153 through D-1
 
 Status values: `NOT STARTED` | `IN PROGRESS` | `BLOCKED` | `WAITING REVIEW` | `DONE` | `DEFERRED`
 Priority: P1 (critical path) | P2 (high value) | P3 (nice to have)
+
+---
+
+## D-17-150: Tailscale client consolidation (macOS)
+
+**Goal:** Resolve dual-client confusion (Tailscale.app + brew CLI) by consolidating to single client (brew CLI, fully open-source).
+
+**Triggered by:** 2026-05-07 discovery — two clients on MacBook with conflicting control planes (Tailscale Inc. vs Headscale); state confusion; no doctrine exception justified.
+
+**Acceptance criteria:**
+- Decision documented (Option A: CLI only, remove Tailscale.app)
+- 24-48 hr verification window passed (daemon persistence without GUI verified on Darwin 25.4)
+- Tailscale.app removed; brew CLI configured and persistent
+- No state drift back to Tailscale Inc. over 1 week
+- D-17-145 recovery procedures tested and working with CLI-only setup
+
+**Work packages:**
+
+| WP | Description | Status | Est. |
+|---|---|---|---|
+| WP-150-01a | **Verification window:** 24-48 hr daemon persistence test (sleep/wake, daemon restart) | NOT STARTED | 2 hr (spread over 48 hr) | Critical safety step before removal |
+| WP-150-02 | **Removal:** Uninstall Tailscale.app; configure brew CLI; verify | NOT STARTED | 30 min | AFTER WP-01a passes |
+| WP-150-03 | **Post-removal validation:** 1-week tracking (daemon stability, no Tailscale Inc. drift) | NOT STARTED | 5 min daily | Running observation after WP-02 |
+
+**Dependencies:** None. Can execute anytime on MacBook (no Mac Mini required).
+
+**Risks:**
+- brew CLI daemon doesn't persist after Tailscale.app removal (launchd plist issue)
+- Daemon hangs or crashes under sleep/wake without GUI as fallback
+
+**Mitigation:** WP-150-01a verification window before removal. Rollback is simple (reinstall Tailscale.app from Homebrew).
 
 ---
 
@@ -338,7 +370,8 @@ WP-153-01 → WP-153-02 → WP-153-03 → WP-153-04. About 90 minutes. After WP-
 | 2026-05-07 | D-17-160 | Goose recipe library design phase complete (5/5 specs drafted) | All recipes now at DESIGN DRAFT; implementation testing deferred to Mac Studio reachability; specs ready at `goose-recipes/*.yaml` for execution phase |
 | 2026-05-07 | D-17-153 | WP-01 through WP-04 runbook drafted with paste-ready commands | Pre-stage so first home session is execution-only, no decision-making mid-flight |
 | 2026-05-07 | D-17-159 | CHOSEN: Option B (Jellyfin migration) | Doctrine alignment over UX polish; Infuse bridges Apple TV gap as Symfonium-precedent paid client; 30-day parallel reversible; bounded migration cost fits D-17-MEDIA window |
-| 2026-05-07 | D-17-145 | Headscale auth recovery runbook drafted | Incident trigger: macOS Tailscale.app + brew CLI conflicting state, Headscale unreachable during travel. Runbook covers prevention (emergency pre-auth keys), 3 recovery scenarios, quarterly rotation. WP-145-01 (actual key generation) deferred to home session. |
+| 2026-05-07 | D-17-145 | COMPLETE: Headscale auth recovery runbook + emergency key count = 3 | Incident: Headscale unreachable during travel (no recovery path). Runbook complete with prevention (3 emergency pre-auth keys in Vaultwarden + offline + paper), 3 scenarios, quarterly rotation. WP-145-01 (key generation) deferred to home session. |
+| 2026-05-07 | D-17-150 | CHOSEN: Option A (brew CLI only, remove Tailscale.app) | Today's dual-client confusion (Tailscale.app on Tailscale Inc., CLI on Headscale) caused auth state conflicts. Option A = doctrine-aligned (CLI is Apache 2.0 OSS; GUI is proprietary with no functional gap). Symfonium precedent does NOT apply (Symfonium fills OSS gap; GUI doesn't). WP-150-01a verification window before removal. |
 | | | | |
 
 ---
@@ -353,8 +386,8 @@ WP-153-01 → WP-153-02 → WP-153-03 → WP-153-04. About 90 minutes. After WP-
 | 30-day parallel cost ($25/mo total) | LOW | Acceptable, planned, time-bounded | Adrian |
 | Plex migration to Jellyfin disrupts daily use | MEDIUM | 30-day parallel; Infuse covers both | Adrian |
 | Swiftfin/Jellyfin Apple TV UX rougher than estimated | MEDIUM | 30-day parallel = clear abort signal; Infuse fallback covers worst case | Adrian |
-| Auth credentials inaccessible during travel (Headscale unreachable) | HIGH | Emergency pre-auth keys + offline storage + paper backup (see D-17-145 runbook) | Adrian |
-| Tailscale.app + brew CLI in conflicting states | MEDIUM | Client consolidation decision pending (D-17-150); runbook documents both scenarios | Adrian |
+| Auth credentials inaccessible during travel (Headscale unreachable) | HIGH | Emergency pre-auth keys + offline storage + paper backup (see D-17-145 runbook; count = 3) | Adrian |
+| brew CLI daemon persistence without Tailscale.app GUI fallback | MEDIUM | WP-150-01a verification window (24-48 hr) before removal confirms daemon auto-loads and survives sleep/wake on Darwin 25.4 | Adrian |
 
 ---
 
