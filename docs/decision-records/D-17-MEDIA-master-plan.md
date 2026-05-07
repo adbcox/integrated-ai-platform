@@ -27,7 +27,7 @@ Scope split into **8 independently-executable deliverables (D-17-153 through D-1
 | D-17-156 | arr-stack TRaSH alignment (Recyclarr) | P2 | NOT STARTED | D-17-155 | 4-6 hr | — | — |
 | D-17-157 | Music stack completion (Navidrome verified) | P2 | NOT STARTED | D-17-156 | 2-3 hr | — | — |
 | D-17-158 | Audiobook stack (Audiobookshelf + Readarr) | P3 | NOT STARTED | D-17-155 | 3-4 hr | — | — |
-| D-17-159 | Plex vs Jellyfin decision + execution | P3 | NOT STARTED | D-17-156 | 1 hr decision + 4-8 hr if migrate | — | — |
+| D-17-159 | Plex vs Jellyfin decision + execution | P3 | DECISION DONE, MIGRATION PENDING | D-17-156, D-17-155 | 1 hr decision ✅ + 4-8 hr migrate (gated Mac Mini) | 2026-05-07 | — |
 | D-17-160 | Goose media-ops recipe library | P2 | DESIGN COMPLETE | none | 4-6 hr | 2026-05-07 | 2026-05-07 |
 
 Status values: `NOT STARTED` | `IN PROGRESS` | `BLOCKED` | `WAITING REVIEW` | `DONE` | `DEFERRED`
@@ -237,12 +237,12 @@ Priority: P1 (critical path) | P2 (high value) | P3 (nice to have)
 
 | WP | Description | Status | Est. |
 |---|---|---|---|
-| WP-159-01 | DECISION: Plex (paid, polished, proprietary exception) vs Jellyfin (free, OSS, rougher edges) | NOT STARTED | 1 hr |
-| WP-159-02 | If Jellyfin: deploy Docker, point at TRaSH media paths | NOT STARTED | 1 hr |
-| WP-159-03 | If Jellyfin: parallel-run with Plex 30 days | NOT STARTED | 30 days |
-| WP-159-04 | If Jellyfin: configure Infuse on Apple TV (works with both) | NOT STARTED | 30 min |
-| WP-159-05 | If Jellyfin: cutover, retire Plex | NOT STARTED | 1 hr |
-| WP-159-06 | Document final state in Decisions log | NOT STARTED | 30 min |
+| WP-159-01 | DECISION: Plex vs Jellyfin (CHOSEN: Option B — Jellyfin migration) | DONE | 1 hr | Decision record at `docs/decision-records/D-17-159-plex-vs-jellyfin.md` (2026-05-07) |
+| WP-159-02 | Deploy Jellyfin Docker on QNAP, point at TRaSH media paths | NOT STARTED | 1 hr | **Gated on Mac Mini reachability + D-17-155 TRaSH paths completion** |
+| WP-159-03 | Parallel-run Jellyfin + Plex 30 days for validation | NOT STARTED | 30 days | **Gated on WP-159-02 completion** |
+| WP-159-04 | Configure Infuse on Apple TV for Jellyfin backend | NOT STARTED | 30 min | **Gated on WP-159-02 completion** |
+| WP-159-05 | Cutover: migrate remaining clients to Jellyfin, retire Plex | NOT STARTED | 1 hr | **Gated on WP-159-03 parallel run success** |
+| WP-159-06 | Document final state, lessons learned in runbook | NOT STARTED | 30 min | **Gated on WP-159-05 completion** |
 
 ---
 
@@ -297,6 +297,7 @@ WP-153-01 → WP-153-02 → WP-153-03 → WP-153-04. About 90 minutes. After WP-
 | 2026-05-07 | D-17-154 | Default Syncthing, fallback Mullvad-on-QNAP | Same as current arch; only escalate if throughput fails |
 | 2026-05-07 | D-17-160 | Goose recipe library design phase complete (5/5 specs drafted) | All recipes now at DESIGN DRAFT; implementation testing deferred to Mac Studio reachability; specs ready at `goose-recipes/*.yaml` for execution phase |
 | 2026-05-07 | D-17-153 | WP-01 through WP-04 runbook drafted with paste-ready commands | Pre-stage so first home session is execution-only, no decision-making mid-flight |
+| 2026-05-07 | D-17-159 | CHOSEN: Option B (Jellyfin migration) | Doctrine alignment over UX polish; Infuse bridges Apple TV gap as Symfonium-precedent paid client; 30-day parallel reversible; bounded migration cost fits D-17-MEDIA window |
 | | | | |
 
 ---
@@ -310,6 +311,7 @@ WP-153-01 → WP-153-02 → WP-153-03 → WP-153-04. About 90 minutes. After WP-
 | TRaSH path migration breaks active downloads | HIGH | Run after seedit4me cancellation; or pause torrents during migration window | Adrian |
 | 30-day parallel cost ($25/mo total) | LOW | Acceptable, planned, time-bounded | Adrian |
 | Plex migration to Jellyfin disrupts daily use | MEDIUM | 30-day parallel; Infuse covers both | Adrian |
+| Swiftfin/Jellyfin Apple TV UX rougher than estimated | MEDIUM | 30-day parallel = clear abort signal; Infuse fallback covers worst case | Adrian |
 
 ---
 

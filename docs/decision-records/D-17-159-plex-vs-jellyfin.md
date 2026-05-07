@@ -2,9 +2,24 @@
 
 ## Status
 
-**PROPOSED** — awaiting operator decision at GATE
+**ACCEPTED [B]** — Jellyfin migration path selected
 
-(Operator selects: ACCEPTED [Option A], ACCEPTED [Option B], or DEFERRED)
+**Decision date:** 2026-05-07 (flight session)  
+**Decided by:** Operator (Adrian Cox)  
+**Decided at:** GATE checkpoint, after reviewing ADR
+
+---
+
+## Operator decision (2026-05-07 flight session)
+
+**Choice:** Option B (Jellyfin migration with Infuse on Apple TV)
+
+**Reasoning:**
+- Doctrine alignment with 100% OSS principle is non-negotiable
+- Infuse on Apple TV mitigates UX gap (parallels Symfonium precedent: one paid client bridging OSS gap; server stays fully OSS)
+- Plex vendor risk demonstrated historically; migration cost is bounded now vs unbounded later under forced conditions
+- 30-day parallel run on QNAP is reversible and zero-incremental-cost
+- Migration scope fits inside D-17-MEDIA window; doing it now avoids touching media stack twice
 
 ---
 
@@ -265,9 +280,9 @@ WP-159-06: Document final state
 
 ---
 
-**AWAITING OPERATOR DECISION AT GATE**
+**DECIDED: OPTION B (JELLYFIN)**
 
-Operator selects one:
-- [ ] Option A (Plex) — update Status to ACCEPTED [A], update master plan WP-159-01 to DONE
-- [ ] Option B (Jellyfin) — update Status to ACCEPTED [B], update master plan WP-159-01 to DONE (with migration WPs opened)
-- [ ] Option C (Dual-run trial) — update Status to DEFERRED [C], set 30-day review date, open WP-159-02 (Jellyfin test deploy only)
+Operator selected on 2026-05-07 (flight session):
+- [x] Option B (Jellyfin) — ACCEPTED [B], WP-159-01 DONE, WP-159-02 through WP-159-06 gated on Mac Mini reachability
+
+Next: WP-159-02 (Jellyfin Docker deploy on QNAP) when Mac Studio reachable. 30-day parallel run scheduled after WP-155 (TRaSH paths) completes.
