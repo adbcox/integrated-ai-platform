@@ -21,6 +21,7 @@ Scope split into **8 independently-executable deliverables (D-17-153 through D-1
 
 | ID | Deliverable | Priority | Status | Blocked by | Est. effort | Started | Completed |
 |---|---|---|---|---|---|---|---|
+| D-17-145 | Headscale auth recovery (travel resilience) | P1 | DESIGN DRAFT | none | 2 hr (prevention) + ongoing maintenance | 2026-05-07 | — |
 | D-17-153 | Seedbox migration (Whatbox NL + qBittorrent) | P1 | NOT STARTED | none | 2-4 hr active + 30 days parallel | — | — |
 | D-17-154 | Sync transit hardening (Syncthing throughput verify) | P1 | NOT STARTED | D-17-153 WP-04 | 2 hr | — | — |
 | D-17-155 | TRaSH path discipline migration | P1 | NOT STARTED | D-17-153 WP-02 | 3-5 hr | — | — |
@@ -32,6 +33,45 @@ Scope split into **8 independently-executable deliverables (D-17-153 through D-1
 
 Status values: `NOT STARTED` | `IN PROGRESS` | `BLOCKED` | `WAITING REVIEW` | `DONE` | `DEFERRED`
 Priority: P1 (critical path) | P2 (high value) | P3 (nice to have)
+
+---
+
+## D-17-145: Headscale auth recovery (travel resilience)
+
+**Goal:** Disaster recovery runbook to re-establish Tailscale/Headscale auth when Headscale server (Mac Mini) is asleep, network-unreachable, or destroyed while operator is traveling.
+
+**Triggered by:** 2026-05-07 incident — macOS Tailscale.app + brew CLI in conflicting states; Headscale unreachable when Mac Mini asleep; no documented recovery path.
+
+**Acceptance criteria:**
+- Emergency pre-auth keys generated and stored (Vaultwarden + offline + paper)
+- 3 recovery scenarios documented with step-by-step commands (LAN-reachable, home-unreachable, traveling-unreachable)
+- Periodic quarterly rotation runbook documented
+- Documented in `docs/runbooks/headscale-auth-recovery.md`
+
+**Work packages:**
+
+| WP | Description | Status | Est. |
+|---|---|---|---|
+| WP-145-01 | **Prevention:** Generate 3 emergency pre-auth keys; store securely (Vaultwarden + offline + paper) | NOT STARTED | 1 hr | When home with Mac Mini reachable; do this ASAP |
+| WP-145-02 | **Recovery Scenario A:** LAN-reachable Mac Mini (wake-on-LAN or SSH) | DESIGN DRAFT | — | Documented in runbook section 2.A |
+| WP-145-03 | **Recovery Scenario B:** Mac Mini at home but Headscale down (console/SSH access) | DESIGN DRAFT | — | Documented in runbook section 2.B |
+| WP-145-04 | **Recovery Scenario C:** Operator traveling, Mac Mini unreachable (emergency pre-auth key) | DESIGN DRAFT | — | Documented in runbook section 2.C |
+| WP-145-05 | **Maintenance:** Quarterly key rotation procedure | DESIGN DRAFT | 15 min per quarter | Documented in runbook section 3 |
+| WP-145-06 | **Operator decision gate:** Confirm number of emergency keys to maintain (2 vs 3 vs 4+) | PENDING | — | Recommendation: 3 (active + backup + rotation buffer) |
+
+**Dependencies:** None. Can proceed immediately.
+
+**Risks:**
+- Emergency pre-auth keys stored insecurely (paper lost, Vaultwarden compromised)
+- Emergency keys expired or revoked before needed
+- Operator forgets location of offline emergency keys during travel
+
+**Mitigation:**
+- Store in 3 places (encrypted, offline, paper); 3 keys at any time
+- Rotate quarterly; alert operator before travel >7 days
+- This runbook as reference card (print and carry on travels)
+
+**Rollback:** None applicable (runbook is pure documentation). If recovery fails, escalate to on-site intervention or Headscale Docker rebuild (D-17-151).
 
 ---
 
@@ -298,6 +338,7 @@ WP-153-01 → WP-153-02 → WP-153-03 → WP-153-04. About 90 minutes. After WP-
 | 2026-05-07 | D-17-160 | Goose recipe library design phase complete (5/5 specs drafted) | All recipes now at DESIGN DRAFT; implementation testing deferred to Mac Studio reachability; specs ready at `goose-recipes/*.yaml` for execution phase |
 | 2026-05-07 | D-17-153 | WP-01 through WP-04 runbook drafted with paste-ready commands | Pre-stage so first home session is execution-only, no decision-making mid-flight |
 | 2026-05-07 | D-17-159 | CHOSEN: Option B (Jellyfin migration) | Doctrine alignment over UX polish; Infuse bridges Apple TV gap as Symfonium-precedent paid client; 30-day parallel reversible; bounded migration cost fits D-17-MEDIA window |
+| 2026-05-07 | D-17-145 | Headscale auth recovery runbook drafted | Incident trigger: macOS Tailscale.app + brew CLI conflicting state, Headscale unreachable during travel. Runbook covers prevention (emergency pre-auth keys), 3 recovery scenarios, quarterly rotation. WP-145-01 (actual key generation) deferred to home session. |
 | | | | |
 
 ---
@@ -312,6 +353,8 @@ WP-153-01 → WP-153-02 → WP-153-03 → WP-153-04. About 90 minutes. After WP-
 | 30-day parallel cost ($25/mo total) | LOW | Acceptable, planned, time-bounded | Adrian |
 | Plex migration to Jellyfin disrupts daily use | MEDIUM | 30-day parallel; Infuse covers both | Adrian |
 | Swiftfin/Jellyfin Apple TV UX rougher than estimated | MEDIUM | 30-day parallel = clear abort signal; Infuse fallback covers worst case | Adrian |
+| Auth credentials inaccessible during travel (Headscale unreachable) | HIGH | Emergency pre-auth keys + offline storage + paper backup (see D-17-145 runbook) | Adrian |
+| Tailscale.app + brew CLI in conflicting states | MEDIUM | Client consolidation decision pending (D-17-150); runbook documents both scenarios | Adrian |
 
 ---
 
