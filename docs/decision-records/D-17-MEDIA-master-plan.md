@@ -28,7 +28,7 @@ Scope split into **8 independently-executable deliverables (D-17-153 through D-1
 | D-17-157 | Music stack completion (Navidrome verified) | P2 | NOT STARTED | D-17-156 | 2-3 hr | — | — |
 | D-17-158 | Audiobook stack (Audiobookshelf + Readarr) | P3 | NOT STARTED | D-17-155 | 3-4 hr | — | — |
 | D-17-159 | Plex vs Jellyfin decision + execution | P3 | NOT STARTED | D-17-156 | 1 hr decision + 4-8 hr if migrate | — | — |
-| D-17-160 | Goose media-ops recipe library | P2 | DESIGN STARTED | D-17-149 design | 4-6 hr | 2026-05-07 | — |
+| D-17-160 | Goose media-ops recipe library | P2 | DESIGN COMPLETE | none | 4-6 hr | 2026-05-07 | 2026-05-07 |
 
 Status values: `NOT STARTED` | `IN PROGRESS` | `BLOCKED` | `WAITING REVIEW` | `DONE` | `DEFERRED`
 Priority: P1 (critical path) | P2 (high value) | P3 (nice to have)
@@ -263,9 +263,9 @@ Priority: P1 (critical path) | P2 (high value) | P3 (nice to have)
 |---|---|---|---|
 | WP-160-01 | Recipe 1: `goose-arr-status-summary` — pulls Sonarr/Radarr/Lidarr queue + recent imports + recent errors, outputs Markdown brief | DESIGN DRAFT | 1 hr | spec at `goose-recipes/arr-status-summary.yaml` (2026-05-07 flight) |
 | WP-160-02 | Recipe 2: `goose-arr-failed-imports-triage` — examines failed imports, categorizes by failure mode, drafts Plane tickets | DESIGN DRAFT | 1.5 hr | spec at `goose-recipes/arr-failed-imports-triage.yaml` (2026-05-07 flight) |
-| WP-160-03 | Recipe 3: `goose-zabbix-incident-brief` — for media stack alerts (qBit unreachable, low disk, etc.) | NOT STARTED | 1 hr |
+| WP-160-03 | Recipe 3: `goose-zabbix-incident-brief` — for media stack alerts (qBit unreachable, low disk, etc.) | DESIGN DRAFT | 1 hr | spec at `goose-recipes/goose-zabbix-incident-brief.yaml` (2026-05-07 flight) |
 | WP-160-04 | Recipe 4: `goose-runbook-summarizer` — compresses any runbook into action brief | DESIGN DRAFT | 30 min | spec at `goose-recipes/runbook-summarizer.yaml` (2026-05-07 flight) |
-| WP-160-05 | Recipe 5: `goose-plane-ticket-drafter` — free-form input → structured Plane ticket draft | NOT STARTED | 1 hr |
+| WP-160-05 | Recipe 5: `goose-plane-ticket-drafter` — free-form input → structured Plane ticket draft | DESIGN DRAFT | 1 hr | spec at `goose-recipes/goose-plane-ticket-drafter.yaml` (2026-05-07 flight) |
 | WP-160-06 | All 5 tested with real data; pass/fail per recipe | NOT STARTED | 1 hr |
 | WP-160-07 | Documentation runbook | NOT STARTED | 30 min |
 
@@ -295,7 +295,7 @@ WP-153-01 → WP-153-02 → WP-153-03 → WP-153-04. About 90 minutes. After WP-
 | 2026-05-07 | D-17-153 | Whatbox NL chosen over Bytesized/Seedhost/Pulsed | $15/mo, AMS peering verified by community, native qBit, EU jurisdiction preserved, $5/mo headroom under $20 cap |
 | 2026-05-07 | D-17-153 | Pilot order: Lidarr → Sonarr → Radarr | Music = smallest files, easiest rollback, separate from primary TV/movie queue |
 | 2026-05-07 | D-17-154 | Default Syncthing, fallback Mullvad-on-QNAP | Same as current arch; only escalate if throughput fails |
-| 2026-05-07 | D-17-160 | Goose recipe library v0.1: 3 specs drafted (arr-status, arr-failed-triage, runbook-summarizer) | Flight session productive design work; specs at `goose-recipes/*.yaml` ready for testing when home stack reachable |
+| 2026-05-07 | D-17-160 | Goose recipe library design phase complete (5/5 specs drafted) | All recipes now at DESIGN DRAFT; implementation testing deferred to Mac Studio reachability; specs ready at `goose-recipes/*.yaml` for execution phase |
 | 2026-05-07 | D-17-153 | WP-01 through WP-04 runbook drafted with paste-ready commands | Pre-stage so first home session is execution-only, no decision-making mid-flight |
 | | | | |
 

@@ -1,0 +1,120 @@
+# Goose Recipe: goose-plane-ticket-drafter
+# WP-160-05 — converts free-form description into a structured Plane ticket draft
+# with title, project, priority, labels, and acceptance criteria.
+#
+# Profile: goose-local-plane
+# Permissions: read-only HTTP to Plane API (project/label lookup only); NO ticket creation
+# Mode: brief (read-only discovery, text-only output draft)
+# Status: DRAFT (v0.1) — for D-17-160 implementation
+#
+# Inputs:
+#   - description (required, string)
+#   - project_hint (optional, string)
+#   - priority_hint (optional, string)
+#   - Vault path for Plane API token: secret/plane/api-token
+#
+# Output: structured ticket draft (text, operator-pasteable into Plane web UI)
+#   Fields: title (auto-suggested), project, priority, labels, description
+#   (with sections: summary, context, acceptance criteria, links)
+
+name: goose-plane-ticket-drafter
+description: |
+  Convert free-form description into a structured Plane ticket draft. Suggest
+  title, project, priority, labels based on project/label lookup from Plane API.
+  NEVER creates tickets — output is text only for operator review + manual entry.
+
+profile: goose-local-plane
+mode: brief
+permissions:
+  http:
+    - https://api.plane.so/api/v1/workspaces/
+    - https://api.plane.so/api/v1/projects/
+    - https://api.plane.so/api/v1/labels/
+  vault:
+    - secret/plane/api-token
+  filesystem: []
+  shell: []
+  # Plane POST /tickets intentionally NOT included — no auto-creation
+
+inputs:
+  description:
+    type: string
+    required: true
+    description: "Free-form ticket description from operator"
+  project_hint:
+    type: string
+    required: false
+    description: "Optional hint for which Plane project this belongs to (e.g., 'Infrastructure', 'Product')"
+  priority_hint:
+    type: string
+    required: false
+    description: "Optional hint for priority (urgent, high, medium, low)"
+
+prompt_template: |
+  You are a ticket-drafting assistant. The operator wants to create a Plane ticket
+  and provided a free-form description. Your job is to structure it and suggest
+  metadata (project, priority, labels), then output a draft for operator review.
+
+  Step 1: Parse the operator's description. Extract:
+    - Core problem statement (1 sentence)
+    - Context (what's the background?)
+    - Acceptance criteria (if mentioned, or infer from problem)
+    - Relevant links (URLs, references)
+
+  Step 2: Query Plane API (read-only) to discover:
+    - Available projects (and their IDs)
+    - Available labels for each project
+    - Suggest best-fit project based on {{project_hint}} or content inference
+
+  Step 3: Suggest:
+    - Ticket title (auto-generated from core problem, 50-80 chars)
+    - Project (use {{project_hint}} if provided and exists; otherwise infer from description)
+    - Priority (use {{priority_hint}} if provided; otherwise infer from urgency cues in description)
+    - Labels (from available labels in target project; suggest up to 3 most relevant)
+
+  Step 4: Output a text-only draft in this exact structure:
+
+  ---
+  PLANE TICKET DRAFT
+
+  **Title:** {suggested title}
+  **Project:** {project name}
+  **Priority:** {urgent | high | medium | low}
+  **Labels:** {label1}, {label2}, {label3}
+
+  **Description:**
+
+  ## Summary
+  {one-line core problem}
+
+  ## Context
+  {background info from operator's description}
+
+  ## Acceptance criteria
+  - {criterion 1}
+  - {criterion 2}
+  - {criterion 3}
+  (adjust count as needed; omit if not mentioned)
+
+  ## Links
+  {any URLs mentioned, or "(none)"}
+
+  ---
+
+  Constraints:
+  - DO NOT call Plane POST /tickets. Output is text only.
+  - DO NOT invent projects or labels not returned by the API.
+  - If {{project_hint}} doesn't match an existing project, note "(project hint not found; using best-match: {project})"
+    in a footer comment (outside the ticket draft box).
+  - All suggested fields are optional for operator to override.
+  - Keep description sections concise (2-4 sentences each).
+  - Quote operator's own words where possible; don't rephrase.
+
+acceptance_criteria:
+  - Output is plain text, operator-pasteable into Plane web UI without modification
+  - Title is auto-generated (not copy-pasted from description)
+  - Project lookup called, but never POST /tickets
+  - Labels are actual values from Plane API (not invented)
+  - Acceptance criteria section present (inferred or extracted from description)
+  - If project_hint doesn't match, footer note explains the deviation
+  - Total output under 2k tokens for typical ticket description

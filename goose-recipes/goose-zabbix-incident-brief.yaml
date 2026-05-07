@@ -1,0 +1,100 @@
+# Goose Recipe: goose-zabbix-incident-brief
+# WP-160-03 — polls Zabbix API for active alerts, groups by host + severity,
+# drafts a triage brief for operator review.
+#
+# Profile: goose-local-zabbix (per master log §15 — TODO: confirm Zabbix API host/IP)
+# Permissions: read-only HTTP to Zabbix API + Vault read for API token
+# Mode: brief (no writes, no acknowledgements, pure read + classify)
+# Status: DRAFT (v0.1) — for D-17-160 implementation
+#
+# Inputs:
+#   - severity_filter (optional, default: "all >= warning")
+#   - time_window_minutes (optional, default: 60)
+#   - Vault path for Zabbix API token: secret/zabbix/api-token
+#
+# Output: Markdown brief with sections:
+#   - Active alerts grouped by host
+#   - Severity rollup (count by level)
+#   - Triage suggestion (1-3 bullets)
+#   - Suggested runbook link (if alert maps to known runbook)
+
+name: goose-zabbix-incident-brief
+description: |
+  Poll Zabbix API for active alerts. Group by host and severity. Produce a
+  triage-focused Markdown brief suitable for daily standup or incident response.
+  Pure read + classify. NO writes, NO acknowledgements.
+
+profile: goose-local-zabbix
+mode: brief
+permissions:
+  http:
+    - http://192.168.10.X/api_jsonrpc.php  # TODO: confirm Zabbix API endpoint in master log §15
+  vault:
+    - secret/zabbix/api-token
+  filesystem: []
+  shell: []
+
+inputs:
+  severity_filter:
+    type: string
+    default: "all >= warning"
+    description: "Filter alerts by severity. Options: warning, average, high, disaster, or 'all'"
+  time_window_minutes:
+    type: integer
+    default: 60
+    description: "Only include alerts triggered within last N minutes"
+
+prompt_template: |
+  You are a monitoring brief writer. The user wants a quick triage of active
+  Zabbix alerts.
+
+  Step 1: Connect to Zabbix API using the Vault-provided token.
+
+  Step 2: Query problem() method with:
+    - filter: severity >= {{severity_filter}}
+    - only: active problems (not resolved)
+    - time window: last {{time_window_minutes}} minutes
+    - include host info, trigger details, event timestamp
+
+  Step 3: Group alerts by host. For each host, group by severity level.
+
+  Step 4: Produce a Markdown brief in this exact structure:
+
+  # Zabbix incident brief — {{timestamp}}
+
+  ## Severity rollup
+  - Disaster: {N}
+  - High: {N}
+  - Average: {N}
+  - Warning: {N}
+  - **Total active problems:** {N}
+
+  ## Active alerts by host
+  ### {hostname}
+  - [{severity}] {trigger name} — triggered {{time_ago}}
+    Event ID: {event_id} | Status: {state}
+  ...
+
+  ## Triage suggestion
+  (1-3 bullets. Examples: "Check network connectivity on {host}", "Review disk usage on {host}",
+  "Escalate to {team}" based on severity and pattern. No speculation beyond what the alerts show.)
+
+  ## Suggested runbook link
+  (If any alert key or trigger name matches a known runbook pattern from master log §20,
+  suggest it here. Otherwise, write "(none — check runbook index)".)
+
+  Constraints:
+  - NO API writes. NO acknowledgement calls. Pure read only.
+  - If Zabbix API is unreachable, note it and return empty brief.
+  - Group by host first, then by severity within each host.
+  - Include event timestamp so operator can cross-reference logs.
+  - If severity_filter is not recognized, default to "all".
+
+acceptance_criteria:
+  - Zabbix API queried without errors (or gracefully fails with message)
+  - All active problems within time_window included
+  - Severity rollup totals match alert count in sections below
+  - Output is valid Markdown
+  - No Zabbix API writes executed (audit log confirms read-only)
+  - Runbook suggestion is optional; omit if no match found
+  - Total token budget under 3k for typical alert load
