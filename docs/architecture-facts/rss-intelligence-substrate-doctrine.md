@@ -38,7 +38,43 @@ These are two deliverables, not one. Splitting matters because scoring criteria,
 | Summarization | Ollama (existing T1-T4 worker pool) | No external API. Routes via litellm-gateway when deployed. |
 | Output sink (technical) | OpenProject WPs via existing OP sync | Plane CE retired in D-17-04; OpenProject is canonical. |
 | Output sink (briefing) | Operator decision (Obsidian / Nextcloud / daily email) | Different consumer, different sink. |
+| Normalizer / dedupe / classifier | Python idempotent job (runs after raw archive, before metadata insert) | Re-runnable. Source bytes already preserved upstream so this stage can be re-run without re-fetching. |
+| Metadata filters | Per-system policy layer over SQLite/Postgres | Explicitly the divergence point between D-17-136 (technical filters) and D-17-137 (personal filters). |
 | Monitoring | Zabbix | Existing platform monitoring; new items per D-17-105 doctrine. |
+
+
+## Pipeline order (canonical)
+
+Per master log §16 and §17, the canonical flow shared by both systems is:
+
+```
+RSS feeds
+  ↓
+Miniflux / FreshRSS (aggregator polls)
+  ↓
+QNAP raw archive  ←── preserve source bytes BEFORE any transformation
+  ↓
+Python normalizer / dedupe / classifier (idempotent)
+  ↓
+SQLite / Postgres metadata (canonical query layer)
+  ↓
+Ollama embeddings + summaries (local; no external API)
+  ↓
+Per-system divergence:
+  D-17-136 (Technical):  daily/weekly digest  →  OpenProject WPs / benchmark prompts / Aider+OpenCode task briefs
+  D-17-137 (Briefing):   story clustering  →  source/perspective scoring  →  personal relevance ranker  →  daily briefing (Obsidian / Nextcloud / email / markdown)  →  archive + RAG loop
+```
+
+**Critical invariant:** raw archive happens BEFORE any normalization, dedupe, or filtering. This preserves source bytes for forensic re-processing, model retraining, and time-travel debugging. Downstream stages can be re-run without re-fetching from sources (rate-limit safe).
+
+**Different policies, same plumbing** (per master log §16/§17 framing):
+
+| Axis | D-17-136 (Technical) | D-17-137 (Briefing) |
+|---|---|---|
+| Scoring | technical relevance, model/tool relevance | news/source scoring, personal relevance |
+| Output unit | benchmark prompts, OpenProject WPs, task briefs | concise source-linked briefing cards |
+| Filter dimension | model/tool/release-tracking | personal interest, perspective diversity, no-outrage |
+| RAG loop | n/a (digests are write-once) | archive + RAG (briefings searchable for operator queries) |
 
 ## Excluded substrate (locked, with reasons)
 
