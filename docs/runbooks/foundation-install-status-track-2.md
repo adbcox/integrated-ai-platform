@@ -1,8 +1,9 @@
-# Foundation Install Track 2 Status — PARTIAL (Stage 0 FAILED)
+# Foundation Install Track 2 Status — OrbStack Baseline (Session 2)
 
-**Session Date:** 2026-05-09
+**Session Date (Session 1):** 2026-05-09
+**Session Date (Session 2 — Current):** 2026-05-09
 **Branch:** feat/foundation-install-track-2
-**Status:** PAUSED — Docker daemon startup failed at Stage 0
+**Status:** IN PROGRESS — OrbStack baseline installed per ADR-A-019; proceeding to Stage 1
 
 ## Preflight Results
 
@@ -12,7 +13,39 @@
 - claude (installed at `/Users/adriancox/.local/bin/claude`)
 - goose 1.33.1 (installed at `/opt/homebrew/bin/goose`)
 
-## Stage 0 — Docker Daemon
+## Stage 0a — Ingest Canonical Roadmap
+
+**Status:** ✓ COMPLETE
+
+**Action:** Copied `~/Downloads/LOCAL_OPEN_SOURCE_AI_WORKSTATION_IMPLEMENTATION_ROADMAP.md` to `docs/architecture-facts/local-ai-workstation-roadmap.md`
+
+**Verification:** 2055 lines ingested; commit e1b2cd21
+
+## Stage 0b — Container Runtime: OrbStack (per ADR-A-019)
+
+**Status:** ✓ COMPLETE
+
+**Actions:**
+```bash
+brew install --cask orbstack          # Version 2.1.1,20026
+open -a OrbStack                      # First-run setup
+sleep 10                              # Initialization wait
+docker ps                             # Verification passed (empty list)
+docker run --rm hello-world           # Smoke test passed
+```
+
+**Verification:**
+- OrbStack CLI: `/opt/homebrew/bin/orb` (orbctl also available)
+- Docker binary: `/usr/local/bin/docker` (provided by OrbStack)
+- Docker context: orbstack (active, marked with *)
+- Server version: 29.4.0
+- Operating System: OrbStack (per `docker info`)
+- OrbStack processes running in Activity Monitor
+- smoke test (hello-world) succeeded
+
+**Note:** Docker Desktop remains installed but inactive. Full uninstall deferred (requires sudo interaction). OrbStack and Docker Desktop contexts coexist peacefully; orbstack context is active by default.
+
+## Stage 0 — Docker Daemon (Session 1, Historical Context)
 
 **Status:** FAILED
 **Issue:** Docker Desktop startup failed to produce responsive daemon after 60+ seconds.
@@ -33,26 +66,24 @@ docker ps                         # Tested daemon responsiveness (failed)
 3. Consider restarting macOS if Docker daemon refuses to start.
 4. OpenHands (Stage 6) requires Docker; cannot proceed past this gate without Docker operational.
 
-## Stages Not Reached
+## Installed / To Install
 
-- **Stage 1:** OpenCode CLI install (blocked by Docker gate, though not a direct dependency)
-- **Stage 2:** OpenCode plugins (blocked)
-- **Stage 3:** Cline VS Code extension (can proceed independently; deferred pending Docker resolution)
-- **Stage 4:** Continue VS Code extension (can proceed independently; deferred pending Docker resolution)
-- **Stage 5:** Serena MCP (can proceed independently; deferred pending Docker resolution)
-- **Stage 6:** OpenHands Docker install (blocked by Docker startup failure)
-- **Stage 7:** Foundation status document (this document is partial status)
+**Session 2 Progress:**
+- Stage 0a: ✓ Canonical roadmap ingested
+- Stage 0b: ✓ OrbStack container runtime installed (2.1.1,20026)
+- Stage 1: [IN PROGRESS] OpenCode CLI
+- Stage 2: [PENDING] OpenCode configuration
+- Stage 3: [PENDING] Cline VS Code extension
+- Stage 4: [PENDING] Continue VS Code extension
+- Stage 5: [PENDING] Serena MCP
+- Stage 6: [PENDING] OpenHands sandbox
+- Stage 7: [PENDING] Filesystem layout + foundation status report
 
-## Installed agents (Stage 0 only)
+## Baseline agents (already installed, pre-Session 2)
 
-None in this session. Baseline agents verified but not newly installed:
-- aider 0.86.2 (pre-installed, already verified)
-- claude (pre-installed, already verified)
-- goose 1.33.1 (pre-installed, already verified)
-
-## Deferred / Not Yet Started
-
-All remaining agents and plugins (Stages 1–6) are blocked by Docker startup failure.
+- aider 0.86.2 (installed at `/opt/homebrew/bin/aider`)
+- claude (installed at `/Users/adriancox/.local/bin/claude`)
+- goose 1.33.1 (installed at `/opt/homebrew/bin/goose`)
 
 ## Open Questions for Operator
 
