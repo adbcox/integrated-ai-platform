@@ -392,6 +392,18 @@ Track 2 agents requested (from `docs/runbooks/full-upgrade-master-project-plan.m
 
 Track 1 (production Ollama models, Miniflux, litellm) is a separate task, not in scope for this session.
 
+## Track 1.A — LiteLLM Smart Routing Proxy
+
+**Status:** ✓ COMPLETE (Session 2026-05-09)
+
+Track 1.A LiteLLM proxy installation and agent re-wiring has been completed in a separate session on branch `feat/track-1a-litellm-routing`. This foundational work enables transparent model routing with automatic fallback chains:
+- **Proxy endpoint:** `http://localhost:4000/v1` (OpenAI-compatible API)
+- **Models configured:** qwen2.5-coder (local Ollama), qwen3-coder-30b (Mac Studio LAN with local fallback)
+- **Agents re-wired:** OpenCode, Goose, Aider, Continue VS Code extension
+- **Service:** Running as macOS launchd agent (com.adriancox.litellm)
+
+See `docs/runbooks/track-1a-litellm-status.md` for full details.
+
 ---
 
 **Next action:** Operator must resolve Docker startup before continuing Track 2. Consider resuming either:
