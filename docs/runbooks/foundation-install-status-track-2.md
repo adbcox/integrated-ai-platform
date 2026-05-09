@@ -74,7 +74,7 @@ docker ps                         # Tested daemon responsiveness (failed)
 - Stage 1: ✓ OpenCode CLI installed (1.14.41)
 - Stage 2: ✓ OpenCode configuration created (opencode.json + AGENTS.md.template)
 - Stage 3: ✓ Cline VS Code extension installed (3.82.0)
-- Stage 4: [PENDING] Continue VS Code extension
+- Stage 4: ✓ Continue VS Code extension installed (1.2.22)
 - Stage 5: [PENDING] Serena MCP
 - Stage 6: [PENDING] OpenHands sandbox
 - Stage 7: [PENDING] Filesystem layout + foundation status report
@@ -150,6 +150,38 @@ Base URL: http://10.55.0.1:11434/v1 (Mac Studio Thunderbolt — not applicable t
 
 **Role (roadmap §13.1):**
 IDE-supervised autonomous lane for front-end bugs, browser testing, VS Code tasks, visual diff review, and interactive Plan/Act work.
+
+## Stage 4 — Continue VS Code Extension
+
+**Status:** ✓ COMPLETE (pre-installed)
+
+**Installation Status:**
+- Extension ID: `continue.continue` (verified)
+- Version: 1.2.22 (pre-installed on this MacBook)
+- Verified: `code --list-extensions | grep continue` confirms installation
+
+**Configuration (per roadmap §14.2):**
+Continue should be configured with Ollama endpoints via VS Code settings. Recommended configuration:
+```json
+{
+  "models": [
+    {
+      "title": "Mac Studio Qwen3 Coder LAN",
+      "provider": "ollama",
+      "model": "qwen3-coder:30b-coding",
+      "apiBase": "http://192.168.10.142:11434"
+    }
+  ]
+}
+```
+
+**Role (roadmap §14.1):**
+IDE helper extension (not autonomous executor) for:
+- Autocomplete
+- Codebase Q&A
+- Lightweight local chat
+- Review/checks
+- Developer convenience
 
 ## Baseline agents (already installed, pre-Session 2)
 
