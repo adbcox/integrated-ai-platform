@@ -73,7 +73,7 @@ docker ps                         # Tested daemon responsiveness (failed)
 - Stage 0b: ✓ OrbStack container runtime installed (2.1.1,20026)
 - Stage 1: ✓ OpenCode CLI installed (1.14.41)
 - Stage 2: ✓ OpenCode configuration created (opencode.json + AGENTS.md.template)
-- Stage 3: [PENDING] Cline VS Code extension
+- Stage 3: ✓ Cline VS Code extension installed (3.82.0)
 - Stage 4: [PENDING] Continue VS Code extension
 - Stage 5: [PENDING] Serena MCP
 - Stage 6: [PENDING] OpenHands sandbox
@@ -120,6 +120,36 @@ curl -fsSL https://opencode.ai/install | bash
 - Per canonical roadmap discipline, no OpenCode plugins installed (out of scope)
 - Tailscale URL provider for off-LAN access deferred to Track 1 (LiteLLM endpoint config)
 - Fallback model (qwen2.5-coder:7b) for offline mode not yet installed locally (deferred to Track 1)
+
+## Stage 3 — Cline VS Code Extension
+
+**Status:** ✓ COMPLETE
+
+**Installation:**
+- Extension ID: `saoudrizwan.claude-dev` (verified from https://github.com/cline/cline)
+- Installed via: `code --install-extension saoudrizwan.claude-dev`
+- Version: 3.82.0
+- Verified: `code --list-extensions | grep saoudrizwan` confirms installation
+
+**Configuration (per roadmap §13.2):**
+The following configuration should be set in VS Code settings or Cline extension settings:
+```
+Base URL: http://192.168.10.142:11434/v1 (LAN endpoint for MacBook)
+Model: qwen3-coder:30b-coding
+```
+
+Alternative (Thunderbolt, requires direct Mac Studio connection):
+```
+Base URL: http://10.55.0.1:11434/v1 (Mac Studio Thunderbolt — not applicable to this MacBook)
+```
+
+**Operational Mode (roadmap §13.3):**
+- Use Plan/Act split: Plan first, Act only after approval
+- No unattended destructive commands
+- Use Cline worktree only (~local-ai-workstation/worktrees/cline)
+
+**Role (roadmap §13.1):**
+IDE-supervised autonomous lane for front-end bugs, browser testing, VS Code tasks, visual diff review, and interactive Plan/Act work.
 
 ## Baseline agents (already installed, pre-Session 2)
 
