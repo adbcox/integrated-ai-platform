@@ -16,6 +16,7 @@ the decision content here.
 | [A-001](adr/ADR-A-001.md) | Retain the existing control plane | Continue using the Mac Mini as the platform's control plane through Phase 13. |
 | [A-002](adr/ADR-A-002.md) | Shared runtime substrate is mandatory | All platform services run on a single shared substrate (Docker on Mac Mini today, portable to Linux). |
 | [A-008](adr/ADR-A-008.md) | Branches may not fork the platform | Single mainline; no long-lived feature branches. |
+| [A-019](adr/ADR-A-019-container-runtime-per-host.md) | Container runtime per host: Colima Mac Mini production, OrbStack MacBook roaming workstation | Per-host runtime decision; OrbStack is the second deliberate exception to the 100%-OSS ethos (after Proton Mail), accepted for the per-MCP-instance VM simplification on the roaming laptop. |
 
 ## Coding posture and AI subsystems
 

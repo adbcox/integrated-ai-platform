@@ -24,6 +24,7 @@ Individual ADR files live here. Each file is one decision.
 | [ADR-A-016](ADR-A-016-canonical-patterns-registry.md) | Canonical Patterns Registry | Accepted |
 | [ADR-A-017](ADR-A-017-vault-warm-copy-backup-strategy.md) | Vault file-backend warm-copy is the backup strategy | Accepted |
 | [ADR-A-018](ADR-A-018-replace-plane-with-openproject.md) | Replace Plane CE with OpenProject CE as PM substrate | Accepted |
+| [ADR-A-019](ADR-A-019-container-runtime-per-host.md) | Container runtime per host: Colima Mac Mini production, OrbStack MacBook roaming workstation | Accepted |
 
 ## Format
 
