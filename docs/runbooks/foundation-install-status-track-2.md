@@ -75,9 +75,9 @@ docker ps                         # Tested daemon responsiveness (failed)
 - Stage 2: ✓ OpenCode configuration created (opencode.json + AGENTS.md.template)
 - Stage 3: ✓ Cline VS Code extension installed (3.82.0)
 - Stage 4: ✓ Continue VS Code extension installed (1.2.22)
-- Stage 5: ✗ FAILED — Serena MCP installation incomplete
-- Stage 6: [BLOCKED] OpenHands sandbox (depends on Serena verification)
-- Stage 7: [BLOCKED] Filesystem layout + status report (depends on Stage 6)
+- Stage 5: ✓ Serena MCP installed (1.2.0, corrected per oraios docs)
+- Stage 6: [PENDING] OpenHands sandbox
+- Stage 7: [PENDING] Filesystem layout + status report
 - Stage 7: [PENDING] Filesystem layout + foundation status report
 
 ## Stage 1 — OpenCode CLI
@@ -186,41 +186,50 @@ IDE helper extension (not autonomous executor) for:
 
 ## Stage 5 — Serena MCP Server
 
-**Status:** ✗ FAILED (verification gate not passed)
+**Status:** ✓ COMPLETE (corrected per oraios official documentation)
 
-**Installation Attempt:**
+**Initial Attempt (FAILED — documented in commit 5a63dbf5):**
+- Used incorrect package: `uv tool install serena` (name collision)
+- Result: serena==0.9.1 (wrong package, library-only, no CLI)
+- Issue: Roadmap §11.2 pointed to incorrect PyPI package name
+
+**Corrected Installation (per https://oraios.github.io/serena/02-usage/010_installation.html):**
 ```bash
-uv tool install serena
-# Result: Resolved 6 packages, installed serena==0.9.1
-# Error: No executables are provided by package `serena`; removing tool
+uv tool install -p 3.13 serena-agent@latest --prerelease=allow
 ```
 
-**Verification Gate Failure:**
-- `serena --version` fails (command not found)
-- `which serena` returns no result
-- `uv tool install serena` does not create an executable CLI
+**Installation Details:**
+- Package: serena-agent (correct oraios MCP server)
+- Version: 1.2.0
+- Python runtime: 3.13.13 (provisioned by uv)
+- Executables installed: serena, serena-hooks
+- Installation path: `/Users/adriancox/.local/bin/serena`
 
-**Analysis:**
-Per roadmap §11.2: "Install Serena using its recommended current installer. If using `uv`: `uv tool install serena`"
-Per roadmap §11.2: "If the shell cannot find `serena`, use the full executable path in MCP client configuration."
+**Verification Gate (PASSED):**
+```bash
+which serena                    # ✓ /Users/adriancox/.local/bin/serena
+serena --version                # ✓ Serena 1.2.0
+serena --help                   # ✓ Shows CLI subcommands (init, start-mcp-server, project, config, etc.)
+serena init                      # ✓ Initialized successfully
+```
 
-The Serena PyPI package (v0.9.1) does not provide an entrypoint CLI, only a library. This is either:
-1. A PyPI package version issue (possibly pre-release or incorrectly packaged)
-2. Expected behavior (Serena designed as a library, not a CLI)
+**Initialization:**
+- Config file: `/Users/adriancox/.serena/serena_config.yml`
+- Language backend: LSP
+- Auto-detected clients: claude-code, codex
+- Status: "Serena has been initialised successfully"
 
-**Blocking Issue:**
-Cannot verify Stage 5 without a functioning Serena binary or library path. Per hard rule "Stop on first verification failure," proceeding to Stage 6 (OpenHands) is blocked pending Serena resolution.
+**Configuration (per roadmap §11.3):**
+Per-workspace Serena configuration can be set with:
+```bash
+serena start-mcp-server --project /path/to/current/worktree
+```
 
-**Operator Action Required:**
-1. Check if there is an alternative Serena distribution or installation method
-2. Verify if Serena v0.9.1 is the correct version or if a newer release is available
-3. Confirm whether Serena is meant to be used as a library or CLI tool
-4. If library-only, provide the Python import path and MCP server invocation method
+**Role (per roadmap §11.1):**
+Semantic code-intelligence layer for symbol search, definition/reference lookup, repo structure analysis, semantic navigation, safe refactor planning, and large-codebase context reduction.
 
-**Resolution Options:**
-- Option 1: Delay Serena; proceed to Stage 6 (OpenHands) independently
-- Option 2: Fix Serena installation before continuing to Stage 6
-- Option 3: Document Serena as deferred to Track 1 (post-foundation configuration)
+**Note:**
+This corrects commit 5a63dbf5 (Stage 5 failure). The roadmap §11.2 contained a reference to the wrong PyPI package (serena vs serena-agent). The correct package is serena-agent from the oraios project.
 
 ## Baseline agents (already installed, pre-Session 2)
 
