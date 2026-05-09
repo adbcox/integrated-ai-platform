@@ -2,7 +2,7 @@
 
 **Session Date:** 2026-05-09
 **Branch:** feat/track-1a-litellm-routing
-**Status:** IN PROGRESS — Stage 3 complete
+**Status:** IN PROGRESS — Stage 4 complete
 
 ## Stage 1 — LiteLLM Proxy Installation
 
@@ -79,9 +79,30 @@ uv tool install 'litellm[proxy]'
 - No manual intervention needed
 - Transparent to agent tools (OpenCode, Goose, Aider)
 
+## Stage 4 — Re-wire OpenCode
+
+**Status:** ✓ COMPLETE
+
+**Configuration Updated:** `~/local-ai-workstation/configs/opencode/opencode.json`
+
+**Changes:**
+- Replaced `ollama_macstudio_lan` + `ollama_local_offline` providers with single `litellm_local_proxy` provider
+- New provider points at: `http://localhost:4000/v1` (LiteLLM proxy)
+- API key: `sk-local-only-not-secret`
+- Models exposed:
+  - `qwen2.5-coder` (local Ollama via proxy)
+  - `qwen3-coder-30b` (Mac Studio LAN via proxy, with local fallback)
+- Default model: `qwen3-coder-30b` (router handles fallback to local if LAN unreachable)
+
+**Routing Behavior:** All requests now route through the LiteLLM proxy, which:
+- Attempts qwen3-coder-30b requests on Mac Studio LAN (192.168.10.142:11434)
+- Falls back to local qwen2.5-coder if LAN unreachable
+- Operator can override per-session via model selector in OpenCode TUI
+
+**Verification:** Config is valid JSON; OpenCode TUI loads with new provider and models
+
 ## Remaining Stages
 
-- Stage 4: [PENDING] Re-wire OpenCode
 - Stage 5: [PENDING] Re-wire Goose
 - Stage 6: [PENDING] Re-wire Aider
 - Stage 7: [PENDING] Verify Cline + Continue
