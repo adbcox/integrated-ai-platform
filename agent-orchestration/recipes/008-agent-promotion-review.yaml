@@ -1,0 +1,38 @@
+name: Agent Promotion Review
+description: |
+  Review benchmark evidence for a coding agent and produce a promotion
+  recommendation memo. Assess whether an agent should be promoted from
+  experimental to primary lane.
+
+instructions: |
+  Review benchmark artifacts and evidence, then produce a promotion review memo:
+  - Executive summary: Is this agent ready for promotion?
+  - Benchmark summary: Which task classes does this agent excel at?
+  - Performance metrics: Compared to baseline (Aider)
+  - Safety and reliability: Were all constraints respected?
+  - Resource usage: Latency, token consumption, cost
+  - Risks and mitigations: What could go wrong?
+  - Recommendation: Promote, conditional, or reject
+  - Conditions (if conditional): What must be fixed first?
+  - Rollback plan: How to revert if issues arise
+
+parameters:
+  - name: agent_name
+    description: "Name of agent being reviewed (e.g., opencode)"
+    required: true
+  - name: artifact_path
+    description: "Path to benchmark artifacts and results"
+    required: true
+  - name: baseline_agent
+    description: "Baseline agent to compare against"
+    required: false
+    default: "aider"
+
+# E-003 host substitution: MacBook uses LiteLLM proxy with model_name qwen2.5-coder
+model: qwen2.5-coder
+
+tags:
+  - benchmarking
+  - promotion-gate
+  - decision-support
+  - goose-orchestration

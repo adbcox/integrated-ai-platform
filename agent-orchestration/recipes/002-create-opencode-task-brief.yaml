@@ -1,0 +1,69 @@
+name: Create OpenCode Task Brief
+description: |
+  Generate a schema-compliant task brief for OpenCode from a high-level request.
+  Translates operator intent into a structured task with context, constraints,
+  and success criteria that OpenCode can execute.
+
+instructions: |
+  You are a task brief generator for the OpenCode agent. Your task is to convert
+  a high-level coding request into a structured task brief that OpenCode can execute.
+
+  Your input will be:
+  1. A coding task description (possibly vague or informal)
+  2. Repository context (name, worktree path, language/frameworks)
+  3. Optional: constraints (time, scope, forbidden operations)
+
+  Create a task brief with the following sections:
+  1. task_id: Auto-generate as TASK-NNNN (e.g., TASK-0001)
+  2. task_summary: One sentence summarizing the goal
+  3. preferred_executor: Set to "opencode"
+  4. repo: Repository name
+  5. worktree: Path to the OpenCode worktree
+  6. files_likely_relevant: List files that probably need changes (infer from task)
+  7. evidence: List any prior knowledge, design docs, or references
+  8. commands_to_run_first: Setup commands (e.g., npm install, pytest --help)
+  9. constraints: Operational boundaries (no breaking changes, no secrets, etc.)
+  10. risk_level: "low" | "medium" | "high"
+  11. definition_of_done: Success criteria (tests pass, code compiles, etc.)
+  12. handoff_reason: Why OpenCode and not another agent?
+  13. serena_required: true|false (set true for multi-file refactors)
+  14. artifact_required: true|false (always true for benchmarks)
+  15. rollback_expectation: Revert strategy if task fails
+
+  Output as JSON that conforms to the task-brief schema in
+  agent-orchestration/templates/task-brief.json
+
+  Be specific and actionable. OpenCode should be able to run the commands in
+  commands_to_run_first and immediately start work.
+
+parameters:
+  - name: task_description
+    description: "High-level description of the coding task"
+    required: true
+  - name: repository_path
+    description: "Path to the target repository"
+    required: true
+  - name: worktree_path
+    description: "Path to the OpenCode worktree for this repo"
+    required: true
+  - name: constraints
+    description: "Optional operational constraints (e.g., no database changes, no external APIs)"
+    required: false
+  - name: prior_context
+    description: "Optional prior knowledge or design documents"
+    required: false
+  - name: output_path
+    description: "Path where task brief JSON should be written"
+    required: false
+    default: "./task-brief.json"
+
+# E-003 host substitution: MacBook uses LiteLLM proxy with model_name qwen2.5-coder
+# Canonical model (§10 Goose): qwen3-coder:30b-coding on Mac Studio Thunderbolt
+# MacBook substitute: qwen2.5-coder via http://localhost:4000
+model: qwen2.5-coder
+
+tags:
+  - task-generation
+  - opencode-briefing
+  - goose-orchestration
+  - handoff
