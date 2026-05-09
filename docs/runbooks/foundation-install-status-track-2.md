@@ -71,13 +71,30 @@ docker ps                         # Tested daemon responsiveness (failed)
 **Session 2 Progress:**
 - Stage 0a: ✓ Canonical roadmap ingested
 - Stage 0b: ✓ OrbStack container runtime installed (2.1.1,20026)
-- Stage 1: [IN PROGRESS] OpenCode CLI
+- Stage 1: ✓ OpenCode CLI installed (1.14.41)
 - Stage 2: [PENDING] OpenCode configuration
 - Stage 3: [PENDING] Cline VS Code extension
 - Stage 4: [PENDING] Continue VS Code extension
 - Stage 5: [PENDING] Serena MCP
 - Stage 6: [PENDING] OpenHands sandbox
 - Stage 7: [PENDING] Filesystem layout + foundation status report
+
+## Stage 1 — OpenCode CLI
+
+**Status:** ✓ COMPLETE
+
+**Install Method:** Official install script (verified at https://opencode.ai/docs/)
+```bash
+curl -fsSL https://opencode.ai/install | bash
+```
+
+**Verification:**
+- Installation path: `/Users/adriancox/.opencode/bin/opencode`
+- Version: 1.14.41
+- Added to PATH via `.zshrc`
+- Database migration completed successfully
+- `opencode --help` returns expected commands (run, providers, agent, models, etc.)
+- `opencode --version` returns 1.14.41 (parseable)
 
 ## Baseline agents (already installed, pre-Session 2)
 
