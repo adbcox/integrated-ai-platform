@@ -2,7 +2,7 @@
 
 **Session Date:** 2026-05-09
 **Branch:** feat/track-1a-litellm-routing
-**Status:** IN PROGRESS — Stage 1 complete
+**Status:** IN PROGRESS — Stage 3 complete
 
 ## Stage 1 — LiteLLM Proxy Installation
 
@@ -41,9 +41,46 @@ uv tool install 'litellm[proxy]'
 
 **Verification:** Config syntax verified by starting proxy briefly; health check responded.
 
+## Stage 3 — LiteLLM as launchd Service
+
+**Status:** ✓ COMPLETE
+
+**launchd Configuration:**
+- Label: `com.adriancox.litellm`
+- Plist location: `~/Library/LaunchAgents/com.adriancox.litellm.plist`
+- Command: `/Users/adriancox/.local/bin/litellm --config ~/local-ai-workstation/configs/litellm/config.yaml --port 4000`
+- RunAtLoad: true
+- KeepAlive: true
+- Logs: `~/local-ai-workstation/logs/litellm.{out,err}`
+
+**Service Status:** Loaded and running
+
+**Verification Tests:**
+
+1. **Model List Endpoint:**
+   ```bash
+   curl -H "Authorization: Bearer sk-local-only-not-secret" \
+     http://localhost:4000/v1/models
+   ```
+   ✓ Returns: `qwen2.5-coder`, `qwen3-coder-30b`
+
+2. **Local Model Chat Completion (qwen2.5-coder):**
+   ✓ Request succeeded; model responded with "WORKING"
+   ✓ Used local Ollama (127.0.0.1:11434)
+
+3. **Fallback Chain Test (qwen3-coder-30b → qwen2.5-coder):**
+   ✓ Requested qwen3-coder-30b (configured for LAN endpoint 192.168.10.142:11434)
+   ✓ LAN endpoint unreachable (off-network), router fell back to qwen2.5-coder
+   ✓ Response received with "FALLBACK_OK"
+   ✓ Proves: fallback chain working; router handles offline scenario automatically
+
+**Behavioral Note:** When Mac Studio is off-network or unreachable:
+- Requests to qwen3-coder-30b automatically degrade to qwen2.5-coder
+- No manual intervention needed
+- Transparent to agent tools (OpenCode, Goose, Aider)
+
 ## Remaining Stages
 
-- Stage 3: [PENDING] launchd service setup
 - Stage 4: [PENDING] Re-wire OpenCode
 - Stage 5: [PENDING] Re-wire Goose
 - Stage 6: [PENDING] Re-wire Aider
