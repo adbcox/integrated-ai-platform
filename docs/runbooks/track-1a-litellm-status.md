@@ -206,11 +206,13 @@ Then configure in VS Code settings:
 
 ## Remediation Session (2026-05-09)
 
-**Issue:** Validation report (2026-05-09T14:06:00Z) found that LiteLLM chat/completions endpoint timed out when the LAN tier was unreachable. Root cause: `num_retries: 2` × `timeout: 30` = up to 90 seconds before fallback fired.
+**Initial Issue:** Validation report (2026-05-09T14:06:00Z) identified LiteLLM chat/completions timeout when LAN tier was unreachable. Root cause: `num_retries: 2` × `timeout: 30s` = up to 90 seconds before fallback, exceeding agent timeout budgets.
+
+### Stage 1: LiteLLM Fallback Chain Fast-Fail Fix
 
 **Fix Applied:**
 
-Updated `~/local-ai-workstation/configs/litellm/config.yaml` with per-model timeouts and immediate fallback:
+Updated `~/local-ai-workstation/configs/litellm/config.yaml`:
 
 ```yaml
 model_list:
@@ -224,7 +226,7 @@ model_list:
     litellm_params:
       model: ollama/qwen3-coder:30b-coding
       api_base: http://192.168.10.142:11434
-      timeout: 5           # FAST-FAIL: fires immediately if LAN unreachable
+      timeout: 5           # FAST-FAIL: LAN tier times out immediately when unreachable
       stream_timeout: 5
 
 router_settings:
@@ -232,19 +234,42 @@ router_settings:
   num_retries: 0           # no retries; fall back immediately on timeout
   timeout: 60
   fallbacks:
-    - qwen3-coder-30b: ["qwen2.5-coder"]  # moved to router_settings per LiteLLM docs
+    - qwen3-coder-30b: ["qwen2.5-coder"]
 ```
 
-**Verification:** Post-fix smoke tests (2026-05-09 ~14:15):
-- Test A (local model): 0.36 seconds, WORKING response ✓
-- Test B (LAN fallback): 9.29 seconds, WORKING response via qwen2.5-coder ✓
+**Verification Tests (2026-05-09 ~14:15):**
+- Test A (direct local): 0.36s, response: WORKING ✓
+- Test B (fallback chain): 9.29s, response: WORKING (via qwen2.5-coder) ✓
 
-**Impact:** Fallback chain now completes in ~9-10 seconds instead of 60-90 seconds, enabling reliable proxy operation across all network states.
+Note: Test B model field shows `ollama/qwen2.5-coder:7b`, confirming LAN tier timeout → fallback to local.
 
-## Remaining Stages
+**Impact:** Fallback now completes in ~9-10 seconds (vs. prior 60-90s), enabling agents to successfully use proxy in all network states.
 
-- Stage 2: OpenCode PATH fix
-- Stage 3: Docker Desktop cask removal
-- Stage 4: Create missing filesystem directories
-- Stage 5: Goose smoke test re-run
-- Stage 6: Status doc update
+### Stage 2: OpenCode PATH Fix
+
+**Status:** Already present in `~/.zshrc`. Verified: `which opencode` → `/Users/adriancox/.opencode/bin/opencode`, version 1.14.41 ✓
+
+### Stage 3: Docker Desktop Cask Removal
+
+**Status:** Deferred — requires sudo password for helper tool cleanup. OrbStack verified working (`docker run --rm hello-world` succeeds). Operator can remove cask manually: `brew uninstall --cask docker-desktop`
+
+### Stage 4: Create Missing Filesystem Directories
+
+**Status:** Created all 7 missing directories. Verification: 16/16 directories now present ✓
+- Created: agent_runs, agent_tasks, agent_briefs, agent_failures, agent_promotions, prompts, configs/goose
+
+### Stage 5: Goose Functional Smoke Test Re-run
+
+**Status:** PASSED — Goose responds with VALID ✓
+
+Output: `{"name": "VALID", "arguments": {}}` (successfully routed through LiteLLM proxy with fallback)
+
+### Summary
+
+Track 1.A now fully operational:
+- ✓ Fallback chain fires in <10s when LAN unreachable
+- ✓ All agents (OpenCode, Goose, Aider, Continue) route through proxy
+- ✓ Filesystem layout complete per canonical roadmap
+- ✓ Functional end-to-end smoke tests passing
+
+Remaining operator action: `brew uninstall --cask docker-desktop` (optional; OrbStack is active)
