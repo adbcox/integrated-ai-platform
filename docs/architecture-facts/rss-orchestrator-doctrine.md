@@ -37,12 +37,12 @@ Parallel evaluation (B2.2 Goose evaluation, referenced in full-upgrade-master-pr
 
 | Stage | Model class | Specific model (baseline) | Route | Reasoning |
 |---|---|---|---|---|
-| embed-summarize | Embedding + summarization | nomic-embed-text:latest + qwen2.5-coder:14b (inference) | Mac Studio → litellm-gateway | Embedding required for RAG; summary for context window. Baseline from D-17-12; may change per B3.T2 benchmark results. |
-| score-technical-relevance | Scoring (rubric-guided) | qwen2.5-coder:32b (inference) | Mac Studio → litellm-gateway | Sufficient for structured scoring; T1 priority tier. |
-| score-personal-relevance | Scoring (rubric-guided) | qwen2.5-coder:32b (inference) | Mac Studio → litellm-gateway | Same as technical-relevance; parallel pipeline. |
-| classify-technical-output | Routing decision + template fill | qwen2.5-coder:32b (inference) | Mac Studio → litellm-gateway | Deterministic routing rules in prompt context; template fill handled by same model. |
+| embed-summarize | Embedding + summarization | nomic-embed-text:latest (embeddings) + gemma2:27b (summarization) | Mac Studio → litellm-gateway | Embedding required for RAG; summary for context window. Baseline from D-17-12; may change per B3.T2 benchmark results. |
+| score-technical-relevance | Scoring (rubric-guided) | qwen3-coder:30b-coding | Mac Studio → litellm-gateway | Coding-tilted technical content; 30b balances reasoning depth with throughput. |
+| score-personal-relevance | Scoring (rubric-guided) | gemma2:27b | Mac Studio → litellm-gateway | General-purpose reasoning fits news/personal content better than coding-tilted models. |
+| classify-technical-output | Routing decision + template fill | qwen3-coder:30b-coding | Mac Studio → litellm-gateway | Routing rules are deterministic (rule-based); template fill produces WP/benchmark/task-brief content where coding-tilted output is valuable. |
 
-**Model selection rationale:** T1 priority tier (qwen2.5-coder:32b on Mac Studio Ollama) is the baseline for routine platform work per `PROJECT_FRAMEWORK.md` §3.1. Subsequent model choices (B3.T2 benchmark) may justify T2 (subagent chain decomposer/implementer) or T3 (specialty models) if measurably superior on RSS tasks. Recipes specify model class + role; specific model swapped via config file without recipe reimplementation.
+**Model selection rationale:** Baseline models drawn from the operator's locked Mac Studio Ollama stack per substrate doctrine (qwen3-coder-next:80B / qwen3-coder:30b-coding / deepseek-coder-v2:16b / gemma2:27b). Choices balance task fit (coding-tilted vs general reasoning) against throughput. **Subject to revision when B3.T2 model upgrade benchmark resolves** (Gemma 4 vs Qwen3-Coder-Next head-to-head); Goose recipes specify model role + class, specific model swapped via litellm-gateway config without recipe reimplementation. **Dev/test on MacBook** uses local qwen2.5-coder:7b for all stages (results biased toward smaller model; comparative pipeline correctness validates regardless).
 
 ## State management
 
@@ -83,7 +83,9 @@ Parallel evaluation (B2.2 Goose evaluation, referenced in full-upgrade-master-pr
 **D-17-137 outputs:**
 - Personal briefing sink: `emit-personal-briefing` recipe writes to operator-chosen sink (pending KI-B-02 decision: Obsidian Vault / Nextcloud / daily email). Abstraction: sink-specific writer plugin in recipes.
 
-## Relationship to D-17-160 (media-ops recipes) — NOTE: D-17-160 unverified in PROJECT_FRAMEWORK
+## Relationship to D-17-160 (media-ops recipes)
+
+**Status note:** D-17-160 has commits on `travel/2026-05-07/documentation-hardening` (e.g., `6290eee2 feat(D-17-160): 3 Goose media-ops recipe specs (v0.1 drafts)`, `b802128f feat(D-17-160): 2 final Goose recipe specs`). It does NOT yet have a `§9 framework row` in `docs/PROJECT_FRAMEWORK.md`. See KI-B-10 below.
 
 Both D-17-136 (RSS) and D-17-160 (media-ops) recipe sets run on Mac Mini Pro (.145) as Goose deployments. Shared infrastructure:
 - Goose configuration: `config/goose/config.yaml` (single provider + model config; recipes read this)
@@ -93,7 +95,10 @@ Both D-17-136 (RSS) and D-17-160 (media-ops) recipe sets run on Mac Mini Pro (.1
 
 Separate domains: RSS recipes score articles for ingestion; media-ops recipes orchestrate media transcoding / archival. No recipe-to-recipe dependencies.
 
-## Relationship to B2.2 Goose evaluation — NOTE: B2.2 tracks unverified in PROJECT_FRAMEWORK / full-upgrade-master-project-plan
+## Relationship to B2.2 Goose evaluation
+
+**Cross-branch note:** B2.2 / B2.8 / B4 tracks are defined in `docs/runbooks/full-upgrade-master-project-plan.md`, which currently lives on branch `feat/full-upgrade-master-plan` (not visible from `feat/rss-intelligence`). The cross-reference is conceptually valid; the branches will reconcile when both merge to main.
+
 
 This RSS recipe set proceeds in design phase independent of B2.2 broad-evaluation outcome. The B2 roadmap evaluates whether Goose is the platform's default agent for autonomous coding, workstation orchestration, and operational tasks. If B2.2 concludes that Goose is NOT the winner (e.g., OpenHands, Claude Code, or another agent wins), then:
 
@@ -108,13 +113,15 @@ No blocking dependency. Design proceeds.
 
 2. **B2.2 / B2.8 / B4 roadmap tracks:** The task references full-upgrade-master-project-plan with B2.2 (Goose evaluation), B2.8 (??), and B4 (??). Verify that this document exists and that the track descriptions match the framing here (B2.2 is agent-selection eval, B4 is Linux VM substrate for Phase B orchestration).
 
-3. **Goose recipe scheduling capability:** This doctrine assumes Goose has a native `--recipe` invocation mode. Verify that Goose 1.33.1 supports recipe execution via CLI. If uncertain, clarify launchd-invocation approach.
+3. **Goose recipe scheduling capability:** This doctrine assumes Goose has a native `--recipe` invocation mode. Verify against the deployed Goose version (`goose --version`) that recipe execution via CLI is supported. If uncertain, clarify launchd-invocation approach.
 
 4. **Sink write abstraction:** This doctrine assumes individual recipes can write to D-17-136 sinks (OpenProject API, benchmark intake, task-queue file). If some sinks require authentication/credentials, specify whether those credentials are Vault-stored (and thus require `developer` extension re-enabled for Vault access) or file-based (~/.config/).
 
 5. **Cross-recipe state coordination:** In the event that two recipes run concurrently (e.g., operator manually runs `score-technical-relevance` while scheduled orchestrator is running `embed-summarize`), SQLite concurrent-write locking is sufficient to prevent corruption. Verify this assumption or add explicit recipe-lock file.
 
 6. **Model backend swap at runtime:** This doctrine specifies models via config.yaml. If operator wants to use a different model for, say, technical-relevance scoring (Ollama model swap), can the recipe read a per-recipe model override from config/goose/recipes/*.yaml without recipe code changes? (Specificity: is the Goose recipe DSL that flexible?)
+6. **KI-B-10 (added 2026-05-09 honesty pass):** D-17-160 (Goose media-ops recipes) is referenced in this doctrine and has commits on `travel/2026-05-07/documentation-hardening`, but does not yet have a `§9` framework row in `docs/PROJECT_FRAMEWORK.md`. Add a row in next framework-update commit so future cross-references are verifiable via grep.
+
 
 ## Pipeline integration
 
