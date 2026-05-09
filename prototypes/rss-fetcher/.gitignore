@@ -1,0 +1,6 @@
+# Runtime DB files (don't commit smoke-test results)
+prototype.db
+prototype.db-shm
+prototype.db-wal
+__pycache__/
+*.pyc
