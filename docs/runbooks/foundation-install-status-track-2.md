@@ -3,7 +3,7 @@
 **Session Date (Session 1):** 2026-05-09
 **Session Date (Session 2 — Current):** 2026-05-09
 **Branch:** feat/foundation-install-track-2
-**Status:** IN PROGRESS — OrbStack baseline installed per ADR-A-019; proceeding to Stage 1
+**Status:** ✓ COMPLETE — All Track 2 foundation stages (0a–7) installed and verified
 
 ## Preflight Results
 
@@ -77,7 +77,8 @@ docker ps                         # Tested daemon responsiveness (failed)
 - Stage 4: ✓ Continue VS Code extension installed (1.2.22)
 - Stage 5: ✓ Serena MCP installed (1.2.0, corrected per oraios docs)
 - Stage 6: ✓ OpenHands sandbox installed (1.7, smoke test passed)
-- Stage 7: [PENDING] Filesystem layout + foundation status report
+- Stage 7: ✓ Filesystem layout + agent environment baseline captured
+- **STATUS: COMPLETE** — All Track 2 foundation stages finished
 
 ## Stage 1 — OpenCode CLI
 
@@ -276,25 +277,92 @@ Sandbox-only autonomy system. Requires running container with Docker socket acce
 
 **Note:** Container image is tagged as "latest" in the Dockerfile but semantic version 1.7 corresponds to agent-server tag 1.19.1-python. Both are current stable as of 2026-05-09.
 
+## Stage 7 — Control Plane Filesystem Layout
+
+**Status:** ✓ COMPLETE
+
+**Directory Structure Created:**
+```
+~/local-ai-workstation/
+├── agents/                      (for agent instance configs)
+├── configs/                     (global + per-agent configs)
+│   ├── opencode/
+│   │   ├── opencode.json        (primary provider config)
+│   │   └── AGENTS.md.template   (agent operating instructions)
+│   └── AGENT_ARTIFACT_SCHEMA.json (JSON schema for task artifacts)
+├── docs/                        (local documentation, runbooks)
+├── logs/                        (agent execution logs)
+├── scripts/                     (helper scripts, wrappers)
+├── agent_environment/           (version manifests)
+│   └── versions-2026-05-09.md   (baseline tool versions)
+└── worktrees/
+    └── opencode/                (OpenCode execution worktree)
+```
+
+**Files Created:**
+1. `~/local-ai-workstation/configs/AGENT_ARTIFACT_SCHEMA.json` (per roadmap §7)
+   - JSON Schema Draft 2020-12 defining canonical artifact structure
+   - 13 required fields: timestamp, task_id, agent, host, model_host, provider, model, repo, worktree, task_class, mode, permissions_profile, verifier_status
+   - Support for enumerated values: agents (goose, opencode, aider, cline, continue, openhands, human), task_class (14 types), verifier_status (pass/fail/partial/not_run)
+   - Optional fields for telemetry: wall_clock_seconds, tokens_per_second, diff_lines, loop_detection, rollback tracking
+
+2. `~/local-ai-workstation/agent_environment/versions-2026-05-09.md`
+   - Baseline version capture per roadmap §3.3
+   - macOS version: 26.4.1 (BuildVersion 25E253)
+   - Tool versions:
+     - Goose 1.33.1
+     - Aider 0.86.2
+     - Serena 1.2.0
+     - Ollama 0.19.0
+     - Node 22.21.1
+     - Python 3.14.3
+     - uv 0.11.12
+     - Git 2.52.0
+
+**Verification:** All required directories exist; AGENT_ARTIFACT_SCHEMA.json is valid JSON; version manifest captures baseline tool state.
+
 ## Baseline agents (already installed, pre-Session 2)
 
 - aider 0.86.2 (installed at `/opt/homebrew/bin/aider`)
 - claude (installed at `/Users/adriancox/.local/bin/claude`)
 - goose 1.33.1 (installed at `/opt/homebrew/bin/goose`)
 
-## Session 2 Summary
+## Session 2 Complete Summary
 
-**All Track 2 agents successfully installed and verified:**
-- OrbStack container runtime (2.1.1,20026) replaces Docker Desktop per ADR-A-019
-- OpenCode CLI (1.14.41) + configuration (opencode.json + AGENTS.md.template)
-- Cline VS Code extension (3.82.0) for IDE-supervised autonomous tasks
-- Continue VS Code extension (1.2.22) for IDE helper mode
-- Serena MCP server (1.2.0) for semantic code intelligence
-- OpenHands sandbox (1.7) for docker-only autonomy
+**Track 2 Foundation Install Status: ✓ ALL STAGES COMPLETE**
 
-**Docker Desktop issue resolved:** OrbStack provides fully functional docker daemon with standard socket at /var/run/docker.sock (symlink from ~/.orbstack/run/docker.sock). Docker Desktop remains installed but inactive.
+**Stages 0a–0b: Container Runtime**
+- OrbStack 2.1.1,20026 installed, verified, active (docker context: orbstack)
+- Docker socket at /var/run/docker.sock correctly bound
+- Smoke test: `docker run --rm hello-world` passed
+- Docker Desktop remains installed but inactive (fallback context available)
 
-**Remaining work (Stage 7):** Control plane filesystem layout and final foundation status report.
+**Stages 1–2: OpenCode CLI & Configuration**
+- OpenCode CLI 1.14.41 installed via official script
+- Configuration created: opencode.json (primary: ollama_macstudio_lan@192.168.10.142:11434, fallback: ollama_local_offline@127.0.0.1:11434)
+- AGENTS.md.template created per roadmap §9.5 (Plan/Build mode discipline, safety rules)
+- Default model: qwen3-coder:30b-coding
+
+**Stages 3–5: VS Code Extensions & MCP**
+- Cline 3.82.0 (saoudrizwan.claude-dev) for IDE-supervised autonomous tasks
+- Continue 1.2.22 for IDE helper functions
+- Serena MCP 1.2.0 (corrected from serena-agent package, not PyPI "serena" collision) for semantic code intelligence
+
+**Stage 6: OpenHands Sandbox**
+- Image: docker.openhands.dev/openhands/openhands:1.7 (2.02GB)
+- Smoke test: Container started, migrations completed, UI loaded on http://localhost:3000, cleanly stopped
+- Agent server tag: 1.19.1-python
+
+**Stage 7: Control Plane Filesystem**
+- Directory structure: agents/, configs/, docs/, logs/, scripts/, agent_environment/, worktrees/
+- AGENT_ARTIFACT_SCHEMA.json created per roadmap §7 (JSON Schema for task artifacts)
+- Version manifest: versions-2026-05-09.md with baseline tool versions
+
+**Architecture Summary**
+- Local inference: Mac Studio Qwen models (LAN endpoint 192.168.10.142:11434)
+- Agent execution: Multimodal (OpenCode CLI, Cline IDE-supervised, OpenHands sandbox, Aider/Goose CLI)
+- Docker support: OrbStack with standard socket binding for container nesting
+- Codebase integration: Serena MCP for intelligent code navigation
 
 ## Command Summary for Operator Verification
 
