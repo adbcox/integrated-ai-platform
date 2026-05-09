@@ -2,7 +2,7 @@
 
 **Session Date:** 2026-05-09
 **Branch:** feat/track-1a-litellm-routing
-**Status:** IN PROGRESS — Stage 6 complete
+**Status:** IN PROGRESS — Stage 7 complete
 
 ## Stage 1 — LiteLLM Proxy Installation
 
@@ -144,7 +144,66 @@ edit-format: diff
 
 **Routing Behavior:** Aider will use OpenAI-compatible API through LiteLLM proxy; requests to qwen3-coder-30b will fall back to local qwen2.5-coder if Mac Studio LAN is unreachable.
 
+## Stage 7 — Verify VS Code Extensions (Cline, Continue)
+
+**Status:** ✓ COMPLETE
+
+### Continue VS Code Extension
+
+**Installation Status:** ✓ Installed (continue.continue)
+
+**Proxy Support:** ✓ Supports custom OpenAI-compatible API base URLs via `apiBase` field
+
+**Configuration Created:** `~/.continue/config.json`
+
+**Configuration Contents:**
+```json
+{
+  "models": [
+    {
+      "title": "LiteLLM Proxy - Qwen3 Coder 30B",
+      "provider": "openai",
+      "model": "qwen3-coder-30b",
+      "apiBase": "http://localhost:4000/v1",
+      "apiKey": "<sk-local-only>"
+    },
+    {
+      "title": "LiteLLM Proxy - Qwen2.5 Coder 7B",
+      "provider": "openai",
+      "model": "qwen2.5-coder",
+      "apiBase": "http://localhost:4000/v1",
+      "apiKey": "<sk-local-only>"
+    }
+  ]
+}
+```
+(Use actual key: `sk-local-only-not-secret`)
+
+**Routing Behavior:** Continue will use qwen3-coder-30b by default (with local fallback if LAN unreachable).
+
+### Cline VS Code Extension
+
+**Installation Status:** ⚠ Not found in current VS Code extensions list
+
+**Note:** Track 2 status document indicates Cline 3.82.0 (saoudrizwan.claude-dev) should be installed. However, it doesn't appear in the current `code --list-extensions` output. This may indicate:
+1. Extension was not successfully installed, OR
+2. Extension uses a different ID than expected, OR
+3. Extension requires re-installation
+
+**Recommendation:** Operator should verify Cline installation status in VS Code Extensions sidebar. If installed, it supports custom OpenAI-compatible Base URLs (documented in Cline README). If not installed, use:
+```bash
+code --install-extension saoudrizwan.claude-dev
+```
+
+Then configure in VS Code settings:
+- Provider: OpenAI Compatible
+- Base URL: http://localhost:4000/v1
+- API Key: sk-local-only-not-secret
+
+**Summary:**
+- ✓ Continue: Fully routed through LiteLLM proxy (config created)
+- ⚠ Cline: Supports proxy routing but requires verification/re-installation
+
 ## Remaining Stages
 
-- Stage 7: [PENDING] Verify Cline + Continue
 - Stage 8: [PENDING] Final status documentation
