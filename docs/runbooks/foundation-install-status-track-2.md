@@ -75,8 +75,9 @@ docker ps                         # Tested daemon responsiveness (failed)
 - Stage 2: ✓ OpenCode configuration created (opencode.json + AGENTS.md.template)
 - Stage 3: ✓ Cline VS Code extension installed (3.82.0)
 - Stage 4: ✓ Continue VS Code extension installed (1.2.22)
-- Stage 5: [PENDING] Serena MCP
-- Stage 6: [PENDING] OpenHands sandbox
+- Stage 5: ✗ FAILED — Serena MCP installation incomplete
+- Stage 6: [BLOCKED] OpenHands sandbox (depends on Serena verification)
+- Stage 7: [BLOCKED] Filesystem layout + status report (depends on Stage 6)
 - Stage 7: [PENDING] Filesystem layout + foundation status report
 
 ## Stage 1 — OpenCode CLI
@@ -182,6 +183,44 @@ IDE helper extension (not autonomous executor) for:
 - Lightweight local chat
 - Review/checks
 - Developer convenience
+
+## Stage 5 — Serena MCP Server
+
+**Status:** ✗ FAILED (verification gate not passed)
+
+**Installation Attempt:**
+```bash
+uv tool install serena
+# Result: Resolved 6 packages, installed serena==0.9.1
+# Error: No executables are provided by package `serena`; removing tool
+```
+
+**Verification Gate Failure:**
+- `serena --version` fails (command not found)
+- `which serena` returns no result
+- `uv tool install serena` does not create an executable CLI
+
+**Analysis:**
+Per roadmap §11.2: "Install Serena using its recommended current installer. If using `uv`: `uv tool install serena`"
+Per roadmap §11.2: "If the shell cannot find `serena`, use the full executable path in MCP client configuration."
+
+The Serena PyPI package (v0.9.1) does not provide an entrypoint CLI, only a library. This is either:
+1. A PyPI package version issue (possibly pre-release or incorrectly packaged)
+2. Expected behavior (Serena designed as a library, not a CLI)
+
+**Blocking Issue:**
+Cannot verify Stage 5 without a functioning Serena binary or library path. Per hard rule "Stop on first verification failure," proceeding to Stage 6 (OpenHands) is blocked pending Serena resolution.
+
+**Operator Action Required:**
+1. Check if there is an alternative Serena distribution or installation method
+2. Verify if Serena v0.9.1 is the correct version or if a newer release is available
+3. Confirm whether Serena is meant to be used as a library or CLI tool
+4. If library-only, provide the Python import path and MCP server invocation method
+
+**Resolution Options:**
+- Option 1: Delay Serena; proceed to Stage 6 (OpenHands) independently
+- Option 2: Fix Serena installation before continuing to Stage 6
+- Option 3: Document Serena as deferred to Track 1 (post-foundation configuration)
 
 ## Baseline agents (already installed, pre-Session 2)
 
