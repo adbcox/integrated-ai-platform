@@ -22,9 +22,27 @@ uv tool install 'litellm[proxy]'
 - `litellm --help` confirms `--config` and `--port` options available
 - Version output is parseable: `LiteLLM: Current Version = 1.83.14`
 
+## Stage 2 — LiteLLM Proxy Configuration
+
+**Status:** ✓ COMPLETE
+
+**Configuration File:** `~/local-ai-workstation/configs/litellm/config.yaml`
+
+**Models Configured:**
+1. `qwen2.5-coder` — Local MacBook Ollama (127.0.0.1:11434) — always available
+2. `qwen3-coder-30b` — Mac Studio LAN (192.168.10.142:11434) — home network only
+3. `qwen3-coder-30b-tailscale` — Mac Studio via Tailscale (commented out, operator to provide hostname)
+
+**Router Configuration:**
+- Strategy: simple-shuffle
+- Retries: 2
+- Timeout: 30 seconds
+- Fallback chain: qwen3-coder-30b → qwen2.5-coder (if LAN unreachable, falls back to local)
+
+**Verification:** Config syntax verified by starting proxy briefly; health check responded.
+
 ## Remaining Stages
 
-- Stage 2: [PENDING] LiteLLM proxy configuration (local + LAN + Tailscale tiers)
 - Stage 3: [PENDING] launchd service setup
 - Stage 4: [PENDING] Re-wire OpenCode
 - Stage 5: [PENDING] Re-wire Goose
