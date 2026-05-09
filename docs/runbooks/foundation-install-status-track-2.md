@@ -72,7 +72,7 @@ docker ps                         # Tested daemon responsiveness (failed)
 - Stage 0a: ✓ Canonical roadmap ingested
 - Stage 0b: ✓ OrbStack container runtime installed (2.1.1,20026)
 - Stage 1: ✓ OpenCode CLI installed (1.14.41)
-- Stage 2: [PENDING] OpenCode configuration
+- Stage 2: ✓ OpenCode configuration created (opencode.json + AGENTS.md.template)
 - Stage 3: [PENDING] Cline VS Code extension
 - Stage 4: [PENDING] Continue VS Code extension
 - Stage 5: [PENDING] Serena MCP
@@ -95,6 +95,31 @@ curl -fsSL https://opencode.ai/install | bash
 - Database migration completed successfully
 - `opencode --help` returns expected commands (run, providers, agent, models, etc.)
 - `opencode --version` returns 1.14.41 (parseable)
+
+## Stage 2 — OpenCode Configuration
+
+**Status:** ✓ COMPLETE
+
+**Files Created:**
+1. `~/local-ai-workstation/configs/opencode/opencode.json` (89 lines)
+   - Primary provider: `ollama_macstudio_lan` (192.168.10.142:11434)
+   - Fallback provider: `ollama_local_offline` (127.0.0.1:11434)
+   - Default model: `ollama_macstudio_lan/qwen3-coder:30b-coding`
+   - Permission schema from roadmap §9.4 verbatim (deny .env, secrets, push; allow read/grep/glob/git-status)
+   - Security rules: deny sudo, rm, chmod -R, destructive Docker commands
+   - Adapted for MacBook topology (no Thunderbolt to Mac Studio, LAN endpoint only)
+
+2. `~/local-ai-workstation/configs/opencode/AGENTS.md.template` (48 lines)
+   - Mission statement: evidence-producing coding agent with reversible, testable changes
+   - Operating modes: Plan mode before Build for multi-file/refactors; direct Build for low-risk one-file
+   - Safety rules: no secrets, no sudo, no push, no destructive commands
+   - Artifact requirements: task id, files read/changed, commands/tests run, result, risks, rollback, JSONL fields
+   - Per roadmap §9.5 verbatim
+
+**Notes:**
+- Per canonical roadmap discipline, no OpenCode plugins installed (out of scope)
+- Tailscale URL provider for off-LAN access deferred to Track 1 (LiteLLM endpoint config)
+- Fallback model (qwen2.5-coder:7b) for offline mode not yet installed locally (deferred to Track 1)
 
 ## Baseline agents (already installed, pre-Session 2)
 
