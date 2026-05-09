@@ -56,14 +56,16 @@ echo "$PRE_RUN" > "$RUN_DIR/artifact-pre-run.json"
 
 # Run OpenCode in the worktree
 echo "[OpenCode] Starting task $TASK_ID in $WORKTREE"
-cd "$WORKTREE"
+
+# Extract task summary for OpenCode message
+TASK_SUMMARY=$(jq -r '.task_summary' "$TASK_BRIEF")
 
 # Capture exit code
 EXIT_CODE=0
 DURATION=0
 START_TIME=$(date +%s)
 
-if /opt/homebrew/bin/opencode --config 2>&1 | tee "$RUN_DIR/execution.log"; then
+if /Users/adriancox/.opencode/bin/opencode run "$TASK_SUMMARY" --dir "$WORKTREE" --format json 2>&1 | tee "$RUN_DIR/execution.log"; then
   RESULT="success"
 else
   EXIT_CODE=$?
