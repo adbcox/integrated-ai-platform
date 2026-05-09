@@ -2,7 +2,7 @@
 
 **Session Date:** 2026-05-09
 **Branch:** feat/track-1a-litellm-routing
-**Status:** IN PROGRESS — Stage 4 complete
+**Status:** IN PROGRESS — Stage 5 complete
 
 ## Stage 1 — LiteLLM Proxy Installation
 
@@ -101,9 +101,25 @@ uv tool install 'litellm[proxy]'
 
 **Verification:** Config is valid JSON; OpenCode TUI loads with new provider and models
 
+## Stage 5 — Re-wire Goose
+
+**Status:** ✓ COMPLETE
+
+**Configuration Updated:** `~/.config/goose/config.yaml`
+
+**Changes:**
+- GOOSE_PROVIDER: ollama (unchanged — LiteLLM accepts Ollama-style API)
+- GOOSE_MODEL: changed from `qwen2.5-coder:7b` → `qwen3-coder-30b`
+- OLLAMA_HOST: changed from `http://127.0.0.1:11434` → `http://localhost:4000` (LiteLLM proxy)
+
+**Authentication Note:** LiteLLM master_key is disabled (set to null) in proxy config to allow Ollama-style requests without authentication headers. Goose's Ollama provider does not support Bearer token auth. This is acceptable for local-only setup.
+
+**Verification:** Goose successfully executed a test task through the LiteLLM proxy and returned the expected response.
+
+**Routing Behavior:** Goose now routes all requests through LiteLLM proxy, with automatic fallback to local Ollama if Mac Studio LAN is unreachable.
+
 ## Remaining Stages
 
-- Stage 5: [PENDING] Re-wire Goose
 - Stage 6: [PENDING] Re-wire Aider
 - Stage 7: [PENDING] Verify Cline + Continue
 - Stage 8: [PENDING] Final status documentation
