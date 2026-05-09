@@ -1,6 +1,6 @@
 # D-17-137 Personal Briefing Engine: Personal Relevance Scoring Rubric
 
-**Status:** ACTIVE
+**Status:** DRAFT — first iteration (refine after first week of results, see Open Questions)
 **Date authored:** 2026-05-09 (feat/rss-intelligence branch)
 **Source of truth:** Operator's stated interest domains (KI-B-01); substrate doctrine scoring criteria
 **Consumer:** D-17-137 (Personal Briefing Engine)

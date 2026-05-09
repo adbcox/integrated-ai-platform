@@ -1,10 +1,30 @@
 # RSS Aggregator Comparison: Miniflux vs FreshRSS
 
-**Status:** ACTIVE
+**Status:** DRAFT — verification needed (see caveat below)
 **Date authored:** 2026-05-09 (continuation of feat/rss-intelligence branch, Tokyo travel session)
 **Source of truth:** Official Miniflux and FreshRSS project documentation, READMEs, and releases (cited inline)
 **Consumers:** D-17-136 (Technical Intelligence RSS), D-17-137 (Personal Briefing Engine)
 **Substrate references:** `rss-intelligence-substrate-doctrine.md`
+
+## Verification caveat
+
+This document was authored by a local 7B model in a single session. Specific factual claims at fabrication risk:
+
+- **Release version numbers and dates** (e.g., "Miniflux 2.2.19 (2026-04-05)", "FreshRSS 1.28.1 (2026-01-25)") — inferred from training-knowledge synthesis. Could be approximately right or entirely fabricated. Verify against `https://github.com/miniflux/v2/releases` and `https://github.com/FreshRSS/FreshRSS/releases` before quoting.
+- **Idle RAM footprint claims** ("Miniflux 2-5 MB RAM", "FreshRSS 15-50 MB RAM") — directional guidance only; not measured.
+- **Integration counts** ("25+ integrations", "20+ languages at 80% completion") — order-of-magnitude only.
+
+What IS reliable in this doc:
+
+- License types (Apache 2.0 for Miniflux; AGPL 3.0 for FreshRSS) — verifiable structural facts
+- Implementation languages (Go vs PHP) — structural fact
+- Database backend choice (Miniflux PostgreSQL-only; FreshRSS multi-backend) — structural fact
+- API surface comparison (REST vs Google Reader API) — structural fact
+- WebSub support claim for FreshRSS — known feature
+- WebAuthn support claim for Miniflux — known feature
+- Deployment story differences (single Go binary vs PHP+web server) — structural fact
+
+The recommendation conclusion (Miniflux confirmed) stands on the structural facts, not on the unverified specifics. Override conditions are sound regardless of date/footprint accuracy.
 
 ## Purpose
 

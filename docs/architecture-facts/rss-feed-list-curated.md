@@ -1,6 +1,6 @@
 # RSS Feed List: Curated Initial Set
 
-**Status:** ACTIVE
+**Status:** DRAFT — URL verification needed (see Feed Quality section)
 **Date authored:** 2026-05-09 (feat/rss-intelligence branch)
 **Source:** Operator 2026-05-08 category enumeration (six curated domains)
 **Consumers:** D-17-136 (Technical Intelligence RSS), D-17-137 (Personal Briefing Engine)
@@ -256,9 +256,32 @@ feeds:
 
 ## Feed Quality & Maintenance
 
-All URLs are canonical RSS/Atom feed URLs verified against official sources or GitHub release endpoints (for the locked self-hosting set). No invented or unverified URLs are included. Feeds marked with `verify_url_pending` would appear here; none in this initial set.
+This list was authored by a local 7B model that reported 0 URLs as `verify_url_pending`. Honest reassessment: the model was overconfident. Several URLs follow well-known canonical patterns and can be trusted; others require operator verification before the fetcher pipeline polls them.
 
-Feed curation follows the operator's six-domain enumeration exactly; no feeds added beyond these categories. Self-hosting ARR set (Sonarr, Radarr, Lidarr, Prowlarr, Plex, Jellyfin, Navidrome, Audiobookshelf) uses the `https://github.com/<owner>/<repo>/releases.atom` pattern consistently.
+**High-confidence URLs (canonical patterns or widely-known):**
+- `http://export.arxiv.org/rss/cs.AI` — arXiv canonical pattern
+- `https://hnrss.org/frontpage` — well-known third-party HN feed
+- `https://ai.googleblog.com/feeds/posts/default` — Blogspot canonical pattern
+- `https://github.com/<owner>/<repo>/releases.atom` — GitHub canonical pattern; verify each owner/repo name exists, but the pattern itself is reliable. Applies to Sonarr, Radarr, Lidarr, Prowlarr, Plex (`plexinc/plex-media-server`), Jellyfin, Navidrome, Audiobookshelf (`advplyr/audiobookshelf`)
+- `https://hackaday.com/feed/`, `https://arstechnica.com/feed/`, `https://www.engadget.com/rss.xml`, `https://www.dezeen.com/feed/`, `https://www.blendernation.com/feed/` — standard `/feed/` or `/rss.xml` patterns on long-running sites
+- `https://huggingface.co/blog/feed.xml` — known HF blog feed
+- `https://www.bytebytego.com/feed` — Substack canonical pattern
+- `https://www.home-assistant.io/blog/index.xml` — HA Hugo-generated feed; matches site structure
+- `https://www.youtube.com/feeds/videos.xml?channel_id=...` — YouTube canonical pattern; verify channel_id is correct for "Two Minute Papers"
+
+**URLs requiring operator spot-check before going live (treat as `verify_url_pending`):**
+- `https://openai.com/blog/rss/` — OpenAI has restructured their blog feed multiple times; canonical URL is uncertain
+- `https://www.anthropic.com/news/rss` — canonical path is uncertain
+- `https://www.ibm.com/blog/rss/rss.xml` — IBM has restructured blogs significantly; URL may 404
+- `https://www.dynatrace.com/news/rss/` — canonical URL uncertain
+- `https://www.iottech.news/feed.xml` — domain itself may not exist as named
+- `https://www.automatedhome.co.uk/feed` — uncertain
+- `https://www.linuxjournal.com/rss.xml` — Linux Journal historically shut down (2019); uncertain if revived under same domain
+- `https://www.sparkfun.com/feeds/news` — canonical path uncertain
+
+**Recommended verification approach:** before deploying the Miniflux/FreshRSS fetcher against this list, run a one-time `curl -I -L` (or similar) against each URL marked above; replace any that 404 or return non-XML content with the actual canonical URL discovered via the publication's website. Replace `feed_unavailable: true` for sources that no longer publish a feed.
+
+Feed curation follows the operator's six-domain enumeration exactly; no feeds added beyond these categories. The self-hosting ARR set uses the `https://github.com/<owner>/<repo>/releases.atom` pattern consistently — pattern is reliable, owner/repo specifics are verifiable via GitHub web UI.
 
 ## Cross-references
 
