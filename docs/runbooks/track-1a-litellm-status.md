@@ -2,7 +2,7 @@
 
 **Session Date:** 2026-05-09
 **Branch:** feat/track-1a-litellm-routing
-**Status:** IN PROGRESS — Stage 5 complete
+**Status:** IN PROGRESS — Stage 6 complete
 
 ## Stage 1 — LiteLLM Proxy Installation
 
@@ -118,8 +118,33 @@ uv tool install 'litellm[proxy]'
 
 **Routing Behavior:** Goose now routes all requests through LiteLLM proxy, with automatic fallback to local Ollama if Mac Studio LAN is unreachable.
 
+## Stage 6 — Re-wire Aider
+
+**Status:** ✓ COMPLETE
+
+**Configuration Created:** `~/local-ai-workstation/configs/aider/.aider.conf.yml`
+**Symlink:** `~/.aider.conf.yml` → `~/local-ai-workstation/configs/aider/.aider.conf.yml`
+
+**Configuration Contents:**
+```yaml
+openai-api-base: http://localhost:4000/v1
+openai-api-key: sk-local-only-not-secret
+model: openai/qwen3-coder-30b
+weak-model: openai/qwen2.5-coder
+no-auto-commits: false
+edit-format: diff
+```
+
+**Changes:**
+- Aider now routes through LiteLLM proxy at localhost:4000/v1
+- Primary model: qwen3-coder-30b (Mac Studio via proxy, with local fallback)
+- Weak model: qwen2.5-coder (local Ollama via proxy)
+
+**Verification:** Config file is properly formatted YAML and symlinked for automatic discovery by Aider
+
+**Routing Behavior:** Aider will use OpenAI-compatible API through LiteLLM proxy; requests to qwen3-coder-30b will fall back to local qwen2.5-coder if Mac Studio LAN is unreachable.
+
 ## Remaining Stages
 
-- Stage 6: [PENDING] Re-wire Aider
 - Stage 7: [PENDING] Verify Cline + Continue
 - Stage 8: [PENDING] Final status documentation
