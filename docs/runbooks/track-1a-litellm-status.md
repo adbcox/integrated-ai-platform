@@ -204,6 +204,47 @@ Then configure in VS Code settings:
 - ✓ Continue: Fully routed through LiteLLM proxy (config created)
 - ⚠ Cline: Supports proxy routing but requires verification/re-installation
 
+## Remediation Session (2026-05-09)
+
+**Issue:** Validation report (2026-05-09T14:06:00Z) found that LiteLLM chat/completions endpoint timed out when the LAN tier was unreachable. Root cause: `num_retries: 2` × `timeout: 30` = up to 90 seconds before fallback fired.
+
+**Fix Applied:**
+
+Updated `~/local-ai-workstation/configs/litellm/config.yaml` with per-model timeouts and immediate fallback:
+
+```yaml
+model_list:
+  - model_name: qwen2.5-coder
+    litellm_params:
+      model: ollama/qwen2.5-coder:7b
+      api_base: http://127.0.0.1:11434
+      timeout: 60          # generous for local generation
+
+  - model_name: qwen3-coder-30b
+    litellm_params:
+      model: ollama/qwen3-coder:30b-coding
+      api_base: http://192.168.10.142:11434
+      timeout: 5           # FAST-FAIL: fires immediately if LAN unreachable
+      stream_timeout: 5
+
+router_settings:
+  routing_strategy: simple-shuffle
+  num_retries: 0           # no retries; fall back immediately on timeout
+  timeout: 60
+  fallbacks:
+    - qwen3-coder-30b: ["qwen2.5-coder"]  # moved to router_settings per LiteLLM docs
+```
+
+**Verification:** Post-fix smoke tests (2026-05-09 ~14:15):
+- Test A (local model): 0.36 seconds, WORKING response ✓
+- Test B (LAN fallback): 9.29 seconds, WORKING response via qwen2.5-coder ✓
+
+**Impact:** Fallback chain now completes in ~9-10 seconds instead of 60-90 seconds, enabling reliable proxy operation across all network states.
+
 ## Remaining Stages
 
-- Stage 8: [PENDING] Final status documentation
+- Stage 2: OpenCode PATH fix
+- Stage 3: Docker Desktop cask removal
+- Stage 4: Create missing filesystem directories
+- Stage 5: Goose smoke test re-run
+- Stage 6: Status doc update
