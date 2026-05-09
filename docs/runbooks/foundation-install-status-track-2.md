@@ -76,8 +76,7 @@ docker ps                         # Tested daemon responsiveness (failed)
 - Stage 3: ✓ Cline VS Code extension installed (3.82.0)
 - Stage 4: ✓ Continue VS Code extension installed (1.2.22)
 - Stage 5: ✓ Serena MCP installed (1.2.0, corrected per oraios docs)
-- Stage 6: [PENDING] OpenHands sandbox
-- Stage 7: [PENDING] Filesystem layout + status report
+- Stage 6: ✓ OpenHands sandbox installed (1.7, smoke test passed)
 - Stage 7: [PENDING] Filesystem layout + foundation status report
 
 ## Stage 1 — OpenCode CLI
@@ -231,16 +230,71 @@ Semantic code-intelligence layer for symbol search, definition/reference lookup,
 **Note:**
 This corrects commit 5a63dbf5 (Stage 5 failure). The roadmap §11.2 contained a reference to the wrong PyPI package (serena vs serena-agent). The correct package is serena-agent from the oraios project.
 
+## Stage 6 — OpenHands Sandbox
+
+**Status:** ✓ COMPLETE
+
+**Installation Method:** Docker image pull via OrbStack
+```bash
+docker pull docker.openhands.dev/openhands/openhands:1.7
+```
+
+**Verification — Smoke Test:**
+Official quick-start docker run command (per https://docs.openhands.dev/openhands/usage/run-openhands/local-setup):
+```bash
+docker run -it --rm --pull=always \
+  -e AGENT_SERVER_IMAGE_REPOSITORY=ghcr.io/openhands/agent-server \
+  -e AGENT_SERVER_IMAGE_TAG=1.19.1-python \
+  -e LOG_ALL_EVENTS=true \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  -v ~/.openhands:/.openhands \
+  -p 3000:3000 \
+  --add-host host.docker.internal:host-gateway \
+  --name openhands-app \
+  docker.openhands.dev/openhands/openhands:1.7
+```
+
+**Smoke Test Results:**
+- Image pull: ✓ Successful (2.02GB, image docker.openhands.dev/openhands/openhands:1.7)
+- Container startup: ✓ Started successfully
+- Database migrations: ✓ Completed (log: "Applying alembic migration versions")
+- HTTP endpoint: ✓ Responsive on port 3000 (`curl -s http://localhost:3000` returned OpenHands UI HTML)
+- UI load: ✓ Full page HTML with React application loaded
+- Container lifecycle: ✓ Stopped cleanly with `docker stop openhands-app`
+- Socket binding: ✓ /var/run/docker.sock correctly mapped from OrbStack
+
+**Configuration (per roadmap §15.1):**
+OpenHands runs as Docker-only sandbox autonomy. No CLI needed; access via web UI on http://localhost:3000 after starting container. Environment variables:
+- AGENT_SERVER_IMAGE_REPOSITORY: ghcr.io/openhands/agent-server
+- AGENT_SERVER_IMAGE_TAG: 1.19.1-python (matches 1.7 image)
+- LOG_ALL_EVENTS: true
+- Docker socket: /var/run/docker.sock (OrbStack-provided symlink from ~/.orbstack/run/docker.sock)
+- Volume mounts: ~/.openhands for state persistence
+
+**Role (per roadmap §15.1):**
+Sandbox-only autonomy system. Requires running container with Docker socket access. Cannot operate standalone on host; no host shell, host editing, or host command execution. All work confined to container. Used for rapid iteration, testing, and teaching.
+
+**Note:** Container image is tagged as "latest" in the Dockerfile but semantic version 1.7 corresponds to agent-server tag 1.19.1-python. Both are current stable as of 2026-05-09.
+
 ## Baseline agents (already installed, pre-Session 2)
 
 - aider 0.86.2 (installed at `/opt/homebrew/bin/aider`)
 - claude (installed at `/Users/adriancox/.local/bin/claude`)
 - goose 1.33.1 (installed at `/opt/homebrew/bin/goose`)
 
-## Open Questions for Operator
+## Session 2 Summary
 
-1. **Docker startup failure root cause:** What prevented Docker Desktop daemon from starting? Check system logs.
-2. **Docker essential for this session?** OpenHands (Stage 6) requires Docker, but Stages 3–5 (Cline, Continue, Serena MCP) do not. Should we proceed with those stages while Docker is being debugged, or wait for Docker resolution first?
+**All Track 2 agents successfully installed and verified:**
+- OrbStack container runtime (2.1.1,20026) replaces Docker Desktop per ADR-A-019
+- OpenCode CLI (1.14.41) + configuration (opencode.json + AGENTS.md.template)
+- Cline VS Code extension (3.82.0) for IDE-supervised autonomous tasks
+- Continue VS Code extension (1.2.22) for IDE helper mode
+- Serena MCP server (1.2.0) for semantic code intelligence
+- OpenHands sandbox (1.7) for docker-only autonomy
+
+**Docker Desktop issue resolved:** OrbStack provides fully functional docker daemon with standard socket at /var/run/docker.sock (symlink from ~/.orbstack/run/docker.sock). Docker Desktop remains installed but inactive.
+
+**Remaining work (Stage 7):** Control plane filesystem layout and final foundation status report.
 
 ## Command Summary for Operator Verification
 
@@ -260,13 +314,13 @@ git checkout feat/foundation-install-track-2
 ## Relationship to v3 Master Plan
 
 Track 2 agents requested (from `docs/runbooks/full-upgrade-master-project-plan.md` B2 sub-tracks):
-- B2.1 OpenCode — **NOT YET INSTALLED** (blocked by Docker)
+- B2.1 OpenCode CLI — ✓ **INSTALLED** (1.14.41)
 - B2.2 Goose — ✓ **ALREADY INSTALLED** (1.33.1)
 - B2.3 Aider — ✓ **ALREADY INSTALLED** (0.86.2)
-- B2.4 Cline — **NOT YET INSTALLED** (deferred, can proceed without Docker)
-- B2.5 Continue — **NOT YET INSTALLED** (deferred, can proceed without Docker)
-- B2.6 Serena MCP — **NOT YET INSTALLED** (deferred, can proceed without Docker)
-- B2.7 OpenHands — **NOT YET INSTALLED** (blocked by Docker)
+- B2.4 Cline — ✓ **INSTALLED** (3.82.0)
+- B2.5 Continue — ✓ **INSTALLED** (1.2.22)
+- B2.6 Serena MCP — ✓ **INSTALLED** (1.2.0)
+- B2.7 OpenHands — ✓ **INSTALLED** (1.7)
 
 Track 1 (production Ollama models, Miniflux, litellm) is a separate task, not in scope for this session.
 
