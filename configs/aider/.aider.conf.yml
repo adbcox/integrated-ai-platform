@@ -1,0 +1,10 @@
+model: ollama_chat/qwen3-coder:30b-coding
+map-tokens: 4096
+cache-prompts: true
+auto-commits: true
+dirty-commits: false
+show-diffs: true
+read:
+  - CONVENTIONS.md
+  - DEBUGGING.md
+  - VERIFICATION.md

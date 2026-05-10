@@ -1,0 +1,11 @@
+{
+  "name": "goose-local-home-assistant",
+  "description": "Home Assistant digital twin operations - state analysis, automation review, device health",
+  "provider": "ollama",
+  "model": "qwen3-coder:30b-coding",
+  "api_host": "http://10.55.0.1:11434",
+  "fallback_api_host": "http://192.168.10.142:11434",
+  "permissions": "ops_read",
+  "operational_scope": "home-assistant",
+  "recipe_set": ["007-home-assistant-digital-twin-summary"]
+}

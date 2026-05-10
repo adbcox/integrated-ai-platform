@@ -1,0 +1,29 @@
+name: Zabbix Incident Summary
+description: |
+  Read Zabbix incident logs and produce a structured incident summary with
+  impact assessment and recommended actions.
+
+instructions: |
+  Analyze Zabbix incident data and produce a summary including:
+  - Incident severity and affected systems
+  - Timeline of events
+  - Root cause hypothesis
+  - Recommended immediate actions
+  - Escalation path if needed
+
+parameters:
+  - name: incident_id
+    description: "Zabbix incident ID or log file path"
+    required: true
+  - name: time_range
+    description: "Time range for incident (e.g., last 6 hours)"
+    required: false
+    default: "last 24 hours"
+
+# E-003 host substitution: MacBook uses LiteLLM proxy with model_name qwen2.5-coder
+model: qwen2.5-coder
+
+tags:
+  - operations
+  - incident-response
+  - monitoring

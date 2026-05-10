@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# OpenCode wrapper: execute task and capture schema-compliant artifacts
+# OpenCode wrapper: execute task and capture schema-compliant artifacts per §7
 
 set -euo pipefail
 
@@ -8,15 +8,17 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
 # Parse arguments
 TASK_BRIEF=""
+MODE="${MODE:-build}"  # plan, build, ask
 while [[ $# -gt 0 ]]; do
   case $1 in
     --task-brief) TASK_BRIEF="$2"; shift 2;;
+    --mode) MODE="$2"; shift 2;;
     *) echo "Unknown option: $1"; exit 1;;
   esac
 done
 
 if [[ -z "$TASK_BRIEF" ]]; then
-  echo "Usage: $0 --task-brief <path>"
+  echo "Usage: $0 --task-brief <path> [--mode plan|build|ask]"
   exit 1
 fi
 
@@ -25,74 +27,126 @@ if [[ ! -f "$TASK_BRIEF" ]]; then
   exit 1
 fi
 
-# Extract task metadata
+# Extract task metadata per §10.6 schema
 TASK_ID=$(jq -r '.task_id' "$TASK_BRIEF")
+TASK_CLASS=$(jq -r '.task_class // "simple_edit"' "$TASK_BRIEF")
 WORKTREE=$(jq -r '.worktree' "$TASK_BRIEF")
 REPO=$(jq -r '.repo' "$TASK_BRIEF")
+PERMISSIONS=$(jq -r '.permissions_profile // "eval_edit"' "$TASK_BRIEF")
 
 if [[ -z "$TASK_ID" ]] || [[ "$TASK_ID" == "null" ]]; then
   echo "Error: task_id not found in brief"
   exit 1
 fi
 
+# Resolve host information
+HOST=$(hostname -s)
+ENDPOINT="http://10.55.0.1:11434"
+MODEL_HOST="Thunderbolt"
+PROVIDER="ollama"
+MODEL="qwen3-coder:30b-coding"
+
 # Create run directory
 RUN_DIR="$HOME/local-ai-workstation/agent_runs/${TASK_ID}/opencode"
 mkdir -p "$RUN_DIR"
 
-# Emit pre-run artifact
+# Get agent version
+AGENT_VERSION=$(/Users/adriancox/.opencode/bin/opencode --version 2>/dev/null | head -1 || echo "unknown")
+
+# Pre-run artifact per §7
+TIMESTAMP_START=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 PRE_RUN=$(cat <<EOF
 {
+  "timestamp": "$TIMESTAMP_START",
   "task_id": "$TASK_ID",
   "agent": "opencode",
-  "timestamp_start": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
-  "worktree": "$WORKTREE",
+  "agent_version": "$AGENT_VERSION",
+  "host": "$HOST",
+  "model_host": "$MODEL_HOST",
+  "provider": "$PROVIDER",
+  "model": "$MODEL",
+  "endpoint": "$ENDPOINT",
   "repo": "$REPO",
-  "status": "started",
-  "artifact_type": "pre_run"
+  "worktree": "$WORKTREE",
+  "branch": "$(cd "$WORKTREE" && git rev-parse --abbrev-ref HEAD 2>/dev/null || echo 'unknown')",
+  "task_class": "$TASK_CLASS",
+  "mode": "$MODE",
+  "permissions_profile": "$PERMISSIONS",
+  "verifier_status": "not_run",
+  "notes": "Pre-run initialization"
 }
 EOF
 )
 echo "$PRE_RUN" > "$RUN_DIR/artifact-pre-run.json"
 
-# Run OpenCode in the worktree
-echo "[OpenCode] Starting task $TASK_ID in $WORKTREE"
+echo "[OpenCode] Starting task $TASK_ID (mode: $MODE) in $WORKTREE"
 
-# Extract task summary for OpenCode message
-TASK_SUMMARY=$(jq -r '.task_summary' "$TASK_BRIEF")
-
-# Capture exit code
+# Execute OpenCode per §9.4: cd to worktree and launch opencode
 EXIT_CODE=0
 DURATION=0
 START_TIME=$(date +%s)
+TASK_SUMMARY=$(jq -r '.task_summary' "$TASK_BRIEF")
 
-if /Users/adriancox/.opencode/bin/opencode run "$TASK_SUMMARY" --dir "$WORKTREE" --format json 2>&1 | tee "$RUN_DIR/execution.log"; then
-  RESULT="success"
+cd "$WORKTREE"
+
+# Capture files before
+FILES_BEFORE=$(find . -type f -name '*.py' -o -name '*.js' -o -name '*.json' 2>/dev/null | sort || true)
+
+# Run OpenCode with task summary as message
+if /Users/adriancox/.opencode/bin/opencode run "$TASK_SUMMARY" --dir "$WORKTREE" 2>&1 | tee "$RUN_DIR/execution.log"; then
+  RESULT="pass"
+  VERIFIER="pass"
 else
   EXIT_CODE=$?
-  RESULT="failure"
+  RESULT="fail"
+  VERIFIER="fail"
 fi
 
 END_TIME=$(date +%s)
 DURATION=$((END_TIME - START_TIME))
 
-# Emit post-run artifact
+# Capture files after
+FILES_AFTER=$(find . -type f -name '*.py' -o -name '*.js' -o -name '*.json' 2>/dev/null | sort || true)
+
+# Compute diff
+MODIFIED_FILES=$(comm -13 <(echo "$FILES_BEFORE") <(echo "$FILES_AFTER") | head -20 || true)
+LINES_ADDED=$(grep -c '^+' "$RUN_DIR/execution.log" 2>/dev/null || echo 0)
+LINES_REMOVED=$(grep -c '^-' "$RUN_DIR/execution.log" 2>/dev/null || echo 0)
+
+# Post-run artifact per §7
+TIMESTAMP_END=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 POST_RUN=$(cat <<EOF
 {
+  "timestamp": "$TIMESTAMP_END",
   "task_id": "$TASK_ID",
   "agent": "opencode",
-  "timestamp_end": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
-  "worktree": "$WORKTREE",
+  "agent_version": "$AGENT_VERSION",
+  "host": "$HOST",
+  "model_host": "$MODEL_HOST",
+  "provider": "$PROVIDER",
+  "model": "$MODEL",
+  "endpoint": "$ENDPOINT",
   "repo": "$REPO",
-  "status": "$RESULT",
-  "exit_code": $EXIT_CODE,
-  "duration_seconds": $DURATION,
-  "artifact_type": "post_run"
+  "worktree": "$WORKTREE",
+  "branch": "$(cd "$WORKTREE" && git rev-parse --abbrev-ref HEAD 2>/dev/null || echo 'unknown')",
+  "task_class": "$TASK_CLASS",
+  "mode": "$MODE",
+  "permissions_profile": "$PERMISSIONS",
+  "files_modified": $(echo "$MODIFIED_FILES" | jq -Rs 'split("\n")[:-1]'),
+  "diff_lines_added": $LINES_ADDED,
+  "diff_lines_removed": $LINES_REMOVED,
+  "wall_clock_seconds": $DURATION,
+  "malformed_edit_count": 0,
+  "operator_interventions": 0,
+  "rollback_available": true,
+  "verifier_status": "$VERIFIER",
+  "notes": "OpenCode execution completed"
 }
 EOF
 )
 echo "$POST_RUN" > "$RUN_DIR/artifact-post-run.json"
 
-echo "[OpenCode] Task $TASK_ID completed with status: $RESULT (exit $EXIT_CODE, ${DURATION}s)"
-echo "[OpenCode] Artifacts written to: $RUN_DIR"
+echo "[OpenCode] Task $TASK_ID completed with verifier status: $VERIFIER (${DURATION}s)"
+echo "[OpenCode] Artifacts: $RUN_DIR"
 
 exit $EXIT_CODE

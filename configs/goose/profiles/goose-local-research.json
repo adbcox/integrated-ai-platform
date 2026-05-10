@@ -1,0 +1,11 @@
+{
+  "name": "goose-local-research",
+  "description": "Research operations - analyze logs, write research entries, summarize findings",
+  "provider": "ollama",
+  "model": "qwen3-coder:30b-coding",
+  "api_host": "http://10.55.0.1:11434",
+  "fallback_api_host": "http://192.168.10.142:11434",
+  "permissions": "read_only",
+  "operational_scope": "research-logs",
+  "recipe_set": ["005-research-log-to-plane-ticket"]
+}

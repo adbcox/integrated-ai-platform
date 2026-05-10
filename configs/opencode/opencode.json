@@ -1,0 +1,93 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "provider": {
+    "ollama": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "Ollama on Mac Studio Thunderbolt",
+      "options": {
+        "baseURL": "http://10.55.0.1:11434/v1"
+      },
+      "models": {
+        "qwen3-coder:30b-coding": {
+          "name": "Qwen3 Coder 30B Coding"
+        },
+        "qwen3-coder-next:80B": {
+          "name": "Qwen3 Coder Next 80B"
+        },
+        "deepseek-coder-v2:16b": {
+          "name": "DeepSeek Coder V2 16B"
+        },
+        "gemma2:27b": {
+          "name": "Gemma2 27B"
+        }
+      }
+    },
+    "ollama_lan_fallback": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "Ollama on Mac Studio LAN fallback",
+      "options": {
+        "baseURL": "http://192.168.10.142:11434/v1"
+      },
+      "models": {
+        "qwen3-coder:30b-coding": {
+          "name": "Qwen3 Coder 30B Coding"
+        },
+        "qwen3-coder-next:80B": {
+          "name": "Qwen3 Coder Next 80B"
+        },
+        "deepseek-coder-v2:16b": {
+          "name": "DeepSeek Coder V2 16B"
+        },
+        "gemma2:27b": {
+          "name": "Gemma2 27B"
+        }
+      }
+    }
+  },
+  "model": "ollama/qwen3-coder:30b-coding",
+  "permission": {
+    "*": "ask",
+    "read": {
+      "*": "allow",
+      "*.env": "deny",
+      "*.env.*": "deny",
+      "*.pem": "deny",
+      "*.key": "deny",
+      "*.p12": "deny",
+      "*.mobileprovision": "deny",
+      "*.env.example": "allow"
+    },
+    "grep": "allow",
+    "glob": "allow",
+    "edit": "ask",
+    "bash": {
+      "*": "ask",
+      "pwd": "allow",
+      "ls *": "allow",
+      "find *": "allow",
+      "rg *": "allow",
+      "grep *": "allow",
+      "git status*": "allow",
+      "git diff*": "allow",
+      "git log*": "allow",
+      "git branch*": "allow",
+      "git worktree list*": "allow",
+      "python -m pytest*": "ask",
+      "pytest*": "ask",
+      "npm test*": "ask",
+      "npm run test*": "ask",
+      "npm run lint*": "ask",
+      "ruff check*": "ask",
+      "mypy*": "ask",
+      "git commit*": "ask",
+      "git push*": "deny",
+      "rm *": "deny",
+      "sudo *": "deny",
+      "chmod -R*": "deny",
+      "chown -R*": "deny",
+      "docker compose down*": "ask",
+      "docker compose up*": "ask",
+      "docker compose restart*": "ask"
+    }
+  }
+}

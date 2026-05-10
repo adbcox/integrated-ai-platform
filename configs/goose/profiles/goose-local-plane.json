@@ -1,0 +1,11 @@
+{
+  "name": "goose-local-plane",
+  "description": "Plane ticket operations - ticket creation, linking, workflow management",
+  "provider": "ollama",
+  "model": "qwen3-coder:30b-coding",
+  "api_host": "http://10.55.0.1:11434",
+  "fallback_api_host": "http://192.168.10.142:11434",
+  "permissions": "ops_write_draft",
+  "operational_scope": "plane",
+  "recipe_set": ["005-research-log-to-plane-ticket"]
+}

@@ -1,0 +1,11 @@
+{
+  "name": "goose-local-control-plane",
+  "description": "Control plane operations - artifact schema, worktree routing, permission profiles",
+  "provider": "ollama",
+  "model": "qwen3-coder:30b-coding",
+  "api_host": "http://10.55.0.1:11434",
+  "fallback_api_host": "http://192.168.10.142:11434",
+  "permissions": "ops_write_draft",
+  "operational_scope": "workstation-orchestration",
+  "recipe_set": ["001-summarize-benchmark-artifacts", "008-agent-promotion-review"]
+}
