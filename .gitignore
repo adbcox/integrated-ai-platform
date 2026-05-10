@@ -58,8 +58,10 @@ data/*.sqlite3
 *.swp
 *.swo
 
-# Claude Code local session state (scheduled_tasks.lock, settings.local.json)
-.claude/
+# Claude Code local session state
+.claude/scheduled_tasks.lock
+.claude/settings.local.json
+.claude/commands/
 
 # Logs
 *.log
