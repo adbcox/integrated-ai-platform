@@ -3,6 +3,7 @@ ki: KI-011
 title: Concurrent-load (N=3-5) validation for vllm-mlx deferred to Mac Studio post-Headscale-resolution
 severity: LOW
 status: OPEN
+disposition: accept-as-deferred-pending-on-LAN-session
 discovered: 2026-05-10
 phase: Orchestration-layer-build closeout (vllm-mlx stunt-double promotion, commit 81db99ea)
 ---
@@ -100,3 +101,7 @@ responses.
 - Operational ceiling: `--max-num-seqs 4` is a conservative bound.
   Productionizing the stunt-double beyond this concurrency level
   requires empirical justification (the probe above) before raising.
+
+## Disposition (2026-05-11)
+
+Disposition recorded per phase-17-closeout-audit §6 Q5 operator approval; status remains OPEN. Accept-as-deferred-pending-on-LAN-session: closure trigger is Mac Studio reachability via Headscale, at which point the N=3-5 concurrent-load probe runs and populates the integration test §9 status line with empirical numbers.

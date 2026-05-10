@@ -236,7 +236,7 @@ The orchestrator (Claude Code at the top level) delegates implementation work to
 
 ### Current Inference Stack
 
-State as of HEAD `81db99ea`; re-verify on session start since this changes faster than file commits.
+State as of main HEAD `fabe20a7` (post-Phase 17 closeout merges 2026-05-11); re-verify on session start since this changes faster than file commits.
 
 - Tier-1 Ollama on port 11434 (untouched; qwen2.5-coder:7b for fast tasks)
 - LiteLLM proxy on port 4000 (config at `configs/litellm/config.yaml`; live path at `~/local-ai-workstation/configs/litellm/config.yaml` is symlinked to the repo file)

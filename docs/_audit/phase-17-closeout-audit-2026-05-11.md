@@ -330,3 +330,27 @@ Each is a discrete operator decision required before execution starts. Recommend
 ## End of audit
 
 No closeout work executed. Execution briefs draft per §5 sequence after operator review of §6 decisions. Brief A (KI triage + meta-tooling hygiene) is the natural first execution brief — fully OFF-LAN-EXECUTABLE, no decision dependencies, lowest risk.
+
+---
+
+## §8 Brief A landing note (2026-05-11)
+
+**Brief A landed** on branch `feat/phase-17-brief-a` (single commit pending push). WPs completed:
+
+- **WP-1 (KI frontmatter migration):** KI-001, KI-002, KI-005, KI-009 gained YAML frontmatter (ki / title / severity / status / discovered / phase) matching the KI-010/011/012 convention. Body content preserved unchanged (importantly: KI-009's `**Status:**` body line preserved because `scripts/check-repo-coherence.py caddy-dns-parity` reads it at runtime per the hook's data-driven gate).
+- **WP-2 (disposition annotations):** KI-010 + KI-011 gained `disposition: accept-as-deferred-pending-on-LAN-session`; KI-012 gained `disposition: accept-as-permanent-debt-decade-horizon`. Each got a `## Disposition (2026-05-11)` body section recording the audit §6 Q5 operator approval. Status field preserved as OPEN on all three.
+- **WP-3 (KI-003 + KI-004 deferred to operator decision):** content surfaced to operator in Brief A report-back. Both files NOT modified per brief constraint.
+- **WP-4 (CLAUDE.md staleness):** L239 stale HEAD reference (`81db99ea` from the orchestration-layer-build authoring) refreshed to current main `fabe20a7` with timestamp. No other staleness markers required substantive correction (the other grep matches were doctrine references using the word "stale" in conceptual contexts, not staleness markers themselves).
+- **WP-5 (Subagent MEMORY.md scaffolding):** all 4 placeholders (state-verifier / brief-author / doctrine-author / provenance-runner) replaced with structured stub schemas (Operator preferences / Recurring patterns / Cross-references / Change log). No accumulated session content to promote — the agents have not been invocation-active during Phase 17.
+- **WP-6 (.secrets.baseline stale-entry removal):** SKIPPED — pre-flight `comm -23` on baselined vs tracked file lists returned empty (4 file pointers in baseline, all live). Baseline is clean.
+
+WP-3 deferred items (operator decision required before next execution brief):
+
+- **Q6 — KI-003 disposition.** KI-003 inline status reads "RESOLVED — root cause was OBOT_DEV_MODE: 'true' in obot-stack.yml. Setting it to 'false' makes obot serve the API on /api/ (returns 403 = auth required, valid) and return clean 404 on UI paths. ... obot.internal validates verify=0 http=404 (in the 2xx-4xx pass range)." **Recommend close-as-resolved** — inline status is unambiguous.
+- **Q7 — KI-004 disposition.** KI-004 YAML frontmatter is `status: MITIGATED`. Mitigation applied (`--ignore-scripts` flag in npm install); recommended fix (custom Docker image pre-installing dependencies) is deferred. **Recommend accept-as-permanent-debt** unless operator wants to schedule the custom-image work as a Phase 18 deliverable.
+
+Remaining Phase 17 closeout sequence:
+
+- **Brief B** (doctrine + framework hygiene): WP-6.1 PROJECT_FRAMEWORK §3 ↔ identifier-conventions.md cross-reference; CLAUDE.md staleness sweep (already partly addressed in Brief A's WP-4); subagent MEMORY.md curation (placeholders are now scaffolded; promotion of stable patterns happens during subagent invocation, not on schedule).
+- **Brief C** (Phase-17-in-spirit deliverable closeout): D-17-54 closure verification; D-17-62 runbooks index; D-17-115 close-as-DEFERRED in closeout doc.
+- **Brief D** (LAN session): D-17-01 v2 stack audit re-run; NetBox-vs-container reconciliation. Phase-17-final tag cut after Brief D lands.

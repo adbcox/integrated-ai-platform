@@ -3,6 +3,7 @@ ki: KI-012
 title: Caddy internal CA root rotation requires manual re-trust across all distributed devices
 severity: LOW
 status: OPEN
+disposition: accept-as-permanent-debt-decade-horizon
 discovered: 2026-05-11
 phase: D-17-115 Phase 1 (Caddy internal-CA trust distribution closeout)
 ---
@@ -132,3 +133,7 @@ the new rotation cycle.
 - This KI exists primarily to prevent rotation surprise — the operator
   has a written record that this work is anticipated and the
   decision-tree options are pre-staged.
+
+## Disposition (2026-05-11)
+
+Disposition recorded per phase-17-closeout-audit §6 Q5 operator approval; status remains OPEN. Accept-as-permanent-debt-decade-horizon: rotation event is ~2035-2036; the KI persists until that event surfaces, at which point operator chooses option (b) static CA or option (c) automated re-distribution per the Trigger to close section above.

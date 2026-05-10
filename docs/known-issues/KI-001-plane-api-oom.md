@@ -1,3 +1,12 @@
+---
+ki: KI-001
+title: plane-api worker OOM/SIGKILL events
+severity: LOW
+status: RESOLVED
+discovered: 2026-04-27
+phase: pre-Phase-17 (frontmatter migration 2026-05-11 per phase-17-closeout-audit Brief A)
+---
+
 # KI-001: plane-api worker OOM/SIGKILL events
 
 ## Status
