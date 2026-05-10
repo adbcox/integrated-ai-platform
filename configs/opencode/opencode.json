@@ -42,6 +42,18 @@
           "name": "Gemma2 27B"
         }
       }
+    },
+    "litellm_local": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "LiteLLM proxy on MacBook",
+      "options": {
+        "baseURL": "http://localhost:4000/v1",
+        "apiKey": "sk-local-only-not-secret"
+      },
+      "models": {
+        "qwen3-coder-30b": { "name": "Qwen3 Coder 30B via LiteLLM" },
+        "qwen2.5-coder": { "name": "Qwen2.5 Coder via LiteLLM" }
+      }
     }
   },
   "model": "ollama/qwen3-coder:30b-coding",
@@ -87,7 +99,13 @@
       "chown -R*": "deny",
       "docker compose down*": "ask",
       "docker compose up*": "ask",
-      "docker compose restart*": "ask"
-    }
+      "docker compose restart*": "ask",
+      "docker system prune*": "deny"
+    },
+    "external_directory": "ask",
+    "doom_loop": "ask",
+    "webfetch": "ask",
+    "websearch": "ask",
+    "task": "ask"
   }
 }

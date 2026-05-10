@@ -9,7 +9,7 @@
     "planBefore": true,
     "requireApproval": true,
     "noUnattendedDestructive": true,
-    "restricttedToWorktree": true,
+    "restrictedToWorktree": true,
     "worktreeBase": "/Users/adriancox/local-ai-workstation/worktrees/integrated-ai-platform-cline"
   },
   "toolSettings": {

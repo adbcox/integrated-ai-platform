@@ -79,6 +79,24 @@ else
   MODEL="qwen3-coder:30b-coding"
 fi
 
+# E-003 substitution: translate canonical model names to LiteLLM model names
+if [[ "$MODEL_HOST" == "LiteLLM-local" ]]; then
+  case "$MODEL" in
+    qwen3-coder:30b-coding|qwen3-coder:30b|ollama_chat/qwen3-coder:30b-coding)
+      LITELLM_MODEL="qwen3-coder-30b" ;;
+    qwen3-coder-next:80B|ollama_chat/qwen3-coder-next:80B)
+      LITELLM_MODEL="qwen3-coder-30b" ;;
+    deepseek-coder-v2:16b|ollama_chat/deepseek-coder-v2:16b)
+      LITELLM_MODEL="qwen2.5-coder" ;;
+    gemma2:27b)
+      LITELLM_MODEL="qwen2.5-coder" ;;
+    *)
+      LITELLM_MODEL="qwen2.5-coder" ;;
+  esac
+  MODEL="$LITELLM_MODEL"
+  PROVIDER="litellm"
+fi
+
 # Provider derivation from model prefix or MODEL_HOST
 if [[ "$MODEL" =~ ^litellm/ ]]; then
   PROVIDER="litellm"
@@ -163,11 +181,22 @@ for PARAM_NAME in $(grep "  - name:" "$RECIPE_PATH" | sed 's/.*- name: //'); do
   fi
 done
 
+if [[ "$MODEL_HOST" == "LiteLLM-local" ]]; then
+  export GOOSE_PROVIDER=openai
+  export OPENAI_HOST="http://localhost:4000"
+  export OPENAI_API_KEY="sk-local-only-not-secret"  # pragma: allowlist secret
+  export GOOSE_MODEL="$MODEL"
+else
+  export GOOSE_PROVIDER=ollama
+  export OLLAMA_HOST="$ENDPOINT"
+  export GOOSE_MODEL="$MODEL"
+fi
+
 if goose run --recipe "$RECIPE_PATH" --params $PARAMS_STRING 2>&1 | tee "$RUN_DIR/execution.log"; then
-  RESULT=$?
+  RESULT=${PIPESTATUS[0]}
   VERIFIER="pass"
 else
-  RESULT=$?
+  RESULT=${PIPESTATUS[0]}
   VERIFIER="fail"
 fi
 
@@ -182,8 +211,8 @@ DURATION=$((END_TIME - START_TIME))
 
 FILES_AFTER=$(find . -type f \( -name '*.py' -o -name '*.js' -o -name '*.json' \) 2>/dev/null | sort || true)
 MODIFIED_FILES=$(comm -13 <(echo "$FILES_BEFORE") <(echo "$FILES_AFTER") | head -20 || true)
-LINES_ADDED=$(grep -c '^+' "$RUN_DIR/execution.log" 2>/dev/null || echo 0)
-LINES_REMOVED=$(grep -c '^-' "$RUN_DIR/execution.log" 2>/dev/null || echo 0)
+LINES_ADDED=$(grep -c '^+' "$RUN_DIR/execution.log" 2>/dev/null) || LINES_ADDED=0
+LINES_REMOVED=$(grep -c '^-' "$RUN_DIR/execution.log" 2>/dev/null) || LINES_REMOVED=0
 
 TIMESTAMP_END=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 POST_RUN=$(cat <<EOF

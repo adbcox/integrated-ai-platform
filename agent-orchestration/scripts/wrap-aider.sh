@@ -69,11 +69,15 @@ esac
 BRIEF_MODEL=$(jq -r '.model // null' "$TASK_BRIEF")
 if [[ "$BRIEF_MODEL" != "null" && -n "$BRIEF_MODEL" ]]; then
   MODEL="$BRIEF_MODEL"
+  # Detect existing model prefix; prepend ollama_chat/ if not present
+  if [[ "$BRIEF_MODEL" =~ ^(ollama_chat/|ollama/|litellm/) ]]; then
+    MAIN_MODEL="$BRIEF_MODEL"
+  else
+    MAIN_MODEL="ollama_chat/${BRIEF_MODEL}"
+  fi
   if [[ "$MODE" == "architect" ]]; then
-    MAIN_MODEL="ollama_chat/${MODEL}"
     EDITOR_MODEL="ollama_chat/qwen3-coder:30b-coding"
   else
-    MAIN_MODEL="ollama_chat/${MODEL}"
     EDITOR_MODEL=""
   fi
 else
@@ -88,8 +92,28 @@ else
   fi
 fi
 
+# E-003 substitution: translate canonical model names to LiteLLM model names
+if [[ "$MODEL_HOST" == "LiteLLM-local" ]]; then
+  case "$MODEL" in
+    qwen3-coder:30b-coding|qwen3-coder:30b|ollama_chat/qwen3-coder:30b-coding)
+      LITELLM_MODEL="qwen3-coder-30b" ;;
+    qwen3-coder-next:80B|ollama_chat/qwen3-coder-next:80B)
+      LITELLM_MODEL="qwen3-coder-30b" ;;
+    deepseek-coder-v2:16b|ollama_chat/deepseek-coder-v2:16b)
+      LITELLM_MODEL="qwen2.5-coder" ;;
+    gemma2:27b)
+      LITELLM_MODEL="qwen2.5-coder" ;;
+    *)
+      LITELLM_MODEL="qwen2.5-coder" ;;
+  esac
+  MODEL="$LITELLM_MODEL"
+  PROVIDER="litellm"
+fi
+
 # Provider derivation from model prefix or MODEL_HOST
-if [[ "$MAIN_MODEL" =~ ^litellm/ ]]; then
+if [[ "$PROVIDER" == "litellm" ]]; then
+  : # already set by E-003 substitution
+elif [[ "$MAIN_MODEL" =~ ^litellm/ ]]; then
   PROVIDER="litellm"
 elif [[ "$MAIN_MODEL" =~ ^ollama ]]; then
   PROVIDER="ollama"
@@ -142,15 +166,40 @@ cd "$WORKTREE"
 
 FILES_BEFORE=$(find . -type f \( -name '*.py' -o -name '*.js' -o -name '*.json' \) 2>/dev/null | sort || true)
 
-if [[ "$MODE" == "architect" ]]; then
-  aider --architect --model "$MAIN_MODEL" --editor-model "$EDITOR_MODEL" --message "$TASK_SUMMARY" --yes-always 2>&1 | tee "$RUN_DIR/execution.log"
-  RESULT=$?
-elif [[ "$MODE" == "ask" ]]; then
-  aider --chat-mode ask --model "$MAIN_MODEL" --message "$TASK_SUMMARY" --yes-always 2>&1 | tee "$RUN_DIR/execution.log"
-  RESULT=$?
+if [[ "$MODEL_HOST" == "LiteLLM-local" ]]; then
+  if [[ "$MODE" == "architect" ]]; then
+    aider --architect \
+          --model "openai/$MODEL" \
+          --editor-model "openai/$MODEL" \
+          --openai-api-base http://localhost:4000 \
+          --openai-api-key sk-local-only-not-secret \
+          --message "$TASK_SUMMARY" --yes-always 2>&1 | tee "$RUN_DIR/execution.log"
+    RESULT=${PIPESTATUS[0]}
+  elif [[ "$MODE" == "ask" ]]; then
+    aider --chat-mode ask \
+          --model "openai/$MODEL" \
+          --openai-api-base http://localhost:4000 \
+          --openai-api-key sk-local-only-not-secret \
+          --message "$TASK_SUMMARY" --yes-always 2>&1 | tee "$RUN_DIR/execution.log"
+    RESULT=${PIPESTATUS[0]}
+  else
+    aider --model "openai/$MODEL" \
+          --openai-api-base http://localhost:4000 \
+          --openai-api-key sk-local-only-not-secret \
+          --message "$TASK_SUMMARY" --yes-always 2>&1 | tee "$RUN_DIR/execution.log"
+    RESULT=${PIPESTATUS[0]}
+  fi
 else
-  aider --model "$MAIN_MODEL" --message "$TASK_SUMMARY" --yes-always 2>&1 | tee "$RUN_DIR/execution.log"
-  RESULT=$?
+  if [[ "$MODE" == "architect" ]]; then
+    aider --architect --model "$MAIN_MODEL" --editor-model "$EDITOR_MODEL" --message "$TASK_SUMMARY" --yes-always 2>&1 | tee "$RUN_DIR/execution.log"
+    RESULT=${PIPESTATUS[0]}
+  elif [[ "$MODE" == "ask" ]]; then
+    aider --chat-mode ask --model "$MAIN_MODEL" --message "$TASK_SUMMARY" --yes-always 2>&1 | tee "$RUN_DIR/execution.log"
+    RESULT=${PIPESTATUS[0]}
+  else
+    aider --model "$MAIN_MODEL" --message "$TASK_SUMMARY" --yes-always 2>&1 | tee "$RUN_DIR/execution.log"
+    RESULT=${PIPESTATUS[0]}
+  fi
 fi
 
 if [[ $RESULT -eq 0 ]]; then
@@ -166,8 +215,8 @@ DURATION=$((END_TIME - START_TIME))
 
 FILES_AFTER=$(find . -type f \( -name '*.py' -o -name '*.js' -o -name '*.json' \) 2>/dev/null | sort || true)
 MODIFIED_FILES=$(comm -13 <(echo "$FILES_BEFORE") <(echo "$FILES_AFTER") | head -20 || true)
-LINES_ADDED=$(grep -c '^+' "$RUN_DIR/execution.log" 2>/dev/null || echo 0)
-LINES_REMOVED=$(grep -c '^-' "$RUN_DIR/execution.log" 2>/dev/null || echo 0)
+LINES_ADDED=$(grep -c '^+' "$RUN_DIR/execution.log" 2>/dev/null) || LINES_ADDED=0
+LINES_REMOVED=$(grep -c '^-' "$RUN_DIR/execution.log" 2>/dev/null) || LINES_REMOVED=0
 
 TIMESTAMP_END=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 POST_RUN=$(cat <<EOF

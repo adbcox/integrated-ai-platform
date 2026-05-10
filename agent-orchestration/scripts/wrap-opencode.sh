@@ -74,6 +74,24 @@ else
   MODEL="qwen3-coder:30b-coding"
 fi
 
+# E-003 substitution: translate canonical model names to LiteLLM model names
+if [[ "$MODEL_HOST" == "LiteLLM-local" ]]; then
+  case "$MODEL" in
+    qwen3-coder:30b-coding|qwen3-coder:30b|ollama_chat/qwen3-coder:30b-coding)
+      LITELLM_MODEL="qwen3-coder-30b" ;;
+    qwen3-coder-next:80B|ollama_chat/qwen3-coder-next:80B)
+      LITELLM_MODEL="qwen3-coder-30b" ;;
+    deepseek-coder-v2:16b|ollama_chat/deepseek-coder-v2:16b)
+      LITELLM_MODEL="qwen2.5-coder" ;;
+    gemma2:27b)
+      LITELLM_MODEL="qwen2.5-coder" ;;
+    *)
+      LITELLM_MODEL="qwen2.5-coder" ;;
+  esac
+  MODEL="$LITELLM_MODEL"
+  PROVIDER="litellm"
+fi
+
 # Provider derivation from model prefix or MODEL_HOST
 if [[ "$MODEL" =~ ^litellm/ ]]; then
   PROVIDER="litellm"
@@ -91,8 +109,15 @@ fi
 RUN_DIR="$HOME/local-ai-workstation/agent_runs/${TASK_ID}/opencode"
 mkdir -p "$RUN_DIR"
 
+# Resolve OpenCode binary path
+OPENCODE_BIN="${OPENCODE_BIN:-$HOME/.opencode/bin/opencode}"
+if [[ ! -x "$OPENCODE_BIN" ]]; then
+  echo "Error: opencode binary not found at $OPENCODE_BIN. Set OPENCODE_BIN env var."
+  exit 1
+fi
+
 # Get agent version
-AGENT_VERSION=$(/Users/adriancox/.opencode/bin/opencode --version 2>/dev/null | head -1 || echo "unknown")
+AGENT_VERSION=$("$OPENCODE_BIN" --version 2>/dev/null | head -1 || echo "unknown")
 
 # Pre-run artifact per §7
 TIMESTAMP_START=$(date -u +%Y-%m-%dT%H:%M:%SZ)
@@ -128,17 +153,36 @@ DURATION=0
 START_TIME=$(date +%s)
 TASK_SUMMARY=$(jq -r '.task_summary' "$TASK_BRIEF")
 
+# Apply operational mode prefix per §9.6 (mode selection via prompt)
+case "$MODE" in
+  plan)
+    TASK_SUMMARY="Plan only. Do not edit files yet. $TASK_SUMMARY"
+    ;;
+  ask)
+    TASK_SUMMARY="Inspect only. Do not edit files. $TASK_SUMMARY"
+    ;;
+  build)
+    # build mode: no prefix
+    ;;
+esac
+
 cd "$WORKTREE"
 
 # Capture files before
 FILES_BEFORE=$(find . -type f -name '*.py' -o -name '*.js' -o -name '*.json' 2>/dev/null | sort || true)
 
 # Run OpenCode with task summary as message
-if /Users/adriancox/.opencode/bin/opencode run "$TASK_SUMMARY" --dir "$WORKTREE" 2>&1 | tee "$RUN_DIR/execution.log"; then
+if [[ "$MODEL_HOST" == "LiteLLM-local" ]]; then
+  "$OPENCODE_BIN" run "$TASK_SUMMARY" --dir "$WORKTREE" --model "litellm_local/$MODEL" 2>&1 | tee "$RUN_DIR/execution.log"
+else
+  "$OPENCODE_BIN" run "$TASK_SUMMARY" --dir "$WORKTREE" 2>&1 | tee "$RUN_DIR/execution.log"
+fi
+PIPE_EXIT=${PIPESTATUS[0]}
+if [[ $PIPE_EXIT -eq 0 ]]; then
   RESULT="pass"
   VERIFIER="pass"
 else
-  EXIT_CODE=$?
+  EXIT_CODE=$PIPE_EXIT
   RESULT="fail"
   VERIFIER="fail"
 fi
@@ -151,8 +195,8 @@ FILES_AFTER=$(find . -type f -name '*.py' -o -name '*.js' -o -name '*.json' 2>/d
 
 # Compute diff
 MODIFIED_FILES=$(comm -13 <(echo "$FILES_BEFORE") <(echo "$FILES_AFTER") | head -20 || true)
-LINES_ADDED=$(grep -c '^+' "$RUN_DIR/execution.log" 2>/dev/null || echo 0)
-LINES_REMOVED=$(grep -c '^-' "$RUN_DIR/execution.log" 2>/dev/null || echo 0)
+LINES_ADDED=$(grep -c '^+' "$RUN_DIR/execution.log" 2>/dev/null) || LINES_ADDED=0
+LINES_REMOVED=$(grep -c '^-' "$RUN_DIR/execution.log" 2>/dev/null) || LINES_REMOVED=0
 
 # Post-run artifact per §7
 TIMESTAMP_END=$(date -u +%Y-%m-%dT%H:%M:%SZ)

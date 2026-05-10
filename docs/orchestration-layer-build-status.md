@@ -2,7 +2,7 @@
 
 **Date:** 2026-05-10
 **Branch:** feat/orchestration-layer-build
-**Status:** Implementation in progress (Closure Requirements 1-6 completed; #7-8 pending)
+**Status:** Phase 8d complete — E-003 LiteLLM substitution implemented; 4 real artifacts validated
 
 ---
 
@@ -18,8 +18,9 @@ The orchestration layer build implements canonical architecture per `docs/archit
 - ✅ **Requirement #4**: Goose configuration per §10.3-§10.4 — 8 local profiles created (VERIFIED)
 - ✅ **Requirement #5**: Move Goose recipes per §10.5 — relocated to configs/goose/recipes/ (VERIFIED)
 - ✅ **Requirement #6**: Continue + Cline configs per §13.2 and §14.2 — IDE extension configuration files created (VERIFIED)
-- 🔄 **Requirement #7**: Recipe parameter mapping + Aider invocation fixes (in progress — R3/R4 implementation complete)
-- 🔄 **Requirement #8**: End-to-end TASK-0001 A/B execution (pending actual agent execution)
+- ✅ **Requirement #7**: Recipe parameter mapping + Aider invocation fixes (R3/R4 complete; R9a/R9b/R9c complete)
+- ✅ **Requirement #8** (Phase 8c): OpenCode 6 permission rules, Cline config typo fixed, model prefix detection (VERIFIED)
+- ✅ **Requirement #9** (Phase 8d): E-003 LiteLLM substitution across all 3 wrappers; TASK-0001 A/B executed; 4 artifacts validated (VERIFIED)
 
 ---
 
@@ -174,9 +175,10 @@ aider --model "$MAIN_MODEL" --message "$TASK_SUMMARY" --yes-always
 
 Applied to all three mode branches (code, ask, architect).
 
-## Commit History (9 commits)
+## Commit History (all commits since main, uncurated)
 
 ```
+0345a7e5 docs(status): update Phase 8b progress with R2/R3/R4 verification results
 71559f45 fix(wrappers): correct provider derivation to use MODEL_HOST fallback
 ac5840d8 fix(wrappers R2+R3): runtime probing + recipe parameter mapping per §7, §10.5, §12.4
 dcf71222 feat(closure-reqs): deploy per-worktree configs + Goose/Cline/Continue profiles per §13.2, §14.2
@@ -186,39 +188,143 @@ c448ee7d fix(wrappers): correct Goose CLI invocation and artifact schema for all
 138ed5d6 feat(orchestration): WBS 9.2+9.3 — task brief + Plane draft templates per canonical §10.6 §10.7
 5a6b5d75 feat(orchestration): WBS 9.1 — 8 Goose recipes (001-008) per canonical §10.5
 241e4f08 feat(orchestration): WBS 6.4 — Serena MCP integration per canonical §11
+566314b4 feat(orchestration): WBS 7.1+7.2 — worktree creation script + policy per canonical §6
+a695cc6e feat(orchestration): WBS 1.2+1.3 — agent lane policy + permission profiles per canonical §8 §9 §10 §11 §12 §13 §14 §15
+36029d52 docs(track-1a-litellm): add stunt-double deployment and home-transition runbook
+37fa89f4 docs(track-1a): remediation complete — fallback fix + cleanup
+238e8ecd fix(track-1a): LiteLLM fallback chain fast-fails LAN tier under 5s
+aee657c2 docs(track-1a): status report — LiteLLM proxy operational, agents re-wired
+25fe7a6a feat(track-1a): Continue routed through LiteLLM proxy; Cline status documented
+9b6c2b93 feat(track-1a): Aider routes through LiteLLM proxy
+cd9fed6e feat(track-1a): Goose routes through LiteLLM proxy
+1870682e feat(track-1a): OpenCode routes through LiteLLM proxy
+1571e11d feat(track-1a): LiteLLM launchd service + verified routing
+c57f5b3e feat(track-1a): LiteLLM proxy config — local + LAN tiers (Tailscale deferred)
+eab3b421 feat(track-1a): install LiteLLM proxy 1.83.14
+a72270d8 feat(foundation): complete Stage 7 filesystem layout and agent environment baseline
+456fc843 feat(foundation): install OpenHands sandbox via OrbStack
+07c5b9cd feat(foundation): install Serena MCP 1.2.0 — corrected per oraios docs
+5a63dbf5 docs(foundation-install-track-2): Stage 5 Serena MCP verification failed
+d948b3cf feat(foundation): continue VS Code extension verified (pre-installed)
+95232dab feat(foundation): install Cline VS Code extension
+02209930 feat(foundation): OpenCode opencode.json + AGENTS.md template
+5c04ba3c feat(foundation): install OpenCode CLI 1.14.41
+61223e22 docs(foundation-install-track-2): update status — OrbStack baseline
+e1b2cd21 docs(foundation): ingest canonical Local AI Workstation roadmap as architecture-fact
+6efcb4ae docs(foundation-install-track-2): Stage 0 Docker daemon failure
 ```
 
 ---
 
-## Execution Readiness
+## Phase 8d: E-003 LiteLLM Substitution
 
-### ✅ Ready for Phase 8b: A/B Execution Testing
+### Context
 
-**Wrapper Implementation Complete**:
-- ✅ Runtime probing: probe_model_host() with 3-step fallback sequence
-- ✅ Provider derivation: from model prefix or MODEL_HOST (litellm/ollama/unknown)
-- ✅ Recipe parameter mapping: extract from YAML, match to task brief, use defaults
-- ✅ Aider invocation: --message flag + --yes-always for non-interactive execution
-- ✅ Artifact generation: all 13 required fields + optional evidence fields
-- ✅ Per-worktree configs deployed (opencode.json, .aider.conf.yml, AGENTS.md)
-- ✅ All recipes in canonical location with parameter declarations
+Mac Studio Thunderbolt (10.55.0.1:11434) and LAN (192.168.10.142:11434) were
+unreachable from MacBook (off-LAN scenario). LiteLLM proxy at localhost:4000
+was the only available endpoint. This is the canonical E-003 substitution path.
 
-**What's Ready**:
-1. wrap-aider.sh: runtime-resolved MODEL_HOST/PROVIDER, mode-based model selection, --message invocation
-2. wrap-opencode.sh: runtime-resolved endpoints, model fallback from task brief
-3. wrap-goose.sh: recipe parameter extraction and mapping, complete --params string
-4. Agent runs directory structure: ~/local-ai-workstation/agent_runs/{TASK_ID}/{agent}/
-5. Artifact validation framework: jq-based required field checking (ajv-cli installed)
+### E-003 Model Translation Table (added to all 3 wrappers)
 
-### 🔄 Pending: Phase 8b A/B Execution
+| Canonical model name | LiteLLM model name | Notes |
+|---|---|---|
+| qwen3-coder:30b-coding / qwen3-coder:30b | qwen3-coder-30b | Primary coding model |
+| qwen3-coder-next:80B | qwen3-coder-30b | No 80B locally; 30B stunt-double |
+| deepseek-coder-v2:16b | qwen2.5-coder | Closest available fallback |
+| gemma2:27b | qwen2.5-coder | Closest available fallback |
+| (default) | qwen2.5-coder | Safe default |
 
-**Next Steps for R5**:
-1. Execute wrap-opencode.sh --task-brief TASK-0001-json-to-csv.json
-2. Execute wrap-aider.sh --task-brief TASK-0001-json-to-csv.json --mode code
-3. Capture pre/post artifacts for both agents
-4. Validate artifact structure (13 required fields)
-5. Record actual metrics: exit codes, wall_clock_seconds, files_modified
-6. Generate final status report with A/B comparison
+### Per-Wrapper E-003 Implementation
+
+**wrap-aider.sh (R14b)**: When MODEL_HOST=LiteLLM-local, invokes aider with:
+```
+aider --model openai/<litellm_model> \
+      --openai-api-base http://localhost:4000 \
+      --openai-api-key sk-local-only-not-secret \
+      --message "$TASK_SUMMARY" --yes-always
+```
+
+**wrap-opencode.sh (R14c)**: When MODEL_HOST=LiteLLM-local, invokes:
+```
+"$OPENCODE_BIN" run "$TASK_SUMMARY" --dir "$WORKTREE" --model litellm_local/<model>
+```
+Also added `litellm_local` provider block to all three opencode.json copies.
+Binary path changed from `command -v opencode` to `$HOME/.opencode/bin/opencode`.
+
+**wrap-goose.sh (R14d)**: When MODEL_HOST=LiteLLM-local, sets env vars:
+```
+GOOSE_PROVIDER=openai
+OPENAI_HOST=http://localhost:4000
+OPENAI_API_KEY=sk-local-only-not-secret
+GOOSE_MODEL=<litellm_model>
+```
+Verified with `GOOSE_PROVIDER=openai` smoke test: goose started with "openai qwen2.5-coder".
+
+### Additional fixes (Phase 8d)
+
+- **LINES_ADDED/LINES_REMOVED bug**: `grep -c '^+' file || echo 0` produced `"0\n0"` on no-match
+  (grep exits 1, triggering `|| echo 0` alongside grep's own output). Fixed to:
+  `$(grep -c '^+' file 2>/dev/null) || VAR=0` in all 3 wrappers.
+- **R8/R14e** (OpenCode 6 permission rules): confirmed present in all 3 opencode.json copies.
+- **R10/R14f** (Cline typo): `restricttedToWorktree` → `restrictedToWorktree` confirmed in both locations.
+
+---
+
+## Phase 7 A/B Execution Results (R14g)
+
+### Endpoint probe (2026-05-10)
+
+```
+curl -fsS http://localhost:4000/v1/models | jq -r '.data[].id'
+qwen2.5-coder
+qwen3-coder-30b
+```
+
+✓ Both models present. Thunderbolt/LAN unreachable → E-003 path active.
+
+### Aider execution
+
+```
+bash agent-orchestration/scripts/wrap-aider.sh \
+  --task-brief agent-orchestration/task-briefs/TASK-0001-json-to-csv.json \
+  --mode code
+```
+
+Exit: 0 | Duration: 55s | Model: openai/qwen3-coder-30b via LiteLLM
+
+### OpenCode execution
+
+```
+bash agent-orchestration/scripts/wrap-opencode.sh \
+  --task-brief agent-orchestration/task-briefs/TASK-0001-json-to-csv.json \
+  --mode build
+```
+
+Exit: 0 | Duration: 1092s | Model: litellm_local/qwen3-coder-30b via LiteLLM
+(long duration: LiteLLM routed qwen3-coder-30b through stunt-double endpoint at 11435,
+which was unhealthy, then fell back to qwen2.5-coder at 11434)
+
+### AJV validation — raw output
+
+```
+npx ajv-cli@latest validate --spec draft2020 \
+  -s ~/local-ai-workstation/configs/AGENT_ARTIFACT_SCHEMA.json \
+  -d <artifact>
+
+aider/artifact-pre-run.json valid
+aider/artifact-post-run.json valid
+opencode/artifact-pre-run.json valid
+opencode/artifact-post-run.json valid
+```
+
+### Artifact field summary
+
+| Artifact | model_host | provider | model | wall_clock_seconds |
+|---|---|---|---|---|
+| aider/pre-run | LiteLLM-local | litellm | qwen3-coder-30b | n/a |
+| aider/post-run | LiteLLM-local | litellm | qwen3-coder-30b | 55 |
+| opencode/pre-run | LiteLLM-local | litellm | qwen3-coder-30b | n/a |
+| opencode/post-run | LiteLLM-local | litellm | qwen3-coder-30b | 1092 |
 
 ---
 
@@ -229,12 +335,4 @@ c448ee7d fix(wrappers): correct Goose CLI invocation and artifact schema for all
 - **Wrapper Location:** agent-orchestration/scripts/
 - **Config Location:** configs/
 - **Worktrees:** ~/local-ai-workstation/worktrees/
-
----
-
-## Next Steps
-
-1. **Requirement #7 Completion**: Document actual runtime execution results
-2. **Requirement #8 Completion**: Commit/revert any uncommitted changes to wrap-aider.sh
-3. **Phase 7 A/B Testing**: Execute task briefs against OpenCode/Aider/Goose with artifact capture
-4. **Verification Gates**: Validate artifacts against schema before marking phase complete
+- **Run Artifacts:** ~/local-ai-workstation/agent_runs/TASK-0001/
