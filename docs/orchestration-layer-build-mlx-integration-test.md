@@ -307,6 +307,11 @@ class is `quantization-of-operator-confirmed-base` per D-17-92. See
 rescan upgrade path. D-17-10 governance obligation from the override (overrides.log
 2026-05-10T19:19:00Z) is satisfied; migration commit unblocked.
 
+**Concurrent-load validation status:** deferred to Mac Studio (96 GB) post-Headscale-resolution.
+Integration test validated single-stream `tool_calls` (TASK-0001, 368s); N=3-5 concurrent behavior
+untested on MacBook 32 GB. Conservative ceiling set via `--max-num-seqs 4` in launchd plist.
+Tracking: KI-011.
+
 **Action item before promoting to default:** reconcile the live config path
 (`~/local-ai-workstation/configs/litellm/config.yaml`) with the repo config path
 (`configs/litellm/config.yaml`) so a single commit keeps both in sync. The Ollama stunt-double
