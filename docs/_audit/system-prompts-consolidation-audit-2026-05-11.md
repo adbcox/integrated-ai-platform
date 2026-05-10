@@ -324,3 +324,312 @@ The PRESERVE-BOTH path is lower-risk and respects the prior D-17-16 "canonical-a
 No consolidation work executed. Cleanup brief drafts as a separate
 follow-up message after operator review of this audit's
 recommendations and the 5 open questions in §8.
+
+---
+
+## §14 Addendum: Semantic re-comparison (2026-05-11)
+
+### 14.1 Trigger
+
+Operator-flagged methodology concern with the original §5 overlap
+analysis: structural differences (header label "Mode:" vs "Persona:",
+derivation citations, scope-bounding "When to use" sections, "Key
+characteristics" descriptors, dispatch-template wrappers, routing
+config blocks) were treated as semantic drift. They should not have
+been. Re-classifying all 4 pairs as DIVERGENT on that basis was a
+surface-level read; the actual instructional content — the "do X,
+avoid Y, prioritize Z" core that gets sent to the model — was never
+extracted and compared.
+
+This addendum supersedes §5's verdicts via the rubric in §14.2.
+§5 is preserved as historical record so the methodology evolution is
+auditable. If §14.4 changes the §8 consolidation recommendation,
+that change is named explicitly.
+
+### 14.2 Method — semantic rubric
+
+Per pair, three explicit steps:
+
+**Step 1 — Strip metadata wrappers.** Remove: YAML frontmatter,
+`# Persona:` / `## Mode:` header lines, `# Derivation:` / `# Source:`
+citation lines, `When to use` / `When NOT to use` / `Key
+characteristics` scope-bounding sections, `Litellm / Open WebUI
+routing config` blocks, `Frontier review protocol` operator-side
+sections, `Examples of well-scoped tasks` operator-facing reference
+lists, trailing `## See also` / cross-reference sections. For Library
+B's dispatch-template-wrapped prompts, the substantive instructional
+content is in the dispatch-template Constraints block + any referenced
+preamble file content (e.g., `[INSERT 00-STANDARD-PREAMBLE.MD
+VERBATIM HERE]` resolves to the constraints in
+`config/prompts/library/v1.0.0/00-standard-preamble.md`).
+
+**Step 2 — Extract as normalized bullet list.** Discrete instructional
+items per side (imperatives, prohibitions, priorities, formatting
+rules). Original wording preserved.
+
+**Step 3 — Compare item-by-item.** PRESENT-IN-BOTH / LIBRARY-A-ONLY /
+LIBRARY-B-ONLY / DIFFERENT-INSTRUCTION (actual semantic disagreement).
+Per-pair verdict from {SEMANTICALLY IDENTICAL, SUBSET/SUPERSET,
+OVERLAPPING WITH UNIQUE EXTENSIONS, DIVERGENT BY INSTRUCTION}.
+
+### 14.3 Per-pair verdicts
+
+#### 14.3.1 voice-fast
+
+**Library A instructional items** (`docs/system-prompts/modes/voice-fast.md`):
+
+1. Answer directly — no preamble, no restating the question, no filler phrases ("Great question")
+2. One short paragraph or one tight list; stop when delivered
+3. Don't add follow-up suggestions unless asked
+4. If genuinely ambiguous: ask ONE short clarifier; else pick likeliest interpretation
+5. Don't enumerate everything you considered
+6. Don't add caveats unless material to operator action
+7. Don't ask permission for low-stakes actions; just do + report
+8. If answer is "I don't know," say so plainly and stop
+9. If tool call needed, make it and answer from result
+10. On "more detail" follow-up: shift to deliberate-analysis posture for that turn
+
+**Library B instructional items** (`config/prompts/library/v1.0.0/01-voice-fast.md` — dispatch-template Constraints only; metadata wrappers stripped):
+
+1. If source file does not contain the fact, say so explicitly. Do not autocomplete.
+2. Output must be ≤50 lines.
+3. Do not add preamble, explanation, or caveats unless explicitly requested.
+
+**Comparison:**
+
+| Topic | A | B | Classification |
+|---|---|---|---|
+| No preamble | A.1 | B.3 | PRESENT-IN-BOTH |
+| Output length cap | A.2 (qualitative: "short paragraph / tight list") | B.2 (quantitative: ≤50 lines) | PRESENT-IN-BOTH (matching intent; B more specific) |
+| No unrequested caveats | A.6 | B.3 | PRESENT-IN-BOTH |
+| Don't fabricate when info missing | A.8 (knowledge gap) | B.1 (source-file gap) | PRESENT-IN-BOTH (overlapping intent; A is broader, B is source-file-scoped) |
+| No question restatement, no filler phrases | A.1 | — | LIBRARY-A-ONLY |
+| One short para or list (format) | A.2 | — | LIBRARY-A-ONLY |
+| No follow-up suggestions unless asked | A.3 | — | LIBRARY-A-ONLY |
+| Ambiguity handling (one clarifier) | A.4 | — | LIBRARY-A-ONLY |
+| Don't enumerate what was considered | A.5 | — | LIBRARY-A-ONLY |
+| Don't ask permission for low-stakes | A.7 | — | LIBRARY-A-ONLY |
+| Tool calls allowed/encouraged | A.9 | — | LIBRARY-A-ONLY |
+| Mode-switch on operator follow-up | A.10 | — | LIBRARY-A-ONLY |
+
+**Verdict: SUBSET — Library B's instructional content is a subset of Library A.** All 3 of B's constraints are present in A. A adds 8 additional posture and ambiguity-handling items. NO DIFFERENT-INSTRUCTION conflicts.
+
+#### 14.3.2 deliberate-analysis
+
+**Library A instructional items** (`docs/system-prompts/modes/deliberate-analysis.md`):
+
+1. State the question as understood in one short sentence (early-correction posture)
+2. Identify major decision axes (2-4); name them, don't dissolve into prose
+3. For each axis, name considerations pulling each direction; cite operator input specifics; flag inferences
+4. Land on a recommendation; name confidence honestly (incl. alternatives)
+5. Distinguish KNOW vs INFER vs GUESS with explicit labels
+6. If question turns on a fact you don't have, ask rather than substituting
+7. If you change your mind, name the change ("on reflection, I'd shift…")
+8. Don't pretend to deliberate when answer is obvious
+9. Don't end with "let me know if you want elaboration"
+10. Don't offer five options when two are real (compress weak options into single rejected-alternatives line)
+11. Surface assumptions early
+12. When citing file/runtime fact, include path or command (verifiability)
+13. Make tool calls rather than reasoning from memory
+
+**Library B instructional items** (`config/prompts/library/v1.0.0/02-deliberate-analysis.md` dispatch-template + `00-standard-preamble.md` Constraints A/B/C/D):
+
+1. **Constraint A:** Copy verbatim block from source before paraphrasing for every concrete fact (function name, flag, path, env var, exit code, command shape); do not paraphrase first; do not simplify command syntax
+2. **Constraint A:** If source doesn't contain the fact, say so with [UNVERIFIED] tag; do not autocomplete from training data
+3. **Constraint B:** Append a "Source-citation table" with Fact / Source file / Line(s) / Verbatim quote; line numbers must be verified via the same read call
+4. **Constraint B:** Any fact not citable is a self-flagged defect; list in "Self-flagged defects" section
+5. **Constraint C:** [UNVERIFIED] tags for genuinely uncertain facts, not as cover for un-read sources
+6. **Constraint C:** If source file fails to read, surface back with which path failed, refuse to fabricate, propose re-scope
+7. **Constraint D:** Open with the first procedure step or one-line scope sentence; do NOT open with sibling-concern recap, description of what you're about to do, or restatement of constraints
+8. Dispatch-template output: full draft document inline, followed by Source-citation table, followed by Self-flagged defects
+
+**Comparison:**
+
+| Topic | A | B | Classification |
+|---|---|---|---|
+| Cite verifiable file/line for facts | A.12 (path/command included) | B.3 (Source-citation table with line verification) | PRESENT-IN-BOTH (matching intent; B is mechanism-explicit) |
+| Honest uncertainty labeling | A.5 (KNOW/INFER/GUESS) | B.5 ([UNVERIFIED] tags) | PRESENT-IN-BOTH (different syntax, same intent) |
+| Refuse to fabricate when fact missing | A.6 (ask for it) | B.6 (surface back + refuse) | PRESENT-IN-BOTH |
+| Opening posture | A.1 (state the question in 1 sentence) | B.7 (NO description of what you're about to do) | DIFFERENT-INSTRUCTION (mild — A: state question; B: skip preamble; potentially compatible if "stating the question" counts as a "scope sentence" not a "preamble," but tense as authored) |
+| Identify decision axes (2-4); name them | A.2 | — | LIBRARY-A-ONLY |
+| Each axis: considerations in each direction | A.3 | — | LIBRARY-A-ONLY |
+| Land on recommendation with confidence | A.4 | — | LIBRARY-A-ONLY |
+| Change-of-mind discipline (name the change) | A.7 | — | LIBRARY-A-ONLY |
+| Don't pretend to deliberate when obvious | A.8 | — | LIBRARY-A-ONLY |
+| Don't end with "let me know" | A.9 | — | LIBRARY-A-ONLY |
+| Compress weak options to single line | A.10 | — | LIBRARY-A-ONLY |
+| Surface assumptions early | A.11 | — | LIBRARY-A-ONLY |
+| Tool calls over memory | A.13 | — | LIBRARY-A-ONLY |
+| Verbatim-block-before-paraphrasing | — | B.1 | LIBRARY-B-ONLY (source-fidelity discipline; primary defense against D-17-53 fabrication failure modes) |
+| Source-citation table format | — | B.3 | LIBRARY-B-ONLY (mechanism-specific) |
+| Self-flagged defects section | — | B.4 | LIBRARY-B-ONLY |
+| Output format (draft / citation table / defects) | — | B.8 | LIBRARY-B-ONLY |
+
+**Verdict: OVERLAPPING WITH UNIQUE EXTENSIONS.** Both libraries share a verifiability-and-honest-uncertainty core (A.5-12 / B.3-6). Each has substantial unique additions: A has deliberation-discipline (decision axes, confidence-naming, change-of-mind handling, compress-weak-options); B has source-fidelity discipline (verbatim-blocks, citation table, self-flagged defects, output-format mandate). One mild DIFFERENT-INSTRUCTION on opening posture (A: state question; B: skip preamble) — likely reconcilable in a merge.
+
+#### 14.3.3 code-review
+
+**Library A instructional items** (`docs/system-prompts/modes/code-review.md`):
+
+1. Read-only posture; read-tool calls OK; write-tool calls out of scope
+2. Report findings, not patches; name fix in one line, don't write the patch
+3. Distinguish severity honestly: bug / smell / style / nit / opinion
+4. Findings shape: file+line, one-line description, why-it-matters, severity, optional direction
+5. Group by severity; within severity, by file
+6. Look for: security (input validation, secret handling, injection, credential exposure in logs)
+7. Look for: concurrency (races, missing locks, double-frees, ordering)
+8. Look for: error handling (silent failures, empty except, swallowed errors, retry masking)
+9. Look for: test coverage (untested branches, untested error paths)
+10. Look for: doctrine compliance (CLAUDE.md non-negotiables: Vault for secrets, no .env, container hardening, hash-only verification)
+11. Don't suggest broad refactors unless code is genuinely broken
+12. Don't "consider also" outside changed lines (diff scope discipline)
+13. Don't say "looks good to me" without reading; propose splitting if too big
+14. Lead with bugs; smells second; style and nits last
+15. Quote relevant code when issue isn't obvious
+16. If clean, say so plainly ("I read X, Y, Z; no findings above nit; ready to merge")
+
+**Library B instructional items** (`config/prompts/library/v1.0.0/03-code-review.md` dispatch-template Constraints + output format):
+
+1. One finding per bullet
+2. Severity: CRITICAL / HIGH / MEDIUM / LOW / INFO
+3. Location: file:line (or "line N" for diff input)
+4. Finding: one sentence
+5. Recommendation: one sentence
+6. Only cite line numbers visible in the input
+7. If uncertain about a finding, prefix with [UNCERTAIN]
+8. Don't describe what the code does unless a finding depends on it
+9. Don't add preamble
+
+**Comparison:**
+
+| Topic | A | B | Classification |
+|---|---|---|---|
+| Per-finding structure | A.4 (file+line, description, why, severity, direction) | B.1-5 (severity, location, finding, recommendation) | PRESENT-IN-BOTH (overlapping intent; A has "why-it-matters" axis B lacks) |
+| Cite verifiable locations | A.4 (file+line) | B.6 (only cite line numbers visible) | PRESENT-IN-BOTH (matching intent; B is anti-fabrication-explicit) |
+| Severity classification | A.3 (bug / smell / style / nit / opinion) | B.2 (CRITICAL / HIGH / MEDIUM / LOW / INFO) | **DIFFERENT-INSTRUCTION** — A uses honest-defect-class taxonomy; B uses CVSS-style severity taxonomy. Same axis, conflicting taxonomies |
+| Honest uncertainty | — (no explicit instruction; implicit in honest-severity posture) | B.7 ([UNCERTAIN] prefix) | LIBRARY-B-ONLY |
+| Read-only posture | A.1 | — | LIBRARY-A-ONLY |
+| Report findings, not patches | A.2 | — | LIBRARY-A-ONLY |
+| Group by severity then file | A.5 | — | LIBRARY-A-ONLY (B has one-finding-per-bullet without grouping) |
+| Security-axis scope | A.6 | — | LIBRARY-A-ONLY |
+| Concurrency-axis scope | A.7 | — | LIBRARY-A-ONLY |
+| Error-handling-axis scope | A.8 | — | LIBRARY-A-ONLY |
+| Test-coverage-axis scope | A.9 | — | LIBRARY-A-ONLY |
+| Doctrine-compliance-axis scope | A.10 (CLAUDE.md non-negotiables) | — | LIBRARY-A-ONLY |
+| Refactor restraint | A.11 | — | LIBRARY-A-ONLY |
+| Diff scope discipline | A.12 | — | LIBRARY-A-ONLY |
+| Honest "didn't read" / split-large | A.13 | — | LIBRARY-A-ONLY |
+| Severity order in output (bugs first) | A.14 | — | LIBRARY-A-ONLY |
+| Quote relevant code when not obvious | A.15 | — | LIBRARY-A-ONLY |
+| Clean-review phrasing template | A.16 | — | LIBRARY-A-ONLY |
+| Don't describe code unless finding depends on it | — | B.8 | LIBRARY-B-ONLY (tightens A.15's "quote when not obvious") |
+| No preamble | — | B.9 | LIBRARY-B-ONLY |
+
+**Verdict: OVERLAPPING WITH UNIQUE EXTENSIONS + 1 DIFFERENT-INSTRUCTION (severity taxonomy).** Both share findings-shape intent and verifiability. A has substantial unique scope-extension and discipline content (security/concurrency/error/test/doctrine axes; severity-order output; refactor restraint). B has source-fidelity discipline ([UNCERTAIN] prefix, only-cite-visible-lines). The severity taxonomy conflict (bug/smell/style/nit/opinion vs CRITICAL/HIGH/MEDIUM/LOW/INFO) is a real disagreement requiring operator arbitration in any merge.
+
+#### 14.3.4 decomposition
+
+**Library A instructional items** (`docs/system-prompts/modes/decomposition-planning.md`):
+
+1. Unit of output is a spec (not code, not plan-of-plans, not discussion)
+2. Each spec small enough for sub-agent end-to-end execution
+3. Don't merge sub-specs that share file just for efficiency (independence > efficiency)
+4. Don't decompose past overhead-exceeds-value
+5. Spec shape: ID, Subject, Scope, Inputs, Outputs, Acceptance criteria, Dependencies
+6. Topologically sort specs; flag parallelizable
+7. If two specs mutually dependent → one is mis-scoped (resolve before delivering)
+8. Don't pre-write implementation in spec text (collapses pattern)
+9. Don't include "verify X" specs (verification is part of each spec)
+10. Don't decompose tasks best served by single end-to-end implementation
+11. Make acceptance criteria mechanically checkable where possible
+12. Surface uncertainty (don't paper over scope ambiguity)
+13. Reference doctrine when spec must comply with non-obvious rule
+
+**Library B instructional items** (`config/prompts/library/v1.0.0/04-decomposition.md` dispatch-template Constraints + per-subtask format):
+
+1. Each subtask must have exactly ONE output path
+2. Each subtask's source file list must contain ≤6 files
+3. Subtasks must be independently executable (or sequenced with explanation)
+4. Don't include concrete command syntax or file content in the spec — specs describe scope, not implementation
+5. Don't produce more than 8 subtasks; if more required, re-scope
+6. Per-subtask format: Output path, Source files (≤6), Persona, Required coverage, Operator pre-flight, Dependencies
+
+**Comparison:**
+
+| Topic | A | B | Classification |
+|---|---|---|---|
+| Specs describe scope, not implementation | A.1, A.8 | B.4 | PRESENT-IN-BOTH |
+| Subtasks independently executable | A.3 | B.3 | PRESENT-IN-BOTH |
+| Dependencies tracked | A.5 (Dependencies field), A.6-7 (DAG / mis-scoped if mutual) | B.6 (Dependencies field) | PRESENT-IN-BOTH (A has DAG discipline; B has the field only) |
+| Limit on subtask count | A.4 (qualitative: "overhead exceeds value") | B.5 (quantitative: ≤8) | PRESENT-IN-BOTH (matching intent; B is more specific) |
+| Output target | A.5 (Outputs field, allows multiple) | B.1 (exactly ONE output path) | **DIFFERENT-INSTRUCTION** — A allows multiple outputs per spec; B requires exactly one |
+| Source file cap | — | B.2 (≤6) | LIBRARY-B-ONLY |
+| Per-subtask persona designation | — | B.6 (Persona field) | LIBRARY-B-ONLY |
+| Operator pre-flight gate | — | B.6 (Operator pre-flight field) | LIBRARY-B-ONLY |
+| Spec-shape: Subject + Scope + Inputs + Acceptance | A.5 | B.6 has "Required coverage" instead of "Acceptance criteria" — overlapping but not identical | PRESENT-IN-BOTH (overlapping field set; field names differ; Library A has explicit "Acceptance criteria" which B's "Required coverage" partially overlaps with) |
+| Don't include "verify X" specs | A.9 | — | LIBRARY-A-ONLY |
+| Don't decompose single-shot tasks | A.10 | — | LIBRARY-A-ONLY |
+| Mechanically checkable acceptance | A.11 | — | LIBRARY-A-ONLY |
+| Surface scope uncertainty | A.12 | — | LIBRARY-A-ONLY |
+| Reference doctrine for non-obvious rules | A.13 | — | LIBRARY-A-ONLY |
+| Topological sort + parallelizable flag | A.6 | — | LIBRARY-A-ONLY |
+
+**Verdict: OVERLAPPING WITH UNIQUE EXTENSIONS + 1 DIFFERENT-INSTRUCTION (output-path cardinality).** Both share spec-not-implementation and independence-execution core. A has broader anti-pattern guards and dependency-graph discipline; B has operational fields (persona designation per subtask, pre-flight gate, source-file cap). One DIFFERENT-INSTRUCTION on output-path cardinality (A multiple; B exactly one).
+
+### 14.4 Re-derived consolidation recommendation
+
+**Verdict mix:**
+
+| Pair | New verdict | Was §5 verdict |
+|---|---|---|
+| voice-fast | SUBSET (B ⊂ A) | DIVERGENT |
+| deliberate-analysis | OVERLAPPING WITH UNIQUE EXTENSIONS + 1 mild DIFFERENT-INSTRUCTION | DIVERGENT |
+| code-review | OVERLAPPING WITH UNIQUE EXTENSIONS + 1 DIFFERENT-INSTRUCTION (severity) | DIVERGENT |
+| decomposition | OVERLAPPING WITH UNIQUE EXTENSIONS + 1 DIFFERENT-INSTRUCTION (output-path cardinality) | DIVERGENT |
+
+3 pairs are OVERLAPPING WITH UNIQUE EXTENSIONS; 1 is SUBSET. Per the rubric:
+> If ≥3 pairs are OVERLAPPING WITH UNIQUE EXTENSIONS: merge into one canonical version per pair (union of instructional items), retire the other.
+
+**§8 recommended PRESERVE BOTH based on §5's DIVERGENT verdicts. Semantic re-comparison OVERRIDES that recommendation: MERGE INTO ONE CANONICAL PER PAIR via UNION OF INSTRUCTIONAL ITEMS.**
+
+The merger target should be Library B (`config/prompts/library/`) per the original audit's §6 cross-reference and §7 consumer-risk findings — Library B is runtime-wired across 11+ sites including bin/aider_* loaders and scripts/aider-task.sh, while Library A is documentation-only with 5 cite sites. Keeping the canonical content in Library B preserves runtime-wiring without re-pathing; Library A's content migrates into Library B as union additions; Library A retires with mechanical cross-reference fixes at the 5 cite sites.
+
+Three DIFFERENT-INSTRUCTION items require operator arbitration in the merge:
+
+1. **deliberate-analysis opening posture** — A's "state the question in one sentence" vs B's "skip preamble; open with first procedure step." Likely reconcilable: A's question-statement is a "one-line scope sentence" per B's allowance. Merge wording: open with one-line scope sentence stating the question as understood; do not add explanatory preamble.
+2. **code-review severity taxonomy** — A's bug/smell/style/nit/opinion vs B's CRITICAL/HIGH/MEDIUM/LOW/INFO. Genuine taxonomy disagreement; operator decides which is canonical. Note: B's CVSS-style aligns with security-scanning tool output; A's defect-class aligns with peer-review tradition.
+3. **decomposition output-path cardinality** — A allows multiple Outputs per spec; B requires exactly one Output path. Operator decides; B's "one output" enforces tighter spec-granularity but limits what A's Outputs-as-list allowed.
+
+### 14.5 Implications for cleanup brief
+
+**§10's cleanup brief outline (6 WPs under PRESERVE BOTH) is superseded.** Under MERGE INTO B per the re-derived recommendation, the cleanup brief shape becomes:
+
+| WP | Scope | Files | Notes |
+|---|---|---|---|
+| WP-1 | Operator decision on 3 DIFFERENT-INSTRUCTION items | n/a | Output as a decision doc; pre-merge gate |
+| WP-2 | Author merged voice-fast in Library B (union of A.1-10 + B.1-3; B is subset of A so A's content + B's quantitative bounds become the merged result) | `v1.0.0/01-voice-fast.md` modified | Single file edit |
+| WP-3 | Author merged deliberate-analysis in Library B (union of A.2-13 + B.A-D; resolve opening-posture conflict per WP-1) | `v1.0.0/02-deliberate-analysis.md` modified | Single file edit; may require splitting between standard-preamble and persona file |
+| WP-4 | Author merged code-review in Library B (union of A.1-16 + B.6-9; resolve severity-taxonomy conflict per WP-1) | `v1.0.0/03-code-review.md` modified | Single file edit |
+| WP-5 | Author merged decomposition in Library B (union of A.1-13 + B.1-6; resolve output-cardinality conflict per WP-1) | `v1.0.0/04-decomposition.md` modified | Single file edit |
+| WP-6 | Retire `docs/system-prompts/modes/*.md` (4 files) — content now in Library B | 4 files deleted | Retain `docs/system-prompts/` as the tier-axis + consumer-prose home if operator wants to preserve those axes |
+| WP-7 | Update 5 Library A cross-reference sites to point at Library B (or retain A pointers for tier/consumer-prose content) | 5 files touched | Mechanical sed update |
+| WP-8 | Update Library B's `CATALOG.md` to acknowledge the merge (note that v1.0.0/01-04 now contains the merged superset; record retirement of Library A modes/) | `v1.0.0/CATALOG.md` modified | Documentation update |
+| WP-9 | Update `docs/system-prompts/README.md` — either retire entirely OR soften scope to "tiers + consumer documentation only; modes are in `config/prompts/library/v1.0.0/`" | 1 file modified or deleted | Operator decision on Library A's future |
+
+**Open question — Library A's tier and consumer axes:** Library A's `tiers/T1-T4.md` (referenced by `exo-cluster.md`) and `consumers/litellm-routing.md` + `consumers/open-webui-integration.md` have NO Library B counterparts. The merge applies to the 4 overlapping modes only. The tier axis stays in Library A by default unless operator decides to fold tiers/ into Library B (B has 5 personas without a tier axis — would require structural extension).
+
+**Open question — Library B's internal duplication (personas/ vs numbered presets):** unchanged from original §8 Open Question 2. Still NEEDS-OPERATOR-DECISION.
+
+The original §10 PRESERVE-BOTH outline (6 small WPs) is now invalidated. Operator approves the §14.5 MERGE-INTO-B path (or modifies) before any cleanup brief drafts.
+
+### 14.6 Risk register addendum
+
+| Risk | Likelihood | Impact | Mitigation |
+|---|---|---|---|
+| Merge introduces semantic drift in Library B's runtime-loaded prompts | MEDIUM | Aider workflows could degrade if merged prompts perform differently than Library B's current minimal-constraints versions | Stage merge per pair; A/B test on TASK-0001 shape before retiring Library A's source |
+| Severity-taxonomy choice for code-review affects downstream parsing | MEDIUM | If a downstream consumer parses severity strings (CRITICAL etc.), changing to bug/smell/style breaks the parser | Pre-flight grep for severity-string parsing before WP-4 lands |
+| Library A's "state the question" opening helps frontier reviewers spot misread early; B's "skip preamble" may lose that signal | LOW | Frontier review may need extra effort to detect misread | Compromise wording in WP-3: "open with one-line problem statement (not preamble)" |
+| Original §5 DIVERGENT verdicts have already been cited in CR-17-NNN / KI-NNN entries that take §5's surface-drift framing at face value | LOW | None yet (no CRs/KIs reference §5's verdicts) | Verify via grep before WP-7 lands |
+| The operator's earlier D-17-16 "canonical-as-is" disposition (preserved in original §8 Open Question 5) is now structurally inconsistent with MERGE-INTO-B | HIGH | Operator may want to revisit the D-17-16 decision explicitly | Surface in WP-1 as part of operator decision |
+
+End of §14 addendum.
