@@ -165,7 +165,13 @@ TASK_SUMMARY=$(jq -r '.task_summary' "$TASK_BRIEF")
 
 cd "$WORKTREE"
 
-FILES_BEFORE=$(find . -type f \( -name '*.py' -o -name '*.js' -o -name '*.json' \) 2>/dev/null | sort || true)
+# Verifier pre-state capture (git-diff-based; replaces broken find+comm
+# verifier pre-2026-05-11). The prior logic missed untracked files outside
+# .py/.js/.json, missed in-place modifications entirely. The wrap-aider
+# variant also had a half-honest line counter (git diff numstat for tracked
+# + wc -l fallback only on OUTPUT_FILES, missing untracked-not-in-OUTPUT_FILES).
+# New logic mirrors the canonical wrap-opencode fix in commit 1ce59ffc.
+PRE_REF=$(git rev-parse HEAD 2>/dev/null || echo "")
 
 # Build --file flags from aider_output_files in task brief; pre-create missing files
 FILE_FLAGS=()
@@ -243,17 +249,43 @@ fi
 END_TIME=$(date +%s)
 DURATION=$((END_TIME - START_TIME))
 
-FILES_AFTER=$(find . -type f \( -name '*.py' -o -name '*.js' -o -name '*.json' \) 2>/dev/null | sort || true)
-MODIFIED_FILES=$(comm -13 <(echo "$FILES_BEFORE") <(echo "$FILES_AFTER") | head -20 || true)
-# Try git diff first (covers tracked file edits); fall back to wc -l on new output files
-LINES_ADDED=$(git diff --numstat HEAD 2>/dev/null | awk '{sum+=$1} END{print sum+0}') || LINES_ADDED=0
-if [[ "$LINES_ADDED" -eq 0 && -n "$OUTPUT_FILES" ]]; then
-  while IFS= read -r f; do
-    [[ -z "$f" || ! -f "$f" ]] && continue
-    LINES_ADDED=$((LINES_ADDED + $(wc -l < "$f" 2>/dev/null || echo 0)))
-  done <<< "$OUTPUT_FILES"
+# Verifier post-state diff (git-diff-based; honest detection across all file
+# types including untracked + in-place modifications). See pre-state comment above.
+PORCELAIN=$(git status --porcelain 2>/dev/null || true)
+
+# files_modified: parse porcelain. Handles M / A / D / R / ?? entries.
+# Rename lines ("R  old -> new") yield the new path.
+MODIFIED_FILES=$(echo "$PORCELAIN" | awk 'NF>0 {
+  path=substr($0,4)
+  n=index(path," -> ")
+  if (n>0) path=substr(path,n+4)
+  print path
+}' | sort -u | head -50)
+
+# Untracked files need intent-only-add (-N) to participate in git diff;
+# revert after counting so we leave the worktree staging state untouched.
+UNTRACKED_LIST=$(echo "$PORCELAIN" | awk 'substr($0,1,2)=="??" {print substr($0,4)}')
+if [[ -n "$UNTRACKED_LIST" ]]; then
+  echo "$UNTRACKED_LIST" | while IFS= read -r p; do
+    [[ -n "$p" ]] && git add -N -- "$p" 2>/dev/null || true
+  done
 fi
-LINES_REMOVED=$(git diff --numstat HEAD 2>/dev/null | awk '{sum+=$2} END{print sum+0}') || LINES_REMOVED=0
+
+if [[ -n "$PRE_REF" ]]; then
+  SHORTSTAT=$(git diff --shortstat "$PRE_REF" 2>/dev/null || echo "")
+else
+  SHORTSTAT=$(git diff --shortstat 2>/dev/null || echo "")
+fi
+LINES_ADDED=$(echo "$SHORTSTAT" | grep -oE '[0-9]+ insertion' | grep -oE '[0-9]+' || echo "")
+LINES_REMOVED=$(echo "$SHORTSTAT" | grep -oE '[0-9]+ deletion' | grep -oE '[0-9]+' || echo "")
+[[ -z "$LINES_ADDED" ]] && LINES_ADDED=0
+[[ -z "$LINES_REMOVED" ]] && LINES_REMOVED=0
+
+if [[ -n "$UNTRACKED_LIST" ]]; then
+  echo "$UNTRACKED_LIST" | while IFS= read -r p; do
+    [[ -n "$p" ]] && git reset --quiet -- "$p" 2>/dev/null || true
+  done
+fi
 
 TIMESTAMP_END=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 POST_RUN=$(cat <<EOF
