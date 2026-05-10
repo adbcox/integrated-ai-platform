@@ -199,3 +199,26 @@ ollama_models:
     hf_id_confidence: certain
     provenance_scan_target: deepseek-ai/DeepSeek-Coder-V2-Lite-Instruct
     notes: Mac Mini manifest; same model as mac-studio variant, different tag alias.
+
+hf_direct_models:
+  # ── HuggingFace-direct pulls (not via Ollama) ────────────────────────────
+
+  - hf_repo: mlx-community/Qwen3-Coder-30B-A3B-Instruct-3bit
+    host: macbook-pro
+    architecture: qwen3moe
+    param_count: "30.5B"
+    quantization: mlx-3bit
+    upstream_hf_id: Qwen/Qwen3-Coder-30B-A3B-Instruct
+    upstream_hf_id_notes: >
+      MLX-community quantization of operator-confirmed Qwen3-Coder-30B-A3B-Instruct
+      upstream. Quantization-of-base disposition per D-17-92 quantization-divergence
+      doctrine.
+    derivation_type: direct_quantization
+    hf_id_confidence: operator_confirmed
+    provenance_scan_target: Qwen/Qwen3-Coder-30B-A3B-Instruct
+    provenance_scan_fallbacks:
+      - Qwen/Qwen3-Coder-30B-A3B
+    notes: >
+      Pulled under D-17-10 override 2026-05-10 for vllm-mlx integration test;
+      see docs/_provenance/overrides.log 2026-05-10T19:19:00Z. Block B WP-03
+      will run upstream Qwen scan.

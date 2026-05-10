@@ -8,11 +8,12 @@ model_list:
     model_info:
       supports_function_calling: true
 
-  # Tier 2: Stunt-Double Ollama (local high-fidelity simulation)
+  # Tier 2: Stunt-Double vllm-mlx (MLX-native inference evaluation)
   - model_name: qwen3-coder-30b-stunt-double
     litellm_params:
-      model: ollama_chat/qwen3-coder:30b-coding
-      api_base: http://127.0.0.1:11435
+      model: openai/qwen3-coder-30b-mlx
+      api_base: http://127.0.0.1:8500/v1
+      api_key: "not-needed"
       timeout: 300
       stream_timeout: 300
     model_info:
