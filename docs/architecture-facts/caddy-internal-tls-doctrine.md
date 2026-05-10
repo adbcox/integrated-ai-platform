@@ -20,6 +20,7 @@ Canonical export path:
 The source of truth is the certificate inside the Caddy container:
 
 - `docker exec caddy cat /data/caddy/pki/authorities/local/root.crt`
+- Repo-canonical (D-17-115 Phase 2 cert commit pending): `deployment/caddy/internal-root.crt` for cert content; `scripts/caddy-ca-trust-macos.sh` for scripted macOS trust install; `docs/runbooks/caddy-internal-ca-trust.md` for manual procedures on other OS classes (iOS / iPadOS / tvOS / Android). Rotation tracked in `docs/known-issues/KI-012-caddy-ca-rotation.md`.
 
 ## Device classes
 
