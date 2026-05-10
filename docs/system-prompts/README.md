@@ -1,26 +1,42 @@
 # Local LLM system prompt library
 
-**Status:** Repo-managed library of system-prompt content for the
-platform's local LLM stack. D-17-11 deliverable. D#22 architecture
-reference: this directory is canonical; if a consumer service ships
-inline prompt text that differs from the content here, the content
-here wins and the consumer should be updated.
+**Status:** Repo-managed library of system-prompt documentation for
+the platform's local LLM stack. D-17-11 deliverable.
 
-**What this library is.** A small set of composable system-prompt
-fragments operators select per task. Two axes:
+**Scope (per 2026-05-11 consolidation audit §14).** This directory is
+canonical for the **documentation/doctrine layer** — `tiers/` (T1-T4
+capability classes) and `consumers/` (descriptive integration prose).
+The **runtime preset layer** is canonical at
+`config/prompts/library/v1.0.0/` (D-17-90), where the operational
+prompts are loaded by `bin/persona_loader.py` and referenced by
+`scripts/aider-task.sh`. The 4 mode prompts originally housed at
+`docs/system-prompts/modes/` were merged into the runtime layer and
+retired in the 2026-05-11 cleanup commit; the `capability-permission`
+mode (D-17-23 slot fill) was migrated to
+`config/prompts/library/v1.0.0/08-capability-permission.md`. See
+`docs/_audit/system-prompts-consolidation-audit-2026-05-11.md` for the
+merge provenance and per-pair semantic comparison.
 
-- **Modes** — *what kind of work* the prompt is for (voice-fast,
-  deliberate-analysis, code-review, decomposition-planning,
-  capability-permission). One mode per session.
+**What this library now contains (post-2026-05-11 consolidation).**
+
 - **Tiers** — *which model class* the prompt is being run on
   (T1 general-purpose, T2 throughput, T3 specialty, T4 distributed).
   Tier hints adjust verbosity, tool-use expectations, and the model's
-  self-framing of its capabilities.
+  self-framing of its capabilities. **CANONICAL HERE.**
+- **Consumers** — descriptive integration prose for
+  `consumers/litellm-routing.md` and `consumers/open-webui-integration.md`.
+  **CANONICAL HERE** (Library B's `v1.0.0/05-persona-routing.yaml` is
+  the runtime config; this directory's consumer docs are the
+  descriptive overview).
+- **Modes** — *what kind of work* the prompt is for (voice-fast,
+  deliberate-analysis, code-review, decomposition-planning,
+  capability-permission). **MIGRATED to**
+  `config/prompts/library/v1.0.0/` (presets 01-04 + 08).
 
 A consumer (litellm-gateway, Open WebUI, or operator paste) composes
-one mode + one tier into the running system prompt. See
-`consumers/litellm-routing.md` and `consumers/open-webui-integration.md`
-for the integration patterns.
+one mode (from Library B presets) + one tier (from this directory)
+into the running system prompt. See `consumers/litellm-routing.md`
+and `consumers/open-webui-integration.md` for the integration patterns.
 
 **What this library is NOT.**
 
@@ -69,20 +85,31 @@ Three forces converge:
 ```
 docs/system-prompts/
 ├── README.md                                 (this file)
-├── modes/
-│   ├── voice-fast.md                         (low-latency conversational)
-│   ├── deliberate-analysis.md                (multi-step reasoning, slower)
-│   ├── code-review.md                        (read-only critique posture)
-│   ├── decomposition-planning.md             (split a task into sub-specs)
-│   └── capability-permission.md              (D-17-23 slot — pre-grant permissions)
-├── tiers/
+├── tiers/                                    (CANONICAL HERE)
 │   ├── T1-general-purpose.md                 (default-class chat models)
 │   ├── T2-throughput.md                      (smaller / quantized fast models)
 │   ├── T3-specialty.md                       (code-fine-tunes, domain-specific — D-17-12 evaluation)
 │   └── T4-distributed.md                     (multi-node, exo-cluster — D-17-14)
-└── consumers/
+└── consumers/                                (CANONICAL HERE — descriptive prose)
     ├── litellm-routing.md                    (how litellm-gateway composes prompts)
     └── open-webui-integration.md             (how Open WebUI selects prompts)
+```
+
+Modes have moved to the runtime preset layer (2026-05-11):
+
+```
+config/prompts/library/v1.0.0/                (CANONICAL there)
+├── CATALOG.md
+├── 00-standard-preamble.md
+├── 01-voice-fast.md                          (was modes/voice-fast.md)
+├── 02-deliberate-analysis.md                 (was modes/deliberate-analysis.md)
+├── 03-code-review.md                         (was modes/code-review.md)
+├── 04-decomposition.md                       (was modes/decomposition-planning.md)
+├── 05-persona-routing.yaml                   (runtime routing config)
+├── 06-aider-tier1-presets.md                 (D-17-95)
+├── 07-deepseek-verifier-prompt.md            (D-17-110)
+├── 08-capability-permission.md               (was modes/capability-permission.md; D-17-23)
+└── personas/                                 (D-17-121 runtime layer)
 ```
 
 ---
@@ -135,15 +162,15 @@ operator actually wants the integration live.
 
 ---
 
-## Mode index
+## Mode index — MIGRATED to `config/prompts/library/v1.0.0/`
 
-| Mode | When to use | Notes |
-|---|---|---|
-| voice-fast | Low-latency conversational; voice front-end; quick Q&A | Short responses, no preamble, stop after answering |
-| deliberate-analysis | Multi-step reasoning, design discussion, judgment calls | Verbose framing, allow think-out-loud, name uncertainty |
-| code-review | Reading code without modifying it; PR review; audit | Read-only posture; flag issues but don't propose patches unless asked |
-| decomposition-planning | Splitting a complex task into sub-specs for sub-agents | Output a structured spec list; do not execute the sub-tasks |
-| capability-permission | Pre-grant permissions for capabilities the model commonly hedges on | D-17-23 slot fill — Flavors C/D specifically |
+The 5 mode prompts (voice-fast / deliberate-analysis / code-review /
+decomposition-planning / capability-permission) were merged into the
+runtime preset layer in the 2026-05-11 consolidation cleanup. See
+`config/prompts/library/v1.0.0/CATALOG.md` for the runtime-loaded
+preset library; the per-pair semantic comparison and merge provenance
+is at
+`docs/_audit/system-prompts-consolidation-audit-2026-05-11.md` §14.
 
 ## Tier index
 
@@ -156,11 +183,17 @@ operator actually wants the integration live.
 
 ---
 
-## Slot-binding contract (D-17-23)
+## Slot-binding contract (D-17-23) — MIGRATED to Library B
 
-`modes/capability-permission.md` fills the slot D-17-23 specified in
+The slot-binding contract previously documented `modes/capability-permission.md`
+as the D-17-23 slot fill. As of the 2026-05-11 consolidation, the
+slot fill lives at
+`config/prompts/library/v1.0.0/08-capability-permission.md`.
+The original slot specification at
 `docs/architecture-facts/capability-self-knowledge.md` "Hand-off to
-D-17-11" section. The slot specification:
+D-17-11" section is unchanged; D-17-11's contractual obligation is
+satisfied (the content was authored and delivered) but the runtime
+home of the prompt content is now Library B. The slot specification:
 
 > Prompt content that pre-grants permission for capabilities the
 > operator commonly wants and Claude or local models commonly hedge

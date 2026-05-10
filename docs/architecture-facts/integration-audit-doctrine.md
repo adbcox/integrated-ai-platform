@@ -677,7 +677,7 @@ The accumulation pattern is mechanical: every phase produces audit reports, capa
 - **Cluster D** (`docs/canonical-patterns/`): openproject-connector → `architecture-patterns/`; plane-connector → `_archive/` (Plane CE retired in WP-17-04-06).
 - **Cluster E** (`docs/performance/baseline-metrics.md`): → `_archive/phase-10/`.
 - **Cluster F** (`docs/phases/`): 2 files → per-phase `_archive/phase-NN/`.
-- **Cluster G** (`docs/system-prompts/`): canonical-as-is (operator decision; preserves D-17-11 self-contained library shape).
+- **Cluster G** (`docs/system-prompts/`): canonical-as-is (operator decision; preserves D-17-11 self-contained library shape). *Updated 2026-05-11 per consolidation audit §14: tiers/ and consumers/ remain canonical here; modes/ merged into `config/prompts/library/v1.0.0/01-04 + 08` and retired. The directory-level "canonical-as-is" disposition is now partial — see `docs/_audit/system-prompts-consolidation-audit-2026-05-11.md` for the per-pair semantic comparison that drove the merge.*
 - **Cluster H** (`docs/templates/`): 1 file → `architecture-patterns/`.
 - **Cluster I** (`docs/zabbix/`): consolidated to single canonical `docs/runbooks/zabbix-operations.md`; Phase 12 retro fragments → `_archive/phase-12/`.
 
