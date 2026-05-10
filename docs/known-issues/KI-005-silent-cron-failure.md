@@ -1,3 +1,12 @@
+---
+ki: KI-005
+title: 02:00 backup cron entry produced no log output
+severity: Sev-2
+status: CLOSED
+discovered: 2026-05-01
+phase: D-16-04.1 (cron → launchd migration; frontmatter migration 2026-05-11 per phase-17-closeout-audit Brief A)
+---
+
 # KI-005 — 02:00 backup cron entry produced no log output
 
 Severity: Sev-2 (data loss risk)

@@ -1,3 +1,12 @@
+---
+ki: KI-009
+title: caddy-unbound-parity check queries wrong DNS authority
+severity: Sev-3
+status: RESOLVED
+discovered: 2026-05-01
+phase: D-17-09 / D-17-21 closure (frontmatter migration 2026-05-11 per phase-17-closeout-audit Brief A)
+---
+
 # KI-009 — caddy-unbound-parity check queries wrong DNS authority
 
 **Severity:** Sev-3 (operational; structural bug; not data loss)

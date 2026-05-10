@@ -3,6 +3,7 @@ ki: KI-010
 title: Upstream Qwen/Qwen3-Coder-30B-A3B-Instruct provenance scan deferred to Mac Studio post-Headscale-resolution
 severity: LOW
 status: OPEN
+disposition: accept-as-deferred-pending-on-LAN-session
 discovered: 2026-05-10
 phase: D-17-10 governance fulfillment (Block B WP-04, MLX integration test)
 ---
@@ -117,3 +118,7 @@ from `quantization-of-operator-confirmed-base` to
 - Governance attestation deferred from `verified-*` to
   `operator_confirmed` — doctrine-acknowledged downgrade, not a gap
 - No blocker for migration commit (D-17-10 satisfied via Path B)
+
+## Disposition (2026-05-11)
+
+Disposition recorded per phase-17-closeout-audit §6 Q5 operator approval; status remains OPEN. Accept-as-deferred-pending-on-LAN-session: closure trigger is Mac Studio reachability via Headscale, at which point the wrapper rerun on Mac Studio replaces this disposition with a verified-* verdict.
