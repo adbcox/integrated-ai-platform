@@ -79,13 +79,17 @@ else
   MODEL="qwen3-coder:30b-coding"
 fi
 
-# Provider derivation from model prefix
+# Provider derivation from model prefix or MODEL_HOST
 if [[ "$MODEL" =~ ^litellm/ ]]; then
   PROVIDER="litellm"
 elif [[ "$MODEL" =~ ^ollama ]]; then
   PROVIDER="ollama"
-else
+elif [[ "$MODEL_HOST" == "LiteLLM-local" ]]; then
+  PROVIDER="litellm"
+elif [[ "$MODEL_HOST" == "none" ]]; then
   PROVIDER="unknown"
+else
+  PROVIDER="ollama"
 fi
 
 RUN_DIR="$HOME/local-ai-workstation/agent_runs/${TASK_ID}/goose"
