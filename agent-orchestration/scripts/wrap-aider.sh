@@ -40,19 +40,61 @@ if [[ -z "$TASK_ID" ]] || [[ "$TASK_ID" == "null" ]]; then
 fi
 
 HOST=$(hostname -s)
-ENDPOINT="http://10.55.0.1:11434"
-MODEL_HOST="Thunderbolt"
-PROVIDER="ollama"
 
-# Model selection per §12.4
-if [[ "$MODE" == "architect" ]]; then
-  MAIN_MODEL="ollama_chat/qwen3-coder-next:80B"
-  EDITOR_MODEL="ollama_chat/qwen3-coder:30b-coding"
-  MODEL="qwen3-coder-next:80B"
+# Runtime resolution: probe for available endpoint
+probe_model_host() {
+  if curl -s -m 2 http://10.55.0.1:11434/api/tags >/dev/null 2>&1; then
+    echo "Thunderbolt"
+    return 0
+  elif curl -s -m 2 http://192.168.10.142:11434/api/tags >/dev/null 2>&1; then
+    echo "LAN"
+    return 0
+  elif curl -s -m 2 http://localhost:4000/v1/models >/dev/null 2>&1; then
+    echo "LiteLLM-local"
+    return 0
+  fi
+  echo "none"
+  return 1
+}
+
+MODEL_HOST=$(probe_model_host)
+case "$MODEL_HOST" in
+  Thunderbolt) ENDPOINT="http://10.55.0.1:11434" ;;
+  LAN) ENDPOINT="http://192.168.10.142:11434" ;;
+  LiteLLM-local) ENDPOINT="http://localhost:4000" ;;
+  *) ENDPOINT=""; MODEL_HOST="none" ;;
+esac
+
+# Model selection: extract from task brief, fallback to mode-based default per §12.4
+BRIEF_MODEL=$(jq -r '.model // null' "$TASK_BRIEF")
+if [[ "$BRIEF_MODEL" != "null" && -n "$BRIEF_MODEL" ]]; then
+  MODEL="$BRIEF_MODEL"
+  if [[ "$MODE" == "architect" ]]; then
+    MAIN_MODEL="ollama_chat/${MODEL}"
+    EDITOR_MODEL="ollama_chat/qwen3-coder:30b-coding"
+  else
+    MAIN_MODEL="ollama_chat/${MODEL}"
+    EDITOR_MODEL=""
+  fi
 else
-  MAIN_MODEL="ollama_chat/qwen3-coder:30b-coding"
-  EDITOR_MODEL=""
-  MODEL="qwen3-coder:30b-coding"
+  if [[ "$MODE" == "architect" ]]; then
+    MAIN_MODEL="ollama_chat/qwen3-coder-next:80B"
+    EDITOR_MODEL="ollama_chat/qwen3-coder:30b-coding"
+    MODEL="qwen3-coder-next:80B"
+  else
+    MAIN_MODEL="ollama_chat/qwen3-coder:30b-coding"
+    EDITOR_MODEL=""
+    MODEL="qwen3-coder:30b-coding"
+  fi
+fi
+
+# Provider derivation from model prefix
+if [[ "$MAIN_MODEL" =~ ^litellm/ ]]; then
+  PROVIDER="litellm"
+elif [[ "$MAIN_MODEL" =~ ^ollama ]]; then
+  PROVIDER="ollama"
+else
+  PROVIDER="unknown"
 fi
 
 RUN_DIR="$HOME/local-ai-workstation/agent_runs/${TASK_ID}/aider"
@@ -97,13 +139,13 @@ cd "$WORKTREE"
 FILES_BEFORE=$(find . -type f \( -name '*.py' -o -name '*.js' -o -name '*.json' \) 2>/dev/null | sort || true)
 
 if [[ "$MODE" == "architect" ]]; then
-  aider --architect --model "$MAIN_MODEL" --editor-model "$EDITOR_MODEL" <<< "$TASK_SUMMARY" 2>&1 | tee "$RUN_DIR/execution.log"
+  aider --architect --model "$MAIN_MODEL" --editor-model "$EDITOR_MODEL" --message "$TASK_SUMMARY" --yes-always 2>&1 | tee "$RUN_DIR/execution.log"
   RESULT=$?
 elif [[ "$MODE" == "ask" ]]; then
-  aider --chat-mode ask --model "$MAIN_MODEL" <<< "$TASK_SUMMARY" 2>&1 | tee "$RUN_DIR/execution.log"
+  aider --chat-mode ask --model "$MAIN_MODEL" --message "$TASK_SUMMARY" --yes-always 2>&1 | tee "$RUN_DIR/execution.log"
   RESULT=$?
 else
-  aider --model "$MAIN_MODEL" <<< "$TASK_SUMMARY" 2>&1 | tee "$RUN_DIR/execution.log"
+  aider --model "$MAIN_MODEL" --message "$TASK_SUMMARY" --yes-always 2>&1 | tee "$RUN_DIR/execution.log"
   RESULT=$?
 fi
 

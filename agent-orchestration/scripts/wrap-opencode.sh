@@ -41,10 +41,47 @@ fi
 
 # Resolve host information
 HOST=$(hostname -s)
-ENDPOINT="http://10.55.0.1:11434"
-MODEL_HOST="Thunderbolt"
-PROVIDER="ollama"
-MODEL="qwen3-coder:30b-coding"
+
+# Runtime resolution: probe for available endpoint
+probe_model_host() {
+  if curl -s -m 2 http://10.55.0.1:11434/api/tags >/dev/null 2>&1; then
+    echo "Thunderbolt"
+    return 0
+  elif curl -s -m 2 http://192.168.10.142:11434/api/tags >/dev/null 2>&1; then
+    echo "LAN"
+    return 0
+  elif curl -s -m 2 http://localhost:4000/v1/models >/dev/null 2>&1; then
+    echo "LiteLLM-local"
+    return 0
+  fi
+  echo "none"
+  return 1
+}
+
+MODEL_HOST=$(probe_model_host)
+case "$MODEL_HOST" in
+  Thunderbolt) ENDPOINT="http://10.55.0.1:11434" ;;
+  LAN) ENDPOINT="http://192.168.10.142:11434" ;;
+  LiteLLM-local) ENDPOINT="http://localhost:4000" ;;
+  *) ENDPOINT=""; MODEL_HOST="none" ;;
+esac
+
+# Model selection: extract from task brief, fallback to default
+BRIEF_MODEL=$(jq -r '.model // null' "$TASK_BRIEF")
+if [[ "$BRIEF_MODEL" != "null" && -n "$BRIEF_MODEL" ]]; then
+  MODEL="$BRIEF_MODEL"
+else
+  MODEL="qwen3-coder:30b-coding"
+fi
+
+# Provider derivation from model prefix
+if [[ "$MODEL" =~ ^litellm/ ]]; then
+  PROVIDER="litellm"
+elif [[ "$MODEL" =~ ^ollama ]]; then
+  PROVIDER="ollama"
+else
+  PROVIDER="unknown"
+fi
 
 # Create run directory
 RUN_DIR="$HOME/local-ai-workstation/agent_runs/${TASK_ID}/opencode"
