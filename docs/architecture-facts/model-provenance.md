@@ -176,8 +176,24 @@ rest, separate mechanisms (filesystem integrity monitoring, Vault-
 stored hashes captured at install time) would be required. Out of
 scope for D-17-10.
 
+A fourth verdict-source class, **operator-accepted (Path B)**, is
+a doctrine-level disposition layered on top of any of the three
+Path A sources above (most commonly scan-confirmed in its failure
+mode). Path B applies when the kit's automated fingerprinting
+workload is blocked by hardware constraint and the operator
+accepts the next-best evidence class as the active doctrine grade.
+Full trigger conditions, disposition outcome, upgrade path, and
+audit requirements: see
+`docs/architecture-facts/model-provenance-doctrine.md`
+§"Operator-accepted (Path B) — doctrine-level disposition". First
+precedent: `docs/_provenance/backfill-2026-05-10.md`
+(`Qwen/Qwen3-Coder-30B-A3B-Instruct`, 2026-05-10); upgrade path
+tracked as KI-010.
+
 See `docs/_provenance/backfill-2026-05-02.md` for the per-model
-results and verdict-source labels.
+results and verdict-source labels; see also
+`docs/architecture-facts/model-provenance-doctrine.md` for the
+canonical disposition authority.
 
 ## Known kit limitations (as of v1.0.0)
 

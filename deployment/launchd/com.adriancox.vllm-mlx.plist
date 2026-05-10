@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>com.adriancox.vllm-mlx</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/Users/adriancox/local-ai-workstation/venvs/vllm-mlx/bin/vllm-mlx</string>
+    <string>serve</string>
+    <string>/Users/adriancox/local-ai-workstation/models/mlx/qwen3-coder-30b-3bit</string>
+    <string>--served-model-name</string>
+    <string>qwen3-coder-30b-mlx</string>
+    <string>--host</string>
+    <string>127.0.0.1</string>
+    <string>--port</string>
+    <string>8500</string>
+    <string>--tool-call-parser</string>
+    <string>qwen3_coder</string>
+    <string>--enable-auto-tool-choice</string>
+    <string>--max-num-seqs</string>
+    <string>4</string>
+    <string>--enable-prefix-cache</string>
+    <string>--log-level</string>
+    <string>INFO</string>
+  </array>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>PATH</key><string>/Users/adriancox/local-ai-workstation/venvs/vllm-mlx/bin:/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+  </dict>
+  <key>RunAtLoad</key><true/>
+  <key>KeepAlive</key><true/>
+  <key>StandardOutPath</key><string>/Users/adriancox/local-ai-workstation/logs/vllm-mlx.stdout.log</string>
+  <key>StandardErrorPath</key><string>/Users/adriancox/local-ai-workstation/logs/vllm-mlx.stderr.log</string>
+  <key>WorkingDirectory</key><string>/Users/adriancox/local-ai-workstation</string>
+</dict>
+</plist>

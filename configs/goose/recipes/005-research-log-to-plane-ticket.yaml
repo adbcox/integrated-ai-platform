@@ -1,0 +1,30 @@
+name: Research Log to Plane Ticket
+description: |
+  Convert a research log entry or decision memo into a Plane ticket draft,
+  ready for operator review and submission.
+
+instructions: |
+  Take research findings and create a well-formed Plane ticket including:
+  - Title derived from research summary
+  - Description with findings and context
+  - Suggested labels and priority
+  - Links to related research or decisions
+  - Acceptance criteria if actionable
+  - Assign to appropriate team if known
+
+parameters:
+  - name: research_log_path
+    description: "Path to research log entry or markdown file"
+    required: true
+  - name: project_key
+    description: "Plane project key for ticket (e.g., ENG, OPS)"
+    required: false
+    default: "RESEARCH"
+
+# E-003 host substitution: MacBook uses LiteLLM proxy with model_name qwen2.5-coder
+model: qwen2.5-coder
+
+tags:
+  - research
+  - ticketing
+  - workflow-automation

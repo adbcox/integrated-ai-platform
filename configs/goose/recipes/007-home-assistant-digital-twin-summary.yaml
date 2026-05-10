@@ -1,0 +1,30 @@
+name: Home Assistant Digital Twin Summary
+description: |
+  Summarize Home Assistant automation state, digital twin configuration,
+  and operational status for review and optimization.
+
+instructions: |
+  Analyze Home Assistant data and produce a summary including:
+  - Active automations and scripts
+  - Digital twin entity status
+  - Performance metrics (latency, success rate)
+  - Recent state changes or anomalies
+  - Recommended optimizations or fixes
+  - Integration health status
+
+parameters:
+  - name: config_path
+    description: "Path to Home Assistant configuration or exported state"
+    required: true
+  - name: time_range
+    description: "Time period for analysis"
+    required: false
+    default: "last 7 days"
+
+# E-003 host substitution: MacBook uses LiteLLM proxy with model_name qwen2.5-coder
+model: qwen2.5-coder
+
+tags:
+  - operations
+  - home-automation
+  - digital-twin

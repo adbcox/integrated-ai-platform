@@ -1,0 +1,11 @@
+{
+  "name": "goose-local-zabbix",
+  "description": "Zabbix monitoring operations - alert analysis, incident classification",
+  "provider": "ollama",
+  "model": "qwen3-coder:30b-coding",
+  "api_host": "http://10.55.0.1:11434",
+  "fallback_api_host": "http://192.168.10.142:11434",
+  "permissions": "ops_read",
+  "operational_scope": "zabbix",
+  "recipe_set": ["003-zabbix-incident-summary"]
+}

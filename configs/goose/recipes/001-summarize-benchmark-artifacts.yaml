@@ -1,0 +1,58 @@
+name: Summarize Benchmark Artifacts
+description: |
+  Analyze benchmark run artifacts and produce a structured comparison summary.
+  Takes JSONL artifact logs from multiple agent runs and synthesizes them into
+  a qualitative and quantitative analysis of performance differences.
+
+instructions: |
+  You are a technical benchmark analyst. Your task is to review artifacts from
+  agent benchmark runs and produce a comprehensive summary.
+
+  Your input will be:
+  1. Path(s) to artifact directories from benchmark runs
+  2. Agent names and task descriptions
+  3. Performance metrics (latency, token usage, success/failure)
+  4. Qualitative outputs (code quality, architectural decisions)
+
+  Analyze:
+  - Task completion: did the agent successfully complete the task?
+  - Code quality: was the output maintainable, tested, documented?
+  - Process efficiency: number of iterations, refinements, backtracking
+  - Time/token metrics: latency, inference tokens, total cost
+  - Safety: did the agent respect worktree boundaries and permission profiles?
+  - Serena usage impact: if applicable, measure Serena's contribution to results
+
+  Produce a summary document with:
+  1. Executive summary (2-3 sentences)
+  2. Per-task breakdown with metrics table
+  3. Qualitative comparison (strengths/weaknesses per agent)
+  4. Recommendations (which agent for which task class)
+  5. Any anomalies or concerns
+
+  Output format: Markdown document suitable for promotion review.
+
+parameters:
+  - name: artifact_dirs
+    description: "Comma-separated paths to benchmark artifact directories"
+    required: true
+  - name: task_description
+    description: "Description of the task that was benchmarked"
+    required: true
+  - name: agents_tested
+    description: "Comma-separated list of agent names (e.g., opencode,aider,cline)"
+    required: true
+  - name: output_path
+    description: "Path where summary should be written"
+    required: false
+    default: "./benchmark-summary.md"
+
+# E-003 host substitution: MacBook uses LiteLLM proxy with model_name qwen2.5-coder
+# Canonical model (§10 Goose): qwen3-coder:30b-coding on Mac Studio Thunderbolt
+# MacBook substitute: qwen2.5-coder via http://localhost:4000
+model: qwen2.5-coder
+
+tags:
+  - analysis
+  - benchmarking
+  - promotion-gate
+  - goose-orchestration

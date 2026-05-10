@@ -1,0 +1,35 @@
+{
+  "task_id": "TASK-0001",
+  "task_summary": "Implement a Python utility to convert JSON files to CSV format with configurable field selection",
+  "aider_output_files": ["json_to_csv.py"],
+  "preferred_executor": "aider",
+  "repo": "integrated-ai-platform",
+  "worktree": "/Users/adriancox/local-ai-workstation/worktrees/integrated-ai-platform-aider",
+  "files_likely_relevant": [
+    "agent-orchestration/task-briefs/TASK-0001-json-to-csv.json",
+    "agent-orchestration/examples/sample-data.json"
+  ],
+  "evidence": [
+    "JSON format: list of objects with fields: id, name, email, country, created_at",
+    "CSV output: header row + data rows, fields: id, name, email",
+    "Error handling: graceful message for missing fields, invalid JSON",
+    "Command-line interface: python json_to_csv.py <input.json> <output.csv> [--fields field1,field2,...]"
+  ],
+  "commands_to_run_first": [
+    "ls -la agent-orchestration/examples/",
+    "head -20 agent-orchestration/examples/sample-data.json"
+  ],
+  "constraints": [
+    "No external dependencies beyond stdlib (csv, json, argparse)",
+    "Must handle file I/O errors gracefully",
+    "Output CSV must be RFC 4180 compliant",
+    "File size limit: 1GB input JSON",
+    "No streaming required (in-memory processing acceptable)"
+  ],
+  "risk_level": "low",
+  "definition_of_done": "1. json_to_csv.py script created in repo root\n2. Handles valid JSON with list of objects\n3. Supports --fields flag for field selection\n4. Produces valid RFC 4180 CSV output\n5. Exits with code 0 on success, non-zero on error\n6. Unit tests written (3+ test cases)\n7. README.md documents usage with examples\n8. All tests pass",
+  "handoff_reason": "A/B proof-of-concept comparing OpenCode and Aider agent capabilities on a well-defined, short-duration task. Task is intentionally simple to isolate agent behavior for comparison. Success metrics: correctness, completeness, token efficiency, duration.",
+  "serena_required": false,
+  "artifact_required": true,
+  "rollback_expectation": "Not applicable for experimental A/B run; both agent branches are isolated in worktrees (agent-eval/*). No rollback required; results are captured in artifact form only."
+}

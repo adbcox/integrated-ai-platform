@@ -89,6 +89,12 @@ This is the "AI workstation" or "platform". Pre-2026 alternative terminology (th
 - Avoid Mac-only patterns unless explicitly approved as platform-specific (KNOWN-LIMITATION).
 - Out-of-repo compose changes (`~/control-center-stack/stacks/*`) require pre/post snapshots in the rewire log because git doesn't track them automatically.
 
+### Network Topology
+- LAN: 192.168.10.0/24. OPNsense at .1 on Minisforum MS-01 is the sole DNS authority (Dnsmasq; never Unbound, never Kea per D-17-21).
+- Wiring: OPNsense → Ruckus ICX 7150-C12P-2X1G PoE+ switch via 10G DAC (not through the Deco AP — that path was the SPOF for AI workloads, corrected). Deco BE95 in AP mode only.
+- Hosts: Mac Mini M4 Pro at .145 (orchestration, 48 GB), Mac Studio M3 Ultra at .142 (96 GB, delivered, currently NOT joined to Headscale — see KI-010 for the dependency this creates), Threadripper + RTX 4070 (GPU compute: ingestion at scale, AI image/video, 3D model gen), Ryzen 9900X (daily driver), QNAP at .201 (NAS), Home Assistant at .141 (sole canonical instance per D-17-34).
+- Current primary work surface: MacBook Pro 32 GB.
+
 ### Active follow-up lists
 
 Phase-specific follow-up lists live in their phase plan / closeout
@@ -185,6 +191,18 @@ deliverable table with a fresh D-NN-MM ID.
 - URL-embedded credentials using non-URL-safe characters (must be hex or other URL-safe encoding; base64's `/+=` break DSN parsing)
 - Pre-compose launcher scripts (e.g., `bin/oss_wave_openhands.sh`) — deprecated; compose is canonical service lifecycle
 - Display of credential values during diagnostics (use hash-based equality verification only; if diagnosis appears to require value inspection, stop and surface for user decision)
+- `git commit --no-verify` is forbidden — pre-commit hooks are load-bearing security (`detect-secrets`, `yamllint`, trim-trailing-whitespace, end-of-files, JSON/YAML validation, plus phase/ADR/launchd/Mac-Studio-reach/Caddy-DNS-parity conditional checks). Bypassing the gate is not an option; fix the cause when a hook blocks a commit.
+- `.secrets.baseline` auto-rebuild via `detect-secrets scan --baseline .secrets.baseline` is forbidden — full-rebuild sweeps unrelated repo-wide findings (`connectors.yaml`, `obot/tools.yaml`, `nextcloud/vault-mapping.yaml`, `qnap-syncthing/qnap-config.xml.snapshot`, `vault-mapping.yaml`) into the whitelist. Surgical hand-edits only: add specific new entries in alphabetical position, refresh `generated_at`, no other changes.
+- LiteLLM's `openai/` provider requires a non-empty `api_key` field even for unauthenticated upstreams — the literal placeholder `"not-needed"` is the documented convention. detect-secrets flags this as a false positive; whitelist via surgical `.secrets.baseline` entry per the rule above.
+
+### Common Failure Modes
+
+Patterns that recur and should be actively guarded against during brief authoring and execution:
+
+- **Ollama-anchoring** — defaulting to Ollama-shaped solutions even after architectural demotion. vllm-mlx is the default stunt-double now; tier-1 Ollama remains for small-model fallback only. When in doubt, route through the new pattern.
+- **Stale-context drafting** — assuming a deliverable is greenfield when it's already DONE. Always check `docs/PROJECT_FRAMEWORK.md` §9 status table and `ls docs/phase-NN/` before referencing any deliverable. Recurring miss; treat as default failure mode.
+- **Brief bloat** — long briefs that obscure the actual ask. Tight is better. Pre-flight reads belong inside the brief; speculative content does not.
+- **Friction stacking** — per-step approval requests instead of autonomous execution between checkpoint gates. Brief should specify hard stops; everything else runs through.
 
 ### LLM Access Doctrine
 
@@ -215,6 +233,26 @@ Use `claude-pro` ONLY for high-judgment tasks where Anthropic-quality reasoning 
 - `reviewer` (qwen2.5-coder:7b): validates implementation against spec
 
 The orchestrator (Claude Code at the top level) delegates implementation work to subagents to minimize its own quota usage when running under `claude-pro`. Under `claude-local`, the entire chain runs on the Mac Mini's Ollama.
+
+### Current Inference Stack
+
+State as of HEAD `81db99ea`; re-verify on session start since this changes faster than file commits.
+
+- Tier-1 Ollama on port 11434 (untouched; qwen2.5-coder:7b for fast tasks)
+- LiteLLM proxy on port 4000 (config at `configs/litellm/config.yaml`; live path at `~/local-ai-workstation/configs/litellm/config.yaml` is symlinked to the repo file)
+- vllm-mlx on port 8500 (default stunt-double; persistent via launchd `com.adriancox.vllm-mlx`; serves `mlx-community/Qwen3-Coder-30B-A3B-Instruct-3bit`)
+- Ollama stunt-double on port 11435 = DEMOTED (plist renamed to `.plist.disabled`, preserved for one-step rollback)
+
+Cross-reference: @docs/orchestration-layer-build-mlx-integration-test.md
+
+### Provenance Governance
+
+- Cisco Provenance Kit at `~/repos/model-provenance-kit/` on Mac Mini and MacBook (NOT a repo subdir; outside the integrated-ai-platform repo).
+- Wrappers: `scripts/verify-model-provenance.sh`, `scripts/ollama-pull-verified.sh`, `scripts/hf-download-verified.sh`, `bin/ollama_pull_with_provenance.sh`.
+- Doctrine: @docs/architecture-facts/model-provenance.md, @docs/architecture-facts/model-provenance-doctrine.md.
+- Override log: `docs/_provenance/overrides.log`. Backfill docs: `docs/_provenance/backfill-YYYY-MM-DD.md`.
+- Map files (BOTH active, neither supersedes): `config/model-hf-map.yaml` (D-17-92, flat, used by `verify-model-provenance.sh`) AND `config/model_provenance/ollama_to_hf_mapping.yaml` (D-17-122, structured; has `hf_direct_models:` stanza for HF-direct pulls; used by `ollama_pull_with_provenance.sh`).
+- Verdict classes: verified-specific (exit 0), unverified (exit 1), marginal (exit 2), verified-base-family (exit 3). Plus operator-accepted (Path B) — doctrine-level disposition for hardware-blocked scans, not a wrapper exit code; see `model-provenance-doctrine.md` §"Operator-accepted (Path B)".
 
 ### Execution surfaces
 

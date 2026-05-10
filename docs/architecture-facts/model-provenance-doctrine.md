@@ -208,10 +208,113 @@ models (created via `ollama create`) inherit provenance from their base model.
 | `LIKELY` | 0.70–0.84 | Review; accept or re-scan with deep-signals |
 | `WEAK_MATCH` | 0.50–0.69 | Investigate; do not use in production without review |
 | `NO_MATCH` | < 0.50 | Block; surface to operator |
-| `SCAN_OOM` | — | Kit OOM-killed; re-scan on Mac Studio (96GB) |
+| `SCAN_OOM` | — | Kit OOM-killed; re-scan on Mac Studio (96GB) — or apply operator-accepted (Path B) disposition when rescan is deferred (see below) |
 | `UNKNOWN` | — | HF repo missing / kit error / HF ID unconfirmed; operator resolves |
 | `N_A` | — | Cloud-only or Modelfile derivative; provenance inherited or N/A |
 | `N_A_GATED` | — | Gated HF model; provision `secret/huggingface/admin` |
+
+### Operator-accepted (Path B) — doctrine-level disposition
+
+`operator-accepted (Path B)` is a **doctrine-level disposition class** that
+formalizes operator handling of `SCAN_OOM` and other hardware-blocked scans.
+It is layered on top of the wrapper exit code via the `disposition` field in
+the per-model JSON record. The wrapper itself does not emit a new exit code
+for Path B — it still emits `1` (scan-failed) with `scan_rc=137` (SIGKILL/OOM)
+or `scan_rc=1` (graceful failure). Introducing a new wrapper exit code for
+Path B is a wrapper-script change, out of scope here.
+
+**Trigger conditions (all must hold):**
+
+1. The kit's automated fingerprinting workload exceeds available hardware
+   resources. Canonical case: BF16 weight-level fingerprinting of >15B-param
+   models on hosts with <96 GB unified memory. Signal: `scan_rc=137`
+   (SIGKILL/OOM) or runtime >1h before kit-internal failure on a model where
+   the upstream family IS in the deep-signals catalog (i.e. failure mode is
+   hardware, not catalog absence).
+2. The upstream's `hf_id_confidence` is already `operator_confirmed` in
+   `config/model_provenance/ollama_to_hf_mapping.yaml`.
+3. The publisher is from the known-good set (Alibaba/Qwen, Mistral AI,
+   DeepSeek, Google/Gemma, Meta/Llama, NVIDIA, IBM, etc., plus mlx-community
+   for derivatives of verified bases).
+
+**Disposition outcome:**
+
+- Falls back to the upstream's existing `operator_confirmed` doctrine class
+  as the active grade. The operator's pre-attempt identity confirmation now
+  carries the evidentiary load that the scan would have carried.
+- Downstream derivatives (quantized variants, MLX builds, Modelfile
+  derivatives) inherit `quantization-of-operator-confirmed-base` per D-17-92
+  quantization-divergence doctrine. Distinguishable from
+  `quantization-of-verified-base` (the class that applies post-rescan).
+
+**Upgrade path:**
+
+When capable hardware becomes available (canonical case: Mac Studio 96 GB
+unified memory reachable via Headscale), rerun the scan:
+
+```bash
+scripts/verify-model-provenance.sh --hf <upstream-repo>
+```
+
+On success (exit 0 or 3), the verdict promotes from `operator-accepted
+(Path B)` to `verified-specific` or `verified-base-family`. Promotion
+procedure:
+
+1. Wrapper overwrites the per-model JSON record with new verdict + top_matches
+2. Append a "Promotion" subsection to the relevant
+   `docs/_provenance/backfill-YYYY-MM-DD.md` noting verdict, rescan date,
+   and host
+3. Update any related integration-test docs' provenance-gate-status lines
+4. Flip the tracking KI to RESOLVED with close-out summary
+
+Verdict promotion automatically promotes the derivative chain from
+`quantization-of-operator-confirmed-base` to `quantization-of-verified-base`.
+
+**Audit requirements:**
+
+Every operator-accepted disposition MUST reference all three of:
+
+1. **Override entry** in `docs/_provenance/overrides.log` capturing the
+   override decision timestamp, source (`hf-direct` / `ollama-pull`), and
+   `revision_sha` if the pulled artifact has a pinned revision.
+2. **Backfill doc** at `docs/_provenance/backfill-YYYY-MM-DD.md` capturing
+   the disposition rationale, scan attempt records (host, RAM, scan_rc,
+   runtime), the operational-vs-governance distinction, and the upgrade-path
+   note.
+3. **Open KI entry** at `docs/known-issues/KI-NNN-<slug>.md` tracking the
+   upgrade path until promotion completes. The KI's "Trigger to close" must
+   name capable hardware + the wrapper invocation.
+
+Absence of any of the three closes the disposition's legitimacy. Path B is
+not a free pass; it is an accountable hold pattern.
+
+**Relationship to Path A verdict-source vocabulary:**
+
+Path A (in `docs/architecture-facts/model-provenance.md` §"Backfill verdicts:
+scan-confirmed vs inferred") enumerates three verdict-source classes for
+backfill rows: `scan-confirmed`, `catalog-inferred`, `mapping-inferred`.
+`operator-accepted (Path B)` is the fourth class, applied when scan-confirmed
+pursuit is blocked by hardware constraint and the operator accepts the
+next-best evidence class as the active doctrine class. Path B can layer on
+top of any of the three Path A sources but is most commonly paired with
+scan-confirmed (failure mode) — the scan was attempted, failed for hardware
+reasons, and the operator accepts the documented failure record as the
+governance artifact.
+
+**First precedent (worked example):**
+
+`docs/_provenance/backfill-2026-05-10.md` — disposition recorded for
+`Qwen/Qwen3-Coder-30B-A3B-Instruct` on 2026-05-10. Two scan attempts both
+OOM'd on BF16 fingerprinting:
+
+- mac-mini 16 GB, scan_rc=1 (graceful failure), 2026-05-04
+- macbook-pro 32 GB, scan_rc=137 (SIGKILL/OOM after 9564s), 2026-05-10
+
+Upgrade path tracked as KI-010 (Mac Studio rescan). Downstream derivative
+`mlx-community/Qwen3-Coder-30B-A3B-Instruct-3bit` (MLX-3bit quantization,
+12.5 GiB on disk) carries `quantization-of-operator-confirmed-base` class
+pending rescan. Override entry: `docs/_provenance/overrides.log`
+2026-05-10T19:19:00Z.
 
 ### Backfill results (2026-05-05)
 

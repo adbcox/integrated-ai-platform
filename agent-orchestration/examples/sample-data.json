@@ -1,0 +1,37 @@
+[
+  {
+    "id": 1,
+    "name": "Alice Johnson",
+    "email": "alice.johnson@example.com",
+    "country": "United States",
+    "created_at": "2024-01-15T10:30:00Z"
+  },
+  {
+    "id": 2,
+    "name": "Bob Smith",
+    "email": "bob.smith@example.com",
+    "country": "United Kingdom",
+    "created_at": "2024-02-20T14:45:30Z"
+  },
+  {
+    "id": 3,
+    "name": "Carol White",
+    "email": "carol.white@example.com",
+    "country": "Canada",
+    "created_at": "2024-03-10T09:15:00Z"
+  },
+  {
+    "id": 4,
+    "name": "David Brown",
+    "email": "david.brown@example.com",
+    "country": "Australia",
+    "created_at": "2024-04-05T16:20:45Z"
+  },
+  {
+    "id": 5,
+    "name": "Eve Davis",
+    "email": "eve.davis@example.com",
+    "country": "New Zealand",
+    "created_at": "2024-05-12T11:00:00Z"
+  }
+]

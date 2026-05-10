@@ -5,8 +5,51 @@
   "exit_code": 1,
   "threshold": 0.7,
   "kit_version": "1.0.0",
-  "timestamp_utc": "2026-05-03T16:44:01Z",
+  "timestamp_utc": "2026-05-10T16:16:13Z",
   "scan_rc": 137,
   "matches": [],
-  "note": "Provenance Kit scan failed; treat as unverified."
+  "note": "Provenance Kit scan failed; treat as unverified.",
+  "disposition": {
+    "class": "scan-failed/SCAN_OOM, operator-accepted (Path B)",
+    "accepted_utc": "2026-05-10",
+    "fallback_doctrine_class": "operator_confirmed",
+    "fallback_source": "config/model_provenance/ollama_to_hf_mapping.yaml line 23 (operator-confirmed 2026-05-05)",
+    "rationale": "BF16 fingerprinting workload (~60 GB) exceeds available unified memory on macbook-pro (32 GB) and mac-mini (16 GB). HF ID was already operator-confirmed pre-attempt; Cisco kit scan would have promoted operator_confirmed to verified-*, but operator-accepted SCAN_OOM is the doctrine-acknowledged next-best class when scan is hardware-blocked. Operational use of the MLX-3bit serving derivative is unaffected (12.5 GiB on disk, RSS 1.7 GB serving on macbook-pro 32 GB).",
+    "supplements_wrapper_record": "These fields supplement the wrapper-written body. A future rescan (e.g. on Mac Studio) overwrites the wrapper-managed top-level fields; canonical disposition record lives in docs/_provenance/backfill-2026-05-10.md."
+  },
+  "attempts": [
+    {
+      "date": "2026-05-04",
+      "host": "mac-mini",
+      "ram_gb": 16,
+      "scan_target": "Qwen/Qwen3-Coder-30B-A3B",
+      "scan_rc": 1,
+      "exit_mode": "graceful failure (insufficient memory)",
+      "record": "docs/_provenance/Qwen__Qwen3-Coder-30B-A3B.json"
+    },
+    {
+      "date": "2026-05-10",
+      "host": "macbook-pro",
+      "ram_gb": 32,
+      "scan_target": "Qwen/Qwen3-Coder-30B-A3B-Instruct",
+      "scan_rc": 137,
+      "exit_mode": "SIGKILL/OOM (process killed by OS during fingerprint computation)",
+      "runtime_seconds_before_kill": 9564,
+      "record": "docs/_provenance/Qwen__Qwen3-Coder-30B-A3B-Instruct.json (this file)"
+    }
+  ],
+  "upgrade_path": {
+    "trigger": "Mac Studio (96 GB unified memory) reachable post-Headscale-resolution",
+    "command": "scripts/verify-model-provenance.sh --hf Qwen/Qwen3-Coder-30B-A3B-Instruct",
+    "expected_verdict": "verified-specific OR verified-base-family (qwen--qwen family is in deep-signals catalog)",
+    "promotion_doctrine": "operator_confirmed → verified-{specific,base-family}; MLX-3bit derivative chain promotes from quantization-of-operator-confirmed-base → quantization-of-verified-base per D-17-92",
+    "tracking": "docs/known-issues/KI-010-upstream-qwen-coder-30b-provenance-scan-deferred.md"
+  },
+  "cross_references": {
+    "override_entry": "docs/_provenance/overrides.log 2026-05-10T19:19:00Z",
+    "mapping_config": "config/model_provenance/ollama_to_hf_mapping.yaml hf_direct_models block",
+    "backfill_record": "docs/_provenance/backfill-2026-05-10.md",
+    "integration_test_doc": "docs/orchestration-layer-build-mlx-integration-test.md §9",
+    "doctrine": "docs/architecture-facts/model-provenance.md (D-17-92 quantization-divergence; D-17-122 SCAN_OOM disposition class)"
+  }
 }

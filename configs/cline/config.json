@@ -1,0 +1,26 @@
+{
+  "apiProvider": "ollama",
+  "ollamaBaseUrl": "http://10.55.0.1:11434",
+  "ollamaModelId": "qwen3-coder:30b-coding",
+  "fallbackBaseUrl": "http://192.168.10.142:11434",
+  "clineId": "default",
+  "theme": "dark",
+  "operationalMode": {
+    "planBefore": true,
+    "requireApproval": true,
+    "noUnattendedDestructive": true,
+    "restrictedToWorktree": true,
+    "worktreeBase": "/Users/adriancox/local-ai-workstation/worktrees/integrated-ai-platform-cline"
+  },
+  "toolSettings": {
+    "allowRead": true,
+    "allowWrite": true,
+    "allowExecute": true,
+    "forbiddenPaths": [
+      "**/.env",
+      "**/*.key",
+      "**/*.pem",
+      "**/secrets/**"
+    ]
+  }
+}

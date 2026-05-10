@@ -1,0 +1,17 @@
+{
+  "task_id": "TASK-0000",
+  "task_summary": "",
+  "preferred_executor": "opencode",
+  "repo": "",
+  "worktree": "",
+  "files_likely_relevant": [],
+  "evidence": [],
+  "commands_to_run_first": [],
+  "constraints": [],
+  "risk_level": "low",
+  "definition_of_done": "",
+  "handoff_reason": "",
+  "serena_required": true,
+  "artifact_required": true,
+  "rollback_expectation": ""
+}

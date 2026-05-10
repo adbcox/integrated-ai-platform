@@ -1,0 +1,29 @@
+name: QNAP Runbook Review
+description: |
+  Review QNAP operational runbooks for completeness, clarity, and safety.
+  Identify missing sections, outdated commands, or risky operations.
+
+instructions: |
+  Review a QNAP runbook and produce a report including:
+  - Runbook purpose and scope summary
+  - Completeness check (do all sections exist?)
+  - Clarity assessment (are commands unambiguous?)
+  - Safety review (are destructive operations clearly marked?)
+  - Suggestions for improvement
+  - Any required updates based on current QNAP version
+
+parameters:
+  - name: runbook_path
+    description: "Path to QNAP runbook markdown file"
+    required: true
+  - name: qnap_version
+    description: "Current QNAP firmware version (e.g., 5.3.2)"
+    required: false
+
+# E-003 host substitution: MacBook uses LiteLLM proxy with model_name qwen2.5-coder
+model: qwen2.5-coder
+
+tags:
+  - operations
+  - documentation
+  - infrastructure

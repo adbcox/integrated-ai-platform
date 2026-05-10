@@ -1,0 +1,29 @@
+name: ARR/Media Health Report
+description: |
+  Generate a health report for ARR (Annual Recurring Revenue) or media
+  assets, with status metrics and recommended actions.
+
+instructions: |
+  Produce a health report including:
+  - Current status summary
+  - Key metrics (growth, churn, utilization)
+  - Anomalies or trends of concern
+  - Recommended maintenance actions
+  - Forecast or projections if applicable
+
+parameters:
+  - name: asset_type
+    description: "Type of asset (arr, media, storage, etc.)"
+    required: true
+  - name: lookback_period
+    description: "Time period for analysis (e.g., last 30 days)"
+    required: false
+    default: "last 30 days"
+
+# E-003 host substitution: MacBook uses LiteLLM proxy with model_name qwen2.5-coder
+model: qwen2.5-coder
+
+tags:
+  - operations
+  - reporting
+  - business-metrics

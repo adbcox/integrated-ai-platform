@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>com.adriancox.ollama-stunt-double</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/opt/homebrew/bin/ollama</string>
+    <string>serve</string>
+  </array>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>OLLAMA_HOST</key><string>127.0.0.1:11435</string>
+    <key>OLLAMA_MODELS</key><string>/Users/adriancox/local-ai-workstation/stunt-double-mac-studio/models</string>
+  </dict>
+  <key>RunAtLoad</key><true/>
+  <key>KeepAlive</key><true/>
+  <key>StandardOutPath</key><string>/Users/adriancox/local-ai-workstation/stunt-double-mac-studio/logs/ollama.out</string>
+  <key>StandardErrorPath</key><string>/Users/adriancox/local-ai-workstation/stunt-double-mac-studio/logs/ollama.err</string>
+  <key>WorkingDirectory</key><string>/Users/adriancox</string>
+</dict>
+</plist>
