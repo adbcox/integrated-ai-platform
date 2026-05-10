@@ -208,6 +208,7 @@ if [[ "$MODEL_HOST" == "LiteLLM-local" ]]; then
           --message "$TASK_SUMMARY" --yes-always 2>&1 | tee "$RUN_DIR/execution.log"
     RESULT=${PIPESTATUS[0]}
   else
+    MODEL="qwen2.5-coder"
     aider --model "openai/qwen2.5-coder" \
           --openai-api-base http://localhost:4000 \
           --openai-api-key sk-local-only-not-secret \

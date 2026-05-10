@@ -444,3 +444,41 @@ All 4 schema-valid. ✓
 - **Config Location:** configs/
 - **Worktrees:** ~/local-ai-workstation/worktrees/
 - **Run Artifacts:** ~/local-ai-workstation/agent_runs/TASK-0001/
+
+---
+
+## Phase 8e+ — Corrections to prior claims (verified 2026-05-10)
+
+### Aider — v1 baseline frozen with qwen2.5-coder (7B), not qwen3-coder-30b
+
+Aider produced a real working json_to_csv.py (23 lines, valid Python). First end-to-end success.
+
+The Phase 8e artifact and comparison table reported model qwen3-coder-30b, but execution.log shows Model openai/qwen2.5-coder with whole edit format. wrap-aider.sh code-mode LiteLLM branch hardcodes the 7B deliberately — 30B's verbose responses defeat aider's whole-format parser; 7B produces clean bare filename + code-block. The artifact field was reading the substitution-table value instead of the actual --model flag passed to aider. This commit sets MODEL=qwen2.5-coder before the aider call so artifacts reflect what actually ran.
+
+### OpenCode — NOT working; prior tool_calls diagnosis was wrong
+
+Phase 8e doc claimed OpenCode failure was a "tool_calls gap" caused by "qwen models via Ollama/LiteLLM emit write tool calls as plain text JSON rather than tool_calls API objects." Direct API testing disproves this:
+
+- LiteLLM bridge (http://localhost:4000/v1/chat/completions) with a tools definition and qwen3-coder-30b returns a structured tool_calls array.
+- Direct stunt-double Ollama (http://127.0.0.1:11435/v1/chat/completions) with tools and qwen3-coder:30b-coding also returns structured tool_calls.
+
+Actual finding: OpenCode in opencode run non-interactive mode hangs after receiving the model response with tool_calls. Two tests each consumed 4+ minutes producing no file. --dangerously-skip-permissions did not change behavior. Cause is inside OpenCode's batch-run state machine, not in the model or LiteLLM bridge.
+
+This commit also restores wrap-opencode.sh to use $MODEL (so the 30B is attempted when available) and adds --dangerously-skip-permissions as the documented correct flag, even though it didn't resolve the hang on its own.
+
+### Updated v1 baseline
+
+- Orchestration plumbing: COMPLETE.
+- Aider end-to-end on E-003 path with qwen2.5-coder (7B): COMPLETE, reproducible.
+- OpenCode end-to-end: PARTIAL; batch-run hang, cause unknown, requires OpenCode-side debug instrumentation.
+
+### Investigation step for OpenCode (next session, run in operator terminal directly)
+
+Run this in your own terminal (not via any tool channel — both prior MCP attempts timed out). Capture run.log; the section between the model's tool_call response and the non-write is where the cause is:
+
+    cd /tmp && rm -rf oc-debug && mkdir oc-debug && cd oc-debug && git init -q
+    cp ~/local-ai-workstation/configs/opencode/opencode.json .
+    ~/.opencode/bin/opencode run "Create foo.py with print('hi')" \
+      --dir . --model litellm_local/qwen2.5-coder \
+      --dangerously-skip-permissions \
+      --print-logs --log-level DEBUG 2>&1 | tee /tmp/oc-debug/run.log

@@ -173,7 +173,7 @@ FILES_BEFORE=$(find . -type f -name '*.py' -o -name '*.js' -o -name '*.json' 2>/
 
 # Run OpenCode with task summary as message
 if [[ "$MODEL_HOST" == "LiteLLM-local" ]]; then
-  "$OPENCODE_BIN" run "$TASK_SUMMARY" --dir "$WORKTREE" --model "litellm_local/qwen2.5-coder" 2>&1 | tee "$RUN_DIR/execution.log"
+  "$OPENCODE_BIN" run "$TASK_SUMMARY" --dir "$WORKTREE" --model "litellm_local/$MODEL" --dangerously-skip-permissions 2>&1 | tee "$RUN_DIR/execution.log"
 else
   "$OPENCODE_BIN" run "$TASK_SUMMARY" --dir "$WORKTREE" 2>&1 | tee "$RUN_DIR/execution.log"
 fi
