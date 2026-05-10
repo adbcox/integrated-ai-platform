@@ -26,6 +26,7 @@ if [[ ! -f "$TASK_BRIEF" ]]; then
   echo "Error: task brief not found: $TASK_BRIEF"
   exit 1
 fi
+TASK_BRIEF="$(cd "$(dirname "$TASK_BRIEF")" && pwd)/$(basename "$TASK_BRIEF")"
 
 # Extract task metadata per §10.6
 TASK_ID=$(jq -r '.task_id' "$TASK_BRIEF")
@@ -166,13 +167,33 @@ cd "$WORKTREE"
 
 FILES_BEFORE=$(find . -type f \( -name '*.py' -o -name '*.js' -o -name '*.json' \) 2>/dev/null | sort || true)
 
+# Build --file flags from aider_output_files in task brief; pre-create missing files
+FILE_FLAGS=()
+OUTPUT_FILES=$(jq -r '.aider_output_files // [] | .[]' "$TASK_BRIEF" 2>/dev/null || true)
+while IFS= read -r f; do
+  [[ -z "$f" ]] && continue
+  [[ ! -f "$f" ]] && touch "$f"
+  FILE_FLAGS+=(--file "$f")
+done <<< "$OUTPUT_FILES"
+
+# When output files are specified in LiteLLM mode, prepend a format directive so the
+# model outputs bare filename+code-block without prose (aider's whole parser requires this)
+AIDER_MESSAGE="$TASK_SUMMARY"
+if [[ ${#FILE_FLAGS[@]} -gt 0 ]]; then
+  AIDER_MESSAGE="Output ONLY the filename followed by a fenced code block. No explanatory text before or after. Task: $TASK_SUMMARY"
+fi
+
 if [[ "$MODEL_HOST" == "LiteLLM-local" ]]; then
   if [[ "$MODE" == "architect" ]]; then
     aider --architect \
           --model "openai/$MODEL" \
-          --editor-model "openai/$MODEL" \
+          --editor-model "openai/qwen2.5-coder" \
           --openai-api-base http://localhost:4000 \
           --openai-api-key sk-local-only-not-secret \
+          --no-show-model-warnings \
+          --no-pretty \
+          --map-tokens 0 \
+          ${FILE_FLAGS[@]+"${FILE_FLAGS[@]}"} \
           --message "$TASK_SUMMARY" --yes-always 2>&1 | tee "$RUN_DIR/execution.log"
     RESULT=${PIPESTATUS[0]}
   elif [[ "$MODE" == "ask" ]]; then
@@ -180,24 +201,32 @@ if [[ "$MODEL_HOST" == "LiteLLM-local" ]]; then
           --model "openai/$MODEL" \
           --openai-api-base http://localhost:4000 \
           --openai-api-key sk-local-only-not-secret \
+          --no-show-model-warnings \
+          --no-pretty \
+          --map-tokens 0 \
+          ${FILE_FLAGS[@]+"${FILE_FLAGS[@]}"} \
           --message "$TASK_SUMMARY" --yes-always 2>&1 | tee "$RUN_DIR/execution.log"
     RESULT=${PIPESTATUS[0]}
   else
-    aider --model "openai/$MODEL" \
+    aider --model "openai/qwen2.5-coder" \
           --openai-api-base http://localhost:4000 \
           --openai-api-key sk-local-only-not-secret \
-          --message "$TASK_SUMMARY" --yes-always 2>&1 | tee "$RUN_DIR/execution.log"
+          --no-show-model-warnings \
+          --no-pretty \
+          --map-tokens 0 \
+          ${FILE_FLAGS[@]+"${FILE_FLAGS[@]}"} \
+          --message "$AIDER_MESSAGE" --yes-always 2>&1 | tee "$RUN_DIR/execution.log"
     RESULT=${PIPESTATUS[0]}
   fi
 else
   if [[ "$MODE" == "architect" ]]; then
-    aider --architect --model "$MAIN_MODEL" --editor-model "$EDITOR_MODEL" --message "$TASK_SUMMARY" --yes-always 2>&1 | tee "$RUN_DIR/execution.log"
+    aider --architect --model "$MAIN_MODEL" --editor-model "$EDITOR_MODEL" --no-show-model-warnings --message "$TASK_SUMMARY" --yes-always 2>&1 | tee "$RUN_DIR/execution.log"
     RESULT=${PIPESTATUS[0]}
   elif [[ "$MODE" == "ask" ]]; then
-    aider --chat-mode ask --model "$MAIN_MODEL" --message "$TASK_SUMMARY" --yes-always 2>&1 | tee "$RUN_DIR/execution.log"
+    aider --chat-mode ask --model "$MAIN_MODEL" --no-show-model-warnings --message "$TASK_SUMMARY" --yes-always 2>&1 | tee "$RUN_DIR/execution.log"
     RESULT=${PIPESTATUS[0]}
   else
-    aider --model "$MAIN_MODEL" --message "$TASK_SUMMARY" --yes-always 2>&1 | tee "$RUN_DIR/execution.log"
+    aider --model "$MAIN_MODEL" --no-show-model-warnings --message "$TASK_SUMMARY" --yes-always 2>&1 | tee "$RUN_DIR/execution.log"
     RESULT=${PIPESTATUS[0]}
   fi
 fi
@@ -215,8 +244,15 @@ DURATION=$((END_TIME - START_TIME))
 
 FILES_AFTER=$(find . -type f \( -name '*.py' -o -name '*.js' -o -name '*.json' \) 2>/dev/null | sort || true)
 MODIFIED_FILES=$(comm -13 <(echo "$FILES_BEFORE") <(echo "$FILES_AFTER") | head -20 || true)
-LINES_ADDED=$(grep -c '^+' "$RUN_DIR/execution.log" 2>/dev/null) || LINES_ADDED=0
-LINES_REMOVED=$(grep -c '^-' "$RUN_DIR/execution.log" 2>/dev/null) || LINES_REMOVED=0
+# Try git diff first (covers tracked file edits); fall back to wc -l on new output files
+LINES_ADDED=$(git diff --numstat HEAD 2>/dev/null | awk '{sum+=$1} END{print sum+0}') || LINES_ADDED=0
+if [[ "$LINES_ADDED" -eq 0 && -n "$OUTPUT_FILES" ]]; then
+  while IFS= read -r f; do
+    [[ -z "$f" || ! -f "$f" ]] && continue
+    LINES_ADDED=$((LINES_ADDED + $(wc -l < "$f" 2>/dev/null || echo 0)))
+  done <<< "$OUTPUT_FILES"
+fi
+LINES_REMOVED=$(git diff --numstat HEAD 2>/dev/null | awk '{sum+=$2} END{print sum+0}') || LINES_REMOVED=0
 
 TIMESTAMP_END=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 POST_RUN=$(cat <<EOF

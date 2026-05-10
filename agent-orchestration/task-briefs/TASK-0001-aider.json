@@ -1,6 +1,7 @@
 {
   "task_id": "TASK-0001",
   "task_summary": "Implement a Python utility to convert JSON files to CSV format with configurable field selection",
+  "aider_output_files": ["json_to_csv.py"],
   "preferred_executor": "aider",
   "repo": "integrated-ai-platform",
   "worktree": "/Users/adriancox/local-ai-workstation/worktrees/integrated-ai-platform-aider",

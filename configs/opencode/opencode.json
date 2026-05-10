@@ -71,7 +71,7 @@
     },
     "grep": "allow",
     "glob": "allow",
-    "edit": "ask",
+    "edit": "allow",
     "bash": {
       "*": "ask",
       "pwd": "allow",

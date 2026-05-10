@@ -7,6 +7,7 @@ artifacts/
 .ssh/authorized_keys
 .aider*
 !.aider.conf.yml
+!.aider.model.settings.yml
 !.aiderignore
 .remote-tasks/
 .local-model-data/

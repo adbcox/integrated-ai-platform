@@ -1,0 +1,32 @@
+- name: ollama_chat/qwen3-coder:30b-coding
+  edit_format: diff
+  extra_params:
+    num_ctx: 65536
+    temperature: 0
+
+- name: ollama_chat/deepseek-coder-v2:16b
+  edit_format: diff
+  extra_params:
+    num_ctx: 32768
+    temperature: 0
+
+- name: ollama_chat/qwen3-coder-next:80B
+  edit_format: diff
+  extra_params:
+    num_ctx: 65536
+    temperature: 0
+
+- name: openai/qwen3-coder-30b
+  edit_format: whole
+  editor_edit_format: whole
+  use_repo_map: true
+  extra_params:
+    num_ctx: 32768
+  weak_model_name: openai/qwen2.5-coder
+
+- name: openai/qwen2.5-coder
+  edit_format: whole
+  editor_edit_format: whole
+  use_repo_map: true
+  extra_params:
+    num_ctx: 32768
