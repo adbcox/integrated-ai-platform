@@ -1,0 +1,45 @@
+model_list:
+  # Tier 1: Local MacBook Ollama (always available)
+  - model_name: qwen2.5-coder
+    litellm_params:
+      model: ollama_chat/qwen2.5-coder:7b
+      api_base: http://127.0.0.1:11434
+      timeout: 60
+    model_info:
+      supports_function_calling: true
+
+  # Tier 2: Stunt-Double Ollama (local high-fidelity simulation)
+  - model_name: qwen3-coder-30b-stunt-double
+    litellm_params:
+      model: ollama_chat/qwen3-coder:30b-coding
+      api_base: http://127.0.0.1:11435
+      timeout: 300
+      stream_timeout: 300
+    model_info:
+      supports_function_calling: true
+
+  # Tier 3: Mac Studio via VPN (REAL model when reachable; env-var driven)
+  - model_name: qwen3-coder-30b
+    litellm_params:
+      model: ollama_chat/qwen3-coder:30b-coding
+      api_base: os.environ/MAC_STUDIO_OLLAMA_BASE_URL
+      timeout: 300
+    model_info:
+      supports_function_calling: true
+
+router_settings:
+  routing_strategy: simple-shuffle
+  num_retries: 0
+  timeout: 60
+  fallbacks:
+    - qwen3-coder-30b: ["qwen3-coder-30b-stunt-double"]
+
+litellm_settings:
+  drop_params: true
+
+general_settings:
+  # Note: master_key is disabled to allow Ollama-style API access (Goose compatibility).
+  # OpenAI-compatible clients should still send Authorization: Bearer sk-local-only-not-secret
+  # for better security, but it's not enforced locally.
+  master_key: null
+  database_url: null

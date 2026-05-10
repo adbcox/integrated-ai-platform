@@ -482,3 +482,68 @@ Run this in your own terminal (not via any tool channel — both prior MCP attem
       --dir . --model litellm_local/qwen2.5-coder \
       --dangerously-skip-permissions \
       --print-logs --log-level DEBUG 2>&1 | tee /tmp/oc-debug/run.log
+
+---
+
+## Phase 8f — OpenCode lane root cause identified and fixed; v1 baseline frozen (2026-05-10)
+
+### Retraction of Phase 8e+ OpenCode diagnoses
+
+The Phase 8e+ corrections section above contained two diagnoses that are both wrong and are retracted here:
+
+1. **"OpenCode batch-run hang"** — Phase 8e+ claimed OpenCode hangs after receiving `tool_calls` in non-interactive mode. This was false. OpenCode's `run` command works correctly when the LiteLLM model actually delivers structured `delta.tool_calls` in its streaming response. The apparent hang was caused by the model never emitting tool calls (see below), leaving OpenCode looping with no tools to dispatch.
+
+2. **"tool_calls gap in LiteLLM streaming"** — Phase 8e also claimed the root cause was LiteLLM failing to translate bare-JSON model output into structured `tool_calls` for the streaming path. This was a symptom, not the root cause. The bare-JSON output was a consequence of the wrong LiteLLM model prefix (see below).
+
+### Actual root cause
+
+The three `model_list` entries in `configs/litellm/config.yaml` used the `ollama/` prefix on their `model` field (e.g. `ollama/qwen3-coder:30b-coding`). The `ollama/` prefix routes LiteLLM through Ollama's `/api/generate` endpoint. That endpoint does not support structured tool calls — the model emits its tool invocation as bare JSON text in `message.content`, and LiteLLM's streaming path for `/api/generate` passes it through as `delta.content` text chunks. OpenCode receives text, not `tool_calls`, and renders the text as a response without dispatching any write tool.
+
+The fix is a one-character prefix change: `ollama/` → `ollama_chat/`. The `ollama_chat/` prefix routes through Ollama's `/api/chat` endpoint, which has native structured tool_calls support. LiteLLM passes these through cleanly as `delta.tool_calls` in the SSE stream. Verified by direct curl against the LiteLLM router showing structured `delta.tool_calls` with `name` and `arguments` populated in the first streaming chunk.
+
+### What was ruled out
+
+- **Python streaming proxy** — not needed; native `ollama_chat/` prefix fixes the streaming path without interception.
+- **`supports_function_calling: true` flag** — was added to `model_info` for all three entries; did not change streaming behavior on its own; retained as correct metadata but is not the fix.
+- **Fallback chain degradation** — `qwen2.5-coder` (7B) was silently receiving fallback requests intended for the 30B; it cannot produce structured tool calls for tool-using tasks. Fallback to `qwen2.5-coder` removed from the 30B chains. This masked the root cause but was not the root cause itself.
+- **Task brief complexity** — simplified brief was tested and worked; not the underlying issue.
+- **OpenCode permissions** — `"write": "allow"` was tested; not needed; `opencode.json` restored to canonical pre-session state.
+
+### Changes committed
+
+**`configs/litellm/config.yaml`** (new tracked file; previously only deployed to `~/local-ai-workstation/configs/litellm/`):
+
+- All three `model_list` entries: `ollama/` → `ollama_chat/` on the `model` field.
+- Tier 2 stunt-double (`qwen3-coder-30b-stunt-double`): `timeout: 5` → `300`, `stream_timeout: 5` → `300`. The 5-second timeout was appropriate for 7B but kills 30B inference mid-stream (30B tool-using tasks run 30–300 seconds on the MacBook M-series GPU).
+- Tier 3 Mac Studio (`qwen3-coder-30b`): `timeout: 10` → `300` for the same reason.
+- Tier 1 (`qwen2.5-coder`): `timeout: 60` unchanged — appropriate for 7B inference.
+- Fallback chain: `qwen3-coder-30b-stunt-double: ["qwen2.5-coder"]` entry removed; `qwen3-coder-30b` fallback list trimmed from `["qwen3-coder-30b-stunt-double", "qwen2.5-coder"]` to `["qwen3-coder-30b-stunt-double"]`.
+
+**`wrap-opencode.sh`**: unchanged from HEAD `e1aaca24`. No proxy, no rescue, no path sanitizer. The HEAD wrapper is correct; the broken piece was always in the LiteLLM config.
+
+### End-to-end verification (2026-05-10)
+
+Direct streaming curl against `qwen3-coder-30b` via LiteLLM with a `write` tool definition returned:
+
+```
+data: {"choices":[{"delta":{"tool_calls":[{"function":{"arguments":"{\"filePath\": \"foo.py\", \"content\": \"print hi\"}","name":"write"},...}]}}]}
+data: {"choices":[{"finish_reason":"stop",...}]}
+data: [DONE]
+```
+
+`wrap-opencode.sh --task-brief TASK-0001-opencode.json --mode build` completed with:
+- `verifier_status: pass`
+- `files_modified`: `json_to_csv_converter.py`, `scripts/json_to_csv.py`, `scripts/json_to_csv_enhanced.py`
+- All three files compile clean (`python3 -m py_compile`)
+- `wall_clock_seconds: 469`
+
+### v1 baseline — FROZEN
+
+Both agent lanes confirmed working end-to-end on the stunt-double path:
+
+| Lane | Model | Path | Status |
+|------|-------|------|--------|
+| aider | `qwen2.5-coder:7b` | `ollama_chat/` via LiteLLM port 4000 | WORKING |
+| opencode | `qwen3-coder:30b-coding` | `ollama_chat/` via LiteLLM stunt-double port 11435 | WORKING |
+
+v1 baseline is frozen. Further work (GATE 3 evaluation, multi-task harness, Mac Studio promotion) proceeds from this state.
