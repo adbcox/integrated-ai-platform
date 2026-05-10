@@ -1,3 +1,13 @@
+---
+ki: KI-003
+title: obot's UI returns 502 on /
+severity: LOW
+status: RESOLVED
+disposition: closed-as-resolved-per-audit-Q6
+discovered: 2026-04-27
+phase: pre-Phase-17 (Phase 7-era obot deployment; frontmatter migration 2026-05-11 per phase-17-closeout-audit Brief B Q6)
+---
+
 # KI-003: obot's UI returns 502 on /
 
 ## Status
@@ -25,3 +35,7 @@ unrelated to Phase 7 routing.
 
 ## Created
 Mon Apr 27 21:50:03 EDT 2026
+
+## Disposition (2026-05-11)
+
+Disposition recorded per phase-17-closeout-audit §6 Q6: closed-as-resolved given evidence chain (root cause identified — `OBOT_DEV_MODE: "true"`; fix applied — flipped to `"false"`; verification confirmed — `obot.internal` returns http=404 in the 2xx-4xx pass range). Frontmatter status promoted to RESOLVED.

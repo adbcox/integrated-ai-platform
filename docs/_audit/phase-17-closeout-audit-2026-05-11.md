@@ -354,3 +354,37 @@ Remaining Phase 17 closeout sequence:
 - **Brief B** (doctrine + framework hygiene): WP-6.1 PROJECT_FRAMEWORK §3 ↔ identifier-conventions.md cross-reference; CLAUDE.md staleness sweep (already partly addressed in Brief A's WP-4); subagent MEMORY.md curation (placeholders are now scaffolded; promotion of stable patterns happens during subagent invocation, not on schedule).
 - **Brief C** (Phase-17-in-spirit deliverable closeout): D-17-54 closure verification; D-17-62 runbooks index; D-17-115 close-as-DEFERRED in closeout doc.
 - **Brief D** (LAN session): D-17-01 v2 stack audit re-run; NetBox-vs-container reconciliation. Phase-17-final tag cut after Brief D lands.
+
+---
+
+## §9 Brief B landing note (2026-05-11)
+
+**Brief B landed** on branch `feat/phase-17-brief-b` (single commit pending push). WPs completed:
+
+- **Q6 KI-003 closure (audit §6 Q6 operator approval):** YAML frontmatter migration applied. New frontmatter fields: `status: RESOLVED`, `disposition: closed-as-resolved-per-audit-Q6`, plus `severity / discovered / phase` matching the Brief A pattern. Body `## Status` section preserved unchanged (parser-compat-safe; consistent with Brief A's `**Status:**` body-line preservation for KI-009). Added `## Disposition (2026-05-11)` body section referencing the evidence chain (root cause identified — `OBOT_DEV_MODE: "true"`; fix applied — flipped to `"false"`; verification — `obot.internal` returns http=404 in pass range).
+- **Q7 KI-004 disposition (audit §6 Q7 operator approval):** existing YAML frontmatter gained `disposition: accept-as-permanent-debt-mitigated-workaround` field. Status preserved as `MITIGATED`. Added `## Disposition (2026-05-11)` body section recording: mitigation operationally functional; custom-image permanent fix deferred indefinitely; reopens if mitigation fails or if operator schedules the custom-image build as a Phase 18 deliverable.
+- **Criterion 6 cross-reference cleanup:** the asymmetric PROJECT_FRAMEWORK.md §3 ↔ identifier-conventions.md cross-reference is now bidirectional. PROJECT_FRAMEWORK.md §3 gained a "Doctrine cross-reference" paragraph pointing at identifier-conventions.md as the canonical detailed taxonomy doc. identifier-conventions.md L4 was updated to cite both `§1 (lifecycle vocabulary)` AND `§3 (label format conventions)` for accuracy (previously cited only §1; the actual label-format table is at §3); "Last verified" date updated to 2026-05-11 with audit reference. The doctrine pair is now structurally symmetric per criterion 6's worked-example pattern (Path A / Path B from model-provenance).
+
+Remaining Phase 17 closeout sequence (post-Brief B):
+
+- **Brief C** (Phase-17-in-spirit deliverable closeout): D-17-54 closure verification (read both authored runbooks; flip §9 status to DONE if adequate); D-17-62 runbooks index (author `docs/runbooks/README.md`; legacy-reference scan); D-17-115 close-as-DEFERRED in Phase 17 closeout doc (Phase 1 DONE off-LAN; Phase 2 LAN-gated).
+- **Brief D** (next on-LAN session): D-17-01 v2 stack audit re-run; NetBox-vs-container reconciliation (depends on Q1 CMDB authority decision). Phase-17-final tag cut after Brief D lands and all 8 criteria satisfy.
+
+Criterion 5 (KI register triage) is now **COMPLETE** as of Brief B — every KI on main has a disposition recorded:
+
+| KI | Status | Disposition |
+|---|---|---|
+| KI-001 | RESOLVED | closed-as-resolved (frontmatter migrated Brief A) |
+| KI-002 | RESOLVED | closed-as-resolved (frontmatter migrated Brief A) |
+| KI-003 | RESOLVED | closed-as-resolved-per-audit-Q6 (Brief B) |
+| KI-004 | MITIGATED | accept-as-permanent-debt-mitigated-workaround (Brief B) |
+| KI-005 | CLOSED | closed-as-resolved (frontmatter migrated Brief A) |
+| KI-009 | RESOLVED | closed-as-resolved (frontmatter migrated Brief A) |
+| KI-010 | OPEN | accept-as-deferred-pending-on-LAN-session (Brief A) |
+| KI-011 | OPEN | accept-as-deferred-pending-on-LAN-session (Brief A) |
+| KI-012 | OPEN | accept-as-permanent-debt-decade-horizon (Brief A) |
+| KI-RETIRED-rclone-sftp | RETIRED (filename prefix) | n/a — historical artifact |
+
+Criterion 7 (meta-tooling hygiene) is **partially complete** — CLAUDE.md staleness fixed in Brief A; MEMORY.md scaffolds in Brief A; .secrets.baseline review in Brief A surfaced zero stale entries. Subagent MEMORY.md curation is a continuous activity (population happens during subagent invocations, not on a schedule); not blocking for tag-cut.
+
+Criterion 6 (doctrine consolidation) is now **COMPLETE** — both worked examples (Path A/B model-provenance from feat/orchestration-layer-build merge; PROJECT_FRAMEWORK ↔ identifier-conventions from Brief B) have bidirectional cross-references; no remaining orphan-terminology pairs identified.
