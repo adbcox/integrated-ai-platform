@@ -24,6 +24,7 @@ the decision content here.
 | [A-003](adr/ADR-A-003.md) | Ollama-first is the default coding posture | Local Ollama is the default LLM; Anthropic Pro is reserved for high-judgment tasks. |
 | [A-004](adr/ADR-A-004.md) | Aider is an adapter, not a backbone | Aider integrates into the platform; the platform does not depend on Aider's lifecycle. |
 | [A-005](adr/ADR-A-005.md) | Claude Code is supervisory or exceptional | Routine work runs under `claude-local`; `claude-pro` is for supervisory or genuinely high-judgment tasks. |
+| [A-020](adr/ADR-A-020-track2-agent-roles.md) | Track 2 Agent Role Codification (PROPOSED) | Codifies work-class × LiteLLM-tier × default-model × capability-boundary for the six verified Track 2 agents (Aider/Goose/Serena/OpenCode/Continue/OpenHands). Status PROPOSED — seven operator decision questions (Q-1 through Q-7 in §5) gate Acceptance. |
 
 ## Documentation, ADR governance, and external systems
 
