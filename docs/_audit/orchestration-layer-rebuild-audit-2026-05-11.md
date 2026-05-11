@@ -10,9 +10,9 @@
 
 ## §1 Summary
 
-The orchestration-layer rebuild has **delivered the spec's primary surfaces with two intentional deviations** (Track 1.B vllm-mlx stunt-double subsystem; OrbStack as container runtime) and **two operator-introduced abstractions beyond §17.2 scope** (Track 1.A LiteLLM proxy + smart fallback; LocalAIConfig migration package). Track 2 agent-stack installs are **partially complete on MacBook**: Aider + Goose + Serena confirmed live; OpenCode + Cline + Continue + OpenHands not installed as primary CLIs (configs/refs only). Mac Studio future-integration readiness is **prepared on the wire**: LiteLLM Tier 3 is env-var driven and flips when `MAC_STUDIO_OLLAMA_BASE_URL` is exported, with an automatic fallback chain to Tier 2 stunt-double, but device-side trust (D-17-115 Phase 2) and Headscale rejoin (KI-010 / KI-011 close-out path) are LAN-gated and untestable from the current off-LAN MacBook session.
+The orchestration-layer rebuild has **delivered the spec's primary surfaces with two intentional deviations** (Track 1.B vllm-mlx stunt-double subsystem; OrbStack as container runtime) and **two operator-introduced abstractions beyond §17.2 scope** (Track 1.A LiteLLM proxy + smart fallback; LocalAIConfig migration package). Track 2 agent-stack installs are **mostly complete on MacBook**: Aider + Goose + Serena + OpenCode + Continue confirmed live (OpenCode and Continue findings corrected 2026-05-11 — see §9 self-correction); only Cline remains uninstalled, and OpenHands install state is partial pending sandbox-launch verification. Mac Studio future-integration readiness is **prepared on the wire**: LiteLLM Tier 3 is env-var driven and flips when `MAC_STUDIO_OLLAMA_BASE_URL` is exported, with an automatic fallback chain to Tier 2 stunt-double, but device-side trust (D-17-115 Phase 2) and Headscale rejoin (KI-010 / KI-011 close-out path) are LAN-gated and untestable from the current off-LAN MacBook session.
 
-Recommendation: prioritize completing Track 2 agent-stack installs on the home Mac Mini (OpenCode + Cline + Continue + OpenHands per §17.2 WBS rows 5.1, 5.5, 5.6, 5.7) ahead of the next on-LAN session, then close KI-010/KI-011/D-17-115 Phase 2 in a single LAN-gated brief. The Track 1.B stunt-double subsystem is a durable substrate that should remain post-Mac-Studio-rejoin as the Mac-Mini-only inference path for MacBook off-LAN work — not a temporary shim.
+Recommendation: prioritize Cline install on home Mac Mini + OpenHands sandbox-launch verification (§17.2 WBS rows 5.5 + 5.7) ahead of the next on-LAN session, then close KI-010/KI-011/D-17-115 Phase 2 in a single LAN-gated brief. The Track 1.B stunt-double subsystem is a durable substrate that should remain post-Mac-Studio-rejoin as the Mac-Mini-only inference path for MacBook off-LAN work — not a temporary shim.
 
 **Non-scope:** No execution. No installs, no config changes, no §9 row mutations, no roadmap or errata edits. This is the audit deliverable only.
 
@@ -141,10 +141,10 @@ Mac Studio Tier 3 named `qwen3-coder-30b` auto-falls-back to Tier 2 stunt-double
 | Aider | latest stable | `aider 0.86.2` at `/opt/homebrew/bin/aider` (Homebrew bottle, 2026-05-07) | Aider-AI/aider (correct upstream; verified via dist-info) | ✓ live |
 | Goose | v1.33.1 (per §3.2) | `goose 1.33.1` at `/opt/homebrew/bin/goose` (Mach-O arm64 binary) | Block Goose (NOT pressly/goose — the pressly Homebrew formula reports "Not installed" and conflicts with `block-goose-cli`) | ✓ live |
 | Serena | v1.2.0 (per §3.2) | `Serena 1.2.0` at `/Users/adriancox/.local/bin/serena`; `~/.serena/` config + memories present | oraios/serena (correct upstream per errata E-001 retry) | ✓ live |
-| OpenCode | v1.14.40 (per §3.2) | NOT installed system-wide (`which opencode` → not found). Only present as `configs/opencode/` in repo and `~/repos/ref-docs/opencode/` reference clone | n/a | ✗ install pending |
-| Cline | current stable VS Code extension | NOT installed (`which cline` → not found). Spec calls for VS Code extension, not CLI; this audit cannot confirm extension state from CLI surface | n/a | ✗ extension state untested |
-| Continue | current stable VS Code extension | NOT installed (`which continue` → shell builtin collision; no agent binary). Same caveat as Cline | n/a | ✗ extension state untested |
-| OpenHands | v1.7.0 (per §3.2) | Partial install state: `~/.openhands/openhands.db` exists; no `openhands` CLI binary. Spec §15.1 calls for sandbox-only via Docker; OrbStack-managed | n/a (Docker-image-based) | ⚠ install state ambiguous |
+| OpenCode | v1.14.40 (per §3.2) | INSTALLED at `~/.opencode/bin/opencode` v1.14.41 (Mach-O arm64, 104 MB, mtime 2026-05-07); PATH-wired in `~/.zshrc:24` (`export PATH=/Users/adriancox/.opencode/bin:$PATH`). Initial probe via `which opencode` in Bash subshells (non-zsh-rc-sourcing) returned not-found — that was a tool-shell artifact, not an install gap (see §9 self-correction) | upstream `opencode-ai` npm scope; binary signature matches `curl -fsSL https://opencode.ai/install \| bash` install path | ✓ live (correction 2026-05-11) |
+| Cline | current stable VS Code extension | NOT installed (`code --list-extensions` returned no matches for `cline`; supplementary probe 2026-05-11) | n/a | ✗ not installed (confirmed via probe-beyond-`which`) |
+| Continue | current stable VS Code extension | INSTALLED as VS Code extension `continue.continue-1.2.22-darwin-arm64` at `~/.vscode/extensions/`; config substrate at `~/.continue/{config.json,config.yaml,package.json,sessions/sessions.json,index/index.sqlite}` (supplementary probe 2026-05-11) | continue.continue (canonical) | ✓ live (correction 2026-05-11) |
+| OpenHands | v1.7.0 (per §3.2) | Partial install state: `~/.openhands/openhands.db` + `~/.openhands/.jwt_secret` exist; no `openhands` CLI binary, no pip install, no `uv tool list` entry, no Docker image probe possible from this session (daemon unavailable). Spec §15.1 calls for sandbox-only via Docker; OrbStack-managed | n/a (Docker-image-based) | ⚠ install state ambiguous (supplementary probe confirms no false-negative beyond what audit already noted) |
 
 **Spec-corrected install command for Serena** (per errata E-001): `uv tool install -p 3.13 serena-agent@latest --prerelease=allow` — the roadmap's literal `uv tool install serena` is a PyPI namespace-collision trap. Errata file documents this; canonical roadmap is preserved as-ingested.
 
@@ -225,19 +225,19 @@ Bucket legend: **AS-SPEC** / **WITH-DEVIATION** / **BUT-NOT-SPEC** / **NOT-DELIV
 | 4.1 | Install/update Ollama on Mac Studio | NOT-DELIVERED-VERIFIABLE | Mac Studio off-LAN; per `~/local-ai-workstation/inventory/ollama_list_mac_studio.json` (2026-05-07 snapshot) Ollama ran with 7 models pre-Tokyo |
 | 4.2 | Pull required models | WITH-DEVIATION | Pre-Tokyo snapshot confirmed 7 models on Mac Studio; locally MLX-quant via vllm-mlx covers Qwen3-Coder-30B on MacBook |
 | 4.3 | Record versions | AS-SPEC | `~/local-ai-workstation/inventory/tool_versions.txt` + `LocalAIConfig/inventory/` snapshots |
-| 5.1 | Install OpenCode | NOT-DELIVERED | `which opencode` not found; configs/ + ref-docs/ only |
+| 5.1 | Install OpenCode | AS-SPEC (correction 2026-05-11 — see §9) | Binary at `~/.opencode/bin/opencode` v1.14.41; PATH-wired in `~/.zshrc:24`; initial NOT-DELIVERED classification was a Bash-subshell-probe artifact |
 | 5.2 | Install Goose | AS-SPEC | `goose 1.33.1` at `/opt/homebrew/bin/goose` (Block Goose, NOT pressly/goose — verified via `brew info` showing pressly variant "Not installed") |
 | 5.3 | Install Aider | AS-SPEC | `aider 0.86.2` at `/opt/homebrew/bin/aider` (Aider-AI/aider) |
 | 5.4 | Install Serena | AS-SPEC (with errata E-001 install-command correction) | `Serena 1.2.0` at `~/.local/bin/serena` |
-| 5.5 | Install Cline | NOT-DELIVERED (extension state untested from CLI) | VS Code extension; not exercised on MacBook |
-| 5.6 | Install Continue | NOT-DELIVERED (extension state untested from CLI) | VS Code extension; not exercised on MacBook |
+| 5.5 | Install Cline | NOT-DELIVERED (confirmed via probe-beyond-`which` 2026-05-11) | `code --list-extensions` returned empty for `cline`; no extension dir under `~/.vscode/extensions/` |
+| 5.6 | Install Continue | AS-SPEC (correction 2026-05-11 — see §9) | `continue.continue-1.2.22-darwin-arm64` extension installed; full config substrate at `~/.continue/` |
 | 5.7 | Install OpenHands | NOT-DELIVERED-FULLY | `~/.openhands/openhands.db` exists; no CLI binary; sandbox launch not verified |
-| 6.1 | Configure OpenCode (`opencode.json`) | BUT-NOT-SPEC (configs present without install) | `configs/opencode/` shipped; agent itself not installed |
+| 6.1 | Configure OpenCode (`opencode.json`) | AS-SPEC (correction 2026-05-11) | `configs/opencode/opencode.json` shipped + agent now confirmed installed; install + config substrate both present |
 | 6.2 | Configure Goose profiles | AS-SPEC | `~/local-ai-workstation/configs/goose/` + `LocalAIConfig/agents/goose/` |
 | 6.3 | Configure Aider (`.aider.*` files) | AS-SPEC | `.aider.conf.yml` repo-local (with `read: CONVENTIONS.md`); architect mode wrappers in `bin/` |
 | 6.4 | Configure Serena MCP | AS-SPEC | `~/.serena/serena_config.yml` + memories; per-workspace pattern per spec §11.3 |
-| 6.5 | Configure Continue | NOT-DELIVERED | Continue extension not installed |
-| 6.6 | Configure Cline | NOT-DELIVERED | Cline extension not installed |
+| 6.5 | Configure Continue | AS-SPEC (correction 2026-05-11) | Continue extension installed + `~/.continue/config.{json,yaml}` + `.continuerc.json` + `config.ts` populated |
+| 6.6 | Configure Cline | NOT-DELIVERED | Cline extension not installed (5.5 dependency unmet) |
 | 7.1 | Create worktree script | AS-SPEC | `agent-orchestration/scripts/create-agent-worktrees.sh` + `~/local-ai-workstation/worktrees/` (4 worktrees: opencode, openhands, cline, aider) |
 | 7.2 | Enforce worktree policy | AS-SPEC | `docs/agent-policy/AGENT_WORKTREE_POLICY.md` |
 | 8.1 | Create JSONL schema | AS-SPEC | `~/local-ai-workstation/AGENT_ARTIFACT_SCHEMA.json` + `LocalAIConfig/schemas/` |
@@ -249,8 +249,8 @@ Bucket legend: **AS-SPEC** / **WITH-DEVIATION** / **BUT-NOT-SPEC** / **NOT-DELIV
 | 9.3 | Create Plane draft template | AS-SPEC | `agent-orchestration/templates/plane-draft.md` (Plane retired post-D-17-04; template retained for historical reference) |
 | 10.1 | Add Zabbix checks | AS-SPEC (delivered in Phase 17 D-17-46/119) | Scraparr + QNAP Syncthing template + zabbix-trapper-pattern.md substrate |
 | 10.2 | Add dashboards | AS-SPEC | `docker/grafana-provisioning/dashboards/arr-stack-overview-p18.json` + zabbix-overview-p14 |
-| 11.1 | Run OpenCode vs Aider A/B | NOT-DELIVERED (gated on 5.1 OpenCode install) | Cannot run A/B without both tools live |
-| 11.2 | Run OpenCode with/without Serena | NOT-DELIVERED (gated on 5.1) | Same gate as 11.1 |
+| 11.1 | Run OpenCode vs Aider A/B | NOT-DELIVERED (gate updated 2026-05-11 — install layer cleared, benchmark execution remains) | OpenCode + Aider both live; A/B benchmark execution is now a discrete WP, not blocked at install layer |
+| 11.2 | Run OpenCode with/without Serena | NOT-DELIVERED (gate updated 2026-05-11 — install layer cleared, benchmark execution remains) | OpenCode + Serena both live; benchmark execution is now a discrete WP |
 | 11.3 | Review promotion (promotion memo) | WITH-DEVIATION | `docs/architecture-facts/promotion-criteria.md` + per-cell promotion log in D-17-53 chronicle (Goose+qwen3-coder cell first measured datapoint) |
 | 12.1 | Create handoff package | BUT-NOT-SPEC-richer | Brief A/B/C closeout audit infrastructure (this audit + `phase-17-closeout-audit-2026-05-11.md` + `system-prompts-consolidation-audit-2026-05-11.md`) substantially exceeds the spec's handoff-package requirement |
 | 12.2 | Freeze v1 baseline (tag/archive) | NOT-DELIVERED (phase-17-final tag deferred until Brief D lands) | Brief D LAN-session gates the tag-cut |
@@ -268,9 +268,11 @@ Bucket legend: **AS-SPEC** / **WITH-DEVIATION** / **BUT-NOT-SPEC** / **NOT-DELIV
 - D-17-95 work-routing doctrine (TIER 1 Aider-eligible / TIER 2 Claude Code) — extends §11.1 A/B promotion concept into a daily work-routing rubric
 - D-17-136 Retrieval-Augmented Aider context pack generator — extends §8.4 verifier gates with retrieval substrate
 
-**Counts:** AS-SPEC 22 / WITH-DEVIATION 5 / BUT-NOT-SPEC 9 / NOT-DELIVERED 14.
+**Counts (corrected 2026-05-11 per §9 self-correction):** AS-SPEC 26 / WITH-DEVIATION 5 / BUT-NOT-SPEC 8 / NOT-DELIVERED 11.
 
-Of the 14 NOT-DELIVERED rows, 11 are LAN-gated or Mac-Studio-rejoin-gated (rows 2.1, 2.3, 3.2, 4.1, 11.1, 11.2 plus 5.1/5.5/5.6/5.7/6.5/6.6 awaiting agent installs on the home Mac Mini); only 3 are off-LAN-executable now (5.1 OpenCode install on MacBook, 12.2 baseline tag pending Brief D).
+Original counts (2026-05-11 pre-correction): AS-SPEC 22 / WITH-DEVIATION 5 / BUT-NOT-SPEC 9 / NOT-DELIVERED 14. Delta = +4 AS-SPEC, -1 BUT-NOT-SPEC, -3 NOT-DELIVERED (driven by OpenCode and Continue install-state false-negatives).
+
+Of the corrected 11 NOT-DELIVERED rows, 9 are LAN-gated or Mac-Studio-rejoin-gated (2.1, 2.3, 3.2, 4.1, 11.1, 11.2 plus 5.5/5.7 awaiting Cline + OpenHands work on the home Mac Mini, plus 6.6 gated on 5.5). Off-LAN-executable now (2): 5.5 Cline install + 5.7 OpenHands sandbox-launch verification; 12.2 baseline tag remains Brief D LAN-gated.
 
 ---
 
@@ -337,9 +339,32 @@ Ordered by leverage (highest-leverage gap first):
 | WBS 11.1/11.2 A/B benchmark execution gap | LOW-MEDIUM | Both rows are gated on WBS 5.1 OpenCode install. If OpenCode is installed but the A/B comparison is skipped at WBS 12.2 baseline-freeze time, the spec's promotion-gate evidence requirement is not satisfied | Brief D scope should include at least one A/B task class (e.g., the bug-fix on a single file task from §5.1 of the implementation schedule) before tag-cut |
 | Mac Studio rejoin uncovers Headscale config drift | MEDIUM | Headscale unreachable today (`vpn.reivernet.com:8082` timeout). If the unreachability is caused by control-server side drift, the Mac Studio rejoin runbook may be insufficient | Treat the first LAN session as a Headscale-server health check first; Mac Studio rejoin is downstream |
 | Cisco Provenance Kit OOM recurrence on Mac Studio | LOW | KI-010 documents that Tier 1/2 (32 GB) OOMs on the BF16 fingerprint step; Mac Studio's 96 GB should clear it, but the kit's memory model may scale with model size and a 60+ GB BF16 download may approach Mac Studio limits on simultaneous swap pressure | KI-010 closure brief should monitor memory pressure during the scan; surface back if OOM recurs |
+| Install-state probe methodology relied on `which <agent>` alone; missed installs not PATH-wired (OpenCode at `~/.opencode/bin/`) AND missed VS Code extensions (Continue at `~/.vscode/extensions/`). Future audits classifying NOT-DELIVERED at WBS 5.x must probe non-PATH install locations (`~/.<agent>/bin/`, `~/.local/bin/`, `/opt/homebrew/bin/`), VS Code extension lists (`code --list-extensions`), config dirs (`~/.<agent>/`), and Docker images (`docker images`) before classification | HIGH (already materialized in original audit) | Brief D plan §7 risk register row (b) already cites this; doctrine response is the §9 self-correction in this doc + a checklist for future install-state audits | Future audits adopt the probe-beyond-`which` checklist: (1) `which`, (2) `~/.<agent>/bin/`, (3) `/opt/homebrew/bin/<agent>` + `brew info <agent>`, (4) `~/.local/bin/<agent>`, (5) `pip3 show` + `uv tool list`, (6) `code --list-extensions`, (7) `find ~/.vscode/extensions ~/.continue ~/.<agent>`, (8) `docker images \| grep <agent>` |
+
+---
+
+## §9 Self-correction (2026-05-11) — install-state probe methodology
+
+**What surfaced.** Thread A WP-1 (Brief D off-LAN cleanup pass) discovered two install-state false-negatives in this audit's §4.C and §5 classifications:
+
+1. **OpenCode is installed.** Binary at `~/.opencode/bin/opencode` v1.14.41 (Mach-O 64-bit arm64, 104 MB, mtime 2026-05-07 22:31). PATH-wired in `~/.zshrc:24` (`export PATH=/Users/adriancox/.opencode/bin:$PATH`). Functional smoke tests pass: `opencode --version` returns `1.14.41`; `opencode --help` produces full subcommand suite. The install almost certainly came from `curl -fsSL https://opencode.ai/install \| bash` (the install path E-002 endorses) given the `@opencode-ai/plugin` npm scope in `~/.opencode/package.json`. Wrap-opencode shape match against installed CLI is perfect — `run` subcommand + `--dir` + `-m, --model` + `--dangerously-skip-permissions` flags all present.
+
+2. **Continue is installed.** VS Code extension `continue.continue-1.2.22-darwin-arm64` at `~/.vscode/extensions/`. Config substrate at `~/.continue/` includes `config.json`, `config.yaml`, `package.json`, `.continueignore`, `.continuerc.json`, `tsconfig.json`, `config.ts`, `sessions/sessions.json`, `index/index.sqlite` — fully-active install with session history.
+
+**Confirmed-correct classifications (probe-beyond-`which` validated).** Cline was correctly classified NOT-DELIVERED (`code --list-extensions` returned empty for `cline`; no extension dir). OpenHands install state remains ambiguous (only `~/.openhands/openhands.db` + `.jwt_secret` present; no CLI binary, no pip install, no `uv tool list` entry; Docker probe unavailable from current session).
+
+**Root cause.** Original audit's pre-flight used `which <agent>` as the sole install-state probe. The Bash subshells the audit-author tool used to run those probes do NOT source `~/.zshrc` (zsh-specific rc file); they source `~/.bash_profile` (which doesn't have the OpenCode PATH-wire). The PATH-wire only takes effect in the operator's interactive zsh shell — exactly where the operator actually invokes opencode. Verified via `/bin/zsh -i -c 'opencode --version'` post-discovery: returns `1.14.41` cleanly.
+
+For VS Code extensions: `which` cannot find them since they aren't binaries on PATH. The correct probe is `code --list-extensions` (or equivalent for Cursor / VS Codium / VS Code Insiders) plus `find ~/.vscode/extensions/` for the directory match.
+
+**Doctrine response.** A new §8 risk register row codifies the probe-beyond-`which` checklist for future install-state audits. The Brief D plan §7 risk register row (b) "Track 2 install completeness mis-stated for Cline / Continue" already anticipated this; Thread A WP-1 resolved it for OpenCode and Continue (false-negatives corrected to AS-SPEC) and confirmed Cline as correct NOT-DELIVERED.
+
+**Scope contained.** The §17.2 WBS row classifications for non-Track-2 areas (model host, network, governance, artifacts, worktrees, benchmarks, workflows, monitoring, promotion gates, docs) used non-`which` evidence (filesystem inspection, repo file existence, config presence) and are not affected by this self-correction. The methodology fix applies specifically to WBS 5.x install-state classifications.
+
+**PATH-wire scope note.** The operator's `~/.zshrc:24` PATH-wire is OUTSIDE the repo (operator's home directory shell rc). Thread A WP-1 did NOT modify it (no edit needed; pre-existing) and did NOT add it to the repo (per brief: "if it's at ~/.zshrc and that's NOT in the repo, then the PATH-wire is not a repo change"). The §9 self-correction documents the PATH-wire's existence for audit-trail completeness.
 
 ---
 
 ## End of audit
 
-No execution. Single audit deliverable. Brief D (LAN-session) is the natural next execution context for the §7 prioritization above. Off-LAN-executable items in §7 (OpenCode install, Cline/Continue extension probe, OpenHands sandbox launch, roadmap errata branch merge) can land in interim briefs without LAN dependency.
+No execution. Single audit deliverable. Brief D (LAN-session) is the natural next execution context for the §7 prioritization above. Off-LAN-executable items in §7 — narrowed post-§9 correction to: Cline install on home Mac Mini (5.5), OpenHands sandbox-launch verification (5.7), roadmap errata branch merge (LANDED 2026-05-11 at main commit 3a3a3a2f) — can land in interim briefs without LAN dependency. OpenCode (5.1) and Continue (5.6) are no longer in the off-LAN-executable list; they were already done at audit-authoring time.
