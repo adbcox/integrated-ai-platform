@@ -24,6 +24,7 @@ Individual ADR files live here. Each file is one decision.
 | [ADR-A-016](ADR-A-016-canonical-patterns-registry.md) | Canonical Patterns Registry | Accepted |
 | [ADR-A-017](ADR-A-017-vault-warm-copy-backup-strategy.md) | Vault file-backend warm-copy is the backup strategy | Accepted |
 | [ADR-A-018](ADR-A-018-replace-plane-with-openproject.md) | Replace Plane CE with OpenProject CE as PM substrate | Accepted |
+| [ADR-A-020](ADR-A-020-track2-agent-roles.md) | Track 2 Agent Role Codification | Accepted |
 
 ## Format
 
