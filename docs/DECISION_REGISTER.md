@@ -24,7 +24,7 @@ the decision content here.
 | [A-003](adr/ADR-A-003.md) | Ollama-first is the default coding posture | Local Ollama is the default LLM; Anthropic Pro is reserved for high-judgment tasks. |
 | [A-004](adr/ADR-A-004.md) | Aider is an adapter, not a backbone | Aider integrates into the platform; the platform does not depend on Aider's lifecycle. |
 | [A-005](adr/ADR-A-005.md) | Claude Code is supervisory or exceptional | Routine work runs under `claude-local`; `claude-pro` is for supervisory or genuinely high-judgment tasks. |
-| [A-020](adr/ADR-A-020-track2-agent-roles.md) | Track 2 Agent Role Codification (PROPOSED) | Codifies work-class × LiteLLM-tier × default-model × capability-boundary for the six verified Track 2 agents (Aider/Goose/Serena/OpenCode/Continue/OpenHands). Status PROPOSED — seven operator decision questions (Q-1 through Q-7 in §5) gate Acceptance. |
+| [A-020](adr/ADR-A-020-track2-agent-roles.md) | Track 2 Agent Role Codification | Codifies work-class × LiteLLM-tier × default-model × capability-boundary for the six verified Track 2 agents (Aider/Goose/Serena/OpenCode/Continue/OpenHands). Q-1 through Q-7 resolved 2026-05-11 per Thread A WP-4: cross-cutting `.env`+SSH prohibition (Q-1); OpenCode inherits Aider TIER 1 doc-authoring refusal (Q-2); Serena classified MCP tool (Q-3); Continue pinned to `qwen2.5-coder:7b` T1 (Q-4); Cline v1.1 amendment post-Brief D (Q-5); OpenHands T3 default with operator-supervised T2 escape hatch (Q-6); Goose Posture 0 supervised-only no autonomous recipes (Q-7). |
 
 ## Documentation, ADR governance, and external systems
 

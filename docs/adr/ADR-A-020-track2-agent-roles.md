@@ -1,7 +1,8 @@
 # ADR-A-020 — Track 2 Agent Role Codification
 
-**Status:** PROPOSED
-**Date:** 2026-05-11
+**Status:** ACCEPTED
+**Date:** 2026-05-11 (PROPOSED); 2026-05-11 (ACCEPTED)
+**Acceptance gate:** operator decision via Thread A WP-4 chat session 2026-05-11; Q-1 through Q-7 resolved per §5
 **Phase:** 17 (closeout)
 **Deliverable:** Thread A WP-4 (Brief D plan-doc handoff)
 **Supersedes:** none (this is the first ADR consolidating Track 2 agent roles)
@@ -68,9 +69,11 @@ Six rows, one per agent. Columns: canonical surface / primary work-class / disal
 | Default LiteLLM tier | **Bypasses LiteLLM** — direct native Ollama provider to Mac Studio (per D-17-13 WP-03 substrate); falls back to LiteLLM-local via `wrap-goose.sh` `MODEL_HOST=LiteLLM-local` branch when Mac Studio unreachable | D-17-13 WP-03 + `wrap-goose.sh` L51-66 `probe_model_host` |
 | Default model | `qwen3-coder:30b-coding` (per `wrap-goose.sh` L79); LITELLM_MODEL fallback `qwen3-coder-30b` for litellm-local | `wrap-goose.sh` L79-96; roadmap §4.3 ("Goose research/ops: qwen3-coder:30b-coding initially") |
 | Capability boundaries | Read-only substrate only: `filesystem-mcp` + `xindex` extensions enabled; write/exec extensions all DISABLED. Operator review mandatory on all output (Posture 0 doctrine: "supervised use only"). No Vault, no docker, no ssh-cross-host | D-17-13 WP-05 `goose-capability-boundary.md` Posture 1 boundary (current cell Posture 0 = stricter) |
-| Posture | **Posture 0 (supervised use only)** — first measured cell (Goose+qwen3-coder:30b × C1) demoted from Posture 2 → Posture 1 → Posture 0 across D-17-53 sessions 10–13; C1 split into C1a SUSPENDED + C1b parked | D-17-53 §9 row chronicle (Option B trigger; "Goose dispatch RETIRED for C1a work indefinitely") |
+| Posture | **Posture 0 — supervised invocation only. Autonomous recipe execution NOT permitted. Manual operator approval required per invocation.** (Q-7 resolution honors D-17-53 Posture-2 → Posture-0 demotion chronicle; no low-risk recipe carve-out — full supervised gate.) First measured cell (Goose+qwen3-coder:30b × C1) demoted from Posture 2 → Posture 1 → Posture 0 across D-17-53 sessions 10–13; C1 split into C1a SUSPENDED + C1b parked | D-17-53 §9 row chronicle (Option B trigger; "Goose dispatch RETIRED for C1a work indefinitely") + Q-7 resolution |
 
-### Serena 1.2.0 (MCP tool, not agent — see Q-3)
+### Serena 1.2.0 (MCP tool, not standalone agent — Q-3 RESOLVED)
+
+**Note:** MCP tool, not standalone agent. Provides LSP-based symbol intelligence consumed by other agents (Cline + Aider + OpenCode + Goose). Row retained for visibility per Q-3 resolution; tier/model columns remain N/A — Serena does not invoke an LLM directly.
 
 | Field | Value | Evidence |
 |---|---|---|
@@ -90,7 +93,7 @@ Six rows, one per agent. Columns: canonical surface / primary work-class / disal
 |---|---|---|
 | Canonical surface | Mac Mini per roadmap §1.2 (primary terminal coding executor); MacBook for roaming | roadmap §1.2 + §9.1 ("primary Claude Code-style terminal coding executor candidate") |
 | Primary work-class | **OpenCode normal coding** (per §4.3); Plan/Build mode discipline per roadmap §9.5 AGENTS.md template | roadmap §4.3 + §9.5 |
-| Disallowed | Not specified by spec. Q-2 in §5: should OpenCode inherit Aider's TIER 1 work-class boundaries (TIER 2 doc-authoring refused) or operate at TIER 2 by default? | n/a |
+| Disallowed | TIER 2 multi-paragraph doc-authoring (C1a) DISALLOWED — inherits Aider boundary per D-17-101 (Q-2 resolution: OpenCode refuses C1a chronicle/doctrine append; route to Claude Code/Codex) | D-17-101 §9 row + work-routing-doctrine.md "Aider refusal note" (extended by ADR-A-020 to OpenCode) |
 | Default LiteLLM tier | T2 stunt-double on MacBook off-LAN; T3 Mac Studio Ollama on-LAN. `wrap-opencode.sh` `probe_model_host` returns Thunderbolt → LAN → LiteLLM-local fallback chain (L51-66) | `wrap-opencode.sh` probe + `configs/opencode/opencode.json` Thunderbolt + LAN-fallback providers |
 | Default models | normal: `qwen3-coder:30b-coding`; hard plan: `qwen3-coder-next:80B`; via LiteLLM stunt-double on MacBook: `qwen3-coder-30b-stunt-double` (auto-fallback per `configs/litellm/config.yaml`) | roadmap §4.3 + `configs/opencode/opencode.json` `models` block + LiteLLM fallback chain |
 | Capability boundaries | Plan/Build mode discipline (AGENTS.md template per §9.5); safety rules per roadmap §8 permission profiles; `--dangerously-skip-permissions` flag available in v1.14.41 CLI (wrap-opencode uses it on litellm-local path L181 only) | roadmap §8 + §9.5 + `wrap-opencode.sh` |
@@ -104,7 +107,7 @@ Six rows, one per agent. Columns: canonical surface / primary work-class / disal
 | Primary work-class | **IDE helper / autocomplete / inline checks** — NOT an autonomous executor | roadmap §2.2 ("Continue | IDE helper/autocomplete/checks | Autonomous executor [= incorrect role]") |
 | Disallowed | Use as autonomous executor (explicit incorrect role per roadmap §2.2) | roadmap §2.2 |
 | Default LiteLLM tier | **autocomplete: fastest acceptable local model**; per §4.3 "Continue autocomplete: fastest acceptable local model" — implies T1 Ollama 7b for fast tasks (no LiteLLM hop needed for autocomplete latency profile) | roadmap §4.3 |
-| Default model | Fastest acceptable local model. Q-4 in §5: explicit model assignment? `qwen2.5-coder:7b` for autocomplete on MacBook (matches LiteLLM T1)? | roadmap §4.3 (underspecified) |
+| Default model | `qwen2.5-coder:7b` (T1 explicit pin per Q-4 resolution; Continue's own config retains runtime override capability via VS Code extension settings) | roadmap §4.3 + Q-4 resolution (explicit T1 pin selected over "fastest acceptable" ambiguity) |
 | Capability boundaries | IDE-scoped (VS Code extension); no shell exec via Continue itself; helper role — operator review on every suggestion | roadmap §2.2 + §14.1 |
 | Posture | **Active production** — installed v1.2.22; ~/.continue/{config.json,config.yaml,package.json,sessions/sessions.json,index/index.sqlite} populated | WP-1 supplementary probe |
 
@@ -115,8 +118,8 @@ Six rows, one per agent. Columns: canonical surface / primary work-class / disal
 | Canonical surface | Sandbox-only via Docker per roadmap §15.1; image `docker.openhands.dev/openhands/openhands:1.7` (operator-verified canonical per WP-2 + capability audit `openhands-app-2026-05-01.md`) | roadmap §15.1 + capability audit |
 | Primary work-class | **Sandboxed full-project autonomy experiment** — SWE-bench-like tasks on COPIED repos | roadmap §15.1 |
 | Disallowed | Verbatim §15.2: "No canonical repo edits / No direct QNAP write access except artifact export directory / No Vault access / No .env access / No host Docker destructive control / No production service credentials / No persistent unattended autonomy" | roadmap §15.2 (verbatim) |
-| Default LiteLLM tier | Per §4.3: "OpenHands sandbox: same models but with strict artifact logging" — implies same tier as OpenCode (T2 MacBook off-LAN / T3 Mac Studio on-LAN). Q-6 in §5: should sandbox-only constraint force T3 (Mac Studio) only, never local stunt-double? | roadmap §4.3 (underspecified) |
-| Default model | Same as OpenCode per §4.3 ("same models"). Q-6 sibling. | roadmap §4.3 |
+| Default LiteLLM tier | **T3 Mac Studio Ollama (default — sustained autonomous runs)** per Q-6 resolution. Escape hatch: operator may invoke OpenHands sandbox on T2 vllm-mlx stunt-double for short experimental runs under manual session supervision; sustained autonomous SWE-bench-like batches require T3 to avoid MacBook thermal throttling during travel sessions. | roadmap §4.3 + Q-6 resolution |
+| Default model | T3: `qwen3-coder:30b-coding`; T3 hard plan: `qwen3-coder-next:80B`; T2 escape hatch: `qwen3-coder-30b-stunt-double` (short manual-supervised runs only) | roadmap §4.3 + Q-6 resolution |
 | Capability boundaries | Verbatim §15.2 (above). Operator-decided KEEP per Phase 17 capability audit 2026-05-01 | roadmap §15.2 + capability audit |
 | Posture | **Sandbox-only — KEEP** per capability audit; install v1.7 via Track 2 Stage 6 (smoke-test PASSED 2026-05-09) | Track 2 Stage 6 + capability audit operator-decided KEEP |
 
@@ -128,16 +131,16 @@ Cross-section of work-class × tier × default-agent. **Cross-references §2 row
 
 | Work-class | T1 (Ollama 7b — fast) | T2 (vllm-mlx stunt-double 30b-3bit — MacBook off-LAN) | T3 (Mac Studio Ollama 30b-coding — on-LAN) | Default agent |
 |---|---|---|---|---|
-| **C0 fast / autocomplete** | `qwen2.5-coder:7b` | n/a (fast-path stays T1) | n/a | Continue (autocomplete) |
+| **C0 fast / autocomplete** | `qwen2.5-coder:7b` (Q-4 explicit pin) | n/a (fast-path stays T1) | n/a | Continue (autocomplete) |
 | **C1 bounded code edit (TIER 1)** | n/a | `qwen3-coder-30b-stunt-double` | `qwen3-coder:30b-coding` | Aider |
 | **C1 architect / hard plan** | n/a | (vllm-mlx limited to 30b-3bit) | `qwen3-coder-next:80B` | Aider (architect mode) / OpenCode (hard plan) |
 | **C1a verbatim-quote reference doc** | n/a | n/a | n/a | **Reserved Claude Code under `claude-local`** — Goose SUSPENDED for this cell per D-17-53 |
 | **C1b narrative chronicle / doctrine** | n/a | n/a | n/a | Claude Code (Goose+qwen3-coder:30b at Posture 0 — supervised use only) |
 | **C2 IDE-supervised Plan/Act** | n/a | n/a | n/a | Cline (out-of-ADR-scope; queued for Brief D WP-D-07) |
-| **TIER 2 doc-authoring** | n/a | n/a | n/a | **Claude Code / Codex** (Aider refuses; D-17-101) |
+| **TIER 2 doc-authoring (C1a multi-paragraph chronicle/doctrine)** | n/a | n/a | n/a | **Claude Code / Codex** — Aider refuses (D-17-101); OpenCode refuses (Q-2 inherits Aider boundary) |
 | **TIER 2 orchestration / probes / Vault** | n/a | n/a | n/a | Claude Code / Codex |
 | **TIER 3 frontier escalation** | n/a | n/a | n/a | Claude Code under `claude-pro` |
-| **Sandbox SWE-bench-like** | n/a | (Q-6) | (Q-6) | OpenHands (sandbox-only) |
+| **Sandbox SWE-bench-like (sustained autonomous)** | n/a | escape hatch only (operator-supervised short runs) | `qwen3-coder:30b-coding` / `qwen3-coder-next:80B` for hard plan (Q-6 default) | OpenHands (sandbox-only, T3 default) |
 
 **Reading note.** T1 is local Mac Mini / MacBook Ollama 7b for fast tasks; T2 is MacBook off-LAN vllm-mlx serving `mlx-community/Qwen3-Coder-30B-A3B-Instruct-3bit` on port 8500; T3 is Mac Studio Ollama serving `qwen3-coder:30b-coding` env-var-driven via LiteLLM. The LiteLLM auto-fallback chain `qwen3-coder-30b → qwen3-coder-30b-stunt-double` (per `configs/litellm/config.yaml`) means agents requesting T3 transparently downgrade to T2 when Mac Studio is unreachable — no agent-side change needed.
 
@@ -147,6 +150,7 @@ Cross-section of work-class × tier × default-agent. **Cross-references §2 row
 
 **Cross-cutting boundaries (apply to all 6 agents):**
 
+- **Cross-cutting prohibition (Q-1 resolution):** all Track 2 agents are denied `.env` file access AND cross-host SSH access in their default invocations. OpenHands §15.2 already mandates this for OpenHands; Q-1 generalizes the prohibition to Aider / Goose / Serena / OpenCode / Continue. Operator-authored runbooks providing explicit narrow-scope credential or SSH access are the only sanctioned override path; the override must be invocation-scoped, not session-scoped, and must surface in artifact provenance.
 - **Vault:** No agent reads, writes, or rotates Vault secrets directly. Vault interaction is Claude Code / Codex territory (TIER 2 per `work-routing-doctrine.md`). OpenHands §15.2 explicitly forbids.
 - **Production canonical repo:** OpenHands forbidden from canonical repo edits per §15.2; other agents may edit canonical repo within their work-class boundaries (Aider TIER 1; Goose Posture 0 supervised; OpenCode/Continue per their roles).
 - **`.env` access:** Forbidden for OpenHands per §15.2; not specified for other agents — Q-1 in §5: is `.env` access disallowed for ALL Track 2 agents?
@@ -162,38 +166,53 @@ Cross-section of work-class × tier × default-agent. **Cross-references §2 row
 
 ---
 
-## §5 Operator decision questions (gate ADR Acceptance)
+## §5 Resolved decisions (2026-05-11)
 
-Seven questions surfaced inline in §2/§3/§4. Resolve before ADR Status flips PROPOSED → Accepted.
+Seven decision questions surfaced during PROPOSED authoring (Thread A WP-4 commit `34b6e6dd`). All seven resolved 2026-05-11 via operator decision in the Thread A WP-4 chat session; resolutions are baked into §2 + §3 + §4 above. Resolution log:
 
-| Q# | Question | Default position | Affects |
-|---|---|---|---|
-| Q-1 | Cross-cutting boundary: should `.env` access + cross-host SSH be explicitly disallowed for ALL Track 2 agents (not just OpenHands per §15.2)? | YES — codify in §4 cross-cutting boundaries | §4 (all rows) |
-| Q-2 | OpenCode work-class — inherit Aider's TIER 1 work-class boundaries (refuse TIER 2 doc-authoring) or operate at TIER 2 by default? | Inherit TIER 1 boundaries — keep frontier-cost discipline (D-17-95 rationale) | OpenCode §2 row |
-| Q-3 | Serena classification — "agent" (row in §2) or "MCP tool" (footnote / sibling doc)? | MCP tool — but keep §2 row for completeness with a clear "tool, not agent" annotation | Serena §2 row + §3 matrix |
-| Q-4 | Continue model assignment — explicit T1 `qwen2.5-coder:7b` for autocomplete, or "fastest acceptable local model" left runtime-configurable? | Explicit T1 `qwen2.5-coder:7b` for autocomplete; T2/T3 for IDE chat per `qwen3-coder:30b-coding` default | Continue §2 row + §3 matrix |
-| Q-5 | Cline (out-of-scope for this ADR) — when does it earn an ADR row? Sibling ADR? Folded into this one in a v1.1 amendment? | Sibling ADR or v1.1 amendment after Brief D WP-D-07 closes Mac Mini canonical-surface install. NOT in this ADR | next-ADR scope |
-| Q-6 | OpenHands sandbox tier — should sandbox-only constraint force T3-only (Mac Studio) routing, never T2 stunt-double? Or inherit standard T2-on-MacBook-off-LAN fallback? | T3-only when on-LAN; sandbox use off-LAN deferred until Mac Mini available (T2 stunt-double on MacBook is operator-personal not sandbox) | OpenHands §2 row + §3 matrix |
-| Q-7 | Goose Posture 0 doctrine — does the ADR mandate "supervised use only with operator-approved recipes" or also allow autonomous low-risk recipes (read-only summarization, repo introspection)? | Supervised use only — operator review mandatory on all output per current `goose-capability-boundary.md` until Posture 1 re-promotion gate passes | Goose §2 row |
+| Q# | Question | Resolution | Decision date | Decision source |
+|---|---|---|---|---|
+| Q-1 | Cross-cutting boundary: should `.env` access + cross-host SSH be explicitly disallowed for ALL Track 2 agents (not just OpenHands per §15.2)? | **YES** — `.env` access AND cross-host SSH denied for all 6 agents in default invocations. Operator-authored runbooks with narrow-scope override are the only sanctioned path; override must be invocation-scoped + surfaced in artifact provenance. Codified as the first bullet of §4 cross-cutting boundaries. | 2026-05-11 | Thread A WP-4 chat session |
+| Q-2 | OpenCode work-class — inherit Aider's TIER 1 work-class boundaries (refuse TIER 2 doc-authoring) or operate at TIER 2 by default? | **Inherit TIER 1 boundaries** — OpenCode refuses C1a multi-paragraph doc-authoring per D-17-101 (extended from Aider to OpenCode by this ADR). Frontier-cost discipline retained. Codified in §2 OpenCode "Disallowed" cell + §3 TIER 2 doc-authoring row. | 2026-05-11 | Thread A WP-4 chat session |
+| Q-3 | Serena classification — "agent" (row in §2) or "MCP tool" (footnote / sibling doc)? | **MCP tool, not standalone agent** — Serena provides LSP-based symbol intelligence consumed by other agents (Cline + Aider + OpenCode + Goose). Row retained for visibility with explicit annotation; tier/model columns N/A. Codified in §2 Serena row annotation. | 2026-05-11 | Thread A WP-4 chat session |
+| Q-4 | Continue model assignment — explicit T1 `qwen2.5-coder:7b` for autocomplete, or "fastest acceptable local model" left runtime-configurable? | **Explicit T1 pin `qwen2.5-coder:7b`** for autocomplete. Continue's own VS Code extension settings retain runtime override capability for IDE-chat use cases. Codified in §2 Continue "Default model" cell + §3 matrix C0 row. | 2026-05-11 | Thread A WP-4 chat session |
+| Q-5 | Cline (out-of-scope for this ADR) — when does it earn an ADR row? Sibling ADR? Folded into this one in a v1.1 amendment? | **ADR-A-020 v1.1 amendment** planned post-Brief D WP-D-07 Mac Mini canonical-surface install. This ADR v1.0 scope explicitly excludes Cline; Cline state is "covered separately" pending Brief D execution evidence. NOT a sibling ADR — v1.1 amendment keeps the agent-routing matrix in a single file. | 2026-05-11 | Thread A WP-4 chat session |
+| Q-6 | OpenHands sandbox tier — should sandbox-only constraint force T3-only (Mac Studio) routing, never T2 stunt-double? Or inherit standard T2-on-MacBook-off-LAN fallback? | **T3 Mac Studio default for sustained autonomous runs**; T2 vllm-mlx stunt-double available as operator-supervised escape hatch for short experimental runs. Sustained SWE-bench-like batches forbidden on T2 (MacBook thermal throttling during travel sessions). Codified in §2 OpenHands "Default LiteLLM tier" cell + §3 sandbox row. | 2026-05-11 | Thread A WP-4 chat session |
+| Q-7 | Goose Posture 0 doctrine — does the ADR mandate "supervised use only with operator-approved recipes" or also allow autonomous low-risk recipes (read-only summarization, repo introspection)? | **Supervised invocation only; autonomous recipes NOT permitted.** Manual operator approval required per invocation. No low-risk autonomous carve-out — full supervised gate honors D-17-53 Posture-2 → Posture-0 demotion chronicle. Codified in §2 Goose "Posture" cell. | 2026-05-11 | Thread A WP-4 chat session |
 
-**Resolution mechanism.** Operator answers Q-1 through Q-7 in a single pass; ADR is re-edited with answers folded in; Status flips PROPOSED → Accepted; downstream consequences in §6 unlock.
+**Resolution outcome.** All seven decisions baked into ADR body above; Status flipped PROPOSED → ACCEPTED 2026-05-11. Downstream propagation queued for Thread A WP-5 per §6 below.
 
 ---
 
-## §6 Consequences (downstream of Acceptance)
+## §6 Consequences (now actionable — Thread A WP-5 propagation scope)
 
-If this ADR is Accepted with Q-1 through Q-7 resolved, the following downstream changes unlock — **none of them in this commit**:
+Acceptance 2026-05-11 triggers the downstream propagation work below. **None of it executes in this Acceptance commit** — propagation is Thread A WP-5 scope; this section enumerates the queued work for that follow-on brief.
 
-**Doctrine doc updates:**
-- `work-routing-doctrine.md` (D-17-95) — add a cross-reference to this ADR's §3 matrix; no content rewrite (D-17-95 is canonical for TIER 1/2/3 generic classification; this ADR codifies which agent handles which work-class within those tiers).
-- `goose-capability-boundary.md` — add a cross-reference to this ADR's Goose row + Q-7 resolution.
-- `aider-intelligence-doctrine.md` — add a cross-reference; the five-layer enforcement structure is already canonical there.
+**Doctrine doc updates (Thread A WP-5):**
+- `work-routing-doctrine.md` (D-17-95) — add a cross-reference to this ADR's §3 matrix AND fold in the Q-1 cross-cutting `.env` + SSH prohibition as a new sub-section of the tier definitions (the prohibition applies across all tiers, so it belongs in the doctrine's preamble, not under any single tier).
+- `goose-capability-boundary.md` — add a cross-reference to this ADR's Goose row + formalize the Q-7 "supervised invocation only" gate as an explicit promotion-criterion entry (no autonomous recipes until Posture 1 re-promotion gate passes).
+- `capability-self-knowledge.md` (D-17-23) — add a reference to this ADR's §2 per-agent role table as the canonical agent-identity index (capability-self-knowledge currently focuses on capability-discovery flavors A/B/C/D; the per-agent role table is the missing identity layer).
+- `aider-intelligence-doctrine.md` — add a cross-reference; the five-layer enforcement structure is already canonical there. No content rewrite.
 - `local-prompt-library-doctrine.md` (D-17-90) — add cross-reference linking persona selection to this ADR's per-agent model defaults.
 
-**Wrapper script updates (Brief D candidates, NOT this commit):**
-- `agent-orchestration/scripts/wrap-aider.sh` — explicit routing rule for TIER 2 doc-authoring (current behavior: BRIEF_MODEL or task-class default; Q-2 may require explicit refusal path).
-- `agent-orchestration/scripts/wrap-goose.sh` — Posture 0 enforcement (Q-7).
-- `agent-orchestration/scripts/wrap-opencode.sh` — Q-2 + Q-6 routing changes.
+**Wrapper script updates (Thread A WP-5 — NOT this commit):**
+- `agent-orchestration/scripts/wrap-opencode.sh` — gain explicit Q-2 doc-authoring refuse path (extension of D-17-101 Aider boundary; OpenCode now refuses C1a multi-paragraph chronicle/doctrine append at the wrapper layer, surfacing the work back to operator with a `route to Claude Code/Codex` message).
+- `agent-orchestration/scripts/wrap-goose.sh` — gain explicit Q-7 supervised-mode gate (current `--no-context` posture is read-only-substrate-aligned; WP-5 adds an explicit "operator approval required" prompt OR an `AGENT_OPERATOR_APPROVED=1` env-var gate so autonomous invocations are structurally blocked).
+- `agent-orchestration/scripts/wrap-aider.sh` — already enforces TIER 1/TIER 2 boundary via the three-layer intelligence system (D-17-103); WP-5 adds a cross-reference comment pointing to this ADR.
+
+**LiteLLM config audit (Thread A WP-5):** verify `configs/litellm/config.yaml` Tier-1 `qwen2.5-coder` entry serves the Q-4 explicit `qwen2.5-coder:7b` pin (the current config aliases `qwen2.5-coder` → `ollama_chat/qwen2.5-coder:7b` per the WP-2 pre-flight read; Q-4 is satisfied at the LiteLLM layer but the wrapper / extension config alignment is worth verifying).
+
+**§9 row interactions:**
+- D-17-95 (work-routing doctrine) — this ADR is downstream consolidation; no row change.
+- D-17-13 (Goose) — DONE; this ADR cites it. No row change.
+- D-17-101 (Aider doc-authoring Tier-2 reclassification) — DONE; cited. No row change.
+- D-17-104 (Kimi K2.6 DEFERRED) — cited as cascade-evaluation that did NOT promote; no row change.
+
+**Brief D plan (`docs/_planning/phase-17-brief-d-plan-2026-05-11.md`):**
+- WP-D-07 inherits ADR-resolved agent roles for per-agent validation work. Specifically: Q-5 commits this ADR to a v1.1 amendment after Brief D WP-D-07 closes Mac Mini canonical-surface install for Cline. WP-5 may author a sibling planning note recording the v1.1 trigger.
+
+**Capability boundary canonicalization:**
+- Q-1 resolution codifies cross-cutting `.env` + SSH boundaries in §4 of this ADR. WP-5 extends `integration-audit-doctrine.md` with a new Finding cross-referencing this ADR's §4 first bullet — the Finding is the durable observability anchor; the ADR is the decision anchor.
 
 **§9 row interactions:**
 - D-17-95 (work-routing doctrine) — this ADR is downstream consolidation; no row change.
@@ -251,3 +270,11 @@ If this ADR is Accepted with Q-1 through Q-7 resolved, the following downstream 
 **Phase 17 closeout artifacts that consume this ADR's outcome:** `docs/_audit/orchestration-layer-rebuild-audit-2026-05-11.md` (audit), `docs/_planning/phase-17-brief-d-plan-2026-05-11.md` (Brief D plan WP-D-07).
 
 **Install evidence (Thread A WP-1 + WP-2 + WP-3 corrections):** `docs/runbooks/foundation-install-status-track-2.md` Stages 1–7; main commits `06d3d6fd` (WP-1), `b71c3689` (WP-2), `bbf3d4e3` (WP-3).
+
+---
+
+## §9 Version history
+
+- **v1.0 PROPOSED** — 2026-05-11 — initial codification, 7 Q-NN gates open. Thread A WP-4 commit `34b6e6dd` on `feat/thread-a-wp-4-track2-agents-adr`.
+- **v1.0 ACCEPTED** — 2026-05-11 — Q-1 through Q-7 resolved per operator decision in Thread A WP-4 chat session. Resolutions baked into §2 + §3 + §4 above; resolution log at §5. This commit on the same branch (Thread A WP-4 Acceptance amendment).
+- **v1.1 (planned)** — post-Brief D WP-D-07 — Cline canonical-surface coverage added per Q-5 resolution. Trigger: Mac Mini Cline install verified live during Brief D LAN-session. Amendment shape: add Cline row to §2; extend §3 matrix with C2 IDE-supervised Plan/Act row; update §1 Context to seven-agent scope.
