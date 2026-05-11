@@ -1502,3 +1502,36 @@ service that already exists).
 - D-17-108 (FlareSolverr — migrated to Mac Mini Docker)
 - Finding 20 (D-17-107 note on probe-before-assume)
 - `docs/architecture-facts/download-pipeline-monitoring-doctrine.md`
+
+---
+
+## Finding 23 — Cross-cutting Track 2 agent prohibitions: `.env` + cross-host SSH denied for all Track 2 agents (ADR-A-020 Q-1)
+
+**Date:** 2026-05-11
+**Originating WP:** Thread A WP-5 (ADR-A-020 propagation)
+**Decision anchor:** `docs/adr/ADR-A-020-track2-agent-roles.md` §4 first bullet + §5 Q-1 resolution.
+
+### Observability anchor
+
+`.env` file access AND cross-host SSH access are denied in default invocations for all six Track 2 agents (Aider / Goose / Serena / OpenCode / Continue / OpenHands). The roadmap §15.2 already enforces this for OpenHands; ADR-A-020 Q-1 generalizes the prohibition to the remaining five agents.
+
+### Audit pattern
+
+Future audits inspecting Track 2 agent invocations must verify the prohibition holds. Observability surfaces to probe:
+
+| Surface | Audit check |
+|---|---|
+| Agent artifact provenance (`~/local-ai-workstation/agent_runs/<task_id>/<agent>/artifact-{pre,post}-run.json`) | Inspect `notes` + `permissions_profile` fields for any sanctioned-override annotations; absence of explicit override means default prohibition applies |
+| Wrapper script source | `wrap-aider.sh` / `wrap-goose.sh` / `wrap-opencode.sh` must NOT pass `.env` paths as args; must NOT export SSH agent forwarding |
+| Operator-authored runbook overrides | Sanctioned overrides MUST be invocation-scoped (not session-scoped); MUST surface in artifact provenance; MUST cite an operator-authored runbook by path |
+
+### Override doctrine
+
+The only sanctioned override path is operator-authored runbook providing explicit narrow-scope credential or SSH access. Override scope is **invocation-scoped, not session-scoped**: a single Aider task brief that needs SSH to a specific host MAY override per ADR-A-020 §4; the override does NOT persist to subsequent invocations.
+
+### Cross-references
+
+- ADR-A-020 §4 first bullet (binding decision anchor)
+- ADR-A-020 §5 Q-1 resolution
+- `local-ai-workstation-roadmap.md` §15.2 (OpenHands-specific antecedent)
+- `work-routing-doctrine.md` "Cross-cutting Track 2 agent prohibitions" section (sibling doctrine reference; same Q-1 codification)
