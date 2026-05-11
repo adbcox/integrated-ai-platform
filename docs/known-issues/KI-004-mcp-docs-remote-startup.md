@@ -3,6 +3,7 @@ ki: KI-004
 title: mcp-docs-remote startup fragility (apt-get + npm on every restart)
 severity: LOW
 status: MITIGATED
+disposition: accept-as-permanent-debt-mitigated-workaround
 discovered: 2026-04-29
 phase: Phase 14 D-DOC
 ---
@@ -57,3 +58,7 @@ Push to a local registry (e.g., `192.168.10.145:5000/iap/mcp-docs-remote:latest`
 - Service is functional post-mitigation
 - Cold-start latency remains elevated (~60 s for apt even with --ignore-scripts)
 - Restart loop eliminated
+
+## Disposition (2026-05-11)
+
+Recorded per phase-17-closeout-audit §6 Q7: accept-as-permanent-debt. The `--ignore-scripts` mitigation is operationally functional; the recommended permanent fix (custom pre-built Docker image at `192.168.10.145:5000/iap/mcp-docs-remote:latest`) is deferred indefinitely. Reopens if mitigation fails or if operator schedules the custom-image build as a Phase 18 deliverable.

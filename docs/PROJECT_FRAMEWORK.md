@@ -78,6 +78,8 @@ A change record is the unit of work-package execution; when a WP runs, it IS a c
 
 Labels are stable once issued. If scope changes, the label is closed (`SUPERSEDED by`, `DEFERRED to`) and a new label is issued. Re-using a label for new scope creates traceability rot and is forbidden.
 
+**Doctrine cross-reference:** the canonical detailed taxonomy for these label patterns (including format strings, examples, and the Phase 17 historical shorthand-migration map) lives at `docs/architecture-facts/identifier-conventions.md` (D#22 architecture-fact). That doc cites this section back as source-of-truth for the lifecycle vocabulary; the two together form the bidirectional doctrine pair per criterion 6 of the Phase 17 closeout audit (`docs/_audit/phase-17-closeout-audit-2026-05-11.md` §3.6).
+
 ### 3.1 Local model stack prioritization (T1–T4)
 
 When a deliverable consumes local LLM capacity, prefer models in

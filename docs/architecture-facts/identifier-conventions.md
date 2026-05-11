@@ -1,8 +1,8 @@
 # Identifier conventions (canonical)
 
 **Status:** Canonical (D#22 — architecture-fact, survives compaction)
-**Source of truth:** `docs/PROJECT_FRAMEWORK.md` §1 Lifecycle Vocabulary
-**Last verified:** 2026-05-02
+**Source of truth:** `docs/PROJECT_FRAMEWORK.md` §1 (lifecycle vocabulary — Phase / Deliverable / Work Package / Task definitions) + §3 (label format conventions — the actual ID patterns table). §3 back-references this doc per phase-17-closeout-audit criterion 6.
+**Last verified:** 2026-05-11 (cross-reference symmetry verified per Brief B)
 
 Future sessions MUST consult this file before generating new
 identifiers in any committed artifact (commits, docs, code, configs).
