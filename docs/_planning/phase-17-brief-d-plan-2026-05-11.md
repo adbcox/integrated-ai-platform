@@ -133,6 +133,7 @@ Each WP carries: title, dependencies, scope summary, success criteria, gate refe
   - Roadmap WBS 6.5 Configure Continue (gated on 5.6)
   - Roadmap WBS 6.6 Configure Cline (gated on 5.5)
   - Roadmap WBS 11.1 + 11.2 OpenCode A/B + Serena impact (gated on 5.1)
+  - **WBS 5.5 Cline canonical-surface install on Mac Mini** — MacBook install landed off-LAN via Thread A WP-3 (extension `saoudrizwan.claude-dev` v3.82.0 confirmed installed; verified canonical per `docs/runbooks/foundation-install-status-track-2.md` Stage 3 + `https://github.com/cline/cline`); Mac Mini canonical-surface install (§1.2: "Mac Mini should run … Cline …") carries to this WP via `code --install-extension saoudrizwan.claude-dev`. Verify VS Code CLI (`which code` OR `/Applications/Visual\ Studio\ Code.app/Contents/Resources/app/bin/code`) is available on Mac Mini before issuing the install command.
 - **Per-row disposition:** execute the missing work in-session OR re-scope to Phase 18 with explicit deferral note citing Brief D investigation date. Roadmap WBS 12.2 (v1 baseline tag) is WP-D-09, not WP-D-07.
 - **Success criteria:** each of the 11 rows either landed-as-delivered OR explicitly carried to Phase 18 with a paper-trail annotation. Orchestration-rebuild audit §5 gap classification updated (or sibling audit-Brief-D-landing note appended) reflecting the disposition.
 - **Gate references:** Orchestration-rebuild audit §5 + §7 risk register row "Track 2 install completeness mis-stated for Cline / Continue".
