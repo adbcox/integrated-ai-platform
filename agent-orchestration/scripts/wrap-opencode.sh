@@ -1,5 +1,11 @@
 #!/usr/bin/env bash
-# OpenCode wrapper: execute task and capture schema-compliant artifacts per §7
+# OpenCode wrapper: execute task and capture schema-compliant artifacts per §7.
+#
+# ADR-A-020 Q-2 binding (ACCEPTED 2026-05-11): OpenCode inherits Aider's TIER 1
+# work-class boundary per D-17-101. Multi-paragraph doc-authoring (task_class
+# C1a or doc_author) is REFUSED at this wrapper layer; route to Claude Code /
+# Codex. See `docs/adr/ADR-A-020-track2-agent-roles.md` §2 OpenCode row +
+# §5 Q-2 resolution. The refuse gate below is the implementation.
 
 set -euo pipefail
 
@@ -38,6 +44,31 @@ if [[ -z "$TASK_ID" ]] || [[ "$TASK_ID" == "null" ]]; then
   echo "Error: task_id not found in brief"
   exit 1
 fi
+
+# ADR-A-020 Q-2 doc-authoring refuse gate.
+# OpenCode inherits Aider's TIER 1 boundary per D-17-101: multi-paragraph
+# doc-authoring is route-to-Claude-Code/Codex, not OpenCode-eligible.
+# Task classes recognized as doc-authoring shapes: C1a, doc_author,
+# chronicle_append, doctrine_extend.
+case "$TASK_CLASS" in
+  C1a|doc_author|chronicle_append|doctrine_extend)
+    cat >&2 <<'REFUSE_MSG'
+[OpenCode] REFUSED — task_class=$TASK_CLASS is multi-paragraph doc-authoring.
+
+Per ADR-A-020 §2 OpenCode row + §5 Q-2 resolution (ACCEPTED 2026-05-11),
+OpenCode inherits Aider's TIER 1 boundary (D-17-101): multi-paragraph
+chronicle/doctrine append is not OpenCode-eligible.
+
+Route this task to Claude Code (`claude-local` or `claude-pro`) or Codex
+per work-routing-doctrine.md TIER 2 surface assignment.
+
+Refused at wrapper layer; no agent invocation occurred. Exit code 5
+distinguishes this from runtime failures (exit 1) and brief-validation
+failures (exit 0 → no-op).
+REFUSE_MSG
+    exit 5
+    ;;
+esac
 
 # Resolve host information
 HOST=$(hostname -s)

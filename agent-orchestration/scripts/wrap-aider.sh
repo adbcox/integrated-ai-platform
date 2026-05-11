@@ -1,5 +1,15 @@
 #!/usr/bin/env bash
-# Aider wrapper: execute task and capture schema-compliant artifacts per §7, §12.4
+# Aider wrapper: execute task and capture schema-compliant artifacts per §7, §12.4.
+#
+# ADR-A-020 §2 Aider row (ACCEPTED 2026-05-11): TIER 1 work-class boundary
+# already enforced via the three-layer intelligence system (D-17-103):
+# Layer 0 ambiguity guard (D-17-111), Layer 1 diff sanity (D-17-103),
+# Layer 1.5 DeepSeek verifier (D-17-110), Layer 2 pre-flight shape detector
+# (D-17-103 — BLOCKs doc-append / rewrite-large / C1-multi-file shapes per
+# D-17-101 reclassification), Layer 3 outcome telemetry (D-17-103). No new
+# gate in this wrapper — the existing enforcement is canonical. See
+# `docs/adr/ADR-A-020-track2-agent-roles.md` §2 Aider row for the binding
+# role codification.
 
 set -euo pipefail
 

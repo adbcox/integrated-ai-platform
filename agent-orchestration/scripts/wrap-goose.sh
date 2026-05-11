@@ -1,5 +1,17 @@
 #!/usr/bin/env bash
-# Goose wrapper: execute orchestration recipe and capture schema-compliant artifacts per §7, §10.5
+# Goose wrapper: execute orchestration recipe and capture schema-compliant artifacts per §7, §10.5.
+#
+# ADR-A-020 Q-7 binding (ACCEPTED 2026-05-11): Goose at Posture 0 — supervised
+# invocation only. Autonomous recipe execution is NOT permitted. Manual operator
+# approval required PER INVOCATION via interactive y/N prompt read from /dev/tty.
+# NO env-var bypass. NO low-risk recipe carve-out. The supervised gate IS the
+# whole point — bypassing it is a doctrine violation.
+#
+# See `docs/adr/ADR-A-020-track2-agent-roles.md` §2 Goose row + §5 Q-7
+# resolution. Source of authority: D-17-53 Posture-2 → Posture-0 demotion
+# chronicle (Sessions 11/12/13 fabrication evidence). Future maintainers:
+# do NOT add an AGENT_OPERATOR_APPROVED=1 env-var bypass — the ADR explicitly
+# rejected that pattern; the per-invocation interactive prompt is binding.
 
 set -euo pipefail
 
@@ -44,6 +56,50 @@ if [[ -z "$TASK_ID" ]] || [[ "$TASK_ID" == "null" ]]; then
   echo "Error: task_id not found in brief"
   exit 1
 fi
+
+# ADR-A-020 Q-7 supervised-invocation gate.
+# Posture 0: manual operator approval required per invocation. No bypass.
+# Reads from /dev/tty so pipe-fed invocations still hit the gate.
+RECIPE_NAME=$(basename "$RECIPE_PATH" .yaml)
+cat >&2 <<APPROVAL_BANNER
+
+[Goose] ADR-A-020 Q-7 supervised-invocation gate
+================================================
+Task ID:        $TASK_ID
+Task class:     $TASK_CLASS
+Task summary:   $TASK_SUMMARY
+Recipe:         $RECIPE_NAME ($RECIPE_PATH)
+Worktree:       $WORKTREE
+Repo:           $REPO
+Permissions:    $PERMISSIONS
+
+Goose runs at Posture 0 (D-17-53 demotion chronicle). Per ADR-A-020 §2 Goose
+row + §5 Q-7 resolution: every invocation requires explicit operator approval.
+
+Approve this invocation? [y/N]: APPROVAL_BANNER
+read -r APPROVAL_RESPONSE </dev/tty
+case "$APPROVAL_RESPONSE" in
+  y|Y|yes|YES)
+    echo >&2
+    echo "[Goose] Operator approval recorded — proceeding with invocation." >&2
+    ;;
+  *)
+    echo >&2
+    cat >&2 <<'REFUSE_MSG'
+[Goose] REFUSED — operator did not approve invocation.
+
+Per ADR-A-020 §2 Goose row + §5 Q-7 resolution (ACCEPTED 2026-05-11),
+Goose at Posture 0 requires per-invocation operator approval. No
+bypass path exists. To proceed, re-invoke wrap-goose.sh and respond
+'y' at the prompt.
+
+Refused at wrapper layer; no agent invocation occurred. Exit code 7
+distinguishes this from runtime failures (non-zero from goose run)
+and brief-validation failures (exit 1).
+REFUSE_MSG
+    exit 7
+    ;;
+esac
 
 HOST=$(hostname -s)
 

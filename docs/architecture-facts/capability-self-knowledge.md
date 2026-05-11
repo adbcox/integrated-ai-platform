@@ -7,6 +7,12 @@ disagrees with any other doc, this file wins.
 
 **Doctrine ID:** D#23 (added in this deliverable)
 
+## Related canonical refs
+
+For canonical per-agent role definitions (work-class, default LiteLLM tier, default model, capability boundaries, posture) for the six verified Track 2 agents (Aider / Goose / Serena / OpenCode / Continue / OpenHands), see **ADR-A-020 §2** (`docs/adr/ADR-A-020-track2-agent-roles.md`).
+
+This doctrine doc remains the substrate for *capability-self-knowledge methodology* (the four flavors of false-negative blockers + the unblock patterns); ADR-A-020 §2 is the substrate for *per-agent role state* (who routes what at which tier). Cross-reference symmetry: this doc describes the discovery pattern; ADR-A-020 records the resulting agent-identity decisions.
+
 ## Pattern observed
 
 AI systems (Claude across surfaces; eventually local models like

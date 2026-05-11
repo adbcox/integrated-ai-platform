@@ -21,10 +21,36 @@ Sibling chronicles:
   (substrate-side observability)
 - `integration-audit-doctrine.md` — durable rules across deliverables
   (process-side observability)
+- `docs/adr/ADR-A-020-track2-agent-roles.md` — ADR §2 Goose row +
+  §5 Q-7 resolution are the binding doctrine for Goose Posture 0
+  invocation gating; this chronicle is historical record.
 
 ---
 
-## Posture 1 — Capability-validation phase (current, D-17-13 reopen)
+## ADR-A-020 Q-7 binding (2026-05-11) — Posture 0 invocation gate
+
+**Status:** Posture 0 — supervised invocation only. Autonomous recipe
+execution is **NOT permitted** under any work-class. Manual operator
+approval required per invocation. No low-risk recipe carve-out.
+
+**Source of authority:** ADR-A-020 §2 Goose row + §5 Q-7 resolution
+(`docs/adr/ADR-A-020-track2-agent-roles.md`, Status: ACCEPTED
+2026-05-11). ADR is the binding doctrine; this chronicle below is
+historical record of the demotion that informed Q-7.
+
+**Implementation:** `agent-orchestration/scripts/wrap-goose.sh` carries
+the per-invocation operator-approval prompt (reads y/N from `/dev/tty`;
+no env-var bypass per Q-7 "no carve-out"). Goose invocations that
+bypass `wrap-goose.sh` are out-of-policy and surface as audit findings.
+
+**Re-promotion trigger:** Cell promotion past Posture 0 requires class
+redefinition + a fresh N=5 capability-validation gate per the demotion
+chronicle below. ADR-A-020 v1.0 does not pre-authorize any re-promotion
+path; a future ADR amendment is required to flip the binding.
+
+---
+
+## Posture 1 — Capability-validation phase (D-17-13 reopen — historical, superseded by Posture 0 above)
 
 **Date:** 2026-05-03
 **Originating WP:** D-17-13 WP-05

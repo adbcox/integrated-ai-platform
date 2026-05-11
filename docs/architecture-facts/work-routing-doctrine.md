@@ -10,6 +10,17 @@ architecture or security decisions.
 - `docs/runbooks/aider-default-workflow.md` — operator invocation guide
 - `docs/architecture-facts/goose-capability-boundary.md` — Goose posture
 - `config/prompts/library/v1.0.0/CATALOG.md` — persona selection
+- `docs/adr/ADR-A-020-track2-agent-roles.md` — canonical per-agent role table (work-class × tier × default-model × capability-boundary for the six Track 2 agents); this doctrine defines the generic tier classifier, ADR-A-020 §3 maps agent identity into those tiers.
+
+---
+
+## Cross-cutting Track 2 agent prohibitions (ADR-A-020 Q-1)
+
+`.env` file access AND cross-host SSH access are denied in default invocations for all Track 2 agents (Aider / Goose / Serena / OpenCode / Continue / OpenHands). Per ADR-A-020 §4 first bullet (Q-1 resolution): operator-authored runbooks providing explicit narrow-scope override are the only sanctioned path. The override must be **invocation-scoped, not session-scoped**, and must surface in artifact provenance.
+
+This prohibition applies across all tiers (TIER 1 / TIER 2 / TIER 3) — it is a capability-boundary constraint, not a tier-classification constraint. It belongs in this doctrine's preamble because operators reach this doc when classifying work; the prohibition is part of the up-front decision context, not a downstream consequence.
+
+OpenHands already enforces this via `local-ai-workstation-roadmap.md` §15.2 ("No .env access … No production service credentials"). ADR-A-020 Q-1 generalizes the OpenHands posture to all six Track 2 agents.
 
 ---
 
